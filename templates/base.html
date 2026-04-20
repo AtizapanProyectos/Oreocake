@@ -5,45 +5,139 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}HOPE - Tele-Psicología PWA{% endblock %}</title>
-    <link rel="icon" href="{% static 'img/link (1).ico' %}" type="image/x-icon">
-    <link rel="shortcut icon" href="{% static 'img/link (1).ico' %}" type="image/x-icon">
+    <link rel="icon" href="{% static 'img/favicon.ico' %}" type="image/x-icon">
     
     <link rel="stylesheet" href="{% static 'css/style.css' %}?v=2">
-    
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        /* La nueva barra gigante y anclada al techo */
+        .navbar-cool {
+            position: absolute; /* 🔥 ESTO HACE QUE SE QUEDE ARRIBA Y NO BAJE CONTIGO 🔥 */
+            top: 25px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 95%; /* Un poco más ancha para que respire el logo */
+            max-width: 1200px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(15px);
+            border-radius: 80px; /* Más curvita */
+            box-shadow: 0 15px 40px rgba(90, 63, 163, 0.08);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 35px; /* 🔥 Barra más gordita 🔥 */
+            z-index: 4000;
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            transition: all 0.3s ease;
+        }
+
+        .navbar-cool:hover {
+            background: rgba(255, 255, 255, 1);
+            box-shadow: 0 20px 50px rgba(90, 63, 163, 0.12);
+        }
+
+        /* Botones laterales más grandes */
+        .nav-btn {
+            width: 60px; /* 🔥 Botones más anchos 🔥 */
+            height: 60px; /* 🔥 Botones más altos 🔥 */
+            border-radius: 50%;
+            background: #f8fafc;
+            color: #64748b;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            font-size: 24px; /* 🔥 Íconos más grandes 🔥 */
+            transition: 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            border: 1px solid transparent;
+        }
+
+        .nav-btn:hover {
+            background: #f3e8ff;
+            color: #5A3FA3;
+            transform: scale(1.1);
+        }
+
+        .nav-btn.logout:hover {
+            background: #fff1f2;
+            color: #F85B8C;
+        }
+
+        /* Logo centrado GIGANTE */
+        .logo-center {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex: 1;
+            transition: transform 0.3s ease;
+        }
+        
+        .logo-center:hover {
+            transform: scale(1.05);
+        }
+
+        .logo-center img {
+            height: 75px; /* 🔥 LOGO GIGANTE 🔥 */
+            object-fit: contain;
+        }
+        
+        /* Espaciador aumentado para que los paneles no se metan debajo del logo */
+        .nav-spacer { height: 160px; }
+
+        /* Estilo del modal de Despedida */
+        .modal-despedida {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(8px);
+            z-index: 9999; display: none; align-items: center; justify-content: center;
+        }
+        .modal-despedida-box {
+            background: #fffaf0; padding: 45px; border-radius: 35px; text-align: center;
+            border-top: 8px solid #F85B8C; max-width: 400px; width: 90%;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.15);
+            animation: popIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        @keyframes popIn { 0% { transform: scale(0.6); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+    </style>
 </head>
 <body>
 
-    <nav class="navbar">
-        <div class="nav-container">
-            <a href="{% url 'modulo_informativo' %}" class="logo">
-                <img src="{% static 'img/logo_hope_extendido.png' %}" alt="HOPE PWA Logo" class="logo-img">
-            </a>
-            
-            <div class="menu-toggle" id="mobile-menu">
-                <span class="bar"></span>
-                <span class="bar"></span>
-                <span class="bar"></span>
-            </div>
+    <nav class="navbar-cool">
+        <a href="{% url 'inicio' %}" class="nav-btn" title="Ir al Inicio">
+            <i class="fa-solid fa-house"></i>
+        </a>
+        
+        <a href="{% url 'inicio' %}" class="logo-center">
+            <img src="{% static 'img/logo_hope_extendido.png' %}" alt="HOPE Logo">
+        </a>
 
-            <ul class="nav-menu">
-                <li class="nav-item"><a href="#" class="nav-link">Inicio</a></li>
-                <li class="nav-item"><a href="#" class="nav-link active">Módulo Informativo</a></li>
-            </ul>
-        </div>
+        {% if user.is_authenticated %}
+        <a href="#" onclick="mostrarDespedida(); return false;" class="nav-btn logout" title="Cerrar Sesión">
+            <i class="fa-solid fa-arrow-right-from-bracket"></i>
+        </a>
+        {% else %}
+        <div style="width: 60px;"></div> 
+        {% endif %}
     </nav>
 
     <div class="nav-spacer"></div>
 
-    <main class="main-content">
-        {% block content %}
-        {% endblock %}
-    </main>
+    {% block content %}
+    {% endblock %}
+    <div id="modalDespedida" class="modal-despedida">
+        <div class="modal-despedida-box">
+            <i class="fas fa-hand-holding-heart" style="font-size: 65px; color: #F85B8C; margin-bottom: 20px;"></i>
+            <h2 style="font-family: 'Outfit', sans-serif; font-size: 2.2rem; color: #0f0f0f; margin-bottom: 10px; font-weight: 800;">¡Hasta pronto!</h2>
+            <p style="color: #64748b; font-size: 1.1rem; margin-bottom: 0; font-family: 'Plus Jakarta Sans', sans-serif;">Te esperamos de nuevo con nosotros. 💜</p>
+        </div>
+    </div>
 
-    <footer class="footer">
-        <p>&copy; 2026 Plataforma HOPE. Oportunidad | Prevención | Esperanza.</p>
-    </footer>
-
-    <script src="{% static 'js/main.js' %}"></script>
+    <script>
+        function mostrarDespedida() {
+            document.getElementById('modalDespedida').style.display = 'flex';
+            setTimeout(() => {
+                window.location.href = "{% url 'logout_usuario' %}";
+            }, 2500); 
+        }
+    </script>
 </body>
 </html>

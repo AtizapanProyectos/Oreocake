@@ -5,40 +5,39 @@
 
 {% block content %}
 <style>
-    /* Importamos las fuentes para asegurar que carguen bien en Railway */
     @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700;900&family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap');
 
     :root {
-        /* Paleta Sólida HOPE */
         --c-purple: #5A3FA3;
         --c-pink: #F85B8C;
         --c-orange: #F27C21;
         --c-yellow: #F8D33D;
         --c-teal: #25B8B8;
+        --c-indigo: #4f46e5;
+        --text-main: #0f0f0f;
+        --text-muted: #64748b;
         --font-headings: 'Outfit', sans-serif;
         --font-body: 'Plus Jakarta Sans', sans-serif;
     }
 
-    body { font-family: var(--font-body); background-color: #f8fafc; color: #0f0f0f; }
+    body { font-family: var(--font-body); background-color: #f8fafc; color: var(--text-main); }
     .expediente-wrapper { max-width: 1200px; margin: 0 auto; padding: 40px 20px 100px; }
 
-    /* CABECERA SUPERIOR */
+    /* CABECERA */
     .header-clinico { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 30px; border-bottom: 1px solid #e2e8f0; padding-bottom: 20px; }
-    .btn-back { color: #64748b; font-weight: 600; text-decoration: none; font-size: 14px; transition: 0.2s; display: inline-flex; align-items: center; gap: 8px; margin-bottom: 10px;}
+    .btn-back { color: var(--text-muted); font-weight: 600; text-decoration: none; font-size: 14px; transition: 0.2s; display: inline-flex; align-items: center; gap: 8px; margin-bottom: 10px;}
     .btn-back:hover { color: var(--c-purple); }
     
-    /* Botón Alerta ahora usa el Rosa de la marca */
     .btn-alert-top { background: #fff1f2; color: var(--c-pink); border: 1px solid #fecdd3; padding: 10px 20px; border-radius: 12px; font-weight: 700; cursor: pointer; transition: 0.3s; display: flex; align-items: center; gap: 8px; font-size: 14px; }
     .btn-alert-top:hover { background: var(--c-pink); color: white; border-color: var(--c-pink); }
+    .btn-teal-top { background: #f0fdfa; color: var(--c-teal); border: 1px solid #ccfbf1; padding: 10px 20px; border-radius: 12px; font-weight: 700; cursor: pointer; transition: 0.3s; display: flex; align-items: center; gap: 8px; font-size: 14px; }
+    .btn-teal-top:hover { background: var(--c-teal); color: white; border-color: var(--c-teal); }
 
-    /* EL MURO DE SESIONES */
-    .muro-box { background: white; border-radius: 24px; padding: 40px; box-shadow: 0 4px 20px rgba(0,0,0,0.02); border: 1px solid #f1f5f9; }
+    /* BLOQUE MURO */
+    .muro-box { background: white; border-radius: 24px; padding: 40px; box-shadow: 0 4px 20px rgba(0,0,0,0.02); border: 1px solid #f1f5f9; margin-bottom: 30px;}
     .muro-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; border-bottom: 1px dashed #e2e8f0; padding-bottom: 25px; }
+    .pill-brand-title { font-weight: 800; padding: 10px 20px; border-radius: 12px; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; display: inline-flex; align-items: center; gap: 10px; }
     
-    /* Etiqueta título Muro */
-    .pill-brand-title { background: #f3e8ff; color: var(--c-purple); font-weight: 800; padding: 10px 20px; border-radius: 12px; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; display: inline-flex; align-items: center; gap: 10px; }
-    
-    /* Botón Brutal Sólido */
     .btn-nueva-bitacora { background: var(--c-purple); color: white; border: none; padding: 12px 25px; border-radius: 100px; font-weight: 700; font-size: 15px; cursor: pointer; transition: 0.3s cubic-bezier(0.16, 1, 0.3, 1); display: inline-flex; align-items: center; gap: 10px; box-shadow: 0 4px 15px rgba(90, 63, 163, 0.2); font-family: var(--font-headings); letter-spacing: 0.5px;}
     .btn-nueva-bitacora:hover { background: var(--c-orange); transform: translateY(-3px); box-shadow: 0 8px 20px rgba(242, 124, 33, 0.3); }
 
@@ -48,40 +47,161 @@
     .empty-title { font-family: var(--font-headings); font-size: 24px; color: var(--c-purple); margin: 0 0 5px 0; }
     .empty-sub { color: #94a3b8; font-size: 15px; margin: 0; }
 
-    /* TARJETA DE SESIÓN GUARDADA (ACORDEÓN) */
-    .session-card { border: 1px solid #e2e8f0; border-radius: 16px; margin-bottom: 15px; transition: 0.3s; overflow: hidden; }
-    .session-header { background: #f8fafc; padding: 20px 25px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; font-weight: 700; color: #0f0f0f; font-size: 16px; border-left: 6px solid var(--c-purple); }
-    .session-header:hover { background: #f1f5f9; }
-    .session-body { display: none; padding: 30px; background: white; border-top: 1px solid #e2e8f0; border-left: 6px solid var(--c-purple); }
-    
-    .timeline-node { border-left: 3px solid #e2e8f0; padding-left: 25px; margin-left: 10px; position: relative; padding-bottom: 30px; }
+    /* =========================================================================
+       TARJETA UNIFICADA DE SESIÓN
+       ========================================================================= */
+    .session-card {
+        border: 1px solid #e2e8f0;
+        border-radius: 20px;
+        margin-bottom: 16px;
+        overflow: hidden;
+        transition: box-shadow 0.3s, border-color 0.3s;
+        background: white;
+    }
+    .session-card:hover { box-shadow: 0 4px 20px rgba(90,63,163,0.08); border-color: #d4c5f5; }
+
+    /* Header de la tarjeta — clickeable para expandir */
+    .session-header {
+        padding: 20px 25px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        cursor: pointer;
+        border-left: 6px solid var(--c-purple);
+        background: #f8fafc;
+        transition: background 0.2s;
+    }
+    .session-header:hover { background: #f3eeff; }
+
+    .session-header-left { display: flex; align-items: center; gap: 14px; }
+    .session-date-badge {
+        background: #f3e8ff;
+        color: var(--c-purple);
+        border-radius: 12px;
+        padding: 8px 16px;
+        font-weight: 800;
+        font-size: 13px;
+        font-family: var(--font-headings);
+        white-space: nowrap;
+    }
+    .session-header-meta { display: flex; flex-direction: column; gap: 2px; }
+    .session-header-title { font-weight: 700; color: var(--text-main); font-size: 15px; }
+    .session-header-sub { font-size: 12px; color: var(--text-muted); display: flex; align-items: center; gap: 10px; }
+
+    /* Badges que muestran qué tiene la sesión */
+    .session-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 3px 10px;
+        border-radius: 100px;
+        font-size: 11px;
+        font-weight: 700;
+    }
+    .badge-bitacora { background: #f3e8ff; color: var(--c-purple); }
+    .badge-meet { background: #e0e7ff; color: var(--c-indigo); }
+    .badge-adjunto { background: #fff7ed; color: var(--c-orange); }
+
+    .session-chevron { color: #94a3b8; transition: transform 0.3s; font-size: 14px; }
+
+    /* Cuerpo expandible */
+    .session-body { display: none; border-top: 1px solid #e2e8f0; }
+    .session-body.open { display: block; animation: fadeIn 0.3s ease forwards; }
+
+    /* TABS internas */
+    .session-tabs {
+        display: flex;
+        border-bottom: 1px solid #e2e8f0;
+        background: #fdfdfe;
+        padding: 0 25px;
+        gap: 0;
+    }
+    .tab-btn {
+        padding: 14px 22px;
+        font-weight: 700;
+        font-size: 13px;
+        cursor: pointer;
+        border: none;
+        background: none;
+        color: var(--text-muted);
+        border-bottom: 3px solid transparent;
+        transition: 0.2s;
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        margin-bottom: -1px;
+        font-family: var(--font-body);
+        text-transform: uppercase;
+        letter-spacing: 0.7px;
+    }
+    .tab-btn:hover { color: var(--c-purple); }
+    .tab-btn.active { color: var(--c-purple); border-bottom-color: var(--c-purple); }
+    .tab-btn.tab-meet.active { color: var(--c-indigo); border-bottom-color: var(--c-indigo); }
+
+    /* Paneles de tab */
+    .tab-panel { display: none; padding: 30px; }
+    .tab-panel.active { display: block; animation: fadeIn 0.25s ease forwards; }
+
+    /* TIMELINE dentro de bitácora */
+    .timeline-node { border-left: 3px solid #e2e8f0; padding-left: 25px; margin-left: 10px; position: relative; padding-bottom: 28px; }
     .timeline-node:last-child { padding-bottom: 0; border-left-color: transparent; }
     .timeline-node::before { content: ''; position: absolute; left: -10px; top: 0; width: 17px; height: 17px; border-radius: 50%; background: #e2e8f0; border: 3px solid white; }
-    
-    /* Colores Sólidos HOPE para el Timeline */
     .node-purple-brand::before { background: var(--c-purple); }
     .node-teal-brand::before { background: var(--c-teal); }
     .node-orange-brand::before { background: var(--c-orange); }
     .node-pink-brand::before { background: var(--c-pink); }
 
     .node-title { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 10px 0; }
-    .node-content { margin: 0; font-size: 15px; color: #0f0f0f; line-height: 1.6; }
+    .node-content { margin: 0; font-size: 15px; color: var(--text-main); line-height: 1.6; }
+
+    /* PANEL MEET */
+    .meet-loading { text-align: center; padding: 40px; color: var(--text-muted); }
+    .meet-files-grid { display: flex; gap: 12px; flex-wrap: wrap; }
+    .meet-file-chip {
+        background: #f1f5f9;
+        border: 1px solid #e2e8f0;
+        padding: 12px 20px;
+        border-radius: 12px;
+        text-decoration: none;
+        color: var(--text-main);
+        font-weight: 600;
+        font-size: 13px;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: 0.2s;
+    }
+    .meet-file-chip:hover { background: #e2e8f0; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+    .meet-pending { padding: 20px; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 12px; color: var(--text-main); font-weight: 600; font-size: 15px; }
+    .meet-trigger-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: #eef2ff;
+        color: var(--c-indigo);
+        border: 1px solid #c7d2fe;
+        padding: 10px 20px;
+        border-radius: 12px;
+        font-weight: 700;
+        font-size: 13px;
+        cursor: pointer;
+        transition: 0.2s;
+        border-style: none;
+        font-family: var(--font-body);
+    }
+    .meet-trigger-btn:hover { background: var(--c-indigo); color: white; }
 
     /* =========================================================================
        EL WIZARD: NUEVA BITÁCORA
        ========================================================================= */
     #vista-wizard { display: none; background: white; border-radius: 24px; padding: 50px; box-shadow: 0 10px 40px rgba(0,0,0,0.03); border: 1px solid #f1f5f9; }
-    
     .wizard-step { display: none; animation: fadeIn 0.4s ease forwards; }
     .wizard-step.active { display: block; }
-    
     .wizard-header-title { font-family: var(--font-headings); font-size: 28px; color: var(--c-purple); margin: 0 0 30px 0; display: flex; justify-content: space-between; align-items: center; }
     
     .input-label { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: #475569; margin-bottom: 15px; display: block; }
-    .input-box { width: 100%; border: 2px solid #e2e8f0; border-radius: 16px; padding: 25px; font-family: inherit; font-size: 15px; color: #0f0f0f; resize: vertical; outline: none; transition: 0.3s; line-height: 1.6; background: #fafafa; }
+    .input-box { width: 100%; border: 2px solid #e2e8f0; border-radius: 16px; padding: 25px; font-family: inherit; font-size: 15px; color: var(--text-main); resize: vertical; outline: none; transition: 0.3s; line-height: 1.6; background: #fafafa; }
     .input-box:focus { background: white; }
-
-    /* Colores en focus para cada paso */
     .box-step1:focus { border-color: var(--c-purple); box-shadow: 0 0 0 4px rgba(90, 63, 163, 0.1); }
     .box-step2a:focus { border-color: var(--c-teal); box-shadow: 0 0 0 4px rgba(37, 184, 184, 0.1); }
     .box-step2b:focus { border-color: var(--c-orange); box-shadow: 0 0 0 4px rgba(242, 124, 33, 0.1); }
@@ -89,21 +209,68 @@
     .box-step3b:focus { border-color: var(--c-yellow); box-shadow: 0 0 0 4px rgba(248, 211, 61, 0.2); }
 
     .split-textareas { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; }
-
     .wizard-footer { display: flex; justify-content: flex-end; gap: 15px; margin-top: 30px; border-top: 1px solid #f1f5f9; padding-top: 30px; }
     .btn-cancel { background: #f1f5f9; color: #475569; border: none; padding: 12px 25px; border-radius: 12px; font-weight: 700; cursor: pointer; transition: 0.3s; font-family: var(--font-headings); }
     .btn-cancel:hover { background: #e2e8f0; color: var(--c-purple); }
 
-    /* Alerta Modal Emergencia (En Rosa Marca) */
-    #modalEmergencia { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(5px); z-index: 5000; align-items: center; justify-content: center; padding: 20px; }
-    .emergencia-box { background: white; width: 100%; max-width: 500px; padding: 40px; border-radius: 24px; border-top: 8px solid var(--c-pink); }
+    /* Modales */
+    .custom-modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(5px); z-index: 5000; align-items: center; justify-content: center; padding: 20px; }
+    .custom-modal-box { background: white; width: 100%; max-width: 500px; padding: 40px; border-radius: 24px; position: relative; animation: fadeIn 0.3s ease forwards; }
 
     @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* =========================================================================
+       ZONA DE CARGA DE ARCHIVO (SCAN IA)
+       ========================================================================= */
+    .upload-zona-wrapper { margin-bottom: 28px; border: 2px dashed #d4c5f5; border-radius: 20px; background: linear-gradient(135deg, #faf7ff 0%, #f0fdfa 100%); overflow: hidden; transition: border-color 0.3s, box-shadow 0.3s; }
+    .upload-zona-wrapper.drag-over { border-color: var(--c-purple); box-shadow: 0 0 0 4px rgba(90,63,163,0.1); background: linear-gradient(135deg, #f3e8ff 0%, #e0fdf4 100%); }
+    .upload-zona-header { display: flex; align-items: center; justify-content: space-between; padding: 16px 22px; cursor: pointer; user-select: none; border-bottom: 1px solid transparent; transition: border-color 0.3s; }
+    .upload-zona-header:hover { background: rgba(90,63,163,0.04); }
+    .upload-zona-header-left { display: flex; align-items: center; gap: 12px; }
+    .upload-zona-icon { width: 40px; height: 40px; border-radius: 12px; background: var(--c-purple); display: flex; align-items: center; justify-content: center; color: white; font-size: 18px; flex-shrink: 0; }
+    .upload-zona-label { font-weight: 800; font-size: 14px; color: var(--c-purple); font-family: var(--font-headings); letter-spacing: 0.3px; }
+    .upload-zona-sublabel { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+    .upload-zona-toggle { color: #94a3b8; font-size: 13px; transition: transform 0.3s; }
+    .upload-zona-toggle.open { transform: rotate(180deg); }
+    .upload-zona-body { display: none; padding: 22px; border-top: 1px dashed #d4c5f5; }
+    .upload-zona-body.visible { display: block; animation: fadeIn 0.3s ease; }
+    .upload-drop-area { border: 2px dashed #c4b5fd; border-radius: 14px; padding: 35px 20px; text-align: center; background: white; cursor: pointer; transition: 0.3s; position: relative; }
+    .upload-drop-area:hover { border-color: var(--c-purple); background: #faf5ff; }
+    .upload-drop-area input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+    .upload-drop-icon { font-size: 40px; color: #c4b5fd; margin-bottom: 12px; }
+    .upload-drop-title { font-weight: 700; font-size: 15px; color: var(--c-purple); margin-bottom: 5px; }
+    .upload-drop-sub { font-size: 12px; color: var(--text-muted); }
+    .upload-chips { display: flex; gap: 8px; justify-content: center; margin-top: 12px; flex-wrap: wrap; }
+    .upload-chip { background: #f3e8ff; color: var(--c-purple); border-radius: 100px; padding: 4px 12px; font-size: 11px; font-weight: 700; letter-spacing: 0.5px; }
+    .upload-preview { display: none; margin-top: 16px; background: white; border-radius: 14px; border: 1px solid #e2e8f0; padding: 16px 20px; }
+    .upload-preview.show { display: flex; align-items: center; gap: 15px; animation: fadeIn 0.3s ease; }
+    .upload-preview-icon { width: 46px; height: 46px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; }
+    .upload-preview-icon.img { background: #fef3c7; color: var(--c-orange); }
+    .upload-preview-icon.pdf { background: #fee2e2; color: #dc2626; }
+    .upload-preview-icon.doc { background: #dbeafe; color: #2563eb; }
+    .upload-preview-info { flex: 1; min-width: 0; }
+    .upload-preview-name { font-weight: 700; font-size: 14px; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .upload-preview-size { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+    .upload-preview-remove { color: #94a3b8; cursor: pointer; font-size: 18px; transition: 0.2s; flex-shrink: 0; }
+    .upload-preview-remove:hover { color: var(--c-pink); }
+    .btn-procesar-ia { width: 100%; margin-top: 16px; background: linear-gradient(135deg, var(--c-purple), #7c5cbf); color: white; border: none; padding: 14px 25px; border-radius: 14px; font-weight: 800; font-size: 14px; cursor: pointer; transition: 0.3s cubic-bezier(0.16, 1, 0.3, 1); display: none; align-items: center; justify-content: center; gap: 10px; font-family: var(--font-headings); letter-spacing: 0.5px; box-shadow: 0 4px 15px rgba(90,63,163,0.25); }
+    .btn-procesar-ia:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(90,63,163,0.35); }
+    .btn-procesar-ia.show { display: flex; animation: fadeIn 0.3s ease; }
+    .btn-procesar-ia:disabled { opacity: 0.7; cursor: not-allowed; transform: none; }
+    .ia-status { display: none; margin-top: 14px; padding: 14px 18px; border-radius: 12px; font-size: 13px; font-weight: 600; align-items: center; gap: 10px; }
+    .ia-status.processing { display: flex; background: #f3e8ff; color: var(--c-purple); border: 1px solid #d4c5f5; }
+    .ia-status.success { display: flex; background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; }
+    .ia-status.error { display: flex; background: #fff1f2; color: var(--c-pink); border: 1px solid #fecdd3; }
+    .ia-status .status-icon { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 14px; }
+    .ia-status.processing .status-icon { background: var(--c-purple); color: white; }
+    .ia-status.success .status-icon { background: #16a34a; color: white; }
+    .ia-status.error .status-icon { background: var(--c-pink); color: white; }
 
     @media(max-width: 800px) {
         .split-textareas { grid-template-columns: 1fr; }
         .header-clinico { flex-direction: column; align-items: flex-start; gap: 20px; }
         .muro-header { flex-direction: column; gap: 20px; text-align: center; }
+        .session-tabs { overflow-x: auto; }
     }
 </style>
 
@@ -113,80 +280,226 @@
         <div>
             <a href="{% url 'panel_doctor' %}" class="btn-back"><i class="fas fa-arrow-left"></i> Volver a la Agenda</a>
             <h1 style="font-family: var(--font-headings); font-size: 42px; margin: 10px 0 5px 0; color: var(--c-purple);">{{ paciente.first_name|title }} {{ paciente.last_name|title }}</h1>
-            <p style="margin: 0; color: #64748b; font-size: 15px;"><i class="fas fa-envelope" style="color: var(--c-orange);"></i> {{ paciente.email }}</p>
+            <p style="margin: 0; color: var(--text-muted); font-size: 15px;"><i class="fas fa-envelope" style="color: var(--c-orange);"></i> {{ paciente.email }}</p>
         </div>
-        <div>
+        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            {% if respuestas_formateadas %}
+            <button class="btn-teal-top" onclick="document.getElementById('modalTriage').style.display='flex'">
+                <i class="fas fa-clipboard-list"></i> Ver cuestionario Inicial
+            </button>
+            {% endif %}
+            <button onclick="generarSintesisMaestra()" style="background: #f3e8ff; color: var(--c-purple); border: 1px solid #d8b4fe; padding: 10px 20px; border-radius: 12px; font-weight: 700; cursor: pointer; transition: 0.3s; display: flex; align-items: center; gap: 8px; font-size: 14px;" onmouseover="this.style.background='var(--c-purple)'; this.style.color='white'" onmouseout="this.style.background='#f3e8ff'; this.style.color='var(--c-purple)'">
+                <i class="fas fa-brain"></i> Síntesis Clínica IA
+            </button>
             <button class="btn-alert-top" onclick="document.getElementById('modalEmergencia').style.display='flex'">
-                <i class="fas fa-siren-on"></i> Ver Focos Rojos y Emergencia
+                <i class="fas fa-siren-on"></i> Ver Focos Rojos
             </button>
         </div>
     </div>
 
-    <div id="vista-muro" class="muro-box">
+    <!-- =====================================================================
+         MURO UNIFICADO: cada sesión tiene Bitácora + Meet en tabs
+         ===================================================================== -->
+    <div id="vista-muro" class="muro-box" style="border-top: 6px solid var(--c-purple);">
         <div class="muro-header">
-            <span class="pill-brand-title"><i class="fas fa-history"></i> 2. Muro de Sesiones</span>
+            <span class="pill-brand-title" style="background: #f3e8ff; color: var(--c-purple);">
+                <i class="fas fa-history"></i> Expediente de Sesiones
+            </span>
             <button class="btn-nueva-bitacora" onclick="abrirWizard()">
                 <i class="fas fa-plus"></i> Nueva Bitácora
             </button>
         </div>
 
-        {% if historiales %}
-            {% for h in historiales %}
-            <div class="session-card">
-                <div class="session-header" onclick="toggleSession('detalle-{{ h.id }}', this)">
-                    <span><i class="far fa-calendar-check" style="margin-right: 8px; color: var(--c-orange);"></i> {{ h.fecha_registro|date:"d de F, Y - H:i" }}</span>
-                    <i class="fas fa-chevron-down icon-arrow" style="color: #94a3b8; transition: 0.3s;"></i>
-                </div>
-                <div id="detalle-{{ h.id }}" class="session-body">
-                    
-                    {% if h.como_llega %}
-                    <div class="timeline-node node-purple-brand">
-                        <p class="node-title" style="color: var(--c-purple);">1. ¿Cómo llega el paciente?</p>
-                        <p class="node-content">{{ h.como_llega|linebreaksbr }}</p>
+
+
+        {% if sesiones %}
+            {% for sesion in sesiones %}
+
+            {% with slug=sesion.slug fecha_display=sesion.fecha_orden|date:"d M Y" hora_display=sesion.hora_orden|time:"H:i" %}
+
+            <div class="session-card" id="card-{{ slug }}">
+
+                {# ── CABECERA ── #}
+                <div class="session-header" onclick="toggleSession('{{ slug }}', this)"
+                     {% if not sesion.tiene_historial %}style="border-left-color: var(--c-indigo);"{% endif %}>
+                    <div class="session-header-left">
+                        <div class="session-date-badge"
+                             {% if not sesion.tiene_historial %}style="background:#e0e7ff;color:var(--c-indigo);"{% endif %}>
+                            <i class="{% if sesion.tiene_historial %}far fa-calendar-check{% else %}fas fa-video{% endif %}"
+                               style="margin-right:6px;"></i>
+                            {{ fecha_display }}
+                        </div>
+                        <div class="session-header-meta">
+                            <div class="session-header-title">Sesión · {{ hora_display }} hrs</div>
+                            <div class="session-header-sub">
+                                {% if sesion.tiene_historial %}
+                                <span class="session-badge badge-bitacora"><i class="fas fa-book"></i> Bitácora</span>
+                                {% endif %}
+                                {% if sesion.tiene_meet %}
+                                <span class="session-badge badge-meet"><i class="fas fa-video"></i> Meet</span>
+                                {% endif %}
+                                {% if sesion.historial and sesion.historial.archivo_adjunto %}
+                                <span class="session-badge badge-adjunto"><i class="fas fa-paperclip"></i> Adjunto</span>
+                                {% endif %}
+                                {% if not sesion.tiene_historial %}
+                                <span class="session-badge" style="background:#fef3c7;color:#b45309;">
+                                    <i class="fas fa-pen"></i> Sin bitácora aún
+                                </span>
+                                {% endif %}
+                            </div>
+                        </div>
                     </div>
+                    <div style="display:flex;align-items:center;gap:10px;">
+                        {% if not sesion.tiene_historial and sesion.cita %}
+                        <button class="btn-nueva-bitacora"
+                                style="padding:8px 18px;font-size:13px;box-shadow:none;"
+                                onclick="event.stopPropagation(); abrirWizard('{{ sesion.cita.id }}')">
+                            <i class="fas fa-plus"></i> Agregar Bitácora
+                        </button>
+                        {% endif %}
+                        <i class="fas fa-chevron-down session-chevron"></i>
+                    </div>
+                </div>
+
+                {# ── CUERPO EXPANDIBLE ── #}
+                <div id="body-{{ slug }}" class="session-body">
+
+                    {# ── TABS ── #}
+                    <div class="session-tabs">
+                        {% if sesion.tiene_historial %}
+                        <button class="tab-btn {% if not sesion.tiene_meet %}active{% endif %} {% if sesion.tiene_meet %}active{% endif %}"
+                                onclick="switchTab(event, '{{ slug }}', 'bitacora')">
+                            <i class="fas fa-book-medical"></i> Bitácora Clínica
+                        </button>
+                        {% endif %}
+                        {% if sesion.tiene_meet %}
+                        <button class="tab-btn tab-meet {% if not sesion.tiene_historial %}active{% endif %}"
+                                onclick="switchTab(event, '{{ slug }}', 'meet')">
+                            <i class="fas fa-video"></i> Resumen Meet
+                        </button>
+                        {% endif %}
+                    </div>
+
+                    {# ── TAB: BITÁCORA ── #}
+                    {% if sesion.tiene_historial %}
+                    {% with h=sesion.historial %}
+                    <div id="tab-bitacora-{{ slug }}" class="tab-panel active">
+                        <button type="button" class="btn-cancel" style="margin-top: 25px; width: 100%; border: 1px dashed #cbd5e1; background: transparent; color: var(--c-orange);" onmouseover="this.style.background='#fffaf0'" onmouseout="this.style.background='transparent'" onclick="editarBitacora({{ h.id }})">
+                            <i class="fas fa-edit"></i> Corregir / Editar esta Bitácora
+                        </button>
+
+                        {% if h.como_llega %}
+                        <div class="timeline-node node-purple-brand">
+                            <p class="node-title" style="color:var(--c-purple);">1. ¿Cómo llega el paciente?</p>
+                            <p class="node-content">{{ h.como_llega|linebreaksbr }}</p>
+                        </div>
+                        {% endif %}
+
+                        <div class="timeline-node node-teal-brand">
+                            <p class="node-title" style="color:var(--c-teal);">2. Notas privadas del desarrollo</p>
+                            <p class="node-content">{{ h.notas_sesion|linebreaksbr }}</p>
+                        </div>
+
+                        <div class="timeline-node node-orange-brand">
+                            <p class="node-title" style="color:var(--c-orange);"><i class="fas fa-star"></i> 3. ¿Qué se llevó de la sesión?</p>
+                            <p class="node-content" style="font-style:italic;background:#fffaf0;padding:15px;border-radius:10px;border:1px solid #ffedd5;">
+                                "{{ h.aprendizaje_paciente|default:'No registrado' }}"
+                            </p>
+                        </div>
+
+                        {% if h.como_se_va or h.recomendaciones %}
+                        <div class="timeline-node node-pink-brand">
+                            <p class="node-title" style="color:var(--c-pink);">4. Cierre y Recomendaciones</p>
+                            <p class="node-content" style="margin-bottom:10px;"><strong>Alta:</strong> {{ h.como_se_va|default:'-'|linebreaksbr }}</p>
+                            <p class="node-content"><strong>Recomendaciones:</strong> {{ h.recomendaciones|default:'-'|linebreaksbr }}</p>
+                        </div>
+                        {% endif %}
+
+                        {% if h.archivo_adjunto %}
+                        <div style="margin-top:20px;border-top:1px solid #e2e8f0;padding-top:15px;">
+                            <a href="{{ h.archivo_adjunto.url }}" target="_blank"
+                               style="background:#f1f5f9;color:var(--c-purple);padding:8px 16px;border-radius:8px;text-decoration:none;font-weight:700;font-size:13px;display:inline-flex;align-items:center;gap:8px;transition:0.3s;"
+                               onmouseover="this.style.background='#e2e8f0'" onmouseout="this.style.background='#f1f5f9'">
+                                <i class="fas fa-file-download"></i> Ver Documento Escaneado
+                            </a>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endwith %}
                     {% endif %}
 
-                    <div class="timeline-node node-teal-brand">
-                        <p class="node-title" style="color: var(--c-teal);">2. Notas privadas del desarrollo</p>
-                        <p class="node-content">{{ h.notas_sesion|linebreaksbr }}</p>
+                    {# ── TAB: MEET ── #}
+                    {% if sesion.tiene_meet %}
+                    {% with cita=sesion.cita %}
+                    <div id="tab-meet-{{ slug }}" class="tab-panel {% if not sesion.tiene_historial %}active{% endif %}">
+                        <div id="meet-content-{{ cita.id }}" data-cargado="false">
+                            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;padding-bottom:16px;border-bottom:1px dashed #e2e8f0;">
+                                <div>
+                                    <p style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--c-indigo);margin:0 0 4px 0;">
+                                        <i class="fas fa-robot" style="margin-right:5px;"></i> Notas Automáticas · Google Meet
+                                    </p>
+                                    <p style="font-size:13px;color:var(--text-muted);margin:0;">
+                                        Sesión del {{ cita.fecha|date:"d M Y" }} a las {{ cita.hora|time:"H:i" }}
+                                    </p>
+                                </div>
+                                <button class="meet-trigger-btn" onclick="cargarMeet('{{ cita.id }}', this)">
+                                    <i class="fas fa-sync-alt"></i> Sincronizar
+                                </button>
+                            </div>
+                            <div class="meet-loading" style="display:none;">
+                                <i class="fas fa-circle-notch fa-spin" style="font-size:28px;color:var(--c-indigo);margin-bottom:12px;display:block;"></i>
+                                Sincronizando con Google Drive…
+                            </div>
+                            <div class="meet-result" style="color:var(--text-muted);font-size:14px;text-align:center;padding:20px 0;">
+                                <i class="fas fa-video" style="font-size:28px;color:#cbd5e1;margin-bottom:10px;display:block;"></i>
+                                Presiona "Sincronizar" para recuperar las transcripciones de esta sesión.
+                            </div>
+                        </div>
                     </div>
-
-                    <div class="timeline-node node-orange-brand">
-                        <p class="node-title" style="color: var(--c-orange);"><i class="fas fa-star"></i> 3. ¿Qué se llevó de la sesión?</p>
-                        <p class="node-content" style="font-style: italic; background: #fffaf0; padding: 15px; border-radius: 10px; border: 1px solid #ffedd5;">"{{ h.aprendizaje_paciente|default:'No registrado' }}"</p>
-                    </div>
-
-                    {% if h.como_se_va or h.recomendaciones %}
-                    <div class="timeline-node node-pink-brand">
-                        <p class="node-title" style="color: var(--c-pink);">4. Cierre y Recomendaciones</p>
-                        <p class="node-content" style="margin-bottom: 10px;"><strong>Alta:</strong> {{ h.como_se_va|default:'-'|linebreaksbr }}</p>
-                        <p class="node-content"><strong>Recomendaciones:</strong> {{ h.recomendaciones|default:'-'|linebreaksbr }}</p>
-                    </div>
+                    {% endwith %}
                     {% endif %}
 
-                </div>
-            </div>
+                </div>{# /session-body #}
+            </div>{# /session-card #}
+
+            {% endwith %}
             {% endfor %}
+
         {% else %}
             <div class="empty-muro">
                 <i class="fas fa-folder-open empty-icon"></i>
                 <h3 class="empty-title">Expediente Limpio</h3>
-                <p class="empty-sub">Aún no hay bitácoras guardadas. Haz clic en "+ Nueva Bitácora".</p>
+                <p class="empty-sub">Aún no hay sesiones ni bitácoras guardadas. Haz clic en "+ Nueva Bitácora".</p>
             </div>
         {% endif %}
+
     </div>
 
-
+    <!-- WIZARD: Nueva Bitácora -->
     <div id="vista-wizard">
         <form id="formBitacoraNueva" onsubmit="guardarBitacora(event)">
             {% csrf_token %}
             <input type="hidden" name="paciente_id" value="{{ paciente.id }}">
+            {# cita_id se inyecta por JS cuando se abre desde una sesión Meet #}
+            <input type="hidden" name="cita_id" id="wizardCitaId" value="">
+            <input type="hidden" name="historial_id" id="wizardHistorialId" value="">
+
+            {# Banner contextual: aparece solo cuando se enlaza a una cita #}
+            <div id="wizard-cita-banner" style="display:none; background:#e0e7ff; border:1px solid #c7d2fe; border-radius:14px; padding:14px 20px; margin-bottom:24px; display:none; align-items:center; gap:12px;">
+                <i class="fas fa-link" style="color:var(--c-indigo); font-size:18px;"></i>
+                <div>
+                    <span style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--c-indigo);">Vinculando a sesión Meet</span>
+                    <p id="wizard-cita-info" style="margin:2px 0 0;font-size:13px;color:#3730a3;font-weight:600;"></p>
+                </div>
+                <button type="button" onclick="abrirWizard()" style="margin-left:auto;background:none;border:none;color:#94a3b8;cursor:pointer;font-size:16px;" title="Crear bitácora sin vincular">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
 
             <div id="step-1" class="wizard-step active">
                 <h2 class="wizard-header-title">Paso 1: Inicio de sesión <span style="font-size: 14px; color: #94a3b8; font-family: var(--font-body);">1 de 3</span></h2>
                 <label class="input-label" style="color: var(--c-purple);">¿Cómo llega tu paciente hoy?</label>
                 <textarea name="como_llega" class="input-box box-step1" style="min-height: 250px;" placeholder="Describe su estado emocional inicial, avances desde la última sesión..."></textarea>
-                
                 <div class="wizard-footer">
                     <button type="button" class="btn-cancel" onclick="cerrarWizard()">Cancelar</button>
                     <button type="button" class="btn-nueva-bitacora" onclick="nextStep(2)">Siguiente <i class="fas fa-arrow-right"></i></button>
@@ -195,7 +508,47 @@
 
             <div id="step-2" class="wizard-step">
                 <h2 class="wizard-header-title">Redactar Sesión de Hoy <span style="font-size: 14px; color: #94a3b8; font-family: var(--font-body);">2 de 3</span></h2>
-                
+
+                <div class="upload-zona-wrapper" id="uploadZonaWrapper">
+                    <div class="upload-zona-header" onclick="toggleUploadZona()">
+                        <div class="upload-zona-header-left">
+                            <div class="upload-zona-icon"><i class="fas fa-wand-magic-sparkles"></i></div>
+                            <div>
+                                <div class="upload-zona-label">Importar y distribuir con IA</div>
+                                <div class="upload-zona-sublabel">Sube una foto o archivo y la IA acomodará la info en cada sección.</div>
+                            </div>
+                        </div>
+                        <i class="fas fa-chevron-down upload-zona-toggle" id="uploadZonaToggle"></i>
+                    </div>
+                    <div class="upload-zona-body" id="uploadZonaBody">
+                        <div class="upload-drop-area" id="uploadDropArea">
+                            <input type="file" name="archivo_adjunto" id="archivoNota" accept=".jpg,.jpeg,.png,.webp,.pdf,.doc,.docx" onchange="archivoSeleccionado(event)">
+                            <div class="upload-drop-icon"><i class="fas fa-cloud-arrow-up"></i></div>
+                            <div class="upload-drop-title">Arrastra aquí o haz clic para seleccionar</div>
+                            <div class="upload-drop-sub">Tus notas escritas a mano o documentos clínicos</div>
+                            <div class="upload-chips">
+                                <span class="upload-chip">📷 JPG / PNG</span>
+                                <span class="upload-chip">📄 PDF</span>
+                                <span class="upload-chip">📝 DOC / DOCX</span>
+                            </div>
+                        </div>
+                        <div class="upload-preview" id="uploadPreview">
+                            <div class="upload-preview-icon img" id="previewIcon"><i class="fas fa-file-image"></i></div>
+                            <div class="upload-preview-info">
+                                <div class="upload-preview-name" id="previewNombre">archivo.jpg</div>
+                                <div class="upload-preview-size" id="previewTamano">—</div>
+                            </div>
+                            <i class="fas fa-times upload-preview-remove" onclick="limpiarArchivo()" title="Quitar archivo"></i>
+                        </div>
+                        <button type="button" class="btn-procesar-ia" id="btnProcesarIA" onclick="procesarArchivoIA()">
+                            <i class="fas fa-wand-magic-sparkles"></i> Procesar con IA y extraer texto
+                        </button>
+                        <div class="ia-status" id="iaStatus">
+                            <div class="status-icon"><i class="fas fa-spinner fa-spin" id="statusIcon"></i></div>
+                            <span id="statusMsg">Analizando documento...</span>
+                        </div>
+                    </div>
+                </div>
                 <div class="split-textareas">
                     <div>
                         <label class="input-label" style="color: var(--c-teal);">Notas Privadas (Desarrollo de la sesión)</label>
@@ -206,7 +559,6 @@
                         <textarea name="aprendizaje_paciente" class="input-box box-step2b" required style="min-height: 250px;" placeholder="Pregúntale al paciente al finalizar y anota su respuesta literal..."></textarea>
                     </div>
                 </div>
-
                 <div class="wizard-footer">
                     <button type="button" class="btn-cancel" onclick="nextStep(1)">Atrás</button>
                     <button type="button" class="btn-nueva-bitacora" onclick="nextStep(3)">Siguiente <i class="fas fa-arrow-right"></i></button>
@@ -215,35 +567,83 @@
 
             <div id="step-3" class="wizard-step">
                 <h2 class="wizard-header-title">Cierre y Alta <span style="font-size: 14px; color: #94a3b8; font-family: var(--font-body);">3 de 3</span></h2>
-                
                 <label class="input-label" style="color: var(--c-pink);">¿Cómo se va el paciente? (Notas de Alta)</label>
                 <textarea name="como_se_va" class="input-box box-step3a" style="min-height: 150px;" placeholder="Resumen del estado final de la sesión, logros..."></textarea>
-
                 <label class="input-label" style="color: #b45309; margin-top: 20px;">Recomendaciones Generales / Tareas</label>
                 <textarea name="recomendaciones" class="input-box box-step3b" style="min-height: 150px;" placeholder="Libros, hábitos, rutinas a seguir..."></textarea>
-                
                 <div class="wizard-footer">
                     <button type="button" class="btn-cancel" onclick="nextStep(2)">Atrás</button>
                     <button type="submit" class="btn-nueva-bitacora"><i class="fas fa-save"></i> Guardar y Finalizar</button>
                 </div>
             </div>
-
         </form>
     </div>
 
 </div>
 
-<div id="modalEmergencia">
-    <div class="emergencia-box">
+<!-- Modal Triage -->
+<div id="modalTriage" class="custom-modal-overlay">
+    <div class="custom-modal-box" style="text-align: center;">
+        <i class="fas fa-times" style="position: absolute; top: 20px; right: 20px; cursor: pointer; font-size: 20px; color: #94a3b8; transition: 0.2s;" onmouseover="this.style.color='#0f0f0f'" onmouseout="this.style.color='#94a3b8'" onclick="document.getElementById('modalTriage').style.display='none'"></i>
+        <div style="width: 90px; height: 90px; border-radius: 50%; background: #f0fdfa; color: var(--c-teal); display: flex; align-items: center; justify-content: center; font-size: 38px; margin: 0 auto 20px; border: 4px solid var(--c-teal); box-shadow: 0 4px 15px rgba(37, 184, 184, 0.2);">
+            <i class="fas fa-clipboard-check"></i>
+        </div>
+        <h2 style="font-family: var(--font-headings); font-size: 28px; color: var(--text-main); margin: 0 0 5px 0; font-weight: 800;">Cuestionario Inicial</h2>
+        <p style="color: var(--c-purple); font-weight: 700; margin: 0 0 25px 0; font-size: 15px;">Flujo Clínico: {{ cuestionario.flujo_elegido|title }}</p>
+        <div style="background: #f8fafc; border-radius: 16px; padding: 25px; text-align: left; margin-bottom: 30px; border: 1px solid #e2e8f0; max-height: 400px; overflow-y: auto;">
+            {% for pregunta, respuesta in respuestas_formateadas.items %}
+            <div style="margin-bottom: 18px;">
+                <span style="font-size: 11px; text-transform: uppercase; color: var(--text-muted); font-weight: 800; letter-spacing: 1px; display: block; margin-bottom: 4px;">{{ pregunta }}</span>
+                <p style="margin: 0; font-size: 15px; color: var(--text-main); font-weight: 500; line-height: 1.5;">{{ respuesta }}</p>
+            </div>
+            {% endfor %}
+            <p style="margin: 15px 0 0 0; text-align: left; font-size: 11px; color: #94a3b8; font-style: italic;">Completado: {{ cuestionario.fecha_completado|date:"d M Y, H:i" }}</p>
+        </div>
+        <button onclick="document.getElementById('modalTriage').style.display='none'" style="background: #f3e8ff; color: var(--c-purple); border: none; padding: 15px 30px; border-radius: 12px; font-weight: 700; font-size: 15px; cursor: pointer; transition: 0.3s; width: 100%; font-family: var(--font-headings);">Cerrar Triage</button>
+    </div>
+</div>
+
+<!-- Modal Resumen -->
+
+<div id="modalSintesis" class="custom-modal-overlay">
+    <div class="custom-modal-box" style="max-width: 800px; text-align: left; background: white; border-top: 8px solid var(--c-purple);">
+        <i class="fas fa-times" style="position: absolute; top: 20px; right: 20px; cursor: pointer; font-size: 20px; color: #94a3b8; transition: 0.2s;" onmouseover="this.style.color='#0f0f0f'" onmouseout="this.style.color='#94a3b8'" onclick="document.getElementById('modalSintesis').style.display='none'"></i>
+        
+        <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 25px;">
+            <div style="width: 60px; height: 60px; border-radius: 15px; background: #f3e8ff; color: var(--c-purple); display: flex; align-items: center; justify-content: center; font-size: 28px;">
+                <i class="fas fa-brain"></i>
+            </div>
+            <div>
+                <h2 style="font-family: var(--font-headings); font-size: 26px; color: var(--text-main); margin: 0 0 4px 0; font-weight: 800;">Síntesis Clínica Integral</h2>
+                <p style="color: var(--text-muted); margin: 0; font-size: 14px;">Análisis deductivo generado por IA a partir de todo el expediente.</p>
+            </div>
+        </div>
+        
+        <div id="sintesisLoader" style="text-align: center; padding: 50px 20px;">
+            <i class="fas fa-circle-notch fa-spin" style="font-size: 40px; color: var(--c-purple); margin-bottom: 20px; display: block;"></i>
+            <h4 style="color: var(--text-main); margin: 0 0 10px 0;">Analizando expediente completo...</h4>
+            <p style="color: var(--text-muted); font-size: 14px; margin: 0;">La IA está cruzando los datos del cuestionario inicial y el historial de bitácoras. Esto puede tomar alrededor de 15 segundos.</p>
+        </div>
+        
+        <div id="sintesisContent" style="display: none; background: #f8fafc; border-radius: 16px; padding: 30px; border: 1px solid #e2e8f0; max-height: 50vh; overflow-y: auto; font-size: 15px; line-height: 1.6; color: var(--text-main);">
+            </div>
+        
+        <button onclick="document.getElementById('modalSintesis').style.display='none'" style="margin-top: 25px; background: #f1f5f9; color: var(--text-muted); border: none; padding: 15px; border-radius: 12px; font-weight: 700; font-size: 15px; cursor: pointer; transition: 0.3s; width: 100%; font-family: var(--font-headings);" onmouseover="this.style.background='#e2e8f0'; this.style.color='#0f0f0f'" onmouseout="this.style.background='#f1f5f9'; this.style.color='var(--text-muted)'">Cerrar Reporte</button>
+    </div>
+</div>
+
+
+
+<!-- Modal Emergencia -->
+<div id="modalEmergencia" class="custom-modal-overlay">
+    <div class="emergencia-box" style="border-top: 8px solid var(--c-pink);">
         <div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
             <h3 style="margin: 0; font-size: 24px; color: var(--c-pink); font-family: var(--font-headings);"><i class="fas fa-siren-on"></i> Datos Críticos</h3>
             <i class="fas fa-times" style="cursor: pointer; font-size: 20px; color: #cbd5e1;" onclick="document.getElementById('modalEmergencia').style.display='none'"></i>
         </div>
-        
         <form onsubmit="guardarEmergencia(event)">
             {% csrf_token %}
             <input type="hidden" name="paciente_id" value="{{ paciente.id }}">
-            
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                 <label class="input-label" style="color: var(--c-pink); margin: 0;">Teléfono de Emergencia</label>
                 {% if paciente.perfil.telefono_emergencia %}
@@ -253,95 +653,347 @@
                 {% endif %}
             </div>
             <input type="text" name="telefono_emergencia" class="input-box" style="padding: 15px;" value="{{ paciente.perfil.telefono_emergencia|default:'' }}" placeholder="Ej. 55 1234 5678" onfocus="this.style.borderColor='var(--c-pink)'" onblur="this.style.borderColor='#e2e8f0'">
-            
             <label class="input-label" style="color: var(--c-pink); margin-top: 15px;">Focos Rojos</label>
             <textarea name="focos_rojos" class="input-box" style="min-height: 120px;" placeholder="Alergias, riesgos..." onfocus="this.style.borderColor='var(--c-pink)'" onblur="this.style.borderColor='#e2e8f0'">{{ paciente.perfil.focos_rojos|default:'' }}</textarea>
-            
             <button type="submit" class="btn-nueva-bitacora" style="width: 100%; justify-content: center; background: var(--c-pink); margin-top: 20px;">Actualizar Alertas</button>
         </form>
     </div>
 </div>
 
 <script>
-    // Mostrar/Ocultar detalles de la sesión en el muro
+    // =========================================================================
+    // ACORDEÓN DE SESIÓN
+    // =========================================================================
     function toggleSession(id, headerObj) {
-        const body = document.getElementById(id);
-        const icon = headerObj.querySelector('.icon-arrow');
-        if(body.style.display === 'block') {
-            body.style.display = 'none';
+        const body = document.getElementById('body-' + id);
+        const icon = headerObj.querySelector('.session-chevron');
+        if (body.classList.contains('open')) {
+            body.classList.remove('open');
             icon.style.transform = 'rotate(0deg)';
         } else {
-            body.style.display = 'block';
+            body.classList.add('open');
             icon.style.transform = 'rotate(180deg)';
         }
     }
 
-    // Funciones del Wizard
-    function abrirWizard() {
-        document.getElementById('vista-muro').style.display = 'none';
-        document.getElementById('vista-wizard').style.display = 'block';
-        nextStep(1); // Siempre inicia en paso 1
+    // =========================================================================
+    // TABS INTERNAS (Bitácora / Meet)
+    // =========================================================================
+    function switchTab(event, sessionId, tabName) {
+        const body = document.getElementById('body-' + sessionId);
+        // Desactivar todos los tabs y paneles dentro de esta sesión
+        body.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        body.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+        // Activar el seleccionado
+        event.currentTarget.classList.add('active');
+        const panel = document.getElementById('tab-' + tabName + '-' + sessionId);
+        if (panel) panel.classList.add('active');
     }
 
+    // =========================================================================
+    // CARGA DE MEET (lazy, solo cuando el usuario lo pide)
+    // =========================================================================
+    function cargarMeet(citaId, btnObj) {
+        const container = document.getElementById('meet-content-' + citaId);
+        if (!container) return;
+        if (container.getAttribute('data-cargado') === 'true') return;
+
+        const loading = container.querySelector('.meet-loading');
+        const result = container.querySelector('.meet-result');
+        btnObj.disabled = true;
+        btnObj.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Sincronizando…';
+
+        if (loading) loading.style.display = 'block';
+        if (result) result.style.display = 'none';
+
+        fetch(`/check-meet-notes/${citaId}/`)
+            .then(r => r.json())
+            .then(data => {
+                if (loading) loading.style.display = 'none';
+                if (data.status === 'success') {
+                    let html = '<div>';
+                    html += '<p style="color: var(--c-indigo); font-weight: 800; font-size: 12px; text-transform: uppercase; margin-bottom: 15px; letter-spacing: 1px;"><i class="fas fa-folder-open" style="margin-right:5px;"></i> Archivos recuperados</p>';
+                    html += '<div class="meet-files-grid">';
+                    data.attachments.forEach(file => {
+                        html += `<a href="${file.url}" target="_blank" class="meet-file-chip"><i class="fas fa-file-alt" style="color: var(--c-indigo); font-size: 16px;"></i> ${file.title}</a>`;
+                    });
+                    html += '</div></div>';
+                    if (result) { result.innerHTML = html; result.style.display = 'block'; result.style.textAlign = 'left'; result.style.padding = '0'; }
+                    container.setAttribute('data-cargado', 'true');
+                    btnObj.innerHTML = '<i class="fas fa-check"></i> Sincronizado';
+                    btnObj.style.background = '#f0fdf4';
+                    btnObj.style.color = '#16a34a';
+                    btnObj.style.borderColor = '#bbf7d0';
+                } else if (data.status === 'pending') {
+                    if (result) { result.innerHTML = `<div class="meet-pending">${data.message}</div>`; result.style.display = 'block'; result.style.padding = '0'; result.style.textAlign = 'left'; }
+                    btnObj.innerHTML = '<i class="fas fa-sync-alt"></i> Sincronizar';
+                    btnObj.disabled = false;
+                } else {
+                    if (result) { result.innerHTML = `<div style="color: #ef4444; font-weight: bold; padding: 10px 0;">Error: ${data.message}</div>`; result.style.display = 'block'; result.style.padding = '0'; }
+                    btnObj.innerHTML = '<i class="fas fa-sync-alt"></i> Reintentar';
+                    btnObj.disabled = false;
+                }
+            })
+            .catch(() => {
+                if (loading) loading.style.display = 'none';
+                if (result) { result.innerHTML = '<div style="color: #ef4444; font-weight: bold; padding: 10px 0;">Fallo de conexión. Intenta de nuevo.</div>'; result.style.display = 'block'; result.style.padding = '0'; }
+                btnObj.innerHTML = '<i class="fas fa-sync-alt"></i> Reintentar';
+                btnObj.disabled = false;
+            });
+    }
+
+    // =========================================================================
+    // WIZARD
+    // =========================================================================
+    // citaId opcional: si viene, la bitácora quedará enlazada a esa cita Meet
+    function abrirWizard(citaId) {
+        document.getElementById('vista-muro').style.display = 'none';
+        document.getElementById('vista-wizard').style.display = 'block';
+
+        const inputCita  = document.getElementById('wizardCitaId');
+        const banner     = document.getElementById('wizard-cita-banner');
+        const bannerInfo = document.getElementById('wizard-cita-info');
+
+        if (citaId) {
+            // Buscamos la info de la cita desde el DOM para el banner
+            const meetContent = document.getElementById('meet-content-' + citaId);
+            const citaInfoEl  = meetContent ? meetContent.querySelector('p:last-of-type') : null;
+            const citaTexto   = citaInfoEl ? citaInfoEl.textContent.trim() : 'Cita #' + citaId;
+
+            inputCita.value = citaId;
+            bannerInfo.textContent = citaTexto;
+            banner.style.display = 'flex';
+        } else {
+            inputCita.value = '';
+            banner.style.display = 'none';
+        }
+
+        nextStep(1);
+    }
     function cerrarWizard() {
         document.getElementById('vista-wizard').style.display = 'none';
         document.getElementById('vista-muro').style.display = 'block';
         document.getElementById('formBitacoraNueva').reset();
+        document.getElementById('wizardCitaId').value = '';
+        document.getElementById('wizard-cita-banner').style.display = 'none';
+        document.getElementById('wizardHistorialId').value = '';
     }
-
     function nextStep(step) {
         document.querySelectorAll('.wizard-step').forEach(el => el.classList.remove('active'));
         document.getElementById('step-' + step).classList.add('active');
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
-
-    // Guardar la bitácora nueva completa
     function guardarBitacora(e) {
         e.preventDefault();
         const btn = e.target.querySelector('button[type="submit"]');
         const originalText = btn.innerHTML;
         btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
         btn.disabled = true;
-
         fetch("{% url 'guardar_historial' %}", {
             method: 'POST',
             body: new FormData(e.target),
             headers: {'X-Requested-With': 'XMLHttpRequest'}
-        })
-        .then(r => r.json())
-        .then(data => {
-            if(data.status === 'success') {
-                // PUM, recargamos la página y aparece en la lista
-                location.reload(); 
-            } else {
-                alert('Error al guardar: ' + data.message);
-                btn.innerHTML = originalText;
-                btn.disabled = false;
-            }
-        }).catch(err => { alert("Error de conexión"); btn.innerHTML = originalText; btn.disabled = false; });
+        }).then(r => r.json()).then(data => {
+            if (data.status === 'success') { location.reload(); }
+            else { alert('Error al guardar: ' + data.message); btn.innerHTML = originalText; btn.disabled = false; }
+        }).catch(() => { alert("Error de conexión"); btn.innerHTML = originalText; btn.disabled = false; });
     }
 
-    // Guardar solo emergencia sin salir de la vista
+    // =========================================================================
+    // ZONA DE ESCANEO IA
+    // =========================================================================
+    let archivoActual = null;
+
+    function toggleUploadZona() {
+        const body = document.getElementById('uploadZonaBody');
+        const toggle = document.getElementById('uploadZonaToggle');
+        const wrapper = document.getElementById('uploadZonaWrapper');
+        const abierto = body.classList.contains('visible');
+        if (abierto) {
+            body.classList.remove('visible');
+            toggle.classList.remove('open');
+            wrapper.style.borderColor = '';
+        } else {
+            body.classList.add('visible');
+            toggle.classList.add('open');
+            wrapper.style.borderColor = 'var(--c-purple)';
+        }
+    }
+
+    function archivoSeleccionado(e) {
+        const archivo = e.target.files[0];
+        if (!archivo) return;
+        archivoActual = archivo;
+        const preview = document.getElementById('uploadPreview');
+        const icon = document.getElementById('previewIcon');
+        const nombre = document.getElementById('previewNombre');
+        const tamano = document.getElementById('previewTamano');
+        const btn = document.getElementById('btnProcesarIA');
+        nombre.textContent = archivo.name;
+        const kb = archivo.size / 1024;
+        tamano.textContent = kb > 1024 ? (kb / 1024).toFixed(1) + ' MB' : kb.toFixed(0) + ' KB';
+        icon.className = 'upload-preview-icon';
+        if (archivo.type.startsWith('image/')) icon.classList.add('img');
+        else if (archivo.type === 'application/pdf') icon.classList.add('pdf');
+        else icon.classList.add('doc');
+        icon.innerHTML = archivo.type.startsWith('image/') ? '<i class="fas fa-file-image"></i>' : archivo.type === 'application/pdf' ? '<i class="fas fa-file-pdf"></i>' : '<i class="fas fa-file-word"></i>';
+        preview.classList.add('show');
+        btn.classList.add('show');
+    }
+
+    function limpiarArchivo() {
+        archivoActual = null;
+        document.getElementById('archivoNota').value = '';
+        document.getElementById('uploadPreview').classList.remove('show');
+        document.getElementById('btnProcesarIA').classList.remove('show');
+        mostrarStatus('', '');
+    }
+
+    function mostrarStatus(tipo, msg) {
+        const el = document.getElementById('iaStatus');
+        el.className = 'ia-status';
+        if (!tipo) { el.style.display = 'none'; return; }
+        el.classList.add(tipo);
+        document.getElementById('statusIcon').className = tipo === 'processing' ? 'fas fa-spinner fa-spin' : tipo === 'success' ? 'fas fa-check' : 'fas fa-exclamation';
+        document.getElementById('statusMsg').textContent = msg;
+    }
+
+    async function procesarArchivoIA() {
+        if (!archivoActual) return;
+        const btn = document.getElementById('btnProcesarIA');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Procesando…';
+        mostrarStatus('processing', 'Analizando documento con IA…');
+
+        const formData = new FormData();
+        formData.append('archivo', archivoActual);
+        formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+
+        try {
+            const resp = await fetch("{% url 'procesar_archivo_ia' %}", {
+                method: 'POST', body: formData,
+                headers: {'X-Requested-With': 'XMLHttpRequest'}
+            });
+            const rawData = await resp.json();
+            if (rawData.status === 'success') {
+                const jsonIA = rawData.data;
+                if (jsonIA.como_llega) { let d = document.querySelector('[name="como_llega"]'); d.value += (d.value ? '\n\n' : '') + jsonIA.como_llega; }
+                if (jsonIA.notas_sesion) { let d = document.querySelector('[name="notas_sesion"]'); d.value += (d.value ? '\n\n' : '') + jsonIA.notas_sesion; }
+                if (jsonIA.aprendizaje_paciente) { let d = document.querySelector('[name="aprendizaje_paciente"]'); d.value += (d.value ? '\n\n' : '') + jsonIA.aprendizaje_paciente; }
+                if (jsonIA.como_se_va) { let d = document.querySelector('[name="como_se_va"]'); d.value += (d.value ? '\n\n' : '') + jsonIA.como_se_va; }
+                if (jsonIA.recomendaciones) { let d = document.querySelector('[name="recomendaciones"]'); d.value += (d.value ? '\n\n' : '') + jsonIA.recomendaciones; }
+                ['como_llega', 'notas_sesion', 'aprendizaje_paciente', 'como_se_va', 'recomendaciones'].forEach(name => {
+                    if (jsonIA[name]) {
+                        document.querySelector(`[name="${name}"]`).style.borderColor = 'var(--c-teal)';
+                        setTimeout(() => { document.querySelector(`[name="${name}"]`).style.borderColor = '#e2e8f0'; }, 2500);
+                    }
+                });
+                mostrarStatus('success', '¡Información distribuida automáticamente en las casillas!');
+                btn.innerHTML = '<i class="fas fa-check"></i> Texto extraído correctamente';
+            } else {
+                mostrarStatus('error', rawData.error || 'No se pudo procesar el archivo. Intenta de nuevo.');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-wand-magic-sparkles"></i> Procesar con IA y extraer texto';
+            }
+        } catch (err) {
+            console.error(err);
+            mostrarStatus('error', 'Error de conexión. Verifica la red e intenta de nuevo.');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-wand-magic-sparkles"></i> Procesar con IA y extraer texto';
+        }
+    }
+
+    // Drag & drop
+    const dropArea = document.getElementById('uploadDropArea');
+    if (dropArea) {
+        const wrapper = document.getElementById('uploadZonaWrapper');
+        dropArea.addEventListener('dragover', (e) => { e.preventDefault(); wrapper.classList.add('drag-over'); });
+        dropArea.addEventListener('dragleave', () => { wrapper.classList.remove('drag-over'); });
+        dropArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            wrapper.classList.remove('drag-over');
+            const archivo = e.dataTransfer.files[0];
+            if (archivo) {
+                document.getElementById('archivoNota').files = e.dataTransfer.files;
+                archivoSeleccionado({ target: { files: e.dataTransfer.files } });
+            }
+        });
+    }
+
     function guardarEmergencia(e) {
         e.preventDefault();
         const btn = e.target.querySelector('button[type="submit"]');
         const originalText = btn.innerHTML;
         btn.innerHTML = 'Guardando...';
-        
         fetch("{% url 'guardar_expediente_global' %}", {
             method: 'POST',
             body: new FormData(e.target),
             headers: {'X-Requested-With': 'XMLHttpRequest'}
         }).then(r => r.json()).then(d => {
             btn.innerHTML = originalText;
-            if(d.status === 'success') {
+            if (d.status === 'success') {
                 alert("Alertas actualizadas.");
                 document.getElementById('modalEmergencia').style.display = 'none';
-                
-                // Si queremos que el botón "Llamar" aparezca de inmediato si agregaron un número:
                 location.reload();
             }
         });
     }
+
+
+
+function editarBitacora(historialId) {
+        fetch(`/obtener-bitacora/${historialId}/`)
+            .then(r => r.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    const h = data.data;
+                    
+                    // Llenar los campos con los datos de la base de datos
+                    document.getElementById('wizardHistorialId').value = historialId;
+                    document.querySelector('[name="como_llega"]').value = h.como_llega;
+                    document.querySelector('[name="notas_sesion"]').value = h.notas_sesion;
+                    document.querySelector('[name="aprendizaje_paciente"]').value = h.aprendizaje_paciente;
+                    document.querySelector('[name="como_se_va"]').value = h.como_se_va;
+                    document.querySelector('[name="recomendaciones"]').value = h.recomendaciones;
+
+                    // Cambiar el texto del banner
+                    document.getElementById('wizard-cita-info').textContent = "Modificando una bitácora ya existente";
+                    document.getElementById('wizard-cita-banner').style.display = 'flex';
+                    
+                    // Ocultar el muro y abrir el Wizard en el Paso 1
+                    document.getElementById('vista-muro').style.display = 'none';
+                    document.getElementById('vista-wizard').style.display = 'block';
+                    nextStep(1);
+                } else {
+                    alert("No se pudo cargar la bitácora para edición.");
+                }
+            });
+    }
+
+
+function generarSintesisMaestra() {
+        document.getElementById('modalSintesis').style.display = 'flex';
+        document.getElementById('sintesisLoader').style.display = 'block';
+        document.getElementById('sintesisContent').style.display = 'none';
+
+        fetch(`/generar-sintesis/{{ paciente.id }}/`)
+            .then(r => r.json())
+            .then(data => {
+                document.getElementById('sintesisLoader').style.display = 'none';
+                if (data.status === 'success') {
+                    document.getElementById('sintesisContent').innerHTML = data.sintesis;
+                    document.getElementById('sintesisContent').style.display = 'block';
+                } else {
+                    document.getElementById('sintesisContent').innerHTML = `<div style="text-align: center; color: #ef4444;"><i class="fas fa-exclamation-triangle" style="font-size: 30px; margin-bottom: 10px;"></i><p><b>Error:</b> ${data.message}</p></div>`;
+                    document.getElementById('sintesisContent').style.display = 'block';
+                }
+            })
+            .catch(err => {
+                document.getElementById('sintesisLoader').style.display = 'none';
+                document.getElementById('sintesisContent').innerHTML = `<div style="text-align: center; color: #ef4444;"><i class="fas fa-wifi" style="font-size: 30px; margin-bottom: 10px;"></i><p><b>Fallo de conexión.</b> No se pudo contactar al servidor de IA.</p></div>`;
+                document.getElementById('sintesisContent').style.display = 'block';
+            });
+    }
+
 </script>
 {% endblock %}

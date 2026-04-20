@@ -1,0 +1,236 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Acceso — HOPE</title>
+<link rel="icon" href="{% static 'img/favicon.ico' %}" type="image/x-icon">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700;900&family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --c-purple:   #5A3FA3;
+  --c-pink:     #F85B8C;
+  --c-teal:     #25B8B8;
+  --c-dark:     #0f0f0f;
+  --text-muted: #64748b;
+  --font-h: 'Outfit', sans-serif;
+  --font-b: 'Plus Jakarta Sans', sans-serif;
+}
+
+html, body {
+  height: 100%;
+  font-family: var(--font-b);
+  color: var(--c-dark);
+  background: #fff;
+}
+
+.page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background:
+    radial-gradient(circle at top right,   rgba(90,63,163,.08),  #fff 60%),
+    radial-gradient(circle at bottom left, rgba(248,91,140,.06), #fff 70%);
+}
+
+.card {
+  width: 100%;
+  max-width: 420px;
+  background: #fff;
+  border: 1px solid #f1f5f9;
+  border-radius: 40px;
+  padding: 52px 48px 48px;
+  box-shadow: 0 20px 60px rgba(0,0,0,.07);
+  animation: fadeUp .5s cubic-bezier(.22,.68,0,1.2) both;
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(24px) scale(.98); }
+  to   { opacity: 1; transform: translateY(0)    scale(1);   }
+}
+
+.logo-wrap {
+  text-align: center;
+  margin-bottom: 36px;
+}
+.logo-wrap img {
+  height: 44px;
+  width: auto;
+}
+
+.card-title {
+  font-family: var(--font-h);
+  font-size: 2rem;
+  font-weight: 900;
+  color: var(--c-purple);
+  text-align: center;
+  margin-bottom: 6px;
+  line-height: 1.1;
+  letter-spacing: -1px;
+  text-transform: uppercase;
+}
+.card-sub {
+  text-align: center;
+  font-size: .9rem;
+  color: var(--text-muted);
+  margin-bottom: 32px;
+}
+
+.error-box {
+  background: rgba(248,91,140,.06);
+  border: 1px solid rgba(248,91,140,.25);
+  border-radius: 16px;
+  padding: 13px 16px;
+  font-size: .875rem;
+  color: var(--c-pink);
+  font-weight: 600;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  animation: shake .35s ease;
+}
+@keyframes shake {
+  0%,100%{ transform:translateX(0) }
+  25%    { transform:translateX(-6px) }
+  75%    { transform:translateX(6px) }
+}
+
+.field { margin-bottom: 16px; }
+.field label {
+  display: block;
+  font-size: .78rem;
+  font-weight: 800;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: .8px;
+  margin-bottom: 8px;
+}
+.field input {
+  width: 100%;
+  background: #fafafa;
+  border: 2px solid #f1f5f9;
+  border-radius: 15px;
+  padding: 16px 18px;
+  font-size: .95rem;
+  font-family: var(--font-b);
+  color: var(--c-dark);
+  outline: none;
+  transition: border-color .2s, background .2s, box-shadow .2s;
+}
+.field input::placeholder { color: #c0cad4; }
+.field input:focus {
+  border-color: var(--c-purple);
+  background: #fff;
+  box-shadow: 0 0 0 4px rgba(90,63,163,.08);
+}
+
+.btn {
+  width: 100%;
+  margin-top: 10px;
+  padding: 18px;
+  border: none;
+  border-radius: 100px;
+  background: var(--c-purple);
+  color: #fff;
+  font-family: var(--font-h);
+  font-size: 1rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 15px 30px rgba(90,63,163,.2);
+  transition: transform .3s, filter .3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+.btn:hover { transform: translateY(-4px); filter: brightness(1.1); }
+.btn:active { transform: translateY(0); }
+.btn::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(105deg, transparent 40%, rgba(255,255,255,.15) 50%, transparent 60%);
+  transform: translateX(-100%);
+  transition: transform .45s ease;
+}
+.btn:hover::after { transform: translateX(100%); }
+
+.card-note {
+  margin-top: 28px;
+  text-align: center;
+  font-size: .78rem;
+  color: #cbd5e1;
+  font-weight: 600;
+  letter-spacing: .3px;
+}
+</style>
+</head>
+<body>
+
+<div class="page">
+  <div class="card">
+
+    <div class="logo-wrap">
+      <img src="{% static 'img/nlogo.png' %}" alt="HOPE">
+    </div>
+
+    <h1 class="card-title">Bienvenido</h1>
+    <p class="card-sub">Acceso exclusivo para equipo HOPE</p>
+
+    {% if error %}
+    <div class="error-box">
+      <i class="fas fa-circle-exclamation"></i>
+      {{ error }}
+    </div>
+    {% endif %}
+
+    <form method="POST" action="{% url 'admindoc_login' %}">
+      {% csrf_token %}
+
+      <div class="field">
+        <label for="login_email">Correo</label>
+        <input
+          type="text"
+          id="login_email"
+          name="login_email"
+          placeholder="tu@correo.com"
+          autocomplete="email"
+          required
+        >
+      </div>
+
+      <div class="field">
+        <label for="login_password">Contraseña</label>
+        <input
+          type="password"
+          id="login_password"
+          name="login_password"
+          placeholder="••••••••"
+          autocomplete="current-password"
+          required
+        >
+      </div>
+
+      <button type="submit" class="btn">
+        Entrar <i class="fas fa-arrow-right"></i>
+      </button>
+    </form>
+
+    <p class="card-note">HOPE &mdash; Oportunidad · Prevención · Esperanza</p>
+  </div>
+</div>
+
+</body>
+</html>

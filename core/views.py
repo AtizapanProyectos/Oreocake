@@ -6,6 +6,7 @@ from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes, force_str
 from django.contrib import messages
 from django.urls import reverse
+# pyrefly: ignore [missing-import]
 from django.http import JsonResponse
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
@@ -28,6 +29,43 @@ from django.conf import settings
 
 from .models import *
 from .cuestionario_data import CUESTIONARIO_CLINICO
+
+from django.utils import timezone as tz
+
+
+
+from django.core.mail import EmailMultiAlternatives
+from django.template.loader import render_to_string
+from django.http import JsonResponse
+from django.utils.timezone import localtime, now
+
+import re
+
+import base64
+import os
+
+
+import fitz          # PyMuPDF  — para leer PDFs
+import docx          # python-docx — para leer .doc/.docx
+from groq import Groq
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.contrib.auth.decorators import login_required
+ 
+ 
+TIPOS_IMAGEN  = {'jpg', 'jpeg', 'png', 'webp'}
+TIPOS_PDF     = {'pdf'}
+TIPOS_DOC     = {'doc', 'docx'}
+TAMANO_MAX_MB = 10  # límite de seguridad
+
+
+
+
+from django.contrib.auth import logout
+
+def logout_usuario(request):
+    logout(request)
+    return redirect('inicio')
 
 # =========================================================================
 # 🧠 FUNCIÓN MAESTRA: CREAR ENLACE DE GOOGLE MEET
@@ -86,7 +124,10 @@ def generar_link_meet(fecha_obj, hora_obj, paciente_nombre, psicologo_nombre, pa
             sendUpdates='all'  
         ).execute()
 
-        return event_result.get('hangoutLink')
+        return {
+            'link': event_result.get('hangoutLink'),
+            'id_evento': event_result.get('id')
+        }
 
     except Exception as e:
         print(f"Error generando Meet: {e}")
@@ -94,10 +135,13 @@ def generar_link_meet(fecha_obj, hora_obj, paciente_nombre, psicologo_nombre, pa
 
 # =========================================================================
 # 🏠 NUEVA VISTA: PÁGINA DE INICIO (LANDING PAGE)
-# =========================================================================
 def inicio(request):
-    return render(request, 'inicio.html')
-
+    context = {
+        'cuestionario_json': json.dumps(CUESTIONARIO_CLINICO)
+    }
+    
+    # ¡AQUÍ ESTÁ LA MAGIA! Pasamos el 'context' a la plantilla
+    return render(request, 'inicio.html', context)
 
 def modulo_informativo(request):
     context = {
@@ -126,7 +170,8 @@ def registrar_usuario(request):
             return JsonResponse({'status': 'error', 'message': 'Este correo ya está registrado.'})
 
         user = User.objects.create_user(
-            username=email, email=email, password=password)
+            username=email, 
+            email=email, password=password)
         user.first_name = nombre
         user.is_active = False
         user.save()
@@ -188,42 +233,98 @@ def activar_cuenta(request, uidb64, token):
     else:
         return render(request, 'verificacion_resultado.html', {'exito': False})
 
-
 def login_usuario(request):
-    if request.method == 'POST':
-        email = request.POST.get('login_email')
-        password = request.POST.get('login_password')
+    if request.method != 'POST':
+        return JsonResponse({'status': 'error', 'message': 'Método no permitido.'}, status=405)
 
-        try:
-            user = User.objects.get(username=email)
-        except User.DoesNotExist:
-            return JsonResponse({'status': 'error', 'error_type': 'invalid', 'message': 'El correo o la contraseña son incorrectos.'})
+    email = request.POST.get('login_email', '').strip()
+    password = request.POST.get('login_password', '')
 
-        if not user.check_password(password):
-            return JsonResponse({'status': 'error', 'error_type': 'invalid', 'message': 'El correo o la contraseña son incorrectos.'})
+    if not email or not password:
+        return JsonResponse({
+            'status': 'error',
+            'error_type': 'invalid',
+            'message': 'Por favor ingresa tu correo y contraseña.'
+        })
 
-        if not user.is_active:
-            return JsonResponse({'status': 'error', 'error_type': 'unverified', 'message': 'Aún no verificas tu cuenta. Por favor, revisa tu bandeja de entrada.'})
+    try:
+        # iexact makes the lookup case-insensitive — works as long as
+        # your registro view saves email as the username field.
+        user = User.objects.get(username__iexact=email)
+    except User.DoesNotExist:
+        return JsonResponse({
+            'status': 'error',
+            'error_type': 'invalid',
+            'message': 'El correo o la contraseña son incorrectos.'
+        })
+    except User.MultipleObjectsReturned:
+        # Defensive: shouldn't happen if username is unique, but just in case
+        return JsonResponse({
+            'status': 'error',
+            'error_type': 'invalid',
+            'message': 'El correo o la contraseña son incorrectos.'
+        })
 
-        login(request, user)
+    if not user.check_password(password):
+        return JsonResponse({
+            'status': 'error',
+            'error_type': 'invalid',
+            'message': 'El correo o la contraseña son incorrectos.'
+        })
 
-        if user.is_superuser:
-            return JsonResponse({'status': 'success', 'redirect_url': '/panel-admin/'})
-        elif hasattr(user, 'perfil_psicologo'):
-            return JsonResponse({'status': 'success', 'redirect_url': '/panel-doctor/'})
-        else:
-            return JsonResponse({'status': 'success', 'redirect_url': '/panel/'})
+    if not user.is_active:
+        return JsonResponse({
+            'status': 'error',
+            'error_type': 'unverified',
+            'message': 'Aún no verificas tu cuenta. Por favor, revisa tu bandeja de entrada.'
+        })
 
-    return JsonResponse({'status': 'error', 'message': 'Método no permitido.'})
+    login(request, user)
+
+    if user.is_superuser:
+        redirect_url = reverse('panel_admin')
+    elif hasattr(user, 'perfil_psicologo'):
+        redirect_url = reverse('panel_doctor')
+    else:
+        redirect_url = reverse('panel_generico')
+
+    return JsonResponse({'status': 'success', 'redirect_url': redirect_url})
 
 
 def panel_generico(request):
     if not request.user.is_authenticated:
         return redirect('modulo_informativo')
 
-    hoy = timezone.now().date()
-    hora_actual = timezone.now().time()
-    perfil_usuario = request.user.perfil
+    # 1. Primero obtenemos el perfil (¡Esto debe ir antes de todo!)
+    try:
+        perfil_usuario = request.user.perfil
+    except Exception:
+        logout(request)
+        return redirect('modulo_informativo')
+
+    # 2. Ahora sí, extraemos qué vino a buscar el paciente (ya conocemos perfil_usuario)
+# 2. 🔥 CORRECCIÓN: Leer desde tu tabla CuestionarioRegistro 🔥
+    tipo_servicio = "individual" 
+    
+    # Buscamos el último cuestionario que haya llenado este paciente
+    ultimo_cuestionario = CuestionarioRegistro.objects.filter(paciente=request.user).last()
+
+    if ultimo_cuestionario and ultimo_cuestionario.respuestas:
+        respuestas = ultimo_cuestionario.respuestas
+        if isinstance(respuestas, str):
+            try:
+                respuestas = json.loads(respuestas)
+            except:
+                respuestas = {}
+        
+        # Extraemos la llave exacta que guardaste (Ej: 'terapia_pareja' o 'Criar con Conciencia')
+        tipo_servicio = respuestas.get("servicio_solicitado", "individual")
+
+    # 3. Configuración de tiempos y citas
+    now_local = timezone.localtime(timezone.now())
+    hoy = now_local.date()
+    hora_actual = now_local.time().replace(second=0, microsecond=0)
+
     psicologo_asignado = perfil_usuario.psicologo_asignado
 
     cita_proxima = Cita.objects.filter(
@@ -232,57 +333,92 @@ def panel_generico(request):
         estado='Confirmada'
     ).order_by('fecha', 'hora').first()
 
+    # 4. Lógica de disponibilidad del calendario
     festivos = set(DiaFestivo.objects.filter(fecha__gte=hoy).values_list('fecha', flat=True))
     horas_base = [time(h, 0) for h in range(9, 19)]
     total_psicologos_activos = PerfilPsicologo.objects.filter(esta_activo=True).count()
 
     dias_json = {}
     dias_html = {}
-    dias_agregados = 0
-    dia_actual = hoy
-    dias_iterados = 0
 
-    while dias_agregados < 365 and dias_iterados < 400:
-        dias_iterados += 1
-        if dia_actual.weekday() <= 6 and dia_actual not in festivos:
-            horas_del_dia_str = []
-            horas_del_dia_obj = []
+    if total_psicologos_activos > 0 or psicologo_asignado:
+        fecha_limite = hoy + timedelta(days=90)
+        if psicologo_asignado:
+            citas_ocupadas = set(
+                (c['fecha'], c['hora'].replace(second=0, microsecond=0))
+                for c in Cita.objects.filter(
+                    psicologo=psicologo_asignado,
+                    fecha__gte=hoy,
+                    fecha__lte=fecha_limite,
+                    estado='Confirmada'
+                ).values('fecha', 'hora')
+            )
+        else:
+            citas_agrupadas = Cita.objects.filter(
+                fecha__gte=hoy,
+                fecha__lte=fecha_limite,
+                estado='Confirmada'
+            ).values('fecha', 'hora').annotate(total=Count('id'))
+            citas_ocupadas = {
+                (c['fecha'], c['hora'].replace(second=0, microsecond=0)): c['total']
+                for c in citas_agrupadas
+            }
 
-            for h in horas_base:
-                if dia_actual == hoy and h <= hora_actual: continue
+        dias_agregados = 0
+        dia_actual = hoy
+        dias_iterados = 0
+        while dias_agregados < 30 and dias_iterados < 120:
+            dias_iterados += 1
+            if dia_actual.weekday() <= 4 and dia_actual not in festivos:
+                horas_del_dia_str = []
+                horas_del_dia_obj = []
+                for h in horas_base:
+                    if dia_actual == hoy and h < hora_actual:
+                        continue
+                    if psicologo_asignado:
+                        if (dia_actual, h) not in citas_ocupadas:
+                            horas_del_dia_str.append(h.strftime('%I:%M %p'))
+                            horas_del_dia_obj.append(h)
+                    else:
+                        ocupadas = citas_ocupadas.get((dia_actual, h), 0)
+                        if ocupadas < total_psicologos_activos:
+                            horas_del_dia_str.append(h.strftime('%I:%M %p'))
+                            horas_del_dia_obj.append(h)
+                if horas_del_dia_str:
+                    dias_json[dia_actual.strftime('%Y-%m-%d')] = horas_del_dia_str
+                    dias_html[dia_actual] = horas_del_dia_obj
+                    dias_agregados += 1
+            dia_actual += timedelta(days=1)
 
-                if psicologo_asignado:
-                    if not Cita.objects.filter(psicologo=psicologo_asignado, fecha=dia_actual, hora=h, estado='Confirmada').exists():
-                        horas_del_dia_str.append(h.strftime('%I:%M %p'))
-                        horas_del_dia_obj.append(h)
-                else:
-                    if Cita.objects.filter(fecha=dia_actual, hora=h, estado='Confirmada').count() < total_psicologos_activos:
-                        horas_del_dia_str.append(h.strftime('%I:%M %p'))
-                        horas_del_dia_obj.append(h)
-
-            if horas_del_dia_str:
-                dias_json[dia_actual.strftime('%Y-%m-%d')] = horas_del_dia_str
-                dias_html[dia_actual] = horas_del_dia_obj
-                dias_agregados += 1
-
-        dia_actual += timedelta(days=1)
-
+    # 5. Talleres e Inscripciones
     talleres_futuros = Taller.objects.filter(fecha__gte=hoy).order_by('fecha', 'hora')
     mis_inscripciones_ids = InscripcionTaller.objects.filter(paciente=request.user).values_list('taller_id', flat=True)
-    mis_talleres = InscripcionTaller.objects.filter(paciente=request.user, taller__fecha__gte=hoy).order_by('taller__fecha')
+    mis_talleres = InscripcionTaller.objects.filter(
+        paciente=request.user,
+        taller__fecha__gte=hoy
+    ).order_by('taller__fecha')
+
+    # 🔥 NUEVO: Buscamos el taller exacto si el usuario viene por uno
+    taller_solicitado_obj = None
+    if tipo_servicio not in ['individual', 'terapia_individual', 'terapia_pareja', '']:
+        taller_solicitado_obj = Taller.objects.filter(nombre=tipo_servicio, fecha__gte=hoy).first()
+
 
     return render(request, 'panel_generico.html', {
         'dias_disponibles_json': dias_json,
         'dias_disponibles': dias_html,
         'cita_proxima': cita_proxima,
         'perfil': perfil_usuario,
-        'talleres': talleres_futuros.filter(tipo='Taller'),
-        'grupales': talleres_futuros.filter(tipo='Grupal'),
-        'escuela_padres': talleres_futuros.filter(tipo='Padres'),
+        'tipo_servicio': tipo_servicio,
+        'taller_solicitado_obj': taller_solicitado_obj,
+        'talleres_padres': talleres_futuros.filter(tipo='padres'),
+        'talleres_pareja': talleres_futuros.filter(tipo='pareja'),
+        'talleres_grupales': talleres_futuros.filter(tipo='grupal'),
+        'talleres_autoestima': talleres_futuros.filter(tipo='autoestima'),
         'mis_inscripciones_ids': list(mis_inscripciones_ids),
         'mis_talleres': mis_talleres,
+        'paypal_client_id': settings.PAYPAL_CLIENT_ID,
     })
-
 
 def inscribir_taller_ajax(request):
     if request.method == 'POST' and request.user.is_authenticated:
@@ -322,100 +458,102 @@ def inscribir_taller_ajax(request):
             return JsonResponse({'status': 'error', 'message': 'El programa no existe.'})
     return JsonResponse({'status': 'error', 'message': 'Petición no válida.'})
 
-
 def guardar_cita_ajax(request):
     if request.method == 'POST':
         if not request.user.is_authenticated:
             return JsonResponse({'status': 'error', 'message': 'Debes iniciar sesión.'})
 
+        # Atrapamos los datos del formulario
         fecha_str = request.POST.get('fecha')
         hora_str = request.POST.get('hora')
         animo = request.POST.get('animo', 'No especificó')
+        modalidad_str = request.POST.get('modalidad', 'En línea') # <--- CAPTURAMOS MODALIDAD
 
         try:
             fecha_obj = datetime.strptime(fecha_str, '%Y-%m-%d').date()
             hora_obj = datetime.strptime(hora_str, '%H:%M').time()
             perfil = request.user.perfil
-
             psicologo = perfil.psicologo_asignado
 
+            # Lógica de asignación automática de psicólogo (si no tiene uno)
             if not psicologo:
                 preferencia = ""
                 try:
                     cuestionario = request.user.cuestionario_inicial
-                    preferencia = cuestionario.respuestas.get(
-                        'preferencia_terapeuta', '')
+                    preferencia = cuestionario.respuestas.get('preferencia_terapeuta', '')
                 except:
                     pass
 
                 psicologos_ocupados_ids = Cita.objects.filter(
                     fecha=fecha_obj, hora=hora_obj, estado='Confirmada').values_list('psicologo_id', flat=True)
+                
                 psicologos_libres = PerfilPsicologo.objects.filter(esta_activo=True).exclude(
                     id__in=psicologos_ocupados_ids).annotate(carga_pacientes=Count('pacientes_asignados'))
 
                 if not psicologos_libres.exists():
-                    return JsonResponse({'status': 'error', 'message': 'Lo sentimos, este horario acaba de ser ocupado por alguien más. Por favor elige otro.'})
+                    return JsonResponse({'status': 'error', 'message': 'Lo sentimos, este horario acaba de ser ocupado. Elige otro.'})
 
                 if 'Mujer' in preferencia:
-                    psicologo = psicologos_libres.filter(
-                        genero='Mujer').order_by('carga_pacientes').first()
+                    psicologo = psicologos_libres.filter(genero='Mujer').order_by('carga_pacientes').first()
                 elif 'Hombre' in preferencia:
-                    psicologo = psicologos_libres.filter(
-                        genero='Hombre').order_by('carga_pacientes').first()
+                    psicologo = psicologos_libres.filter(genero='Hombre').order_by('carga_pacientes').first()
 
                 if not psicologo:
-                    psicologo = psicologos_libres.order_by(
-                        'carga_pacientes').first()
+                    psicologo = psicologos_libres.order_by('carga_pacientes').first()
 
                 perfil.psicologo_asignado = psicologo
                 perfil.save()
-
             else:
+                # Validar disponibilidad si ya tiene psicólogo
                 if Cita.objects.filter(psicologo=psicologo, fecha=fecha_obj, hora=hora_obj, estado='Confirmada').exists():
-                    return JsonResponse({'status': 'error', 'message': 'Lo sentimos, tu terapeuta acaba de ocupar este horario. Elige otro por favor.'})
+                    return JsonResponse({'status': 'error', 'message': 'Tu terapeuta ya tiene una cita en ese horario. Elige otro.'})
 
-            enlace_generado = generar_link_meet(
-                fecha_obj=fecha_obj,
-                hora_obj=hora_obj,
-                paciente_nombre=request.user.first_name,
-                psicologo_nombre=psicologo.usuario.first_name,
-                paciente_email=request.user.email,             
-                psicologo_email=psicologo.usuario.email        
-            )
+            # 🔥 LÓGICA DE MODALIDAD: ¿Creamos Meet o no? 🔥
+            link_final = None
+            id_google = None
 
+            if modalidad_str == 'En línea':
+                datos_meet = generar_link_meet(
+                    fecha_obj=fecha_obj,
+                    hora_obj=hora_obj,
+                    paciente_nombre=request.user.first_name,
+                    psicologo_nombre=psicologo.usuario.first_name,
+                    paciente_email=request.user.email,             
+                    psicologo_email=psicologo.usuario.email        
+                )
+                if datos_meet:
+                    link_final = datos_meet['link']
+                    id_google = datos_meet['id_evento']
+
+            # Creamos la cita con el nuevo campo modalidad
             Cita.objects.create(
                 paciente=request.user,
                 psicologo=psicologo,
                 fecha=fecha_obj,
                 hora=hora_obj,
                 estado_animo=animo,
+                modalidad=modalidad_str, # <--- GUARDAMOS SI ES PRESENCIAL O EN LÍNEA
                 motivo='Primera Sesión' if not perfil.psicologo_asignado else 'Sesión de Seguimiento',
                 estado='Confirmada',
-                enlace_meet=enlace_generado
+                enlace_meet=link_final,
+                id_evento_google=id_google  
             )
 
-            # =========================================================
-            # 📧 ENVIAR CORREO HTML DE CONFIRMACIÓN DE CITA CLÍNICA
-            # =========================================================
+            # --- Enviar correo de confirmación ---
             asunto = 'Confirmación de tu sesión en HOPE'
-            link_final = enlace_generado if enlace_generado else "Se generará pronto y podrás verlo en tu panel."
+            link_correo = link_final if link_final else "Cita Presencial (Revisa tu panel para ver la dirección)"
             
             contexto = {
                 'nombre': request.user.first_name,
                 'psicologo_nombre': psicologo.usuario.first_name,
                 'fecha': fecha_obj.strftime('%d/%m/%Y'),
                 'hora': hora_obj.strftime('%H:%M'),
-                'link_meet': link_final
+                'link_meet': link_correo
             }
             
             mensaje_html = render_to_string('correo_cita.html', contexto)
             mensaje_plano = strip_tags(mensaje_html)
-            
-            try:
-                send_mail(asunto, mensaje_plano, None, [request.user.email], html_message=mensaje_html, fail_silently=True)
-            except Exception as e:
-                print(f"Error al enviar correo de la cita: {e}")
-            # =========================================================
+            send_mail(asunto, mensaje_plano, None, [request.user.email], html_message=mensaje_html, fail_silently=True)
 
             return JsonResponse({'status': 'success'})
         except Exception as e:
@@ -424,32 +562,57 @@ def guardar_cita_ajax(request):
     return JsonResponse({'status': 'error'})
 
 
-# =========================================================================
-# 🩺 PANEL DEL DOCTOR Y EXPEDIENTE MAESTRO
-# =========================================================================
 def panel_doctor(request):
     if not request.user.is_authenticated or not hasattr(request.user, 'perfil_psicologo'):
         return redirect('modulo_informativo')
 
     psicologo = request.user.perfil_psicologo
-    hoy = timezone.now().date()
-    
-    citas_hoy = Cita.objects.filter(psicologo=psicologo, fecha=hoy, estado='Confirmada').order_by('hora')
-    
-    # 1. Agregamos las Citas Normales (Color Verde Teal: #297E7E)
+
+    # ✅ FIX 1: Hora local México, no UTC
+    now_local = timezone.localtime(timezone.now())
+    hoy = now_local.date()
+    hora_actual = now_local.time().replace(second=0, microsecond=0)
+
+    # ✅ FIX 2: Tolerancia de 60 min — una cita "sigue activa" hasta 1 hora después de su hora
+    from datetime import timedelta as td
+    hora_limite = (now_local - td(hours=1)).time().replace(second=0, microsecond=0)
+
+    # ✅ FIX 3: Citas de hoy que NO han expirado (incluye las que empezaron hace menos de 60 min)
+    citas_hoy = Cita.objects.filter(
+        psicologo=psicologo,
+        fecha=hoy,
+        estado='Confirmada',
+        hora__gte=hora_limite  # <- muestra citas desde 1 hora atrás
+    ).order_by('hora')
+
+    # 🔥 NUEVO: Talleres/Grupos de hoy que NO han expirado
+    talleres_hoy = Taller.objects.filter(
+        psicologo=psicologo,
+        fecha=hoy,
+        hora__gte=hora_limite
+    ).order_by('hora')
+
+
+    # ✅ FIX 4: Calendario también con hora local
+    citas_todas = Cita.objects.filter(psicologo=psicologo)
     eventos_calendario = [{
-        'title': f"{c.paciente.first_name} ({c.hora.strftime('%H:%M')})", 
-        'start': f"{c.fecha.isoformat()}T{c.hora.strftime('%H:%M:%S')}", 
-        'backgroundColor': '#297E7E' if c.fecha >= hoy else '#D1D5DB', 
+        'title': f"{c.paciente.first_name} ({c.hora.strftime('%H:%M')})",
+        'start': f"{c.fecha.isoformat()}T{c.hora.strftime('%H:%M:%S')}",
+        'backgroundColor': '#297E7E' if c.fecha >= hoy else '#D1D5DB',
         'borderColor': '#297E7E' if c.fecha >= hoy else '#D1D5DB'
-    } for c in Cita.objects.filter(psicologo=psicologo)]
+    } for c in citas_todas]
 
     mis_pacientes_db = User.objects.filter(perfil__psicologo_asignado=psicologo).distinct()
-    pacientes_data = [{'usuario': p, 'total_citas': Cita.objects.filter(paciente=p, psicologo=psicologo).count()} for p in mis_pacientes_db]
+    pacientes_data = [
+        {
+            'usuario': p,
+            'total_citas': Cita.objects.filter(paciente=p, psicologo=psicologo).count()
+        }
+        for p in mis_pacientes_db
+    ]
 
     mis_talleres_impartidos = Taller.objects.filter(psicologo=psicologo).order_by('fecha', 'hora')
 
-    # 2. Agregamos los Talleres/Grupos al mismo calendario (Color Dorado/Oliva: #B5992D)
     for taller in mis_talleres_impartidos:
         eventos_calendario.append({
             'title': f"★ Grupo: {taller.nombre}",
@@ -464,9 +627,11 @@ def panel_doctor(request):
         'eventos_calendario_json': json.dumps(eventos_calendario),
         'pacientes_data': pacientes_data,
         'talleres_impartidos': mis_talleres_impartidos,
-        'hoy': hoy
+        'talleres_hoy': talleres_hoy, # <-- ¡NO OLVIDES ESTA LÍNEA!
+        'hoy': hoy,
+        # ✅ FIX 5: Pasar hora actual al template por si quieres resaltar la cita en curso
+        'hora_actual': hora_actual,
     })
-
 
 def obtener_expediente_ajax(request):
     if not request.user.is_authenticated: return JsonResponse({'status': 'error'})
@@ -522,80 +687,236 @@ def guardar_historial_ajax(request):
     if request.method == 'POST' and request.user.is_authenticated:
         paciente_id = request.POST.get('paciente_id')
         cita_id = request.POST.get('cita_id')
+        historial_id = request.POST.get('historial_id') # 🔥 NUEVO: Atrapamos el ID
         
-        como_llega = request.POST.get('como_llega', '')
-        notas = request.POST.get('notas_sesion', '')
-        aprendizaje = request.POST.get('aprendizaje_paciente', '')
-        como_se_va = request.POST.get('como_se_va', '')
-        recomendaciones = request.POST.get('recomendaciones', '')
-
         try:
             paciente = User.objects.get(id=paciente_id)
             psicologo = request.user.perfil_psicologo
+            archivo = request.FILES.get('archivo_adjunto')
             
-            historial = HistorialClinico(
-                paciente=paciente,
-                psicologo=psicologo,
-                como_llega=como_llega,
-                notas_sesion=notas,
-                aprendizaje_paciente=aprendizaje,
-                como_se_va=como_se_va,
-                recomendaciones=recomendaciones
-            )
+            if historial_id:
+                # MODO EDICIÓN: Actualizamos la existente
+                historial = HistorialClinico.objects.get(id=historial_id, psicologo=psicologo)
+                historial.como_llega = request.POST.get('como_llega', '')
+                historial.notas_sesion = request.POST.get('notas_sesion', '')
+                historial.aprendizaje_paciente = request.POST.get('aprendizaje_paciente', '')
+                historial.como_se_va = request.POST.get('como_se_va', '')
+                historial.recomendaciones = request.POST.get('recomendaciones', '')
+                if archivo:
+                    historial.archivo_adjunto = archivo
+                historial.save()
+            else:
+                # MODO CREACIÓN: Lo que ya tenías
+                historial = HistorialClinico(
+                    paciente=paciente, psicologo=psicologo,
+                    como_llega=request.POST.get('como_llega', ''),
+                    notas_sesion=request.POST.get('notas_sesion', ''),
+                    aprendizaje_paciente=request.POST.get('aprendizaje_paciente', ''),
+                    como_se_va=request.POST.get('como_se_va', ''),
+                    recomendaciones=request.POST.get('recomendaciones', ''),
+                    archivo_adjunto=archivo
+                )
+                if cita_id and cita_id.strip() != "":
+                    cita = Cita.objects.filter(id=cita_id, psicologo=psicologo).first()
+                    if cita:
+                        historial.cita = cita
+                        cita.estado = 'Completada'
+                        cita.save()
+                historial.save()
 
-            if cita_id and cita_id.strip() != "":
-                cita = Cita.objects.filter(id=cita_id, psicologo=psicologo).first()
-                if cita:
-                    historial.cita = cita
-                    cita.estado = 'Completada'
-                    cita.save()
-
-            historial.save()
             return JsonResponse({'status': 'success', 'message': 'Bitácora guardada con éxito.'})
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)})
             
     return JsonResponse({'status': 'error'})
 
-
 # =========================================================================
 # 📂 NUEVA VISTA: EXPEDIENTE COMPLETO DEL PACIENTE
 # =========================================================================
+
+
+
+
 def detalle_paciente(request, paciente_id):
     if not request.user.is_authenticated or not hasattr(request.user, 'perfil_psicologo'):
         return redirect('modulo_informativo')
-
+ 
     psicologo = request.user.perfil_psicologo
-
+ 
     try:
         paciente = User.objects.get(id=paciente_id)
     except User.DoesNotExist:
         return redirect('panel_doctor')
-
+ 
     if getattr(paciente.perfil, 'psicologo_asignado', None) != psicologo:
         return redirect('panel_doctor')
-
-    historiales = HistorialClinico.objects.filter(
-        paciente=paciente, psicologo=psicologo).order_by('-fecha_registro')
-    total_sesiones = Cita.objects.filter(
-        paciente=paciente, psicologo=psicologo).count()
-
+ 
+    # =========================================================================
+    # CUESTIONARIO INICIAL (TRIAGE)
+    # =========================================================================
+    cuestionario = None
+    respuestas_formateadas = {}
+ 
+    if hasattr(paciente, 'cuestionario_inicial'):
+        cuestionario = paciente.cuestionario_inicial
+        if cuestionario.respuestas:
+            for clave, valor in cuestionario.respuestas.items():
+                clave_limpia = str(clave).replace('_', ' ').capitalize()
+                valor_limpio = ", ".join(str(i) for i in valor) if isinstance(valor, list) else str(valor)
+                respuestas_formateadas[clave_limpia] = valor_limpio
+ 
+    # =========================================================================
+    # CONSTRUCCIÓN DE LA LISTA UNIFICADA DE SESIONES
+    #
+    # La lógica es simple:
+    #   1. Tomamos TODAS las citas pasadas del paciente con este psicólogo.
+    #   2. Para cada cita buscamos si ya existe un HistorialClinico vinculado
+    #      (usando la relación OneToOne cita.nota_clinica).
+    #   3. Si existe historial SIN cita (fue creado manualmente sin agendar),
+    #      también lo incluimos al final.
+    #   4. Le pasamos al template una lista de dicts con estructura clara.
+    # =========================================================================
+    now_local = timezone.localtime(timezone.now())
+ 
+    # Todas las citas pasadas, con o sin evento Google (para unificar todo)
+    citas_pasadas = Cita.objects.filter(
+        paciente=paciente,
+        psicologo=psicologo,
+        fecha__lte=now_local.date(),
+    ).order_by('-fecha', '-hora').select_related('nota_clinica')
+ 
+    # IDs de historiales que YA están vinculados a una cita (para no duplicarlos)
+    historiales_vinculados_ids = set()
+ 
+    sesiones = []  # ← Lista final que le pasamos al template
+ 
+    for cita in citas_pasadas:
+        historial = None
+        # El related_name del OneToOne en HistorialClinico.cita es 'nota_clinica'
+        try:
+            historial = cita.nota_clinica  # puede lanzar RelatedObjectDoesNotExist
+            historiales_vinculados_ids.add(historial.id)
+        except Exception:
+            historial = None
+ 
+        # Solo incluir citas que tienen Meet O que tienen bitácora
+        # (omitir citas vacías sin ningún contenido)
+        tiene_meet = bool(cita.id_evento_google)
+        tiene_historial = historial is not None
+ 
+        if tiene_meet or tiene_historial:
+            sesiones.append({
+                'tipo': 'completa',          # tiene cita base
+                'cita': cita,
+                'historial': historial,
+                'tiene_meet': tiene_meet,
+                'tiene_historial': tiene_historial,
+                # Fecha canónica para ordenar: usamos la de la cita
+                'fecha_orden': cita.fecha,
+                'hora_orden': cita.hora,
+                'slug': f"c-{cita.id}", # <--- 1. AGREGA ESTA LÍNEA AQUÍ
+            })
+ 
+    # Historiales huérfanos: creados manualmente sin asociar a ninguna cita
+    historiales_huerfanos = HistorialClinico.objects.filter(
+        paciente=paciente,
+        psicologo=psicologo,
+        cita__isnull=True,   # sin cita vinculada
+    ).exclude(
+        id__in=historiales_vinculados_ids
+    ).order_by('-fecha_registro')
+ 
+    for h in historiales_huerfanos:
+        sesiones.append({
+            'tipo': 'solo_historial',    # no tiene cita asociada
+            'cita': None,
+            'historial': h,
+            'tiene_meet': False,
+            'tiene_historial': True,
+            'fecha_orden': h.fecha_registro.date(),
+            'hora_orden': h.fecha_registro.time(),
+            'slug': f"h-{h.id}", # <--- 2. AGREGA ESTA LÍNEA AQUÍ TAMBIÉN
+        })
+ 
+    # Ordenamos todo junto por fecha descendente
+    sesiones.sort(key=lambda s: (s['fecha_orden'], s['hora_orden']), reverse=True)
+ 
+    total_sesiones = Cita.objects.filter(paciente=paciente, psicologo=psicologo).count()
+ 
     return render(request, 'detalle_paciente.html', {
         'paciente': paciente,
-        'historiales': historiales,
-        'total_sesiones': total_sesiones
+        'sesiones': sesiones,           # ← ÚNICA LISTA, reemplaza historiales + citas_pasadas
+        'total_sesiones': total_sesiones,
+        'cuestionario': cuestionario,
+        'respuestas_formateadas': respuestas_formateadas,
     })
 
+
+def guardar_historial(request):
+    """
+    Guarda una nueva entrada en HistorialClinico.
+    Si el form incluye `cita_id`, vincula la bitácora a esa Cita
+    a través del OneToOneField `cita` — así Meet y Bitácora quedan
+    en la misma sesión de forma permanente.
+    """
+    if request.method != 'POST':
+        return JsonResponse({'status': 'error', 'message': 'Método no permitido'}, status=405)
+
+    if not request.user.is_authenticated or not hasattr(request.user, 'perfil_psicologo'):
+        return JsonResponse({'status': 'error', 'message': 'No autorizado'}, status=403)
+
+    psicologo = request.user.perfil_psicologo
+    paciente_id = request.POST.get('paciente_id')
+    cita_id     = request.POST.get('cita_id')  # Puede venir vacío → bitácora libre
+
+    try:
+        paciente = User.objects.get(id=paciente_id)
+    except User.DoesNotExist:
+        return JsonResponse({'status': 'error', 'message': 'Paciente no encontrado'})
+
+    # Resolver la cita si viene id
+    cita = None
+    if cita_id:
+        try:
+            cita = Cita.objects.get(
+                id=cita_id,
+                paciente=paciente,
+                psicologo=psicologo,
+            )
+            # Protección: si ya tiene bitácora, no sobreescribir
+            if hasattr(cita, 'nota_clinica') and cita.nota_clinica is not None:
+                return JsonResponse({
+                    'status': 'error',
+                    'message': 'Esta sesión ya tiene una bitácora vinculada.'
+                })
+        except Cita.DoesNotExist:
+            # Si el id no existe o no pertenece al contexto, lo ignoramos
+            # y guardamos como bitácora libre (no bloqueamos al doctor)
+            cita = None
+
+    # Crear el historial
+    historial = HistorialClinico.objects.create(
+        paciente     = paciente,
+        psicologo    = psicologo,
+        cita         = cita,             # None si es bitácora libre
+        como_llega   = request.POST.get('como_llega', '').strip(),
+        notas_sesion = request.POST.get('notas_sesion', '').strip(),
+        aprendizaje_paciente = request.POST.get('aprendizaje_paciente', '').strip(),
+        como_se_va   = request.POST.get('como_se_va', '').strip(),
+        recomendaciones = request.POST.get('recomendaciones', '').strip(),
+    )
+
+    # Adjunto (archivo escaneado o foto)
+    archivo = request.FILES.get('archivo_adjunto')
+    if archivo:
+        historial.archivo_adjunto = archivo
+        historial.save()
+
+    return JsonResponse({'status': 'success', 'historial_id': historial.id})
 # =========================================================================
 # 👑 CENTRO DE COMANDO (PANEL DE SUPER ADMIN / CEO)
 # =========================================================================
 
-# =========================================================================
-# 👑 CENTRO DE COMANDO (PANEL DE SUPER ADMIN / CEO)
-# =========================================================================
-# =========================================================================
-# 👑 CENTRO DE COMANDO (PANEL DE SUPER ADMIN / CEO)
-# =========================================================================
 def es_admin(user):
     return user.is_superuser
 
@@ -718,3 +1039,378 @@ def panel_admin(request):
         'hoy': hoy
     }
     return render(request, 'panel_admin.html', context)
+
+
+
+
+# Etiquetas y emojis por mood
+MOOD_META = {
+    'triste':    {'label': 'Triste 😔',    'emoji': '😔'},
+    'tranquilo': {'label': 'Tranquilo 😌', 'emoji': '😌'},
+    'bien':      {'label': 'Bien 🙂',      'emoji': '🙂'},
+    'genial':    {'label': '¡Genial! 🤩',  'emoji': '🤩'},
+}
+ 
+ 
+def enviar_mood_ajax(request):
+    if request.method != 'POST':
+        return JsonResponse({'status': 'error', 'detail': 'Método no permitido'}, status=405)
+ 
+    mood      = request.POST.get('mood', '').strip()
+    mensaje   = request.POST.get('mensaje', '').strip()
+    instagram = request.POST.get('instagram', '').strip().lstrip('@')
+ 
+    # Fallback si el mood no es reconocido
+    meta = MOOD_META.get(mood, {'label': mood.capitalize(), 'emoji': '💜'})
+ 
+    # Contexto para el template
+    context = {
+        'mood_emoji':  meta['emoji'],
+        'mood_label':  meta['label'],
+        'mensaje':     mensaje or '(La persona no dejó un mensaje escrito.)',
+        'instagram':   instagram,                                    # vacío = no compartido
+        'fecha':       localtime(now()).strftime('%d %b %Y, %H:%M'),
+    }
+ 
+    # Renderizar HTML
+    html_content = render_to_string('email_mood_hope.html', context)
+ 
+    # Asunto
+    subject = f'💜 Alguien compartió cómo se siente hoy: {meta["label"]}'
+    if instagram:
+        subject += f'  ·  IG: @{instagram}'
+ 
+    # Texto plano de fallback
+    text_content = (
+        f"Estado de ánimo: {meta['label']}\n\n"
+        f"Nos contó:\n{mensaje}\n\n"
+        f"Instagram: {'@' + instagram if instagram else 'No compartido'}\n"
+        f"Fecha: {context['fecha']}"
+    )
+ 
+    # Enviar
+    try:
+        email = EmailMultiAlternatives(
+            subject=subject,
+            body=text_content,
+            from_email=None,                          # usa DEFAULT_FROM_EMAIL del settings
+            to=['contacto@espaciohope.com'],
+        )
+        email.attach_alternative(html_content, 'text/html')
+        email.send(fail_silently=False)
+    except Exception as exc:
+        # Logueamos pero no exponemos el error al cliente
+        import logging
+        logging.getLogger(__name__).error('Error enviando mood email: %s', exc)
+ 
+    return JsonResponse({'status': 'success'})
+
+
+def admindoc_login(request):
+    """
+    Login exclusivo para doctores/admin.
+    - GET  → muestra la página de login
+    - POST → autentica y redirige según rol (NO devuelve JSON)
+    """
+    # Si ya está autenticado, redirigir directo
+    if request.user.is_authenticated:
+        if request.user.is_superuser:
+            return redirect('/panel-admin/')
+        elif hasattr(request.user, 'perfil_psicologo'):
+            return redirect('/panel-doctor/')
+        else:
+            return redirect('/panel/')
+
+    error = None
+
+    if request.method == 'POST':
+        email    = request.POST.get('login_email', '').strip()
+        password = request.POST.get('login_password', '')
+
+        if not email or not password:
+            error = 'Por favor ingresa tu correo y contraseña.'
+        else:
+            try:
+                user = User.objects.get(username__iexact=email)
+            except User.DoesNotExist:
+                error = 'El correo o la contraseña son incorrectos.'
+            except User.MultipleObjectsReturned:
+                error = 'El correo o la contraseña son incorrectos.'
+            else:
+                if not user.check_password(password):
+                    error = 'El correo o la contraseña son incorrectos.'
+                elif not user.is_active:
+                    error = 'Aún no verificas tu cuenta. Revisa tu bandeja de entrada.'
+                else:
+                    login(request, user)
+                    if user.is_superuser:
+                        return redirect('/panel-admin/')
+                    elif hasattr(user, 'perfil_psicologo'):
+                        return redirect('/panel-doctor/')
+                    else:
+                        return redirect('/panel/')
+
+    return render(request, 'admindoc.html', {'error': error})
+
+
+def _extraer_json_groq(texto):
+    """ Función auxiliar para limpiar la respuesta de la IA y asegurar que sea JSON válido """
+    try:
+        import re
+        match = re.search(r'\{.*\}', texto, re.DOTALL)
+        if match:
+            return json.loads(match.group(0))
+        return json.loads(texto)
+    except:
+        return {"notas_sesion": texto} 
+
+@user_passes_test(lambda u: hasattr(u, 'perfil_psicologo'))
+def procesar_archivo_ia(request):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Método no permitido'}, status=405)
+
+    archivo = request.FILES.get('archivo')
+    if not archivo:
+        return JsonResponse({'error': 'No se recibió ningún archivo'}, status=400)
+
+    extension = archivo.name.rsplit('.', 1)[-1].lower()
+
+    # 🔥 SÚPER PROMPT CLÍNICO DEDUCTIVO 🔥
+    prompt_instrucciones = (
+        "Eres un analizador clínico experto. Lee el documento adjunto, analiza el contexto y distribuye la información "
+        "en formato JSON. Los textos no siempre tendrán los títulos exactos, debes usar tu capacidad de comprensión "
+        "lectora para deducir en qué categoría va cada párrafo.\n\n"
+        "Usa ESTRICTAMENTE estas 5 claves:\n"
+        "- \"como_llega\": Análisis del estado inicial, puntualidad, actitud al llegar.\n"
+        "- \"notas_sesion\": El desarrollo de la consulta, temas hablados, dinámicas.\n"
+        "- \"aprendizaje_paciente\": La respuesta a qué se llevó de la sesión (conclusiones del paciente).\n"
+        "- \"como_se_va\": Notas de alta, estado emocional al finalizar o cierre de sesión.\n"
+        "- \"recomendaciones\": Tareas, sugerencias o indicaciones futuras.\n\n"
+        "Si no encuentras información para alguna categoría, déjala como cadena vacía (\"\").\n"
+        "IMPORTANTE: Devuelve ÚNICAMENTE el JSON válido en texto plano, sin bloques de código markdown (```json), ni explicaciones."
+    )
+
+    try:
+        from groq import Groq
+        client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
+
+        # ── IMAGEN ──
+        if extension in ['jpg', 'jpeg', 'png', 'webp']:
+            imagen_bytes  = archivo.read()
+            import base64
+            imagen_base64 = base64.standard_b64encode(imagen_bytes).decode('utf-8')
+            mime = 'image/jpeg' if extension in ('jpg', 'jpeg') else f'image/{extension}'
+
+            response = client.chat.completions.create(
+                model="llama-3.2-90b-vision-preview", # 🔥 Modelo de visión super potente
+                messages=[
+                    {
+                        "role": "user",
+                        "content": [
+                            {"type": "text", "text": prompt_instrucciones},
+                            {"type": "image_url", "image_url": {"url": f"data:{mime};base64,{imagen_base64}"}}
+                        ]
+                    }
+                ],
+                max_tokens=2000,
+                temperature=0.1
+            )
+            texto_respuesta = response.choices[0].message.content.strip()
+            datos_distribuidos = _extraer_json_groq(texto_respuesta)
+
+        # ── PDF O WORD ──
+        else:
+            texto_raw = ""
+            if extension == 'pdf':
+                import fitz
+                doc_pdf = fitz.open(stream=archivo.read(), filetype="pdf")
+                for pagina in doc_pdf: texto_raw += pagina.get_text()
+                doc_pdf.close()
+            elif extension in ['doc', 'docx']:
+                import docx
+                doc_word = docx.Document(archivo)
+                texto_raw = "\n".join(p.text for p in doc_word.paragraphs if p.text.strip())
+
+            if not texto_raw.strip():
+                return JsonResponse({'error': 'El documento no contiene texto extraíble.'}, status=422)
+
+            response = client.chat.completions.create(
+                model="llama-3.3-70b-versatile", # 🔥 Modelo de texto líder en razonamiento
+                messages=[
+                    {"role": "system", "content": prompt_instrucciones},
+                    {"role": "user", "content": texto_raw[:8000]}
+                ],
+                max_tokens=2000,
+                temperature=0.1,
+            )
+            datos_distribuidos = _extraer_json_groq(response.choices[0].message.content.strip())
+
+        return JsonResponse({'status': 'success', 'data': datos_distribuidos})
+
+    except Exception as e:
+        print(f">>> ERROR IA: {e}")
+        return JsonResponse({'error': f'Error al procesar: {str(e)}'}, status=500)
+
+
+
+def _limpiar_texto_con_groq(client: Groq, texto_raw: str) -> str:
+    """
+    Pasa el texto extraído de PDF/Word por Groq para limpiarlo,
+    quitar encabezados de página, numeraciones y ruido de formato.
+    Si el texto es muy largo, lo trunca a 8000 chars antes de enviarlo.
+    """
+    texto_truncado = texto_raw[:8000]
+ 
+    response = client.chat.completions.create(
+        model="llama-3.3-70b-versatile",
+        messages=[
+            {
+                "role": "system",
+                "content": (
+                    "Eres un asistente clínico. Tu tarea es limpiar y formatear "
+                    "notas de sesión psicológica extraídas de un documento. "
+                    "REGLAS: "
+                    "1. Elimina encabezados de página, números de página, fechas repetidas y ruido de formato. "
+                    "2. Conserva TODO el contenido clínico relevante sin resumirlo ni alterarlo. "
+                    "3. Corrige ortografía y puntuación mínimamente. "
+                    "4. Devuelve ÚNICAMENTE el texto limpio, sin comentarios ni markdown."
+                )
+            },
+            {
+                "role": "user",
+                "content": texto_truncado
+            }
+        ],
+        max_tokens=2000,
+        temperature=0.1,
+    )
+    return response.choices[0].message.content.strip()
+ 
+
+
+def check_meet_notes(request, cita_id):
+    if not request.user.is_authenticated:
+        return JsonResponse({'status': 'error', 'message': 'No autorizado'})
+
+    try:
+        cita = Cita.objects.get(id=cita_id)
+        if not cita.id_evento_google:
+            return JsonResponse({'status': 'error', 'message': 'Esta cita no tiene un enlace de Meet registrado.'})
+
+        # Conectar a Google Calendar usando tu token
+        token_path = os.path.join(settings.BASE_DIR, 'token.json')
+        if not os.path.exists(token_path):
+            return JsonResponse({'status': 'error', 'message': 'No hay conexión con Google.'})
+
+        from google.oauth2.credentials import Credentials
+        from googleapiclient.discovery import build
+
+        creds = Credentials.from_authorized_user_file(token_path, ['https://www.googleapis.com/auth/calendar.events'])
+        service = build('calendar', 'v3', credentials=creds)
+
+        # Buscamos el evento exacto con la huella digital
+        event = service.events().get(calendarId='primary', eventId=cita.id_evento_google).execute()
+
+        # Google guarda las transcripciones como "attachments" en el calendario
+        attachments = event.get('attachments', [])
+
+        if attachments:
+            archivos = []
+            for a in attachments:
+                archivos.append({
+                    'title': a.get('title', 'Documento de Google'),
+                    'url': a.get('fileUrl', '#')
+                })
+            return JsonResponse({'status': 'success', 'attachments': archivos})
+        else:
+            return JsonResponse({'status': 'pending', 'message': 'esperando notas danos un minutito :)'})
+
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)})
+
+
+def obtener_bitacora(request, historial_id):
+    if not request.user.is_authenticated:
+        return JsonResponse({'status': 'error'})
+    try:
+        h = HistorialClinico.objects.get(id=historial_id, psicologo=request.user.perfil_psicologo)
+        return JsonResponse({
+            'status': 'success',
+            'data': {
+                'como_llega': h.como_llega or '',
+                'notas_sesion': h.notas_sesion or '',
+                'aprendizaje_paciente': h.aprendizaje_paciente or '',
+                'como_se_va': h.como_se_va or '',
+                'recomendaciones': h.recomendaciones or '',
+            }
+        })
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)})
+
+
+@csrf_exempt
+def generar_sintesis_ajax(request, paciente_id):
+    if not request.user.is_authenticated or not hasattr(request.user, 'perfil_psicologo'):
+        return JsonResponse({'status': 'error', 'message': 'No autorizado'})
+
+    try:
+        paciente = User.objects.get(id=paciente_id)
+        psicologo = request.user.perfil_psicologo
+
+        # 1. Obtener Cuestionario Inicial
+        cuestionario_texto = "El paciente no tiene cuestionario inicial registrado."
+        if hasattr(paciente, 'cuestionario_inicial'):
+            respuestas = paciente.cuestionario_inicial.respuestas
+            # Formatear el JSON del cuestionario a texto legible
+            cuestionario_texto = "\n".join([f"- {k.replace('_', ' ').capitalize()}: {v}" for k, v in respuestas.items()])
+
+        # 2. Obtener TODAS las bitácoras en orden cronológico
+        historiales = HistorialClinico.objects.filter(paciente=paciente, psicologo=psicologo).order_by('fecha_registro')
+        bitacoras_texto = ""
+        
+        for i, h in enumerate(historiales):
+            bitacoras_texto += f"\n--- SESIÓN {i+1} ({h.fecha_registro.strftime('%d/%m/%Y')}) ---\n"
+            bitacoras_texto += f"Estado inicial: {h.como_llega or 'N/A'}\n"
+            bitacoras_texto += f"Desarrollo de la sesión: {h.notas_sesion or 'N/A'}\n"
+            bitacoras_texto += f"Aprendizaje del paciente: {h.aprendizaje_paciente or 'N/A'}\n"
+            bitacoras_texto += f"Cierre y alta: {h.como_se_va or 'N/A'}\n"
+            bitacoras_texto += f"Recomendaciones dadas: {h.recomendaciones or 'N/A'}\n"
+
+        if not historiales.exists():
+            return JsonResponse({'status': 'error', 'message': 'No hay bitácoras suficientes para generar un resumen.'})
+
+        # 3. El Prompt para Groq
+        prompt = (
+            f"Eres un supervisor clínico experto de altísimo nivel. A continuación te presento los datos de un paciente llamado {paciente.first_name}.\n\n"
+            f"CUESTIONARIO INICIAL (Contexto):\n{cuestionario_texto}\n\n"
+            f"BITÁCORAS DE SESIONES (Evolución cronológica):\n{bitacoras_texto}\n\n"
+            "Analiza todo cruzando la información y genera una SÍNTESIS INTEGRAL MAESTRA profunda y estructurada con los siguientes 4 puntos:\n"
+            "1. Situación actual del paciente.\n"
+            "2. Contexto inicial y evolución a través de las sesiones.\n"
+            "3. Puntos clínicos relevantes identificados (patrones, alertas, logros).\n"
+            "4. Posibles medidas o líneas de acción a considerar para futuras sesiones.\n\n"
+            "INSTRUCCIONES DE FORMATO: Devuelve tu respuesta EXCLUSIVAMENTE en código HTML. "
+            "Usa <h3> para los títulos de cada sección (color púrpura sugerido style='color:#5A3FA3;'), "
+            "usa <ul> y <li> para listas, y <p> para párrafos regulares. "
+            "No incluyas etiquetas <html> ni <body>, solo el fragmento de contenido. No incluyas backticks (```html) en tu respuesta."
+        )
+
+        # 4. Llamada a la IA
+        from groq import Groq
+        client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
+        
+        response = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=3000,
+            temperature=0.2 # Temperatura baja para que sea muy analítico y no invente nada
+        )
+        
+        sintesis_html = response.choices[0].message.content.strip()
+        # Limpieza por si Groq devuelve backticks de markdown a pesar de las instrucciones
+        sintesis_html = sintesis_html.replace('```html', '').replace('```', '')
+
+        return JsonResponse({'status': 'success', 'sintesis': sintesis_html})
+
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)})

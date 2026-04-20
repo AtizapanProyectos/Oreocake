@@ -138,16 +138,18 @@ EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
-EMAIL_HOST_USER = 'soporte.sistemas@atizapan.gob.mx'  # Pon tu Gmail actual
+EMAIL_HOST_USER = 'foto.video@atizapan.gob.mx'  # Pon tu Gmail actual
 # OJO: Usa una "Contraseña de Aplicación" de Google, no tu contraseña normal.
-EMAIL_HOST_PASSWORD = 'jhzn rzll diyt wqcx'
-DEFAULT_FROM_EMAIL = 'Plataforma HOPE <soporte.sistemas@atizapan.gob.mx>'
+EMAIL_HOST_PASSWORD = 'gnkz avxs natn xdos'
+DEFAULT_FROM_EMAIL = 'Espacio HOPE <foto.video@atizapan.gob.mx>'
 
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 
 STORAGES = {
-    # ...
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
     "staticfiles": {
         "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
     },
@@ -185,3 +187,5 @@ ALLOWED_HOSTS = ['espaciohope.com',
 
  ]
 
+
+PAYPAL_CLIENT_ID = os.environ.get('PAYPAL_CLIENT_ID', 'sb')

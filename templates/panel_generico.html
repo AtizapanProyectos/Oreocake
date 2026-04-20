@@ -190,45 +190,71 @@
                 <h2 style="color: var(--c-purple); font-size: 36px; font-weight: 800; font-family: var(--font-headings);">{{ cita_proxima.hora|time:"h:i A" }}</h2>
             </div>
 
-            {% if cita_proxima.enlace_meet %}
-            <div id="btn-locked" style="background: #f1f5f9; padding: 20px; border-radius: 16px; color: #64748b; max-width: 500px; margin: 0 auto; text-align: center; border: 2px dashed #cbd5e1;">
-                <i class="fas fa-clock" style="font-size: 28px; margin-bottom: 10px; color: #94a3b8;"></i>
-                <p style="font-weight: 700; margin: 0; font-size: 18px; color: var(--text-main);">Aún no es hora</p>
-                <p style="font-size: 14px; margin: 5px 0 0 0;">Tu acceso se activará 1 hora antes de la sesión.</p>
+{% if cita_proxima.modalidad == 'Presencial' %}
+            <div style="background: white; border: 2px dashed var(--c-purple); border-radius: 20px; padding: 40px 30px; max-width: 450px; margin: 0 auto; text-align: center; position: relative; box-shadow: 0 15px 40px rgba(90,63,163,0.1);">
+                <div style="position: absolute; top: -15px; left: 50%; transform: translateX(-50%); background: var(--c-purple); color: white; padding: 8px 25px; border-radius: 100px; font-weight: 800; font-size: 13px; letter-spacing: 2px; text-transform: uppercase; font-family: var(--font-headings);">
+                    Pase de Acceso Presencial
+                </div>
+                
+                <i class="fas fa-location-dot" style="font-size: 40px; color: var(--c-pink); margin-bottom: 15px;"></i>
+                <h4 style="color: var(--c-dark); font-family: var(--font-headings); margin-bottom: 5px; font-size: 24px; font-weight: 800;">Clínica HOPE</h4>
+                <p style="margin: 0; font-size: 15px; color: var(--text-muted); margin-bottom: 25px;">Lago Margarita 47, Col. Granada, CDMX</p>
+                
+                <div style="background: #f8fafc; padding: 20px; border-radius: 16px; border: 1px solid #e2e8f0; text-align: left; margin-bottom: 20px;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                        <span style="font-size: 11px; color: #94a3b8; text-transform: uppercase; font-weight: 800;">Paciente</span>
+                        <span style="font-size: 11px; color: #94a3b8; text-transform: uppercase; font-weight: 800;">ID: #{{ cita_proxima.id }}</span>
+                    </div>
+                    <p style="margin: 0; font-size: 18px; font-weight: 700; color: var(--c-purple); font-family: var(--font-headings);">{{ user.first_name|title }} {{ user.last_name|title }}</p>
+                </div>
+
+                <div style="display: flex; align-items: center; justify-content: center; gap: 10px; color: var(--c-orange); font-weight: 800; font-size: 14px;">
+                    <i class="fas fa-camera"></i> 
+                    <span>TOMA CAPTURA DE ESTE PASE</span>
+                </div>
             </div>
 
-            <a href="{{ cita_proxima.enlace_meet }}" target="_blank" id="btn-unlocked" class="btn-brutal btn-primary" style="display: none; width: 100%; max-width: 500px; justify-content: center; font-size: 18px; text-decoration: none; margin: 0 auto;">
-                Ingresar a mi Consulta <i class="fas fa-external-link-alt"></i>
-            </a>
-            
-            <script>
-                document.addEventListener("DOMContentLoaded", function() {
-                    function revisarHoraCita() {
-                        const fechaStr = "{{ cita_proxima.fecha|date:'Y-m-d' }}";
-                        const horaStr = "{{ cita_proxima.hora|time:'H:i:s' }}"; 
-                        if (!fechaStr || !horaStr) return;
-                        const citaDate = new Date(`${fechaStr}T${horaStr}`);
-                        const now = new Date();
-                        const diff = citaDate - now;
-                        // 1 hora = 3600000 milisegundos
-                        if (diff <= 3600000 && diff >= -3600000) {
-                            document.getElementById('btn-locked').style.display = 'none';
-                            document.getElementById('btn-unlocked').style.display = 'inline-flex';
-                        } else {
-                            document.getElementById('btn-locked').style.display = 'block';
-                            document.getElementById('btn-unlocked').style.display = 'none';
+        {% else %}
+            {% if cita_proxima.enlace_meet %}
+                <div id="btn-locked" style="background: #f1f5f9; padding: 25px; border-radius: 20px; color: #64748b; max-width: 500px; margin: 0 auto; text-align: center; border: 2px dashed #cbd5e1;">
+                    <i class="fas fa-clock" style="font-size: 32px; margin-bottom: 12px; color: #94a3b8;"></i>
+                    <p style="font-weight: 800; margin: 0; font-size: 20px; color: var(--text-main); font-family: var(--font-headings);">Aún no es hora</p>
+                    <p style="font-size: 14px; margin: 5px 0 0 0;">Tu acceso se activará 1 hora antes de la sesión.</p>
+                </div>
+
+                <a href="{{ cita_proxima.enlace_meet }}" target="_blank" id="btn-unlocked" class="btn-brutal btn-primary" style="display: none; width: 100%; max-width: 500px; justify-content: center; font-size: 18px; text-decoration: none; margin: 0 auto; border-radius: 20px;">
+                    Ingresar a mi Consulta Online <i class="fas fa-video"></i>
+                </a>
+                
+                <script>
+                    document.addEventListener("DOMContentLoaded", function() {
+                        function revisarHoraCita() {
+                            const fechaStr = "{{ cita_proxima.fecha|date:'Y-m-d' }}";
+                            const horaStr = "{{ cita_proxima.hora|time:'H:i:s' }}"; 
+                            if (!fechaStr || !horaStr) return;
+                            const citaDate = new Date(`${fechaStr}T${horaStr}`);
+                            const now = new Date();
+                            const diff = citaDate - now;
+                            if (diff <= 3600000 && diff >= -3600000) {
+                                document.getElementById('btn-locked').style.display = 'none';
+                                document.getElementById('btn-unlocked').style.display = 'inline-flex';
+                            } else {
+                                document.getElementById('btn-locked').style.display = 'block';
+                                document.getElementById('btn-unlocked').style.display = 'none';
+                            }
                         }
-                    }
-                    revisarHoraCita(); 
-                    setInterval(revisarHoraCita, 60000); 
-                });
-            </script>
+                        revisarHoraCita(); 
+                        setInterval(revisarHoraCita, 60000); 
+                    });
+                </script>
             {% else %}
-            <div style="background: #fffaf0; border: 1px solid #ffedd5; padding: 20px; border-radius: 16px; color: var(--c-orange); max-width: 500px; margin: 0 auto;">
-                <i class="fas fa-hourglass-half" style="font-size: 24px; margin-bottom: 10px;"></i>
-                <p style="font-weight: 600;">Generando enlace seguro...</p>
-            </div>
+                <div style="background: #fffaf0; border: 2px solid #ffedd5; padding: 25px; border-radius: 20px; color: var(--c-orange); max-width: 500px; margin: 0 auto; text-align: center;">
+                    <i class="fas fa-hourglass-half" style="font-size: 30px; margin-bottom: 12px; animation: pulse 2s infinite;"></i>
+                    <p style="font-weight: 800; font-family: var(--font-headings); font-size: 18px;">Generando enlace seguro...</p>
+                    <p style="font-size: 14px; margin: 5px 0 0 0;">Danos un momento para preparar tu sala virtual.</p>
+                </div>
             {% endif %}
+        {% endif %}
         </div>
         
         {% else %} {% if user.perfil.psicologo_asignado %}
@@ -266,10 +292,60 @@
                     </a>
                 </div>
             </div>
+{% else %}
+            
+            {% if tipo_servicio == 'terapia_pareja' %}
+            <div class="chic-card fade-in-up" style="border-top: 6px solid var(--c-pink); margin-bottom: 40px; background: #fdf2f8;">
+                <div style="display: flex; align-items: center; gap: 30px; flex-wrap: wrap; justify-content: center; text-align: center;">
+                    <i class="fas fa-heart" style="font-size: 60px; color: var(--c-pink);"></i>
+                    <div>
+                        <h3 style="font-family: var(--font-headings); font-size: 2.5rem; color: var(--text-main); margin-bottom: 10px;">Un espacio para crecer juntos</h3>
+                        <p style="color: var(--text-muted); font-size: 16px; margin-bottom: 20px; max-width: 500px;">Bienvenido a su espacio HOPE. Aquí creemos en las reconciliaciones, en la empatía y en construir vínculos sanos. Muy pronto se les asignará un especialista.</p>
+                        <button onclick="mostrarCalendario()" class="btn-brutal btn-primary" style="background: var(--c-pink); color: white; border-radius: 30px; padding: 15px 30px;">
+                            Agendar primera sesión <i class="fas fa-arrow-right"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+{% elif tipo_servicio != 'individual' and tipo_servicio != 'terapia_individual' and tipo_servicio != 'terapia_pareja' and tipo_servicio != '' %}
+            <div class="chic-card fade-in-up" style="border-top: 6px solid var(--c-purple); margin-bottom: 40px; background: #f3e8ff;">
+                <div style="text-align: center; margin-bottom: 30px;">
+                    <i class="fas fa-seedling" style="font-size: 60px; color: var(--c-purple); margin-bottom: 15px;"></i>
+                    <h3 style="font-family: var(--font-headings); font-size: 2.5rem; color: var(--text-main); margin-bottom: 10px;">¡Bienvenido a tu lugar seguro!</h3>
+                    <p style="color: var(--text-muted); font-size: 16px; max-width: 600px; margin: 0 auto;">Todo lo que sientes importa y tú nos importas. Estás a un paso de confirmar tu lugar en este programa especial.</p>
+                </div>
+
+                {% if taller_solicitado_obj %}
+                <div style="background: white; border-radius: 20px; padding: 30px; max-width: 500px; margin: 0 auto; border: 1px solid #e2e8f0; text-align: left; box-shadow: 0 10px 25px rgba(90,63,163,0.05);">
+                    <span class="step-tag" style="margin: 0 0 15px 0; background: #fdf2f8; color: var(--c-purple);">Programa Elegido</span>
+                    <h4 style="font-size: 24px; font-family: var(--font-headings); margin-bottom: 10px; color: var(--text-main);">{{ taller_solicitado_obj.nombre }}</h4>
+                    <p style="font-size: 15px; color: var(--text-muted); margin-bottom: 20px; line-height: 1.6;">{{ taller_solicitado_obj.descripcion }}</p>
+                    
+                    <div style="display: flex; gap: 15px; align-items: center; margin-bottom: 25px; background: #f8fafc; padding: 15px; border-radius: 16px; border: 1px dashed #cbd5e1;">
+                        <i class="far fa-calendar-alt" style="font-size: 28px; color: var(--c-purple);"></i>
+                        <div>
+                            <p style="margin: 0; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); font-weight: 800;">Fecha programada</p>
+                           <p style="margin: 0; font-weight: 700; font-size: 16px; color: var(--text-main);">{{ taller_solicitado_obj.fecha|date:"d \d\e F, Y" }} a las {{ taller_solicitado_obj.hora|time:"h:i A" }}</p>
+                        </div>
+                    </div>
+                    
+                    {% if taller_solicitado_obj.id in mis_inscripciones_ids %}
+                        <button class="btn-inscribir btn-inscrito" disabled style="width: 100%; margin-top: 0; padding: 18px;"><i class="fas fa-check-circle"></i> Ya estás inscrito</button>
+                        <button onclick="switchTab('comunidad')" class="btn-outline" style="width: 100%; margin-top: 15px; font-size: 14px; padding: 15px; border-radius: 15px; text-align: center; justify-content: center;">Ir a mis talleres <i class="fas fa-arrow-right"></i></button>
+                    {% elif taller_solicitado_obj.cupos_disponibles == 0 %}
+                        <button class="btn-inscribir" disabled style="width: 100%; margin-top: 0; padding: 18px; background: #cbd5e1;">Cupo Lleno</button>
+                    {% else %}
+                        <button class="btn-brutal btn-primary" style="background: var(--c-purple); width: 100%; margin-top: 0; padding: 18px; color: white;" onclick="inscribirPrograma({{ taller_solicitado_obj.id }}, '{{ taller_solicitado_obj.nombre }}')">Completar Inscripción <i class="fas fa-arrow-right"></i></button>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+
             {% else %}
             <div class="chic-card fade-in-up" style="border-top: 6px solid var(--c-teal); margin-bottom: 40px; background: #f0fdfa;">
                 <div style="display: flex; align-items: center; gap: 30px; flex-wrap: wrap; justify-content: center; text-align: center;">
-                    <i class="fas fa-seedling" style="font-size: 60px; color: var(--c-teal);"></i>
+                    <i class="fas fa-spa" style="font-size: 60px; color: var(--c-teal);"></i>
                     <div>
                         <h3 style="font-family: var(--font-headings); font-size: 2.5rem; color: var(--text-main); margin-bottom: 10px;">El Reto HOPE: Compromiso Semanal</h3>
                         <p style="color: var(--text-muted); font-size: 16px; margin-bottom: 20px; max-width: 500px;">Las estadísticas indican que asistir 1 vez por semana acelera tu proceso de sanación. ¿Estás listo/a para comprometerte con tu bienestar?</p>
@@ -281,6 +357,8 @@
                 </div>
             </div>
             {% endif %}
+
+        {% endif %}
 
             <div class="chic-card" id="booking-wizard" {% if not user.perfil.psicologo_asignado %}style="display: none;"{% endif %}>
                 <span class="step-tag">Agendar Nueva Sesión</span>
@@ -310,27 +388,68 @@
                 </div>
 
                 <div id="step-2-payment" style="display: none; text-align: center; padding-top: 40px; border-top: 1px solid #f1f5f9; margin-top: 40px;">
-                    <button id="btn-back-schedule" style="background:none; border:none; color: var(--c-purple); font-weight: 700; cursor:pointer; font-size: 16px; margin-bottom: 20px; float: left;">
-                        <i class="fas fa-arrow-left"></i> Volver al calendario
-                    </button>
-                    <div style="clear: both;"></div>
+<button id="btn-back-schedule" style="background:none; border:none; color: var(--c-purple); font-weight: 700; cursor:pointer; font-size: 16px; margin-bottom: 20px; display:block;">
+    <i class="fas fa-arrow-left"></i> Volver al calendario
+</button>
 
-                    <h2 class="chic-title" style="color: var(--text-main); font-family: var(--font-headings); font-size: 2rem; margin-bottom: 10px;">Confirmar Cita</h2>
+<h2 class="chic-title" style="color: var(--text-main); font-family: var(--font-headings); font-size: 2rem; margin-bottom: 10px; clear: both;">
+    Confirmar Cita
+</h2> <p id="selected-time-text" style="font-size: 18px; color: var(--c-purple); margin-bottom: 20px; font-weight: 600;"></p>
+
+                    <div style="margin-bottom: 30px; text-align: left; max-width: 450px; margin-left: auto; margin-right: auto;">
+                        <p style="font-size: 14px; font-weight: 700; color: var(--text-main); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 1px;">Modalidad de tu sesión:</p>
+                        <div style="display: flex; gap: 15px;">
+                            <label style="flex: 1; cursor: pointer;">
+                                <input type="radio" name="modalidad_opcion" value="En línea" checked style="display: none;" onclick="seleccionarModalidad('En línea')">
+                                <div id="mod-card-linea" class="mod-card" style="border: 2px solid var(--c-purple); background: #f3e8ff; color: var(--c-purple); padding: 15px; border-radius: 15px; font-weight: 700; transition: 0.3s; text-align: center;">
+                                    <i class="fas fa-video"></i> En Línea
+                                </div>
+                            </label>
+                            <label style="flex: 1; cursor: pointer;">
+                                <input type="radio" name="modalidad_opcion" value="Presencial" style="display: none;" onclick="seleccionarModalidad('Presencial')">
+                                <div id="mod-card-presencial" class="mod-card" style="border: 2px solid #e2e8f0; background: #f8fafc; color: var(--text-muted); padding: 15px; border-radius: 15px; font-weight: 700; transition: 0.3s; text-align: center;">
+                                    <i class="fas fa-user-friends"></i> Presencial
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                    
+
+                    <div style="clear: both;"></div>
                     <p id="selected-time-text" style="font-size: 18px; color: var(--c-purple); margin-bottom: 30px; font-weight: 600;"></p>
                     
                     <div class="payment-box">
                         <p style="text-transform: uppercase; letter-spacing: 2px; font-size: 12px; color: #9ca3af; margin-bottom: 10px; font-weight: 700;">Total a pagar</p>
-                        <h3 style="font-size: 42px; margin-bottom: 5px; color: var(--c-purple); font-weight: 800; font-family: var(--font-headings);">$100.00 <span style="font-size: 16px;">MXN</span></h3>
-                        <p style="color: var(--text-main); font-weight: 500; margin-bottom: 25px;">Consulta Psicológica Online</p>
 
-                        <div style="background: #e2e8f0; padding: 15px; border-radius: 12px; margin-bottom: 25px; text-align: left;">
+  
+                        <h3 style="font-size: 42px; margin-bottom: 5px; color: var(--c-purple); font-weight: 800; font-family: var(--font-headings);">
+                            {% if tipo_servicio == 'terapia_pareja' %}
+                                $215.00
+                            {% else %}
+                                $110.00
+                            {% endif %}
+                            <span style="font-size: 16px;">MXN</span>
+                        </h3>
+                        
+                        <p style="color: var(--text-main); font-weight: 500; margin-bottom: 25px;">
+                            {% if tipo_servicio == 'terapia_pareja' %}
+                                Sesión para dos personas (Pareja)
+                            {% else %}
+                                Consulta Psicológica Online Individual
+                            {% endif %}
+                        </p>
+
+                      
+                
+
+                        <div style="background: #fff1f2; border: 1px solid #fecdd3; padding: 15px; border-radius: 16px; margin-bottom: 25px; text-align: left; box-shadow: 0 4px 10px rgba(248,91,140,0.05);">
                             <label style="display: flex; align-items: start; gap: 12px; font-size: 13px; color: var(--text-main); cursor: pointer;">
-                                <input type="checkbox" id="check-consentimiento" style="min-width: 20px; height: 20px; margin-top: 2px; accent-color: var(--c-purple);">
-                                <span style="line-height: 1.4;">Doy mi <strong>consentimiento informado</strong> para recibir atención psicológica y acepto las políticas de la clínica.</span>
+                                <input type="checkbox" id="check-consentimiento" style="min-width: 20px; height: 20px; margin-top: 2px; accent-color: var(--c-pink);">
+                                <span style="line-height: 1.4;">He leído y acepto el <a href="#" onclick="document.getElementById('modalConsentimiento').style.display='flex'; return false;" style="color: var(--c-pink); font-weight: 800; text-decoration: none;">Consentimiento Informado</a> para recibir atención psicológica con mucho amor. 💜</span>
                             </label>
                         </div>
 
-                        <button id="btn-simulate-pay" class="btn-brutal btn-primary" style="width: 100%;">Confirmar y Agendar</button>
+                        <div id="paypal-button-container" style="margin-top: 15px;"></div>
                     </div>
                 </div>
 
@@ -343,7 +462,9 @@
         {% endif %}
     </div>
 
-    <div id="tab-comunidad" class="tab-content">
+
+
+<div id="tab-comunidad" class="tab-content">
         
         {% if mis_talleres %}
         <div class="chic-card" style="margin-bottom: 40px; border-top: 6px solid var(--c-pink);">
@@ -371,45 +492,80 @@
         </div>
         {% endif %}
 
-        <div class="chic-card" style="margin-bottom: 40px;">
-            <h2 style="font-family: var(--font-headings); font-size: 2.5rem; margin-bottom: 10px; color: var(--c-purple);">Talleres de Bienestar</h2>
-            <p style="color: var(--text-muted); margin-bottom: 40px; font-size: 1.1rem;">Aprende y sana junto a expertos.</p>
-            
+        {% if perfil.es_padre %}
+        <div class="chic-card" style="background: #fffaf0; border-color: #ffedd5; margin-bottom: 40px;">
+            <div style="display: flex; align-items: center; gap: 20px; margin-bottom: 30px;">
+                <i class="fas fa-hands-holding-child" style="font-size: 40px; color: var(--c-orange);"></i>
+                <div>
+                    <h2 style="font-family: var(--font-headings); font-size: 2.5rem; margin: 0; color: var(--c-orange);">Escuela para Padres</h2>
+                    <p style="color: var(--text-muted);">Estrategias de crianza positiva para tu familia.</p>
+                </div>
+            </div>
             <div class="grid-programas">
-                {% for t in talleres %}
-                <div class="programa-box">
+                {% for t in talleres_padres %}
+                <div class="programa-box" style="background: white;">
                     <div>
-                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 15px;">
-                            <span class="step-tag" style="margin: 0; background: #f3e8ff; color: var(--c-purple);">Taller Clínico</span>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
+                            <span class="step-tag" style="margin: 0; background: #fffaf0; color: var(--c-orange);">Padres</span>
                             <span class="cupos-badge {% if t.cupos_disponibles == 0 %}cupos-full{% endif %}">{{ t.cupos_disponibles }} cupos</span>
                         </div>
                         <h3 style="font-size: 22px; margin-bottom: 10px; font-family: var(--font-headings);">{{ t.nombre }}</h3>
-                        <p style="font-size: 14px; color: var(--text-muted); margin-bottom: 20px; line-height: 1.6;">{{ t.descripcion|truncatechars:100 }}</p>
-                        <p style="font-size: 13px; font-weight: 700; color: var(--text-main);"><i class="far fa-clock"></i> {{ t.fecha|date:"d/m/Y" }} - {{ t.hora|time:"H:i" }}</p>
+                        <p style="font-size: 14px; color: var(--text-muted); margin-bottom: 20px;">{{ t.descripcion|truncatechars:100 }}</p>
+                        <p style="font-size: 13px; font-weight: 700;"><i class="far fa-clock"></i> {{ t.fecha|date:"d/m/Y" }} - {{ t.hora|time:"H:i" }}</p>
                     </div>
                     {% if t.id in mis_inscripciones_ids %}
-                        <button class="btn-inscribir btn-inscrito" disabled><i class="fas fa-check"></i> Ya estás inscrito</button>
+                        <button class="btn-inscribir btn-inscrito" disabled><i class="fas fa-check"></i> Inscrito</button>
                     {% elif t.cupos_disponibles == 0 %}
                         <button class="btn-inscribir" disabled>Cupo Lleno</button>
                     {% else %}
-                        <button class="btn-inscribir" onclick="inscribirPrograma({{ t.id }}, '{{ t.nombre }}')">Inscribirme ahora</button>
+                        <button class="btn-inscribir" style="background: var(--c-orange);" onclick="inscribirPrograma({{ t.id }}, '{{ t.nombre }}')">Inscribirme</button>
                     {% endif %}
                 </div>
                 {% empty %}
-                <p style="color: var(--text-muted); font-style: italic;">Pronto abriremos nuevas fechas de talleres.</p>
+                <p style="color: var(--text-muted); font-style: italic;">No hay clases programadas por ahora.</p>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="chic-card" style="margin-bottom: 40px;">
+            <h2 style="font-family: var(--font-headings); font-size: 2.5rem; margin-bottom: 10px; color: var(--c-pink);">Reconexión en Pareja</h2>
+            <p style="color: var(--text-muted); margin-bottom: 40px; font-size: 1.1rem;">Construyan un vínculo más sano y fuerte juntos.</p>
+            <div class="grid-programas">
+                {% for t in talleres_pareja %}
+                <div class="programa-box">
+                    <div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
+                            <span class="step-tag" style="margin: 0; background: #fdf2f8; color: var(--c-pink);">Pareja</span>
+                            <span class="cupos-badge {% if t.cupos_disponibles == 0 %}cupos-full{% endif %}">{{ t.cupos_disponibles }} cupos</span>
+                        </div>
+                        <h3 style="font-size: 22px; margin-bottom: 10px; font-family: var(--font-headings);">{{ t.nombre }}</h3>
+                        <p style="font-size: 14px; color: var(--text-muted); margin-bottom: 20px;">{{ t.descripcion|truncatechars:100 }}</p>
+                        <p style="font-size: 13px; font-weight: 700;"><i class="far fa-clock"></i> {{ t.fecha|date:"d/m/Y" }} - {{ t.hora|time:"H:i" }}</p>
+                    </div>
+                    {% if t.id in mis_inscripciones_ids %}
+                        <button class="btn-inscribir btn-inscrito" disabled><i class="fas fa-check"></i> Inscrito</button>
+                    {% elif t.cupos_disponibles == 0 %}
+                        <button class="btn-inscribir" disabled>Cupo Lleno</button>
+                    {% else %}
+                        <button class="btn-inscribir" style="background: var(--c-pink);" onclick="inscribirPrograma({{ t.id }}, '{{ t.nombre }}')">Inscribirme</button>
+                    {% endif %}
+                </div>
+                {% empty %}
+                <p style="color: var(--text-muted); font-style: italic;">Pronto abriremos nuevas fechas de pareja.</p>
                 {% endfor %}
             </div>
         </div>
 
         <div class="chic-card" style="margin-bottom: 40px;">
             <h2 style="font-family: var(--font-headings); font-size: 2.5rem; margin-bottom: 10px; color: var(--c-teal);">Círculos de Confianza</h2>
-            <p style="color: var(--text-muted); margin-bottom: 40px; font-size: 1.1rem;">Terapias grupales guiadas por especialistas.</p>
+            <p style="color: var(--text-muted); margin-bottom: 40px; font-size: 1.1rem;">Terapias grupales guiadas por especialistas en un entorno seguro.</p>
             <div class="grid-programas">
-                {% for t in grupales %}
+                {% for t in talleres_grupales %}
                 <div class="programa-box">
                     <div>
                         <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
-                            <span class="step-tag" style="margin: 0; background: #f0fdfa; color: var(--c-teal);">Terapia Grupal</span>
+                            <span class="step-tag" style="margin: 0; background: #f0fdfa; color: var(--c-teal);">Grupal</span>
                             <span class="cupos-badge {% if t.cupos_disponibles == 0 %}cupos-full{% endif %}">{{ t.cupos_disponibles }} cupos</span>
                         </div>
                         <h3 style="font-size: 22px; margin-bottom: 10px; font-family: var(--font-headings);">{{ t.nombre }}</h3>
@@ -430,21 +586,15 @@
             </div>
         </div>
 
-        {% if perfil.es_padre %}
-        <div class="chic-card" style="background: #fffaf0; border-color: #ffedd5;">
-            <div style="display: flex; align-items: center; gap: 20px; margin-bottom: 30px;">
-                <i class="fas fa-hands-holding-child" style="font-size: 40px; color: var(--c-orange);"></i>
-                <div>
-                    <h2 style="font-family: var(--font-headings); font-size: 2.5rem; margin: 0; color: var(--c-orange);">Escuela para Padres</h2>
-                    <p style="color: var(--text-muted);">Estrategias de crianza positiva para tu familia.</p>
-                </div>
-            </div>
+        <div class="chic-card" style="margin-bottom: 40px;">
+            <h2 style="font-family: var(--font-headings); font-size: 2.5rem; margin-bottom: 10px; color: var(--c-purple);">Crecimiento y Autoestima</h2>
+            <p style="color: var(--text-muted); margin-bottom: 40px; font-size: 1.1rem;">Talleres enfocados en descubrir y fortalecer tu valor personal.</p>
             <div class="grid-programas">
-                {% for t in escuela_padres %}
-                <div class="programa-box" style="background: white;">
+                {% for t in talleres_autoestima %}
+                <div class="programa-box">
                     <div>
                         <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
-                            <span class="step-tag" style="margin: 0; background: #fffaf0; color: var(--c-orange);">Formación Familiar</span>
+                            <span class="step-tag" style="margin: 0; background: #f3e8ff; color: var(--c-purple);">Autoestima</span>
                             <span class="cupos-badge {% if t.cupos_disponibles == 0 %}cupos-full{% endif %}">{{ t.cupos_disponibles }} cupos</span>
                         </div>
                         <h3 style="font-size: 22px; margin-bottom: 10px; font-family: var(--font-headings);">{{ t.nombre }}</h3>
@@ -456,17 +606,18 @@
                     {% elif t.cupos_disponibles == 0 %}
                         <button class="btn-inscribir" disabled>Cupo Lleno</button>
                     {% else %}
-                        <button class="btn-inscribir" style="background: var(--c-orange);" onclick="inscribirPrograma({{ t.id }}, '{{ t.nombre }}')">Asistir a Clase</button>
+                        <button class="btn-inscribir" style="background: var(--c-purple);" onclick="inscribirPrograma({{ t.id }}, '{{ t.nombre }}')">Inscribirme</button>
                     {% endif %}
                 </div>
                 {% empty %}
-                <p style="color: var(--text-muted); font-style: italic;">No hay clases programadas por ahora.</p>
+                <p style="color: var(--text-muted); font-style: italic;">Pronto abriremos nuevas fechas.</p>
                 {% endfor %}
             </div>
         </div>
-        {% endif %}
 
     </div>
+
+
 </div>
 
 <div id="modalPagoTaller" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); backdrop-filter: blur(8px); z-index: 999999; justify-content: center; align-items: center;">
@@ -535,6 +686,56 @@
     </div>
 </div>
 
+
+<div id="modalConsentimiento" class="modal-overlay" style="z-index: 6000; display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(5px); align-items: center; justify-content: center; padding: 20px;">
+  <div class="modal-box" style="width: 100%; max-width: 650px; text-align: left; padding: 40px; border-radius: 30px; border-top: 8px solid var(--c-pink); background: #fffaf0; position: relative; animation: popIn 0.4s ease forwards;">
+    <button class="modal-close" onclick="document.getElementById('modalConsentimiento').style.display='none'" style="position: absolute; top: 25px; right: 25px; background: none; border: none; font-size: 20px; color: #94a3b8; cursor: pointer;"><i class="fas fa-times"></i></button>
+    
+    <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 25px;">
+        <div style="width: 55px; height: 55px; border-radius: 16px; background: #fdf2f8; color: var(--c-pink); display: flex; align-items: center; justify-content: center; font-size: 26px;">
+            <i class="fas fa-hand-holding-heart"></i>
+        </div>
+        <div>
+            <h2 style="font-family: var(--font-headings); font-size: 1.6rem; color: var(--c-dark); margin: 0; font-weight: 800;">Consentimiento Informado</h2>
+            <p style="color: var(--text-muted); margin: 0; font-size: 0.95rem;">Cuidamos de ti y de tu proceso. 🌸</p>
+        </div>
+    </div>
+    
+    <div style="max-height: 45vh; overflow-y: auto; padding-right: 15px; font-size: 0.95rem; color: var(--text-muted); line-height: 1.6; text-align: justify;">
+        
+        <p style="margin-bottom: 15px; background: white; padding: 15px; border-radius: 12px; border: 1px solid #fecdd3;"><strong style="color: var(--c-pink);">I. DATOS DEL PACIENTE</strong><br>
+        <span style="color: var(--c-dark); font-weight: 600;">Nombre:</span> {{ user.first_name }} {{ user.last_name }}<br>
+        <span style="color: var(--c-dark); font-weight: 600;">Edad:</span> Mayor de 18 años<br>
+        <span style="color: var(--c-dark); font-weight: 600;">Fecha:</span> {% now "d \d\e F, Y" %}</p>
+
+        <p style="margin-bottom: 15px;"><strong style="color: var(--c-pink);">II. NATURALEZA DEL SERVICIO</strong><br>
+        Declaro que entiendo que los servicios brindados por HOPE consisten en acompañamiento psicológico, orientación y atención emocional. Este servicio no constituye atención médica ni psiquiátrica, ni sustituye servicios de urgencia.</p>
+        
+        <p style="margin-bottom: 15px;"><strong style="color: var(--c-pink);">III. ALCANCE Y LIMITACIONES</strong><br>
+        Los resultados del proceso no están garantizados. El avance depende de mi participación activa. El servicio se limita al espacio de sesión.</p>
+        
+        <p style="margin-bottom: 15px;"><strong style="color: var(--c-pink);">IV. CONFIDENCIALIDAD</strong><br>
+        Mi información será confidencial excepto en casos de riesgo, violencia o requerimiento legal.</p>
+        
+        <p style="margin-bottom: 15px;"><strong style="color: var(--c-pink);">V. INTERVENCIÓN EN CRISIS</strong><br>
+        Autorizo contacto con familiares, canalización médica o aviso a autoridades si es necesario.</p>
+        
+        <p style="margin-bottom: 15px;"><strong style="color: var(--c-pink);">VI. PROTECCIÓN DE DATOS</strong><br>
+        Autorizo el uso de mis datos para atención terapéutica, administración y uso anonimizado.</p>
+        
+        <p style="margin-bottom: 15px;"><strong style="color: var(--c-pink);">VII. DESLINDE DE RESPONSABILIDAD</strong><br>
+        HOPE no garantiza resultados ni es responsable de decisiones fuera de sesión. HOPE no es un servicio de emergencia.</p>
+        
+        <p style="margin-bottom: 15px; font-weight: 600; color: var(--c-dark);"><strong style="color: var(--c-pink);">VIII. CONSENTIMIENTO</strong><br>
+        Declaro que entiendo y acepto lo anterior de manera libre y voluntaria.</p>
+    </div>
+    
+    <button class="btn-primary" style="width: 100%; justify-content: center; margin-top: 25px; background: var(--c-pink); border-radius: 16px; padding: 15px; border: none; color: white; font-weight: bold; font-size: 1rem; cursor: pointer; transition: 0.3s;" onclick="document.getElementById('modalConsentimiento').style.display='none'">Entendido y Aceptado 💜</button>
+  </div>
+</div>
+
+
+<script src="https://www.paypal.com/sdk/js?client-id={{ paypal_client_id }}&currency=MXN"></script>
 <script>
     function cerrarYRecargar() {
         document.getElementById('alerta-error-cita').style.display = 'none';
@@ -751,7 +952,9 @@
             });
         });
 
-        // --- ENVIAR CITA AJAX CON VALIDACIÓN DE CONSENTIMIENTO ---
+
+        /*
+        // --- ENVIAR CITA AJAX CON VALIDACIÓN DE CONSENTIMIENTO 
         const btnPay = document.getElementById('btn-simulate-pay');
         if (btnPay) {
             btnPay.addEventListener('click', function() {
@@ -774,6 +977,7 @@
                 formData.append('fecha', window.fechaSeleccionada);
                 formData.append('hora', window.horaSeleccionada);
                 formData.append('animo', window.animoSeleccionado);
+                formData.append('modalidad', window.modalidadSeleccionada);
                 formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
 
                 fetch("{% url 'guardar_cita' %}", {
@@ -800,6 +1004,113 @@
                 });
             });
         }
+*/
+
+
+// --- PAYPAL SMART BUTTONS ---
+        
+        // Determinamos el costo dependiendo del servicio (100 o 200 pesos)
+        let montoCobro = "{% if tipo_servicio == 'terapia_pareja' %}215.00{% else %}110.00{% endif %}";
+
+        if (document.getElementById('paypal-button-container')) {
+            paypal.Buttons({
+                
+                // 1. ANTES DE ABRIR PAYPAL: Validamos reglas de HOPE
+                onClick: function(data, actions) {
+                    const checkConsentimiento = document.getElementById('check-consentimiento');
+                    if (checkConsentimiento && !checkConsentimiento.checked) {
+                        document.getElementById('alerta-consentimiento').style.display = 'flex';
+                        return actions.reject(); // Frena a PayPal
+                    }
+                    if (!window.fechaSeleccionada || !window.horaSeleccionada) {
+                        alert("Por favor, selecciona una fecha y una hora válida.");
+                        return actions.reject(); // Frena a PayPal
+                    }
+                    return actions.resolve(); // Todo en orden, abre PayPal
+                },
+
+                // 2. CREAR LA ORDEN DE COBRO
+                createOrder: function(data, actions) {
+                    return actions.order.create({
+                        purchase_units: [{
+                            description: "Sesión Psicológica HOPE",
+                            amount: { value: montoCobro }
+                        }]
+                    });
+                },
+
+                // 3. ¡PAGO EXITOSO! GUARDAMOS EN DJANGO
+                onApprove: function(data, actions) {
+                    document.getElementById('step-2-payment').style.display = 'none';
+                    document.getElementById('step-3-loading').style.display = 'block';
+
+                    return actions.order.capture().then(function(detallesPago) {
+                        // El dinero ya está seguro. Guardamos la cita.
+                        let formData = new URLSearchParams();
+                        formData.append('fecha', window.fechaSeleccionada);
+                        formData.append('hora', window.horaSeleccionada);
+                        formData.append('animo', window.animoSeleccionado);
+                        formData.append('modalidad', window.modalidadSeleccionada);
+                        formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+
+                        fetch("{% url 'guardar_cita' %}", {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-Requested-With': 'XMLHttpRequest' },
+                            body: formData.toString()
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            document.getElementById('step-3-loading').style.display = 'none';
+                            if(data.status === 'success') {
+                                document.getElementById('texto-exito-dinamico').innerText = "Tu sesión y pago han sido confirmados con éxito.";
+                                document.getElementById('alerta-exito-cita').style.display = 'flex';
+                            } else {
+                                document.getElementById('texto-error-cita').innerText = data.message;
+                                document.getElementById('alerta-error-cita').style.display = 'flex';
+                            }
+                        }).catch(error => {
+                            document.getElementById('step-3-loading').style.display = 'none';
+                            document.getElementById('texto-error-cita').innerText = 'Error guardando tu cita, pero tu pago está seguro. Contáctanos.';
+                            document.getElementById('alerta-error-cita').style.display = 'flex';
+                        });
+                    });
+                },
+
+                // 4. SI CANCELA LA VENTANITA
+                onCancel: function (data) {
+                    // No hacemos nada grave, solo le avisamos
+                    console.log("El paciente cerró la ventana de PayPal.");
+                },
+
+                // 5. SI ALGO EXPLOTA EN PAYPAL
+                onError: function (err) {
+                    console.error("Error PayPal:", err);
+                    document.getElementById('texto-error-cita').innerText = 'Hubo un error de conexión con tu banco o PayPal. Intenta de nuevo.';
+                    document.getElementById('alerta-error-cita').style.display = 'flex';
+                }
+                
+            }).render('#paypal-button-container');
+        }
+
     });
+
+
+window.modalidadSeleccionada = 'En línea'; // Por defecto
+
+    function seleccionarModalidad(mod) {
+        window.modalidadSeleccionada = mod;
+        document.querySelectorAll('.mod-card').forEach(c => {
+            c.style.borderColor = '#e2e8f0';
+            c.style.color = 'var(--text-muted)';
+            c.style.background = '#f8fafc';
+        });
+        const selected = document.getElementById('mod-card-' + (mod === 'En línea' ? 'linea' : 'presencial'));
+        selected.style.borderColor = 'var(--c-purple)';
+        selected.style.color = 'var(--c-purple)';
+        selected.style.background = '#f3e8ff';
+    }
+
+
+
 </script>
 {% endblock %}

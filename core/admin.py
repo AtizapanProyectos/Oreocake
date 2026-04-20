@@ -22,12 +22,29 @@ class UsuarioPerfilAdmin(ImportExportModelAdmin):
 # ==========================================
 # 3. CITAS
 # ==========================================
+# ==========================================
+# 3. CITAS
+# ==========================================
 @admin.register(Cita)
 class CitaAdmin(ImportExportModelAdmin):
-    list_display = ('paciente', 'psicologo', 'fecha', 'hora', 'estado')
-    search_fields = ('paciente__first_name', 'paciente__email', 'psicologo__usuario__first_name')
+    # 🔥 AHORA SÍ, TODOS LOS CAMPOS EN LA TABLA 🔥
+    list_display = (
+        'id', 
+        'paciente', 
+        'psicologo', 
+        'fecha', 
+        'hora', 
+        'estado', 
+        'motivo', 
+        'estado_animo', 
+        'enlace_meet', 
+        'id_evento_google'
+    )
+    search_fields = ('paciente__first_name', 'paciente__email', 'psicologo__usuario__first_name', 'id_evento_google')
     list_filter = ('estado', 'fecha', 'psicologo')
-
+    
+    # Para que también puedas ver la fecha de creación cuando entres a editar una cita específica
+    readonly_fields = ('fecha_creacion',)
 # ==========================================
 # 4. HISTORIAL CLÍNICO (EXPEDIENTE)
 # ==========================================

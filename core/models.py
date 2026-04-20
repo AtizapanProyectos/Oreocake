@@ -12,10 +12,12 @@ class PerfilPsicologo(models.Model):
     especialidad = models.CharField(max_length=150, blank=True, null=True, verbose_name="Especialidad (Ej. Terapia Cognitiva)")
     esta_activo = models.BooleanField(default=True, verbose_name="Aceptando nuevos pacientes")
     
+    # 🔥 Ahora sí, para subir tu propia imagen al servidor 🔥
+    foto = models.ImageField(upload_to='fotos_doctores/', blank=True, null=True, verbose_name="Foto de Perfil")
+    cv_breve = models.TextField(blank=True, null=True, verbose_name="Breve CV o Enfoque Clínico")
+    
     def __str__(self):
         return f"Psicólogo/a: {self.usuario.first_name} ({self.genero})"
-
-
 # ==========================================
 # 2. PERFIL DEL PACIENTE (CON EXPEDIENTE MAESTRO)
 # ==========================================
@@ -54,10 +56,11 @@ class Cita(models.Model):
     ])
     fecha_creacion = models.DateTimeField(auto_now_add=True)
     enlace_meet = models.URLField(blank=True, null=True)
+    id_evento_google = models.CharField(max_length=255, blank=True, null=True)
+    modalidad = models.CharField(max_length=50, default='En línea', choices=[('En línea', 'En línea'), ('Presencial', 'Presencial')])
 
     def __str__(self):
         return f"Cita: {self.paciente.first_name} con {self.psicologo.usuario.first_name} el {self.fecha.strftime('%d/%m')}"
-
 # ==========================================
 # 4. HISTORIAL CLÍNICO (BITÁCORA DE CADA SESIÓN)
 # ==========================================
@@ -74,12 +77,15 @@ class HistorialClinico(models.Model):
     como_se_va = models.TextField(blank=True, null=True, verbose_name="4. Cierre y Alta de sesión")
     recomendaciones = models.TextField(blank=True, null=True, verbose_name="5. Recomendaciones generales")
     
+    # 🔥 LOS ARCHIVOS DE EVIDENCIA 🔥
+    archivo_adjunto = models.FileField(upload_to='bitacoras_adjuntos/', blank=True, null=True, verbose_name="Documento Escaneado o Foto")
+    transcripcion_meet = models.FileField(upload_to='transcripciones_meet/', blank=True, null=True, verbose_name="Transcripción de Meet")
+    
     diagnostico_temporal = models.CharField(max_length=250, blank=True, null=True)
     fecha_registro = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return f"Sesión de {self.paciente.first_name} - {self.fecha_registro.strftime('%d/%m/%Y')}"
-
 # ==========================================
 # 5. CUESTIONARIO Y EXTRAS
 # ==========================================
@@ -102,7 +108,14 @@ class DiaFestivo(models.Model):
 # 6. TALLERES Y GRUPOS
 
 class Taller(models.Model):
-    TIPO_CHOICES = [('Taller', 'Taller de Bienestar'), ('Grupal', 'Terapia Grupal'), ('Padres', 'Escuela para Padres')]
+
+    TIPO_CHOICES = [
+    ('padres', 'Taller para Padres de Familia'),
+    ('pareja', 'Taller para Parejas'),
+    ('grupal', 'Taller Grupal'),
+    ('autoestima', 'Taller de Autoestima'),
+    ('profesional', 'Eco-visión'),
+    ]
     nombre = models.CharField(max_length=200, verbose_name="Nombre del Programa")
     descripcion = models.TextField(verbose_name="Descripción Breve")
     tipo = models.CharField(max_length=50, choices=TIPO_CHOICES, verbose_name="Categoría")

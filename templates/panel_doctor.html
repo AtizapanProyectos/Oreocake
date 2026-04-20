@@ -228,11 +228,22 @@
 <div class="dashboard-wrapper">
 
     <div class="dash-header fade-in-up">
-        <div>
-            <span class="tag-clean tag-orange"><i class="fas fa-leaf"></i> Espacio Clínico</span>
-            <h1 class="dash-title">Dr. {{ request.user.first_name }}</h1>
-            <p class="dash-subtitle" id="frase-diaria">Cargando inspiración diaria...</p>
+        <!-- ✦ NUEVO: CONTENEDOR FOTO DE PERFIL + NOMBRE ✦ -->
+        <div style="display: flex; align-items: center; gap: 20px;">
+            <div style="position: relative; cursor: pointer;" onclick="abrirModalMiCV()" title="Ver mi Perfil Profesional">
+                <img src="{% if psicologo.foto and psicologo.foto.name %}{{ psicologo.foto.url }}{% else %}https://ui-avatars.com/api/?name={{ request.user.first_name }}+{{ request.user.last_name }}&background=E5E7EB&color=5A3FA3&size=150&bold=true{% endif %}" alt="Mi Foto" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 3px solid var(--c-purple); box-shadow: 0 4px 15px rgba(90,63,163,0.2); transition: 0.3s;" onmouseover="this.style.transform='scale(1.05)';" onmouseout="this.style.transform='scale(1)';">
+                <div style="position: absolute; bottom: 0; right: 0; background: var(--c-pink); color: white; width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; border: 2px solid white;">
+                    <i class="fas fa-search"></i>
+                </div>
+            </div>
+            
+            <div>
+                <span class="tag-clean tag-orange"><i class="fas fa-leaf"></i> Espacio Clínico</span>
+                <h1 class="dash-title">Psic. {{ request.user.first_name }} {{ request.user.last_name }}</h1>
+                <p class="dash-subtitle" id="frase-diaria">Cargando inspiración diaria...</p>
+            </div>
         </div>
+
         <div style="text-align: right;">
             <p style="margin: 0; font-size: 13px; color: var(--text-muted); text-transform: uppercase; font-weight: 700; letter-spacing: 1px;">Citas para hoy</p>
             <h2 style="font-family: var(--font-headings); font-size: 42px; margin: 0; color: var(--c-orange); font-weight: 900; line-height: 1;">{{ citas_hoy.count }}</h2>
@@ -245,42 +256,80 @@
         <button class="tab-btn" onclick="openTab('pacientes')">Pacientes</button>
         <button class="tab-btn" onclick="openTab('talleres')">Grupos Clínicos</button>
     </div>
-
-    <div id="agenda" class="tab-content active">
+<div id="agenda" class="tab-content active">
         <div class="bento-card">
             <i class="fas fa-seedling leaf-watermark"></i>
             <h2 style="font-family: var(--font-headings); font-size: 24px; margin-bottom: 20px; border-bottom: 1px solid var(--border-soft); padding-bottom: 15px; color: var(--c-purple);">
-                Tus consultas programadas
+                Tus compromisos de hoy
             </h2>
 
-            {% if citas_hoy %}
+            {% if citas_hoy or talleres_hoy %}
+                
                 {% for cita in citas_hoy %}
                 <div class="agenda-row">
                     <div style="display: flex; align-items: center; gap: 25px;">
                         <div class="time-badge-clean">{{ cita.hora|time:"H:i" }}</div>
                         <div>
+                            <span class="tag-clean tag-purple" style="margin-bottom: 5px;">Terapia Individual</span>
+                            
+                            {% if cita.modalidad == 'Presencial' %}
+                                <span class="tag-clean" style="background: #f8fafc; color: var(--text-muted); border: 1px solid #e2e8f0; margin-bottom: 5px; margin-left: 5px;"><i class="fas fa-building"></i> Presencial</span>
+                            {% else %}
+                                <span class="tag-clean" style="background: #e0f2fe; color: #0284c7; border: 1px solid #bae6fd; margin-bottom: 5px; margin-left: 5px;"><i class="fas fa-laptop"></i> En Línea</span>
+                            {% endif %}
+                            
                             <h3 style="font-family: var(--font-headings); font-size: 20px; font-weight: 700; margin: 0 0 5px 0;">{{ cita.paciente.first_name|title }} {{ cita.paciente.last_name|title }}</h3>
                             <p style="margin: 0; font-size: 14px; color: var(--text-muted);"><i class="fas fa-stethoscope botanical-icon"></i> {{ cita.motivo }}</p>
                         </div>
                     </div>
 
-                    <div style="display: flex; gap: 10px;">
-                    {% if cita.enlace_meet %}
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                    
+                    {% if cita.modalidad == 'Presencial' %}
+                        <span style="font-size: 13px; font-weight: 800; color: var(--text-muted); background: #f1f5f9; padding: 10px 15px; border-radius: 12px; display: inline-flex; align-items: center; gap: 8px;">
+                            <i class="fas fa-door-open"></i> Te espera en clínica
+                        </span>
+                    {% elif cita.enlace_meet %}
                         <a href="{{ cita.enlace_meet }}" target="_blank" class="btn-minimal btn-minimal-video" onclick="setTimeout(() => { window.location.href = '{% url 'detalle_paciente' cita.paciente.id %}'; }, 100);">
                             <i class="fas fa-video"></i> Iniciar Meet
                         </a>
                     {% endif %}
+                    
                         <a href="{% url 'detalle_paciente' cita.paciente.id %}" class="btn-minimal btn-minimal-primary">
                             <i class="fas fa-folder-open"></i> Abrir Expediente
                         </a>
                     </div>
                 </div>
                 {% endfor %}
+                
+                {% for taller in talleres_hoy %}
+                <div class="agenda-row" style="background: #fffaf0; padding: 20px; border-radius: 16px; border: 1px dashed #ffedd5; margin-top: 10px;">
+                    <div style="display: flex; align-items: center; gap: 25px;">
+                        <div class="time-badge-clean" style="color: var(--c-orange);">{{ taller.hora|time:"H:i" }}</div>
+                        <div>
+                            <span class="tag-clean tag-orange" style="margin-bottom: 5px;">Sesión Grupal ({{ taller.get_tipo_display }})</span>
+                            <h3 style="font-family: var(--font-headings); font-size: 20px; font-weight: 700; margin: 0 0 5px 0;">{{ taller.nombre }}</h3>
+                            <p style="margin: 0; font-size: 14px; color: var(--text-muted);"><i class="fas fa-users botanical-icon" style="color: var(--c-orange);"></i> {{ taller.inscripciones.count }} Pacientes Inscritos</p>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                    {% if taller.enlace_meet %}
+                        <a href="{{ taller.enlace_meet }}" target="_blank" class="btn-minimal btn-minimal-video" style="background: var(--c-orange);">
+                            <i class="fas fa-video"></i> Abrir Sala Grupal
+                        </a>
+                    {% else %}
+                        <span style="color: var(--c-pink); font-size: 12px; font-weight: 800; background: #fdf2f8; padding: 8px 12px; border-radius: 8px;">Aún sin enlace Meet</span>
+                    {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+
             {% else %}
                 <div class="empty-box">
                     <i class="fas fa-spa empty-icon"></i>
                     <h3 style="font-family: var(--font-headings); font-size: 24px; margin-bottom: 5px; color: var(--c-purple);">Día Despejado</h3>
-                    <p style="color: var(--text-muted);">Aprovecha este tiempo para revisar expedientes o preparar tus talleres.</p>
+                    <p style="color: var(--text-muted);">Aprovecha este tiempo para revisar expedientes o preparar tus próximos grupos.</p>
                 </div>
             {% endif %}
         </div>
@@ -354,6 +403,31 @@
         {% endif %}
     </div>
 
+</div>
+
+<!-- ✦ MODAL MI CV DOCTOR ✦ -->
+<div id="modalMiCV" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); backdrop-filter: blur(8px); z-index: 999999; justify-content: center; align-items: center;">
+    <div class="bento-card" style="height: auto; width: 90%; max-width: 450px; text-align: center; padding: 40px; position: relative; animation: fadeInElegant 0.4s ease forwards;">
+        <span onclick="cerrarModalMiCV()" style="position: absolute; top: 15px; right: 20px; cursor: pointer; font-size: 24px; color: #94a3b8; transition: 0.3s;" onmouseover="this.style.color='var(--c-dark)'" onmouseout="this.style.color='#94a3b8'"><i class="fas fa-times"></i></span>
+        
+        <img src="{% if psicologo.foto and psicologo.foto.name %}{{ psicologo.foto.url }}{% else %}https://ui-avatars.com/api/?name={{ request.user.first_name }}+{{ request.user.last_name }}&background=E5E7EB&color=5A3FA3&size=150&bold=true{% endif %}" alt="Mi Foto" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; margin-bottom: 20px; border: 4px solid var(--c-purple); box-shadow: var(--shadow-sm);">
+        
+        <h2 style="font-family: var(--font-headings); font-size: 2rem; color: var(--text-main); margin-bottom: 5px;">Psic. {{ request.user.first_name }} {{ request.user.last_name }}</h2>
+        <p style="color: var(--c-purple); font-weight: 700; margin-bottom: 25px;">{{ psicologo.especialidad|default:"Psicología Clínica" }}</p>
+        
+        <div style="background: var(--bg-dashboard); border-radius: 16px; padding: 25px; text-align: left; margin-bottom: 30px; border: 1px solid var(--border-soft);">
+            <div style="margin-bottom: 15px;">
+                <span style="font-size: 11px; text-transform: uppercase; color: var(--text-muted); font-weight: 800; letter-spacing: 1px;">Cédula Profesional</span>
+                <p style="margin: 5px 0 0 0; font-weight: 600; color: var(--text-main);">{{ psicologo.cedula_profesional }}</p>
+            </div>
+            <div>
+                <span style="font-size: 11px; text-transform: uppercase; color: var(--text-muted); font-weight: 800; letter-spacing: 1px;">Enfoque Clínico</span>
+                <p style="margin: 5px 0 0 0; font-size: 14px; color: var(--text-main); line-height: 1.6;">{{ psicologo.cv_breve|default:"Atención empática, breve y orientada a soluciones, brindando un espacio seguro para el crecimiento y la paz mental." }}</p>
+            </div>
+        </div>
+        
+        <button onclick="cerrarModalMiCV()" class="btn-minimal btn-minimal-primary" style="width: 100%; justify-content: center; padding: 15px;">Cerrar Perfil</button>
+    </div>
 </div>
 
 <div class="modal-backdrop" id="modalExpediente" style="display: none; align-items: center; justify-content: center; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.5); backdrop-filter: blur(8px); z-index: 5000; padding: 20px;">
@@ -433,6 +507,10 @@
 </div>
 
 <script>
+    // --- LÓGICA DEL MODAL DE CV ---
+    function abrirModalMiCV() { document.getElementById('modalMiCV').style.display = 'flex'; }
+    function cerrarModalMiCV() { document.getElementById('modalMiCV').style.display = 'none'; }
+
     document.addEventListener("DOMContentLoaded", () => {
         const frasesLindas = [
             "Sembrando bienestar, cosechando sonrisas.",
@@ -468,7 +546,6 @@
         }
     });
 
-    // Funciones Modal AJAX actualizadas con la nueva paleta SÓLIDA
     function abrirExpedienteMaestro(pacId, pacName, citaId) {
         document.getElementById('expPacienteId').value = pacId;
         document.getElementById('bitPacienteId').value = pacId;

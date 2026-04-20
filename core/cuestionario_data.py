@@ -1,60 +1,64 @@
 # cuestionario_data.py
 
 CUESTIONARIO_CLINICO = {
-    # --- NUEVO FLUJO: SOLO TALLERES ---
     "solo_talleres": {
-        "titulo": "Inscripción a Programas de Vida",
+        "titulo": "Inscripción a Talleres",
         "preguntas": [
-            {"id": "interes_talleres", "tipo": "multiple", "pregunta": "¿A qué programas te gustaría inscribirte?",
-             "opciones": ["Yoga Clínico", "Meditación y Mindfulness", "Gestión Emocional", "Arquitectura del Ser", "Terapia de Grupo"]},
-            {"id": "es_padre", "tipo": "single", "pregunta": "¿Eres padre o madre de familia?",
-             "opciones": ["Sí", "No"]},
-            {"id": "interes_escuela_padres", "tipo": "single", "pregunta": "Contamos con una 'Escuela para Padres'. ¿Te interesaría recibir información?",
-             "opciones": ["Sí, me interesa mucho", "Por ahora no"],
-             "mostrar_si": {"id": "es_padre", "valores": ["Sí"]}}
+
         ]
     },
     
-    # --- FLUJOS DE TERAPIA (LOS QUE YA TENÍAMOS) ---
+    # --- NUEVO FLUJO CLÍNICO INTEGRADO ---
     "individual": {
-        "titulo": "Terapia Individual (Para mí)",
-        "preguntas": [
-            {"id": "edad", "tipo": "numero", "pregunta": "¿Cuál es tu edad actual?"},
-            {"id": "es_padre", "tipo": "single", "pregunta": "¿Eres padre o madre de familia?",
-             "opciones": ["Sí", "No"]},
-            {"id": "interes_escuela_padres", "tipo": "single", "pregunta": "¿Te interesaría participar en nuestra Escuela para Padres?",
-             "opciones": ["Sí, me interesa mucho", "Por ahora no"],
-             "mostrar_si": {"id": "es_padre", "valores": ["Sí"]}},
-            {"id": "interes_talleres", "tipo": "multiple", "pregunta": "¿Te gustaría complementar tu terapia con algún taller?",
-             "opciones": ["Yoga Clínico", "Meditación", "Gestión Emocional", "Arquitectura del Ser", "Prefiero solo terapia por ahora"]},
-            {"id": "estado_emocional", "tipo": "multiple", "pregunta": "¿Qué buscas alcanzar?",
-             "opciones": ["Paz mental", "Motivación", "Manejo emocional", "Autoconocimiento"]},
-            {"id": "preferencia_terapeuta", "tipo": "single", "pregunta": "¿Preferencia de género para tu terapeuta?",
-             "opciones": ["Hombre", "Mujer", "Indiferente"]},
-        ]
-    },
-    "pareja": {
-        "titulo": "Terapia de Pareja",
+        "titulo": "Evaluación Clínica Inicial",
         "preguntas": [
             {"id": "edad", "tipo": "numero", "pregunta": "¿Cuál es tu edad?"},
-            {"id": "son_padres", "tipo": "single", "pregunta": "¿Son padres de familia?",
+            {"id": "residencia", "tipo": "texto", "pregunta": "¿Cuál es tu lugar de residencia?"},
+            {"id": "motivo_consulta", "tipo": "multiple", "pregunta": "¿Por qué quieres iniciar terapia en este momento? (Puedes elegir más de una opción)",
+             "opciones": ["Ansiedad", "Estrés", "Tristeza o desánimo", "Problemas de autoestima", "Problemas en relaciones (familia, pareja, amistades)", "Estrés escolar o laboral", "Problemas de sueño", "Dificultades para concentrarte", "Manejo de emociones", "Otro"]},
+            {"id": "meta_terapia", "tipo": "texto", "pregunta": "¿Qué te gustaría lograr con la terapia? (Ejemplo: sentirme más tranquilo/a, mejorar mis relaciones, controlar mis pensamientos, etc.)"},
+            {"id": "estado_semana", "tipo": "single", "pregunta": "En la última semana, ¿cómo te has sentido principalmente?",
+             "opciones": ["Bien / estable", "Con estrés o ansiedad", "Triste o desmotivado/a", "Cambios constantes de ánimo"]},
+            {"id": "intensidad_malestar", "tipo": "numero", "pregunta": "En una escala del 1 al 10, ¿qué tan intenso ha sido tu malestar en la última semana?", "min": 1, "max": 10},
+            {"id": "riesgo", "tipo": "single", "pregunta": "En la última semana, ¿has tenido pensamientos de hacerte daño o de no querer vivir?",
              "opciones": ["Sí", "No"]},
-            {"id": "interes_escuela_padres_pareja", "tipo": "single", "pregunta": "¿Les interesaría participar en la Escuela para Padres?",
-             "opciones": ["Sí, nos interesa", "Por ahora no"],
-             "mostrar_si": {"id": "son_padres", "valores": ["Sí"]}},
-            {"id": "expectativas", "tipo": "multiple", "pregunta": "¿Qué metas buscan con este proceso?",
-             "opciones": ["Mejorar comunicación", "Recuperar confianza", "Espacio seguro de crecimiento", "Herramientas prácticas", "Conexión íntima"]},
+            {"id": "terapia_previa", "tipo": "single", "pregunta": "¿Has tomado terapia anteriormente?",
+             "opciones": ["Sí", "No"]},
+            {"id": "exp_previa", "tipo": "texto", "pregunta": "¿Qué te gustó o no te gustó de tu experiencia previa?",
+             "mostrar_si": {"id": "terapia_previa", "valores": ["Sí"]}},
+            {"id": "preferencia_terapeuta", "tipo": "single", "pregunta": "Para tu comodidad, ¿tienes alguna preferencia de terapeuta?",
+             "opciones": ["Mujer", "Hombre", "Indistinto"]},
+            {"id": "horario", "tipo": "multiple", "pregunta": "¿Cuál es tu disponibilidad de horario? (Puedes elegir más de una opción)",
+             "opciones": ["Mañana (9:00 a 12:00)", "Tarde (12:00 a 17:00)", "Noche (17:00 a 20:00)", "Fines de semana"]}
+        ]
+    },
+    
+    # Replicamos el flujo maestro para los demás casos para que siempre se evalúe igual
+    "pareja": {
+        "titulo": "Evaluación Clínica (Pareja)",
+        "preguntas": [
+            {"id": "edad", "tipo": "numero", "pregunta": "¿Cuál es tu edad?"},
+            {"id": "residencia", "tipo": "texto", "pregunta": "¿Cuál es tu lugar de residencia?"},
+            {"id": "motivo_consulta", "tipo": "multiple", "pregunta": "¿Por qué buscan iniciar terapia en este momento?",
+             "opciones": ["Problemas de comunicación", "Infidelidad o desconfianza", "Distanciamiento emocional", "Problemas de crianza", "Otro"]},
+            {"id": "meta_terapia", "tipo": "texto", "pregunta": "¿Qué les gustaría lograr con la terapia?"},
+            {"id": "terapia_previa", "tipo": "single", "pregunta": "¿Han tomado terapia de pareja anteriormente?",
+             "opciones": ["Sí", "No"]},
+            {"id": "modalidad", "tipo": "single", "pregunta": "¿Qué modalidad prefieren?",
+             "opciones": ["Presencial", "En línea", "Indistinto"]},
+            {"id": "horario", "tipo": "multiple", "pregunta": "¿Cuál es su disponibilidad de horario conjunta?",
+             "opciones": ["Mañana (9:00 a 12:00)", "Tarde (12:00 a 17:00)", "Noche (17:00 a 20:00)", "Fines de semana"]}
         ]
     },
     "tercero": {
-        "titulo": "Para un Familiar o Amigo",
+        "titulo": "Ayuda para un Tercero",
         "preguntas": [
-            {"id": "edad_tuya", "tipo": "numero", "pregunta": "¿Cuál es tu edad?"},
-            {"id": "edad_tercero", "tipo": "numero", "pregunta": "¿Qué edad tiene la persona?"},
-            {"id": "rol_respecto_a_tercero", "tipo": "single", "pregunta": "¿Cuál es tu relación con esta persona?",
+            {"id": "edad_tercero", "tipo": "numero", "pregunta": "¿Qué edad tiene la persona que recibirá la terapia?"},
+            {"id": "relacion", "tipo": "single", "pregunta": "¿Cuál es tu relación con esta persona?",
              "opciones": ["Soy su padre/madre", "Soy su pareja", "Soy su amigo/a", "Otro familiar"]},
-            {"id": "motivo_tercero", "tipo": "multiple", "pregunta": "¿Qué te motiva a buscar apoyo para él/ella?",
-             "opciones": ["Que encuentre paz", "Mejores hábitos", "Mejor entorno social/escolar", "Acompañamiento en cambios", "Espacio seguro para hablar"]},
+            {"id": "motivo_consulta", "tipo": "texto", "pregunta": "¿Cuál es el motivo principal por el que buscas ayuda para él/ella?"},
+            {"id": "horario", "tipo": "multiple", "pregunta": "¿Cuál es la disponibilidad de horario de la persona?",
+             "opciones": ["Mañana (9:00 a 12:00)", "Tarde (12:00 a 17:00)", "Noche (17:00 a 20:00)", "Fines de semana"]}
         ]
     }
 }

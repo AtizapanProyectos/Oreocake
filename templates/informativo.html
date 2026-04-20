@@ -1,134 +1,284 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}HOPE - Módulo Informativo (Prevención y Educación){% endblock %}
+{% block title %}HOPE - Módulo Informativo y Triage{% endblock %}
 
 {% block content %}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700;900&family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+
 <style>
+    :root {
+      --c-purple: #5A3FA3;
+      --c-pink: #F85B8C;
+      --c-orange: #F27C21;
+      --c-teal: #25B8B8;
+      --c-dark: #0f0f0f;
+      --text-muted: #64748b;
+      --font-h: 'Outfit', sans-serif;
+      --font-b: 'Plus Jakarta Sans', sans-serif;
+      --shadow-sm: 0 10px 25px rgba(0,0,0,.05);
+      --shadow-md: 0 15px 35px rgba(0,0,0,.1);
+    }
+
+    body { font-family: var(--font-b); color: var(--c-dark); background: #f8fafc; }
+    h1, h2, h3, h4 { font-family: var(--font-h); }
+
+    /* ── HERO BANNER ── */
+    .info-hero {
+        background: linear-gradient(135deg, rgba(90,63,163,0.05) 0%, rgba(255,255,255,1) 100%);
+        padding: 100px 20px;
+        text-align: center;
+        border-bottom: 1px solid #f1f5f9;
+    }
+    .slide-tag {
+        display: inline-block; padding: 6px 14px; border-radius: 100px;
+        font-size: 0.8rem; font-weight: 800; letter-spacing: 1.5px;
+        margin-bottom: 25px; color: var(--c-purple); background: rgba(90,63,163,0.1);
+    }
+    .hero-title { font-size: clamp(3rem, 5vw, 4.5rem); font-weight: 900; line-height: 1.05; margin-bottom: 25px; letter-spacing: -1.5px;}
+    .highlight-purple { color: var(--c-purple); }
+    .hero-subtitle { font-size: 1.25rem; color: var(--text-muted); line-height: 1.6; margin: 0 auto 40px; max-width: 700px; font-weight: 400;}
+    
+    .hero-actions { display: flex; gap: 15px; justify-content: center; flex-wrap: wrap; }
+    
+    /* ── BUTTONS MODERNOS ── */
+    .btn-primary, .btn-outline, .btn-teal {
+        padding: 18px 40px; border-radius: 14px; font-weight: 800; font-size: 1.05rem;
+        font-family: var(--font-h); text-transform: uppercase; letter-spacing: 1px;
+        display: inline-flex; align-items: center; justify-content: center; gap: 12px; transition: .4s; cursor: pointer; border: none;
+    }
+    .btn-primary { background: var(--c-purple); color: #fff; box-shadow: 0 10px 20px rgba(90,63,163,.15); }
+    .btn-primary:hover { transform: translateY(-3px); box-shadow: 0 15px 25px rgba(90,63,163,.25); }
+    
+    .btn-teal { background: var(--c-teal); color: #fff; box-shadow: 0 10px 20px rgba(37,184,184,.15); }
+    .btn-teal:hover { transform: translateY(-3px); box-shadow: 0 15px 25px rgba(37,184,184,.25); }
+
+    .btn-outline { background: #fff; border: 2px solid #e2e8f0; color: var(--c-dark); }
+    .btn-outline:hover { border-color: var(--c-purple); color: var(--c-purple); background: rgba(90,63,163,.05); transform: translateY(-3px); }
+
+    /* ── GRID DE TALLERES (Importado del inicio) ── */
+    .recursos-grid { padding: 80px 20px; max-width: 1200px; margin: 0 auto; }
+    .section-header { text-align: center; margin-bottom: 60px; }
+    .section-header h2 { font-size: 2.5rem; color: var(--c-dark); font-weight: 900; margin-bottom: 15px;}
+    .section-header p { color: var(--text-muted); font-size: 1.1rem; max-width: 600px; margin: 0 auto; line-height: 1.6;}
+    
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 40px; }
+    .card { background: #fff; border-radius: 30px; overflow: hidden; border: 1px solid #f1f5f9; box-shadow: var(--shadow-sm); transition: all .5s; display: flex; flex-direction: column; }
+    .card:hover { transform: translateY(-12px); box-shadow: var(--shadow-md); border-color: var(--c-teal); }
+    .card-img { width: 100%; height: 250px; overflow: hidden; }
+    .card-img img { width: 100%; height: 100%; object-fit: cover; transition: .8s; }
+    .card:hover .card-img img { transform: scale(1.1); }
+    .card-body { padding: 35px; flex-grow: 1; display: flex; flex-direction: column; }
+    .card-body h3 { font-family: var(--font-h); font-size: 1.8rem; margin-bottom: 12px; font-weight: 800; }
+    .card-body p { color: var(--text-muted); font-size: 1.1rem; line-height: 1.6; margin-bottom: 25px; flex-grow: 1; }
+    
+    .btn-inscribete { display: inline-flex; align-items: center; justify-content: center; gap: 10px; color: #fff; padding: 14px 30px; border-radius: 100px; font-weight: 800; font-size: .9rem; font-family: var(--font-h); text-transform: uppercase; letter-spacing: 1px; text-decoration: none; transition: .3s; border: none; cursor: pointer; align-self: flex-start; }
+    .btn-inscribete:hover { transform: translateY(-3px); filter: brightness(1.1); box-shadow: 0 10px 25px rgba(0,0,0,.15); }
+
+    /* ── MODALES Y TRIAGE ── */
+    .modal-overlay {
+        position: fixed; inset: 0; background: rgba(15,23,42,.8); backdrop-filter: blur(10px);
+        z-index: 5000; display: none; align-items: center; justify-content: center; padding: 20px;
+    }
+    .modal-box {
+        background: #fff; width: 100%; max-width: 650px; padding: 50px;
+        border-radius: 30px; position: relative; box-shadow: 0 50px 100px rgba(0,0,0,.2);
+        max-height: 90vh; overflow-y: auto;
+    }
+    .modal-close { position: absolute; top: 25px; right: 25px; font-size: 24px; color: #cbd5e1; cursor: pointer; transition: .3s; background: none; border: none; z-index: 10; }
+    .modal-close:hover { color: var(--c-dark); }
+    
+    .modal-logo { height: 40px; margin-bottom: 30px; display: block; margin-left: auto; margin-right: auto; }
+    .auth-header { text-align: center; margin-bottom: 35px; }
+    .auth-header h2 { font-size: 2rem; color: var(--c-dark); margin-bottom: 10px; line-height: 1.2; }
+    .auth-header p { color: var(--text-muted); font-size: 1.1rem; }
+
+    /* ── OPCIONES DEL CUESTIONARIO ── */
     .triage-option-label {
-        display: flex;
-        align-items: center;
-        gap: 15px;
-        padding: 15px;
-        background: #F3F4F6;
-        border: 2px solid transparent;
-        border-radius: 12px;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        font-weight: 500;
-        color: var(--text-main);
+        display: flex; align-items: center; gap: 15px; padding: 20px;
+        background: #fff; border: 2px solid #e2e8f0; border-radius: 16px;
+        cursor: pointer; transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); 
+        font-weight: 600; color: var(--text-muted); font-family: var(--font-b); font-size: 1.1rem;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.02);
     }
-
-    .triage-option-label:hover {
-        background: #E5E7EB;
-        transform: translateY(-2px);
+    .triage-option-label:hover { 
+        border-color: var(--c-purple); 
+        transform: translateY(-3px); 
+        box-shadow: 0 10px 20px rgba(90,63,163,0.08); 
+        color: var(--c-dark);
     }
-
-    /* Cuando se selecciona un radio o checkbox */
-    .triage-option-label:has(input:checked) {
-        border-color: var(--color-brand-teal);
-        background: rgba(41, 126, 126, 0.05);
+    .triage-option-label:has(input:checked) { 
+        border-color: var(--c-purple); 
+        background: rgba(90,63,163,.04); 
+        color: var(--c-purple); 
+        box-shadow: 0 10px 20px rgba(90,63,163,0.1);
     }
+    .triage-option-label input { width: 24px; height: 24px; accent-color: var(--c-purple); cursor: pointer;}
+    .custom-input-triage { width: 100%; padding: 22px; border: 2px solid #e2e8f0; border-radius: 16px; font-family: var(--font-b); font-size: 1.15rem; background: #f8fafc; transition: .3s; color: var(--c-dark); }
+    .custom-input-triage:focus { outline: none; border-color: var(--c-purple); background: #fff; box-shadow: 0 10px 25px rgba(90,63,163,0.1); }
+    .custom-input-triage::placeholder { color: #cbd5e1; }
 
-    .triage-option-label input {
-        width: 20px;
-        height: 20px;
-        accent-color: var(--color-brand-teal);
+    .progress-container { background: #f1f5f9; border-radius: 100px; height: 8px; width: 100%; margin-bottom: 15px; overflow: hidden; }
+    #progressBar { background: var(--c-pink); width: 0%; height: 100%; transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1); border-radius: 100px; }
+    #progressText { text-align: right; color: var(--c-pink); font-weight: 800; margin-bottom: 30px; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; }
+
+    /* ── FORMULARIO FINAL ── */
+    .input-group { margin-bottom: 20px; position: relative; }
+    .input-group i { position: absolute; left: 20px; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 1.2rem; }
+    .input-group input { width: 100%; padding: 20px 20px 20px 55px; border-radius: 16px; border: 2px solid #e2e8f0; font-size: 1.05rem; font-family: var(--font-b); background: #f8fafc; transition: .3s; color: var(--c-dark); }
+    .input-group input:focus { outline: none; border-color: var(--c-purple); background: #fff; box-shadow: 0 10px 20px rgba(90,63,163,0.08); }
+    .input-group input::placeholder { color: #94a3b8; }
+    .input-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+
+    /* ── ALERTAS PERSONALIZADAS ── */
+    #modalFeedback .modal-box { text-align: center; max-width: 450px; padding: 40px; }
+    .feedback-icon { font-size: 60px; margin-bottom: 20px; }
+    .feedback-icon.error { color: #ef4444; }
+    .feedback-icon.success { color: #10b981; }
+    .feedback-icon.info { color: var(--c-purple); }
+
+    @media(max-width: 768px) {
+        .modal-box { padding: 40px 25px; border-radius: 24px; max-height: 95vh; }
+        .input-row { grid-template-columns: 1fr; gap: 0; }
+        .hero-title { font-size: 2.5rem; }
+        .btn-primary, .btn-outline, .btn-teal { width: 100%; }
+        #stepSeleccionFlujo .btn-outline { padding: 20px 15px; font-size: 1rem; }
+        .btn-inscribete { width: 100%; justify-content: center; }
     }
-
-    .custom-input-triage {
-        width: 100%;
-        padding: 16px 20px;
-        border: 2px solid #e5e7eb;
-        border-radius: 12px;
-        font-family: var(--font-body);
-        font-size: 15px;
-        margin-top: 10px;
-    }
-
-    .custom-input-triage:focus {
-        outline: none;
-        border-color: var(--color-brand-teal);
-    }
-
-    .flujo-btn {
-        flex: 1;
-        padding: 20px 10px;
-        font-size: 16px;
-    }
-
-.btn-talleres-outline {
-    background-color: var(--color-brand-teal) !important;
-    color: #ffffff !important;
-    border: 2px solid var(--color-brand-teal) !important;
-    transition: all 0.3s ease;
-}
-
-.btn-talleres-outline:hover {
-    background-color: #0d8a7a !important; /* opcional: tono más oscuro */
-    color: #ffffff !important;
-}
 </style>
 
 <section class="info-hero">
-    <div class="container animate-on-load">
-        <h1 class="hero-title">El Pilar de la Prevención</h1>
+    <div class="container">
+        <span class="slide-tag">PREVENCIÓN Y EDUCACIÓN</span>
+        <h1 class="hero-title">El Pilar de la <span class="highlight-purple">Prevención</span></h1>
         <p class="hero-subtitle">Educando a la comunidad antes de la intervención clínica. Tu bienestar comienza aquí.</p>
 
-        <div class="hero-actions animate-on-load">
-            <button data-modal="modalRegistro" class="btn-brutal btn-primary modal-trigger">
-                <i class="fas fa-clipboard-list"></i> Registrarse
+        <div class="hero-actions">
+            <button class="btn-primary" onclick="abrirModal('modalRegistro')">
+                Iniciar mi Proceso <i class="fas fa-clipboard-list"></i>
             </button>
-            <button data-modal="modalLogin" class="btn-brutal btn-secondary modal-trigger">
-                <i class="fas fa-user"></i> Inicia Sesión
+            <button class="btn-outline" onclick="abrirModal('modalLogin')">
+                Inicia Sesión <i class="fas fa-user"></i>
             </button>
         </div>
     </div>
 </section>
 
+<!-- ── SECCIÓN DE TALLERES Y GRUPOS ── -->
 <section class="recursos-grid">
-    <div class="container">
-        <div class="section-header animate-on-load">
-            <h2>Explora Nuestros Recursos</h2>
-            <div class="divider"></div>
+    <div class="section-header">
+        <h2>Nuestros Talleres y Grupos</h2>
+        <p>Explora nuestros programas diseñados para acompañarte en cada etapa de tu vida.</p>
+    </div>
+
+    <div class="grid">
+        <!-- Padres -->
+        <div class="card">
+            <div class="card-img"><img src="https://plus.unsplash.com/premium_photo-1661475814151-285c97cfcae9?w=800&auto=format&fit=crop&q=60" alt="Criar con Conciencia" loading="lazy"></div>
+            <div class="card-body">
+                <h3 style="color:var(--c-teal)">"Criar con Conciencia"</h3>
+                <p>Fortalece tu estilo de crianza con herramientas prácticas basadas en evidencia. Aprende a manejar conductas desafiantes, establecer límites efectivos y mejorar la comunicación familiar desde un enfoque claro, breve y orientado a resultados.</p>
+                <button class="btn-inscribete" style="background:var(--c-teal)" onclick="abrirModal('modalRegistro')">Inscríbete <i class="fas fa-arrow-right"></i></button>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-img"><img src="https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=800&auto=format&fit=crop&q=60" alt="Disciplina Inteligente" loading="lazy"></div>
+            <div class="card-body">
+                <h3 style="color:var(--c-purple)">"Disciplina Inteligente"</h3>
+                <p>Transforma la forma en que educas. Estrategias cognitivo-conductuales para fomentar conductas positivas, reducir conflictos y construir un ambiente familiar más equilibrado sin recurrir a gritos o castigos ineficaces.</p>
+                <button class="btn-inscribete" style="background:var(--c-purple)" onclick="abrirModal('modalRegistro')">Inscríbete <i class="fas fa-arrow-right"></i></button>
+            </div>
         </div>
 
-        <div class="grid-layout">
-            <div class="card animate-on-scroll brand">
-                <div class="card-icon"><i class="fas fa-book-open"></i></div>
-                <h3>Contenido Educativo</h3>
-                <p>Artículos detallados sobre bienestar emocional y salud mental.</p>
-                <a href="#" class="card-link">Leer artículos <i class="fas fa-arrow-right"></i></a>
+        <!-- Pareja -->
+        <div class="card">
+            <div class="card-img"><img src="https://images.unsplash.com/photo-1516589178581-6cd7833ae3b2?w=800&auto=format&fit=crop&q=60" alt="Reconectar en Pareja" loading="lazy"></div>
+            <div class="card-body">
+                <h3 style="color:var(--c-pink)">"Reconectar en Pareja"</h3>
+                <p>Recupera la conexión emocional y mejora la comunicación con herramientas prácticas. Identifica patrones negativos, gestiona conflictos y fortalece el vínculo en un proceso breve y enfocado en soluciones reales.</p>
+                <button class="btn-inscribete" style="background:var(--c-pink)" onclick="abrirModal('modalRegistro')">Inscríbete <i class="fas fa-arrow-right"></i></button>
             </div>
-
-            <div class="card animate-on-scroll accent-orange">
-                <div class="card-icon"><i class="fas fa-user-md"></i></div>
-                <h3>Directorio de Psicólogos</h3>
-                <p>Encuentra profesionales validados públicos.</p>
-                <a href="#" class="card-link">Ver directorio <i class="fas fa-arrow-right"></i></a>
+        </div>
+        <div class="card">
+            <div class="card-img"><img src="https://images.unsplash.com/photo-1474552226712-ac0f0961a954?w=800&auto=format&fit=crop&q=60" alt="Amar sin Herir" loading="lazy"></div>
+            <div class="card-body">
+                <h3 style="color:var(--c-orange)">"Amar sin Herir"</h3>
+                <p>Aprende a construir una relación sana y consciente. Reconoce pensamientos y conductas que dañan la relación, promoviendo nuevas formas de comunicación, empatía y resolución de problemas en pareja.</p>
+                <button class="btn-inscribete" style="background:var(--c-orange)" onclick="abrirModal('modalRegistro')">Inscríbete <i class="fas fa-arrow-right"></i></button>
             </div>
+        </div>
 
-            <div class="card animate-on-scroll accent-magenta">
-                <div class="card-icon"><i class="fas fa-layer-group"></i></div>
-                <h3>Biblioteca de Recursos</h3>
-                <p>Materiales multimedia y herramientas de prevención.</p>
-                <a href="#" class="card-link">Explorar multimedia <i class="fas fa-arrow-right"></i></a>
+        <!-- Grupales -->
+        <div class="card">
+            <div class="card-img"><img src="https://images.unsplash.com/photo-1499209974431-9dddcece7f88?w=800&auto=format&fit=crop&q=60" alt="Volver a Empezar" loading="lazy"></div>
+            <div class="card-body">
+                <h3 style="color:var(--c-purple)">"Volver a Empezar"</h3>
+                <p>Sana después de una ruptura y retoma el control de tu vida emocional. A través de técnicas cognitivas y conductuales, aprenderás a gestionar pensamientos dolorosos, fortalecer tu autoestima y cerrar ciclos con claridad.</p>
+                <button class="btn-inscribete" style="background:var(--c-purple)" onclick="abrirModal('modalRegistro')">Inscríbete <i class="fas fa-arrow-right"></i></button>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-img"><img src="https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=800&auto=format&fit=crop&q=60" alt="Renacer Después del Adiós" loading="lazy"></div>
+            <div class="card-body">
+                <h3 style="color:var(--c-teal)">"Renacer Después del Adiós"</h3>
+                <p>Un espacio para reconstruirte desde adentro. Identifica creencias que te limitan, transforma el dolor en aprendizaje y desarrolla hábitos emocionales saludables para avanzar con seguridad hacia una nueva etapa.</p>
+                <button class="btn-inscribete" style="background:var(--c-teal)" onclick="abrirModal('modalRegistro')">Inscríbete <i class="fas fa-arrow-right"></i></button>
+            </div>
+        </div>
+
+        <!-- Autoestima -->
+        <div class="card">
+            <div class="card-img"><img src="https://images.unsplash.com/photo-1519834785169-98be25ec3f84?w=800&auto=format&fit=crop&q=60" alt="Reconstruyendo mi Valor" loading="lazy"></div>
+            <div class="card-body">
+                <h3 style="color:var(--c-pink)">"Reconstruyendo mi Valor"</h3>
+                <p>Un taller breve y transformador para fortalecer tu autoestima desde la evidencia. Aprenderás a identificar pensamientos autocríticos, cuestionar creencias limitantes y desarrollar una autoimagen más realista y positiva. A través de herramientas cognitivo-conductuales, construirás habilidades para tomar decisiones con seguridad, poner límites y relacionarte contigo mismo desde el respeto y la confianza.</p>
+                <button class="btn-inscribete" style="background:var(--c-pink)" onclick="abrirModal('modalRegistro')">Inscríbete <i class="fas fa-arrow-right"></i></button>
             </div>
         </div>
     </div>
 </section>
 
-<div class="modal-backdrop" id="modalLogin">
-    <div class="modal-box glass-panel premium-modal">
-        <span class="close-modal"><i class="fas fa-times"></i></span>
-        <div class="modal-brand">
-            <img src="{% static 'img/logo_hope_extendido.png' %}" alt="HOPE" class="modal-logo">
+<!-- ══ NUEVO MODAL: FEEDBACK (ALERTAS BONITAS) ══ -->
+<div class="modal-overlay" id="modalFeedback">
+    <div class="modal-box" style="padding: 40px; border-radius: 24px;">
+        <div id="feedbackIcon" class="feedback-icon info">
+            <i class="fas fa-info-circle"></i>
         </div>
+        <h2 id="feedbackTitle" style="font-family: var(--font-h); font-size: 1.8rem; color: var(--c-dark); margin-bottom: 10px;">Atención</h2>
+        <p id="feedbackMessage" style="color: var(--text-muted); font-size: 1.1rem; line-height: 1.5; margin-bottom: 25px;">Mensaje de prueba.</p>
+        <button type="button" class="btn-primary" onclick="cerrarModal('modalFeedback')" style="width: 100%;">
+            Entendido
+        </button>
+    </div>
+</div>
+
+<!-- ══ NUEVO MODAL: ÉXITO DE REGISTRO (TRANSLÚCIDO PRO) ══ -->
+<div class="modal-overlay" id="modalExito" style="background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(8px);">
+    <div class="modal-box" style="text-align: center; padding: 50px 40px; background: rgba(30, 31, 42, 0.85); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 24px; box-shadow: 0 25px 50px rgba(0,0,0,0.5); max-width: 450px;">
+        <div style="font-size: 70px; color: #7e57c2; margin-bottom: 20px; animation: bounceIn 0.8s;">
+            <i class="fas fa-heart"></i>
+        </div>
+        <h2 style="font-family: var(--font-h); font-size: 2rem; color: #ffffff; margin-bottom: 15px; font-weight: 800; line-height: 1.2;">¡Te esperamos en tu<br>espacio seguro!</h2>
+        <p style="color: #94a3b8; font-size: 1.05rem; line-height: 1.6; margin-bottom: 35px;">Hemos creado tu expediente clínico de forma segura.<br><br>Revisa tu correo para activar tu cuenta e ingresar al panel.</p>
+        <button type="button" class="btn-primary" onclick="window.location.href='{% url 'modulo_informativo' %}';" style="width: 100%; background: #6366f1; border-radius: 12px; padding: 18px; font-size: 1rem; letter-spacing: 1px; justify-content: center; box-shadow: none; transition: 0.3s; color: #ffffff;">
+            IR AL INICIO <i class="fas fa-arrow-right" style="margin-left: 5px;"></i>
+        </button>
+    </div>
+</div>
+
+<!-- ══ MODAL LOGIN ══ -->
+<div class="modal-overlay" id="modalLogin">
+    <div class="modal-box">
+        <button class="modal-close" onclick="cerrarModal('modalLogin')"><i class="fas fa-times"></i></button>
+        <img src="{% static 'img/nlogo.png' %}" alt="HOPE" class="modal-logo">
         <div class="auth-header">
             <h2>Bienvenido de vuelta</h2>
             <p>Tu espacio seguro te espera.</p>
         </div>
-        <form action="{% url 'login_usuario' %}" method="POST" class="magic-form custom-form" id="formLogin">
+        <form action="{% url 'login_usuario' %}" method="POST" id="formLogin">
             {% csrf_token %}
             <div class="input-group">
                 <i class="fas fa-envelope"></i>
@@ -138,363 +288,451 @@
                 <i class="fas fa-lock"></i>
                 <input type="password" name="login_password" placeholder="Contraseña" required>
             </div>
-            <div class="auth-options">
-                <label class="remember-me"><input type="checkbox"> Recordarme</label>
-                <a href="#" class="forgot-password">¿Olvidaste tu contraseña?</a>
-            </div>
-            <button type="submit" class="btn-brutal">Entrar al panel <i class="fas fa-arrow-right"></i></button>
+            <button type="submit" class="btn-primary" style="width: 100%; margin-top: 15px;">Entrar al panel <i class="fas fa-arrow-right"></i></button>
         </form>
     </div>
 </div>
 
-<div class="modal-backdrop" id="modalRegistro">
-    <div class="modal-box glass-panel premium-modal modal-large">
-        <span class="close-modal"><i class="fas fa-times"></i></span>
-
-        <div class="modal-brand">
-            <img src="{% static 'img/logo_hope_principal.png' %}" alt="HOPE" class="modal-logo">
-        </div>
-
+<!-- ══ MODAL TRIAGE Y REGISTRO ══ -->
+<div class="modal-overlay" id="modalRegistro">
+    <div class="modal-box" id="triageBox">
+        <button class="modal-close" onclick="cerrarModal('modalRegistro')"><i class="fas fa-times"></i></button>
+        <img src="{% static 'img/nlogo.png' %}" alt="HOPE" class="modal-logo">
+        
         <div class="auth-header" id="triageHeader">
             <h2>Personaliza tu experiencia</h2>
             <p>Antes de agendar, ayúdanos a entender un poco más sobre ti.</p>
         </div>
 
         <div id="triageContainer">
-
+            <!-- Paso 1: Tipo de servicio -->
             <div id="stepTriagePrimario">
-                <h3 style="text-align: center; margin-bottom: 30px; font-size: 26px; color: var(--text-main);">¿En qué podemos apoyarte hoy?</h3>
-                <div style="display: flex; gap: 15px; flex-wrap: wrap; justify-content: center;">
-                    <button type="button" class="btn-brutal btn-primary flujo-primario-btn" data-tipo="terapia" style="flex: 1; min-width: 220px; font-size: 18px; justify-content: center; padding: 25px 10px;">
-                        <i class="fas fa-user-md" style="font-size: 24px; margin-right: 10px;"></i> Atención Psicológica
+                <div style="display: flex; gap: 15px; flex-direction: column;">
+                    <button type="button" class="btn-primary flujo-primario-btn" data-tipo="terapia" style="padding: 25px 20px; font-size: 1.2rem; justify-content: flex-start; text-align: left;">
+                        <i class="fas fa-user-md" style="font-size: 28px; width: 40px;"></i> 
+                        <div>
+                            <div style="font-weight: 900;">Terapia Clínica</div>
+                            <div style="font-size: 0.9rem; font-weight: 400; opacity: 0.9; margin-top: 4px; text-transform: none; font-family: var(--font-b);">Sesiones privadas con especialistas.</div>
+                        </div>
                     </button>
-                    <button type="button" class="btn-brutal btn-talleres-outline flujo-primario-btn" data-tipo="talleres" style="flex: 1; min-width: 220px; font-size: 18px; justify-content: center; padding: 25px 10px;">
-                        <i class="fas fa-users" style="font-size: 24px; margin-right: 10px;"></i> Talleres
+                    <button type="button" class="btn-teal flujo-primario-btn" data-tipo="talleres" style="padding: 25px 20px; font-size: 1.2rem; justify-content: flex-start; text-align: left;">
+                        <i class="fas fa-users" style="font-size: 28px; width: 40px;"></i> 
+                        <div>
+                            <div style="font-weight: 900;">Talleres y Grupos</div>
+                            <div style="font-size: 0.9rem; font-weight: 400; opacity: 0.9; margin-top: 4px; text-transform: none; font-family: var(--font-b);">Aprende y sana en comunidad.</div>
+                        </div>
                     </button>
                 </div>
             </div>
 
+            <!-- Paso 2: Para quién -->
             <div id="stepSeleccionFlujo" style="display: none;">
-                <h3 style="text-align: center; margin-bottom: 30px; font-size: 26px; color: var(--text-main);">¿Para quién buscas apoyo hoy?</h3>
-                <div style="display: flex; gap: 15px; flex-wrap: wrap;">
-                    <button type="button" class="btn-brutal btn-secondary flujo-btn" data-flujo="individual" style="font-size: 18px; padding: 25px 10px;">
-                        <i class="fas fa-user"></i> Para mí
+                <div style="display: flex; gap: 15px; flex-direction: column;">
+                    <button type="button" class="btn-outline flujo-btn" data-flujo="individual" style="padding: 22px 20px; justify-content: flex-start; font-size: 1.1rem;">
+                        <i class="fas fa-user" style="font-size: 1.5rem; width: 35px; color: var(--c-purple);"></i> 
+                        Para mí (Individual)
                     </button>
-                    <button type="button" class="btn-brutal btn-secondary flujo-btn" data-flujo="pareja" style="font-size: 18px; padding: 25px 10px;">
-                        <i class="fas fa-user-friends"></i> Mi pareja y yo
+                    <button type="button" class="btn-outline flujo-btn" data-flujo="pareja" style="padding: 22px 20px; justify-content: flex-start; font-size: 1.1rem;">
+                        <i class="fas fa-user-friends" style="font-size: 1.5rem; width: 35px; color: var(--c-pink);"></i> 
+                        Mi pareja y yo
                     </button>
-                    <button type="button" class="btn-brutal btn-secondary flujo-btn" data-flujo="tercero" style="font-size: 18px; padding: 25px 10px;">
-                        <i class="fas fa-hands-helping"></i> Un familiar o amigo
+                    <button type="button" class="btn-outline flujo-btn" data-flujo="tercero" style="padding: 22px 20px; justify-content: flex-start; font-size: 1.1rem;">
+                        <i class="fas fa-hands-helping" style="font-size: 1.5rem; width: 35px; color: var(--c-teal);"></i> 
+                        Un familiar o amigo
                     </button>
                 </div>
             </div>
 
+            <!-- Paso 3: Preguntas dinámicas -->
             <div id="stepPreguntas" style="display: none;">
-                <div style="background: #E5E7EB; border-radius: 10px; height: 10px; width: 100%; margin-bottom: 10px; overflow: hidden;">
-                    <div id="progressBar" style="background: var(--color-brand-teal); width: 0%; height: 100%; transition: width 0.4s ease;"></div>
+                <div class="progress-container">
+                    <div id="progressBar"></div>
                 </div>
-                <p id="progressText" style="text-align: right; color: var(--color-brand-teal); font-weight: 700; margin-bottom: 25px; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;"></p>
+                <p id="progressText"></p>
 
-                <h3 id="questionText" style="margin-bottom: 25px; font-size: 28px; color: var(--color-brand-teal); line-height: 1.3;"></h3>
+                <h3 id="questionText" style="margin-bottom: 30px; font-size: 1.5rem; font-family: var(--font-h); color: var(--c-dark); line-height: 1.4; font-weight: 800;"></h3>
 
-                <div id="questionOptionsContainer" style="display: flex; flex-direction: column; gap: 15px; margin-bottom: 40px; font-size: 18px;"></div>
+                <div id="questionOptionsContainer" style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 40px;"></div>
 
-                <div style="display: flex; justify-content: space-between; gap: 20px;">
-                    <button type="button" id="btnAtras" class="btn-brutal btn-secondary" style="display: none; width: auto; padding: 18px 25px; font-size: 18px;">
-                        <i class="fas fa-arrow-left"></i> Atrás
+                <div style="display: flex; justify-content: space-between; gap: 15px;">
+                    <button type="button" id="btnAtras" class="btn-outline" style="display: none; padding: 18px 25px;">
+                        <i class="fas fa-arrow-left"></i>
                     </button>
-                    <button type="button" id="btnSiguiente" class="btn-brutal btn-primary" style="flex: 1; padding: 18px 25px; font-size: 18px;">
-                        Siguiente <i class="fas fa-arrow-right"></i>
+                    <button type="button" id="btnSiguiente" class="btn-primary" style="flex: 1; padding: 18px 25px;">
+                        Continuar <i class="fas fa-arrow-right"></i>
                     </button>
                 </div>
             </div>
 
-            <form action="{% url 'registro_usuario' %}" method="POST" class="magic-form custom-form" id="formRegistro" style="display: none;">
+            <!-- Paso 4: Formulario de Registro Final -->
+            <form action="{% url 'registro_usuario' %}" method="POST" id="formRegistro" style="display: none;">
                 {% csrf_token %}
                 <input type="hidden" name="flujo_elegido" id="inputFlujoFinal">
                 <input type="hidden" name="respuestas_json" id="inputRespuestasFinal">
 
-                <h3 style="text-align: center; margin-bottom: 25px; font-size: 28px; color: var(--text-main);">¡Casi listos! Crea tu cuenta</h3>
-
                 <div class="input-group">
                     <i class="fas fa-mask"></i>
-                    <input type="text" id="pseudonimoFinal" placeholder="¿Con qué nombre o seudónimo te llamamos?" required style="font-size: 16px;">
+                    <input type="text" id="pseudonimoFinal" placeholder="¿Con qué nombre o seudónimo te llamamos?" required>
                 </div>
 
                 <div class="input-row">
                     <div class="input-group">
                         <i class="fas fa-user"></i>
-                        <input type="text" name="nombre" placeholder="Nombre completo" required style="font-size: 16px;">
+                        <input type="text" name="nombre" placeholder="Nombre completo (Privado)" required>
                     </div>
                     <div class="input-group">
                         <i class="fas fa-envelope"></i>
-                        <input type="email" name="email" placeholder="Correo electrónico" required style="font-size: 16px;">
+                        <input type="email" name="email" placeholder="Correo electrónico" required>
                     </div>
                 </div>
 
                 <div class="input-row">
                     <div class="input-group">
                         <i class="fas fa-phone"></i>
-                        <input type="tel" name="telefono" placeholder="Teléfono" required style="font-size: 16px;">
+                        <input type="tel" name="telefono" placeholder="Tu Teléfono" required>
                     </div>
                     <div class="input-group">
-                        <i class="fas fa-ambulance" style="color: #e11d48;"></i>
-                        <input type="tel" name="telefono_emergencia" placeholder="Tel. Emergencia (Familiar)" required style="font-size: 16px;">
+                        <i class="fas fa-ambulance" style="color: var(--c-pink);"></i>
+                        <input type="tel" name="telefono_emergencia" placeholder="Tel. de Emergencia" required>
                     </div>
                 </div>
+                
                 <div class="input-group">
                         <i class="fas fa-lock"></i>
-                        <input type="password" name="password" placeholder="Contraseña segura" required style="font-size: 16px;">
+                        <input type="password" name="password" placeholder="Crea una Contraseña segura" required>
                 </div>
 
-                <label style="display: flex; align-items: start; gap: 10px; font-size: 14px; color: var(--text-muted); margin-bottom: 25px; text-align: left; cursor: pointer;">
-                    <input type="checkbox" required style="width: 20px; height: 20px; margin-top: 2px; accent-color: var(--color-brand-teal);">
-                    <span style="line-height: 1.4;">He leído y acepto el <a href="#" style="color: var(--color-brand-teal); text-decoration: underline; font-weight: 600;">Aviso de Privacidad</a> para el tratamiento y protección de mis datos clínicos.</span>
+                <label style="display: flex; align-items: start; gap: 12px; font-size: 0.95rem; color: var(--text-muted); margin-bottom: 30px; cursor: pointer; padding: 10px 5px;">
+                    <input type="checkbox" required>
+                    <span style="line-height: 1.5;">He leído y acepto el <a href="#" style="color: var(--c-purple); font-weight: 700;">Aviso de Privacidad</a> clínico.</span>
                 </label>
 
-                <button type="button" class="btn-brutal btn-brand" id="btnSubmitFinal" style="padding: 20px; font-size: 18px; width: 100%; justify-content: center;">
-                    Confirmar y Finalizar <i class="fas fa-check-circle"></i>
+                <button type="submit" class="btn-primary" id="btnSubmitFinal" style="width: 100%; padding: 20px; font-size: 1.1rem;">
+                    Finalizar Registro <i class="fas fa-check-circle"></i>
                 </button>
             </form>
-
         </div>
     </div>
 </div>
 
-<div class="modal-backdrop" id="modalFeedback">
-    <div class="modal-box glass-panel premium-modal" style="max-width: 400px; text-align: center;">
-        <span class="close-modal"><i class="fas fa-times"></i></span>
-        <div id="feedbackIcon" style="font-size: 60px; margin-bottom: 20px;"></div>
-        <h2 id="feedbackTitle" style="color: var(--text-main); margin-bottom: 10px;"></h2>
-        <p id="feedbackMessage" style="color: var(--text-muted); font-size: 16px; margin-bottom: 30px;"></p>
-        <button class="btn-brutal btn-primary close-feedback-btn">Aceptar</button>
-    </div>
-</div>
-
-<div class="logo-animation-overlay" id="magicOverlay">
-    <div class="magic-icons-container">
-        <i class="fas fa-brain magic-icon brain-icon"></i>
-        <i class="fas fa-heart magic-icon heart-icon"></i>
-        <i class="fas fa-smile magic-icon smile-icon"></i>
-    </div>
-    <h3 class="magic-text">Conectando con tu bienestar y esperanza...</h3>
-</div>
-
 <script>
-    document.addEventListener("DOMContentLoaded", function () {
-        const dataCuestionario = JSON.parse('{{ cuestionario_json|escapejs|default:"{}" }}');
+    const dataCuestionario = JSON.parse('{{ cuestionario_json|escapejs|default:"{}" }}');
 
-        let flujoActual = "";
-        let indicePregunta = 0;
-        let respuestasGuardadas = {};
-        let preguntasFlujo = [];
-        let historialNavegacion = [];
-
-        const stepPrimario = document.getElementById("stepTriagePrimario");
-        const stepFlujo = document.getElementById("stepSeleccionFlujo");
-        const stepPreguntas = document.getElementById("stepPreguntas");
-        const formRegistro = document.getElementById("formRegistro");
-        const headerTitle = document.querySelector("#triageHeader h2");
-
-        const questionText = document.getElementById("questionText");
-        const optionsContainer = document.getElementById("questionOptionsContainer");
-        const btnSiguiente = document.getElementById("btnSiguiente");
-        const btnAtras = document.getElementById("btnAtras");
-
-        const progressBar = document.getElementById("progressBar");
-        const progressText = document.getElementById("progressText");
-
-        function debeMostrarPregunta(pregunta) {
-            if (!pregunta.mostrar_si) return true;
-            
-            const depId = pregunta.mostrar_si.id;
-            const valoresPermitidos = pregunta.mostrar_si.valores;
-            const respuestaPrevia = respuestasGuardadas[depId];
-
-            if (!respuestaPrevia) return false;
-            
-            if (Array.isArray(respuestaPrevia)) {
-                return respuestaPrevia.some(r => valoresPermitidos.includes(r));
-            }
-            return valoresPermitidos.includes(respuestaPrevia);
-        }
-
-        function obtenerSiguienteIndiceValido(inicio) {
-            let nextIndex = inicio;
-            while (nextIndex < preguntasFlujo.length) {
-                if (debeMostrarPregunta(preguntasFlujo[nextIndex])) {
-                    return nextIndex; 
-                }
-                nextIndex++; 
-            }
-            return nextIndex;
-        }
-
-        document.querySelectorAll('.flujo-primario-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
-                const tipo = this.getAttribute('data-tipo');
-                stepPrimario.style.display = 'none';
-                
-                if (tipo === 'talleres') {
-                    iniciarCuestionario('solo_talleres');
-                } else {
-                    stepFlujo.style.display = 'block';
-                    headerTitle.innerText = "Terapia Clínica";
-                }
-            });
-        });
-
-        document.querySelectorAll(".flujo-btn").forEach(btn => {
-            btn.addEventListener("click", function () {
-                iniciarCuestionario(this.getAttribute("data-flujo"));
-            });
-        });
-
-        function iniciarCuestionario(flujo) {
-            flujoActual = flujo;
-            preguntasFlujo = dataCuestionario[flujoActual].preguntas;
-
-            stepFlujo.style.display = "none";
-            stepPreguntas.style.display = "block";
-            headerTitle.innerText = dataCuestionario[flujoActual].titulo;
-
-            historialNavegacion = []; 
-            respuestasGuardadas = {}; 
-            indicePregunta = obtenerSiguienteIndiceValido(0); 
-            mostrarPregunta();
-        }
-
-        function mostrarPregunta() {
-            optionsContainer.innerHTML = "";
-
-            if (indicePregunta >= preguntasFlujo.length) {
-                finalizarCuestionario();
-                return;
-            }
-
-            const porcentaje = ((indicePregunta + 1) / preguntasFlujo.length) * 100;
-            progressBar.style.width = porcentaje + "%";
-            progressText.innerText = `Paso ${historialNavegacion.length + 1} de proceso`;
-
-            const q = preguntasFlujo[indicePregunta];
-            questionText.innerText = q.pregunta;
-
-            btnAtras.style.display = historialNavegacion.length > 0 ? "block" : "none";
-
-            if (q.tipo === "single" || q.tipo === "multiple") {
-                const inputType = q.tipo === "single" ? "radio" : "checkbox";
-                q.opciones.forEach((opcion) => {
-                    const checked = respuestasGuardadas[q.id] && respuestasGuardadas[q.id].includes(opcion) ? "checked" : "";
-                    const html = `
-                    <label class="triage-option-label" style="font-size: 17px; padding: 18px;">
-                        <input type="${inputType}" name="${q.id}" value="${opcion}" ${checked} style="width: 24px; height: 24px;">
-                        ${opcion}
-                    </label>
-                `;
-                    optionsContainer.insertAdjacentHTML('beforeend', html);
-                });
-            } else {
-                const val = respuestasGuardadas[q.id] || "";
-                const inputType = q.tipo === "numero" ? "number" : "text";
-                optionsContainer.innerHTML = `<input type="${inputType}" id="${q.id}" class="custom-input-triage" placeholder="Escribe tu respuesta aquí..." value="${val}" style="font-size: 18px; padding: 20px;">`;
-            }
-        }
-
-        btnSiguiente.addEventListener("click", function () {
-            const q = preguntasFlujo[indicePregunta];
-            let hayRespuesta = false;
-
-            if (q.tipo === "single") {
-                const sel = document.querySelector(`input[name="${q.id}"]:checked`);
-                if (sel) { respuestasGuardadas[q.id] = sel.value; hayRespuesta = true; }
-            } else if (q.tipo === "multiple") {
-                const sels = Array.from(document.querySelectorAll(`input[name="${q.id}"]:checked`)).map(el => el.value);
-                if (sels.length > 0) { respuestasGuardadas[q.id] = sels; hayRespuesta = true; }
-            } else {
-                const val = document.getElementById(q.id).value.trim();
-                if (val !== "") { respuestasGuardadas[q.id] = val; hayRespuesta = true; }
-            }
-
-            if (!hayRespuesta) {
-                alert("Por favor, selecciona o ingresa una respuesta antes de continuar.");
-                return;
-            }
-
-            historialNavegacion.push(indicePregunta);
-            indicePregunta = obtenerSiguienteIndiceValido(indicePregunta + 1);
-            mostrarPregunta();
-        });
-
-        btnAtras.addEventListener("click", function () {
-            if (historialNavegacion.length > 0) {
-                indicePregunta = historialNavegacion.pop();
-                mostrarPregunta();
-            }
-        });
-
-        function finalizarCuestionario() {
-            stepPreguntas.style.display = "none";
-            formRegistro.style.display = "block";
-            headerTitle.innerText = "Información de Cuenta";
-            document.getElementById("inputFlujoFinal").value = flujoActual;
-        }
-
-        // 🔥 CORRECCIÓN DEL DOBLE ENVÍO Y MANEJO DE ERRORES 🔥
-        const btnSubmitFinal = document.getElementById("btnSubmitFinal");
-        
-        btnSubmitFinal.addEventListener("click", function (e) {
-            e.preventDefault(); // Detiene el comportamiento nativo
-            
-            // Verificamos que todos los campos requeridos estén llenos
-            if (!formRegistro.checkValidity()) {
-                formRegistro.reportValidity();
-                return;
-            }
-
-            if (formRegistro.dataset.enviando === "true") return;
-            formRegistro.dataset.enviando = "true";
-
-            respuestasGuardadas["pseudonimo"] = document.getElementById("pseudonimoFinal").value;
-            document.getElementById("inputRespuestasFinal").value = JSON.stringify(respuestasGuardadas);
-
-            const formData = new FormData(formRegistro);
-            const originalText = btnSubmitFinal.innerHTML;
-            
-            btnSubmitFinal.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creando cuenta...';
-            btnSubmitFinal.disabled = true;
-
-            fetch(formRegistro.getAttribute("action"), {
-                method: "POST",
-                body: formData,
-                headers: { "X-Requested-With": "XMLHttpRequest" }
-            })
-            .then(async response => {
-                if (!response.ok) throw new Error("Error HTTP de servidor");
-                return response.json();
-            })
-            .then(data => {
-                btnSubmitFinal.innerHTML = originalText;
-                btnSubmitFinal.disabled = false;
-                formRegistro.dataset.enviando = "false";
-
-                if (data.status === "success") {
-                    document.getElementById("modalRegistro").classList.remove("active");
-                    document.getElementById("feedbackTitle").innerText = "¡Registro Exitoso!";
-                    document.getElementById("feedbackMessage").innerText = data.message;
-                    document.getElementById("feedbackIcon").innerHTML = '<i class="fas fa-check-circle" style="color: #10B981;"></i>';
-                    document.getElementById("modalFeedback").classList.add("active");
-                } else {
-                    alert(data.message);
-                }
-            })
-            .catch(err => {
-                console.error(err);
-                alert("Ocurrió un problema guardando tus datos o enviando el correo. Intenta de nuevo por favor.");
-                btnSubmitFinal.innerHTML = originalText;
-                btnSubmitFinal.disabled = false;
-                formRegistro.dataset.enviando = "false";
-            });
+    function abrirModal(id) { 
+        document.getElementById(id).style.display = 'flex'; 
+        if(id === 'modalRegistro') resetearCuestionario();
+    }
+    
+    function cerrarModal(id) { document.getElementById(id).style.display = 'none'; }
+    
+    document.querySelectorAll('.modal-overlay').forEach(o => {
+        o.addEventListener('click', e => { 
+            // Previene que se cierre si es el modal de éxito (queremos que den click al botón de inicio)
+            if(e.target === o && o.id !== 'modalExito') o.style.display = 'none'; 
         });
     });
+
+    function mostrarAlertaPersonalizada(mensaje, tipo = "info") {
+        const title = document.getElementById("feedbackTitle");
+        const msg = document.getElementById("feedbackMessage");
+        const iconDiv = document.getElementById("feedbackIcon");
+
+        msg.innerHTML = mensaje;
+        iconDiv.classList.remove("error", "success", "info");
+
+        if (tipo === "error") {
+            title.innerText = "Hubo un problema";
+            iconDiv.innerHTML = '<i class="fas fa-exclamation-triangle"></i>';
+            iconDiv.classList.add("error");
+        } else if (tipo === "success") {
+            title.innerText = "¡Todo listo!";
+            iconDiv.innerHTML = '<i class="fas fa-check-circle"></i>';
+            iconDiv.classList.add("success");
+        } else {
+            title.innerText = "Atención";
+            iconDiv.innerHTML = '<i class="fas fa-info-circle"></i>';
+            iconDiv.classList.add("info");
+        }
+
+        abrirModal("modalFeedback");
+    }
+
+    let flujoActual = "";
+    let indicePregunta = 0;
+    let respuestasGuardadas = {};
+    let preguntasFlujo = [];
+    let historialNavegacion = [];
+
+    const stepPrimario = document.getElementById("stepTriagePrimario");
+    const stepFlujo = document.getElementById("stepSeleccionFlujo");
+    const stepPreguntas = document.getElementById("stepPreguntas");
+    const formRegistro = document.getElementById("formRegistro");
+    const headerTitle = document.querySelector("#triageHeader h2");
+    const headerSub = document.querySelector("#triageHeader p");
+
+    const questionText = document.getElementById("questionText");
+    const optionsContainer = document.getElementById("questionOptionsContainer");
+    const btnSiguiente = document.getElementById("btnSiguiente");
+    const btnAtras = document.getElementById("btnAtras");
+    const progressBar = document.getElementById("progressBar");
+    const progressText = document.getElementById("progressText");
+
+    function resetearCuestionario() {
+        stepPrimario.style.display = 'block';
+        stepFlujo.style.display = 'none';
+        stepPreguntas.style.display = 'none';
+        formRegistro.style.display = 'none';
+        headerTitle.innerText = "Personaliza tu experiencia";
+        headerSub.innerText = "Antes de agendar, ayúdanos a entender un poco más sobre ti.";
+        flujoActual = "";
+        indicePregunta = 0;
+        respuestasGuardadas = {};
+        historialNavegacion = [];
+    }
+
+    function debeMostrarPregunta(pregunta) {
+        if (!pregunta.mostrar_si) return true;
+        const depId = pregunta.mostrar_si.id;
+        const valoresPermitidos = pregunta.mostrar_si.valores;
+        const respuestaPrevia = respuestasGuardadas[depId];
+        if (!respuestaPrevia) return false;
+        if (Array.isArray(respuestaPrevia)) {
+            return respuestaPrevia.some(r => valoresPermitidos.includes(r));
+        }
+        return valoresPermitidos.includes(respuestaPrevia);
+    }
+
+    function obtenerSiguienteIndiceValido(inicio) {
+        let nextIndex = inicio;
+        while (nextIndex < preguntasFlujo.length) {
+            if (debeMostrarPregunta(preguntasFlujo[nextIndex])) return nextIndex; 
+            nextIndex++; 
+        }
+        return nextIndex;
+    }
+
+    document.querySelectorAll('.flujo-primario-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const tipo = this.getAttribute('data-tipo');
+            stepPrimario.style.display = 'none';
+            if (tipo === 'talleres') {
+                iniciarCuestionario('solo_talleres');
+            } else {
+                stepFlujo.style.display = 'block';
+                headerTitle.innerText = "Terapia Clínica";
+                headerSub.innerText = "Selecciona el tipo de atención que buscas.";
+            }
+        });
+    });
+
+    document.querySelectorAll(".flujo-btn").forEach(btn => {
+        btn.addEventListener("click", function () {
+            iniciarCuestionario(this.getAttribute("data-flujo"));
+        });
+    });
+
+    function iniciarCuestionario(flujo) {
+        flujoActual = flujo;
+        preguntasFlujo = dataCuestionario[flujoActual].preguntas;
+        stepFlujo.style.display = "none";
+        stepPreguntas.style.display = "block";
+        headerTitle.innerText = dataCuestionario[flujoActual].titulo;
+        headerSub.innerText = "Paso a paso, a tu ritmo.";
+        historialNavegacion = []; 
+        respuestasGuardadas = {}; 
+        indicePregunta = obtenerSiguienteIndiceValido(0); 
+        mostrarPregunta();
+    }
+
+    function mostrarPregunta() {
+        optionsContainer.innerHTML = "";
+        if (indicePregunta >= preguntasFlujo.length) {
+            finalizarCuestionario();
+            return;
+        }
+        const porcentaje = ((indicePregunta) / preguntasFlujo.length) * 100;
+        progressBar.style.width = porcentaje + "%";
+        progressText.innerText = `Pregunta ${historialNavegacion.length + 1}`;
+        const q = preguntasFlujo[indicePregunta];
+        questionText.innerText = q.pregunta;
+        btnAtras.style.display = historialNavegacion.length > 0 ? "block" : "none";
+        if (q.tipo === "single" || q.tipo === "multiple") {
+            const inputType = q.tipo === "single" ? "radio" : "checkbox";
+            q.opciones.forEach((opcion) => {
+                const checked = respuestasGuardadas[q.id] && respuestasGuardadas[q.id].includes(opcion) ? "checked" : "";
+                const html = `
+                <label class="triage-option-label">
+                    <input type="${inputType}" name="${q.id}" value="${opcion}" ${checked}>
+                    ${opcion}
+                </label>`;
+                optionsContainer.insertAdjacentHTML('beforeend', html);
+            });
+        } else {
+            const val = respuestasGuardadas[q.id] || "";
+            const inputType = q.tipo === "numero" ? "number" : "text";
+            optionsContainer.innerHTML = `<input type="${inputType}" id="${q.id}" class="custom-input-triage" placeholder="Escribe tu respuesta aquí..." value="${val}">`;
+        }
+    }
+
+    btnSiguiente.addEventListener("click", function () {
+        const q = preguntasFlujo[indicePregunta];
+        let hayRespuesta = false;
+        if (q.tipo === "single") {
+            const sel = document.querySelector(`input[name="${q.id}"]:checked`);
+            if (sel) { respuestasGuardadas[q.id] = sel.value; hayRespuesta = true; }
+        } else if (q.tipo === "multiple") {
+            const sels = Array.from(document.querySelectorAll(`input[name="${q.id}"]:checked`)).map(el => el.value);
+            if (sels.length > 0) { respuestasGuardadas[q.id] = sels; hayRespuesta = true; }
+        } else {
+            const val = document.getElementById(q.id).value.trim();
+            if (val !== "") { respuestasGuardadas[q.id] = val; hayRespuesta = true; }
+        }
+        if (!hayRespuesta) {
+            mostrarAlertaPersonalizada("Por favor, selecciona o ingresa una respuesta antes de continuar.", "info");
+            return;
+        }
+        historialNavegacion.push(indicePregunta);
+        indicePregunta = obtenerSiguienteIndiceValido(indicePregunta + 1);
+        mostrarPregunta();
+    });
+
+    btnAtras.addEventListener("click", function () {
+        if (historialNavegacion.length > 0) {
+            indicePregunta = historialNavegacion.pop();
+            mostrarPregunta();
+        }
+    });
+
+    function finalizarCuestionario() {
+        stepPreguntas.style.display = "none";
+        formRegistro.style.display = "block";
+        headerTitle.innerText = "Crea tu cuenta segura";
+        headerSub.innerText = "Tus datos clínicos están protegidos.";
+        document.getElementById("inputFlujoFinal").value = flujoActual;
+        progressBar.style.width = "100%";
+    }
+
+    // ── REGISTRO ──
+    const formReg = document.getElementById("formRegistro");
+    const btnSubmitFinal = document.getElementById("btnSubmitFinal");
+    
+    formReg.addEventListener("submit", function (e) {
+        e.preventDefault(); 
+        if (formReg.dataset.enviando === "true") return;
+        formReg.dataset.enviando = "true";
+
+        respuestasGuardadas["pseudonimo"] = document.getElementById("pseudonimoFinal").value;
+        document.getElementById("inputRespuestasFinal").value = JSON.stringify(respuestasGuardadas);
+
+        const formData = new FormData(formReg);
+        const originalText = btnSubmitFinal.innerHTML;
+        btnSubmitFinal.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Creando expediente...';
+        btnSubmitFinal.disabled = true;
+
+        const csrfToken = formReg.querySelector('[name=csrfmiddlewaretoken]').value;
+
+        fetch(formReg.getAttribute("action"), {
+            method: "POST",
+            body: formData,
+            headers: { 
+                "X-Requested-With": "XMLHttpRequest",
+                "X-CSRFToken": csrfToken
+            }
+        })
+        .then(async response => {
+            const rawText = await response.text();
+            console.log("[REGISTRO] Status:", response.status);
+            console.log("[REGISTRO] Respuesta:", rawText);
+
+            let data;
+            try {
+                data = JSON.parse(rawText);
+            } catch(parseErr) {
+                mostrarAlertaPersonalizada(
+                    "Error inesperado del servidor (código " + response.status + "). Revisa la consola para más detalles.",
+                    "error"
+                );
+                btnSubmitFinal.innerHTML = originalText;
+                btnSubmitFinal.disabled = false;
+                formReg.dataset.enviando = "false";
+                return;
+            }
+
+            btnSubmitFinal.innerHTML = originalText;
+            btnSubmitFinal.disabled = false;
+            formReg.dataset.enviando = "false";
+
+            if (data.status === "success") {
+                cerrarModal("modalRegistro");
+                abrirModal("modalExito");
+            } else {
+                mostrarAlertaPersonalizada(data.message || "Error desconocido.", "error");
+            }
+        })
+        .catch(err => {
+            console.error("[REGISTRO] Error de red:", err);
+            mostrarAlertaPersonalizada("Problema de conexión. Intenta de nuevo.", "error");
+            btnSubmitFinal.innerHTML = originalText;
+            btnSubmitFinal.disabled = false;
+            formReg.dataset.enviando = "false";
+        });
+    });
+
+    // ── LOGIN ──
+    const formLogin = document.getElementById("formLogin");
+    
+    formLogin.addEventListener("submit", function (e) {
+        e.preventDefault();
+
+        const formData = new FormData(formLogin);
+        const btnSubmit = formLogin.querySelector('button[type="submit"]');
+        const originalText = btnSubmit.innerHTML;
+        btnSubmit.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Entrando...';
+        btnSubmit.disabled = true;
+
+        const csrfToken = formLogin.querySelector('[name=csrfmiddlewaretoken]').value;
+
+        fetch(formLogin.getAttribute("action"), {
+            method: "POST",
+            body: formData,
+            headers: { 
+                "X-Requested-With": "XMLHttpRequest",
+                "X-CSRFToken": csrfToken
+            }
+        })
+        .then(async response => {
+            const rawText = await response.text();
+            console.log("[LOGIN] Status:", response.status);
+            console.log("[LOGIN] Respuesta:", rawText);
+
+            let data;
+            try {
+                data = JSON.parse(rawText);
+            } catch(parseErr) {
+                mostrarAlertaPersonalizada(
+                    "Error inesperado del servidor (código " + response.status + "). Abre la consola (F12) y dile al dev qué dice.",
+                    "error"
+                );
+                btnSubmit.innerHTML = originalText;
+                btnSubmit.disabled = false;
+                return;
+            }
+
+            if (data.status === "success") {
+                window.location.href = data.redirect_url;
+            } else {
+                btnSubmit.innerHTML = originalText;
+                btnSubmit.disabled = false;
+                mostrarAlertaPersonalizada(data.message || "Error desconocido.", "error");
+            }
+        })
+        .catch(err => {
+            console.error("[LOGIN] Error de red:", err);
+            btnSubmit.innerHTML = originalText;
+            btnSubmit.disabled = false;
+            mostrarAlertaPersonalizada("Problema de conexión. Intenta de nuevo.", "error");
+        });
+    });
+
 </script>
 {% endblock %}
