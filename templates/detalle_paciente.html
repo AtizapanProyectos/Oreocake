@@ -1,0 +1,347 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Expediente - {{ paciente.first_name }} | HOPE{% endblock %}
+
+{% block content %}
+<style>
+    /* Importamos las fuentes para asegurar que carguen bien en Railway */
+    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700;900&family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap');
+
+    :root {
+        /* Paleta Sólida HOPE */
+        --c-purple: #5A3FA3;
+        --c-pink: #F85B8C;
+        --c-orange: #F27C21;
+        --c-yellow: #F8D33D;
+        --c-teal: #25B8B8;
+        --font-headings: 'Outfit', sans-serif;
+        --font-body: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    body { font-family: var(--font-body); background-color: #f8fafc; color: #0f0f0f; }
+    .expediente-wrapper { max-width: 1200px; margin: 0 auto; padding: 40px 20px 100px; }
+
+    /* CABECERA SUPERIOR */
+    .header-clinico { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 30px; border-bottom: 1px solid #e2e8f0; padding-bottom: 20px; }
+    .btn-back { color: #64748b; font-weight: 600; text-decoration: none; font-size: 14px; transition: 0.2s; display: inline-flex; align-items: center; gap: 8px; margin-bottom: 10px;}
+    .btn-back:hover { color: var(--c-purple); }
+    
+    /* Botón Alerta ahora usa el Rosa de la marca */
+    .btn-alert-top { background: #fff1f2; color: var(--c-pink); border: 1px solid #fecdd3; padding: 10px 20px; border-radius: 12px; font-weight: 700; cursor: pointer; transition: 0.3s; display: flex; align-items: center; gap: 8px; font-size: 14px; }
+    .btn-alert-top:hover { background: var(--c-pink); color: white; border-color: var(--c-pink); }
+
+    /* EL MURO DE SESIONES */
+    .muro-box { background: white; border-radius: 24px; padding: 40px; box-shadow: 0 4px 20px rgba(0,0,0,0.02); border: 1px solid #f1f5f9; }
+    .muro-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; border-bottom: 1px dashed #e2e8f0; padding-bottom: 25px; }
+    
+    /* Etiqueta título Muro */
+    .pill-brand-title { background: #f3e8ff; color: var(--c-purple); font-weight: 800; padding: 10px 20px; border-radius: 12px; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; display: inline-flex; align-items: center; gap: 10px; }
+    
+    /* Botón Brutal Sólido */
+    .btn-nueva-bitacora { background: var(--c-purple); color: white; border: none; padding: 12px 25px; border-radius: 100px; font-weight: 700; font-size: 15px; cursor: pointer; transition: 0.3s cubic-bezier(0.16, 1, 0.3, 1); display: inline-flex; align-items: center; gap: 10px; box-shadow: 0 4px 15px rgba(90, 63, 163, 0.2); font-family: var(--font-headings); letter-spacing: 0.5px;}
+    .btn-nueva-bitacora:hover { background: var(--c-orange); transform: translateY(-3px); box-shadow: 0 8px 20px rgba(242, 124, 33, 0.3); }
+
+    /* EMPTY STATE */
+    .empty-muro { border: 2px dashed #e2e8f0; border-radius: 20px; padding: 60px 20px; text-align: center; }
+    .empty-icon { font-size: 50px; color: #cbd5e1; margin-bottom: 15px; }
+    .empty-title { font-family: var(--font-headings); font-size: 24px; color: var(--c-purple); margin: 0 0 5px 0; }
+    .empty-sub { color: #94a3b8; font-size: 15px; margin: 0; }
+
+    /* TARJETA DE SESIÓN GUARDADA (ACORDEÓN) */
+    .session-card { border: 1px solid #e2e8f0; border-radius: 16px; margin-bottom: 15px; transition: 0.3s; overflow: hidden; }
+    .session-header { background: #f8fafc; padding: 20px 25px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; font-weight: 700; color: #0f0f0f; font-size: 16px; border-left: 6px solid var(--c-purple); }
+    .session-header:hover { background: #f1f5f9; }
+    .session-body { display: none; padding: 30px; background: white; border-top: 1px solid #e2e8f0; border-left: 6px solid var(--c-purple); }
+    
+    .timeline-node { border-left: 3px solid #e2e8f0; padding-left: 25px; margin-left: 10px; position: relative; padding-bottom: 30px; }
+    .timeline-node:last-child { padding-bottom: 0; border-left-color: transparent; }
+    .timeline-node::before { content: ''; position: absolute; left: -10px; top: 0; width: 17px; height: 17px; border-radius: 50%; background: #e2e8f0; border: 3px solid white; }
+    
+    /* Colores Sólidos HOPE para el Timeline */
+    .node-purple-brand::before { background: var(--c-purple); }
+    .node-teal-brand::before { background: var(--c-teal); }
+    .node-orange-brand::before { background: var(--c-orange); }
+    .node-pink-brand::before { background: var(--c-pink); }
+
+    .node-title { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 10px 0; }
+    .node-content { margin: 0; font-size: 15px; color: #0f0f0f; line-height: 1.6; }
+
+    /* =========================================================================
+       EL WIZARD: NUEVA BITÁCORA
+       ========================================================================= */
+    #vista-wizard { display: none; background: white; border-radius: 24px; padding: 50px; box-shadow: 0 10px 40px rgba(0,0,0,0.03); border: 1px solid #f1f5f9; }
+    
+    .wizard-step { display: none; animation: fadeIn 0.4s ease forwards; }
+    .wizard-step.active { display: block; }
+    
+    .wizard-header-title { font-family: var(--font-headings); font-size: 28px; color: var(--c-purple); margin: 0 0 30px 0; display: flex; justify-content: space-between; align-items: center; }
+    
+    .input-label { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: #475569; margin-bottom: 15px; display: block; }
+    .input-box { width: 100%; border: 2px solid #e2e8f0; border-radius: 16px; padding: 25px; font-family: inherit; font-size: 15px; color: #0f0f0f; resize: vertical; outline: none; transition: 0.3s; line-height: 1.6; background: #fafafa; }
+    .input-box:focus { background: white; }
+
+    /* Colores en focus para cada paso */
+    .box-step1:focus { border-color: var(--c-purple); box-shadow: 0 0 0 4px rgba(90, 63, 163, 0.1); }
+    .box-step2a:focus { border-color: var(--c-teal); box-shadow: 0 0 0 4px rgba(37, 184, 184, 0.1); }
+    .box-step2b:focus { border-color: var(--c-orange); box-shadow: 0 0 0 4px rgba(242, 124, 33, 0.1); }
+    .box-step3a:focus { border-color: var(--c-pink); box-shadow: 0 0 0 4px rgba(248, 91, 140, 0.1); }
+    .box-step3b:focus { border-color: var(--c-yellow); box-shadow: 0 0 0 4px rgba(248, 211, 61, 0.2); }
+
+    .split-textareas { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; }
+
+    .wizard-footer { display: flex; justify-content: flex-end; gap: 15px; margin-top: 30px; border-top: 1px solid #f1f5f9; padding-top: 30px; }
+    .btn-cancel { background: #f1f5f9; color: #475569; border: none; padding: 12px 25px; border-radius: 12px; font-weight: 700; cursor: pointer; transition: 0.3s; font-family: var(--font-headings); }
+    .btn-cancel:hover { background: #e2e8f0; color: var(--c-purple); }
+
+    /* Alerta Modal Emergencia (En Rosa Marca) */
+    #modalEmergencia { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(5px); z-index: 5000; align-items: center; justify-content: center; padding: 20px; }
+    .emergencia-box { background: white; width: 100%; max-width: 500px; padding: 40px; border-radius: 24px; border-top: 8px solid var(--c-pink); }
+
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+    @media(max-width: 800px) {
+        .split-textareas { grid-template-columns: 1fr; }
+        .header-clinico { flex-direction: column; align-items: flex-start; gap: 20px; }
+        .muro-header { flex-direction: column; gap: 20px; text-align: center; }
+    }
+</style>
+
+<div class="expediente-wrapper">
+
+    <div class="header-clinico">
+        <div>
+            <a href="{% url 'panel_doctor' %}" class="btn-back"><i class="fas fa-arrow-left"></i> Volver a la Agenda</a>
+            <h1 style="font-family: var(--font-headings); font-size: 42px; margin: 10px 0 5px 0; color: var(--c-purple);">{{ paciente.first_name|title }} {{ paciente.last_name|title }}</h1>
+            <p style="margin: 0; color: #64748b; font-size: 15px;"><i class="fas fa-envelope" style="color: var(--c-orange);"></i> {{ paciente.email }}</p>
+        </div>
+        <div>
+            <button class="btn-alert-top" onclick="document.getElementById('modalEmergencia').style.display='flex'">
+                <i class="fas fa-siren-on"></i> Ver Focos Rojos y Emergencia
+            </button>
+        </div>
+    </div>
+
+    <div id="vista-muro" class="muro-box">
+        <div class="muro-header">
+            <span class="pill-brand-title"><i class="fas fa-history"></i> 2. Muro de Sesiones</span>
+            <button class="btn-nueva-bitacora" onclick="abrirWizard()">
+                <i class="fas fa-plus"></i> Nueva Bitácora
+            </button>
+        </div>
+
+        {% if historiales %}
+            {% for h in historiales %}
+            <div class="session-card">
+                <div class="session-header" onclick="toggleSession('detalle-{{ h.id }}', this)">
+                    <span><i class="far fa-calendar-check" style="margin-right: 8px; color: var(--c-orange);"></i> {{ h.fecha_registro|date:"d de F, Y - H:i" }}</span>
+                    <i class="fas fa-chevron-down icon-arrow" style="color: #94a3b8; transition: 0.3s;"></i>
+                </div>
+                <div id="detalle-{{ h.id }}" class="session-body">
+                    
+                    {% if h.como_llega %}
+                    <div class="timeline-node node-purple-brand">
+                        <p class="node-title" style="color: var(--c-purple);">1. ¿Cómo llega el paciente?</p>
+                        <p class="node-content">{{ h.como_llega|linebreaksbr }}</p>
+                    </div>
+                    {% endif %}
+
+                    <div class="timeline-node node-teal-brand">
+                        <p class="node-title" style="color: var(--c-teal);">2. Notas privadas del desarrollo</p>
+                        <p class="node-content">{{ h.notas_sesion|linebreaksbr }}</p>
+                    </div>
+
+                    <div class="timeline-node node-orange-brand">
+                        <p class="node-title" style="color: var(--c-orange);"><i class="fas fa-star"></i> 3. ¿Qué se llevó de la sesión?</p>
+                        <p class="node-content" style="font-style: italic; background: #fffaf0; padding: 15px; border-radius: 10px; border: 1px solid #ffedd5;">"{{ h.aprendizaje_paciente|default:'No registrado' }}"</p>
+                    </div>
+
+                    {% if h.como_se_va or h.recomendaciones %}
+                    <div class="timeline-node node-pink-brand">
+                        <p class="node-title" style="color: var(--c-pink);">4. Cierre y Recomendaciones</p>
+                        <p class="node-content" style="margin-bottom: 10px;"><strong>Alta:</strong> {{ h.como_se_va|default:'-'|linebreaksbr }}</p>
+                        <p class="node-content"><strong>Recomendaciones:</strong> {{ h.recomendaciones|default:'-'|linebreaksbr }}</p>
+                    </div>
+                    {% endif %}
+
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="empty-muro">
+                <i class="fas fa-folder-open empty-icon"></i>
+                <h3 class="empty-title">Expediente Limpio</h3>
+                <p class="empty-sub">Aún no hay bitácoras guardadas. Haz clic en "+ Nueva Bitácora".</p>
+            </div>
+        {% endif %}
+    </div>
+
+
+    <div id="vista-wizard">
+        <form id="formBitacoraNueva" onsubmit="guardarBitacora(event)">
+            {% csrf_token %}
+            <input type="hidden" name="paciente_id" value="{{ paciente.id }}">
+
+            <div id="step-1" class="wizard-step active">
+                <h2 class="wizard-header-title">Paso 1: Inicio de sesión <span style="font-size: 14px; color: #94a3b8; font-family: var(--font-body);">1 de 3</span></h2>
+                <label class="input-label" style="color: var(--c-purple);">¿Cómo llega tu paciente hoy?</label>
+                <textarea name="como_llega" class="input-box box-step1" style="min-height: 250px;" placeholder="Describe su estado emocional inicial, avances desde la última sesión..."></textarea>
+                
+                <div class="wizard-footer">
+                    <button type="button" class="btn-cancel" onclick="cerrarWizard()">Cancelar</button>
+                    <button type="button" class="btn-nueva-bitacora" onclick="nextStep(2)">Siguiente <i class="fas fa-arrow-right"></i></button>
+                </div>
+            </div>
+
+            <div id="step-2" class="wizard-step">
+                <h2 class="wizard-header-title">Redactar Sesión de Hoy <span style="font-size: 14px; color: #94a3b8; font-family: var(--font-body);">2 de 3</span></h2>
+                
+                <div class="split-textareas">
+                    <div>
+                        <label class="input-label" style="color: var(--c-teal);">Notas Privadas (Desarrollo de la sesión)</label>
+                        <textarea name="notas_sesion" class="input-box box-step2a" required style="min-height: 250px;" placeholder="Qué se habló hoy, dinámicas usadas, progreso, observaciones de conducta..."></textarea>
+                    </div>
+                    <div>
+                        <label class="input-label" style="color: var(--c-orange);"><i class="fas fa-star"></i> La Pregunta de Oro: ¿Qué te llevas de esta sesión?</label>
+                        <textarea name="aprendizaje_paciente" class="input-box box-step2b" required style="min-height: 250px;" placeholder="Pregúntale al paciente al finalizar y anota su respuesta literal..."></textarea>
+                    </div>
+                </div>
+
+                <div class="wizard-footer">
+                    <button type="button" class="btn-cancel" onclick="nextStep(1)">Atrás</button>
+                    <button type="button" class="btn-nueva-bitacora" onclick="nextStep(3)">Siguiente <i class="fas fa-arrow-right"></i></button>
+                </div>
+            </div>
+
+            <div id="step-3" class="wizard-step">
+                <h2 class="wizard-header-title">Cierre y Alta <span style="font-size: 14px; color: #94a3b8; font-family: var(--font-body);">3 de 3</span></h2>
+                
+                <label class="input-label" style="color: var(--c-pink);">¿Cómo se va el paciente? (Notas de Alta)</label>
+                <textarea name="como_se_va" class="input-box box-step3a" style="min-height: 150px;" placeholder="Resumen del estado final de la sesión, logros..."></textarea>
+
+                <label class="input-label" style="color: #b45309; margin-top: 20px;">Recomendaciones Generales / Tareas</label>
+                <textarea name="recomendaciones" class="input-box box-step3b" style="min-height: 150px;" placeholder="Libros, hábitos, rutinas a seguir..."></textarea>
+                
+                <div class="wizard-footer">
+                    <button type="button" class="btn-cancel" onclick="nextStep(2)">Atrás</button>
+                    <button type="submit" class="btn-nueva-bitacora"><i class="fas fa-save"></i> Guardar y Finalizar</button>
+                </div>
+            </div>
+
+        </form>
+    </div>
+
+</div>
+
+<div id="modalEmergencia">
+    <div class="emergencia-box">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
+            <h3 style="margin: 0; font-size: 24px; color: var(--c-pink); font-family: var(--font-headings);"><i class="fas fa-siren-on"></i> Datos Críticos</h3>
+            <i class="fas fa-times" style="cursor: pointer; font-size: 20px; color: #cbd5e1;" onclick="document.getElementById('modalEmergencia').style.display='none'"></i>
+        </div>
+        
+        <form onsubmit="guardarEmergencia(event)">
+            {% csrf_token %}
+            <input type="hidden" name="paciente_id" value="{{ paciente.id }}">
+            
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <label class="input-label" style="color: var(--c-pink); margin: 0;">Teléfono de Emergencia</label>
+                {% if paciente.perfil.telefono_emergencia %}
+                <a href="tel:{{ paciente.perfil.telefono_emergencia }}" style="background: var(--c-pink); color: white; padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: bold; text-decoration: none; display: inline-flex; align-items: center; gap: 5px;">
+                    <i class="fas fa-phone-alt"></i> Llamar
+                </a>
+                {% endif %}
+            </div>
+            <input type="text" name="telefono_emergencia" class="input-box" style="padding: 15px;" value="{{ paciente.perfil.telefono_emergencia|default:'' }}" placeholder="Ej. 55 1234 5678" onfocus="this.style.borderColor='var(--c-pink)'" onblur="this.style.borderColor='#e2e8f0'">
+            
+            <label class="input-label" style="color: var(--c-pink); margin-top: 15px;">Focos Rojos</label>
+            <textarea name="focos_rojos" class="input-box" style="min-height: 120px;" placeholder="Alergias, riesgos..." onfocus="this.style.borderColor='var(--c-pink)'" onblur="this.style.borderColor='#e2e8f0'">{{ paciente.perfil.focos_rojos|default:'' }}</textarea>
+            
+            <button type="submit" class="btn-nueva-bitacora" style="width: 100%; justify-content: center; background: var(--c-pink); margin-top: 20px;">Actualizar Alertas</button>
+        </form>
+    </div>
+</div>
+
+<script>
+    // Mostrar/Ocultar detalles de la sesión en el muro
+    function toggleSession(id, headerObj) {
+        const body = document.getElementById(id);
+        const icon = headerObj.querySelector('.icon-arrow');
+        if(body.style.display === 'block') {
+            body.style.display = 'none';
+            icon.style.transform = 'rotate(0deg)';
+        } else {
+            body.style.display = 'block';
+            icon.style.transform = 'rotate(180deg)';
+        }
+    }
+
+    // Funciones del Wizard
+    function abrirWizard() {
+        document.getElementById('vista-muro').style.display = 'none';
+        document.getElementById('vista-wizard').style.display = 'block';
+        nextStep(1); // Siempre inicia en paso 1
+    }
+
+    function cerrarWizard() {
+        document.getElementById('vista-wizard').style.display = 'none';
+        document.getElementById('vista-muro').style.display = 'block';
+        document.getElementById('formBitacoraNueva').reset();
+    }
+
+    function nextStep(step) {
+        document.querySelectorAll('.wizard-step').forEach(el => el.classList.remove('active'));
+        document.getElementById('step-' + step).classList.add('active');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // Guardar la bitácora nueva completa
+    function guardarBitacora(e) {
+        e.preventDefault();
+        const btn = e.target.querySelector('button[type="submit"]');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
+        btn.disabled = true;
+
+        fetch("{% url 'guardar_historial' %}", {
+            method: 'POST',
+            body: new FormData(e.target),
+            headers: {'X-Requested-With': 'XMLHttpRequest'}
+        })
+        .then(r => r.json())
+        .then(data => {
+            if(data.status === 'success') {
+                // PUM, recargamos la página y aparece en la lista
+                location.reload(); 
+            } else {
+                alert('Error al guardar: ' + data.message);
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        }).catch(err => { alert("Error de conexión"); btn.innerHTML = originalText; btn.disabled = false; });
+    }
+
+    // Guardar solo emergencia sin salir de la vista
+    function guardarEmergencia(e) {
+        e.preventDefault();
+        const btn = e.target.querySelector('button[type="submit"]');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = 'Guardando...';
+        
+        fetch("{% url 'guardar_expediente_global' %}", {
+            method: 'POST',
+            body: new FormData(e.target),
+            headers: {'X-Requested-With': 'XMLHttpRequest'}
+        }).then(r => r.json()).then(d => {
+            btn.innerHTML = originalText;
+            if(d.status === 'success') {
+                alert("Alertas actualizadas.");
+                document.getElementById('modalEmergencia').style.display = 'none';
+                
+                // Si queremos que el botón "Llamar" aparezca de inmediato si agregaron un número:
+                location.reload();
+            }
+        });
+    }
+</script>
+{% endblock %}

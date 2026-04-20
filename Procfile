@@ -1,0 +1,1 @@
+web: python manage.py collectstatic --noinput && gunicorn hope_project.wsgi --log-file -

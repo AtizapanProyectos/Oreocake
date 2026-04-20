@@ -1,0 +1,805 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Mi Dashboard - HOPE{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<link rel="stylesheet" type="text/css" href="https://npmcdn.com/flatpickr/dist/themes/airbnb.css">
+
+{{ dias_disponibles_json|json_script:"dias-data" }}
+{% csrf_token %}
+
+<style>
+    /* ==========================================================================
+       IMPORTACIÓN DE FUENTES
+       ========================================================================== */
+    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700;900&family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap');
+
+    /* ==========================================================================
+       VARIABLES Y RESET (NUEVA PALETA SÓLIDA)
+       ========================================================================== */
+    :root {
+        --c-purple: #5A3FA3;
+        --c-pink: #F85B8C;
+        --c-orange: #F27C21;
+        --c-yellow: #F8D33D;
+        --c-teal: #25B8B8;
+        
+        --text-main: #0f0f0f;
+        --text-muted: #64748b;
+        --bg-panel: #f8fafc;
+        
+        --font-headings: 'Outfit', sans-serif;
+        --font-body: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    body { background-color: var(--bg-panel); font-family: var(--font-body); color: var(--text-main); }
+
+    /* ==========================================================================
+       ESTRUCTURA GENERAL Y TABS
+       ========================================================================== */
+    .dashboard-header {
+        background: var(--c-purple); /* Color sólido duro, sin desvanecidos */
+        color: white; padding: 60px 40px; border-radius: 0 0 50px 50px;
+        margin-bottom: 40px; text-align: center;
+    }
+
+    .chic-card {
+        background: #ffffff; border-radius: 30px; padding: 40px;
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.03); border: 1px solid #f1f5f9;
+        transition: 0.3s; height: 100%;
+    }
+    .chic-card:hover { transform: translateY(-5px); box-shadow: 0 20px 40px rgba(90, 63, 163, 0.08); }
+
+    .step-tag {
+        font-size: 12px; text-transform: uppercase; letter-spacing: 2px; font-weight: 800; font-family: var(--font-headings);
+        color: var(--c-purple); background: #f3e8ff; padding: 8px 15px;
+        border-radius: 20px; display: inline-block; margin-bottom: 20px;
+    }
+
+    .tabs-nav { display: flex; justify-content: center; gap: 20px; margin-bottom: 40px; flex-wrap: wrap; }
+    .tab-btn {
+        padding: 15px 40px; border-radius: 100px; font-weight: 700; font-size: 16px; font-family: var(--font-headings);
+        cursor: pointer; transition: 0.3s; background: white; border: 2px solid #e2e8f0;
+        color: var(--text-muted); display: flex; align-items: center; gap: 10px;
+    }
+    .tab-btn.active {
+        background: var(--c-purple); color: white; border-color: var(--c-purple);
+        box-shadow: 0 10px 20px rgba(90, 63, 163, 0.2);
+    }
+    .tab-content { display: none; animation: fadeIn 0.5s; }
+    .tab-content.active { display: block; }
+
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* ==========================================================================
+       ESTILOS DEL AGENDADOR CLÍNICO ORIGINAL
+       ========================================================================== */
+    .mood-tracker-gigante { background: #f8fafc; border-radius: 100px; padding: 15px 40px; display: inline-flex; gap: 40px; margin-top: 20px; justify-content: center; flex-wrap: wrap; }
+    .mood-btn-huge { font-size: 50px; background: none; border: none; cursor: pointer; color: #cbd5e1; transition: 0.3s; }
+    .mood-btn-huge:hover { transform: scale(1.2); color: var(--c-yellow); }
+    .mood-btn-huge.selected { color: var(--c-purple); transform: scale(1.2); }
+
+    .date-carousel { display: flex; gap: 20px !important; overflow-x: auto; padding-top: 10px; padding-bottom: 20px !important; -ms-overflow-style: none; scrollbar-width: none; flex-grow: 1; }
+    .date-carousel::-webkit-scrollbar { display: none; }
+    .date-chip { padding: 22px 18px !important; border-radius: 20px; border: 2px solid #f3f4f6; background: #ffffff; box-shadow: 0 4px 15px rgba(0,0,0,0.02); flex-shrink: 0; cursor: pointer; transition: 0.3s; font-family: var(--font-headings); }
+    .date-chip:hover { border-color: var(--c-purple); }
+    .date-chip.active { box-shadow: 0 10px 25px rgba(90, 63, 163, 0.2); transform: translateY(-3px); border-color: var(--c-purple); background: var(--c-purple); color: white; }
+    
+    .slots-container { gap: 15px !important; margin-top: 15px; display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
+    .time-slot-btn { padding: 15px !important; border-radius: 12px; border: 2px solid #f3f4f6; background: white; color: var(--text-main); font-weight: 700; cursor: pointer; transition: all 0.2s; font-family: var(--font-body); }
+    .time-slot-btn:hover, .time-slot-btn.active { background: var(--c-purple); color: white; border-color: var(--c-purple); transform: translateY(-2px); }
+    
+    .btn-brutal { padding: 20px; border-radius: 15px; font-weight: 800; font-family: var(--font-headings); border: none; cursor: pointer; transition: 0.3s; display: inline-flex; align-items: center; justify-content: center; gap: 10px; text-transform: uppercase; letter-spacing: 1px;}
+    .btn-primary { background: var(--c-purple); color: white; }
+    .btn-primary:hover { background: var(--c-orange); box-shadow: 0 15px 30px rgba(242, 124, 33, 0.3); transform: translateY(-3px); }
+
+    .payment-box { background: #FFFFFF; max-width: 450px; margin: 0 auto; padding: 40px; border-radius: 20px; border: 2px solid #F3F4F6; }
+
+    /* ==========================================================================
+       ESTILOS DE TALLERES Y GRUPOS
+       ========================================================================== */
+    .grid-programas { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 30px; }
+    .programa-box { border: 2px solid #f1f5f9; border-radius: 25px; padding: 30px; display: flex; flex-direction: column; justify-content: space-between; background: #fff;}
+    .cupos-badge { font-size: 12px; font-weight: 800; background: #fffbeb; color: var(--c-orange); padding: 6px 12px; border-radius: 10px; display: inline-block; font-family: var(--font-headings);}
+    .cupos-full { background: #fdf2f8; color: var(--c-pink); }
+    .btn-inscribir { width: 100%; padding: 15px; border-radius: 15px; font-weight: 800; font-family: var(--font-headings); background: var(--c-pink); color: white; border: none; cursor: pointer; transition: 0.3s; margin-top: 20px; text-transform: uppercase; letter-spacing: 1px;}
+    .btn-inscribir:hover { background: var(--c-orange); transform: translateY(-2px); }
+    .btn-inscribir:disabled { background: #cbd5e1; cursor: not-allowed; transform: none; }
+    .btn-inscrito { background: #f3e8ff; color: var(--c-purple); cursor: default; }
+
+    /* Mis inscripciones layout base */
+    .inscripcion-card { background: #f8fafc; border-left: 4px solid var(--c-pink); padding: 20px; border-radius: 0 15px 15px 0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; }
+    .inscripcion-actions { display: flex; gap: 10px; align-items: center; }
+
+    /* ==========================================================================
+       ANIMACIÓN PARA LAS ALERTAS MÁGICAS
+       ========================================================================== */
+    @keyframes popIn {
+        0% { transform: scale(0.5); opacity: 0; }
+        100% { transform: scale(1); opacity: 1; }
+    }
+    .alerta-animada { animation: popIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
+
+    /* ==========================================================================
+       🚀 OPTIMIZACIÓN MÓVILES (Celulares y Tablets)
+       ========================================================================== */
+    @media (max-width: 768px) {
+        .dashboard-header { padding: 35px 20px; border-radius: 0 0 30px 30px; margin-bottom: 25px; }
+        .dashboard-header h1 { font-size: 2.2rem !important; }
+        .dashboard-header p { font-size: 1rem !important; }
+        
+        .container { padding-left: 15px; padding-right: 15px; }
+        
+        .chic-card { padding: 25px 20px !important; border-radius: 20px !important; margin-bottom: 25px !important; }
+        .chic-card h2 { font-size: 1.8rem !important; }
+        
+        .tabs-nav { gap: 10px; margin-bottom: 25px; }
+        .tab-btn { padding: 12px 15px; font-size: 14px; flex-grow: 1; text-align: center; justify-content: center; }
+        
+        .mood-tracker-gigante { padding: 15px; border-radius: 20px; gap: 12px; width: 100%; justify-content: space-around; }
+        .mood-btn-huge { font-size: 36px !important; }
+
+        .date-chip { padding: 15px 12px !important; border-radius: 15px; }
+        .slots-container { grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)) !important; gap: 10px !important; }
+        .time-slot-btn { padding: 12px 5px !important; font-size: 13px !important; }
+        
+        .payment-box { padding: 25px 20px !important; }
+        .payment-box h3 { font-size: 32px !important; }
+        
+        .grid-programas { grid-template-columns: 1fr; gap: 20px; }
+        .programa-box { padding: 20px; border-radius: 20px; }
+        
+        .inscripcion-card { flex-direction: column; align-items: flex-start; border-radius: 12px !important; border-left-width: 3px; }
+        .inscripcion-actions { width: 100%; flex-direction: column; margin-top: 10px; }
+        .inscripcion-actions a, .inscripcion-actions span { width: 100%; justify-content: center; text-align: center; padding: 12px !important; }
+
+        .alerta-animada { width: 92% !important; padding: 30px 20px !important; border-radius: 20px !important; }
+        .alerta-animada h2 { font-size: 1.8rem !important; }
+        .alerta-animada i { font-size: 50px !important; }
+
+        .btn-brutal { padding: 15px !important; font-size: 15px !important; }
+    }
+</style>
+
+<div class="dashboard-header">
+    <h1 style="font-family: var(--font-headings); font-size: 3rem; margin-bottom: 10px; font-weight: 800;">¡Hola, {{ user.first_name }}!</h1>
+    <p style="font-size: 1.2rem; opacity: 0.9; font-weight: 300;">Tu espacio integral de sanación y bienestar personal.</p>
+</div>
+
+<div class="container" style="max-width: 1200px; margin: 0 auto; padding-bottom: 100px;">
+    
+    <div class="tabs-nav">
+        <button class="tab-btn active" onclick="switchTab('clinica')"><i class="fas fa-stethoscope"></i> Salud Clínica</button>
+        <button class="tab-btn" onclick="switchTab('comunidad')"><i class="fas fa-users"></i> Comunidad & Talleres</button>
+    </div>
+
+    <div id="tab-clinica" class="tab-content active">
+        
+        {% if cita_proxima %}
+        <div class="chic-card" style="border-top: 6px solid var(--c-purple); text-align: center; margin-bottom: 40px;">
+            <span class="step-tag" style="background: #f3e8ff; color: var(--c-purple);">Próxima Sesión Confirmada</span>
+            <div style="margin: 20px 0;"><i class="fas fa-video" style="font-size: 60px; color: var(--c-purple);"></i></div>
+            <h2 style="font-family: var(--font-headings); font-size: 2.5rem; color: var(--text-main);">Tu sala te espera</h2>
+            
+            <div style="background: #f8fafc; padding: 30px; border-radius: 20px; margin: 25px auto; border: 1px solid #e2e8f0; max-width: 500px;">
+                <p style="color: var(--text-muted); font-size: 16px;">Tienes una sesión programada para el:</p>
+                <h3 style="color: var(--text-main); font-size: 22px; font-family: var(--font-headings);">{{ cita_proxima.fecha|date:"l, d \d\e F"|title }}</h3>
+                <h2 style="color: var(--c-purple); font-size: 36px; font-weight: 800; font-family: var(--font-headings);">{{ cita_proxima.hora|time:"h:i A" }}</h2>
+            </div>
+
+            {% if cita_proxima.enlace_meet %}
+            <div id="btn-locked" style="background: #f1f5f9; padding: 20px; border-radius: 16px; color: #64748b; max-width: 500px; margin: 0 auto; text-align: center; border: 2px dashed #cbd5e1;">
+                <i class="fas fa-clock" style="font-size: 28px; margin-bottom: 10px; color: #94a3b8;"></i>
+                <p style="font-weight: 700; margin: 0; font-size: 18px; color: var(--text-main);">Aún no es hora</p>
+                <p style="font-size: 14px; margin: 5px 0 0 0;">Tu acceso se activará 1 hora antes de la sesión.</p>
+            </div>
+
+            <a href="{{ cita_proxima.enlace_meet }}" target="_blank" id="btn-unlocked" class="btn-brutal btn-primary" style="display: none; width: 100%; max-width: 500px; justify-content: center; font-size: 18px; text-decoration: none; margin: 0 auto;">
+                Ingresar a mi Consulta <i class="fas fa-external-link-alt"></i>
+            </a>
+            
+            <script>
+                document.addEventListener("DOMContentLoaded", function() {
+                    function revisarHoraCita() {
+                        const fechaStr = "{{ cita_proxima.fecha|date:'Y-m-d' }}";
+                        const horaStr = "{{ cita_proxima.hora|time:'H:i:s' }}"; 
+                        if (!fechaStr || !horaStr) return;
+                        const citaDate = new Date(`${fechaStr}T${horaStr}`);
+                        const now = new Date();
+                        const diff = citaDate - now;
+                        // 1 hora = 3600000 milisegundos
+                        if (diff <= 3600000 && diff >= -3600000) {
+                            document.getElementById('btn-locked').style.display = 'none';
+                            document.getElementById('btn-unlocked').style.display = 'inline-flex';
+                        } else {
+                            document.getElementById('btn-locked').style.display = 'block';
+                            document.getElementById('btn-unlocked').style.display = 'none';
+                        }
+                    }
+                    revisarHoraCita(); 
+                    setInterval(revisarHoraCita, 60000); 
+                });
+            </script>
+            {% else %}
+            <div style="background: #fffaf0; border: 1px solid #ffedd5; padding: 20px; border-radius: 16px; color: var(--c-orange); max-width: 500px; margin: 0 auto;">
+                <i class="fas fa-hourglass-half" style="font-size: 24px; margin-bottom: 10px;"></i>
+                <p style="font-weight: 600;">Generando enlace seguro...</p>
+            </div>
+            {% endif %}
+        </div>
+        
+        {% else %} {% if user.perfil.psicologo_asignado %}
+            <div class="chic-card fade-in-up" style="border-top: 6px solid var(--c-yellow); margin-bottom: 40px; text-align: center; background: #fffaf0;">
+                <i class="fas fa-award" style="font-size: 60px; color: var(--c-yellow); margin-bottom: 20px;"></i>
+                <h2 style="font-family: var(--font-headings); font-size: 2.5rem; margin-bottom: 10px;">¡Excelente trabajo en tu sesión!</h2>
+                <p style="font-size: 18px; font-weight: 600; margin-bottom: 10px;">¿Cómo te sentiste hoy?</p>
+                
+                <div class="mood-tracker-gigante" style="margin-bottom: 30px;">
+                    <button class="mood-btn-huge" data-animo="Muy mal" title="Muy mal"><i class="fas fa-sad-cry"></i></button>
+                    <button class="mood-btn-huge" data-animo="Triste" title="Triste"><i class="fas fa-frown"></i></button>
+                    <button class="mood-btn-huge" data-animo="Normal" title="Normal"><i class="fas fa-meh"></i></button>
+                    <button class="mood-btn-huge" data-animo="Bien" title="Bien"><i class="fas fa-smile"></i></button>
+                    <button class="mood-btn-huge" data-animo="Excelente" title="Excelente"><i class="fas fa-grin-stars"></i></button>
+                </div>
+
+                <p style="color: var(--text-muted); margin-bottom: 25px; max-width: 550px; margin-left: auto; margin-right: auto;">Cada paso es un avance enorme. Para mantener este buen ritmo, hemos calculado tu próxima fecha ideal (1 semana).</p>
+
+                <div style="background: white; border: 2px solid var(--c-purple); padding: 30px; border-radius: 20px; display: inline-block; max-width: 500px; width: 100%;">
+                    <span id="mensaje-proxima-semana" style="font-size: 18px; color: var(--c-purple); font-weight: 700; display: block; margin-bottom: 20px;">
+                        <i class="fas fa-calendar-check"></i> Calculando tu próxima fecha...
+                    </span>
+                    
+                    <button id="btn-confirmar-rapido" class="btn-brutal btn-primary" onclick="cargarHorariosRapidos()" style="width: 100%;">
+                        Ver horarios de ese día <i class="fas fa-clock"></i>
+                    </button>
+
+                    <div id="horarios-rapidos-container" style="display: none; margin-top: 20px; border-top: 1px dashed #e2e8f0; padding-top: 20px;">
+                        <p style="font-weight: 600; margin-bottom: 15px;">Horarios disponibles:</p>
+                        <div id="quick-slots" class="slots-container" style="justify-content: center; margin-top: 0;"></div>
+                    </div>
+                    
+                    <a href="#" onclick="mostrarCalendario(); return false;" style="display: block; margin-top: 20px; color: var(--text-muted); text-decoration: underline;">
+                        ¿Gustas explorar otro horario o fecha en el calendario?
+                    </a>
+                </div>
+            </div>
+            {% else %}
+            <div class="chic-card fade-in-up" style="border-top: 6px solid var(--c-teal); margin-bottom: 40px; background: #f0fdfa;">
+                <div style="display: flex; align-items: center; gap: 30px; flex-wrap: wrap; justify-content: center; text-align: center;">
+                    <i class="fas fa-seedling" style="font-size: 60px; color: var(--c-teal);"></i>
+                    <div>
+                        <h3 style="font-family: var(--font-headings); font-size: 2.5rem; color: var(--text-main); margin-bottom: 10px;">El Reto HOPE: Compromiso Semanal</h3>
+                        <p style="color: var(--text-muted); font-size: 16px; margin-bottom: 20px; max-width: 500px;">Las estadísticas indican que asistir 1 vez por semana acelera tu proceso de sanación. ¿Estás listo/a para comprometerte con tu bienestar?</p>
+                        <label style="display: inline-flex; align-items: center; gap: 10px; font-weight: 700; color: white; cursor: pointer; font-size: 16px; background: var(--c-teal); padding: 15px 30px; border-radius: 30px; transition: 0.3s; flex-wrap: wrap; justify-content: center;">
+                            <input type="checkbox" style="width: 22px; height: 22px; accent-color: #ffffff;" onchange="celebrarReto(this)">
+                            ¡Sí, acepto el reto semanal!
+                        </label>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="chic-card" id="booking-wizard" {% if not user.perfil.psicologo_asignado %}style="display: none;"{% endif %}>
+                <span class="step-tag">Agendar Nueva Sesión</span>
+                <h2 style="font-family: var(--font-headings); font-size: 2rem; margin-bottom: 30px;">Selecciona el día y la hora</h2>
+
+                <div id="step-1-schedule">
+                    <div class="date-carousel" id="dateCarousel">
+                        {% for dia, horas in dias_disponibles.items %}
+                        <button type="button" class="date-chip {% if forloop.first %}active{% endif %}" data-target="slots-{{ dia|date:'Ymd' }}" data-fecha="{{ dia|date:'Y-m-d' }}">
+                            <span style="font-size: 12px; display: block; text-transform: uppercase;">{{ dia|date:"D"|title }}</span>
+                            <span style="font-size: 28px; font-weight: 800;">{{ dia|date:"d" }}</span>
+                        </button>
+                        {% empty %}
+                        <p style="color: var(--text-muted); font-style: italic;">No hay fechas disponibles por el momento.</p>
+                        {% endfor %}
+                    </div>
+
+                    <div style="margin-top: 30px;">
+                        {% for dia, horas in dias_disponibles.items %}
+                            <div class="slots-container" id="slots-{{ dia|date:'Ymd' }}" {% if not forloop.first %}style="display: none;"{% endif %}>
+                                {% for h in horas %}
+                                <button class="time-slot-btn" data-fecha="{{ dia|date:'Y-m-d' }}" data-hora="{{ h|time:'H:i' }}">{{ h|time:"h:i A" }}</button>
+                                {% endfor %}
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div id="step-2-payment" style="display: none; text-align: center; padding-top: 40px; border-top: 1px solid #f1f5f9; margin-top: 40px;">
+                    <button id="btn-back-schedule" style="background:none; border:none; color: var(--c-purple); font-weight: 700; cursor:pointer; font-size: 16px; margin-bottom: 20px; float: left;">
+                        <i class="fas fa-arrow-left"></i> Volver al calendario
+                    </button>
+                    <div style="clear: both;"></div>
+
+                    <h2 class="chic-title" style="color: var(--text-main); font-family: var(--font-headings); font-size: 2rem; margin-bottom: 10px;">Confirmar Cita</h2>
+                    <p id="selected-time-text" style="font-size: 18px; color: var(--c-purple); margin-bottom: 30px; font-weight: 600;"></p>
+                    
+                    <div class="payment-box">
+                        <p style="text-transform: uppercase; letter-spacing: 2px; font-size: 12px; color: #9ca3af; margin-bottom: 10px; font-weight: 700;">Total a pagar</p>
+                        <h3 style="font-size: 42px; margin-bottom: 5px; color: var(--c-purple); font-weight: 800; font-family: var(--font-headings);">$100.00 <span style="font-size: 16px;">MXN</span></h3>
+                        <p style="color: var(--text-main); font-weight: 500; margin-bottom: 25px;">Consulta Psicológica Online</p>
+
+                        <div style="background: #e2e8f0; padding: 15px; border-radius: 12px; margin-bottom: 25px; text-align: left;">
+                            <label style="display: flex; align-items: start; gap: 12px; font-size: 13px; color: var(--text-main); cursor: pointer;">
+                                <input type="checkbox" id="check-consentimiento" style="min-width: 20px; height: 20px; margin-top: 2px; accent-color: var(--c-purple);">
+                                <span style="line-height: 1.4;">Doy mi <strong>consentimiento informado</strong> para recibir atención psicológica y acepto las políticas de la clínica.</span>
+                            </label>
+                        </div>
+
+                        <button id="btn-simulate-pay" class="btn-brutal btn-primary" style="width: 100%;">Confirmar y Agendar</button>
+                    </div>
+                </div>
+
+                <div id="step-3-loading" style="display: none; text-align: center; padding: 60px 0;">
+                    <i class="fas fa-circle-notch fa-spin" style="font-size: 50px; color: var(--c-purple);"></i>
+                    <h3 style="margin-top: 20px; font-family: var(--font-headings);">Preparando tu espacio...</h3>
+                </div>
+            </div>
+            
+        {% endif %}
+    </div>
+
+    <div id="tab-comunidad" class="tab-content">
+        
+        {% if mis_talleres %}
+        <div class="chic-card" style="margin-bottom: 40px; border-top: 6px solid var(--c-pink);">
+            <span class="step-tag" style="background: #fdf2f8; color: var(--c-pink);">Mis Inscripciones</span>
+            <h2 style="font-family: var(--font-headings); font-size: 2rem; margin-bottom: 20px;">Tus próximos programas</h2>
+            <div style="display: flex; flex-direction: column; gap: 15px;">
+                {% for inscripcion in mis_talleres %}
+                <div class="inscripcion-card">
+                    <div>
+                        <h4 style="font-size: 18px; margin: 0 0 5px 0; font-family: var(--font-headings);">{{ inscripcion.taller.nombre }}</h4>
+                        <p style="font-size: 14px; color: var(--text-muted); margin: 0;"><i class="far fa-calendar"></i> {{ inscripcion.taller.fecha|date:"d M Y" }} a las {{ inscripcion.taller.hora|time:"H:i" }}</p>
+                    </div>
+                    
+                    <div class="inscripcion-actions">
+                        {% if inscripcion.taller.enlace_meet %}
+                            <a href="{{ inscripcion.taller.enlace_meet }}" target="_blank" class="btn-brutal" style="background: var(--c-pink); color: white; padding: 10px 20px; font-size: 14px; text-decoration: none; border-radius: 12px;"><i class="fas fa-video"></i> Entrar a Sesión</a>
+                        {% else %}
+                            <span style="font-size: 12px; color: var(--c-orange); font-weight: 600; background: #fffbeb; padding: 8px 12px; border-radius: 10px;">Enlace pendiente</span>
+                        {% endif %}
+                        <span style="background: white; padding: 8px 15px; border-radius: 100px; font-size: 12px; font-weight: 800; color: var(--c-pink); box-shadow: 0 2px 10px rgba(0,0,0,0.05);"><i class="fas fa-check-circle"></i> Inscrito</span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="chic-card" style="margin-bottom: 40px;">
+            <h2 style="font-family: var(--font-headings); font-size: 2.5rem; margin-bottom: 10px; color: var(--c-purple);">Talleres de Bienestar</h2>
+            <p style="color: var(--text-muted); margin-bottom: 40px; font-size: 1.1rem;">Aprende y sana junto a expertos.</p>
+            
+            <div class="grid-programas">
+                {% for t in talleres %}
+                <div class="programa-box">
+                    <div>
+                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 15px;">
+                            <span class="step-tag" style="margin: 0; background: #f3e8ff; color: var(--c-purple);">Taller Clínico</span>
+                            <span class="cupos-badge {% if t.cupos_disponibles == 0 %}cupos-full{% endif %}">{{ t.cupos_disponibles }} cupos</span>
+                        </div>
+                        <h3 style="font-size: 22px; margin-bottom: 10px; font-family: var(--font-headings);">{{ t.nombre }}</h3>
+                        <p style="font-size: 14px; color: var(--text-muted); margin-bottom: 20px; line-height: 1.6;">{{ t.descripcion|truncatechars:100 }}</p>
+                        <p style="font-size: 13px; font-weight: 700; color: var(--text-main);"><i class="far fa-clock"></i> {{ t.fecha|date:"d/m/Y" }} - {{ t.hora|time:"H:i" }}</p>
+                    </div>
+                    {% if t.id in mis_inscripciones_ids %}
+                        <button class="btn-inscribir btn-inscrito" disabled><i class="fas fa-check"></i> Ya estás inscrito</button>
+                    {% elif t.cupos_disponibles == 0 %}
+                        <button class="btn-inscribir" disabled>Cupo Lleno</button>
+                    {% else %}
+                        <button class="btn-inscribir" onclick="inscribirPrograma({{ t.id }}, '{{ t.nombre }}')">Inscribirme ahora</button>
+                    {% endif %}
+                </div>
+                {% empty %}
+                <p style="color: var(--text-muted); font-style: italic;">Pronto abriremos nuevas fechas de talleres.</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="chic-card" style="margin-bottom: 40px;">
+            <h2 style="font-family: var(--font-headings); font-size: 2.5rem; margin-bottom: 10px; color: var(--c-teal);">Círculos de Confianza</h2>
+            <p style="color: var(--text-muted); margin-bottom: 40px; font-size: 1.1rem;">Terapias grupales guiadas por especialistas.</p>
+            <div class="grid-programas">
+                {% for t in grupales %}
+                <div class="programa-box">
+                    <div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
+                            <span class="step-tag" style="margin: 0; background: #f0fdfa; color: var(--c-teal);">Terapia Grupal</span>
+                            <span class="cupos-badge {% if t.cupos_disponibles == 0 %}cupos-full{% endif %}">{{ t.cupos_disponibles }} cupos</span>
+                        </div>
+                        <h3 style="font-size: 22px; margin-bottom: 10px; font-family: var(--font-headings);">{{ t.nombre }}</h3>
+                        <p style="font-size: 14px; color: var(--text-muted); margin-bottom: 20px;">{{ t.descripcion|truncatechars:100 }}</p>
+                        <p style="font-size: 13px; font-weight: 700;"><i class="far fa-clock"></i> {{ t.fecha|date:"d/m/Y" }} - {{ t.hora|time:"H:i" }}</p>
+                    </div>
+                    {% if t.id in mis_inscripciones_ids %}
+                        <button class="btn-inscribir btn-inscrito" disabled><i class="fas fa-check"></i> Inscrito</button>
+                    {% elif t.cupos_disponibles == 0 %}
+                        <button class="btn-inscribir" disabled>Cupo Lleno</button>
+                    {% else %}
+                        <button class="btn-inscribir" style="background: var(--c-teal);" onclick="inscribirPrograma({{ t.id }}, '{{ t.nombre }}')">Unirme al Grupo</button>
+                    {% endif %}
+                </div>
+                {% empty %}
+                <p style="color: var(--text-muted); font-style: italic;">Pronto anunciaremos nuevos grupos.</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        {% if perfil.es_padre %}
+        <div class="chic-card" style="background: #fffaf0; border-color: #ffedd5;">
+            <div style="display: flex; align-items: center; gap: 20px; margin-bottom: 30px;">
+                <i class="fas fa-hands-holding-child" style="font-size: 40px; color: var(--c-orange);"></i>
+                <div>
+                    <h2 style="font-family: var(--font-headings); font-size: 2.5rem; margin: 0; color: var(--c-orange);">Escuela para Padres</h2>
+                    <p style="color: var(--text-muted);">Estrategias de crianza positiva para tu familia.</p>
+                </div>
+            </div>
+            <div class="grid-programas">
+                {% for t in escuela_padres %}
+                <div class="programa-box" style="background: white;">
+                    <div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
+                            <span class="step-tag" style="margin: 0; background: #fffaf0; color: var(--c-orange);">Formación Familiar</span>
+                            <span class="cupos-badge {% if t.cupos_disponibles == 0 %}cupos-full{% endif %}">{{ t.cupos_disponibles }} cupos</span>
+                        </div>
+                        <h3 style="font-size: 22px; margin-bottom: 10px; font-family: var(--font-headings);">{{ t.nombre }}</h3>
+                        <p style="font-size: 14px; color: var(--text-muted); margin-bottom: 20px;">{{ t.descripcion|truncatechars:100 }}</p>
+                        <p style="font-size: 13px; font-weight: 700;"><i class="far fa-clock"></i> {{ t.fecha|date:"d/m/Y" }} - {{ t.hora|time:"H:i" }}</p>
+                    </div>
+                    {% if t.id in mis_inscripciones_ids %}
+                        <button class="btn-inscribir btn-inscrito" disabled><i class="fas fa-check"></i> Inscrito</button>
+                    {% elif t.cupos_disponibles == 0 %}
+                        <button class="btn-inscribir" disabled>Cupo Lleno</button>
+                    {% else %}
+                        <button class="btn-inscribir" style="background: var(--c-orange);" onclick="inscribirPrograma({{ t.id }}, '{{ t.nombre }}')">Asistir a Clase</button>
+                    {% endif %}
+                </div>
+                {% empty %}
+                <p style="color: var(--text-muted); font-style: italic;">No hay clases programadas por ahora.</p>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+    </div>
+</div>
+
+<div id="modalPagoTaller" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); backdrop-filter: blur(8px); z-index: 999999; justify-content: center; align-items: center;">
+    <div class="chic-card alerta-animada" style="height: auto; width: 90%; max-width: 480px; text-align: center; padding: 40px; position: relative;">
+        <span onclick="cerrarPagoTaller()" style="position: absolute; top: 15px; right: 20px; cursor: pointer; font-size: 24px; color: #94a3b8;"><i class="fas fa-times"></i></span>
+        
+        <h2 class="chic-title" style="color: var(--text-main); font-size: 2rem; margin-bottom: 5px; font-family: var(--font-headings);">Confirmar Inscripción</h2>
+        <p id="taller-nombre-pago" style="font-size: 18px; color: var(--c-pink); margin-bottom: 25px; font-weight: 700;"></p>
+        
+        <div class="payment-box" style="background: #f8fafc; border: none; padding: 30px; border-radius: 20px; width: 100%;">
+            <p style="text-transform: uppercase; letter-spacing: 2px; font-size: 12px; color: #9ca3af; margin-bottom: 10px; font-weight: 700;">Aportación Sugerida</p>
+            <h3 style="font-size: 42px; margin-bottom: 5px; color: var(--c-pink); font-weight: 800; font-family: var(--font-headings);">$50.00 <span style="font-size: 16px;">MXN</span></h3>
+            <p style="color: var(--text-main); font-weight: 500; margin-bottom: 25px;">Acceso al Programa</p>
+
+            <div style="background: white; padding: 15px; border-radius: 12px; margin-bottom: 25px; text-align: left; border: 1px solid #e2e8f0;">
+                <label style="display: flex; align-items: start; gap: 12px; font-size: 13px; color: var(--text-main); cursor: pointer;">
+                    <input type="checkbox" id="check-consentimiento-taller" style="min-width: 20px; height: 20px; margin-top: 2px; accent-color: var(--c-pink);">
+                    <span style="line-height: 1.4;">Acepto los términos, el <strong>consentimiento de grupo</strong> y las normas de convivencia.</span>
+                </label>
+            </div>
+
+            <button id="btn-procesar-taller" class="btn-brutal" style="width: 100%; background: var(--c-pink); color: white;">Pagar e Inscribirme</button>
+        </div>
+    </div>
+</div>
+
+<div id="alerta-reto" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); backdrop-filter: blur(8px); z-index: 999999; justify-content: center; align-items: center;">
+    <div class="chic-card alerta-animada" style="height: auto; width: 90%; max-width: 550px; text-align: center; padding: 50px;">
+        <i class="fas fa-sparkles" style="font-size: 70px; color: var(--c-yellow); margin-bottom: 25px;"></i>
+        <h2 style="font-family: var(--font-headings); font-size: 3rem; color: var(--c-purple); margin-bottom: 15px;">¡Reto Aceptado!</h2>
+        <p style="font-size: 20px; color: var(--text-main); font-weight: 600; margin-bottom: 35px;">Juntos podremos crear una versión de ti increíble.</p>
+        <button onclick="cerrarAlertaReto()" class="btn-brutal btn-primary" style="width: 100%;">
+            Agendar mi primera sesión <i class="fas fa-arrow-right"></i>
+        </button>
+    </div>
+</div>
+
+<div id="alerta-consentimiento" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); backdrop-filter: blur(8px); z-index: 999999; justify-content: center; align-items: center;">
+    <div class="chic-card alerta-animada" style="height: auto; width: 90%; max-width: 500px; text-align: center; padding: 50px; border-top: 6px solid var(--c-orange);">
+        <i class="fas fa-exclamation-triangle" style="font-size: 60px; color: var(--c-orange); margin-bottom: 20px;"></i>
+        <h2 style="font-family: var(--font-headings); font-size: 2rem; color: var(--text-main); margin-bottom: 15px;">Falta un pequeño paso</h2>
+        <p style="font-size: 16px; color: var(--text-muted); margin-bottom: 30px;">Por favor, marca la casilla para aceptar el <strong>consentimiento informado</strong> antes de confirmar.</p>
+        <button onclick="cerrarAlertaConsentimiento()" class="btn-brutal" style="width: 100%; background: #e2e8f0; color: var(--text-main);">Entendido</button>
+    </div>
+</div>
+
+<div id="alerta-exito-cita" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); backdrop-filter: blur(8px); z-index: 999999; justify-content: center; align-items: center;">
+    <div class="chic-card alerta-animada" style="height: auto; width: 90%; max-width: 500px; text-align: center; padding: 50px; border-top: 6px solid var(--c-teal);">
+        <i class="fas fa-check-circle" style="font-size: 65px; color: var(--c-teal); margin-bottom: 20px;"></i>
+        <h2 style="font-family: var(--font-headings); font-size: 2.2rem; color: var(--text-main); margin-bottom: 10px;">¡Todo listo!</h2>
+        <p id="texto-exito-dinamico" style="font-size: 16px; color: var(--text-muted); margin-bottom: 30px;">Tu sesión ha sido confirmada y agendada con éxito en tu panel.</p>
+        <button onclick="location.reload()" class="btn-brutal" style="width: 100%; background: var(--c-teal); color: white;">
+            Excelente <i class="fas fa-arrow-right" style="margin-left: 8px;"></i>
+        </button>
+    </div>
+</div>
+
+<div id="alerta-error-cita" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); backdrop-filter: blur(8px); z-index: 999999; justify-content: center; align-items: center;">
+    <div class="chic-card alerta-animada" style="height: auto; width: 90%; max-width: 500px; text-align: center; padding: 50px; border-top: 6px solid var(--c-orange);">
+        <i class="fas fa-exclamation-triangle" style="font-size: 65px; color: var(--c-orange); margin-bottom: 20px;"></i>
+        <h2 style="font-family: var(--font-headings); font-size: 2.2rem; color: var(--text-main); margin-bottom: 10px;">¡Ups, un contratiempo!</h2>
+        <p id="texto-error-cita" style="font-size: 16px; color: var(--text-muted); margin-bottom: 30px;">Ocurrió un problema al intentar procesar la solicitud.</p>
+        <button onclick="cerrarYRecargar()" class="btn-brutal" style="width: 100%; background: var(--c-orange); color: white;">
+            Entendido <i class="fas fa-redo" style="margin-left: 8px;"></i>
+        </button>
+    </div>
+</div>
+
+<script>
+    function cerrarYRecargar() {
+        document.getElementById('alerta-error-cita').style.display = 'none';
+        location.reload();
+    }
+
+    // --- NAVEGACIÓN DE TABS ---
+    function switchTab(tabId) {
+        document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById('tab-' + tabId).classList.add('active');
+        event.currentTarget.classList.add('active');
+    }
+
+    // =========================================================================
+    // LÓGICA DE INSCRIPCIÓN Y PAGO SIMULADO PARA TALLERES
+    // =========================================================================
+    let tallerSeleccionadoId = null;
+
+    function inscribirPrograma(tallerId, nombre) {
+        tallerSeleccionadoId = tallerId;
+        document.getElementById('taller-nombre-pago').innerText = nombre;
+        document.getElementById('check-consentimiento-taller').checked = false;
+        document.getElementById('modalPagoTaller').style.display = 'flex';
+    }
+
+    function cerrarPagoTaller() {
+        document.getElementById('modalPagoTaller').style.display = 'none';
+        tallerSeleccionadoId = null;
+    }
+
+    document.getElementById('btn-procesar-taller').addEventListener('click', function() {
+        const check = document.getElementById('check-consentimiento-taller');
+        if (!check.checked) {
+            document.getElementById('alerta-consentimiento').style.display = 'flex';
+            return;
+        }
+
+        const btn = this;
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Procesando...';
+        btn.disabled = true;
+
+        let formData = new URLSearchParams();
+        formData.append('taller_id', tallerSeleccionadoId);
+        formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+
+        fetch("{% url 'inscribir_taller' %}", {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-Requested-With': 'XMLHttpRequest' },
+            body: formData.toString()
+        })
+        .then(response => response.json())
+        .then(data => {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+            
+            if(data.status === 'success') { 
+                cerrarPagoTaller();
+                document.getElementById('texto-exito-dinamico').innerText = "Tu inscripción está confirmada. Ahora podrás ver el enlace de la sala en tu panel.";
+                document.getElementById('alerta-exito-cita').style.display = 'flex';
+            } else { 
+                document.getElementById('texto-error-cita').innerText = data.message;
+                document.getElementById('alerta-error-cita').style.display = 'flex';
+            }
+        }).catch(e => {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+            document.getElementById('texto-error-cita').innerText = "Error de conexión con el servidor.";
+            document.getElementById('alerta-error-cita').style.display = 'flex';
+        });
+    });
+
+    // --- FUNCIONES GLOBALES DE AGENDAMIENTO ---
+    function mostrarCalendario() {
+        const wizard = document.getElementById('booking-wizard');
+        if(wizard) {
+            wizard.style.display = 'block'; 
+            wizard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    }
+
+    function convertirHoraA24(hora12) {
+        let [time, modifier] = hora12.split(' ');
+        let [hours, minutes] = time.split(':');
+        if (hours === '12') hours = '00';
+        if (modifier === 'PM') hours = parseInt(hours, 10) + 12;
+        return `${hours.toString().padStart(2, '0')}:${minutes}`;
+    }
+
+    function cargarHorariosRapidos() {
+        document.getElementById('btn-confirmar-rapido').style.display = 'none';
+        document.getElementById('horarios-rapidos-container').style.display = 'block';
+        
+        const diasData = JSON.parse(document.getElementById('dias-data').textContent);
+        const cajaHoras = document.getElementById('quick-slots');
+        const fechaBusqueda = window.fechaIdealTarget;
+
+        if(diasData[fechaBusqueda] && diasData[fechaBusqueda].length > 0) {
+            let botonesHtml = '';
+            diasData[fechaBusqueda].forEach(horaStr => {
+                let hora24 = convertirHoraA24(horaStr);
+                botonesHtml += `<button type="button" class="time-slot-btn" data-fecha="${fechaBusqueda}" data-hora="${hora24}" onclick="seleccionarHoraRapida(this, '${fechaBusqueda}', '${horaStr}')">${horaStr}</button>`;
+            });
+            cajaHoras.innerHTML = botonesHtml;
+        } else {
+            cajaHoras.innerHTML = '<p style="color: var(--c-orange); font-size: 14px;">El terapeuta no tiene disponibilidad ese día. Explora el calendario abajo.</p>';
+        }
+    }
+
+    function seleccionarHoraRapida(btnElement, fecha, horaAmPm) {
+        window.fechaSeleccionada = fecha;
+        window.horaSeleccionada = btnElement.getAttribute('data-hora');
+
+        document.querySelectorAll('.time-slot-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.date-chip').forEach(c => c.classList.remove('active'));
+        
+        btnElement.classList.add('active');
+
+        let hiddenChip = document.querySelector(`.date-chip[data-fecha="${fecha}"]`);
+        if(hiddenChip) hiddenChip.classList.add('active');
+
+        document.getElementById('booking-wizard').style.display = 'block';
+        document.getElementById('step-1-schedule').style.display = 'none';
+        document.getElementById('step-2-payment').style.display = 'block';
+
+        let partes = fecha.split('-');
+        let fechaObj = new Date(partes[0], partes[1]-1, partes[2]);
+        const opciones = { weekday: 'long', month: 'long', day: 'numeric' };
+        
+        document.getElementById('selected-time-text').innerHTML = `Elegiste el <strong>${fechaObj.toLocaleDateString('es-ES', opciones)}</strong> a las <strong>${horaAmPm}</strong>.`;
+        document.getElementById('step-2-payment').scrollIntoView({behavior: 'smooth', block: 'start'});
+    }
+
+    // Alertas
+    function celebrarReto(checkbox) { if (checkbox.checked) document.getElementById('alerta-reto').style.display = 'flex'; }
+    function cerrarAlertaReto() { document.getElementById('alerta-reto').style.display = 'none'; mostrarCalendario(); }
+    function cerrarAlertaConsentimiento() { document.getElementById('alerta-consentimiento').style.display = 'none'; }
+
+
+    // --- AL CARGAR LA PÁGINA ---
+    document.addEventListener("DOMContentLoaded", function () {
+        window.fechaSeleccionada = "";
+        window.horaSeleccionada = "";
+        window.animoSeleccionado = "No especificó";
+
+        // Calcular próxima semana (Post-sesión)
+        const msj = document.getElementById("mensaje-proxima-semana");
+        if (msj) {
+            let nextWeek = new Date();
+            nextWeek.setDate(nextWeek.getDate() + 7);
+            const opciones = { weekday: 'long', month: 'long', day: 'numeric' };
+            msj.innerHTML = `<i class="fas fa-calendar-check"></i> Tu próxima sesión ideal es el <strong>${nextWeek.toLocaleDateString('es-ES', opciones)}</strong>`;
+            
+            let yyyy = nextWeek.getFullYear();
+            let mm = String(nextWeek.getMonth() + 1).padStart(2, '0');
+            let dd = String(nextWeek.getDate()).padStart(2, '0');
+            window.fechaIdealTarget = `${yyyy}-${mm}-${dd}`;
+        }
+
+        // Mood Tracker (Caritas)
+        const moodBtns = document.querySelectorAll('.mood-btn-huge');
+        moodBtns.forEach(btn => {
+            btn.addEventListener('click', function() {
+                moodBtns.forEach(b => b.classList.remove('selected'));
+                this.classList.add('selected');
+                window.animoSeleccionado = this.getAttribute('data-animo'); 
+            });
+        });
+
+        // Volver al Calendario
+        const btnBack = document.getElementById('btn-back-schedule');
+        if (btnBack) {
+            btnBack.addEventListener('click', () => {
+                document.getElementById('step-2-payment').style.display = 'none';
+                document.getElementById('step-1-schedule').style.display = 'block';
+            });
+        }
+
+        // Lógica de Días (Chips)
+        const dateChips = document.querySelectorAll('.date-chip');
+        const slotContainers = document.querySelectorAll('.slots-container');
+        
+        dateChips.forEach(chip => {
+            chip.addEventListener('click', function() {
+                dateChips.forEach(c => c.classList.remove('active'));
+                slotContainers.forEach(c => c.style.display = 'none');
+                
+                this.classList.add('active');
+                const targetId = this.getAttribute('data-target');
+                const containerReal = document.getElementById(targetId);
+                if(containerReal) containerReal.style.display = 'grid';
+            });
+        });
+
+        // Lógica de Horas
+        const timeSlotBtns = document.querySelectorAll('#step-1-schedule .time-slot-btn');
+        timeSlotBtns.forEach(btn => {
+            btn.addEventListener('click', function() {
+                timeSlotBtns.forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+
+                window.horaSeleccionada = this.getAttribute('data-hora'); 
+                window.fechaSeleccionada = this.getAttribute('data-fecha'); 
+                
+                let partes = window.fechaSeleccionada.split('-');
+                let fechaObj = new Date(partes[0], partes[1]-1, partes[2]);
+                const opciones = { weekday: 'long', month: 'long', day: 'numeric' };
+
+                document.getElementById('selected-time-text').innerHTML = `Has seleccionado el <strong>${fechaObj.toLocaleDateString('es-ES', opciones)}</strong> a las <strong>${this.innerText}</strong>`;
+
+                document.getElementById('step-1-schedule').style.display = 'none';
+                document.getElementById('step-2-payment').style.display = 'block';
+            });
+        });
+
+        // --- ENVIAR CITA AJAX CON VALIDACIÓN DE CONSENTIMIENTO ---
+        const btnPay = document.getElementById('btn-simulate-pay');
+        if (btnPay) {
+            btnPay.addEventListener('click', function() {
+                
+                const checkConsentimiento = document.getElementById('check-consentimiento');
+                if (checkConsentimiento && !checkConsentimiento.checked) {
+                    document.getElementById('alerta-consentimiento').style.display = 'flex';
+                    return; 
+                }
+
+                if (!window.fechaSeleccionada || !window.horaSeleccionada) {
+                    alert("Por favor, selecciona una fecha y una hora válida.");
+                    return;
+                }
+
+                document.getElementById('step-2-payment').style.display = 'none';
+                document.getElementById('step-3-loading').style.display = 'block';
+
+                let formData = new URLSearchParams();
+                formData.append('fecha', window.fechaSeleccionada);
+                formData.append('hora', window.horaSeleccionada);
+                formData.append('animo', window.animoSeleccionado);
+                formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+
+                fetch("{% url 'guardar_cita' %}", {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-Requested-With': 'XMLHttpRequest' },
+                    body: formData.toString()
+                })
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('step-3-loading').style.display = 'none';
+
+                    if(data.status === 'success') {
+                        document.getElementById('texto-exito-dinamico').innerText = "Tu sesión ha sido confirmada y agendada con éxito en tu panel.";
+                        document.getElementById('alerta-exito-cita').style.display = 'flex';
+                    } else {
+                        document.getElementById('texto-error-cita').innerText = data.message;
+                        document.getElementById('alerta-error-cita').style.display = 'flex';
+                    }
+                })
+                .catch(error => {
+                    document.getElementById('step-3-loading').style.display = 'none';
+                    document.getElementById('texto-error-cita').innerText = 'Error de conexión con el servidor. Por favor, intenta de nuevo.';
+                    document.getElementById('alerta-error-cita').style.display = 'flex';
+                });
+            });
+        }
+    });
+</script>
+{% endblock %}

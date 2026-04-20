@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Iniciar Sesión - HOPE{% endblock %}
+
+{% block content %}
+<div class="auth-wrapper">
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+
+    <div class="auth-glass-card fade-in-up">
+        <div class="auth-header">
+            <h2>Bienvenido de nuevo</h2>
+            <p>Ingresa tus credenciales para acceder a tu panel.</p>
+        </div>
+
+        <form action="#" method="POST" class="auth-form">
+            {% csrf_token %}
+            <div class="input-group">
+                <i class="fas fa-envelope"></i>
+                <input type="email" placeholder="Correo electrónico" required>
+            </div>
+            
+            <div class="input-group">
+                <i class="fas fa-lock"></i>
+                <input type="password" placeholder="Contraseña" required>
+            </div>
+
+            <div class="auth-options">
+                <label class="remember-me">
+                    <input type="checkbox"> Recordarme
+                </label>
+                <a href="#" class="forgot-password">¿Olvidaste tu contraseña?</a>
+            </div>
+
+            <button type="submit" class="btn-brutal">Iniciar Sesión <i class="fas fa-arrow-right"></i></button>
+        </form>
+        
+        <p class="auth-footer">¿No tienes cuenta? <a href="#">Regístrate aquí</a></p>
+    </div>
+</div>
+{% endblock %}

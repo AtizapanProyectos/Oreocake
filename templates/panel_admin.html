@@ -1,0 +1,266 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Dirección General - HOPE{% endblock %}
+
+{% block content %}
+<style>
+    /* ==========================================================================
+       IMPORTACIÓN DE FUENTES (ARREGLO PARA RAILWAY)
+       ========================================================================== */
+    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700;900&family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap');
+
+    :root {
+        /* Paleta Sólida HOPE */
+        --c-purple: #5A3FA3;
+        --c-pink: #F85B8C;
+        --c-orange: #F27C21;
+        --c-yellow: #F8D33D;
+        --c-teal: #25B8B8;
+        
+        --text-main: #0f0f0f;
+        --font-headings: 'Outfit', sans-serif;
+        --font-body: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    /* ==========================================================================
+       FONDO Y CONTENEDOR PRINCIPAL (Limpio y Blanco)
+       ========================================================================== */
+    body { background-color: #f8fafc; font-family: var(--font-body); } 
+    .admin-wrapper { padding: 80px 0; color: var(--text-main); }
+    
+    .admin-title { font-family: var(--font-headings); font-size: 42px; color: var(--c-purple); margin-bottom: 5px; line-height: 1.1; font-weight: 800; }
+    .admin-subtitle { color: #64748b; font-size: 16px; margin-bottom: 0; letter-spacing: 2px; text-transform: uppercase; font-weight: 700; }
+
+    /* ==========================================================================
+       ANIMACIONES CHIC
+       ========================================================================== */
+    @keyframes fadeInUpStagger {
+        from { opacity: 0; transform: translateY(30px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-card { opacity: 0; animation: fadeInUpStagger 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+    .delay-1 { animation-delay: 0.1s; }
+    .delay-2 { animation-delay: 0.2s; }
+    .delay-3 { animation-delay: 0.3s; }
+
+    /* ==========================================================================
+       TARJETAS DE ESTADÍSTICAS TOP
+       ========================================================================== */
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 25px; margin-bottom: 50px; }
+    .stat-card { background: #ffffff; border-radius: 24px; padding: 30px; display: flex; align-items: center; gap: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.03); border: 1px solid #f1f5f9; transition: all 0.3s ease; cursor: default; }
+    
+    /* Hover con las sombras de colores correspondientes */
+    .stat-card.card-purple:hover { transform: translateY(-5px); box-shadow: 0 20px 40px rgba(90, 63, 163, 0.15); border-color: var(--c-purple); }
+    .stat-card.card-orange:hover { transform: translateY(-5px); box-shadow: 0 20px 40px rgba(242, 124, 33, 0.15); border-color: var(--c-orange); }
+    .stat-card.card-teal:hover { transform: translateY(-5px); box-shadow: 0 20px 40px rgba(37, 184, 184, 0.15); border-color: var(--c-teal); }
+    .stat-card.card-pink:hover { transform: translateY(-5px); box-shadow: 0 20px 40px rgba(248, 91, 140, 0.15); border-color: var(--c-pink); }
+
+    .stat-icon { width: 65px; height: 65px; border-radius: 20px; display: flex; justify-content: center; align-items: center; font-size: 26px; }
+    .stat-info h3 { margin: 0; font-size: 34px; font-weight: 800; color: var(--text-main); line-height: 1; font-family: var(--font-headings); }
+    .stat-info p { margin: 5px 0 0 0; color: #94a3b8; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; font-weight: 700; }
+
+    /* ==========================================================================
+       PANELES DE TABLAS
+       ========================================================================== */
+    .dashboard-grid { display: grid; grid-template-columns: 1fr; gap: 40px; }
+    .admin-panel { background: #ffffff; border-radius: 32px; border: 1px solid #f1f5f9; padding: 40px; box-shadow: 0 20px 50px rgba(0,0,0,0.02); }
+    .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+    .panel-header h2 { margin: 0; color: var(--text-main); font-family: var(--font-headings); font-size: 28px; }
+    
+    .admin-table { width: 100%; border-collapse: collapse; }
+    .admin-table th { text-align: left; padding: 15px 20px; color: #94a3b8; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; border-bottom: 2px solid #f1f5f9; }
+    .admin-table td { padding: 20px; color: var(--text-main); border-bottom: 1px solid #f8fafc; font-size: 15px; vertical-align: middle; }
+    .admin-table tr:hover td { background-color: #f8fafc; }
+    
+    /* Píldoras de estado */
+    .status-pill { padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 700; letter-spacing: 0.5px; display: inline-flex; align-items: center; gap: 6px; }
+
+    /* ==========================================================================
+       MAGIA MÓVIL (ANDROID/iOS) - TABLAS A TARJETAS
+       ========================================================================== */
+    @media (max-width: 768px) {
+        .admin-wrapper { padding: 40px 0; }
+        .admin-panel { padding: 25px; border-radius: 24px; }
+        
+        /* Ocultar encabezados de tabla */
+        .admin-table thead { display: none; }
+        
+        /* Convertir filas en tarjetas bloque */
+        .admin-table, .admin-table tbody, .admin-table tr, .admin-table td { display: block; width: 100%; box-sizing: border-box; }
+        .admin-table tr { margin-bottom: 20px; border: 1px solid #e2e8f0; border-radius: 16px; padding: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.02); }
+        .admin-table td { display: flex; justify-content: space-between; align-items: center; border: none; padding: 10px 5px; text-align: right; }
+        
+        /* Inyectar etiquetas para el celular usando el atributo data-label */
+        .admin-table td::before { content: attr(data-label); font-weight: 700; color: #64748b; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; text-align: left; padding-right: 15px; }
+        
+        .patient-info { text-align: right; }
+        .patient-info div:first-child { font-weight: 700; }
+        
+        /* Ajuste para el logo en celular */
+        .header-ceo { flex-direction: column; text-align: center; }
+    }
+</style>
+
+<div class="admin-wrapper">
+    <div class="container">
+        
+        <div class="header-ceo fade-in-up" style="display: flex; align-items: center; gap: 25px; margin-bottom: 50px;">
+            <div style="background: #ffffff; padding: 15px 20px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); border: 1px solid #f1f5f9;">
+                <img src="{% static 'img/logo_hope_principal.png' %}" alt="HOPE Logo" style="height: 230px; width: auto; display: block;">
+            </div>
+            <div>
+                <h1 class="admin-title">Inteligencia Operativa</h1>
+                <p class="admin-subtitle"><i class="fas fa-chart-pie" style="color: var(--c-orange); margin-right: 8px;"></i> Métricas de Impacto Clínico</p>
+            </div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card card-purple animate-card">
+                <div class="stat-icon" style="background: rgba(90, 63, 163, 0.1); color: var(--c-purple);">
+                    <i class="fas fa-users"></i>
+                </div>
+                <div class="stat-info">
+                    <h3>{{ total_pacientes }}</h3>
+                    <p>Vidas Impactadas</p>
+                </div>
+            </div>
+            
+            <div class="stat-card card-orange animate-card delay-1">
+                <div class="stat-icon" style="background: rgba(242, 124, 33, 0.1); color: var(--c-orange);">
+                    <i class="fas fa-user-md"></i>
+                </div>
+                <div class="stat-info">
+                    <h3>{{ total_doctores }}</h3>
+                    <p>Especialistas en Red</p>
+                </div>
+            </div>
+
+            <div class="stat-card card-teal animate-card delay-2">
+                <div class="stat-icon" style="background: rgba(37, 184, 184, 0.1); color: var(--c-teal);">
+                    <i class="fas fa-calendar-day"></i>
+                </div>
+                <div class="stat-info">
+                    <h3>{{ citas_hoy }}</h3>
+                    <p>Sesiones de Hoy</p>
+                </div>
+            </div>
+
+            <div class="stat-card card-pink animate-card delay-3">
+                <div class="stat-icon" style="background: rgba(248, 91, 140, 0.1); color: var(--c-pink);">
+                    <i class="fas fa-check-double"></i>
+                </div>
+                <div class="stat-info">
+                    <h3>{{ citas_totales }}</h3>
+                    <p>Sesiones Impartidas</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="dashboard-grid">
+            
+            <div class="admin-panel animate-card delay-2">
+                <div class="panel-header">
+                    <h2><i class="fas fa-stethoscope" style="color: var(--c-teal); margin-right: 12px;"></i> Rendimiento y Capacidad del Equipo Médico</h2>
+                </div>
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Especialista</th>
+                            <th>Área de Enfoque</th>
+                            <th>Pacientes Activos</th>
+                            <th>Sesiones (Hoy)</th>
+                            <th>Disponibilidad</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for doc in doctores %}
+                        <tr>
+                            <td data-label="Especialista">
+                                <div style="font-weight: 700; color: var(--c-purple);">Dr(a). {{ doc.nombre }}</div>
+                            </td>
+                            <td data-label="Área de Enfoque" style="color: #64748b;">{{ doc.especialidad }}</td>
+                            <td data-label="Pacientes Activos">
+                                <span style="font-size: 18px; font-weight: 800;">{{ doc.pacientes }}</span>
+                            </td>
+                            <td data-label="Sesiones Hoy" style="font-weight: 700;">{{ doc.citas_hoy }}</td>
+                            
+                            <td data-label="Disponibilidad" style="width: 250px;">
+                                <div style="display: flex; flex-direction: column; gap: 8px;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; font-size: 12px; font-weight: 700; color: {{ doc.color_carga }};">
+                                        <span style="text-transform: uppercase; letter-spacing: 1px;">{{ doc.carga }}</span>
+                                        <span>{{ doc.porcentaje_carga }}%</span>
+                                    </div>
+                                    <div style="width: 100%; height: 8px; background: #e2e8f0; border-radius: 10px; overflow: hidden;">
+                                        <div style="width: {{ doc.porcentaje_carga }}%; height: 100%; background: {{ doc.color_carga }}; border-radius: 10px; transition: width 1s ease-in-out;"></div>
+                                    </div>
+                                </div>
+                            </td>
+                            
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="5" style="text-align: center; color: #94a3b8;">No hay especialistas registrados en el sistema.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="admin-panel animate-card delay-3">
+                <div class="panel-header">
+                    <h2><i class="fas fa-heartbeat" style="color: var(--c-pink); margin-right: 12px;"></i> Monitoreo de Progreso de Pacientes</h2>
+                </div>
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Paciente</th>
+                            <th>Especialista a Cargo</th>
+                            <th>Historial de Sesiones</th>
+                            <th>Estado de Ánimo (Promedio Histórico)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for pac in pacientes %}
+                        <tr>
+                            <td data-label="Paciente" class="patient-info">
+                                <div style="font-weight: 700; color: var(--c-purple);">{{ pac.nombre }}</div>
+                                <div style="font-size: 13px; color: #94a3b8;">{{ pac.email }}</div>
+                            </td>
+                            <td data-label="Especialista">
+                                {% if pac.doctor == 'Pendiente' %}
+                                    <span style="color: var(--c-pink); font-weight: 600;"><i class="fas fa-exclamation-circle"></i> Pendiente de asignación</span>
+                                {% else %}
+                                    <span style="color: var(--c-purple); font-weight: 600;">Dr(a). {{ pac.doctor }}</span>
+                                {% endif %}
+                            </td>
+                            <td data-label="Sesiones" style="font-size: 16px; font-weight: 800;">{{ pac.sesiones }}</td>
+                            <td data-label="Estado de Ánimo">
+                                <span class="status-pill" style="background: {{ pac.color_animo }}15; color: {{ pac.color_animo }}; border: 1px solid {{ pac.color_animo }}40; font-size: 13px; padding: 8px 16px;">
+                                    <i class="{{ pac.icono_animo }}" style="font-size: 16px; margin-right: 5px;"></i> {{ pac.animo }} 
+                                    
+                                    <span style="font-weight: 400; font-style: italic; opacity: 0.8; margin-left: 5px;">
+                                        {% if pac.sesiones == 0 %}
+                                            (Sin datos)
+                                        {% elif pac.sesiones <= 3 %}
+                                            (Promedio de {{ pac.sesiones }} sesiones)
+                                        {% elif pac.animo == 'Excelente' or pac.animo == 'Bien' %}
+                                            (Tendencia a la alta)
+                                        {% elif pac.animo == 'Muy mal' or pac.animo == 'Triste' %}
+                                            (Requiere atención)
+                                        {% else %}
+                                            (Estable)
+                                        {% endif %}
+                                    </span>
+                                </span>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="4" style="text-align: center; color: #94a3b8;">No hay pacientes registrados en la plataforma.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}

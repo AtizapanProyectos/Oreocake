@@ -1,0 +1,590 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HOPE | Todo lo que sientes importa</title>
+    
+    <link rel="icon" href="{% static 'img/favicon.ico' %}" type="image/x-icon">
+    <link rel="shortcut icon" href="{% static 'img/favicon.ico' %}" type="image/x-icon">
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700;900&family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        :root {
+            /* Colores del código NUEVO */
+            --c-purple: #5A3FA3;
+            --c-pink: #F85B8C;
+            --c-orange: #F27C21;
+            --c-yellow: #F8D33D;
+            --c-teal: #25B8B8;
+            --c-dark: #0f0f0f;
+            --text-muted: #64748b;
+            
+            --sidebar-width: 320px;
+            --font-headings: 'Outfit', sans-serif;
+            --font-body: 'Plus Jakarta Sans', sans-serif;
+            
+            --soft-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            --soft-shadow-hover: 0 15px 35px rgba(0,0,0,0.1);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { overflow-x: hidden; max-width: 100vw; scroll-behavior: smooth; }
+        body { font-family: var(--font-body); color: var(--c-dark); background: #ffffff; display: flex; }
+
+        /* ===== SIDEBAR PREMIUM ===== */
+        .sidebar-navigation {
+            width: var(--sidebar-width); height: 100vh; background: #ffffff;
+            position: fixed; top: 0; left: 0; border-right: 1px solid #f1f5f9;
+            z-index: 1000; display: flex; flex-direction: column; padding: 50px 35px;
+            overflow-y: auto;
+        }
+        .brand-container { margin-bottom: 40px; text-align: center; }
+        .brand-container img { width: 170px !important; height: auto; object-fit: contain; display: inline-block; }
+
+        .nav-section-title {
+            font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px;
+            color: #aaa; font-weight: 800; margin: 15px 0 5px 0;
+        }
+
+        .nav-menu-item {
+            display: flex; align-items: center; padding: 12px 15px;
+            color: var(--text-muted); font-weight: 700; font-size: 0.95rem;
+            text-decoration: none; transition: 0.3s; border-radius: 12px; margin-bottom: 5px;
+        }
+        
+        .nav-menu-item:hover, .nav-menu-item.active { 
+            background: #f8f8f8; color: var(--c-purple); transform: translateX(8px); 
+        }
+        .nav-menu-item i { 
+            font-size: 1.1rem; width: 30px; text-align: center; color: var(--text-muted); transition: 0.3s; 
+        }
+        .nav-menu-item:hover i, .nav-menu-item.active i { color: var(--c-pink); transform: scale(1.1); }
+
+        .staff-access-area { margin-top: auto; padding-top: 20px; border-top: 1px solid #f1f5f9; }
+        .btn-staff-link {
+            width: 100%; background: #f8fafc; border: 2px solid #e2e8f0;
+            padding: 15px; border-radius: 15px; font-weight: 800; font-size: 12px;
+            color: var(--c-dark); cursor: pointer; text-transform: uppercase;
+            display: flex; align-items: center; justify-content: center; gap: 10px; transition: 0.3s;
+        }
+        .btn-staff-link:hover { border-color: var(--c-purple); color: var(--c-purple); background: #ffffff;}
+
+        /* ===== CONTENIDO PRINCIPAL ===== */
+        .main-stage { 
+            margin-left: var(--sidebar-width); 
+            width: calc(100% - var(--sidebar-width)); 
+            min-height: 100vh; 
+            background: #fff;
+        }
+
+        /* ===== CARRUSEL HERO GIGANTE ===== */
+        .hero-slider {
+            position: relative;
+            min-height: 90vh;
+            width: 100%;
+            overflow: hidden;
+            background: #ffffff;
+        }
+        .slide {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            padding: 0 80px;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.8s ease-in-out, visibility 0.8s;
+            z-index: 1;
+        }
+        .slide.active {
+            opacity: 1;
+            visibility: visible;
+            z-index: 2;
+        }
+        
+        /* Fondos dinámicos por slide */
+        .slide-1 { background: radial-gradient(circle at top right, rgba(248, 91, 140, 0.08), #ffffff 60%); }
+        .slide-2 { background: radial-gradient(circle at top right, rgba(90, 63, 163, 0.08), #ffffff 60%); }
+        .slide-3 { background: radial-gradient(circle at top right, rgba(37, 184, 184, 0.08), #ffffff 60%); }
+        .slide-4 { background: radial-gradient(circle at top right, rgba(242, 124, 33, 0.08), #ffffff 60%); }
+
+        .slide-content { max-width: 1100px; z-index: 10; transform: translateY(20px); transition: 0.8s ease-out; opacity: 0; }
+        .slide.active .slide-content { transform: translateY(0); opacity: 1; transition-delay: 0.2s; }
+
+        .hero-slider h1 {
+            font-family: var(--font-headings); font-size: clamp(4rem, 7vw, 7.5rem); font-weight: 900;
+            line-height: 0.95; margin-bottom: 30px; letter-spacing: -2px; text-transform: uppercase; color: var(--c-dark);
+        }
+        .hero-slider p { font-size: 1.5rem; color: var(--text-muted); line-height: 1.5; font-weight: 400; max-width: 800px; margin-bottom: 50px; }
+
+        .hero-buttons { display: flex; gap: 20px; flex-wrap: wrap; }
+        
+        .btn-brutal-purple {
+            padding: 20px 50px; border-radius: 100px; font-weight: 800; font-size: 16px;
+            font-family: var(--font-headings); text-transform: uppercase; letter-spacing: 1px; display: inline-flex;
+            align-items: center; gap: 12px; transition: 0.4s; cursor: pointer;
+            background: var(--c-purple); color: white; border: none; box-shadow: 0 15px 30px rgba(90, 63, 163, 0.2);
+        }
+        .btn-brutal-purple:hover { transform: translateY(-5px); filter: brightness(1.1); }
+
+        .btn-brutal-outline {
+            padding: 20px 50px; border-radius: 100px; font-weight: 800; font-size: 16px;
+            font-family: var(--font-headings); text-transform: uppercase; letter-spacing: 1px; display: inline-flex;
+            align-items: center; gap: 12px; transition: 0.4s; cursor: pointer;
+            background: white; border: 2px solid;
+        }
+        .btn-brutal-outline:hover { color: white !important; transform: translateY(-5px); }
+
+        /* Controles Slider */
+        .slider-controls {
+            position: absolute; bottom: 40px; left: 80px; z-index: 10; display: flex; gap: 12px;
+        }
+        .dot {
+            width: 12px; height: 12px; border-radius: 50%; border: none;
+            background: #cbd5e1; cursor: pointer; transition: 0.3s;
+        }
+        .dot.active { background: var(--c-purple); transform: scale(1.3); }
+
+        /* SECCIÓN SERVICIOS */
+        .section-premium { padding: 100px 80px; }
+        .section-title {
+            font-family: var(--font-headings); font-size: clamp(3rem, 5vw, 4.5rem); 
+            font-weight: 900; color: var(--c-purple); margin-bottom: 60px; line-height: 1;
+        }
+
+        .services-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 40px; width: 100%;
+        }
+        
+        .service-card {
+            background: #ffffff; border-radius: 30px; overflow: hidden; border: 1px solid #f1f5f9;
+            box-shadow: var(--soft-shadow); transition: all 0.5s ease; cursor: pointer;
+            display: flex; flex-direction: column; height: 100%;
+        }
+        .service-card:hover { transform: translateY(-12px); box-shadow: var(--soft-shadow-hover); border-color: var(--c-teal);}
+        .service-img-container { width: 100%; height: 250px; overflow: hidden; }
+        .service-img-container img { width: 100%; height: 100%; object-fit: cover; transition: 0.8s; }
+        .service-card:hover img { transform: scale(1.1); }
+
+        .service-info { padding: 35px; flex-grow: 1; }
+        .service-info h3 { font-family: var(--font-headings); font-size: 1.8rem; margin-bottom: 12px; font-weight: 800; }
+        .service-info p { color: var(--text-muted); font-size: 1.1rem; line-height: 1.6; }
+
+        /* MODALES */
+        .modal-overlay {
+            position: fixed; inset: 0; background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(10px); z-index: 5000; display: none; align-items: center; justify-content: center; padding: 20px;
+        }
+        .modal-white-box {
+            background: #fff; width: 100%; max-width: 550px; padding: 50px;
+            border-radius: 40px; text-align: center; position: relative; box-shadow: 0 50px 100px rgba(0,0,0,0.2);
+        }
+        .close-btn-modal { position: absolute; top: 30px; right: 30px; font-size: 24px; color: #cbd5e1; cursor: pointer; transition: 0.3s; }
+        .close-btn-modal:hover { color: var(--c-dark); }
+
+        /* Chips Donación */
+        .donation-chips { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-bottom: 30px; }
+        .chip {
+            padding: 12px 25px; border: 2px solid #e2e8f0; border-radius: 100px;
+            font-weight: 700; cursor: pointer; transition: 0.3s; color: var(--c-dark); font-size: 16px;
+        }
+        .chip.active { background: var(--c-pink); color: white; border-color: var(--c-pink); }
+        
+        .donation-input {
+            width: 100%; padding: 20px; border-radius: 20px; border: 2px solid #e2e8f0;
+            font-size: 24px; text-align: center; font-weight: 800; color: var(--c-pink);
+            margin-bottom: 20px; font-family: var(--font-headings);
+        }
+        .donation-input:focus { outline: none; border-color: var(--c-pink); }
+        .emoji-reaction { font-size: 80px; margin: 20px 0; animation: bounceIn 0.5s; }
+
+        @keyframes bounceIn {
+            0% { transform: scale(0.3); opacity: 0; }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        /* RESPONSIVE */
+        @media (max-width: 1100px) {
+            .sidebar-navigation { display: none; }
+            .main-stage { margin-left: 0; width: 100%; }
+            .slide { padding: 60px 20px; text-align: center; justify-content: center;}
+            .slider-controls { left: 50%; transform: translateX(-50%); }
+            .hero-buttons { justify-content: center; }
+            .section-premium { padding: 80px 20px; text-align: center; }
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="sidebar-navigation">
+        <div class="brand-container">
+            <img src="{% static 'img/nlogo.png' %}" alt="HOPE Logo">
+        </div>
+        
+        <a href="#inicio" class="nav-menu-item active"><i class="fas fa-home"></i> Inicio</a>
+        
+        <p class="nav-section-title">Nuestros Servicios</p>
+        <a href="{% url 'modulo_informativo' %}" class="nav-menu-item"><i class="fas fa-user"></i> Terapia Individual</a>
+        <a href="{% url 'modulo_informativo' %}" class="nav-menu-item"><i class="fas fa-users"></i> Terapia Grupal</a>
+        <a href="{% url 'modulo_informativo' %}" class="nav-menu-item"><i class="fas fa-child"></i> Talleres para Padres y Madres de Familia</a>
+        <a href="{% url 'modulo_informativo' %}" class="nav-menu-item"><i class="fas fa-chalkboard-teacher"></i> Talleres Generales</a>
+        
+        <a href="#" class="nav-menu-item" onclick="abrirModalDonacion(event)">
+        <i class="fas fa-leaf"></i>
+        Eco-visión
+        </a>
+
+        
+        <p class="nav-section-title">Comunidad</p>
+        <a href="#blog" class="nav-menu-item"><i class="fas fa-book-open"></i> Blog</a>
+        
+
+    </nav>
+
+    <main class="main-stage">
+        
+        <section id="inicio" class="hero-slider">
+            
+            <div class="slide slide-1 active">
+                <div class="slide-content">
+                    <h1>Todo lo que <span style="color: var(--c-pink);">sientes</span> importa.</h1>
+                    <p>Tu paz mental no es un lujo, es el principio de todo. Atención clínica especializada y programas de crecimiento humano para transformar tu realidad.</p>
+                    <div class="hero-buttons">
+                        <button class="btn-brutal-purple" style="background: var(--c-purple);" onclick="iniciarProceso()">Iniciar mi Proceso <i class="fas fa-arrow-right"></i></button>
+                        <button class="btn-brutal-outline" style="color: var(--c-pink); border-color: var(--c-pink);" onmouseover="this.style.background='var(--c-pink)'" onmouseout="this.style.background='white'" onclick="abrirModalDonacion()">Deseo becar a un joven <i class="fas fa-hand-holding-heart"></i></button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="slide slide-2">
+                <div class="slide-content">
+                    <h1>Todo lo que <span style="color: var(--c-purple);">piensas</span> importa.</h1>
+                    <p>No tienes que resolverlo en silencio. Descubre un espacio seguro donde desenredar tus pensamientos y recuperar tu claridad absoluta.</p>
+                    <div class="hero-buttons">
+                        <button class="btn-brutal-purple" style="background: var(--c-purple); box-shadow: 0 15px 30px rgba(90, 63, 163, 0.2);" onclick="location.href='#servicios'">Ver Nuestros Servicios <i class="fas fa-eye"></i></button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="slide slide-3">
+                <div class="slide-content">
+                    <h1>Todo lo que <span style="color: var(--c-teal);">donas</span> importa.</h1>
+                    <p>Conviértete en el puente hacia la esperanza. Tu aportación directa ayuda a financiar tratamientos psicológicos para jóvenes que lo necesitan.</p>
+                    <div class="hero-buttons">
+                        <button class="btn-brutal-purple" style="background: var(--c-teal); box-shadow: 0 15px 30px rgba(37, 184, 184, 0.2);" onclick="abrirModalDonacion()">Hacer un Donativo <i class="fas fa-heart"></i></button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="slide slide-4">
+                <div class="slide-content">
+                    <h1><span style="color: var(--c-orange);">Oportunidad.</span><br>Prevención.<br>Esperanza.</h1>
+                    <p>Construimos una comunidad donde el bienestar mental está al alcance de todos. Atrévete a dar el primer paso hoy mismo.</p>
+                    <div class="hero-buttons">
+                        <button class="btn-brutal-purple" style="background: var(--c-orange); box-shadow: 0 15px 30px rgba(242, 124, 33, 0.2);" onclick="iniciarProceso()">Caminemos Juntos <i class="fas fa-users"></i></button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="slider-controls">
+                <div class="dot active" onclick="goToSlide(0)"></div>
+                <div class="dot" onclick="goToSlide(1)"></div>
+                <div class="dot" onclick="goToSlide(2)"></div>
+                <div class="dot" onclick="goToSlide(3)"></div>
+            </div>
+        </section>
+
+        <section id="servicios" class="section-premium">
+            <h2 class="section-title">Nuestros Servicios.</h2>
+            
+            <div class="services-grid">
+                <div class="service-card" onclick="location.href='{% url 'modulo_informativo' %}'">
+                    <div class="service-img-container">
+                        <img src="https://plus.unsplash.com/premium_photo-1665990294269-f1d6c35ab9d1?q=80&w=869&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" alt="Terapia Individual">
+                    </div>
+                    <div class="service-info">
+                        <h3 style="color: var(--c-teal);">Terapia Individual</h3>
+                        <p>Atención uno a uno enfocada en tu crecimiento y sanación personal.</p>
+                    </div>
+                </div>
+                
+                <div class="service-card" onclick="location.href='{% url 'modulo_informativo' %}'">
+                    <div class="service-img-container">
+                        <img src="https://plus.unsplash.com/premium_photo-1664302446248-f06d384dad67?q=80&w=870&auto=format&fit=crop" alt="Terapia Grupal">
+                    </div>
+                    <div class="service-info">
+                        <h3 style="color: var(--c-purple);">Terapia Grupal</h3>
+                        <p>Círculos de apoyo y contención emocional para sanar en comunidad.</p>
+                    </div>
+                </div>
+                
+                <div class="service-card" onclick="location.href='{% url 'modulo_informativo' %}'">
+                    <div class="service-img-container">
+                        <img src="https://plus.unsplash.com/premium_photo-1661475814151-285c97cfcae9?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MzN8fGRpYSUyMGRlbCUyMHBhZHJlfGVufDB8fDB8fHww" alt="Talleres para Padres">
+                    </div>
+                    <div class="service-info">
+                        <h3 style="color: var(--c-pink);">Talleres para Padres y Madres de Familia</h3>
+                        <p>Guía práctica para fortalecer la crianza y el vínculo con tus hijos.</p>
+                    </div>
+                </div>
+                
+                <div class="service-card" onclick="location.href='{% url 'modulo_informativo' %}'">
+                    <div class="service-img-container">
+                        <img src="https://plus.unsplash.com/premium_photo-1770505432815-e8f86c493154?q=80&w=870&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" alt="Talleres Generales">
+                    </div>
+                    <div class="service-info">
+                        <h3 style="color: var(--c-orange);">Talleres Generales</h3>
+                        <p>Desarrollo de habilidades emocionales para todas las etapas de la vida.</p>
+                    </div>
+                </div>
+                
+                <div class="service-card" onclick="abrirModalDonacion()">
+                    <div class="service-img-container">
+                        <img src="https://images.unsplash.com/photo-1506869673173-31eba16560ab?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTB8fGRvbmFjaW9ufGVufDB8fDB8fHww" alt="Eco-visión">
+                    </div>
+                    <div class="service-info">
+                        <h3 style="color: var(--c-yellow);">Eco-visión</h3>
+                        <p>Reconexión con la naturaleza como pilar de tu equilibrio mental.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="blog" class="section-premium" style="background: #f8fafc;">
+            <h2 class="section-title">Nuestro Blog.</h2>
+            <div class="services-grid">
+                <div class="service-card">
+                    <div class="service-img-container">
+                        <img src="https://images.unsplash.com/photo-1499209974431-9dddcece7f88?auto=format&fit=crop&w=800" alt="Articulo 1">
+                    </div>
+                    <div class="service-info">
+                        <p style="font-size: 0.85rem; color: var(--c-orange); font-weight: bold; margin-bottom: 5px;">SALUD MENTAL</p>
+                        <h3 style="color: var(--c-dark);">El poder de hablar</h3>
+                        <p>Descubre cómo exteriorizar tus emociones alivia la carga diaria.</p>
+                    </div>
+                </div>
+                
+                <div class="service-card">
+                    <div class="service-img-container">
+                        <img src="https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&w=800" alt="Articulo 2">
+                    </div>
+                    <div class="service-info">
+                        <p style="font-size: 0.85rem; color: var(--c-teal); font-weight: bold; margin-bottom: 5px;">MINDFULNESS</p>
+                        <h3 style="color: var(--c-dark);">Respiración Ansiedad</h3>
+                        <p>Ejercicios simples para recuperar tu centro en momentos de estrés.</p>
+                    </div>
+                </div>
+
+                <div class="service-card">
+                    <div class="service-img-container">
+                        <img src="https://images.unsplash.com/photo-1511895426328-dc8714191300?auto=format&fit=crop&w=800" alt="Articulo 3">
+                    </div>
+                    <div class="service-info">
+                        <p style="font-size: 0.85rem; color: var(--c-pink); font-weight: bold; margin-bottom: 5px;">FAMILIA</p>
+                        <h3 style="color: var(--c-dark);">Límites Sanos</h3>
+                        <p>Por qué decir "no" desde el amor fortalece a tus hijos.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <div id="alertaProceso" class="modal-overlay">
+        <div class="modal-white-box" style="max-width: 450px;">
+            <span class="close-btn-modal" onclick="document.getElementById('alertaProceso').style.display='none'"><i class="fas fa-times"></i></span>
+            <div style="font-size: 70px; color: var(--c-purple); margin-bottom: 20px;"><i class="fas fa-hands-holding"></i></div>
+            <h2 style="font-family: var(--font-headings); font-size: 2.5rem; color: var(--c-purple); margin-bottom: 15px;">Caminemos juntos</h2>
+            <p style="color: var(--text-muted); font-size: 1.1rem; margin-bottom: 30px;">Dar el primer paso es el acto de mayor valentía. Estamos aquí para acompañarte.</p>
+            <button class="btn-brutal-purple" style="width: 100%; justify-content: center;" onclick="location.href='{% url 'modulo_informativo' %}'">Continuar <i class="fas fa-check"></i></button>
+        </div>
+    </div>
+
+    <div id="modalDonacion" class="modal-overlay">
+        <div class="modal-white-box">
+            <span class="close-btn-modal" onclick="document.getElementById('modalDonacion').style.display='none'"><i class="fas fa-times"></i></span>
+            <h2 style="font-family: var(--font-headings); font-size: 2.8rem; color: var(--c-dark); margin-bottom: 10px;">Legado de Esperanza</h2>
+            <p style="color: var(--text-muted); margin-bottom: 25px;">Apoya el tratamiento psicológico de un joven.</p>
+            
+            <div id="donationEmoji" class="emoji-reaction">🤍</div>
+
+            <div class="donation-chips">
+                <div class="chip" onclick="selectAmount(100, this, )">$100</div>
+                <div class="chip active" onclick="selectAmount(400, this, )">$400</div>
+                <div class="chip" onclick="selectAmount(1200, this, )">$1,200</div>
+                <div class="chip" onclick="selectAmount(7200, this, )">$7,200</div>
+                <div class="chip" onclick="selectAmount(14500, this, )">$14,500</div>
+                <div class="chip" onclick="selectAmount('', this, )">Otro</div>
+            </div>
+
+            <input type="number" id="customAmount" class="donation-input" value="400" placeholder="Ingresa un monto">
+            <p id="donationImpact" style="color: var(--text-muted); font-style: italic; margin-bottom: 30px;">"Dona 1 mes de terapia"</p>
+
+            <button id="btnPagar" class="btn-brutal-purple" style="width: 100%; justify-content: center; background: var(--c-pink); border: none;" onclick="simularPago()">
+                Aportar <span id="btnAmountText" style="margin: 0 5px;">$500</span> MXN <i class="fas fa-heart"></i>
+            </button>
+        </div>
+    </div>
+
+    <div id="staffPortal" class="modal-overlay">
+        <div class="modal-white-box">
+            <span class="close-btn-modal" onclick="document.getElementById('staffPortal').style.display='none'"><i class="fas fa-times"></i></span>
+            <img src="{% static 'img/nlogo.png' %}" style="height: 55px; margin-bottom: 30px;">
+            <h2 style="font-family: var(--font-headings); font-size: 2.5rem; margin-bottom: 20px;">Acceso Staff 564</h2>
+            <form action="{% url 'login_usuario' %}" method="POST">
+                {% csrf_token %}
+                <input type="email" name="login_email" style="width: 100%; padding: 20px; border-radius: 15px; border: 2px solid #f1f5f9; margin-bottom: 20px; font-size: 16px; background: #fafafa; font-family: var(--font-body);" placeholder="Correo Institucional" required>
+                <input type="password" name="login_password" style="width: 100%; padding: 20px; border-radius: 15px; border: 2px solid #f1f5f9; margin-bottom: 30px; font-size: 16px; background: #fafafa; font-family: var(--font-body);" placeholder="Contraseña" required>
+                <button type="submit" class="btn-brutal-purple" style="width: 100%; justify-content: center;">Autenticar <i class="fas fa-sign-in-alt"></i></button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // --- JS DEL CARRUSEL HERO ---
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide');
+        const dots = document.querySelectorAll('.dot');
+        let slideInterval;
+
+        function goToSlide(index) {
+            slides[currentSlide].classList.remove('active');
+            dots[currentSlide].classList.remove('active');
+            
+            // Lógica para cambiar el color del dot activo según la paleta
+            const colors = ['var(--c-pink)', 'var(--c-purple)', 'var(--c-teal)', 'var(--c-orange)'];
+            
+            currentSlide = index;
+            slides[currentSlide].classList.add('active');
+            dots[currentSlide].classList.add('active');
+            dots[currentSlide].style.background = colors[index];
+            
+            // Resetear color de los inactivos
+            dots.forEach((dot, i) => {
+                if(i !== index) dot.style.background = '#cbd5e1';
+            });
+
+            resetInterval();
+        }
+
+        function nextSlide() {
+            let next = (currentSlide + 1) % slides.length;
+            goToSlide(next);
+        }
+
+        function resetInterval() {
+            clearInterval(slideInterval);
+            slideInterval = setInterval(nextSlide, 7000); // Cambia cada 7 segundos
+        }
+
+        // Iniciar slider
+        goToSlide(0);
+
+        // --- JS del Modal Caminemos Juntos ---
+        function iniciarProceso() {
+            document.getElementById('alertaProceso').style.display = 'flex';
+        }
+
+        // --- JS del Modal de Donaciones ---
+        function abrirModalDonacion() {
+            document.getElementById('modalDonacion').style.display = 'flex';
+        }
+
+        const customInput = document.getElementById('customAmount');
+        const impactText = document.getElementById('donationImpact');
+        const btnAmountText = document.getElementById('btnAmountText');
+        const emojiReaction = document.getElementById('donationEmoji');
+
+        function selectAmount(amount, element, emoji) {
+            document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+            element.classList.add('active');
+            
+            emojiReaction.style.animation = 'none';
+            setTimeout(() => emojiReaction.style.animation = 'bounceIn 0.5s', 10);
+            emojiReaction.innerText = emoji;
+
+            if(amount !== '') {
+                customInput.value = amount;
+                updateDonationText(amount);
+            } else {
+                customInput.value = '';
+                customInput.focus();
+                updateDonationText(0);
+            }
+        }
+
+        customInput.addEventListener('input', function() {
+            document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+            updateDonationText(this.value);
+        });
+
+        function updateDonationText(val) {
+            val = parseInt(val) || 0;
+            btnAmountText.innerText = `$${val.toLocaleString()}`;
+            
+if (val === 100) {
+  impactText.innerText = '"Dona una terapia."';
+  emojiReaction.innerText = '🤍';
+}
+else if (val === 400) {
+  impactText.innerText = '"Dona un mes de terapia."';
+  emojiReaction.innerText = '😊';
+}
+else if (val === 1200) {
+  impactText.innerText = '"Terapia para 1 persona."';
+  emojiReaction.innerText = '💖';
+}
+else if (val === 7200) {
+  impactText.innerText = '"1/2 beca de terapia."';
+  emojiReaction.innerText = '🌟';
+}
+else if (val === 14500) {
+  impactText.innerText = '"1 beca completa."';
+  emojiReaction.innerText = '🪽';
+}
+else {
+  impactText.innerText = '"¡Eres un Padrino de Honor! Aseguras tratamiento a largo plazo."';
+  emojiReaction.innerText = '🚀';
+}
+
+        }
+
+        function simularPago() {
+            const btn = document.getElementById('btnPagar');
+            const originalText = btn.innerHTML;
+            
+            btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Procesando...';
+            btn.disabled = true;
+
+            setTimeout(() => {
+                btn.style.background = '#10B981';
+                btn.style.color = 'white';
+                btn.innerHTML = '<i class="fas fa-check-circle"></i> ¡Gracias por tu donación!';
+                
+                setTimeout(() => {
+                    document.getElementById('modalDonacion').style.display = 'none';
+                    btn.style.background = 'var(--c-pink)';
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                }, 2500);
+            }, 2000);
+        }
+
+        // --- JS Menú Activo ---
+        const menuItems = document.querySelectorAll('.nav-menu-item');
+        menuItems.forEach(item => {
+            item.addEventListener('click', function() {
+                menuItems.forEach(i => i.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
+    </script>
+</body>
+</html>
