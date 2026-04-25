@@ -1,0 +1,500 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}HOPE - Módulo Informativo (Prevención y Educación){% endblock %}
+
+{% block content %}
+<style>
+    .triage-option-label {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        padding: 15px;
+        background: #F3F4F6;
+        border: 2px solid transparent;
+        border-radius: 12px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-weight: 500;
+        color: var(--text-main);
+    }
+
+    .triage-option-label:hover {
+        background: #E5E7EB;
+        transform: translateY(-2px);
+    }
+
+    /* Cuando se selecciona un radio o checkbox */
+    .triage-option-label:has(input:checked) {
+        border-color: var(--color-brand-teal);
+        background: rgba(41, 126, 126, 0.05);
+    }
+
+    .triage-option-label input {
+        width: 20px;
+        height: 20px;
+        accent-color: var(--color-brand-teal);
+    }
+
+    .custom-input-triage {
+        width: 100%;
+        padding: 16px 20px;
+        border: 2px solid #e5e7eb;
+        border-radius: 12px;
+        font-family: var(--font-body);
+        font-size: 15px;
+        margin-top: 10px;
+    }
+
+    .custom-input-triage:focus {
+        outline: none;
+        border-color: var(--color-brand-teal);
+    }
+
+    .flujo-btn {
+        flex: 1;
+        padding: 20px 10px;
+        font-size: 16px;
+    }
+
+.btn-talleres-outline {
+    background-color: var(--color-brand-teal) !important;
+    color: #ffffff !important;
+    border: 2px solid var(--color-brand-teal) !important;
+    transition: all 0.3s ease;
+}
+
+.btn-talleres-outline:hover {
+    background-color: #0d8a7a !important; /* opcional: tono más oscuro */
+    color: #ffffff !important;
+}
+</style>
+
+<section class="info-hero">
+    <div class="container animate-on-load">
+        <h1 class="hero-title">El Pilar de la Prevención</h1>
+        <p class="hero-subtitle">Educando a la comunidad antes de la intervención clínica. Tu bienestar comienza aquí.</p>
+
+        <div class="hero-actions animate-on-load">
+            <button data-modal="modalRegistro" class="btn-brutal btn-primary modal-trigger">
+                <i class="fas fa-clipboard-list"></i> Registrarse
+            </button>
+            <button data-modal="modalLogin" class="btn-brutal btn-secondary modal-trigger">
+                <i class="fas fa-user"></i> Inicia Sesión
+            </button>
+        </div>
+    </div>
+</section>
+
+<section class="recursos-grid">
+    <div class="container">
+        <div class="section-header animate-on-load">
+            <h2>Explora Nuestros Recursos</h2>
+            <div class="divider"></div>
+        </div>
+
+        <div class="grid-layout">
+            <div class="card animate-on-scroll brand">
+                <div class="card-icon"><i class="fas fa-book-open"></i></div>
+                <h3>Contenido Educativo</h3>
+                <p>Artículos detallados sobre bienestar emocional y salud mental.</p>
+                <a href="#" class="card-link">Leer artículos <i class="fas fa-arrow-right"></i></a>
+            </div>
+
+            <div class="card animate-on-scroll accent-orange">
+                <div class="card-icon"><i class="fas fa-user-md"></i></div>
+                <h3>Directorio de Psicólogos</h3>
+                <p>Encuentra profesionales validados públicos.</p>
+                <a href="#" class="card-link">Ver directorio <i class="fas fa-arrow-right"></i></a>
+            </div>
+
+            <div class="card animate-on-scroll accent-magenta">
+                <div class="card-icon"><i class="fas fa-layer-group"></i></div>
+                <h3>Biblioteca de Recursos</h3>
+                <p>Materiales multimedia y herramientas de prevención.</p>
+                <a href="#" class="card-link">Explorar multimedia <i class="fas fa-arrow-right"></i></a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<div class="modal-backdrop" id="modalLogin">
+    <div class="modal-box glass-panel premium-modal">
+        <span class="close-modal"><i class="fas fa-times"></i></span>
+        <div class="modal-brand">
+            <img src="{% static 'img/logo_hope_extendido.png' %}" alt="HOPE" class="modal-logo">
+        </div>
+        <div class="auth-header">
+            <h2>Bienvenido de vuelta</h2>
+            <p>Tu espacio seguro te espera.</p>
+        </div>
+        <form action="{% url 'login_usuario' %}" method="POST" class="magic-form custom-form" id="formLogin">
+            {% csrf_token %}
+            <div class="input-group">
+                <i class="fas fa-envelope"></i>
+                <input type="text" name="login_email" placeholder="Correo electrónico" required>
+            </div>
+            <div class="input-group">
+                <i class="fas fa-lock"></i>
+                <input type="password" name="login_password" placeholder="Contraseña" required>
+            </div>
+            <div class="auth-options">
+                <label class="remember-me"><input type="checkbox"> Recordarme</label>
+                <a href="#" class="forgot-password">¿Olvidaste tu contraseña?</a>
+            </div>
+            <button type="submit" class="btn-brutal">Entrar al panel <i class="fas fa-arrow-right"></i></button>
+        </form>
+    </div>
+</div>
+
+<div class="modal-backdrop" id="modalRegistro">
+    <div class="modal-box glass-panel premium-modal modal-large">
+        <span class="close-modal"><i class="fas fa-times"></i></span>
+
+        <div class="modal-brand">
+            <img src="{% static 'img/logo_hope_principal.png' %}" alt="HOPE" class="modal-logo">
+        </div>
+
+        <div class="auth-header" id="triageHeader">
+            <h2>Personaliza tu experiencia</h2>
+            <p>Antes de agendar, ayúdanos a entender un poco más sobre ti.</p>
+        </div>
+
+        <div id="triageContainer">
+
+            <div id="stepTriagePrimario">
+                <h3 style="text-align: center; margin-bottom: 30px; font-size: 26px; color: var(--text-main);">¿En qué podemos apoyarte hoy?</h3>
+                <div style="display: flex; gap: 15px; flex-wrap: wrap; justify-content: center;">
+                    <button type="button" class="btn-brutal btn-primary flujo-primario-btn" data-tipo="terapia" style="flex: 1; min-width: 220px; font-size: 18px; justify-content: center; padding: 25px 10px;">
+                        <i class="fas fa-user-md" style="font-size: 24px; margin-right: 10px;"></i> Atención Psicológica
+                    </button>
+                    <button type="button" class="btn-brutal btn-talleres-outline flujo-primario-btn" data-tipo="talleres" style="flex: 1; min-width: 220px; font-size: 18px; justify-content: center; padding: 25px 10px;">
+                        <i class="fas fa-users" style="font-size: 24px; margin-right: 10px;"></i> Talleres
+                    </button>
+                </div>
+            </div>
+
+            <div id="stepSeleccionFlujo" style="display: none;">
+                <h3 style="text-align: center; margin-bottom: 30px; font-size: 26px; color: var(--text-main);">¿Para quién buscas apoyo hoy?</h3>
+                <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+                    <button type="button" class="btn-brutal btn-secondary flujo-btn" data-flujo="individual" style="font-size: 18px; padding: 25px 10px;">
+                        <i class="fas fa-user"></i> Para mí
+                    </button>
+                    <button type="button" class="btn-brutal btn-secondary flujo-btn" data-flujo="pareja" style="font-size: 18px; padding: 25px 10px;">
+                        <i class="fas fa-user-friends"></i> Mi pareja y yo
+                    </button>
+                    <button type="button" class="btn-brutal btn-secondary flujo-btn" data-flujo="tercero" style="font-size: 18px; padding: 25px 10px;">
+                        <i class="fas fa-hands-helping"></i> Un familiar o amigo
+                    </button>
+                </div>
+            </div>
+
+            <div id="stepPreguntas" style="display: none;">
+                <div style="background: #E5E7EB; border-radius: 10px; height: 10px; width: 100%; margin-bottom: 10px; overflow: hidden;">
+                    <div id="progressBar" style="background: var(--color-brand-teal); width: 0%; height: 100%; transition: width 0.4s ease;"></div>
+                </div>
+                <p id="progressText" style="text-align: right; color: var(--color-brand-teal); font-weight: 700; margin-bottom: 25px; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;"></p>
+
+                <h3 id="questionText" style="margin-bottom: 25px; font-size: 28px; color: var(--color-brand-teal); line-height: 1.3;"></h3>
+
+                <div id="questionOptionsContainer" style="display: flex; flex-direction: column; gap: 15px; margin-bottom: 40px; font-size: 18px;"></div>
+
+                <div style="display: flex; justify-content: space-between; gap: 20px;">
+                    <button type="button" id="btnAtras" class="btn-brutal btn-secondary" style="display: none; width: auto; padding: 18px 25px; font-size: 18px;">
+                        <i class="fas fa-arrow-left"></i> Atrás
+                    </button>
+                    <button type="button" id="btnSiguiente" class="btn-brutal btn-primary" style="flex: 1; padding: 18px 25px; font-size: 18px;">
+                        Siguiente <i class="fas fa-arrow-right"></i>
+                    </button>
+                </div>
+            </div>
+
+            <form action="{% url 'registro_usuario' %}" method="POST" class="magic-form custom-form" id="formRegistro" style="display: none;">
+                {% csrf_token %}
+                <input type="hidden" name="flujo_elegido" id="inputFlujoFinal">
+                <input type="hidden" name="respuestas_json" id="inputRespuestasFinal">
+
+                <h3 style="text-align: center; margin-bottom: 25px; font-size: 28px; color: var(--text-main);">¡Casi listos! Crea tu cuenta</h3>
+
+                <div class="input-group">
+                    <i class="fas fa-mask"></i>
+                    <input type="text" id="pseudonimoFinal" placeholder="¿Con qué nombre o seudónimo te llamamos?" required style="font-size: 16px;">
+                </div>
+
+                <div class="input-row">
+                    <div class="input-group">
+                        <i class="fas fa-user"></i>
+                        <input type="text" name="nombre" placeholder="Nombre completo" required style="font-size: 16px;">
+                    </div>
+                    <div class="input-group">
+                        <i class="fas fa-envelope"></i>
+                        <input type="email" name="email" placeholder="Correo electrónico" required style="font-size: 16px;">
+                    </div>
+                </div>
+
+                <div class="input-row">
+                    <div class="input-group">
+                        <i class="fas fa-phone"></i>
+                        <input type="tel" name="telefono" placeholder="Teléfono" required style="font-size: 16px;">
+                    </div>
+                    <div class="input-group">
+                        <i class="fas fa-ambulance" style="color: #e11d48;"></i>
+                        <input type="tel" name="telefono_emergencia" placeholder="Tel. Emergencia (Familiar)" required style="font-size: 16px;">
+                    </div>
+                </div>
+                <div class="input-group">
+                        <i class="fas fa-lock"></i>
+                        <input type="password" name="password" placeholder="Contraseña segura" required style="font-size: 16px;">
+                </div>
+
+                <label style="display: flex; align-items: start; gap: 10px; font-size: 14px; color: var(--text-muted); margin-bottom: 25px; text-align: left; cursor: pointer;">
+                    <input type="checkbox" required style="width: 20px; height: 20px; margin-top: 2px; accent-color: var(--color-brand-teal);">
+                    <span style="line-height: 1.4;">He leído y acepto el <a href="#" style="color: var(--color-brand-teal); text-decoration: underline; font-weight: 600;">Aviso de Privacidad</a> para el tratamiento y protección de mis datos clínicos.</span>
+                </label>
+
+                <button type="button" class="btn-brutal btn-brand" id="btnSubmitFinal" style="padding: 20px; font-size: 18px; width: 100%; justify-content: center;">
+                    Confirmar y Finalizar <i class="fas fa-check-circle"></i>
+                </button>
+            </form>
+
+        </div>
+    </div>
+</div>
+
+<div class="modal-backdrop" id="modalFeedback">
+    <div class="modal-box glass-panel premium-modal" style="max-width: 400px; text-align: center;">
+        <span class="close-modal"><i class="fas fa-times"></i></span>
+        <div id="feedbackIcon" style="font-size: 60px; margin-bottom: 20px;"></div>
+        <h2 id="feedbackTitle" style="color: var(--text-main); margin-bottom: 10px;"></h2>
+        <p id="feedbackMessage" style="color: var(--text-muted); font-size: 16px; margin-bottom: 30px;"></p>
+        <button class="btn-brutal btn-primary close-feedback-btn">Aceptar</button>
+    </div>
+</div>
+
+<div class="logo-animation-overlay" id="magicOverlay">
+    <div class="magic-icons-container">
+        <i class="fas fa-brain magic-icon brain-icon"></i>
+        <i class="fas fa-heart magic-icon heart-icon"></i>
+        <i class="fas fa-smile magic-icon smile-icon"></i>
+    </div>
+    <h3 class="magic-text">Conectando con tu bienestar y esperanza...</h3>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const dataCuestionario = JSON.parse('{{ cuestionario_json|escapejs|default:"{}" }}');
+
+        let flujoActual = "";
+        let indicePregunta = 0;
+        let respuestasGuardadas = {};
+        let preguntasFlujo = [];
+        let historialNavegacion = [];
+
+        const stepPrimario = document.getElementById("stepTriagePrimario");
+        const stepFlujo = document.getElementById("stepSeleccionFlujo");
+        const stepPreguntas = document.getElementById("stepPreguntas");
+        const formRegistro = document.getElementById("formRegistro");
+        const headerTitle = document.querySelector("#triageHeader h2");
+
+        const questionText = document.getElementById("questionText");
+        const optionsContainer = document.getElementById("questionOptionsContainer");
+        const btnSiguiente = document.getElementById("btnSiguiente");
+        const btnAtras = document.getElementById("btnAtras");
+
+        const progressBar = document.getElementById("progressBar");
+        const progressText = document.getElementById("progressText");
+
+        function debeMostrarPregunta(pregunta) {
+            if (!pregunta.mostrar_si) return true;
+            
+            const depId = pregunta.mostrar_si.id;
+            const valoresPermitidos = pregunta.mostrar_si.valores;
+            const respuestaPrevia = respuestasGuardadas[depId];
+
+            if (!respuestaPrevia) return false;
+            
+            if (Array.isArray(respuestaPrevia)) {
+                return respuestaPrevia.some(r => valoresPermitidos.includes(r));
+            }
+            return valoresPermitidos.includes(respuestaPrevia);
+        }
+
+        function obtenerSiguienteIndiceValido(inicio) {
+            let nextIndex = inicio;
+            while (nextIndex < preguntasFlujo.length) {
+                if (debeMostrarPregunta(preguntasFlujo[nextIndex])) {
+                    return nextIndex; 
+                }
+                nextIndex++; 
+            }
+            return nextIndex;
+        }
+
+        document.querySelectorAll('.flujo-primario-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const tipo = this.getAttribute('data-tipo');
+                stepPrimario.style.display = 'none';
+                
+                if (tipo === 'talleres') {
+                    iniciarCuestionario('solo_talleres');
+                } else {
+                    stepFlujo.style.display = 'block';
+                    headerTitle.innerText = "Terapia Clínica";
+                }
+            });
+        });
+
+        document.querySelectorAll(".flujo-btn").forEach(btn => {
+            btn.addEventListener("click", function () {
+                iniciarCuestionario(this.getAttribute("data-flujo"));
+            });
+        });
+
+        function iniciarCuestionario(flujo) {
+            flujoActual = flujo;
+            preguntasFlujo = dataCuestionario[flujoActual].preguntas;
+
+            stepFlujo.style.display = "none";
+            stepPreguntas.style.display = "block";
+            headerTitle.innerText = dataCuestionario[flujoActual].titulo;
+
+            historialNavegacion = []; 
+            respuestasGuardadas = {}; 
+            indicePregunta = obtenerSiguienteIndiceValido(0); 
+            mostrarPregunta();
+        }
+
+        function mostrarPregunta() {
+            optionsContainer.innerHTML = "";
+
+            if (indicePregunta >= preguntasFlujo.length) {
+                finalizarCuestionario();
+                return;
+            }
+
+            const porcentaje = ((indicePregunta + 1) / preguntasFlujo.length) * 100;
+            progressBar.style.width = porcentaje + "%";
+            progressText.innerText = `Paso ${historialNavegacion.length + 1} de proceso`;
+
+            const q = preguntasFlujo[indicePregunta];
+            questionText.innerText = q.pregunta;
+
+            btnAtras.style.display = historialNavegacion.length > 0 ? "block" : "none";
+
+            if (q.tipo === "single" || q.tipo === "multiple") {
+                const inputType = q.tipo === "single" ? "radio" : "checkbox";
+                q.opciones.forEach((opcion) => {
+                    const checked = respuestasGuardadas[q.id] && respuestasGuardadas[q.id].includes(opcion) ? "checked" : "";
+                    const html = `
+                    <label class="triage-option-label" style="font-size: 17px; padding: 18px;">
+                        <input type="${inputType}" name="${q.id}" value="${opcion}" ${checked} style="width: 24px; height: 24px;">
+                        ${opcion}
+                    </label>
+                `;
+                    optionsContainer.insertAdjacentHTML('beforeend', html);
+                });
+            } else {
+                const val = respuestasGuardadas[q.id] || "";
+                const inputType = q.tipo === "numero" ? "number" : "text";
+                optionsContainer.innerHTML = `<input type="${inputType}" id="${q.id}" class="custom-input-triage" placeholder="Escribe tu respuesta aquí..." value="${val}" style="font-size: 18px; padding: 20px;">`;
+            }
+        }
+
+        btnSiguiente.addEventListener("click", function () {
+            const q = preguntasFlujo[indicePregunta];
+            let hayRespuesta = false;
+
+            if (q.tipo === "single") {
+                const sel = document.querySelector(`input[name="${q.id}"]:checked`);
+                if (sel) { respuestasGuardadas[q.id] = sel.value; hayRespuesta = true; }
+            } else if (q.tipo === "multiple") {
+                const sels = Array.from(document.querySelectorAll(`input[name="${q.id}"]:checked`)).map(el => el.value);
+                if (sels.length > 0) { respuestasGuardadas[q.id] = sels; hayRespuesta = true; }
+            } else {
+                const val = document.getElementById(q.id).value.trim();
+                if (val !== "") { respuestasGuardadas[q.id] = val; hayRespuesta = true; }
+            }
+
+            if (!hayRespuesta) {
+                alert("Por favor, selecciona o ingresa una respuesta antes de continuar.");
+                return;
+            }
+
+            historialNavegacion.push(indicePregunta);
+            indicePregunta = obtenerSiguienteIndiceValido(indicePregunta + 1);
+            mostrarPregunta();
+        });
+
+        btnAtras.addEventListener("click", function () {
+            if (historialNavegacion.length > 0) {
+                indicePregunta = historialNavegacion.pop();
+                mostrarPregunta();
+            }
+        });
+
+        function finalizarCuestionario() {
+            stepPreguntas.style.display = "none";
+            formRegistro.style.display = "block";
+            headerTitle.innerText = "Información de Cuenta";
+            document.getElementById("inputFlujoFinal").value = flujoActual;
+        }
+
+        // 🔥 CORRECCIÓN DEL DOBLE ENVÍO Y MANEJO DE ERRORES 🔥
+        const btnSubmitFinal = document.getElementById("btnSubmitFinal");
+        
+        btnSubmitFinal.addEventListener("click", function (e) {
+            e.preventDefault(); // Detiene el comportamiento nativo
+            
+            // Verificamos que todos los campos requeridos estén llenos
+            if (!formRegistro.checkValidity()) {
+                formRegistro.reportValidity();
+                return;
+            }
+
+            if (formRegistro.dataset.enviando === "true") return;
+            formRegistro.dataset.enviando = "true";
+
+            respuestasGuardadas["pseudonimo"] = document.getElementById("pseudonimoFinal").value;
+            document.getElementById("inputRespuestasFinal").value = JSON.stringify(respuestasGuardadas);
+
+            const formData = new FormData(formRegistro);
+            const originalText = btnSubmitFinal.innerHTML;
+            
+            btnSubmitFinal.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creando cuenta...';
+            btnSubmitFinal.disabled = true;
+
+            fetch(formRegistro.getAttribute("action"), {
+                method: "POST",
+                body: formData,
+                headers: { "X-Requested-With": "XMLHttpRequest" }
+            })
+            .then(async response => {
+                if (!response.ok) throw new Error("Error HTTP de servidor");
+                return response.json();
+            })
+            .then(data => {
+                btnSubmitFinal.innerHTML = originalText;
+                btnSubmitFinal.disabled = false;
+                formRegistro.dataset.enviando = "false";
+
+                if (data.status === "success") {
+                    document.getElementById("modalRegistro").classList.remove("active");
+                    document.getElementById("feedbackTitle").innerText = "¡Registro Exitoso!";
+                    document.getElementById("feedbackMessage").innerText = data.message;
+                    document.getElementById("feedbackIcon").innerHTML = '<i class="fas fa-check-circle" style="color: #10B981;"></i>';
+                    document.getElementById("modalFeedback").classList.add("active");
+                } else {
+                    alert(data.message);
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                alert("Ocurrió un problema guardando tus datos o enviando el correo. Intenta de nuevo por favor.");
+                btnSubmitFinal.innerHTML = originalText;
+                btnSubmitFinal.disabled = false;
+                formRegistro.dataset.enviando = "false";
+            });
+        });
+    });
+</script>
+{% endblock %}

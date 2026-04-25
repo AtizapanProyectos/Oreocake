@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Mi Agenda - HOPE{% endblock %}
+
+{% block content %}
+<section class="agenda-section fade-in-up">
+    <div class="container">
+        <div class="agenda-header">
+            <div>
+                <h1 class="gradient-text">Mi Agenda Profesional</h1>
+                <p>Gestiona tus citas y disponibilidad.</p>
+            </div>
+            <button class="btn-brutal btn-small"><i class="fas fa-plus"></i> Nueva Cita</button>
+        </div>
+
+        <div class="agenda-layout">
+            <aside class="agenda-sidebar glass-panel">
+                <h3>Octubre 2026</h3>
+                <div class="mini-calendar">
+                    <span>L</span><span>M</span><span>M</span><span>J</span><span>V</span><span>S</span><span>D</span>
+                    <div class="day past">12</div><div class="day past">13</div><div class="day past">14</div>
+                    <div class="day today">15</div><div class="day active">16</div><div class="day">17</div>
+                    <div class="day">18</div>
+                </div>
+            </aside>
+
+            <main class="agenda-timeline glass-panel">
+                <div class="timeline-header">
+                    <h2>Viernes, 16 de Octubre</h2>
+                </div>
+
+                <div class="appointments-list">
+                    <div class="appointment-card float-hover brand-border">
+                        <div class="time-badge">09:00 AM</div>
+                        <div class="appointment-info">
+                            <h4>Consulta - Ansiedad Generalizada</h4>
+                            <p><i class="fas fa-user"></i> Paciente: María López</p>
+                        </div>
+                        <div class="appointment-actions">
+                            <a href="#" class="btn-meet"><i class="fas fa-video"></i> Unirse</a>
+                        </div>
+                    </div>
+
+                    <div class="appointment-card float-hover orange-border">
+                        <div class="time-badge">11:30 AM</div>
+                        <div class="appointment-info">
+                            <h4>Terapia de Pareja</h4>
+                            <p><i class="fas fa-user-friends"></i> Pacientes: Carlos y Ana</p>
+                        </div>
+                        <div class="appointment-actions">
+                            <span class="status-badge pending">Pendiente de pago</span>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+</section>
+{% endblock %}

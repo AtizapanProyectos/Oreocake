@@ -1,0 +1,169 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Verificación de Cuenta - HOPE{% endblock %}
+
+{% block content %}
+<style>
+    /* ==========================================================================
+       VARIABLES Y RESET LOCAL (Por si carga antes que el CSS global)
+       ========================================================================== */
+    :root {
+        --c-purple: #5A3FA3;
+        --c-pink: #F85B8C;
+        --c-orange: #F27C21;
+        --c-yellow: #F8D33D;
+        --c-teal: #25B8B8;
+        
+        --text-main: #0f0f0f;
+        --text-muted: #64748b;
+        --bg-light: #f8fafc;
+        
+        --font-headings: 'Outfit', sans-serif;
+        --font-body: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    .verification-wrapper {
+        min-height: calc(100vh - 80px);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background-color: var(--bg-light);
+        padding: 20px;
+        font-family: var(--font-body);
+    }
+    
+    .result-card {
+        text-align: center;
+        max-width: 500px;
+        width: 100%;
+        background: #ffffff;
+        border-radius: 30px;
+        padding: 50px 40px;
+        box-shadow: 0 15px 35px rgba(0,0,0,0.03);
+        border: 1px solid #f1f5f9;
+        /* Borde superior en Morado Sólido */
+        border-top: 8px solid var(--c-purple);
+    }
+    
+    .icon-container {
+        font-size: 80px;
+        margin-bottom: 20px;
+        display: inline-block;
+    }
+    
+    /* Animación de latido para el éxito (Amarillo) */
+    .success-pulse {
+        color: var(--c-yellow); 
+        animation: pulseIcons 1.5s ease-in-out infinite;
+    }
+    
+    /* Animación de movimiento suave para el error (Rosa) */
+    .error-shake {
+        color: var(--c-pink); 
+        animation: floatAnim 3s ease-in-out infinite;
+    }
+
+    .result-card h1 {
+        font-family: var(--font-headings);
+        font-size: 36px;
+        font-weight: 800;
+        color: var(--text-main);
+        margin-bottom: 15px;
+        letter-spacing: -0.5px;
+    }
+
+    .result-card p {
+        color: var(--text-muted);
+        font-size: 16px;
+        line-height: 1.6;
+        margin-bottom: 35px;
+    }
+
+    /* Botones específicos para esta vista */
+    .btn-brutal-verif {
+        background: var(--c-purple);
+        color: white;
+        border: none;
+        padding: 18px 32px;
+        border-radius: 40px;
+        font-size: 16px;
+        font-weight: 800;
+        font-family: var(--font-headings);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        cursor: pointer;
+        transition: 0.3s;
+        display: inline-flex;
+        justify-content: center;
+        align-items: center;
+        gap: 10px;
+        width: 100%;
+        text-decoration: none;
+    }
+
+    .btn-brutal-verif:hover {
+        background: var(--c-orange);
+        transform: translateY(-3px);
+        box-shadow: 0 10px 20px rgba(242, 124, 33, 0.2);
+    }
+    
+    .btn-secondary-verif {
+        background: transparent;
+        color: var(--c-pink);
+        border: 2px solid var(--c-pink);
+    }
+
+    .btn-secondary-verif:hover {
+        background: var(--c-pink);
+        color: white;
+        box-shadow: 0 10px 20px rgba(248, 91, 140, 0.2);
+    }
+
+    @keyframes pulseIcons {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.1); }
+    }
+    
+    @keyframes floatAnim {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-10px); }
+    }
+</style>
+
+<div class="verification-wrapper">
+    <div class="result-card fade-in-up">
+        
+        {% if exito %}
+            <div class="icon-container success-pulse">
+                <i class="fas fa-smile-beam"></i>
+            </div>
+            
+            <h1>¡Cuenta verificada!</h1>
+            <p>
+                Tu correo electrónico ha sido confirmado exitosamente. Ya formas parte de la comunidad <strong>HOPE</strong>. <br><br>
+                Puedes cerrar esta pestaña de forma segura, o hacer clic abajo para ir a iniciar sesión y agendar tu primera cita.
+            </p>
+            
+            <a href="{% url 'modulo_informativo' %}" class="btn-brutal-verif">
+                <i class="fas fa-user"></i> Ir a Iniciar Sesión
+            </a>
+            
+        {% else %}
+            <div class="icon-container error-shake">
+                <i class="fas fa-heart-broken"></i>
+            </div>
+            
+            <h1>Enlace no válido</h1>
+            <p>
+                Parece que este enlace de verificación ha expirado o tu cuenta ya fue activada anteriormente. 
+            </p>
+            
+            <a href="/informativo/" class="btn-brutal-verif btn-secondary-verif">
+                Volver al inicio
+            </a>
+        {% endif %}
+        
+    </div>
+</div>
+{% endblock %}

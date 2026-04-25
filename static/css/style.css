@@ -1,0 +1,1103 @@
+/* ==========================================================================
+   CONFIGURACIÓN DE TIPOGRAFÍAS WEB (ARREGLO PARA RAILWAY)
+   ========================================================================== */
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700;900&family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap');
+
+/* ==========================================================================
+   VARIABLES Y PALETA DE COLORES HOPE (NUEVA IDENTIDAD)
+   ========================================================================== */
+:root {
+    /* Colores de Marca Nuevos (Sólidos) */
+    --color-brand-purple: #5A3FA3; /* Principal */
+    --color-brand-pink: #F85B8C;   /* Acento */
+    --color-brand-orange: #F27C21; /* Acento */
+    --color-brand-yellow: #F8D33D; /* Acento */
+    --color-brand-teal: #25B8B8;   /* Acento secundario */
+    
+    /* Fondos y Textos */
+    --bg-white: #FFFFFF;
+    --bg-light: #F9FAFB;
+    --text-main: #0f0f0f;
+    --text-muted: #64748b;
+    
+    /* Tipografías Google Fonts */
+    --font-headings: 'Outfit', sans-serif;
+    --font-body: 'Plus Jakarta Sans', sans-serif;
+}
+
+/* ==========================================================================
+   RESET Y BASE
+   ========================================================================== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: var(--font-body);
+    background-color: var(--bg-white);
+    color: var(--text-main);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+h1, h2, h3, h4 {
+    font-family: var(--font-headings);
+    font-weight: 700;
+}
+
+a {
+    text-decoration: none;
+    transition: color 0.3s ease, background 0.3s ease;
+}
+
+/* ==========================================================================
+   NAVEGACIÓN (NAVBAR)
+   ========================================================================== */
+.navbar {
+    background-color: var(--bg-white);
+    position: fixed;
+    top: 0;
+    width: 100%;
+    z-index: 1000;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    height: 80px;
+    display: flex;
+    align-items: center;
+}
+
+.nav-spacer {
+    height: 80px;
+}
+
+.nav-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+}
+
+.logo-img {
+    height: 75px;
+    width: auto;
+}
+
+.nav-menu {
+    display: flex;
+    list-style: none;
+    align-items: center;
+    gap: 30px;
+}
+
+.nav-link {
+    color: var(--text-main);
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.nav-link:hover, .nav-link.active {
+    color: var(--color-brand-purple);
+}
+
+.btn-cta {
+    background-color: var(--color-brand-purple);
+    color: var(--bg-white);
+    padding: 10px 20px;
+    border-radius: 25px;
+    font-weight: 600;
+}
+
+.btn-cta:hover {
+    background-color: #442f7c;
+}
+
+/* Menú Móvil (Hamburguesa) */
+.menu-toggle {
+    display: none;
+    cursor: pointer;
+}
+
+.bar {
+    display: block;
+    width: 25px;
+    height: 3px;
+    margin: 5px auto;
+    transition: all 0.3s ease;
+    background-color: var(--text-main);
+}
+
+/* ==========================================================================
+   COMPONENTES GLOBALES Y UTILIDADES
+   ========================================================================== */
+
+/* Botón Brutal (Estilo Color Sólido Duro) */
+.btn-brutal {
+    background: var(--color-brand-purple); /* Morado Duro sin desvanecidos */
+    color: var(--bg-white);
+    border: none;
+    padding: 18px 32px;
+    border-radius: 40px; 
+    font-size: 18px; 
+    font-weight: 800; 
+    letter-spacing: 0.5px;
+    font-family: var(--font-headings);
+    cursor: pointer;
+    box-shadow: 0 12px 25px rgba(90, 63, 163, 0.4); 
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); 
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+}
+
+.btn-brutal:hover {
+    transform: translateY(-5px) scale(1.03);
+    background: var(--color-brand-orange); /* Cambia a naranja sólido de golpe */
+    box-shadow: 0 20px 35px rgba(242, 124, 33, 0.4); 
+}
+
+.btn-brutal.btn-primary {
+    width: 100%;
+}
+
+.btn-secondary {
+    background: transparent;
+    border: 2px solid var(--color-brand-purple);
+    color: var(--color-brand-purple);
+    box-shadow: none;
+}
+
+.btn-secondary:hover {
+    background: var(--color-brand-purple);
+    color: var(--bg-white);
+    transform: translateY(-3px);
+    box-shadow: 0 15px 25px rgba(90, 63, 163, 0.2);
+}
+
+.btn-small {
+    padding: 10px 20px;
+    font-size: 14px;
+}
+
+/* Texto Solido Elegante (Antes gradiente) */
+.gradient-text {
+    color: var(--color-brand-purple); /* Color fijo sin desvanecido */
+    display: inline-block;
+}
+
+/* Paneles de Cristal (Glassmorphism) */
+.glass-panel {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    border-radius: 20px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
+    padding: 30px;
+}
+
+/* ==========================================================================
+   MÓDULO INFORMATIVO
+   ========================================================================== */
+
+/* Hero Section */
+.info-hero {
+    background-color: var(--bg-light);
+    padding: 100px 0;
+    text-align: center;
+}
+
+.hero-title {
+    font-size: 48px;
+    color: var(--color-brand-purple);
+    margin-bottom: 15px;
+}
+
+.hero-subtitle {
+    font-size: 20px;
+    color: var(--text-muted);
+    font-weight: 400;
+    max-width: 700px;
+    margin: 0 auto;
+}
+
+.hero-actions {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+    margin-top: 40px;
+}
+
+/* Cuadrícula de Recursos */
+.recursos-grid {
+    padding: 80px 0;
+}
+
+.section-header {
+    text-align: center;
+    margin-bottom: 60px;
+}
+
+.section-header h2 {
+    font-size: 36px;
+    color: var(--text-main);
+}
+
+.divider {
+    width: 80px;
+    height: 4px;
+    background-color: var(--color-brand-yellow);
+    margin: 15px auto 0;
+    border-radius: 2px;
+}
+
+.grid-layout {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 30px;
+}
+
+/* Tarjetas */
+.card {
+    background: var(--bg-white);
+    padding: 40px;
+    border-radius: 12px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.03);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    display: flex;
+    flex-direction: column;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+}
+
+.card-icon {
+    font-size: 32px;
+    margin-bottom: 20px;
+}
+
+.card h3 {
+    font-size: 20px;
+    margin-bottom: 10px;
+}
+
+.card p {
+    color: var(--text-muted);
+    font-size: 16px;
+    margin-bottom: 20px;
+    flex-grow: 1;
+}
+
+.card-link {
+    font-weight: 600;
+    font-size: 16px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Variaciones de Color de las Tarjetas */
+.card.brand .card-icon, .card.brand .card-link { color: var(--color-brand-purple); }
+.card.accent-orange .card-icon, .card.accent-orange .card-link { color: var(--color-brand-orange); }
+.card.accent-magenta .card-icon, .card.accent-magenta .card-link { color: var(--color-brand-pink); }
+.card.accent-gold .card-icon, .card.accent-gold .card-link { color: var(--color-brand-yellow); }
+
+/* ==========================================================================
+   VISTA: INICIO DE SESIÓN
+   ========================================================================== */
+.auth-wrapper {
+    min-height: calc(100vh - 80px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    background-color: var(--bg-light);
+    overflow: hidden;
+}
+
+.blob {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(60px);
+    z-index: 0;
+    animation: floatAnim 8s infinite ease-in-out;
+}
+
+.blob-1 {
+    width: 400px; height: 400px;
+    background: rgba(90, 63, 163, 0.15); /* Morado claro */
+    top: -100px; left: -100px;
+}
+
+.blob-2 {
+    width: 300px; height: 300px;
+    background: rgba(242, 124, 33, 0.15); /* Naranja claro */
+    bottom: -50px; right: -50px;
+    animation-delay: -4s;
+}
+
+.auth-glass-card {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    padding: 50px;
+    border-radius: 24px;
+    width: 100%;
+    max-width: 450px;
+    z-index: 1;
+    box-shadow: 0 25px 50px rgba(0,0,0,0.05);
+}
+
+.auth-header { text-align: center; margin-bottom: 30px; }
+.auth-header h2 { font-size: 28px; color: var(--color-brand-purple); margin-bottom: 10px; }
+.auth-header p { color: var(--text-muted); font-size: 15px; }
+
+.input-group { position: relative; margin-bottom: 20px; }
+.input-group i { position: absolute; left: 20px; top: 50%; transform: translateY(-50%); color: var(--text-muted); }
+
+.input-group input {
+    width: 100%;
+    padding: 16px 20px 16px 50px;
+    border: 2px solid #e5e7eb;
+    border-radius: 16px;
+    font-family: var(--font-body);
+    font-size: 15px;
+    background: rgba(255,255,255,0.9);
+    transition: all 0.3s ease;
+    color: var(--text-main);
+}
+
+.input-group input:focus {
+    outline: none;
+    border-color: var(--color-brand-purple);
+    box-shadow: 0 0 0 4px rgba(90, 63, 163, 0.1);
+}
+
+.auth-options {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    font-size: 14px;
+}
+
+.forgot-password { color: var(--color-brand-purple); font-weight: 600; }
+.auth-footer { text-align: center; margin-top: 30px; font-size: 14px; color: var(--text-muted); }
+.auth-footer a { color: var(--color-brand-purple); font-weight: 600; }
+
+/* ==========================================================================
+   VISTA: AGENDA
+   ========================================================================== */
+.agenda-section { padding: 60px 0; background-color: var(--bg-light); min-height: 100vh; }
+.agenda-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 40px; }
+.agenda-header h1 { font-size: 36px; margin-bottom: 5px; }
+.agenda-header p { color: var(--text-muted); font-size: 16px; }
+
+.agenda-layout {
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    gap: 30px;
+}
+
+.mini-calendar {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 10px;
+    text-align: center;
+    margin-top: 20px;
+    font-size: 14px;
+}
+
+.mini-calendar span { color: var(--text-muted); font-weight: 600; font-size: 12px; }
+.day { padding: 8px; border-radius: 50%; cursor: pointer; transition: 0.2s; }
+.day:hover { background-color: rgba(90, 63, 163, 0.1); }
+.day.past { color: #cbd5e1; pointer-events: none; }
+.day.today { font-weight: bold; color: var(--color-brand-orange); }
+.day.active { background-color: var(--color-brand-purple); color: white; box-shadow: 0 4px 10px rgba(90, 63, 163, 0.3); }
+
+.timeline-header { margin-bottom: 25px; border-bottom: 2px solid rgba(0,0,0,0.05); padding-bottom: 15px; }
+
+.appointments-list { display: flex; flex-direction: column; gap: 20px; }
+
+.appointment-card {
+    background: var(--bg-white);
+    border-radius: 16px;
+    padding: 25px;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 20px;
+    align-items: center;
+    border-left: 6px solid;
+}
+
+.brand-border { border-left-color: var(--color-brand-purple); }
+.orange-border { border-left-color: var(--color-brand-orange); }
+
+.time-badge {
+    background: var(--bg-light);
+    padding: 10px 15px;
+    border-radius: 12px;
+    font-weight: bold;
+    color: var(--color-brand-purple);
+    font-family: var(--font-headings);
+}
+
+.appointment-info h4 { font-size: 18px; margin-bottom: 5px; }
+.appointment-info p { color: var(--text-muted); font-size: 14px; }
+
+.btn-meet {
+    background-color: #f3e8ff;
+    color: var(--color-brand-purple);
+    padding: 10px 20px;
+    border-radius: 12px;
+    font-weight: 600;
+}
+.btn-meet:hover { background-color: #e9d5ff; }
+
+.status-badge {
+    padding: 8px 15px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+}
+.status-badge.pending { background-color: #fef08a; color: #854d0e; }
+
+/* ==========================================================================
+   ANIMACIONES MAGIA LOGO HOPE
+   ========================================================================== */
+.logo-animation-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100vh;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.4s ease;
+}
+
+.logo-animation-overlay.active {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.magic-icons-container {
+    display: flex;
+    gap: 25px;
+    font-size: 70px;
+    margin-bottom: 30px;
+}
+
+/* Estados Iniciales (Ocultos y Separados) */
+.brain-icon { color: var(--color-brand-purple); transform: translateX(-150px); opacity: 0; }
+.heart-icon { color: var(--color-brand-pink); transform: translateY(150px); opacity: 0; }
+.smile-icon { color: var(--color-brand-yellow); transform: translateX(150px); opacity: 0; }
+
+/* Animación de entrada de Iconos */
+.logo-animation-overlay.active .brain-icon { animation: slideInLeft 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+.logo-animation-overlay.active .heart-icon { animation: slideInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.3s forwards; }
+.logo-animation-overlay.active .smile-icon { animation: slideInRight 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.6s forwards; }
+
+/* Latido de los Iconos Juntos */
+.logo-animation-overlay.active .magic-icons-container { animation: pulseIcons 1.5s ease-in-out 1.2s infinite; }
+
+/* Texto de Conexión */
+.magic-text {
+    font-family: var(--font-headings);
+    font-size: 28px;
+    color: var(--text-main);
+    opacity: 0;
+}
+.logo-animation-overlay.active .magic-text { animation: fadeInText 1s ease forwards 1s; }
+
+/* ==========================================================================
+   KEYFRAMES (ANIMACIONES BASE Y MÁGICAS)
+   ========================================================================== */
+@keyframes fadeInUp {
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeInUpBrutal {
+    0% { opacity: 0; transform: translateY(40px) scale(0.98); }
+    100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes floatAnim {
+    0% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+    100% { transform: translateY(0px); }
+}
+
+@keyframes slideInLeft {
+    to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes slideInUp {
+    to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes slideInRight {
+    to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes pulseIcons {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.08); }
+}
+
+@keyframes fadeInText {
+    to { opacity: 1; transform: translateY(-10px); }
+}
+
+/* Clases Útiles de Animación */
+.animate-on-load { opacity: 0; transform: translateY(20px); animation: fadeInUp 0.8s ease forwards; }
+.animate-on-scroll { opacity: 0; transform: translateY(20px); transition: opacity 0.8s ease, transform 0.8s ease; }
+.animate-on-scroll.in-view { opacity: 1; transform: translateY(0); }
+.fade-in-up { animation: fadeInUpBrutal 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+.float-hover { transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s ease; }
+.float-hover:hover { transform: translateY(-8px) scale(1.02); box-shadow: 0 20px 40px rgba(90, 63, 163, 0.15); }
+
+/* ==========================================================================
+   FOOTER SUTIL
+   ========================================================================== */
+.footer {
+    text-align: center;
+    padding: 40px;
+    background-color: var(--bg-light);
+    color: var(--text-muted);
+    font-size: 14px;
+}
+
+/* ==========================================================================
+   RESPONSIVE (MOBILE)
+   ========================================================================== */
+@media screen and (max-width: 900px) {
+    .agenda-layout { grid-template-columns: 1fr; }
+    .agenda-header { flex-direction: column; align-items: flex-start; gap: 20px; }
+    .appointment-card { grid-template-columns: 1fr; text-align: left; }
+    .time-badge { display: inline-block; width: fit-content; }
+}
+
+@media screen and (max-width: 768px) {
+    .nav-menu {
+        position: absolute;
+        top: 80px;
+        left: -100%;
+        flex-direction: column;
+        background-color: var(--bg-white);
+        width: 100%;
+        text-align: center;
+        transition: 0.3s;
+        box-shadow: 0 10px 10px rgba(0,0,0,0.05);
+        padding: 20px 0;
+        gap: 20px;
+    }
+    .nav-menu.active { left: 0; }
+    .menu-toggle { display: block; }
+    .hero-title { font-size: 32px; }
+}
+
+@media screen and (max-width: 600px) {
+    .hero-actions { flex-direction: column; padding: 0 20px; }
+    .magic-icons-container { font-size: 50px; }
+}
+
+/* ==========================================================================
+   MODALES BASE Y ESTILOS PREMIUM (CORREGIDO)
+   ========================================================================== */
+
+/* Fondo del Modal (El oscuro con blur) */
+.modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(31, 41, 55, 0.6);
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+    z-index: 2000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+    padding: 20px;
+}
+
+.modal-backdrop.active {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* La caja blanca del Modal */
+.modal-box {
+    width: 100%;
+    max-width: 480px; 
+    background: rgba(255, 255, 255, 0.98);
+    position: relative;
+    transform: translateY(30px) scale(0.95);
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 25px 50px rgba(0,0,0,0.15);
+    border-radius: 20px;
+    padding: 40px;
+    border-top: 6px solid var(--color-brand-purple);
+    max-height: 90vh;
+    overflow-y: auto; 
+}
+
+/* Modal más ancho para el formulario de registro (Agenda) */
+.modal-box.modal-large {
+    max-width: 700px;
+}
+
+.modal-backdrop.active .modal-box {
+    transform: translateY(0) scale(1);
+}
+
+/* Botón de cerrar "X" */
+.close-modal {
+    position: absolute;
+    top: 15px;
+    right: 20px;
+    font-size: 24px;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: color 0.2s;
+    z-index: 10;
+}
+
+.close-modal:hover {
+    color: var(--color-brand-purple);
+}
+
+/* --- CONTROL DEL LOGO EN EL MODAL --- */
+.modal-brand {
+    text-align: center;
+    margin-bottom: 25px;
+}
+
+.modal-logo {
+    height: auto;
+    width: 400px;
+    object-fit: contain;
+}
+
+
+/* --- CAMPOS DE FORMULARIO HERMOSOS --- */
+.auth-header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.auth-header h2 {
+    font-size: 26px;
+    color: var(--color-brand-purple);
+    margin-bottom: 8px;
+}
+
+.auth-header p {
+    color: var(--text-muted);
+    font-size: 15px;
+}
+
+.custom-form .input-group {
+    position: relative;
+    margin-bottom: 38px;
+    width: 100%;
+}
+
+.custom-form .input-group input, 
+.custom-form .input-group select {
+    width: 100%;
+    background: #F3F4F6; 
+    border: 2px solid transparent;
+    border-radius: 12px;
+    padding: 16px 20px 16px 50px;
+    font-family: var(--font-body);
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--text-main);
+    transition: all 0.3s ease;
+    box-sizing: border-box;
+}
+
+.custom-form .input-group i {
+    position: absolute;
+    left: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--color-brand-purple);
+    font-size: 18px;
+    z-index: 2;
+}
+
+.custom-form .input-group input:focus,
+.custom-form .input-group select:focus {
+    outline: none;
+    background: var(--bg-white);
+    border-color: var(--color-brand-purple);
+    box-shadow: 0 4px 15px rgba(90, 63, 163, 0.1);
+}
+
+/* Layout a dos columnas para la fila de inputs */
+.input-row {
+    display: flex;
+    gap: 38px;
+    width: 100%;
+}
+
+.input-row .input-group {
+    flex: 1;
+    margin-bottom: 38px;
+}
+
+/* Select personalizado */
+.custom-select {
+    appearance: none;
+    -webkit-appearance: none;
+    cursor: pointer;
+}
+
+/* Opciones debajo del login */
+.auth-options {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    font-size: 14px;
+}
+
+.forgot-password { 
+    color: var(--color-brand-purple); 
+    font-weight: 600; 
+}
+
+
+/* Responsive para los Modales */
+@media screen and (max-width: 768px) {
+    .modal-box {
+        padding: 30px 20px;
+    }
+    
+    .input-row { 
+        flex-direction: column; 
+        gap: 0; 
+    }
+    
+    .input-row .input-group {
+        width: 100%;
+    }
+}
+
+
+/* ==========================================================================
+   PANEL DEL PACIENTE (DASHBOARD PREMIUM)
+   ========================================================================== */
+.panel-wrapper {
+    background-color: var(--bg-light);
+    min-height: calc(100vh - 80px);
+    padding: 60px 0;
+}
+
+/* Ánimo Gigante */
+.mood-tracker-gigante {
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+    flex-wrap: wrap;
+}
+
+.mood-btn-huge {
+    background: none;
+    border: none;
+    font-size: 55px;
+    color: #E5E7EB;
+    cursor: pointer;
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    filter: grayscale(100%);
+}
+
+.mood-btn-huge:hover, .mood-btn-huge.selected {
+    transform: scale(1.2) translateY(-10px);
+    filter: grayscale(0%);
+}
+
+/* Colores originales al seleccionarse (Ajustados a nueva paleta) */
+.mood-btn-huge:nth-child(1):hover, .mood-btn-huge:nth-child(1).selected { color: var(--color-brand-pink); }
+.mood-btn-huge:nth-child(2):hover, .mood-btn-huge:nth-child(2).selected { color: var(--color-brand-orange); }
+.mood-btn-huge:nth-child(3):hover, .mood-btn-huge:nth-child(3).selected { color: var(--color-brand-yellow); }
+.mood-btn-huge:nth-child(4):hover, .mood-btn-huge:nth-child(4).selected { color: var(--color-brand-teal); }
+.mood-btn-huge:nth-child(5):hover, .mood-btn-huge:nth-child(5).selected { color: var(--color-brand-purple); }
+
+/* Grid del Panel */
+.panel-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 30px;
+}
+
+/* --- CALENDARIO ESTILO DOCTORALIA --- */
+.date-carousel {
+    display: flex;
+    gap: 15px;
+    overflow-x: auto;
+    padding-bottom: 10px;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+.date-carousel::-webkit-scrollbar { display: none; }
+
+.date-chip {
+    background: var(--bg-white);
+    border: 2px solid #E5E7EB;
+    border-radius: 16px;
+    min-width: 90px;
+    padding: 15px 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    flex-shrink: 0;
+}
+
+.date-chip .day-name { font-size: 14px; color: var(--text-muted); text-transform: uppercase; font-weight: 600; margin-bottom: 5px; }
+.date-chip .day-number { font-size: 24px; color: var(--text-main); font-weight: bold; font-family: var(--font-headings); }
+
+.date-chip:hover, .date-chip.active {
+    border-color: var(--color-brand-purple);
+    background: var(--color-brand-purple);
+}
+.date-chip:hover .day-name, .date-chip:hover .day-number,
+.date-chip.active .day-name, .date-chip.active .day-number { color: var(--bg-white); }
+
+
+/* Flechas del Carrusel */
+.carousel-arrow {
+    background: var(--bg-white);
+    border: 2px solid #E5E7EB;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-brand-purple);
+    cursor: pointer;
+    transition: all 0.2s;
+    flex-shrink: 0;
+}
+.carousel-arrow:hover {
+    background: var(--color-brand-purple);
+    color: white;
+    border-color: var(--color-brand-purple);
+}
+
+/* Horarios (Botones) */
+.slots-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 15px;
+}
+
+.time-slot-btn {
+    background: var(--bg-white);
+    border: 2px solid #E5E7EB;
+    color: var(--text-main);
+    padding: 15px;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.time-slot-btn:hover {
+    border-color: var(--color-brand-purple);
+    color: var(--color-brand-purple);
+    box-shadow: 0 4px 10px rgba(90, 63, 163, 0.1);
+}
+
+.payment-box {
+    background: #FFFFFF;
+    max-width: 450px;
+    margin: 0 auto;
+    padding: 40px;
+    border-radius: 20px;
+    border: 2px solid #F3F4F6;
+}
+
+@media screen and (max-width: 900px) {
+    .panel-grid { grid-template-columns: 1fr; }
+}
+
+
+/* ==========================================================================
+   FIX DEFINITIVO: EVITAR EXPANSIÓN INFINITA DE GRID Y FLEX
+   ========================================================================== */
+
+/* 1. Obligamos a las columnas del grid a no expandirse más allá de la pantalla */
+.panel-grid {
+    width: 100%;
+    max-width: 100%;
+}
+
+.main-column {
+    min-width: 0; 
+    width: 100%;
+    max-width: 100%;
+}
+
+/* 2. El contenedor que envuelve las flechas y el carrusel */
+.carousel-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    min-width: 0; 
+    margin-bottom: 20px;
+}
+
+/* 3. Forzamos al carrusel a hacer scroll en lugar de empujar el layout */
+.date-carousel {
+    display: flex;
+    gap: 15px;
+    overflow-x: auto;
+    padding-bottom: 10px;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+    flex-grow: 1; 
+    min-width: 0 !important; 
+    scroll-behavior: smooth;
+}
+
+/* ==========================================================================
+   PERSONALIZACIÓN DEL CALENDARIO FLATPICKR (COLORES PASTEL)
+   ========================================================================== */
+
+/* 1. Días NO disponibles (Deshabilitados) */
+.flatpickr-day.flatpickr-disabled,
+.flatpickr-day.flatpickr-disabled:hover {
+    background-color: #ffffff !important; 
+    color: #000000 !important; 
+    border-color: transparent !important;
+}
+
+/* 2. Días DISPONIBLES -> Morado o Amarillo pastel lindo */
+.flatpickr-day:not(.flatpickr-disabled):not(.selected):not(.today) {
+    background-color: #f3e8ff !important; /* Fondo morado pastel */
+    color: #000000 !important; 
+    border-color: transparent !important;
+    font-weight: 600;
+    border-radius: 10px !important; 
+}
+
+/* 3. Efecto al pasar el mouse por un día disponible */
+.flatpickr-day:not(.flatpickr-disabled):hover {
+    background-color: #d8b4fe !important; /* Morado un poquito más vivo */
+    transform: scale(1.08); 
+    transition: all 0.2s ease;
+}
+
+/* 4. Día SELECCIONADO (El que eligen) -> Tu color Purple de marca */
+.flatpickr-day.selected, .flatpickr-day.startRange, .flatpickr-day.endRange, .flatpickr-day.selected.inRange, .flatpickr-day.startRange.inRange, .flatpickr-day.endRange.inRange, .flatpickr-day.selected:focus, .flatpickr-day.startRange:focus, .flatpickr-day.endRange:focus, .flatpickr-day.selected:hover, .flatpickr-day.startRange:hover, .flatpickr-day.endRange:hover, .flatpickr-day.selected.prevMonthDay, .flatpickr-day.startRange.prevMonthDay, .flatpickr-day.endRange.prevMonthDay, .flatpickr-day.selected.nextMonthDay, .flatpickr-day.startRange.nextMonthDay, .flatpickr-day.endRange.nextMonthDay {
+    background-color: var(--color-brand-purple) !important;
+    color: #ffffff !important;
+    border-color: var(--color-brand-purple) !important;
+    border-radius: 10px !important;
+}
+
+/* Separar un poco los días dentro del calendario de Flatpickr */
+.flatpickr-days {
+    padding: 15px !important; 
+}
+
+
+/* ==========================================================================
+   SEPARACIÓN Y AIRE PARA EL PANEL (MENOS AMONTONADO)
+   ========================================================================== */
+
+/* Botones de horas con más espacio adentro y entre ellos */
+.slots-container {
+    gap: 20px !important; 
+    margin-top: 15px; 
+}
+
+.time-slot-btn {
+    padding: 18px !important; 
+    font-size: 16px;
+}
+
+/* Separar un poco más los cuadritos del carrusel */
+.date-carousel {
+    gap: 20px !important;
+    padding-top: 10px;
+    padding-bottom: 20px !important;
+}
+
+.date-chip {
+    padding: 20px 15px !important; 
+}
+
+
+/* ==========================================================================
+   RESPONSIVE (MOBILE) - OPTIMIZADO
+   ========================================================================== */
+@media screen and (max-width: 900px) {
+    .agenda-layout { grid-template-columns: 1fr; }
+    .agenda-header { flex-direction: column; align-items: flex-start; gap: 20px; }
+    .appointment-card { grid-template-columns: 1fr; text-align: left; }
+    .time-badge { display: inline-block; width: fit-content; }
+}
+
+@media screen and (max-width: 768px) {
+    /* Menú Móvil */
+    .nav-menu { position: absolute; top: 80px; left: -100%; flex-direction: column; background-color: var(--bg-white); width: 100%; text-align: center; transition: 0.3s; box-shadow: 0 10px 10px rgba(0,0,0,0.05); padding: 20px 0; gap: 20px; }
+    .nav-menu.active { left: 0; }
+    .menu-toggle { display: block; }
+    
+    /* Escalar Logo */
+    .logo-img { width: 100%; max-width: 200px; height: auto; }
+    
+    /* Textos y Botones */
+    .hero-title, h1.chic-title { font-size: 32px !important; }
+    .btn-brutal { padding: 14px 20px !important; font-size: 16px !important; }
+    
+    /* Paneles más delgados para ganar espacio en celular */
+    .chic-panel { padding: 30px 20px !important; }
+    .auth-glass-card { padding: 30px 20px !important; }
+    .modal-box { padding: 30px 20px !important; }
+    
+    /* Layouts de 1 columna */
+    .grid-layout { grid-template-columns: 1fr !important; }
+    .input-row { flex-direction: column; gap: 0; }
+    .input-row .input-group { width: 100%; }
+    
+    /* Caritas del estado de ánimo */
+    .mood-btn-huge { font-size: 35px !important; }
+    .mood-tracker-gigante { gap: 15px !important; padding: 15px 20px !important; border-radius: 30px !important; }
+}
+
+@media screen and (max-width: 600px) {
+    .hero-actions { flex-direction: column; padding: 0 20px; }
+    .magic-icons-container { font-size: 50px; }
+}
