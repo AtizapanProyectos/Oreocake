@@ -79,14 +79,28 @@ WSGI_APPLICATION = 'hope_project.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
+# DATABASES = {
+#    'default': {
+#        'ENGINE': 'django.db.backends.mysql',
+#        'NAME': 'hope',
+#        'USER': 'root',  # Cambia esto por tu usuario de MySQL local
+#        'PASSWORD': 'JBVzIRkXKqXsefqrezTQKSQSQiLokjKw',  # Cambia esto por tu contraseña
+#        'HOST': 'yamanote.proxy.rlwy.net',
+#        'PORT': '48237',
+#    }
+#}
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'hope',
-        'USER': 'root',  # Cambia esto por tu usuario de MySQL local
-        'PASSWORD': 'JBVzIRkXKqXsefqrezTQKSQSQiLokjKw',  # Cambia esto por tu contraseña
-        'HOST': 'yamanote.proxy.rlwy.net',
-        'PORT': '48237',
+        'NAME': 'defaultdb',
+        'USER': 'avnadmin',
+        'PASSWORD': 'AVNS_lo8IstpelZZIWWBvZje',
+        'HOST': 'hope-atizapan-ec39.e.aivencloud.com',
+        'PORT': '20731',
+        'OPTIONS': {
+            'ssl': {'ca': None},
+        }
     }
 }
 
