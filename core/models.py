@@ -58,6 +58,12 @@ class Cita(models.Model):
     enlace_meet = models.URLField(blank=True, null=True)
     id_evento_google = models.CharField(max_length=255, blank=True, null=True)
     modalidad = models.CharField(max_length=50, default='En línea', choices=[('En línea', 'En línea'), ('Presencial', 'Presencial')])
+    tipo_sesion = models.CharField(
+        max_length=50,
+        default='individual',
+        choices=[('individual', 'Individual'), ('pareja', 'En Pareja')],
+        verbose_name='Tipo de Sesión'
+    )
 
     def __str__(self):
         return f"Cita: {self.paciente.first_name} con {self.psicologo.usuario.first_name} el {self.fecha.strftime('%d/%m')}"

@@ -343,24 +343,59 @@
             </div>
 
             {% else %}
-            <div class="chic-card fade-in-up" style="border-top: 6px solid var(--c-teal); margin-bottom: 40px; background: #f0fdfa;">
-                <div style="display: flex; align-items: center; gap: 30px; flex-wrap: wrap; justify-content: center; text-align: center;">
-                    <i class="fas fa-spa" style="font-size: 60px; color: var(--c-teal);"></i>
-                    <div>
-                        <h3 style="font-family: var(--font-headings); font-size: 2.5rem; color: var(--text-main); margin-bottom: 10px;">El Reto HOPE: Compromiso Semanal</h3>
-                        <p style="color: var(--text-muted); font-size: 16px; margin-bottom: 20px; max-width: 500px;">Las estadísticas indican que asistir 1 vez por semana acelera tu proceso de sanación. ¿Estás listo/a para comprometerte con tu bienestar?</p>
-                        <label style="display: inline-flex; align-items: center; gap: 10px; font-weight: 700; color: white; cursor: pointer; font-size: 16px; background: var(--c-teal); padding: 15px 30px; border-radius: 30px; transition: 0.3s; flex-wrap: wrap; justify-content: center;">
-                            <input type="checkbox" style="width: 22px; height: 22px; accent-color: #ffffff;" onchange="celebrarReto(this)">
-                            ¡Sí, acepto el reto semanal!
-                        </label>
-                    </div>
-                </div>
-            </div>
+<div class="chic-card" style="margin-bottom: 40px; border: none; padding: 50px; background: linear-gradient(135deg, #f3e8ff 0%, #ffffff 100%); box-shadow: 0 20px 40px rgba(90, 63, 163, 0.1); border-radius: 40px; position: relative; overflow: hidden;">
+    
+    <i class="fas fa-calendar-check" style="position: absolute; right: -20px; bottom: -20px; font-size: 150px; color: var(--c-purple); opacity: 0.05;"></i>
+
+    <div style="text-align: center; position: relative; z-index: 1;">
+        <div style="display: inline-block; background: var(--c-purple); color: white; padding: 8px 20px; border-radius: 50px; font-weight: 800; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 20px;">
+            <i class="fas fa-star"></i> Ciencia de HOPE
+        </div>
+        
+        <h2 style="font-family: var(--font-headings); font-size: clamp(1.8rem, 4vw, 2.5rem); color: var(--text-main); margin-bottom: 20px; font-weight: 900;">
+            Tu bienestar en el ritmo ideal
+        </h2>
+        
+        <p style="font-size: 1.25rem; color: var(--text-muted); line-height: 1.6; max-width: 700px; margin: 0 auto 30px auto;">
+            Estudios clínicos confirman que asistir a sesión 
+            <span style="background: var(--c-yellow); color: var(--c-dark); padding: 4px 15px; border-radius: 12px; font-weight: 900; font-family: var(--font-headings); display: inline-block; transform: rotate(-1deg);">cada 7 días</span> 
+            acelera tu proceso de bienestar hasta un 
+            <strong style="color: var(--c-purple);">40% más rápido</strong>.
+        </p>
+<div id="cta-container" style="text-align: center; margin: 50px 0;">
+    <button onclick="iniciarAgendado()" class="btn-brutal btn-primary" style="padding: 25px 60px; font-size: 1.4rem; border-radius: 100px; box-shadow: 0 15px 30px rgba(90, 63, 163, 0.3);">
+        Agendar mi primera sesión <i class="fas fa-calendar-plus" style="margin-left: 10px;"></i>
+    </button>
+</div>
+
+<div id="selector-servicio" style="display: none; text-align: center; margin: 40px 0; animation: fadeIn 0.5s;">
+    <h3 style="font-family: var(--font-headings); font-size: 1.8rem; margin-bottom: 30px;">¿Qué tipo de sesión necesitas?</h3>
+    
+    <div style="display: flex; gap: 25px; justify-content: center; flex-wrap: wrap;">
+        <div class="chic-card" onclick="seleccionarServicio('individual')" style="cursor: pointer; width: 220px; text-align: center; padding: 30px; border: 2px solid #f1f5f9; transition: 0.3s;">
+            <i class="fas fa-user" style="font-size: 40px; color: var(--c-purple); margin-bottom: 15px;"></i>
+            <h4 style="font-family: var(--font-headings); margin: 0 0 8px 0;">Individual</h4>
+            <p style="font-size: 13px; color: var(--text-muted); margin: 0;">$110 MXN</p>
+        </div>
+
+        <div class="chic-card" onclick="seleccionarServicio('pareja')" style="cursor: pointer; width: 220px; text-align: center; padding: 30px; border: 2px solid #f1f5f9; transition: 0.3s;">
+            <i class="fas fa-user-friends" style="font-size: 40px; color: var(--c-pink); margin-bottom: 15px;"></i>
+            <h4 style="font-family: var(--font-headings); margin: 0 0 8px 0;">En Pareja</h4>
+            <p style="font-size: 13px; color: var(--text-muted); margin: 0;">$215 MXN</p>
+        </div>
+    </div>
+</div>
+
+    </div>
+</div>
             {% endif %}
 
         {% endif %}
 
+        
+
             <div class="chic-card" id="booking-wizard" {% if not user.perfil.psicologo_asignado %}style="display: none;"{% endif %}>
+                                          
                 <span class="step-tag">Agendar Nueva Sesión</span>
                 <h2 style="font-family: var(--font-headings); font-size: 2rem; margin-bottom: 30px;">Selecciona el día y la hora</h2>
 
@@ -388,13 +423,13 @@
                 </div>
 
                 <div id="step-2-payment" style="display: none; text-align: center; padding-top: 40px; border-top: 1px solid #f1f5f9; margin-top: 40px;">
-<button id="btn-back-schedule" style="background:none; border:none; color: var(--c-purple); font-weight: 700; cursor:pointer; font-size: 16px; margin-bottom: 20px; display:block;">
-    <i class="fas fa-arrow-left"></i> Volver al calendario
-</button>
+                <button id="btn-back-schedule" style="background:none; border:none; color: var(--c-purple); font-weight: 700; cursor:pointer; font-size: 16px; margin-bottom: 20px; display:block;">
+                    <i class="fas fa-arrow-left"></i> Volver al calendario
+                </button>
 
-<h2 class="chic-title" style="color: var(--text-main); font-family: var(--font-headings); font-size: 2rem; margin-bottom: 10px; clear: both;">
-    Confirmar Cita
-</h2> <p id="selected-time-text" style="font-size: 18px; color: var(--c-purple); margin-bottom: 20px; font-weight: 600;"></p>
+                <h2 class="chic-title" style="color: var(--text-main); font-family: var(--font-headings); font-size: 2rem; margin-bottom: 10px; clear: both;">
+                 Confirmar Cita
+                </h2> <p id="selected-time-text" style="font-size: 18px; color: var(--c-purple); margin-bottom: 20px; font-weight: 600;"></p>
 
                     <div style="margin-bottom: 30px; text-align: left; max-width: 450px; margin-left: auto; margin-right: auto;">
                         <p style="font-size: 14px; font-weight: 700; color: var(--text-main); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 1px;">Modalidad de tu sesión:</p>
@@ -422,21 +457,12 @@
                         <p style="text-transform: uppercase; letter-spacing: 2px; font-size: 12px; color: #9ca3af; margin-bottom: 10px; font-weight: 700;">Total a pagar</p>
 
   
-                        <h3 style="font-size: 42px; margin-bottom: 5px; color: var(--c-purple); font-weight: 800; font-family: var(--font-headings);">
-                            {% if tipo_servicio == 'terapia_pareja' %}
-                                $215.00
-                            {% else %}
-                                $110.00
-                            {% endif %}
-                            <span style="font-size: 16px;">MXN</span>
+                        <h3 id="precio-dinamico" style="font-size: 42px; margin-bottom: 5px; color: var(--c-purple); font-weight: 800; font-family: var(--font-headings);">
+                            $110.00 <span style="font-size: 16px;">MXN</span>
                         </h3>
                         
-                        <p style="color: var(--text-main); font-weight: 500; margin-bottom: 25px;">
-                            {% if tipo_servicio == 'terapia_pareja' %}
-                                Sesión para dos personas (Pareja)
-                            {% else %}
-                                Consulta Psicológica Online Individual
-                            {% endif %}
+                        <p id="desc-dinamica" style="color: var(--text-main); font-weight: 500; margin-bottom: 25px;">
+                            Consulta Psicológica Online Individual
                         </p>
 
                       
@@ -737,6 +763,39 @@
 
 <script src="https://www.paypal.com/sdk/js?client-id={{ paypal_client_id }}&currency=MXN"></script>
 <script>
+
+
+// Variable global para guardar qué eligió el usuario
+    window.tipoServicioAgendado = ""; 
+
+    function iniciarAgendado() {
+        // Ocultamos el botón gigante y mostramos el menú de selección
+        document.getElementById('cta-container').style.display = 'none';
+        document.getElementById('selector-servicio').style.display = 'block';
+    }
+
+    function seleccionarServicio(tipo) {
+        // 1. Guardamos la selección
+        window.tipoServicioAgendado = tipo;
+        
+        // 2. Actualizamos el precio y descripción visibles
+        if (tipo === 'pareja') {
+            document.getElementById('precio-dinamico').innerHTML = '$215.00 <span style="font-size: 16px;">MXN</span>';
+            document.getElementById('desc-dinamica').innerText = 'Sesión para dos personas (Pareja)';
+        } else {
+            document.getElementById('precio-dinamico').innerHTML = '$110.00 <span style="font-size: 16px;">MXN</span>';
+            document.getElementById('desc-dinamica').innerText = 'Consulta Psicológica Online Individual';
+        }
+
+        // 3. Ocultamos el selector de terapia
+        document.getElementById('selector-servicio').style.display = 'none';
+        
+        // 4. Disparamos la función que despliega el calendario
+        mostrarCalendario(); 
+        
+        console.log("Tipo de servicio seleccionado:", tipo);
+    }
+
     function cerrarYRecargar() {
         document.getElementById('alerta-error-cita').style.display = 'none';
         location.reload();
@@ -1009,9 +1068,6 @@
 
 // --- PAYPAL SMART BUTTONS ---
         
-        // Determinamos el costo dependiendo del servicio (100 o 200 pesos)
-        let montoCobro = "{% if tipo_servicio == 'terapia_pareja' %}215.00{% else %}110.00{% endif %}";
-
         if (document.getElementById('paypal-button-container')) {
             paypal.Buttons({
                 
@@ -1020,20 +1076,25 @@
                     const checkConsentimiento = document.getElementById('check-consentimiento');
                     if (checkConsentimiento && !checkConsentimiento.checked) {
                         document.getElementById('alerta-consentimiento').style.display = 'flex';
-                        return actions.reject(); // Frena a PayPal
+                        return actions.reject();
                     }
                     if (!window.fechaSeleccionada || !window.horaSeleccionada) {
                         alert("Por favor, selecciona una fecha y una hora válida.");
-                        return actions.reject(); // Frena a PayPal
+                        return actions.reject();
                     }
-                    return actions.resolve(); // Todo en orden, abre PayPal
+                    return actions.resolve();
                 },
 
-                // 2. CREAR LA ORDEN DE COBRO
+                // 2. CREAR LA ORDEN DE COBRO — monto se determina en tiempo real
                 createOrder: function(data, actions) {
+                    // Leemos el tipo elegido por el usuario en este momento
+                    let montoCobro = (window.tipoServicioAgendado === 'pareja') ? '5.00' : '5.00';
+                    let descripcion = (window.tipoServicioAgendado === 'pareja')
+                        ? 'Sesión Psicológica HOPE — Pareja'
+                        : 'Sesión Psicológica HOPE — Individual';
                     return actions.order.create({
                         purchase_units: [{
-                            description: "Sesión Psicológica HOPE",
+                            description: descripcion,
                             amount: { value: montoCobro }
                         }]
                     });
@@ -1045,12 +1106,13 @@
                     document.getElementById('step-3-loading').style.display = 'block';
 
                     return actions.order.capture().then(function(detallesPago) {
-                        // El dinero ya está seguro. Guardamos la cita.
                         let formData = new URLSearchParams();
                         formData.append('fecha', window.fechaSeleccionada);
                         formData.append('hora', window.horaSeleccionada);
                         formData.append('animo', window.animoSeleccionado);
                         formData.append('modalidad', window.modalidadSeleccionada);
+                        // ✅ Pasamos el tipo de servicio elegido al backend
+                        formData.append('tipo_servicio', window.tipoServicioAgendado);
                         formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
 
                         fetch("{% url 'guardar_cita' %}", {

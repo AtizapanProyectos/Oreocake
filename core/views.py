@@ -476,7 +476,11 @@ def guardar_cita_ajax(request):
         fecha_str = request.POST.get('fecha')
         hora_str = request.POST.get('hora')
         animo = request.POST.get('animo', 'No especificó')
-        modalidad_str = request.POST.get('modalidad', 'En línea') # <--- CAPTURAMOS MODALIDAD
+        modalidad_str = request.POST.get('modalidad', 'En línea')
+        # 🔥 Tipo de sesión elegido por el usuario en el panel (individual o pareja)
+        tipo_sesion_str = request.POST.get('tipo_servicio', 'individual')
+        if tipo_sesion_str not in ['individual', 'pareja']:
+            tipo_sesion_str = 'individual'
 
         try:
             fecha_obj = datetime.strptime(fecha_str, '%Y-%m-%d').date()
@@ -541,7 +545,8 @@ def guardar_cita_ajax(request):
                 fecha=fecha_obj,
                 hora=hora_obj,
                 estado_animo=animo,
-                modalidad=modalidad_str, # <--- GUARDAMOS SI ES PRESENCIAL O EN LÍNEA
+                modalidad=modalidad_str,
+                tipo_sesion=tipo_sesion_str,  # 🔥 Guardamos si fue individual o de pareja
                 motivo='Primera Sesión' if not perfil.psicologo_asignado else 'Sesión de Seguimiento',
                 estado='Confirmada',
                 enlace_meet=link_final,
