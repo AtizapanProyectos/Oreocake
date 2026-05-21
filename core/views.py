@@ -173,7 +173,9 @@ def registrar_usuario(request):
             username=email, 
             email=email, password=password)
         user.first_name = nombre
-        user.is_active = False
+        
+        # 🔥 El usuario se activa de inmediato para omitir el correo
+        user.is_active = True
         user.save()
 
         es_padre_bool = False
@@ -197,6 +199,8 @@ def registrar_usuario(request):
             respuestas=respuestas_dict,
         )
 
+        # 🔥 Dejamos el envío de correo desactivado en bloque
+        """
         uid = urlsafe_base64_encode(force_bytes(user.pk))
         token = default_token_generator.make_token(user)
         link_activacion = request.build_absolute_uri(
@@ -216,8 +220,13 @@ def registrar_usuario(request):
             html_message=mensaje_html,
             fail_silently=False
         )
-        return JsonResponse({'status': 'success', 'message': '¡Registro exitoso! Revisa tu correo para activar tu cuenta.'})
+        """
 
+        # 🔥 Iniciamos sesión automáticamente en el servidor
+        login(request, user)
+        
+        # 🔥 Mandamos la URL directa para que el JS del frontend redirija al instante
+        return JsonResponse({'status': 'success', 'redirect_url': reverse('panel_generico')})
 
 def activar_cuenta(request, uidb64, token):
     try:

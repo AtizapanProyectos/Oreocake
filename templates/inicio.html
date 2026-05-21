@@ -143,9 +143,31 @@ body{font-family:var(--font-b);color:var(--c-dark);background:#fff;display:flex}
   background:#fff;width:100%;max-width:550px;padding:50px;
   border-radius:40px;text-align:center;position:relative;box-shadow:0 50px 100px rgba(0,0,0,.2)
 }
-.modal-close{position:absolute;top:30px;right:30px;font-size:24px;color:#cbd5e1;cursor:pointer;transition:.3s;background:none;border:none}
-.modal-close:hover{color:var(--c-dark)}
-
+/* ── BOTÓN CERRAR (TACHE ROJO) ── */
+.modal-close {
+    position: absolute; 
+    top: 20px; 
+    right: 20px; 
+    font-size: 22px; 
+    color: #ef4444; 
+    background: #fef2f2; 
+    border: 2px solid #fecaca;
+    width: 45px; 
+    height: 45px; 
+    border-radius: 50%; 
+    cursor: pointer;
+    transition: 0.3s cubic-bezier(0.16, 1, 0.3, 1); 
+    display: flex; 
+    align-items: center; 
+    justify-content: center;
+    z-index: 50;
+}
+.modal-close:hover {
+    background: #ef4444; 
+    color: white; 
+    transform: scale(1.15) rotate(90deg);
+    box-shadow: 0 10px 20px rgba(239, 68, 68, 0.3);
+}
 /* ── MODAL DONACIÓN ── */
 .donation-chips{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:30px}
 .chip{padding:12px 25px;border:2px solid #e2e8f0;border-radius:100px;font-weight:700;cursor:pointer;transition:.3s;color:var(--c-dark);font-size:16px}
@@ -456,6 +478,9 @@ body{font-family:var(--font-b);color:var(--c-dark);background:#fff;display:flex}
     0%, 100% { transform: translateY(0) rotate(0deg); }
     50% { transform: translateY(-15px) rotate(10deg); }
   }
+
+
+
 
 </style>
 </head>
@@ -860,6 +885,15 @@ body{font-family:var(--font-b);color:var(--c-dark);background:#fff;display:flex}
             <button type="submit" class="btn-primary" style="width: 100%; justify-content: center; padding: 20px; font-size: 1.15rem; border-radius: 16px;">
                 Entrar al panel <i class="fas fa-arrow-right"></i>
             </button>
+
+            <div style="margin-top: 25px; text-align: center; border-top: 2px dashed #f1f5f9; padding-top: 20px;">
+                <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 12px; font-weight: 600;">¿Eres nuevo usuario?</p>
+                <button type="button" onclick="cerrarModal('modalLogin'); abrirRegistroDirecto('individual', 'terapia_individual');" class="btn-outline" style="width: 100%; justify-content: center; padding: 15px; font-size: 1rem; border-radius: 16px; border-width: 2px;">
+                    Crea tu cuenta HOPE aquí <i class="fas fa-user-plus"></i>
+                </button>
+            </div>
+            </form>
+          </div>    
         </form>
     </div>
 </div>
@@ -996,20 +1030,69 @@ body{font-family:var(--font-b);color:var(--c-dark);background:#fff;display:flex}
                 <input type="hidden" name="respuestas_json" id="inputRespuestasFinal">
                 <input type="hidden" name="servicio_origen" id="inputServicioOrigen">
 
-                <input type="text" id="pseudonimoFinal" class="custom-input-triage" style="margin-bottom: 15px;" placeholder="¿Con qué nombre o seudónimo te llamamos?" required>
-                <input type="text" name="nombre" class="custom-input-triage" style="margin-bottom: 15px;" placeholder="Nombre completo (Privado)" required>
-                <input type="email" name="email" class="custom-input-triage" style="margin-bottom: 15px;" placeholder="Correo electrónico" required>
-                <input type="tel" name="telefono" class="custom-input-triage" style="margin-bottom: 15px;" placeholder="Tu Teléfono" required>
-                <input type="tel" name="telefono_emergencia" class="custom-input-triage" style="margin-bottom: 15px; border-color: var(--c-pink);" placeholder="Tel. de Emergencia" required>
-                <input type="password" name="password" class="custom-input-triage" style="margin-bottom: 25px;" placeholder="Crea una Contraseña segura" required>
+                <div style="background: #f8fafc; padding: 25px; border-radius: 20px; border: 1px solid #e2e8f0; margin-bottom: 25px;">
+                    <h4 style="font-family: var(--font-h); font-size: 1.4rem; color: var(--c-purple); margin-bottom: 20px; font-weight: 800;">Tus Datos Generales</h4>
 
-                <label style="display: flex; align-items: flex-start; gap: 12px; margin-bottom: 25px; cursor: pointer; background: #fff1f2; padding: 15px; border-radius: 16px; border: 1px solid #fecdd3;">
-                    <input type="checkbox" name="acepta_privacidad" required style="width: 20px; height: 20px; accent-color: var(--c-pink); margin-top: 2px;">
-                    <span style="font-size: 0.9rem; color: var(--text-main); line-height: 1.4;">
-                        He leído y acepto el <a href="#" onclick="abrirModal('modalPrivacidad'); return false;" style="color: var(--c-pink); font-weight: 800; text-decoration: none;">Aviso de Privacidad</a> para proteger mi expediente.
+                    <div style="margin-bottom: 18px;">
+                        <label style="font-size: 0.85rem; font-weight: 700; color: var(--text-muted); margin-bottom: 8px; display: block; text-transform: uppercase; letter-spacing: 1px;">¿Cómo te llamamos? <span style="color: var(--c-pink);">*</span></label>
+                        <div style="position: relative;">
+                            <i class="fas fa-smile" style="position: absolute; left: 18px; top: 50%; transform: translateY(-50%); color: #cbd5e1; font-size: 1.2rem;"></i>
+                            <input type="text" id="pseudonimoFinal" style="width: 100%; padding: 16px 16px 16px 50px; border-radius: 14px; border: 2px solid #cbd5e1; font-size: 1rem; font-family: var(--font-b); outline: none; transition: 0.3s; color: var(--c-dark);" placeholder="Ej. Alex, Majo..." required onfocus="this.style.borderColor='var(--c-purple)'" onblur="this.style.borderColor='#cbd5e1'">
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom: 18px;">
+                        <label style="font-size: 0.85rem; font-weight: 700; color: var(--text-muted); margin-bottom: 8px; display: block; text-transform: uppercase; letter-spacing: 1px;">Nombre Completo (Privado) <span style="color: var(--c-pink);">*</span></label>
+                        <div style="position: relative;">
+                            <i class="fas fa-id-card" style="position: absolute; left: 18px; top: 50%; transform: translateY(-50%); color: #cbd5e1; font-size: 1.2rem;"></i>
+                            <input type="text" name="nombre" style="width: 100%; padding: 16px 16px 16px 50px; border-radius: 14px; border: 2px solid #cbd5e1; font-size: 1rem; font-family: var(--font-b); outline: none; transition: 0.3s; color: var(--c-dark);" placeholder="Para tu expediente clínico oficial" required onfocus="this.style.borderColor='var(--c-purple)'" onblur="this.style.borderColor='#cbd5e1'">
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom: 18px;">
+                        <label style="font-size: 0.85rem; font-weight: 700; color: var(--text-muted); margin-bottom: 8px; display: block; text-transform: uppercase; letter-spacing: 1px;">Correo electrónico <span style="color: var(--c-pink);">*</span></label>
+                        <div style="position: relative;">
+                            <i class="fas fa-envelope" style="position: absolute; left: 18px; top: 50%; transform: translateY(-50%); color: #cbd5e1; font-size: 1.2rem;"></i>
+                            <input type="email" name="email" style="width: 100%; padding: 16px 16px 16px 50px; border-radius: 14px; border: 2px solid #cbd5e1; font-size: 1rem; font-family: var(--font-b); outline: none; transition: 0.3s; color: var(--c-dark);" placeholder="tucorreo@ejemplo.com" required onfocus="this.style.borderColor='var(--c-purple)'" onblur="this.style.borderColor='#cbd5e1'">
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 15px; flex-wrap: wrap; margin-bottom: 18px;">
+                        <div style="flex: 1; min-width: 200px;">
+                            <label style="font-size: 0.85rem; font-weight: 700; color: var(--text-muted); margin-bottom: 8px; display: block; text-transform: uppercase; letter-spacing: 1px;">Tu Teléfono <span style="color: var(--c-pink);">*</span></label>
+                            <div style="position: relative;">
+                                <i class="fas fa-phone" style="position: absolute; left: 18px; top: 50%; transform: translateY(-50%); color: #cbd5e1; font-size: 1.2rem;"></i>
+                                <input type="tel" name="telefono" style="width: 100%; padding: 16px 16px 16px 50px; border-radius: 14px; border: 2px solid #cbd5e1; font-size: 1rem; font-family: var(--font-b); outline: none; transition: 0.3s; color: var(--c-dark);" placeholder="A 10 dígitos" required onfocus="this.style.borderColor='var(--c-purple)'" onblur="this.style.borderColor='#cbd5e1'">
+                            </div>
+                        </div>
+                        <div style="flex: 1; min-width: 200px;">
+                            <label style="font-size: 0.85rem; font-weight: 700; color: var(--c-pink); margin-bottom: 8px; display: block; text-transform: uppercase; letter-spacing: 1px;">Tel. Emergencia <span style="color: var(--c-pink);">*</span></label>
+                            <div style="position: relative;">
+                                <i class="fas fa-notes-medical" style="position: absolute; left: 18px; top: 50%; transform: translateY(-50%); color: var(--c-pink); font-size: 1.2rem; opacity: 0.8;"></i>
+                                <input type="tel" name="telefono_emergencia" style="width: 100%; padding: 16px 16px 16px 50px; border-radius: 14px; border: 2px solid #fbcfe8; font-size: 1rem; font-family: var(--font-b); outline: none; transition: 0.3s; background: #fdf2f8; color: var(--c-dark);" placeholder="Familiar o amigo" required onfocus="this.style.borderColor='var(--c-pink)'; this.style.backgroundColor='#fff';" onblur="this.style.borderColor='#fbcfe8'; this.style.backgroundColor='#fdf2f8';">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom: 5px;">
+                        <label style="font-size: 0.85rem; font-weight: 700; color: var(--text-muted); margin-bottom: 8px; display: block; text-transform: uppercase; letter-spacing: 1px;">Crea una Contraseña <span style="color: var(--c-pink);">*</span></label>
+                        <div style="position: relative;">
+                            <i class="fas fa-lock" style="position: absolute; left: 18px; top: 50%; transform: translateY(-50%); color: #cbd5e1; font-size: 1.2rem;"></i>
+                            <input type="password" name="password" style="width: 100%; padding: 16px 16px 16px 50px; border-radius: 14px; border: 2px solid #cbd5e1; font-size: 1rem; font-family: var(--font-b); outline: none; transition: 0.3s; color: var(--c-dark);" placeholder="Mínimo 8 caracteres" required onfocus="this.style.borderColor='var(--c-purple)'" onblur="this.style.borderColor='#cbd5e1'">
+                        </div>
+                    </div>
+                </div>
+
+                <label style="display: flex; align-items: flex-start; gap: 15px; margin-bottom: 25px; cursor: pointer; background: #fff1f2; padding: 20px; border-radius: 16px; border: 1px solid #fecdd3; transition: 0.3s;" onmouseover="this.style.boxShadow='0 5px 15px rgba(248,91,140,0.1)'" onmouseout="this.style.boxShadow='none'">
+                    <input type="checkbox" name="acepta_privacidad" required style="min-width: 22px; height: 22px; accent-color: var(--c-pink); margin-top: 2px; cursor: pointer;">
+                    <span style="font-size: 0.95rem; color: var(--text-main); line-height: 1.5; font-weight: 500;">
+                        He leído y acepto el <a href="#" onclick="abrirModal('modalPrivacidad'); return false;" style="color: var(--c-pink); font-weight: 800; text-decoration: none; border-bottom: 2px dashed var(--c-pink);">Aviso de Privacidad</a> para la protección de mi expediente clínico.
                     </span>
                 </label>
-                <button type="submit" class="btn-primary" id="btnSubmitFinal" style="width: 100%; justify-content: center; padding: 20px; font-size: 1.1rem;">Finalizar Registro <i class="fas fa-heart"></i></button>
+
+                <button type="submit" class="btn-primary" id="btnSubmitFinal" style="width: 100%; justify-content: center; padding: 22px; font-size: 1.2rem; border-radius: 16px; font-weight: 900;">
+                    Finalizar Registro <i class="fas fa-heart" style="margin-left: 8px;"></i>
+                </button>
             </form>
         </div>
     </div>
@@ -1022,35 +1105,45 @@ body{font-family:var(--font-b);color:var(--c-dark);background:#fff;display:flex}
     0%, 100% { transform: translateY(0) rotate(0deg); }
     50% { transform: translateY(-15px) rotate(10deg); }
   }
-
-/* ── BARRA DESLIZANTE TIERNA (RANGO) ── */
+/* ── BARRA DESLIZANTE (RANGE SLIDER) HOPE PREMIUM ── */
 .custom-range-slider {
     -webkit-appearance: none;
     width: 100%;
-    height: 14px;
-    background: #f1f5f9;
-    border-radius: 20px;
+    height: 12px;
+    background: #e2e8f0;
+    border-radius: 10px;
     outline: none;
     margin: 25px 0 15px;
-    box-shadow: inset 0 2px 5px rgba(0,0,0,0.05);
-}
-.custom-range-slider::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    background: var(--c-pink);
-    cursor: pointer;
-    box-shadow: 0 4px 15px rgba(248, 91, 140, 0.4);
-    border: 5px solid white;
-    transition: 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-}
-.custom-range-slider::-webkit-slider-thumb:hover {
-    transform: scale(1.15);
-    background: var(--c-purple);
+    transition: background 0.3s;
 }
 
+/* ── BARRA DESLIZANTE HOPE PREMIUM (FORZADA) ── */
+input[type=range].custom-range-slider {
+    -webkit-appearance: none !important;
+    width: 100% !important;
+    height: 12px !important;
+    background: #e2e8f0 !important;
+    border-radius: 10px !important;
+    outline: none !important;
+    margin: 25px 0 15px !important;
+}
+
+input[type=range].custom-range-slider::-webkit-slider-thumb {
+    -webkit-appearance: none !important;
+    width: 32px !important;
+    height: 32px !important;
+    border-radius: 50% !important;
+    background: #ffffff !important;
+    border: 4px solid var(--c-purple) !important;
+    cursor: pointer !important;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.15) !important;
+    transition: all 0.2s ease !important;
+}
+
+input[type=range].custom-range-slider::-webkit-slider-thumb:hover {
+    transform: scale(1.2) !important;
+    border-width: 6px !important;
+}
 </style>
 
 <div id="modalBlog1" class="modal-overlay" style="z-index: 6000;">
@@ -1138,10 +1231,20 @@ function cerrarModal(id){
     if(el) el.style.display='none';
 }
 
-document.querySelectorAll('.modal-overlay').forEach(o=>{
+// 🔥 Ya NO cerramos el modal al dar clic afuera (bloqueado intencionalmente) 🔥
+document.querySelectorAll('.modal-overlay').forEach(o => {
   o.addEventListener('click', e => { 
-      if(e.target === o && o.id !== 'modalExito') o.style.display='none';
+      // El código está vacío para ignorar el clic en el fondo gris
   });
+});
+
+// 🔥 Cerrar usando la tecla ESCAPE 🔥
+document.addEventListener('keydown', function(event) {
+    if (event.key === "Escape") {
+        document.querySelectorAll('.modal-overlay').forEach(o => {
+            if(o.id !== 'modalExito') o.style.display = 'none';
+        });
+    }
 });
 
 // ── SLIDER ──
@@ -1317,6 +1420,8 @@ function mostrarPregunta() {
     document.getElementById("questionText").innerText = q.pregunta;
     document.getElementById("btnAtras").style.display = historialNavegacion.length > 0 ? "block" : "none";
     
+    const esPreguntaEdad = q.id === 'edad' || q.pregunta.toLowerCase().includes('edad');
+
     if (q.tipo === "single" || q.tipo === "multiple") {
         const inputType = q.tipo === "single" ? "radio" : "checkbox";
         q.opciones.forEach((opcion) => {
@@ -1324,26 +1429,46 @@ function mostrarPregunta() {
             const html = `<label class="triage-option-label"><input type="${inputType}" name="${q.id}" value="${opcion}" ${checked}> ${opcion}</label>`;
             optionsContainer.insertAdjacentHTML('beforeend', html);
         });
-    }  else if (q.tipo === "numero" && q.min !== undefined && q.max !== undefined) {
-        // 🔥 MAGIA: Si es un número con límites, creamos la Barra Deslizante (Slider) 🔥
-        const val = respuestasGuardadas[q.id] || Math.ceil((q.min + q.max) / 2); // Usa el valor previo o el punto medio
+    } 
+    // --- DISEÑO INTERACTIVO PARA EDAD (13-35) ---
+    else if (esPreguntaEdad) {
+        const minEdad = 13;
+        const maxEdad = 35;
+        const val = respuestasGuardadas[q.id] || 24; 
+        
         optionsContainer.innerHTML = `
-            <div style="text-align: center; margin-top: 15px;">
-                <span id="${q.id}_valDisplay" style="font-size: 5rem; font-weight: 900; color: var(--c-pink); font-family: var(--font-h); line-height: 1; text-shadow: 0 10px 20px rgba(248,91,140,0.15);">${val}</span>
+            <div style="text-align: center; margin-bottom: 20px;">
+                <span id="${q.id}_valDisplay" style="font-size: 6rem; font-weight: 800; color: var(--c-purple); font-family: 'Outfit', sans-serif; line-height: 1;">${val}</span>
+                <span style="font-size: 1.2rem; color: #64748b; font-weight: 500; display: block;">años de edad</span>
             </div>
-            <div style="padding: 0 15px;">
-                <input type="range" id="${q.id}" min="${q.min}" max="${q.max}" value="${val}" class="custom-range-slider" oninput="document.getElementById('${q.id}_valDisplay').innerText = this.value">
-                <div style="display: flex; justify-content: space-between; font-size: 0.9rem; color: var(--text-muted); font-weight: 700; margin-top: 5px;">
-                    <span>Leve (${q.min})</span>
-                    <span>Intenso (${q.max})</span>
+            <div style="padding: 0 10px;">
+                <input type="range" id="${q.id}" min="${minEdad}" max="${maxEdad}" value="${val}" style="width: 100%; height: 8px; background: #e2e8f0; border-radius: 4px; appearance: none; accent-color: var(--c-purple); cursor: pointer;" oninput="document.getElementById('${q.id}_valDisplay').innerText = this.value">
+                <div style="display: flex; justify-content: space-between; font-size: 0.85rem; color: #94a3b8; font-weight: 600; margin-top: 10px;">
+                    <span>13 años</span>
+                    <span>35 años</span>
+                </div>
+            </div>
+        `;
+    }
+    // --- DISEÑO INTERACTIVO PARA INTENSIDAD (Rango normal) ---
+    else if (q.tipo === "numero" && q.min !== undefined && q.max !== undefined) {
+        const val = respuestasGuardadas[q.id] || Math.ceil((q.min + q.max) / 2);
+        optionsContainer.innerHTML = `
+            <div style="text-align: center; margin-bottom: 20px;">
+                <span id="${q.id}_valDisplay" style="font-size: 5rem; font-weight: 800; color: var(--c-pink); font-family: 'Outfit', sans-serif; line-height: 1;">${val}</span>
+            </div>
+            <div style="padding: 0 10px;">
+                <input type="range" id="${q.id}" min="${q.min}" max="${q.max}" value="${val}" style="width: 100%; height: 8px; background: #e2e8f0; border-radius: 4px; appearance: none; accent-color: var(--c-pink); cursor: pointer;" oninput="document.getElementById('${q.id}_valDisplay').innerText = this.value">
+                <div style="display: flex; justify-content: space-between; font-size: 0.85rem; color: #94a3b8; font-weight: 600; margin-top: 10px;">
+                    <span>${q.min}</span>
+                    <span>${q.max}</span>
                 </div>
             </div>
         `;
     } else {
-        // TEXTO O NÚMERO LIBRE (SIN LÍMITES)
         const val = respuestasGuardadas[q.id] || "";
         const inputType = q.tipo === "numero" ? "number" : "text";
-        optionsContainer.innerHTML = `<input type="${inputType}" id="${q.id}" class="custom-input-triage" placeholder="Escribe tu respuesta aquí..." value="${val}">`;
+        optionsContainer.innerHTML = `<input type="${inputType}" id="${q.id}" class="custom-input-triage" placeholder="Escribe aquí..." value="${val}">`;
     }
 }
 
@@ -1442,8 +1567,8 @@ if(formReg) {
             formReg.dataset.enviando = "false";
 
             if (data.status === "success") {
-                cerrarModal("modalRegistro");
-                abrirModal("modalExito");
+                // 🔥 Redirigimos directamente en lugar de abrir el modal
+                window.location.href = data.redirect_url;
             } else {
                 mostrarAlertaPersonalizada(data.message || "Error desconocido.", "error");
             }
@@ -1476,8 +1601,11 @@ function mostrarAlertaPersonalizada(mensaje, tipo = "info") {
 // ── NAV ACTIVO ──
 document.querySelectorAll('.nav-item').forEach(item=>{
   item.addEventListener('click',function(){
-    document.querySelectorAll('.nav-item').forEach(i=>i.classList.remove('active'));
-    this.classList.add('active');
+    // Condición mágica: Ignoramos los botones de Iniciar Sesión para que no se pongan blancos
+    if (!this.classList.contains('btn-login-sidebar') && !this.classList.contains('btn-login-mobile')) {
+        document.querySelectorAll('.nav-item').forEach(i=>i.classList.remove('active'));
+        this.classList.add('active');
+    }
   });
 });
 
