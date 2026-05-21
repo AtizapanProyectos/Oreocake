@@ -93,7 +93,7 @@ WSGI_APPLICATION = 'hope_project.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'railway',
+        'NAME': 'hope',
         'USER': 'root',
         'PASSWORD': 'JBVzIRkXKqXsefqrezTQKSQSQiLokjKw',
         'HOST': 'yamanote.proxy.rlwy.net',
