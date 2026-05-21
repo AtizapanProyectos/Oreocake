@@ -344,7 +344,7 @@ def panel_generico(request):
 
     # 4. Lógica de disponibilidad del calendario
     festivos = set(DiaFestivo.objects.filter(fecha__gte=hoy).values_list('fecha', flat=True))
-    horas_base = [time(h, 0) for h in range(9, 19)]
+    horas_base = [time(h, 0) for h in range(9, 21)]
     total_psicologos_activos = PerfilPsicologo.objects.filter(esta_activo=True).count()
 
     dias_json = {}
@@ -378,7 +378,7 @@ def panel_generico(request):
         dias_iterados = 0
         while dias_agregados < 30 and dias_iterados < 120:
             dias_iterados += 1
-            if dia_actual.weekday() <= 4 and dia_actual not in festivos:
+            if dia_actual not in festivos:
                 horas_del_dia_str = []
                 horas_del_dia_obj = []
                 for h in horas_base:

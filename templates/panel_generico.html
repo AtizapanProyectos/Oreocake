@@ -375,13 +375,13 @@
         <div class="chic-card" onclick="seleccionarServicio('individual')" style="cursor: pointer; width: 220px; text-align: center; padding: 30px; border: 2px solid #f1f5f9; transition: 0.3s;">
             <i class="fas fa-user" style="font-size: 40px; color: var(--c-purple); margin-bottom: 15px;"></i>
             <h4 style="font-family: var(--font-headings); margin: 0 0 8px 0;">Individual</h4>
-            <p style="font-size: 13px; color: var(--text-muted); margin: 0;">$110 MXN</p>
+            <p style="font-size: 13px; color: var(--text-muted); margin: 0;">$100 MXN</p>
         </div>
 
         <div class="chic-card" onclick="seleccionarServicio('pareja')" style="cursor: pointer; width: 220px; text-align: center; padding: 30px; border: 2px solid #f1f5f9; transition: 0.3s;">
             <i class="fas fa-user-friends" style="font-size: 40px; color: var(--c-pink); margin-bottom: 15px;"></i>
             <h4 style="font-family: var(--font-headings); margin: 0 0 8px 0;">En Pareja</h4>
-            <p style="font-size: 13px; color: var(--text-muted); margin: 0;">$215 MXN</p>
+            <p style="font-size: 13px; color: var(--text-muted); margin: 0;">$200 MXN</p>
         </div>
     </div>
 </div>
@@ -402,11 +402,11 @@
                 <div id="step-1-schedule">
                     <div class="date-carousel" id="dateCarousel">
                         {% for dia, horas in dias_disponibles.items %}
-                        <button type="button" class="date-chip {% if forloop.first %}active{% endif %}" data-target="slots-{{ dia|date:'Ymd' }}" data-fecha="{{ dia|date:'Y-m-d' }}">
-                            <span style="font-size: 11px; display: block; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.75;">{{ dia|date:"D"|title }}</span>
-                            <span style="font-size: 26px; font-weight: 800; line-height: 1.1;">{{ dia|date:"d" }}</span>
-                            <span style="font-size: 11px; display: block; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px;">{{ dia|date:"M"|title }}</span>
-                        </button>
+                            <button type="button" class="date-chip {% if forloop.first %}active{% endif %}" data-target="slots-{{ dia|date:'Ymd' }}" data-fecha="{{ dia|date:'Y-m-d' }}">
+                                <span style="font-size: 11px; display: block; text-transform: uppercase; font-weight: 600; letter-spacing: 1px;">{{ dia|date:"D" }}</span>
+                                <span style="font-size: 28px; font-weight: 800; line-height: 1.1;">{{ dia|date:"d" }}</span>
+                                <span style="font-size: 11px; display: block; text-transform: uppercase; font-weight: 700; opacity: 0.8; margin-top: 2px;">{{ dia|date:"M" }}</span>
+                            </button>
                         {% empty %}
                         <p style="color: var(--text-muted); font-style: italic;">No hay fechas disponibles por el momento.</p>
                         {% endfor %}
@@ -416,16 +416,7 @@
                         {% for dia, horas in dias_disponibles.items %}
                             <div class="slots-container" id="slots-{{ dia|date:'Ymd' }}" {% if not forloop.first %}style="display: none;"{% endif %}>
                                 {% for h in horas %}
-                                {% if h|time:"H" == "20" %}
-                                    {# Última sesión del día: 8:00 PM — destacada #}
-                                    <button class="time-slot-btn" data-fecha="{{ dia|date:'Y-m-d' }}" data-hora="{{ h|time:'H:i' }}"
-                                        style="position: relative; border: 2px solid var(--c-purple); background: linear-gradient(135deg, #f3eeff, #fff);">
-                                        {{ h|time:"h:i A" }}
-                                        <span style="display: block; font-size: 10px; font-weight: 700; color: var(--c-purple); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px;">Última sesión</span>
-                                    </button>
-                                {% else %}
-                                    <button class="time-slot-btn" data-fecha="{{ dia|date:'Y-m-d' }}" data-hora="{{ h|time:'H:i' }}">{{ h|time:"h:i A" }}</button>
-                                {% endif %}
+                                <button class="time-slot-btn" data-fecha="{{ dia|date:'Y-m-d' }}" data-hora="{{ h|time:'H:i' }}">{{ h|time:"h:i A" }}</button>
                                 {% endfor %}
                             </div>
                         {% endfor %}
@@ -467,10 +458,12 @@
                         <p style="text-transform: uppercase; letter-spacing: 2px; font-size: 12px; color: #9ca3af; margin-bottom: 10px; font-weight: 700;">Total a pagar</p>
 
   
-                        <h3 id="precio-dinamico" style="font-size: 42px; margin-bottom: 5px; color: var(--c-purple); font-weight: 800; font-family: var(--font-headings);">
+                        <h3 id="precio-dinamico" style="font-size: 42px; margin-bottom: 2px; color: var(--c-purple); font-weight: 800; font-family: var(--font-headings);">
                             $110.00 <span style="font-size: 16px;">MXN</span>
                         </h3>
-                        
+                        <p id="desglose-precio" style="font-size: 13px; color: var(--text-muted); margin-bottom: 8px;">
+                            $100.00 + <span style="color: var(--c-orange); font-weight: 600;">$10.00 comisión</span>
+                        </p>
                         <p id="desc-dinamica" style="color: var(--text-main); font-weight: 500; margin-bottom: 25px;">
                             Consulta Psicológica Online Individual
                         </p>
@@ -791,9 +784,11 @@
         // 2. Actualizamos el precio y descripción visibles
         if (tipo === 'pareja') {
             document.getElementById('precio-dinamico').innerHTML = '$215.00 <span style="font-size: 16px;">MXN</span>';
+            document.getElementById('desglose-precio').innerHTML = '$200.00 + <span style="color: var(--c-orange); font-weight: 600;">$15.00 comisión</span>';
             document.getElementById('desc-dinamica').innerText = 'Sesión para dos personas (Pareja)';
         } else {
             document.getElementById('precio-dinamico').innerHTML = '$110.00 <span style="font-size: 16px;">MXN</span>';
+            document.getElementById('desglose-precio').innerHTML = '$100.00 + <span style="color: var(--c-orange); font-weight: 600;">$10.00 comisión</span>';
             document.getElementById('desc-dinamica').innerText = 'Consulta Psicológica Online Individual';
         }
 
@@ -1098,7 +1093,7 @@
                 // 2. CREAR LA ORDEN DE COBRO — monto se determina en tiempo real
                 createOrder: function(data, actions) {
                     // Leemos el tipo elegido por el usuario en este momento
-                    let montoCobro = (window.tipoServicioAgendado === 'pareja') ? '215.00' : '110.00';
+                    let montoCobro = (window.tipoServicioAgendado === 'pareja') ? '110.00' : '215.00';
                     let descripcion = (window.tipoServicioAgendado === 'pareja')
                         ? 'Sesión Psicológica HOPE — Pareja'
                         : 'Sesión Psicológica HOPE — Individual';
