@@ -93,14 +93,11 @@ WSGI_APPLICATION = 'hope_project.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'defaultdb',
-        'USER': 'avnadmin',
-        'PASSWORD': 'AVNS_lo8IstpelZZIWWBvZje',
-        'HOST': 'hope-atizapan-ec39.e.aivencloud.com',
-        'PORT': '20731',
-        'OPTIONS': {
-            'ssl': {'ca': None},
-        }
+        'NAME': 'railway',
+        'USER': 'root',
+        'PASSWORD': 'JBVzIRkXKqXsefqrezTQKSQSQiLokjKw',
+        'HOST': 'yamanote.proxy.rlwy.net',
+        'PORT': '48237',
     }
 }
 
