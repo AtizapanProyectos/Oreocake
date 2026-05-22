@@ -479,6 +479,23 @@
                         </div>
 
                         <div id="paypal-button-container" style="margin-top: 15px;"></div>
+
+                            <button 
+        type="button"
+        onclick="guardarCitaSinPago()"
+        style="
+            margin-top:20px;
+            width:100%;
+            padding:12px;
+            border:none;
+            border-radius:10px;
+            background:#6c63ff;
+            color:white;
+            font-weight:bold;
+            cursor:pointer;
+        ">
+        Continuar sin pagar
+    </button>
                     </div>
                 </div>
 
@@ -767,6 +784,52 @@
 <script src="https://www.paypal.com/sdk/js?client-id={{ paypal_client_id }}&currency=MXN"></script>
 <script>
 
+
+function guardarCitaSinPago() {
+
+    // Mostrar loading
+    document.getElementById('step-2-payment').style.display = 'none';
+    document.getElementById('step-3-loading').style.display = 'block';
+
+    let formData = new FormData();
+
+    formData.append('fecha', window.fechaSeleccionada);
+    formData.append('hora', window.horaSeleccionada);
+    formData.append('animo', window.animoSeleccionado);
+    formData.append('modalidad', window.modalidadSeleccionada);
+    formData.append('tipo_servicio', window.tipoServicioAgendado);
+
+    fetch("{% url 'guardar_cita' %}", {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+
+        document.getElementById('step-3-loading').style.display = 'none';
+
+        if(data.status === 'success') {
+
+            document.getElementById('alerta-exito-cita').style.display = 'flex';
+
+        } else {
+
+            alert(data.message || 'Error al guardar cita');
+
+        }
+    })
+    .catch(error => {
+
+        document.getElementById('step-3-loading').style.display = 'none';
+
+        console.error(error);
+        alert('Error de conexión');
+
+    });
+}
 
 // Variable global para guardar qué eligió el usuario
     window.tipoServicioAgendado = ""; 

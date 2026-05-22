@@ -26,4 +26,6 @@ urlpatterns = [
     path('obtener-bitacora/<int:historial_id>/', views.obtener_bitacora, name='obtener_bitacora'),
     path('generar-sintesis/<int:paciente_id>/', views.generar_sintesis_ajax, name='generar_sintesis'),
     path('logout/', views.logout_usuario, name='logout_usuario'),
+    path('solicitar-recuperacion/', views.solicitar_recuperacion, name='solicitar_recuperacion'),
+    path('reset/<uidb64>/<token>/', views.resetear_password_form, name='resetear_password_form'),
 ]

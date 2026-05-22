@@ -1428,3 +1428,54 @@ def generar_sintesis_ajax(request, paciente_id):
 
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)})
+
+
+
+@csrf_exempt
+def solicitar_recuperacion(request):
+    if request.method == 'POST':
+        email = request.POST.get('email', '').strip()
+        try:
+            user = User.objects.get(username__iexact=email) # Recuerda que manejas el email como username
+            
+            # Generamos los tokens de Django
+            uid = urlsafe_base64_encode(force_bytes(user.pk))
+            token = default_token_generator.make_token(user)
+            
+            # Creamos el link único que irá en el correo
+            link = request.build_absolute_uri(
+                reverse('resetear_password_form', kwargs={'uidb64': uid, 'token': token})
+            )
+            
+            # Mandamos el correo (puedes meterle un HTML bonito después)
+            asunto = 'Recupera tu acceso a HOPE'
+            mensaje = f'Hola {user.first_name},\n\nHaz clic en el siguiente enlace seguro para restablecer tu contraseña:\n{link}\n\nEste enlace es de un solo uso.'
+            
+            send_mail(asunto, mensaje, None, [user.email], fail_silently=False)
+            
+            return JsonResponse({'status': 'success'})
+        except User.DoesNotExist:
+            # Por seguridad, respondemos success aunque no exista, así los atacantes no adivinan correos.
+            return JsonResponse({'status': 'success'})
+    return JsonResponse({'status': 'error', 'message': 'Método no válido'})
+
+def resetear_password_form(request, uidb64, token):
+    try:
+        uid = force_str(urlsafe_base64_decode(uidb64))
+        user = User.objects.get(pk=uid)
+    except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+        user = None
+
+    # Si el token no es válido o ya caducó
+    if user is not None and default_token_generator.check_token(user, token):
+        if request.method == 'POST':
+            nueva_pass = request.POST.get('nueva_password')
+            if nueva_pass:
+                user.set_password(nueva_pass)
+                user.save()
+                messages.success(request, 'Tu contraseña ha sido actualizada. Ya puedes iniciar sesión.')
+                return redirect('inicio') # O a tu landing page de inicio
+            
+        return render(request, 'reset_form.html', {'uid': uidb64, 'token': token})
+    else:
+        return render(request, 'verificacion_resultado.html', {'exito': False, 'mensaje': 'El enlace de recuperación ha expirado o ya fue utilizado.'})

@@ -879,7 +879,7 @@ body{font-family:var(--font-b);color:var(--c-dark);background:#fff;display:flex}
             </div>
             
             <div style="text-align: right; margin-bottom: 30px;">
-                <a href="#" style="color: var(--c-purple); font-size: 0.95rem; font-weight: 700; text-decoration: none; transition: 0.3s;" onmouseover="this.style.color='var(--c-pink)'" onmouseout="this.style.color='var(--c-purple)'">¿Olvidaste tu contraseña?</a>
+                <a href="#" onclick="abrirModalRecuperar(); return false;" style="color: var(--c-purple); font-size: 0.95rem; font-weight: 700; text-decoration: none; transition: 0.3s;" onmouseover="this.style.color='var(--c-pink)'" onmouseout="this.style.color='var(--c-purple)'">¿Olvidaste tu contraseña?</a>
             </div>
             
             <button type="submit" class="btn-primary" style="width: 100%; justify-content: center; padding: 20px; font-size: 1.15rem; border-radius: 16px;">
@@ -1209,7 +1209,86 @@ input[type=range].custom-range-slider::-webkit-slider-thumb:hover {
   </div>
 </div>
 
+
+<div id="modalRecuperar" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); backdrop-filter: blur(8px); z-index: 999999; justify-content: center; align-items: center; padding: 20px;">
+    <div class="chic-card alerta-animada" style="height: auto; width: 90%; max-width: 480px; text-align: center; padding: 40px; position: relative; background: #ffffff;">
+        <span onclick="cerrarModalRecuperar()" style="position: absolute; top: 15px; right: 20px; cursor: pointer; font-size: 24px; color: #94a3b8;"><i class="fas fa-times"></i></span>
+        
+        <i class="fas fa-key" style="font-size: 50px; color: var(--c-purple); margin-bottom: 20px;"></i>
+        <h2 style="font-family: var(--font-headings); font-size: 2rem; margin-bottom: 10px; color: var(--text-main);">Recuperar Acceso</h2>
+        <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 25px;">Ingresa tu correo registrado y te enviaremos un enlace mágico seguro para restablecer tu contraseña.</p>
+        
+        <div style="text-align: left; margin-bottom: 25px;">
+            <label style="font-size: 13px; font-weight: 700; color: var(--text-main); text-transform: uppercase; letter-spacing: 1px; display: block; margin-bottom: 8px;">Correo Electrónico</label>
+            <input type="email" id="email-recuperar" placeholder="ejemplo@correo.com" style="width: 100%; padding: 15px; border-radius: 12px; border: 2px solid #e2e8f0; font-family: var(--font-body); font-size: 1rem; outline: none; transition: 0.3s;" onfocus="this.style.border_color='var(--c-purple)'" onblur="this.style.border_color='#e2e8f0'">
+        </div>
+
+        <button id="btn-enviar-recuperar" onclick="enviarEnlaceRecuperacion()" class="btn-brutal btn-primary" style="width: 100%; padding: 15px; font-size: 1rem; border-radius: 12px;">
+            Enviar Enlace Seguro <i class="fas fa-paper-plane" style="margin-left: 8px;"></i>
+        </button>
+    </div>
+</div>
+
 <script>
+
+function abrirModalRecuperar() {
+    document.getElementById('email-recuperar').value = "";
+    document.getElementById('modalRecuperar').style.display = 'flex';
+}
+
+function cerrarModalRecuperar() {
+    document.getElementById('modalRecuperar').style.display = 'none';
+}
+
+function enviarEnlaceRecuperacion() {
+    const emailInput = document.getElementById('email-recuperar');
+    const email = emailInput.value.trim();
+    const btn = document.getElementById('btn-enviar-recuperar');
+
+    if (!email || !email.includes('@')) {
+        alert("Por favor, ingresa un correo electrónico válido.");
+        return;
+    }
+
+    // Ponemos el botón en estado de carga
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Enviando...';
+    btn.disabled = true;
+
+    // Construimos la carga para Django
+    let formData = new URLSearchParams();
+    formData.append('email', email);
+    formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+
+    fetch("/solicitar-recuperacion/", { // Asegúrate de que coincida con tu path de urls.py
+        method: 'POST',
+        headers: { 
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-Requested-With': 'XMLHttpRequest' 
+        },
+        body: formData.toString()
+    })
+    .then(response => response.json())
+    .then(data => {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+
+        if (data.status === 'success') {
+            cerrarModalRecuperar();
+            // Aquí puedes usar tu alerta-exito-cita o un alert simple mientras
+            alert("¡Revisa tu bandeja de entrada! Te hemos enviado las instrucciones.");
+        } else {
+            alert(data.message || "Ocurrió un error.");
+        }
+    })
+    .catch(error => {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+        console.error("Error:", error);
+        alert("Error de conexión con el servidor.");
+    });
+}
+
 // ── DATA MOOD ──
 // ── DATA MOOD ──
 const MOODS = {
