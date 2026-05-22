@@ -121,7 +121,7 @@ def generar_link_meet(fecha_obj, hora_obj, paciente_nombre, psicologo_nombre, pa
             calendarId='primary',
             body=event,
             conferenceDataVersion=1,
-            sendUpdates='all'  
+            sendUpdates='none'  
         ).execute()
 
         return {
@@ -455,7 +455,7 @@ def inscribir_taller_ajax(request):
                 mensaje_plano = strip_tags(mensaje_html)
                 
                 try:
-                    send_mail(asunto, mensaje_plano, None, [request.user.email], html_message=mensaje_html, fail_silently=True)
+                    send_mail(asunto, mensaje_plano, 'Espacio HOPE <no-reply@espaciohope.com>', [request.user.email], html_message=mensaje_html, fail_silently=True)
                 except Exception as e:
                     print(f"Error al enviar correo del taller: {e}")
                 # =========================================================
@@ -567,7 +567,7 @@ def guardar_cita_ajax(request):
             
             mensaje_html = render_to_string('correo_cita.html', contexto)
             mensaje_plano = strip_tags(mensaje_html)
-            send_mail(asunto, mensaje_plano, None, [request.user.email], html_message=mensaje_html, fail_silently=True)
+            send_mail(asunto, mensaje_plano, 'Espacio HOPE <no-reply@espaciohope.com>', [request.user.email], html_message=mensaje_html, fail_silently=True)
 
             return JsonResponse({'status': 'success'})
         except Exception as e:
@@ -1107,7 +1107,7 @@ def enviar_mood_ajax(request):
         email = EmailMultiAlternatives(
             subject=subject,
             body=text_content,
-            from_email=None,                          # usa DEFAULT_FROM_EMAIL del settings
+            from_email='Espacio HOPE <no-reply@espaciohope.com>',                          # usa DEFAULT_FROM_EMAIL del settings
             to=['contacto@espaciohope.com'],
         )
         email.attach_alternative(html_content, 'text/html')
@@ -1451,7 +1451,7 @@ def solicitar_recuperacion(request):
             asunto = 'Recupera tu acceso a HOPE'
             mensaje = f'Hola {user.first_name},\n\nHaz clic en el siguiente enlace seguro para restablecer tu contraseña:\n{link}\n\nEste enlace es de un solo uso.'
             
-            send_mail(asunto, mensaje, None, [user.email], fail_silently=False)
+            send_mail(asunto, mensaje, 'Espacio HOPE <no-reply@espaciohope.com>', [user.email], fail_silently=False)
             
             return JsonResponse({'status': 'success'})
         except User.DoesNotExist:

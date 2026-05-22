@@ -1,0 +1,156 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Nueva Contraseña - HOPE{% endblock %}
+
+{% block content %}
+<style>
+    /* ==========================================================================
+       ESTILOS EXCLUSIVOS INTERFAZ SEGURA RESET
+       ========================================================================== */
+    .reset-wrapper {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 75vh;
+        padding: 40px 20px;
+    }
+
+    .reset-card-brutal {
+        background: #ffffff;
+        border-radius: 35px;
+        padding: 50px 45px;
+        max-width: 480px;
+        width: 100%;
+        box-shadow: 0 25px 50px rgba(90, 63, 163, 0.06);
+        border: 1px solid #f1f5f9;
+        border-top: 8px solid var(--c-purple);
+        text-align: center;
+        position: relative;
+        animation: popInReset 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    .input-container-hope {
+        text-align: left;
+        margin-bottom: 25px;
+    }
+
+    .input-container-hope label {
+        font-size: 12px;
+        font-weight: 800;
+        color: var(--text-main);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        display: block;
+        margin-bottom: 8px;
+        font-family: var(--font-headings);
+    }
+
+    .input-hope {
+        width: 100%;
+        padding: 16px 20px;
+        border-radius: 16px;
+        border: 2px solid #e2e8f0;
+        font-family: var(--font-body);
+        font-size: 1rem;
+        outline: none;
+        transition: all 0.3s ease;
+        color: var(--text-main);
+    }
+
+    .input-hope:focus {
+        border-color: var(--c-purple);
+        box-shadow: 0 0 0 5px rgba(90, 63, 163, 0.1);
+        background: #fff;
+    }
+
+    .btn-reset-brutal {
+        width: 100%;
+        padding: 18px;
+        border-radius: 16px;
+        font-weight: 800;
+        font-family: var(--font-headings);
+        border: none;
+        cursor: pointer;
+        transition: 0.3s;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        background: var(--c-purple);
+        color: white;
+        margin-top: 10px;
+    }
+
+    .btn-reset-brutal:hover {
+        background: var(--c-orange);
+        box-shadow: 0 15px 30px rgba(242, 124, 33, 0.25);
+        transform: translateY(-2px);
+    }
+
+    @keyframes popInReset {
+        0% { transform: scale(0.9); opacity: 0; }
+        100% { transform: scale(1); opacity: 1; }
+    }
+
+    @media (max-width: 480px) {
+        .reset-card-brutal { padding: 35px 25px; border-radius: 25px; }
+    }
+</style>
+
+<div class="reset-wrapper">
+    <div class="reset-card-brutal">
+        
+        <div style="width: 70px; height: 70px; border-radius: 22px; background: #f3e8ff; color: var(--c-purple); display: flex; align-items: center; justify-content: center; font-size: 30px; margin: 0 auto 25px auto;">
+            <i class="fas fa-shield-alt"></i>
+        </div>
+
+        <h2 style="font-family: var(--font-headings); font-size: 2.2rem; color: var(--text-main); margin-bottom: 10px; font-weight: 800;">
+            Nueva Contraseña
+        </h2>
+        
+        <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 35px; line-height: 1.5;">
+            Crea una clave segura que recuerdes fácilmente para seguir cuidando de tu bienestar.
+        </p>
+        
+        <form method="POST" onsubmit="return validarPasswords()">
+            {% csrf_token %}
+            
+            <div class="input-container-hope">
+                <label>Escribe tu nueva contraseña</label>
+                <input type="password" id="pass1" name="nueva_password" placeholder="Mínimo 6 caracteres" required class="input-hope">
+            </div>
+
+            <div class="input-container-hope">
+                <label>Confirma tu nueva contraseña</label>
+                <input type="password" id="pass2" placeholder="Repite tu contraseña exactamente" required class="input-hope">
+            </div>
+            
+            <button type="submit" class="btn-reset-brutal">
+                Actualizar Credenciales <i class="fas fa-check-circle"></i>
+            </button>
+        </form>
+
+    </div>
+</div>
+
+<script>
+    function validarPasswords() {
+        const p1 = document.getElementById('pass1').value;
+        const p2 = document.getElementById('pass2').value;
+
+        if(p1.length < 6) {
+            alert("Por seguridad, tu contraseña debe tener al menos 6 caracteres.");
+            return false;
+        }
+
+        if(p1 !== p2) {
+            alert("¡Ups! Las contraseñas no coinciden exactamente. Inténtalo de nuevo.");
+            return false;
+        }
+        return true;
+    }
+</script>
+{% endblock %}

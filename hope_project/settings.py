@@ -152,7 +152,7 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'foto.video@atizapan.gob.mx'  # Pon tu Gmail actual
 # OJO: Usa una "Contraseña de Aplicación" de Google, no tu contraseña normal.
 EMAIL_HOST_PASSWORD = 'gnkz avxs natn xdos'
-DEFAULT_FROM_EMAIL = 'Espacio HOPE <foto.video@atizapan.gob.mx>'
+DEFAULT_FROM_EMAIL = 'Espacio HOPE <no-reply@espaciohope.com>'
 
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 

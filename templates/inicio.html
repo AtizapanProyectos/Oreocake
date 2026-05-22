@@ -1218,10 +1218,19 @@ input[type=range].custom-range-slider::-webkit-slider-thumb:hover {
         <h2 style="font-family: var(--font-headings); font-size: 2rem; margin-bottom: 10px; color: var(--text-main);">Recuperar Acceso</h2>
         <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 25px;">Ingresa tu correo registrado y te enviaremos un enlace mágico seguro para restablecer tu contraseña.</p>
         
-        <div style="text-align: left; margin-bottom: 25px;">
-            <label style="font-size: 13px; font-weight: 700; color: var(--text-main); text-transform: uppercase; letter-spacing: 1px; display: block; margin-bottom: 8px;">Correo Electrónico</label>
-            <input type="email" id="email-recuperar" placeholder="ejemplo@correo.com" style="width: 100%; padding: 15px; border-radius: 12px; border: 2px solid #e2e8f0; font-family: var(--font-body); font-size: 1rem; outline: none; transition: 0.3s;" onfocus="this.style.border_color='var(--c-purple)'" onblur="this.style.border_color='#e2e8f0'">
-        </div>
+          <div style="text-align: left; margin-bottom: 25px;">
+              <label style="font-size: 12px; font-weight: 800; color: var(--text-main); text-transform: uppercase; letter-spacing: 1px; display: block; margin-bottom: 10px; font-family: var(--font-headings);">
+                  Correo Electrónico
+              </label>
+              <div style="position: relative; display: flex; align-items: center;">
+                  <i class="fas fa-envelope" id="icono-sobre" style="position: absolute; left: 20px; color: #94a3b8; font-size: 1.1rem; transition: 0.3s;"></i>
+                  
+                  <input type="email" id="email-recuperar" placeholder="ejemplo@correo.com" 
+                        style="width: 100%; padding: 18px 20px 18px 52px; border-radius: 18px; border: 2px solid #e2e8f0; font-family: var(--font-body); font-size: 1rem; outline: none; transition: all 0.3s ease; color: var(--text-main); background: #f8fafc;" 
+                        onfocus="this.style.borderColor='var(--c-purple)'; this.style.background='#ffffff'; this.style.boxShadow='0 0 0 5px rgba(90, 63, 163, 0.1)'; document.getElementById('icono-sobre').style.color='var(--c-purple)';" 
+                        onblur="this.style.borderColor='#e2e8f0'; this.style.background='#f8fafc'; this.style.boxShadow='none'; document.getElementById('icono-sobre').style.color='#94a3b8';">
+              </div>
+          </div>
 
         <button id="btn-enviar-recuperar" onclick="enviarEnlaceRecuperacion()" class="btn-brutal btn-primary" style="width: 100%; padding: 15px; font-size: 1rem; border-radius: 12px;">
             Enviar Enlace Seguro <i class="fas fa-paper-plane" style="margin-left: 8px;"></i>
