@@ -783,12 +783,12 @@
         
         // 2. Actualizamos el precio y descripción visibles
         if (tipo === 'pareja') {
-            document.getElementById('precio-dinamico').innerHTML = '$215.00 <span style="font-size: 16px;">MXN</span>';
-            document.getElementById('desglose-precio').innerHTML = '$200.00 + <span style="color: var(--c-orange); font-weight: 600;">$15.00 comisión</span>';
+            document.getElementById('precio-dinamico').innerHTML = '$200.00 <span style="font-size: 16px;">MXN</span>';
+            document.getElementById('desglose-precio').innerHTML = '+ <span style="color: var(--c-orange); font-weight: 600;">$15.00 de comisión</span>';
             document.getElementById('desc-dinamica').innerText = 'Sesión para dos personas (Pareja)';
         } else {
-            document.getElementById('precio-dinamico').innerHTML = '$110.00 <span style="font-size: 16px;">MXN</span>';
-            document.getElementById('desglose-precio').innerHTML = '$100.00 + <span style="color: var(--c-orange); font-weight: 600;">$10.00 comisión</span>';
+            document.getElementById('precio-dinamico').innerHTML = '$100.00 <span style="font-size: 16px;">MXN</span>';
+            document.getElementById('desglose-precio').innerHTML = '+ <span style="color: var(--c-orange); font-weight: 600;">$10.00 de comisión</span>';
             document.getElementById('desc-dinamica').innerText = 'Consulta Psicológica Online Individual';
         }
 
