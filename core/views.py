@@ -1447,12 +1447,69 @@ def solicitar_recuperacion(request):
                 reverse('resetear_password_form', kwargs={'uidb64': uid, 'token': token})
             )
             
-            # Mandamos el correo (puedes meterle un HTML bonito después)
-            asunto = 'Recupera tu acceso a HOPE'
-            mensaje = f'Hola {user.first_name},\n\nHaz clic en el siguiente enlace seguro para restablecer tu contraseña:\n{link}\n\nEste enlace es de un solo uso.'
-            
-            send_mail(asunto, mensaje, 'Espacio HOPE <no-reply@espaciohope.com>', [user.email], fail_silently=False)
-            
+            # Correo HTML bonito — HOPE Design
+            asunto = '🔐 Recupera tu acceso a HOPE'
+            nombre = user.first_name or 'amigo/a'
+
+            html_correo = f"""
+<!DOCTYPE html>
+<html lang="es">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
+<body style="margin:0;padding:0;background:#f3f0fa;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f3f0fa;padding:40px 20px;">
+    <tr><td align="center">
+      <table width="100%" style="max-width:520px;background:#ffffff;border-radius:24px;overflow:hidden;box-shadow:0 8px 40px rgba(90,63,163,0.12);">
+        <tr><td style="background:linear-gradient(90deg,#5a3fa3 0%,#e879a0 50%,#f27c21 100%);height:6px;"></td></tr>
+        <tr><td style="padding:40px 40px 0;text-align:center;">
+          <div style="width:68px;height:68px;border-radius:18px;background:linear-gradient(135deg,#f3e8ff,#fce7f3);display:inline-block;line-height:68px;margin-bottom:20px;text-align:center;">
+            <span style="font-size:30px;">🔐</span>
+          </div>
+          <h1 style="margin:0 0 8px;font-size:26px;font-weight:800;color:#1a1035;letter-spacing:-0.5px;">Recupera tu acceso</h1>
+          <p style="margin:0 0 0;font-size:15px;color:#7c6fa0;line-height:1.6;">Hola <strong style="color:#5a3fa3;">{nombre}</strong>, recibimos una solicitud para restablecer la contraseña de tu cuenta en HOPE.</p>
+        </td></tr>
+        <tr><td style="padding:32px 40px;">
+          <table width="100%" style="background:#f8f5ff;border-radius:14px;margin-bottom:28px;" cellpadding="0" cellspacing="0">
+            <tr><td style="padding:18px 20px;">
+              <p style="margin:0 0 4px;font-size:12px;font-weight:700;color:#5a3fa3;text-transform:uppercase;letter-spacing:1px;">¿Fuiste tú?</p>
+              <p style="margin:0;font-size:14px;color:#6b7280;line-height:1.5;">Si fue así, haz clic en el botón para crear tu nueva contraseña. Si <strong>no</strong> fuiste tú, ignora este correo — tu cuenta está segura.</p>
+            </td></tr>
+          </table>
+          <table width="100%" cellpadding="0" cellspacing="0">
+            <tr><td align="center" style="padding-bottom:28px;">
+              <a href="{link}" style="display:inline-block;background:#5a3fa3;color:#ffffff !important;text-decoration:none;font-size:16px;font-weight:800;padding:18px 44px;border-radius:14px;letter-spacing:0.5px;text-transform:uppercase;">
+                Crear nueva contraseña &rarr;
+              </a>
+            </td></tr>
+          </table>
+          <table width="100%" cellpadding="0" cellspacing="0" style="background:#fafafa;border:1px solid #e9e5f0;border-radius:12px;">
+            <tr><td style="padding:14px 16px;">
+              <p style="margin:0 0 6px;font-size:11px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:0.8px;">O copia este enlace:</p>
+              <p style="margin:0;font-size:12px;color:#5a3fa3;word-break:break-all;line-height:1.5;">{link}</p>
+            </td></tr>
+          </table>
+        </td></tr>
+        <tr><td style="background:#f8f5ff;padding:24px 40px;text-align:center;border-top:1px solid #ede9f8;">
+          <p style="margin:0 0 4px;font-size:13px;color:#9ca3af;">⏱ Este enlace <strong>expira en 15 minutos</strong> y es de un solo uso.</p>
+          <p style="margin:8px 0 0;font-size:12px;color:#b0bec5;">Con cariño, el equipo de <strong style="color:#5a3fa3;">Espacio HOPE</strong> 💜</p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>
+"""
+
+            texto_plano = f"Hola {nombre},\n\nRestablece tu contraseña aquí:\n{link}\n\nEste enlace expira en 15 minutos.\n\nEquipo HOPE"
+
+            email_msg = EmailMultiAlternatives(
+                subject=asunto,
+                body=texto_plano,
+                from_email='Espacio HOPE <no-reply@espaciohope.com>',
+                to=[user.email]
+            )
+            email_msg.attach_alternative(html_correo, "text/html")
+            email_msg.send(fail_silently=False)
+
             return JsonResponse({'status': 'success'})
         except User.DoesNotExist:
             # Por seguridad, respondemos success aunque no exista, así los atacantes no adivinan correos.
