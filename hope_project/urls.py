@@ -4,7 +4,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
+    path('error-59/', admin.site.urls),
     # Enrutamos toda la plataforma a través de la app principal
     path('', include('core.urls')),
 ]
