@@ -33,4 +33,5 @@ urlpatterns = [
     path('guardar_cita_ajax/', views.guardar_cita_ajax, name='guardar_cita_ajax'),
     path('guardar-cuestionario-final/', views.guardar_cuestionario_final, name='guardar_cuestionario_final'),
     path('completar-expediente/', views.completar_expediente, name='completar_expediente'),
+    path('guardar-expediente-completo/', views.guardar_expediente_completo, name='guardar_expediente_completo'),
 ]

@@ -1581,8 +1581,9 @@ def sesion_individual(request):
         'dias_disponibles_json': dias_json,
         'dias_disponibles': dias_html,
         'paypal_client_id': settings.PAYPAL_CLIENT_ID,
-            
-        'cuestionario_json': json.dumps(CUESTIONARIO_CLINICO)
+        'mostrar_completar_perfil': request.GET.get('completar_perfil') == '1',  
+        'cuestionario_json': json.dumps(CUESTIONARIO_CLINICO),
+        'paypal_client_id': settings.PAYPAL_CLIENT_ID,
     
     }
     return render(request, 'sesion_individual.html', context)
@@ -1655,3 +1656,20 @@ def completar_expediente(request):
         request.user.perfil.save()
         return JsonResponse({'status': 'success', 'redirect_url': '/panel/'})
     return JsonResponse({'status': 'error', 'message': 'Método no permitido'}, status=400)
+
+
+
+@login_required
+def guardar_expediente_completo(request):
+    if request.method == 'POST':
+        respuestas = json.loads(request.POST.get('respuestas_json', '{}'))
+        # Guardar en el perfil del usuario
+        perfil, created = UsuarioPerfil.objects.get_or_create(usuario=request.user)
+        perfil.nombre = respuestas.get('nombre', '')
+        perfil.pseudonimo = respuestas.get('pseudonimo', '')
+        perfil.telefono = respuestas.get('telefono', '')
+        perfil.telefono_emergencia = respuestas.get('telefono_emergencia', '')
+        perfil.respuestas_cuestionario = respuestas
+        perfil.save()
+        return JsonResponse({'status': 'success', 'redirect_url': '/panel/'})
+    return JsonResponse({'status': 'error'}, status=400)

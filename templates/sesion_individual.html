@@ -930,6 +930,68 @@ body{font-family:var(--font-b);color:var(--c-dark);background:#fff;display:flex}
   </div>
 </div>
 
+
+
+<!-- MODAL PARA COMPLETAR PERFIL (sin registro de correo/contraseña) -->
+<div class="modal-overlay" id="modalCompletarPerfil">
+    <div class="modal-box" style="max-width: 600px; text-align: left; padding: 45px; border-radius: 35px; border-top: 8px solid var(--c-purple);">
+        <button class="modal-close" onclick="cerrarModal('modalCompletarPerfil')"><i class="fas fa-times"></i></button>
+        
+        <img src="{% static 'img/nlogo.png' %}" alt="HOPE Logo" style="height: 45px; margin: 0 auto 20px; display: block;">
+        
+        <div style="text-align: center; margin-bottom: 25px;">
+            <h2 style="font-family: var(--font-h); font-size: 2rem; color: var(--c-dark); font-weight: 800;">Completa tu perfil</h2>
+            <p style="color: var(--text-muted);">Unos datos más para tu expediente clínico 💜</p>
+        </div>
+
+        <!-- Contenedor del cuestionario (igual al de inicio.html pero sin email/password) -->
+        <div id="triageCompletoContainer">
+            <!-- Paso preguntas -->
+            <div id="stepPreguntasCompleto" style="display: none;">
+                <div class="progress-container"><div id="progressBarCompleto"></div></div>
+                <p id="progressTextCompleto" style="text-align: right; color: var(--c-pink); font-weight: 800; margin-bottom: 20px;"></p>
+                <h3 id="questionTextCompleto" style="margin-bottom: 25px; font-size: 1.4rem; font-weight: 800;"></h3>
+                <div id="questionOptionsCompleto" style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 30px;"></div>
+                <div style="display: flex; gap: 15px;">
+                    <button id="btnAtrasCompleto" class="btn-outline" style="display: none; padding: 15px 25px;"><i class="fas fa-arrow-left"></i></button>
+                    <button id="btnSiguienteCompleto" class="btn-primary" style="flex: 1; justify-content: center;">Continuar <i class="fas fa-arrow-right"></i></button>
+                </div>
+            </div>
+
+            <!-- Formulario de datos personales (sin correo/contraseña) -->
+            <form id="formCompletarPerfil" style="display: none;">
+                {% csrf_token %}
+                <input type="hidden" name="respuestas_json" id="respuestasJsonCompleto">
+                
+                <div style="background: #f8fafc; padding: 25px; border-radius: 20px; margin-bottom: 25px;">
+                    <h4 style="font-family: var(--font-h); font-size: 1.3rem; color: var(--c-purple); margin-bottom: 20px;">Tus datos</h4>
+                    
+                    <div style="margin-bottom: 18px;">
+                        <label>¿Cómo te llamamos? *</label>
+                        <input type="text" id="pseudonimoCompleto" class="custom-input-triage" placeholder="Ej. Alex, Majo...">
+                    </div>
+                    <div style="margin-bottom: 18px;">
+                        <label>Nombre completo (privado) *</label>
+                        <input type="text" name="nombre" id="nombreCompleto" class="custom-input-triage" placeholder="Para tu expediente">
+                    </div>
+                    <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+                        <div style="flex:1;">
+                            <label>Teléfono *</label>
+                            <input type="tel" name="telefono" id="telefonoCompleto" class="custom-input-triage" placeholder="10 dígitos">
+                        </div>
+                        <div style="flex:1;">
+                            <label>Teléfono emergencia *</label>
+                            <input type="tel" name="telefono_emergencia" id="emergenciaCompleto" class="custom-input-triage" placeholder="Familiar o amigo">
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-primary" style="width:100%; justify-content: center; padding: 18px;">Guardar y continuar <i class="fas fa-arrow-right"></i></button>
+            </form>
+        </div>
+    </div>
+</div>
+
 <script>
 // ── DATA MOOD ──
     // Variables globales para la cita
@@ -1072,9 +1134,9 @@ function guardarCitaMágica() {
     })
     .then(response => response.json())
     .then(data => {
-        if(data.status === 'success') {
-            window.location.href = '/panel/';
-        } else {
+    if(data.status === 'success') {
+    window.location.href = '/sesion-individual/?completar_perfil=1';
+    } else {
             document.getElementById('step-3-loading').style.display = 'none';
             alert(data.message || 'Error al guardar cita');
         }
@@ -1210,6 +1272,161 @@ function enviarEnlaceRecuperacion(){
     document.getElementById('recuperar-exito-desc').textContent='Te enviamos el enlace a '+email+'. Revisa tu bandeja de entrada.';
   },1800);
 }
+
+
+// Variables para el cuestionario de completar perfil
+let dataCuestionario = {{ cuestionario_json|safe|default:'{}' }};
+let flujoActualCompleto = "individual"; // o el flujo que uses
+let indicePreguntaCompleto = 0;
+let respuestasCompleto = {};
+let historialCompleto = [];
+let preguntasFlujoCompleto = [];
+
+function iniciarCuestionarioCompleto(flujo) {
+    if(!dataCuestionario[flujo]) {
+        mostrarAlertaPersonalizada("Error: No hay preguntas para este servicio.", "error");
+        return;
+    }
+    preguntasFlujoCompleto = dataCuestionario[flujo].preguntas;
+    document.getElementById("stepPreguntasCompleto").style.display = "block";
+    document.getElementById("formCompletarPerfil").style.display = "none";
+    indicePreguntaCompleto = obtenerSiguienteIndiceValidoCompleto(0);
+    mostrarPreguntaCompleto();
+}
+
+function mostrarPreguntaCompleto() {
+    if (indicePreguntaCompleto >= preguntasFlujoCompleto.length) {
+        finalizarCuestionarioCompleto();
+        return;
+    }
+    let q = preguntasFlujoCompleto[indicePreguntaCompleto];
+    document.getElementById("questionTextCompleto").innerText = q.pregunta;
+    let container = document.getElementById("questionOptionsCompleto");
+    container.innerHTML = "";
+    document.getElementById("progressBarCompleto").style.width = ((indicePreguntaCompleto / preguntasFlujoCompleto.length) * 100) + "%";
+    document.getElementById("progressTextCompleto").innerText = `Pregunta ${historialCompleto.length + 1}`;
+    document.getElementById("btnAtrasCompleto").style.display = historialCompleto.length > 0 ? "block" : "none";
+
+    if (q.tipo === "single" || q.tipo === "multiple") {
+        let inputType = q.tipo === "single" ? "radio" : "checkbox";
+        q.opciones.forEach(op => {
+            let checked = respuestasCompleto[q.id] && respuestasCompleto[q.id].includes(op) ? "checked" : "";
+            container.innerHTML += `<label class="triage-option-label"><input type="${inputType}" name="${q.id}" value="${op}" ${checked}> ${op}</label>`;
+        });
+    } else if (q.id === "edad" || q.pregunta.toLowerCase().includes("edad")) {
+        let val = respuestasCompleto[q.id] || 24;
+        container.innerHTML = `
+            <div style="text-align:center"><span id="${q.id}_val" style="font-size:5rem;font-weight:800;color:var(--c-purple)">${val}</span><span> años</span></div>
+            <input type="range" id="${q.id}" min="13" max="35" value="${val}" oninput="document.getElementById('${q.id}_val').innerText=this.value">
+        `;
+    } else if (q.tipo === "numero" && q.min && q.max) {
+        let val = respuestasCompleto[q.id] || Math.ceil((q.min+q.max)/2);
+        container.innerHTML = `
+            <div style="text-align:center"><span id="${q.id}_val" style="font-size:5rem;font-weight:800;color:var(--c-pink)">${val}</span></div>
+            <input type="range" id="${q.id}" min="${q.min}" max="${q.max}" value="${val}" oninput="document.getElementById('${q.id}_val').innerText=this.value">
+        `;
+    } else {
+        let val = respuestasCompleto[q.id] || "";
+        container.innerHTML = `<input type="text" id="${q.id}" class="custom-input-triage" value="${val}" placeholder="Escribe aquí...">`;
+    }
+}
+
+function obtenerSiguienteIndiceValidoCompleto(inicio) {
+    for (let i = inicio; i < preguntasFlujoCompleto.length; i++) {
+        let q = preguntasFlujoCompleto[i];
+        if (!q.mostrar_si) return i;
+        let dep = respuestasCompleto[q.mostrar_si.id];
+        if (!dep) continue;
+        if (Array.isArray(dep) && dep.some(v => q.mostrar_si.valores.includes(v))) return i;
+        if (!Array.isArray(dep) && q.mostrar_si.valores.includes(dep)) return i;
+    }
+    return preguntasFlujoCompleto.length;
+}
+
+document.getElementById("btnSiguienteCompleto").addEventListener("click", () => {
+    let q = preguntasFlujoCompleto[indicePreguntaCompleto];
+    let valor = null;
+    if (q.tipo === "single") {
+        let sel = document.querySelector(`input[name="${q.id}"]:checked`);
+        if (sel) valor = sel.value;
+    } else if (q.tipo === "multiple") {
+        let sels = Array.from(document.querySelectorAll(`input[name="${q.id}"]:checked`)).map(el => el.value);
+        if (sels.length) valor = sels;
+    } else {
+        let input = document.getElementById(q.id);
+        if (input) valor = input.value.trim();
+    }
+    if (!valor) {
+        mostrarAlertaPersonalizada("Responde para continuar.", "info");
+        return;
+    }
+    respuestasCompleto[q.id] = valor;
+    historialCompleto.push(indicePreguntaCompleto);
+    indicePreguntaCompleto = obtenerSiguienteIndiceValidoCompleto(indicePreguntaCompleto + 1);
+    mostrarPreguntaCompleto();
+});
+
+document.getElementById("btnAtrasCompleto").addEventListener("click", () => {
+    if (historialCompleto.length) {
+        indicePreguntaCompleto = historialCompleto.pop();
+        mostrarPreguntaCompleto();
+    }
+});
+
+function finalizarCuestionarioCompleto() {
+    document.getElementById("stepPreguntasCompleto").style.display = "none";
+    document.getElementById("formCompletarPerfil").style.display = "block";
+}
+
+// Envío del formulario de completar perfil
+document.getElementById("formCompletarPerfil").addEventListener("submit", function(e) {
+    e.preventDefault();
+    // Agregar datos personales a las respuestas
+    respuestasCompleto["pseudonimo"] = document.getElementById("pseudonimoCompleto").value;
+    respuestasCompleto["nombre"] = document.getElementById("nombreCompleto").value;
+    respuestasCompleto["telefono"] = document.getElementById("telefonoCompleto").value;
+    respuestasCompleto["telefono_emergencia"] = document.getElementById("emergenciaCompleto").value;
+    
+    document.getElementById("respuestasJsonCompleto").value = JSON.stringify(respuestasCompleto);
+    
+    let btn = this.querySelector('button[type="submit"]');
+    let original = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
+    btn.disabled = true;
+    
+    fetch("/guardar-expediente-completo/", {
+        method: "POST",
+        body: new FormData(this),
+        headers: { "X-CSRFToken": document.querySelector('[name=csrfmiddlewaretoken]').value }
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.status === "success") {
+            window.location.href = data.redirect_url || "/panel/";
+        } else {
+            mostrarAlertaPersonalizada(data.message || "Error al guardar", "error");
+            btn.innerHTML = original;
+            btn.disabled = false;
+        }
+    })
+    .catch(() => {
+        mostrarAlertaPersonalizada("Error de conexión", "error");
+        btn.innerHTML = original;
+        btn.disabled = false;
+    });
+});
 </script>
+
+{% if mostrar_completar_perfil %}
+<script>
+setTimeout(() => { 
+    iniciarCuestionarioCompleto("individual"); 
+    abrirModal('modalCompletarPerfil'); 
+}, 600);
+
+
+</script>
+{% endif %}
+
 </body>
 </html>
