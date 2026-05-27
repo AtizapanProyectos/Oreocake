@@ -20,6 +20,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700;900&family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap" rel="stylesheet">
 <!-- Reemplaza el enlace de font-awesome por este -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+<script src="https://www.paypal.com/sdk/js?client-id={{ paypal_client_id }}&currency=MXN&locale=es_MX"></script>
 <style>
 :root {
   --c-purple: #5A3FA3;
@@ -849,9 +850,7 @@ body{font-family:var(--font-b);color:var(--c-dark);background:#fff;display:flex}
     </div>
     <input type="number" id="donAmount" class="donation-input" value="400" placeholder="Ingresa un monto">
     <p id="donImpact" style="color:var(--text-muted);font-style:italic;margin-bottom:30px">"Dona un mes de terapia."</p>
-    <button id="btnPagar" class="btn-primary" style="width:100%;justify-content:center;background:var(--c-pink)" onclick="simularPago()">
-      Aportar <span id="btnMonto">$400</span> MXN <i class="fas fa-heart"></i>
-    </button>
+    <div id="paypal-button-container-donacion" style="margin-top: 15px; min-height: 45px;"></div>
   </div>
 </div>
 
@@ -1549,7 +1548,7 @@ function goToSlide(idx){
 if(slides.length > 0) goToSlide(0);
 
 function iniciarProceso(){ abrirModal('modalProceso'); }
-function abrirDonacion(e){ if(e) e.preventDefault(); abrirModal('modalDonacion'); }
+function abrirDonacion(e){ if(e) e.preventDefault(); abrirModal('modalDonacion'); renderizarPayPalDonacion(); }
 
 // ── LÓGICA DE DONACIONES RESTAURADA ──
 const donAmount=document.getElementById('donAmount');
@@ -1592,23 +1591,46 @@ if(donAmount) {
   updateDonation(400);
 }
 
-function simularPago(){
-  const btn=document.getElementById('btnPagar');
-  if(!btn) return;
-  btn.innerHTML='<i class="fas fa-circle-notch fa-spin"></i> Procesando...';
-  btn.disabled=true;
-  setTimeout(()=>{
-    btn.style.background='#10B981';
-    btn.innerHTML='<i class="fas fa-check-circle"></i> ¡Gracias por tu donación!';
-    setTimeout(()=>{
-      cerrarModal('modalDonacion');
-      btn.style.background='var(--c-pink)';
-      btn.innerHTML='Aportar <span id="btnMonto">$'+(donAmount.value||0)+'</span> MXN <i class="fas fa-heart"></i>';
-      btn.disabled=false;
-    },2500);
-  },2000);
+// ── PAYPAL PARA DONACIONES ──
+function renderizarPayPalDonacion() {
+    const container = document.getElementById('paypal-button-container-donacion');
+    if (!container) return;
+    
+    // Si ya existe el objeto paypal, renderizamos directo
+    if (typeof paypal !== 'undefined') {
+        renderButtons();
+    } else {
+        // Si no, cargamos el script y luego renderizamos
+        const script = document.createElement('script');
+        script.src = "https://www.paypal.com/sdk/js?client-id={{ paypal_client_id }}&currency=MXN&locale=es_MX";
+        script.onload = renderButtons;
+        document.body.appendChild(script);
+    }
 }
 
+function renderButtons() {
+    const container = document.getElementById('paypal-button-container-donacion');
+    if (container.children.length > 0) return;
+
+    paypal.Buttons({
+        style: { layout: 'vertical', color: 'blue', shape: 'rect', label: 'donate' },
+        createOrder: function(data, actions) {
+            let monto = document.getElementById('donAmount').value || '400';
+            return actions.order.create({
+                purchase_units: [{
+                    description: 'Donación HOPE',
+                    amount: { currency_code: 'MXN', value: parseFloat(monto).toFixed(2) }
+                }]
+            });
+        },
+        onApprove: function(data, actions) {
+            return actions.order.capture().then(function() {
+                container.innerHTML = '<div style="background:#10B981; color:white; padding:15px; border-radius:100px; text-align:center;">¡Gracias por tu apoyo! 🤍</div>';
+                setTimeout(() => { cerrarModal('modalDonacion'); location.reload(); }, 2000);
+            });
+        }
+    }).render('#paypal-button-container-donacion');
+}
 
 // ── LÓGICA DE REGISTRO DIRECTO Y CUESTIONARIO ──
 let dataCuestionario = {};

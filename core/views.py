@@ -139,7 +139,8 @@ def generar_link_meet(fecha_obj, hora_obj, paciente_nombre, psicologo_nombre, pa
 # 🏠 NUEVA VISTA: PÁGINA DE INICIO (LANDING PAGE)
 def inicio(request):
     context = {
-        'cuestionario_json': json.dumps(CUESTIONARIO_CLINICO)
+        'cuestionario_json': json.dumps(CUESTIONARIO_CLINICO),
+        'paypal_client_id': settings.PAYPAL_CLIENT_ID,
     }
     
     # ¡AQUÍ ESTÁ LA MAGIA! Pasamos el 'context' a la plantilla
