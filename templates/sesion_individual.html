@@ -9,6 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700;900&family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+<script src="https://www.paypal.com/sdk/js?client-id={{ paypal_client_id }}&currency=MXN&locale=es_MX"></script>
 <style>
 /* ── VARIABLES ── */
 :root {
@@ -514,7 +515,24 @@ body{font-family:var(--font-b);color:var(--c-dark);background:#fff;display:flex}
 .time-slot-btn:hover, .time-slot-btn.active { background: var(--c-purple); color: white; border-color: var(--c-purple); transform: translateY(-2px); }
 
 .payment-box { background: #FFFFFF; max-width: 450px; margin: 0 auto; padding: 40px; border-radius: 20px; border: 2px solid #F3F4F6; }
+
+.comision-extra {
+    display: inline-block;
+    font-size: 0.75rem;
+    color: #666;
+    background-color: #f9f9f9;
+    padding: 0.2rem 0.5rem;
+    border-radius: 20px;
+    margin-top: 0.25rem;
+    margin-bottom: 0.5rem;
+    text-align: center;
+    width: auto;
+    align-self: center;
+  }
 </style>
+
+
+
 </head>
 <body>
 
@@ -564,19 +582,22 @@ body{font-family:var(--font-b);color:var(--c-dark);background:#fff;display:flex}
       <!-- IZQUIERDA: Foto + CTA Box -->
       <div class="hero-new-left">
         <img src="{% static 'img/19.png' %}" alt="Espacio HOPE — Terapeuta" class="hero-new-img">
-        <div class="cta-box-new">
-          <p class="price-tag-new">Sesión Individual · 50 min</p>
-          <span class="price-amount-new">$100 <span>MXN</span></span>
-          <span class="price-sub">Por sesión · Pago único y seguro</span>
-          <button class="btn-cta-new" onclick="abrirModal('modalRegistro')">
-            <i class="fas fa-calendar-check"></i> &nbsp;Agendar Mi Sesión
-          </button>
-          <div class="cta-badges">
-            <span class="cta-badge"><i class="fas fa-lock"></i> Confidencial</span>
-            <span class="cta-badge"><i class="fas fa-shield-alt"></i> Seguro</span>
-
-          </div>
-        </div>
+<div class="cta-box-new">
+  <p class="price-tag-new">Sesión Individual · 50 min</p>
+  <span class="price-amount-new">$100 <span>MXN</span></span>
+  <span class="price-sub">Por sesión · Pago único y seguro</span>
+  
+  <!-- Pequeña leyenda de comisión -->
+  <span class="comision-extra">+ $10 MXN de comisión</span>
+  
+  <button class="btn-cta-new" onclick="abrirModal('modalRegistro')">
+    <i class="fas fa-calendar-check"></i> &nbsp;Agendar Mi Sesión
+  </button>
+  <div class="cta-badges">
+    <span class="cta-badge"><i class="fas fa-lock"></i> Confidencial</span>
+    <span class="cta-badge"><i class="fas fa-shield-alt"></i> Seguro</span>
+  </div>
+</div>
       </div>
 
       <!-- DERECHA: Texto -->
@@ -779,23 +800,33 @@ body{font-family:var(--font-b);color:var(--c-dark);background:#fff;display:flex}
             </div>
         </div>
 
-        <div id="step-2-payment" style="display: none; text-align: center; padding-top: 40px; border-top: 1px solid #f1f5f9; margin-top: 40px;">
-            <button id="btn-back-schedule" style="background:none; border:none; color: var(--c-purple); font-weight: 700; cursor:pointer; font-size: 16px; margin-bottom: 20px; display:block;">
-                <i class="fas fa-arrow-left"></i> Volver al calendario
-            </button>
+<div id="step-2-payment" style="display: none; text-align: center; padding-top: 40px; border-top: 1px solid #f1f5f9; margin-top: 40px;">
+    <button id="btn-back-schedule" style="background:none; border:none; color: var(--c-purple); font-weight: 700; cursor:pointer; font-size: 16px; margin-bottom: 20px; display:block;">
+        <i class="fas fa-arrow-left"></i> Volver al calendario
+    </button>
 
-            <h2 style="color: var(--c-dark); font-family: var(--font-h); font-size: 2rem; margin-bottom: 10px;">Confirmar Cita</h2>
-            <p id="selected-time-text" style="font-size: 18px; color: var(--c-purple); margin-bottom: 30px; font-weight: 600;"></p>
-            
-            <div class="payment-box">
-                <h3 style="font-size: 42px; margin-bottom: 2px; color: var(--c-purple); font-weight: 800; font-family: var(--font-h);">$100.00 <span style="font-size: 16px;">MXN</span></h3>
-                <p style="color: var(--text-muted); font-weight: 500; margin-bottom: 25px;">Consulta Psicológica Online Individual</p>
+    <h2 style="color: var(--c-dark); font-family: var(--font-h); font-size: 2rem; margin-bottom: 10px;">Confirmar y Pagar</h2>
+    <p id="selected-time-text" style="font-size: 18px; color: var(--c-purple); margin-bottom: 30px; font-weight: 600;"></p>
+    
+<div class="payment-box">
+  <h3 style="font-size: 42px; margin-bottom: 2px; color: var(--c-purple); font-weight: 800; font-family: var(--font-h);">
+    $100.00 <span style="font-size: 16px;">MXN</span>
+  </h3>
+  <p style="color: var(--text-muted); font-weight: 500; margin-bottom: 25px;">Consulta Psicológica Online Individual</p>
 
-                <button type="button" onclick="guardarCitaMágica()" class="btn-primary" style="width:100%; justify-content:center;">
-                    Confirmar Cita Ahora <i class="fas fa-check"></i>
-                </button>
-            </div>
-        </div>
+  <!-- 🔥 LEYENDA DE COMISIÓN (añadida) -->
+  <span class="comision-extra" style="display: inline-block; font-size: 0.75rem; color: #666; background-color: #f9f9f9; padding: 0.2rem 0.7rem; border-radius: 20px; margin-bottom: 12px;">
+    + $10 MXN de comisión
+  </span>
+
+  <!-- 🔥 BOTÓN REAL DE PAYPAL -->
+  <div id="paypal-button-container-individual" style="margin-top: 10px;"></div>
+
+  <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 15px;">
+    <i class="fas fa-lock"></i> Pago 100% seguro procesado por PayPal
+  </p>
+</div>
+</div>
 
         <div id="step-3-loading" style="display: none; text-align: center; padding: 60px 0;">
             <i class="fas fa-circle-notch fa-spin" style="font-size: 50px; color: var(--c-purple);"></i>
@@ -1085,6 +1116,7 @@ function getCookie(name) {
 
             document.getElementById('step-1-schedule').style.display = 'none';
             document.getElementById('step-2-payment').style.display = 'block';
+            renderizarBotonPayPalIndividual();
         });
     });
 
@@ -1109,43 +1141,80 @@ function iniciarCuestionarioFinal() {
     // 3. GUARDAR LA CITA Y REDIRIGIR AL PANEL
 // 3. GUARDAR LA CITA Y REDIRIGIR AL PANEL
 // 3. GUARDAR LA CITA Y REDIRIGIR AL PANEL
-function guardarCitaMágica() {
-    document.getElementById('step-2-payment').style.display = 'none';
-    document.getElementById('step-3-loading').style.display = 'block';
+// ── PAYPAL PARA SESIÓN INDIVIDUAL ──
+function renderizarBotonPayPalIndividual() {
+    const container = document.getElementById('paypal-button-container-individual');
+    if (!container || container.children.length > 0) return; // Ya fue renderizado
 
-    const csrfToken = getCookie('csrftoken'); // Obtenemos el token de la cookie
-
-    let formData = new FormData();
-    formData.append('fecha', window.fechaSeleccionada);
-    formData.append('hora', window.horaSeleccionada);
-    formData.append('animo', window.animoSeleccionado);
-    formData.append('modalidad', window.modalidadSeleccionada);
-    formData.append('tipo_servicio', window.tipoServicioAgendado);
-    // 🔥 AÑADIMOS EL TOKEN TAMBIÉN AQUÍ, ADENTRO DEL FORM DATA 🔥
-    formData.append('csrfmiddlewaretoken', csrfToken);
-
-    fetch("/guardar_cita_ajax/", {
-        method: 'POST',
-        headers: { 
-            'X-Requested-With': 'XMLHttpRequest',
-            'X-CSRFToken': csrfToken // Lo dejamos en el Header también
+    paypal.Buttons({
+        style: {
+            layout: 'vertical',
+            color:  'blue',
+            shape:  'rect',
+            label:  'pay'
         },
-        body: formData
-    })
-    .then(response => response.json())
-    .then(data => {
-    if(data.status === 'success') {
-    window.location.href = '/sesion-individual/?completar_perfil=1';
-    } else {
-            document.getElementById('step-3-loading').style.display = 'none';
-            alert(data.message || 'Error al guardar cita');
+        createOrder: function(data, actions) {
+            return actions.order.create({
+                purchase_units: [{
+                    description: 'Sesión Individual HOPE — ' + window.fechaSeleccionada + ' ' + window.horaSeleccionada,
+                    amount: {
+                        currency_code: 'MXN',
+                        value: '10.00'
+                    }
+                }]
+            });
+        },
+        onApprove: function(data, actions) {
+            // Mostramos pantalla de carga
+            document.getElementById('step-2-payment').style.display = 'none';
+            document.getElementById('step-3-loading').style.display = 'block';
+
+            return actions.order.capture().then(function(details) {
+                // Pago exitoso — ahora guardamos la cita
+                const csrfToken = getCookie('csrftoken');
+                let formData = new FormData();
+                formData.append('fecha', window.fechaSeleccionada);
+                formData.append('hora', window.horaSeleccionada);
+                formData.append('animo', window.animoSeleccionado);
+                formData.append('modalidad', window.modalidadSeleccionada);
+                formData.append('tipo_servicio', window.tipoServicioAgendado);
+                formData.append('paypal_order_id', details.id);
+                formData.append('paypal_payer_email', details.payer.email_address || '');
+                formData.append('csrfmiddlewaretoken', csrfToken);
+
+                fetch("/guardar_cita_ajax/", {
+                    method: 'POST',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRFToken': csrfToken
+                    },
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        window.location.href = '/sesion-individual/?completar_perfil=1';
+                    } else {
+                        document.getElementById('step-3-loading').style.display = 'none';
+                        document.getElementById('step-2-payment').style.display = 'block';
+                        mostrarAlertaPersonalizada(data.message || 'Error al guardar la cita', 'error');
+                    }
+                })
+                .catch(() => {
+                    document.getElementById('step-3-loading').style.display = 'none';
+                    document.getElementById('step-2-payment').style.display = 'block';
+                    mostrarAlertaPersonalizada('Error de conexión', 'error');
+                });
+            });
+        },
+        onError: function(err) {
+            console.error('PayPal error:', err);
+            mostrarAlertaPersonalizada('Ocurrió un error con PayPal. Intenta de nuevo.', 'error');
+        },
+        onCancel: function() {
+            mostrarAlertaPersonalizada('Pago cancelado. Puedes intentarlo cuando quieras.', 'info');
         }
-    })
-    .catch(error => {
-        document.getElementById('step-3-loading').style.display = 'none';
-        console.error("Error capturado:", error); // Esto te dirá qué pasó en la consola F12
-        alert('Error de conexión, revisa la consola F12');
-    });
+    }).render('#paypal-button-container-individual');
 }
     // Funciones Auxiliares
     function abrirModal(id){ const el=document.getElementById(id); if(el) el.style.display='flex'; }
