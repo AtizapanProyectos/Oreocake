@@ -28,4 +28,9 @@ urlpatterns = [
     path('logout/', views.logout_usuario, name='logout_usuario'),
     path('solicitar-recuperacion/', views.solicitar_recuperacion, name='solicitar_recuperacion'),
     path('reset/<uidb64>/<token>/', views.resetear_password_form, name='resetear_password_form'),
+    path('sesion-individual/', views.sesion_individual, name='sesion_individual'),
+    path('registro-rapido/', views.registro_rapido_ajax, name='registro_rapido'),
+    path('guardar_cita_ajax/', views.guardar_cita_ajax, name='guardar_cita_ajax'),
+    path('guardar-cuestionario-final/', views.guardar_cuestionario_final, name='guardar_cuestionario_final'),
+    path('completar-expediente/', views.completar_expediente, name='completar_expediente'),
 ]

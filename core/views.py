@@ -1536,3 +1536,122 @@ def resetear_password_form(request, uidb64, token):
         return render(request, 'reset_form.html', {'uid': uidb64, 'token': token})
     else:
         return render(request, 'verificacion_resultado.html', {'exito': False, 'mensaje': 'El enlace de recuperación ha expirado o ya fue utilizado.'})
+
+
+def sesion_individual(request):
+    # Lógica de tiempos y citas libres (Igualita a la del panel_generico)
+    now_local = timezone.localtime(timezone.now())
+    hoy = now_local.date()
+    hora_actual = now_local.time().replace(second=0, microsecond=0)
+    festivos = set(DiaFestivo.objects.filter(fecha__gte=hoy).values_list('fecha', flat=True))
+    horas_base = [time(h, 0) for h in range(9, 21)]
+    total_psicologos_activos = PerfilPsicologo.objects.filter(esta_activo=True).count()
+
+    dias_json = {}
+    dias_html = {}
+
+    
+    # Calculamos espacios globales (ya que es un paciente nuevo sin psicólogo asignado)
+    if total_psicologos_activos > 0:
+        fecha_limite = hoy + timedelta(days=90)
+        citas_agrupadas = Cita.objects.filter(fecha__gte=hoy, fecha__lte=fecha_limite, estado='Confirmada').values('fecha', 'hora').annotate(total=Count('id'))
+        citas_ocupadas = {(c['fecha'], c['hora'].replace(second=0, microsecond=0)): c['total'] for c in citas_agrupadas}
+
+        dias_agregados = 0
+        dia_actual = hoy
+        dias_iterados = 0
+        while dias_agregados < 30 and dias_iterados < 120:
+            dias_iterados += 1
+            if dia_actual not in festivos:
+                horas_del_dia_str = []
+                horas_del_dia_obj = []
+                for h in horas_base:
+                    if dia_actual == hoy and h < hora_actual: continue
+                    ocupadas = citas_ocupadas.get((dia_actual, h), 0)
+                    if ocupadas < total_psicologos_activos:
+                        horas_del_dia_str.append(h.strftime('%I:%M %p'))
+                        horas_del_dia_obj.append(h)
+                if horas_del_dia_str:
+                    dias_json[dia_actual.strftime('%Y-%m-%d')] = horas_del_dia_str
+                    dias_html[dia_actual] = horas_del_dia_obj
+                    dias_agregados += 1
+            dia_actual += timedelta(days=1)
+
+    context = {
+        'dias_disponibles_json': dias_json,
+        'dias_disponibles': dias_html,
+        'paypal_client_id': settings.PAYPAL_CLIENT_ID,
+            
+        'cuestionario_json': json.dumps(CUESTIONARIO_CLINICO)
+    
+    }
+    return render(request, 'sesion_individual.html', context)
+
+
+@csrf_exempt
+def registro_rapido_ajax(request):
+    if request.method == 'POST':
+        email = request.POST.get('email', '').strip()
+        password = request.POST.get('password', '')
+
+        # Validamos si ya existe el usuario
+        if User.objects.filter(username__iexact=email).exists():
+            return JsonResponse({'status': 'error', 'message': 'Este correo ya tiene cuenta. Cierra esta ventana e Inicia Sesión.'})
+
+        try:
+            # 🔥 CORRECCIÓN: Forzamos el valor directo en la creación inicial
+            user = User.objects.create_user(
+                username=email, 
+                email=email, 
+                password=password,
+                first_name="Paciente"  # <- Lo inyectamos directo aquí para blindarlo de NULL
+            )
+            user.is_active = True
+            user.save()
+
+            # Creamos el perfil genérico obligatorio
+            UsuarioPerfil.objects.create(usuario=user, nombre="Paciente")
+
+            # Iniciamos sesión automáticamente
+            login(request, user)
+            return JsonResponse({'status': 'success'})
+
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': f'Error interno en base de datos: {str(e)}'})
+        
+    return JsonResponse({'status': 'error', 'message': 'Método no válido'})
+
+
+@csrf_exempt
+def guardar_cuestionario_final(request):
+    if request.method == 'POST' and request.user.is_authenticated:
+        respuestas_raw = request.POST.get('respuestas_json', '{}')
+        # Guardamos en la tabla CuestionarioRegistro
+        CuestionarioRegistro.objects.update_or_create(
+            paciente=request.user,
+            defaults={'respuestas': json.loads(respuestas_raw)}
+        )
+        return JsonResponse({'status': 'success'})
+    return JsonResponse({'status': 'error'})
+
+
+def completar_perfil(request):
+    if request.method == 'POST' and request.user.is_authenticated:
+        # Actualizar datos del usuario
+        request.user.first_name = request.POST.get('nombre', '')
+        request.user.save()
+        # Guardar respuestas del triage en un modelo Perfil o en sesión
+        respuestas_json = request.POST.get('respuestas_json')
+        # ... guardas en tu modelo PerfilUsuario
+        return JsonResponse({'status': 'success'})
+    return JsonResponse({'status': 'error'})
+
+@login_required
+def completar_expediente(request):
+    if request.method == 'POST':
+        respuestas = json.loads(request.POST.get('respuestas_json'))
+        # Guardar en el perfil del usuario
+        request.user.perfil.respuestas_cuestionario = respuestas
+        request.user.perfil.save()
+        return JsonResponse({'status': 'success', 'redirect_url': '/panel/'})
+    return JsonResponse({'status': 'error', 'message': 'Método no permitido'}, status=400)
