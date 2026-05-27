@@ -7,6 +7,8 @@ from django.utils.encoding import force_bytes, force_str
 from django.contrib import messages
 from django.urls import reverse
 # pyrefly: ignore [missing-import]
+from django.contrib.auth import authenticate
+from django.middleware.csrf import get_token
 from django.http import JsonResponse
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
@@ -1592,84 +1594,96 @@ def sesion_individual(request):
 @csrf_exempt
 def registro_rapido_ajax(request):
     if request.method == 'POST':
+        from django.contrib.auth import authenticate, login
+        from django.middleware.csrf import get_token
+        from django.urls import reverse
+
         email = request.POST.get('email', '').strip()
         password = request.POST.get('password', '')
 
-        # Validamos si ya existe el usuario
-        if User.objects.filter(username__iexact=email).exists():
-            return JsonResponse({'status': 'error', 'message': 'Este correo ya tiene cuenta. Cierra esta ventana e Inicia Sesión.'})
+        # 1. VALIDADOR DE USUARIO EXISTENTE (Lógica de tu login_usuario)
+        user_match = User.objects.filter(username__iexact=email).first()
+        
+        if user_match:
+            user = authenticate(request, username=user_match.username, password=password)
+            if user is not None:
+                if not user.is_active:
+                    return JsonResponse({
+                        'status': 'error',
+                        'message': 'Aún no verificas tu cuenta. Por favor, revisa tu bandeja de entrada.'
+                    })
 
+                login(request, user)
+                
+                # Asignamos la ruta dependiendo del rol
+                if user.is_superuser:
+                    redirect_url = reverse('panel_admin')
+                elif hasattr(user, 'perfil_psicologo'):
+                    redirect_url = reverse('panel_doctor')
+                else:
+                    redirect_url = reverse('panel_generico')
+                    
+                return JsonResponse({
+                    'status': 'login_existente', 
+                    'redirect_url': redirect_url,
+                    'new_token': get_token(request)
+                })
+            else:
+                return JsonResponse({
+                    'status': 'error', 
+                    'message': 'El correo o la contraseña son incorrectos.'
+                })
+
+        # 2. FLUJO NORMAL: CREACIÓN DE USUARIO NUEVO
         try:
-            # 🔥 CORRECCIÓN: Forzamos el valor directo en la creación inicial
             user = User.objects.create_user(
                 username=email, 
                 email=email, 
                 password=password,
-                first_name="Paciente"  # <- Lo inyectamos directo aquí para blindarlo de NULL
+                first_name="Paciente" 
             )
             user.is_active = True
             user.save()
-
-            # Creamos el perfil genérico obligatorio
             UsuarioPerfil.objects.create(usuario=user, nombre="Paciente")
-
-            # Iniciamos sesión automáticamente
+            
             login(request, user)
-            return JsonResponse({'status': 'success'})
+            return JsonResponse({'status': 'success', 'new_token': get_token(request)})
 
         except Exception as e:
-            return JsonResponse({'status': 'error', 'message': f'Error interno en base de datos: {str(e)}'})
+            return JsonResponse({'status': 'error', 'message': f'Error en base de datos: {str(e)}'})
         
-    return JsonResponse({'status': 'error', 'message': 'Método no válido'})
+    return JsonResponse({'status': 'error', 'message': 'Método no permitido.'})
 
 
-@csrf_exempt
-def guardar_cuestionario_final(request):
-    if request.method == 'POST' and request.user.is_authenticated:
-        respuestas_raw = request.POST.get('respuestas_json', '{}')
-        # Guardamos en la tabla CuestionarioRegistro
-        CuestionarioRegistro.objects.update_or_create(
-            paciente=request.user,
-            defaults={'respuestas': json.loads(respuestas_raw)}
-        )
-        return JsonResponse({'status': 'success'})
-    return JsonResponse({'status': 'error'})
-
-
-def completar_perfil(request):
-    if request.method == 'POST' and request.user.is_authenticated:
-        # Actualizar datos del usuario
-        request.user.first_name = request.POST.get('nombre', '')
-        request.user.save()
-        # Guardar respuestas del triage en un modelo Perfil o en sesión
-        respuestas_json = request.POST.get('respuestas_json')
-        # ... guardas en tu modelo PerfilUsuario
-        return JsonResponse({'status': 'success'})
-    return JsonResponse({'status': 'error'})
-
-@login_required
-def completar_expediente(request):
-    if request.method == 'POST':
-        respuestas = json.loads(request.POST.get('respuestas_json'))
-        # Guardar en el perfil del usuario
-        request.user.perfil.respuestas_cuestionario = respuestas
-        request.user.perfil.save()
-        return JsonResponse({'status': 'success', 'redirect_url': '/panel/'})
-    return JsonResponse({'status': 'error', 'message': 'Método no permitido'}, status=400)
 
 
 
 @login_required
 def guardar_expediente_completo(request):
     if request.method == 'POST':
-        respuestas = json.loads(request.POST.get('respuestas_json', '{}'))
-        # Guardar en el perfil del usuario
+        import json
+        respuestas_raw = request.POST.get('respuestas_json', '{}')
+        respuestas = json.loads(respuestas_raw)
+
+        # 1. Actualizar el modelo User de Django
+        request.user.first_name = respuestas.get('nombre', 'Paciente')
+        request.user.save()
+
+        # 2. Actualizar el UsuarioPerfil (teléfonos y nombre)
         perfil, created = UsuarioPerfil.objects.get_or_create(usuario=request.user)
-        perfil.nombre = respuestas.get('nombre', '')
-        perfil.pseudonimo = respuestas.get('pseudonimo', '')
+        perfil.nombre = respuestas.get('nombre', 'Paciente')
         perfil.telefono = respuestas.get('telefono', '')
         perfil.telefono_emergencia = respuestas.get('telefono_emergencia', '')
-        perfil.respuestas_cuestionario = respuestas
         perfil.save()
+
+        # 3. Guardar todo el cuestionario en CuestionarioRegistro (Modelo Correcto)
+        CuestionarioRegistro.objects.update_or_create(
+            paciente=request.user,
+            defaults={
+                'flujo_elegido': 'individual',
+                'respuestas': respuestas
+            }
+        )
+
         return JsonResponse({'status': 'success', 'redirect_url': '/panel/'})
-    return JsonResponse({'status': 'error'}, status=400)
+    return JsonResponse({'status': 'error', 'message': 'Método no permitido'}, status=400)

@@ -822,6 +822,8 @@ body{font-family:var(--font-b);color:var(--c-dark);background:#fff;display:flex}
   <!-- 🔥 BOTÓN REAL DE PAYPAL -->
   <div id="paypal-button-container-individual" style="margin-top: 10px;"></div>
 
+
+
   <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 15px;">
     <i class="fas fa-lock"></i> Pago 100% seguro procesado por PayPal
   </p>
@@ -1057,7 +1059,12 @@ body{font-family:var(--font-b);color:var(--c-dark);background:#fff;display:flex}
             if (data.status === 'success') {
                 cerrarModal('modalRegistro');
                 abrirModal('modalCalendario');
-            } else {
+            } 
+            // 🔥 AGREGA ESTO: Si ya existía, lo manda directo a su panel
+            else if (data.status === 'login_existente') {
+                window.location.href = data.redirect_url;
+            } 
+            else {
                 alert(data.message);
             }
         }).catch(err => {
@@ -1159,7 +1166,7 @@ function renderizarBotonPayPalIndividual() {
                     description: 'Sesión Individual HOPE — ' + window.fechaSeleccionada + ' ' + window.horaSeleccionada,
                     amount: {
                         currency_code: 'MXN',
-                        value: '10.00'
+                        value: '110.00'
                     }
                 }]
             });
@@ -1342,6 +1349,39 @@ function enviarEnlaceRecuperacion(){
   },1800);
 }
 
+function testSinPago() {
+    document.getElementById('step-2-payment').style.display = 'none';
+    document.getElementById('step-3-loading').style.display = 'block';
+
+    const csrfToken = getCookie('csrftoken');
+    let formData = new FormData();
+    formData.append('fecha', window.fechaSeleccionada);
+    formData.append('hora', window.horaSeleccionada);
+    formData.append('animo', window.animoSeleccionado);
+    formData.append('modalidad', window.modalidadSeleccionada);
+    formData.append('tipo_servicio', window.tipoServicioAgendado);
+    formData.append('csrfmiddlewaretoken', csrfToken);
+
+    fetch("/guardar_cita_ajax/", {
+        method: 'POST',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRFToken': csrfToken
+        },
+        body: formData
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.status === 'success') {
+            // Cita creada gratis, mandamos al paso final del formulario
+            window.location.href = '/sesion-individual/?completar_perfil=1';
+        } else {
+            document.getElementById('step-3-loading').style.display = 'none';
+            document.getElementById('step-2-payment').style.display = 'block';
+            alert('Error: ' + data.message);
+        }
+    });
+}
 
 // Variables para el cuestionario de completar perfil
 let dataCuestionario = {{ cuestionario_json|safe|default:'{}' }};
