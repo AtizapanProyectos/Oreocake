@@ -336,7 +336,7 @@
                                 <span class="session-badge badge-bitacora"><i class="fas fa-book"></i> Bitácora</span>
                                 {% endif %}
                                 {% if sesion.tiene_meet %}
-                                <span class="session-badge badge-meet"><i class="fas fa-video"></i> Meet</span>
+                                <span class="session-badge badge-meet"><i class="fas fa-video"></i>Sesión</span>
                                 {% endif %}
                                 {% if sesion.historial and sesion.historial.archivo_adjunto %}
                                 <span class="session-badge badge-adjunto"><i class="fas fa-paperclip"></i> Adjunto</span>
@@ -375,7 +375,7 @@
                         {% if sesion.tiene_meet %}
                         <button class="tab-btn tab-meet {% if not sesion.tiene_historial %}active{% endif %}"
                                 onclick="switchTab(event, '{{ slug }}', 'meet')">
-                            <i class="fas fa-video"></i> Resumen Meet
+                            <i class="fas fa-video"></i> Resumen Sesión
                         </button>
                         {% endif %}
                     </div>
@@ -436,7 +436,7 @@
                             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;padding-bottom:16px;border-bottom:1px dashed #e2e8f0;">
                                 <div>
                                     <p style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--c-indigo);margin:0 0 4px 0;">
-                                        <i class="fas fa-robot" style="margin-right:5px;"></i> Notas Automáticas · Google Meet
+                                        <i class="fas fa-robot" style="margin-right:5px;"></i> Notas Automáticas · de la Sesión
                                     </p>
                                     <p style="font-size:13px;color:var(--text-muted);margin:0;">
                                         Sesión del {{ cita.fecha|date:"d M Y" }} a las {{ cita.hora|time:"H:i" }}
@@ -448,7 +448,7 @@
                             </div>
                             <div class="meet-loading" style="display:none;">
                                 <i class="fas fa-circle-notch fa-spin" style="font-size:28px;color:var(--c-indigo);margin-bottom:12px;display:block;"></i>
-                                Sincronizando con Google Drive…
+                                Sincronizando…
                             </div>
                             <div class="meet-result" style="color:var(--text-muted);font-size:14px;text-align:center;padding:20px 0;">
                                 <i class="fas fa-video" style="font-size:28px;color:#cbd5e1;margin-bottom:10px;display:block;"></i>
