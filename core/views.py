@@ -75,18 +75,22 @@ def logout_usuario(request):
 def generar_link_meet(fecha_obj, hora_obj, paciente_nombre, psicologo_nombre, paciente_email, psicologo_email):
     SCOPES = ['https://www.googleapis.com/auth/calendar.events']
 
-    token_path = os.path.join(settings.BASE_DIR, 'token.json')
-
-    if not os.path.exists(token_path):
-        print("ERROR: No existe token.json.")
+    # ✅ NUEVO: leer desde variable de entorno en lugar de archivo
+    token_json_str = os.environ.get('GOOGLE_TOKEN_JSON')
+    if not token_json_str:
+        print("ERROR: No existe la variable de entorno GOOGLE_TOKEN_JSON.")
         return None
 
     try:
-        creds = Credentials.from_authorized_user_file(token_path, SCOPES)
+        token_data = json.loads(token_json_str)
+        creds = Credentials.from_authorized_user_info(token_data, SCOPES)
+
         if creds and creds.expired and creds.refresh_token:
             creds.refresh(Request())
-            with open(token_path, 'w') as token:
-                token.write(creds.to_json())
+            # ✅ NUEVO: actualizar la variable en memoria (no escribir archivo)
+            # Nota: en Railway no podemos persistir el refresh automáticamente,
+            # así que actualiza GOOGLE_TOKEN_JSON manualmente si expira.
+            print("⚠️ Token refrescado. Actualiza GOOGLE_TOKEN_JSON en Railway con:", creds.to_json())
 
         service = build('calendar', 'v3', credentials=creds)
 
@@ -123,7 +127,7 @@ def generar_link_meet(fecha_obj, hora_obj, paciente_nombre, psicologo_nombre, pa
             calendarId='primary',
             body=event,
             conferenceDataVersion=1,
-            sendUpdates='none'  
+            sendUpdates='none'
         ).execute()
 
         return {
@@ -1315,14 +1319,15 @@ def check_meet_notes(request, cita_id):
             return JsonResponse({'status': 'error', 'message': 'Esta cita no tiene un enlace de Meet registrado.'})
 
         # Conectar a Google Calendar usando tu token
-        token_path = os.path.join(settings.BASE_DIR, 'token.json')
-        if not os.path.exists(token_path):
+# DESPUÉS
+        token_json_str = os.environ.get('GOOGLE_TOKEN_JSON')
+        if not token_json_str:
             return JsonResponse({'status': 'error', 'message': 'No hay conexión con Google.'})
 
         from google.oauth2.credentials import Credentials
         from googleapiclient.discovery import build
 
-        creds = Credentials.from_authorized_user_file(token_path, ['https://www.googleapis.com/auth/calendar.events'])
+        creds = Credentials.from_authorized_user_info(json.loads(token_json_str), ['https://www.googleapis.com/auth/calendar.events'])
         service = build('calendar', 'v3', credentials=creds)
 
         # Buscamos el evento exacto con la huella digital
