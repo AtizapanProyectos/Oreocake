@@ -232,9 +232,20 @@
                     </div>
                 </div>
 
-                <a href="{{ cita_proxima.enlace_meet }}" target="_blank" id="btn-unlocked" class="btn-brutal btn-primary" style="display: none; width: 100%; max-width: 500px; justify-content: center; font-size: 18px; text-decoration: none; margin: 0 auto; border-radius: 20px;">
+                <div id="btn-unlocked" style="display: none; max-width: 500px; margin: 0 auto;">
+                <a href="{{ cita_proxima.enlace_meet }}" target="_blank" class="btn-brutal btn-primary" style="width: 100%; justify-content: center; font-size: 18px; text-decoration: none; border-radius: 20px; display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
                     Ingresar a mi Consulta Online <i class="fas fa-video"></i>
                 </a>
+
+                    <!-- Botón de soporte WhatsApp debajo del botón de Meet -->
+                <a href="https://wa.me/525521130230?text=Hola%2C%20tengo%20problemas%20para%20ingresar%20a%20mi%20sesi%C3%B3n%20online" 
+                    target="_blank" 
+                    style="display: flex; align-items: center; justify-content: center; gap: 8px; background: #25D366; color: white; padding: 12px 20px; border-radius: 20px; text-decoration: none; font-weight: 600; font-size: 14px; transition: 0.3s;">
+                        <i class="fab fa-whatsapp" style="font-size: 18px;"></i>
+                        ¿Problemas para entrar? Escríbenos
+                </a>
+                    <p style="font-size: 10px; color: #94a3b8; text-align: center; margin-top: 8px;">Soporte técnico vía WhatsApp</p>
+                </div>
                 
                 <script>
                     document.addEventListener("DOMContentLoaded", function() {
@@ -247,7 +258,7 @@
                             const diff = citaDate - now;
                             if (diff <= 3600000 && diff >= -3600000) {
                                 document.getElementById('btn-locked').style.display = 'none';
-                                document.getElementById('btn-unlocked').style.display = 'inline-flex';
+                                document.getElementById('btn-unlocked').style.display = 'block';
                             } else {
                                 document.getElementById('btn-locked').style.display = 'block';
                                 document.getElementById('btn-unlocked').style.display = 'none';
