@@ -434,6 +434,7 @@ def panel_generico(request):
         'mis_inscripciones_ids': list(mis_inscripciones_ids),
         'mis_talleres': mis_talleres,
         'paypal_client_id': settings.PAYPAL_CLIENT_ID,
+        'psicologo_asignado': psicologo_asignado,
     })
 
 def inscribir_taller_ajax(request):

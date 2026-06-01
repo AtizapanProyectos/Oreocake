@@ -276,6 +276,39 @@
                 </div>
             {% endif %}
         {% endif %}
+
+        {% if psicologo_asignado %}
+            <hr style="margin: 40px 0 30px; border: 1px solid #f1f5f9;">
+            <div style="text-align: left; background: #f8fafc; border-radius: 24px; padding: 25px; margin-top: 20px;">
+                <div style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap;">
+                    {% if psicologo_asignado.foto %}
+                        <img src="{{ psicologo_asignado.foto.url }}" alt="Foto del psicólogo" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 3px solid var(--c-purple);">
+                    {% else %}
+                        <div style="width: 100px; height: 100px; border-radius: 50%; background: #e2e8f0; display: flex; align-items: center; justify-content: center; color: var(--c-purple); font-size: 40px;">
+                            <i class="fas fa-user-md"></i>
+                        </div>
+                    {% endif %}
+                    <div style="flex: 1;">
+                        <h3 style="font-family: var(--font-headings); font-size: 1.5rem; margin: 0 0 5px; color: var(--text-main);">
+                            {{ psicologo_asignado.usuario.first_name }} {{ psicologo_asignado.usuario.last_name }}
+                        </h3>
+                        <p style="margin: 0; color: var(--c-purple); font-weight: 600;">
+                            <i class="fas fa-stethoscope"></i> {{ psicologo_asignado.especialidad|default:"Psicoterapeuta" }}
+                        </p>
+                        <p style="margin: 5px 0 0; font-size: 13px; color: var(--text-muted);">
+                            <i class="fas fa-id-card"></i> Cédula: {{ psicologo_asignado.cedula_profesional }}
+                        </p>
+                    </div>
+                </div>
+                {% if psicologo_asignado.cv_breve %}
+                    <div style="margin-top: 15px; font-size: 14px; color: var(--text-muted); border-top: 1px solid #e2e8f0; padding-top: 15px;">
+                        <i class="fas fa-graduation-cap"></i> {{ psicologo_asignado.cv_breve|truncatechars:150 }}
+                    </div>
+                {% endif %}
+            </div>
+        {% endif %}
+
+
         </div>
         
         {% else %} {% if user.perfil.psicologo_asignado %}
