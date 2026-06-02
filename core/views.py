@@ -77,71 +77,34 @@ from .models import DiaFestivo, Cita, HorarioPsicologo, PerfilPsicologo
 from datetime import datetime, timedelta, time
 from collections import defaultdict
 
-def obtener_slots_psicologo_para_dia(psicologo, fecha):
-    """
-    Evalúa la disponibilidad de UN psicólogo en UNA fecha exacta, 
-    respetando su rotación semanal, su hora de comida y citas previas.
-    """
-    # 1. Verificar festivos generales y días libres personales
-    if DiaFestivo.objects.filter(fecha=fecha).exists(): return []
-    if psicologo.dias_libres.filter(fecha=fecha).exists(): return []
-    
-    dia_semana = fecha.weekday()
-    
-    # 2. Calcular a qué semana del mes corresponde
-    if fecha.day <= 7: num_semana = 1
-    elif fecha.day <= 14: num_semana = 2
-    elif fecha.day <= 21: num_semana = 3
-    else: num_semana = 4
-    
-    # El día 1 del mes actual para la búsqueda
-    mes_inicio = date(fecha.year, fecha.month, 1)
-
-    # 3. Buscar el rol exacto de ese doctor para esa semana y día
-    horario = psicologo.horarios.filter(
-        mes=mes_inicio,
-        semana=num_semana,
-        dia_semana=dia_semana,
-        es_descanso=False  # Reemplazamos el viejo "activo=True"
-    ).first()
-
-    # Si no hay rol configurado o no tiene hora de inicio, no trabaja
-    if not horario or not horario.hora_inicio:
-        return []
-        
-    # 4. Obtener citas que ya tiene confirmadas ese día
-    citas_ocupadas = set(
-        Cita.objects.filter(psicologo=psicologo, fecha=fecha, estado='Confirmada')
-        .values_list('hora', flat=True)
-    )
-    
-    slots = []
-    # Generar slots de 1 hora desde que entra hasta que sale
-    slot_actual = datetime.combine(fecha, horario.hora_inicio)
-    fin_turno = datetime.combine(fecha, horario.hora_fin)
-    
-    while slot_actual < fin_turno:
-        hora_slot = slot_actual.time()
-        
-        # 🔥 MAGIA: Evitar la hora de comida
-        es_hora_comida = False
-        if horario.hora_comida_inicio and horario.hora_comida_fin:
-            if horario.hora_comida_inicio <= hora_slot < horario.hora_comida_fin:
-                es_hora_comida = True
-                
-        # Si no es su hora de comida y no tiene cita, lo agregamos
-        if not es_hora_comida and hora_slot not in citas_ocupadas:
-            slots.append(hora_slot.strftime('%I:%M %p'))
-            
-        slot_actual += timedelta(hours=1)
-        
-    return slots
-
 def obtener_slots_globales(fecha_inicio, fecha_fin):
-    """Unión de disponibilidad de todos los psicólogos activos."""
-    psicologos_activos = PerfilPsicologo.objects.filter(esta_activo=True)
-    if not psicologos_activos.exists(): return {}
+    """Unión de disponibilidad (SÚPER OPTIMIZADA EN RAM)"""
+    psicologos_activos = list(PerfilPsicologo.objects.filter(esta_activo=True))
+    if not psicologos_activos: return {}
     
+    # 1. HACEMOS SOLO 4 QUERIES MASIVAS Y GUARDAMOS EN MEMORIA (RAM)
+    festivos = set(DiaFestivo.objects.filter(fecha__gte=fecha_inicio, fecha__lte=fecha_fin).values_list('fecha', flat=True))
+    
+    dias_libres_db = DiaLibrePsicologo.objects.filter(fecha__gte=fecha_inicio, fecha__lte=fecha_fin)
+    dias_libres = defaultdict(set)
+    for dl in dias_libres_db:
+        dias_libres[dl.psicologo_id].add(dl.fecha)
+        
+    mes_inicio = date(fecha_inicio.year, fecha_inicio.month, 1)
+    mes_fin = date(fecha_fin.year, fecha_fin.month, 1)
+    horarios_db = HorarioPsicologo.objects.filter(mes__gte=mes_inicio, mes__lte=mes_fin, es_descanso=False)
+    
+    # Mapeo rápido: (psicologo_id, mes, semana, dia_semana) -> Horario
+    horarios_map = {}
+    for h in horarios_db:
+        horarios_map[(h.psicologo_id, h.mes, h.semana, h.dia_semana)] = h
+        
+    citas_db = Cita.objects.filter(fecha__gte=fecha_inicio, fecha__lte=fecha_fin, estado='Confirmada')
+    citas_ocupadas = set()
+    for c in citas_db:
+        citas_ocupadas.add((c.psicologo_id, c.fecha, c.hora))
+        
+    # 2. PROCESAMIENTO NATIVO EN PYTHON (Tarda milisegundos)
     slots_union = defaultdict(set)
     dia_actual = fecha_inicio
     max_iter = 0
@@ -150,10 +113,39 @@ def obtener_slots_globales(fecha_inicio, fecha_fin):
         max_iter += 1
         if dia_actual > fecha_fin: break
             
+        if dia_actual in festivos:
+            dia_actual += timedelta(days=1)
+            continue
+            
+        dia_semana = dia_actual.weekday()
+        if dia_actual.day <= 7: num_semana = 1
+        elif dia_actual.day <= 14: num_semana = 2
+        elif dia_actual.day <= 21: num_semana = 3
+        else: num_semana = 4
+        mes_actual_buscar = date(dia_actual.year, dia_actual.month, 1)
+        
         for psicologo in psicologos_activos:
-            slots_psic = obtener_slots_psicologo_para_dia(psicologo, dia_actual)
-            for slot_str in slots_psic:
-                slots_union[dia_actual.strftime('%Y-%m-%d')].add(slot_str)
+            if dia_actual in dias_libres[psicologo.id]:
+                continue
+                
+            horario = horarios_map.get((psicologo.id, mes_actual_buscar, num_semana, dia_semana))
+            if not horario or not horario.hora_inicio:
+                continue
+                
+            slot_actual = datetime.combine(dia_actual, horario.hora_inicio)
+            fin_turno = datetime.combine(dia_actual, horario.hora_fin)
+            
+            while slot_actual < fin_turno:
+                hora_slot = slot_actual.time()
+                es_hora_comida = False
+                if horario.hora_comida_inicio and horario.hora_comida_fin:
+                    if horario.hora_comida_inicio <= hora_slot < horario.hora_comida_fin:
+                        es_hora_comida = True
+                        
+                if not es_hora_comida and (psicologo.id, dia_actual, hora_slot) not in citas_ocupadas:
+                    slots_union[dia_actual.strftime('%Y-%m-%d')].add(hora_slot.strftime('%I:%M %p'))
+                    
+                slot_actual += timedelta(hours=1)
                 
         dia_actual += timedelta(days=1)
         
@@ -162,10 +154,19 @@ def obtener_slots_globales(fecha_inicio, fecha_fin):
         resultado[fecha_str] = sorted(slots_set)
     return resultado
 
+
 def obtener_slots_psicologo(psicologo, fecha_inicio, fecha_fin):
-    """
-    Retorna dict { 'YYYY-MM-DD': ['09:00 AM', '10:00 AM'] } iterando día por día.
-    """
+    """Versión ultraligera en RAM para un solo psicólogo"""
+    festivos = set(DiaFestivo.objects.filter(fecha__gte=fecha_inicio, fecha__lte=fecha_fin).values_list('fecha', flat=True))
+    dias_libres = set(psicologo.dias_libres.filter(fecha__gte=fecha_inicio, fecha__lte=fecha_fin).values_list('fecha', flat=True))
+    
+    mes_inicio = date(fecha_inicio.year, fecha_inicio.month, 1)
+    mes_fin = date(fecha_fin.year, fecha_fin.month, 1)
+    horarios_db = psicologo.horarios.filter(mes__gte=mes_inicio, mes__lte=mes_fin, es_descanso=False)
+    horarios_map = {(h.mes, h.semana, h.dia_semana): h for h in horarios_db}
+    
+    citas_ocupadas = set(Cita.objects.filter(psicologo=psicologo, fecha__gte=fecha_inicio, fecha__lte=fecha_fin, estado='Confirmada').values_list('fecha', 'hora'))
+    
     slots_por_fecha = {}
     dia_actual = fecha_inicio
     dias_agregados = 0
@@ -175,8 +176,38 @@ def obtener_slots_psicologo(psicologo, fecha_inicio, fecha_fin):
         max_iter += 1
         if dia_actual > fecha_fin: break
             
-        slots_del_dia = obtener_slots_psicologo_para_dia(psicologo, dia_actual)
+        if dia_actual in festivos or dia_actual in dias_libres:
+            dia_actual += timedelta(days=1)
+            continue
+            
+        dia_semana = dia_actual.weekday()
+        if dia_actual.day <= 7: num_semana = 1
+        elif dia_actual.day <= 14: num_semana = 2
+        elif dia_actual.day <= 21: num_semana = 3
+        else: num_semana = 4
+        mes_actual_buscar = date(dia_actual.year, dia_actual.month, 1)
         
+        horario = horarios_map.get((mes_actual_buscar, num_semana, dia_semana))
+        if not horario or not horario.hora_inicio:
+            dia_actual += timedelta(days=1)
+            continue
+            
+        slots_del_dia = []
+        slot_actual = datetime.combine(dia_actual, horario.hora_inicio)
+        fin_turno = datetime.combine(dia_actual, horario.hora_fin)
+        
+        while slot_actual < fin_turno:
+            hora_slot = slot_actual.time()
+            es_hora_comida = False
+            if horario.hora_comida_inicio and horario.hora_comida_fin:
+                if horario.hora_comida_inicio <= hora_slot < horario.hora_comida_fin:
+                    es_hora_comida = True
+                    
+            if not es_hora_comida and (dia_actual, hora_slot) not in citas_ocupadas:
+                slots_del_dia.append(hora_slot.strftime('%I:%M %p'))
+                
+            slot_actual += timedelta(hours=1)
+            
         if slots_del_dia:
             slots_por_fecha[dia_actual.strftime('%Y-%m-%d')] = slots_del_dia
             dias_agregados += 1
@@ -184,6 +215,11 @@ def obtener_slots_psicologo(psicologo, fecha_inicio, fecha_fin):
         dia_actual += timedelta(days=1)
         
     return slots_por_fecha
+
+def obtener_slots_psicologo_para_dia(psicologo, fecha):
+    """Función auxiliar simple por si la usas en otro lado."""
+    slots_map = obtener_slots_psicologo(psicologo, fecha, fecha)
+    return slots_map.get(fecha.strftime('%Y-%m-%d'), [])
 
 # =========================================================================
 # 🧠 FUNCIÓN MAESTRA: CREAR ENLACE DE GOOGLE MEET
