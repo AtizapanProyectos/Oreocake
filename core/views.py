@@ -61,13 +61,155 @@ TIPOS_DOC     = {'doc', 'docx'}
 TAMANO_MAX_MB = 10  # límite de seguridad
 
 
-
+from datetime import datetime, timedelta, time
+from django.db.models import Count, Q
 
 from django.contrib.auth import logout
 
 def logout_usuario(request):
     logout(request)
     return redirect('inicio')
+
+
+
+from datetime import datetime, timedelta, time
+from collections import defaultdict
+
+def obtener_slots_psicologo(psicologo, fecha_inicio, fecha_fin):
+    """
+    Retorna dict { 'YYYY-MM-DD': ['09:00 AM', '10:00 AM', ...] }
+    para fechas entre fecha_inicio y fecha_fin donde el psicólogo tiene disponibilidad
+    según sus horarios configurados, días libres personales y festivos generales.
+    """
+    from .models import DiaFestivo, Cita  # import local para evitar circular
+    
+    # Días festivos generales (bloquean a todos)
+    festivos_generales = set(DiaFestivo.objects.filter(fecha__gte=fecha_inicio, fecha__lte=fecha_fin).values_list('fecha', flat=True))
+    # Días libres personales del psicólogo
+    dias_libres = set(psicologo.dias_libres.filter(fecha__gte=fecha_inicio, fecha__lte=fecha_fin).values_list('fecha', flat=True))
+    # Horarios semanales del psicólogo
+    horarios = psicologo.horarios.filter(activo=True)
+    horarios_por_dia = defaultdict(list)
+    for h in horarios:
+        horarios_por_dia[h.dia_semana].append((h.hora_inicio, h.hora_fin))
+    
+    # Obtener citas ocupadas del psicólogo en el rango
+    citas_ocupadas = set(
+        Cita.objects.filter(
+            psicologo=psicologo,
+            fecha__gte=fecha_inicio,
+            fecha__lte=fecha_fin,
+            estado='Confirmada'
+        ).values_list('fecha', 'hora')
+    )
+    
+    # Generar slots
+    slots_por_fecha = {}
+    dia_actual = fecha_inicio
+    dias_agregados = 0
+    max_iter = 0
+    
+    while dias_agregados < 30 and max_iter < 120:
+        max_iter += 1
+        if dia_actual > fecha_fin:
+            break
+            
+        if dia_actual in festivos_generales or dia_actual in dias_libres:
+            dia_actual += timedelta(days=1)
+            continue
+        
+        dia_semana = dia_actual.weekday()
+        rangos = horarios_por_dia.get(dia_semana, [])
+        if not rangos:
+            dia_actual += timedelta(days=1)
+            continue
+        
+        horas_disponibles = []
+        for inicio, fin in rangos:
+            slot = datetime.combine(dia_actual, inicio)
+            fin_dt = datetime.combine(dia_actual, fin)
+            while slot < fin_dt:
+                hora_slot = slot.time()
+                if (dia_actual, hora_slot) not in citas_ocupadas:
+                    # No filtramos hora actual aquí porque ya se hace en el template o al seleccionar
+                    horas_disponibles.append(hora_slot.strftime('%I:%M %p'))
+                slot += timedelta(hours=1)
+        
+        if horas_disponibles:
+            slots_por_fecha[dia_actual.strftime('%Y-%m-%d')] = horas_disponibles
+            dias_agregados += 1
+        
+        dia_actual += timedelta(days=1)
+    
+    return slots_por_fecha
+
+def obtener_slots_globales(fecha_inicio, fecha_fin):
+    """
+    Unión de disponibilidad de todos los psicólogos activos.
+    Retorna dict { 'YYYY-MM-DD': ['09:00 AM', ...] } donde un slot es disponible
+    si al menos un psicólogo lo tiene libre.
+    """
+    from .models import PerfilPsicologo
+    
+    psicologos_activos = PerfilPsicologo.objects.filter(esta_activo=True)
+    if not psicologos_activos.exists():
+        return {}
+    
+    slots_union = defaultdict(set)
+    dia_actual = fecha_inicio
+    max_iter = 0
+    
+    while max_iter < 120:
+        max_iter += 1
+        if dia_actual > fecha_fin:
+            break
+            
+        for psicologo in psicologos_activos:
+            slots_psic = obtener_slots_psicologo_para_dia(psicologo, dia_actual)
+            for slot_str in slots_psic:
+                slots_union[dia_actual.strftime('%Y-%m-%d')].add(slot_str)
+        
+        # Si ya tenemos 30 fechas con slots, rompemos
+        if len(slots_union) >= 30:
+            break
+        dia_actual += timedelta(days=1)
+    
+    # Convertir set a lista ordenada
+    resultado = {}
+    for fecha_str, slots_set in slots_union.items():
+        resultado[fecha_str] = sorted(slots_set)
+    return resultado
+
+def obtener_slots_psicologo_para_dia(psicologo, fecha):
+    """Auxiliar: retorna lista de strings de horas disponibles para un psicólogo en una fecha específica."""
+    from .models import DiaFestivo, Cita
+    
+    # Verificar festivos y días libres
+    if DiaFestivo.objects.filter(fecha=fecha).exists():
+        return []
+    if psicologo.dias_libres.filter(fecha=fecha).exists():
+        return []
+    
+    dia_semana = fecha.weekday()
+    horarios = psicologo.horarios.filter(dia_semana=dia_semana, activo=True)
+    if not horarios.exists():
+        return []
+    
+    citas_ocupadas = set(
+        Cita.objects.filter(psicologo=psicologo, fecha=fecha, estado='Confirmada')
+        .values_list('hora', flat=True)
+    )
+    
+    slots = []
+    for h in horarios:
+        slot = datetime.combine(fecha, h.hora_inicio)
+        fin = datetime.combine(fecha, h.hora_fin)
+        while slot < fin:
+            hora_slot = slot.time()
+            if hora_slot not in citas_ocupadas:
+                slots.append(hora_slot.strftime('%I:%M %p'))
+            slot += timedelta(hours=1)
+    return slots
 
 # =========================================================================
 # 🧠 FUNCIÓN MAESTRA: CREAR ENLACE DE GOOGLE MEET
@@ -306,25 +448,20 @@ def login_usuario(request):
 
     return JsonResponse({'status': 'success', 'redirect_url': redirect_url})
 
-
 def panel_generico(request):
     if not request.user.is_authenticated:
         return redirect('modulo_informativo')
 
-    # 1. Primero obtenemos el perfil (¡Esto debe ir antes de todo!)
+    # Perfil del usuario
     try:
         perfil_usuario = request.user.perfil
     except Exception:
         logout(request)
         return redirect('modulo_informativo')
 
-    # 2. Ahora sí, extraemos qué vino a buscar el paciente (ya conocemos perfil_usuario)
-# 2. 🔥 CORRECCIÓN: Leer desde tu tabla CuestionarioRegistro 🔥
-    tipo_servicio = "individual" 
-    
-    # Buscamos el último cuestionario que haya llenado este paciente
+    # Tipo de servicio desde cuestionario
+    tipo_servicio = "individual"
     ultimo_cuestionario = CuestionarioRegistro.objects.filter(paciente=request.user).last()
-
     if ultimo_cuestionario and ultimo_cuestionario.respuestas:
         respuestas = ultimo_cuestionario.respuestas
         if isinstance(respuestas, str):
@@ -332,81 +469,44 @@ def panel_generico(request):
                 respuestas = json.loads(respuestas)
             except:
                 respuestas = {}
-        
-        # Extraemos la llave exacta que guardaste (Ej: 'terapia_pareja' o 'Criar con Conciencia')
         tipo_servicio = respuestas.get("servicio_solicitado", "individual")
 
-    # 3. Configuración de tiempos y citas
+    # Tiempos actuales
     now_local = timezone.localtime(timezone.now())
     hoy = now_local.date()
     hora_actual = now_local.time().replace(second=0, microsecond=0)
 
     psicologo_asignado = perfil_usuario.psicologo_asignado
 
+    # Cita próxima
     cita_proxima = Cita.objects.filter(
         Q(fecha__gt=hoy) | Q(fecha=hoy, hora__gte=hora_actual),
         paciente=request.user,
         estado='Confirmada'
     ).order_by('fecha', 'hora').first()
 
-    # 4. Lógica de disponibilidad del calendario
-    festivos = set(DiaFestivo.objects.filter(fecha__gte=hoy).values_list('fecha', flat=True))
-    horas_base = [time(h, 0) for h in range(9, 21)]
-    total_psicologos_activos = PerfilPsicologo.objects.filter(esta_activo=True).count()
+    # =========================================================
+    # NUEVA LÓGICA DE DISPONIBILIDAD (HORARIOS PERSONALIZADOS)
+    # =========================================================
+    fecha_limite = hoy + timedelta(days=90)
 
-    dias_json = {}
+    if psicologo_asignado:
+        # Paciente con psicólogo asignado: solo sus horarios
+        dias_json = obtener_slots_psicologo(psicologo_asignado, hoy, fecha_limite)
+    else:
+        # Paciente nuevo: unión de disponibilidad de todos los psicólogos activos
+        dias_json = obtener_slots_globales(hoy, fecha_limite)
+
+    # Convertir a formato que usa el template (dias_html con objetos fecha y hora)
     dias_html = {}
+    for fecha_str, horas_str in dias_json.items():
+        fecha_obj = datetime.strptime(fecha_str, '%Y-%m-%d').date()
+        horas_obj = [datetime.strptime(h, '%I:%M %p').time() for h in horas_str]
+        dias_html[fecha_obj] = horas_obj
 
-    if total_psicologos_activos > 0 or psicologo_asignado:
-        fecha_limite = hoy + timedelta(days=90)
-        if psicologo_asignado:
-            citas_ocupadas = set(
-                (c['fecha'], c['hora'].replace(second=0, microsecond=0))
-                for c in Cita.objects.filter(
-                    psicologo=psicologo_asignado,
-                    fecha__gte=hoy,
-                    fecha__lte=fecha_limite,
-                    estado='Confirmada'
-                ).values('fecha', 'hora')
-            )
-        else:
-            citas_agrupadas = Cita.objects.filter(
-                fecha__gte=hoy,
-                fecha__lte=fecha_limite,
-                estado='Confirmada'
-            ).values('fecha', 'hora').annotate(total=Count('id'))
-            citas_ocupadas = {
-                (c['fecha'], c['hora'].replace(second=0, microsecond=0)): c['total']
-                for c in citas_agrupadas
-            }
-
-        dias_agregados = 0
-        dia_actual = hoy
-        dias_iterados = 0
-        while dias_agregados < 30 and dias_iterados < 120:
-            dias_iterados += 1
-            if dia_actual not in festivos:
-                horas_del_dia_str = []
-                horas_del_dia_obj = []
-                for h in horas_base:
-                    if dia_actual == hoy and h < hora_actual:
-                        continue
-                    if psicologo_asignado:
-                        if (dia_actual, h) not in citas_ocupadas:
-                            horas_del_dia_str.append(h.strftime('%I:%M %p'))
-                            horas_del_dia_obj.append(h)
-                    else:
-                        ocupadas = citas_ocupadas.get((dia_actual, h), 0)
-                        if ocupadas < total_psicologos_activos:
-                            horas_del_dia_str.append(h.strftime('%I:%M %p'))
-                            horas_del_dia_obj.append(h)
-                if horas_del_dia_str:
-                    dias_json[dia_actual.strftime('%Y-%m-%d')] = horas_del_dia_str
-                    dias_html[dia_actual] = horas_del_dia_obj
-                    dias_agregados += 1
-            dia_actual += timedelta(days=1)
-
-    # 5. Talleres e Inscripciones
+    # =========================================================
+    # TALLERES E INSCRIPCIONES (igual que antes)
+    # =========================================================
     talleres_futuros = Taller.objects.filter(fecha__gte=hoy).order_by('fecha', 'hora')
     mis_inscripciones_ids = InscripcionTaller.objects.filter(paciente=request.user).values_list('taller_id', flat=True)
     mis_talleres = InscripcionTaller.objects.filter(
@@ -414,11 +514,9 @@ def panel_generico(request):
         taller__fecha__gte=hoy
     ).order_by('taller__fecha')
 
-    # 🔥 NUEVO: Buscamos el taller exacto si el usuario viene por uno
     taller_solicitado_obj = None
     if tipo_servicio not in ['individual', 'terapia_individual', 'terapia_pareja', '']:
         taller_solicitado_obj = Taller.objects.filter(nombre=tipo_servicio, fecha__gte=hoy).first()
-
 
     return render(request, 'panel_generico.html', {
         'dias_disponibles_json': dias_json,
@@ -436,6 +534,7 @@ def panel_generico(request):
         'paypal_client_id': settings.PAYPAL_CLIENT_ID,
         'psicologo_asignado': psicologo_asignado,
     })
+
 
 def inscribir_taller_ajax(request):
     if request.method == 'POST' and request.user.is_authenticated:
@@ -475,17 +574,18 @@ def inscribir_taller_ajax(request):
             return JsonResponse({'status': 'error', 'message': 'El programa no existe.'})
     return JsonResponse({'status': 'error', 'message': 'Petición no válida.'})
 
+from django.db import transaction
+
+@transaction.atomic
 def guardar_cita_ajax(request):
     if request.method == 'POST':
         if not request.user.is_authenticated:
             return JsonResponse({'status': 'error', 'message': 'Debes iniciar sesión.'})
 
-        # Atrapamos los datos del formulario
         fecha_str = request.POST.get('fecha')
         hora_str = request.POST.get('hora')
         animo = request.POST.get('animo', 'No especificó')
         modalidad_str = request.POST.get('modalidad', 'En línea')
-        # 🔥 Tipo de sesión elegido por el usuario en el panel (individual o pareja)
         tipo_sesion_str = request.POST.get('tipo_servicio', 'individual')
         if tipo_sesion_str not in ['individual', 'pareja']:
             tipo_sesion_str = 'individual'
@@ -496,7 +596,7 @@ def guardar_cita_ajax(request):
             perfil = request.user.perfil
             psicologo = perfil.psicologo_asignado
 
-            # Lógica de asignación automática de psicólogo (si no tiene uno)
+            # Lógica de asignación automática (si no tiene psicólogo)
             if not psicologo:
                 preferencia = ""
                 try:
@@ -505,11 +605,19 @@ def guardar_cita_ajax(request):
                 except:
                     pass
 
+                # Obtener psicólogos ocupados en ese horario
                 psicologos_ocupados_ids = Cita.objects.filter(
-                    fecha=fecha_obj, hora=hora_obj, estado='Confirmada').values_list('psicologo_id', flat=True)
+                    fecha=fecha_obj, hora=hora_obj, estado='Confirmada'
+                ).values_list('psicologo_id', flat=True)
                 
-                psicologos_libres = PerfilPsicologo.objects.filter(esta_activo=True).exclude(
-                    id__in=psicologos_ocupados_ids).annotate(carga_pacientes=Count('pacientes_asignados'))
+                # 🔥 select_for_update para evitar race conditions
+                psicologos_libres = PerfilPsicologo.objects.filter(
+                    esta_activo=True
+                ).exclude(
+                    id__in=psicologos_ocupados_ids
+                ).select_for_update().annotate(
+                    carga_pacientes=Count('pacientes_asignados')
+                )
 
                 if not psicologos_libres.exists():
                     return JsonResponse({'status': 'error', 'message': 'Lo sentimos, este horario acaba de ser ocupado. Elige otro.'})
@@ -524,15 +632,19 @@ def guardar_cita_ajax(request):
 
                 perfil.psicologo_asignado = psicologo
                 perfil.save()
+                
+                # Verificación final: asegurar que el horario sigue libre para este psicólogo
+                if Cita.objects.filter(psicologo=psicologo, fecha=fecha_obj, hora=hora_obj, estado='Confirmada').exists():
+                    return JsonResponse({'status': 'error', 'message': 'El horario fue ocupado mientras procesabas. Elige otro.'})
+                    
             else:
                 # Validar disponibilidad si ya tiene psicólogo
                 if Cita.objects.filter(psicologo=psicologo, fecha=fecha_obj, hora=hora_obj, estado='Confirmada').exists():
                     return JsonResponse({'status': 'error', 'message': 'Tu terapeuta ya tiene una cita en ese horario. Elige otro.'})
 
-            # 🔥 LÓGICA DE MODALIDAD: ¿Creamos Meet o no? 🔥
+            # Generar Meet si es en línea
             link_final = None
             id_google = None
-
             if modalidad_str == 'En línea':
                 datos_meet = generar_link_meet(
                     fecha_obj=fecha_obj,
@@ -546,7 +658,7 @@ def guardar_cita_ajax(request):
                     link_final = datos_meet['link']
                     id_google = datos_meet['id_evento']
 
-            # Creamos la cita con el nuevo campo modalidad
+            # Crear la cita
             Cita.objects.create(
                 paciente=request.user,
                 psicologo=psicologo,
@@ -554,17 +666,16 @@ def guardar_cita_ajax(request):
                 hora=hora_obj,
                 estado_animo=animo,
                 modalidad=modalidad_str,
-                tipo_sesion=tipo_sesion_str,  # 🔥 Guardamos si fue individual o de pareja
+                tipo_sesion=tipo_sesion_str,
                 motivo='Primera Sesión' if not perfil.psicologo_asignado else 'Sesión de Seguimiento',
                 estado='Confirmada',
                 enlace_meet=link_final,
                 id_evento_google=id_google  
             )
 
-            # --- Enviar correo de confirmación ---
+            # Enviar correo
             asunto = 'Confirmación de tu sesión en HOPE'
             link_correo = link_final if link_final else "Cita Presencial (Revisa tu panel para ver la dirección)"
-            
             contexto = {
                 'nombre': request.user.first_name,
                 'psicologo_nombre': psicologo.usuario.first_name,
@@ -572,7 +683,6 @@ def guardar_cita_ajax(request):
                 'hora': hora_obj.strftime('%H:%M'),
                 'link_meet': link_correo
             }
-            
             mensaje_html = render_to_string('correo_cita.html', contexto)
             mensaje_plano = strip_tags(mensaje_html)
             send_mail(asunto, mensaje_plano, 'Espacio HOPE <no-reply@espaciohope.com>', [request.user.email], html_message=mensaje_html, fail_silently=True)
@@ -582,7 +692,6 @@ def guardar_cita_ajax(request):
             return JsonResponse({'status': 'error', 'message': str(e)})
 
     return JsonResponse({'status': 'error'})
-
 
 def panel_doctor(request):
     if not request.user.is_authenticated or not hasattr(request.user, 'perfil_psicologo'):

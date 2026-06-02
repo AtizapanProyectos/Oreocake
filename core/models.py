@@ -67,6 +67,9 @@ class Cita(models.Model):
 
     def __str__(self):
         return f"Cita: {self.paciente.first_name} con {self.psicologo.usuario.first_name} el {self.fecha.strftime('%d/%m')}"
+
+    class Meta:
+        unique_together = [['psicologo', 'fecha', 'hora']]
 # ==========================================
 # 4. HISTORIAL CLÍNICO (BITÁCORA DE CADA SESIÓN)
 # ==========================================
@@ -145,3 +148,34 @@ class InscripcionTaller(models.Model):
         unique_together = ('paciente', 'taller')
 
 # ==========================================
+
+
+
+class HorarioPsicologo(models.Model):
+    DIAS_SEMANA = [
+        (0, 'Lunes'), (1, 'Martes'), (2, 'Miércoles'),
+        (3, 'Jueves'), (4, 'Viernes'), (5, 'Sábado'), (6, 'Domingo')
+    ]
+    psicologo = models.ForeignKey(PerfilPsicologo, on_delete=models.CASCADE, related_name='horarios')
+    dia_semana = models.IntegerField(choices=DIAS_SEMANA)
+    hora_inicio = models.TimeField()
+    hora_fin = models.TimeField()
+    activo = models.BooleanField(default=True)
+
+    class Meta:
+        unique_together = [['psicologo', 'dia_semana', 'hora_inicio']]
+
+    def __str__(self):
+        return f"{self.psicologo.usuario.first_name} - {self.get_dia_semana_display()} {self.hora_inicio} a {self.hora_fin}"
+
+
+class DiaLibrePsicologo(models.Model):
+    psicologo = models.ForeignKey(PerfilPsicologo, on_delete=models.CASCADE, related_name='dias_libres')
+    fecha = models.DateField()
+    motivo = models.CharField(max_length=100, blank=True, null=True)
+
+    class Meta:
+        unique_together = [['psicologo', 'fecha']]
+
+    def __str__(self):
+        return f"{self.psicologo.usuario.first_name} - {self.fecha} ({self.motivo or 'Descanso'})"

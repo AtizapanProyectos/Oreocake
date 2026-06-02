@@ -1,12 +1,27 @@
 from django.contrib import admin
 from import_export.admin import ImportExportModelAdmin
-from .models import *
+from .models import * 
+
 # ==========================================
-# 1. PERFIL DEL PSICÓLOGO
+# INLINES PARA EL PERFIL DEL PSICÓLOGO
+# (Tienen que ir arriba para que la clase de abajo los reconozca)
+# ==========================================
+class HorarioInline(admin.TabularInline):
+    model = HorarioPsicologo
+    extra = 1
+
+class DiaLibreInline(admin.TabularInline):
+    model = DiaLibrePsicologo
+    extra = 1
+
+# ==========================================
+# 1. PERFIL DEL PSICÓLOGO (FUSIONADO Y CORREGIDO)
 # ==========================================
 @admin.register(PerfilPsicologo)
 class PerfilPsicologoAdmin(ImportExportModelAdmin):
-    list_display = ('usuario', 'cedula_profesional', 'genero', 'esta_activo')
+    # Aquí agregamos los Inlines que tenías abajo
+    inlines = [HorarioInline, DiaLibreInline] 
+    list_display = ('usuario', 'cedula_profesional', 'especialidad', 'genero', 'esta_activo')
     search_fields = ('usuario__first_name', 'usuario__email', 'cedula_profesional')
     list_filter = ('genero', 'esta_activo')
 
@@ -22,12 +37,8 @@ class UsuarioPerfilAdmin(ImportExportModelAdmin):
 # ==========================================
 # 3. CITAS
 # ==========================================
-# ==========================================
-# 3. CITAS
-# ==========================================
 @admin.register(Cita)
 class CitaAdmin(ImportExportModelAdmin):
-    # 🔥 AHORA SÍ, TODOS LOS CAMPOS EN LA TABLA 🔥
     list_display = (
         'id', 
         'paciente', 
@@ -42,9 +53,8 @@ class CitaAdmin(ImportExportModelAdmin):
     )
     search_fields = ('paciente__first_name', 'paciente__email', 'psicologo__usuario__first_name', 'id_evento_google')
     list_filter = ('estado', 'fecha', 'psicologo')
-    
-    # Para que también puedas ver la fecha de creación cuando entres a editar una cita específica
     readonly_fields = ('fecha_creacion',)
+
 # ==========================================
 # 4. HISTORIAL CLÍNICO (EXPEDIENTE)
 # ==========================================
@@ -85,3 +95,9 @@ class TallerAdmin(ImportExportModelAdmin):
 class InscripcionTallerAdmin(ImportExportModelAdmin):
     list_display = ('paciente', 'taller', 'fecha_inscripcion')
     list_filter = ('taller__tipo', 'taller__fecha')
+
+# ==========================================
+# 8. REGISTROS INDIVIDUALES EXTRA
+# ==========================================
+admin.site.register(HorarioPsicologo)
+admin.site.register(DiaLibrePsicologo)

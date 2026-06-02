@@ -92,11 +92,19 @@ WSGI_APPLICATION = 'hope_project.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': os.environ.get('DB_NAME', 'hope'),
-        'USER': os.environ.get('DB_USER', 'root'),
-        'PASSWORD': os.environ.get('DB_PASSWORD'),
-        'HOST': os.environ.get('DB_HOST'),
-        'PORT': os.environ.get('DB_PORT', '3306'),
+
+        'NAME': 'hope',
+        'USER': 'root',
+        'PASSWORD': 'JBVzIRkXKqXsefqrezTQKSQSQiLokjKw',
+        'HOST': 'yamanote.proxy.rlwy.net',
+        'PORT': '48237',
+
+
+        #'NAME': os.environ.get('DB_NAME', 'hope'),
+        #'USER': os.environ.get('DB_USER', 'root'),
+        #'PASSWORD': os.environ.get('DB_PASSWORD'),
+        #'HOST': os.environ.get('DB_HOST'),
+        #'PORT': os.environ.get('DB_PORT', '3306'),
     }
 }
 
