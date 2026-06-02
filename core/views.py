@@ -70,40 +70,102 @@ def logout_usuario(request):
     logout(request)
     return redirect('inicio')
 
-
+from datetime import datetime, timedelta, time, date
+from collections import defaultdict
+from .models import DiaFestivo, Cita, HorarioPsicologo, PerfilPsicologo
 
 from datetime import datetime, timedelta, time
 from collections import defaultdict
 
-def obtener_slots_psicologo(psicologo, fecha_inicio, fecha_fin):
+def obtener_slots_psicologo_para_dia(psicologo, fecha):
     """
-    Retorna dict { 'YYYY-MM-DD': ['09:00 AM', '10:00 AM', ...] }
-    para fechas entre fecha_inicio y fecha_fin donde el psicólogo tiene disponibilidad
-    según sus horarios configurados, días libres personales y festivos generales.
+    Evalúa la disponibilidad de UN psicólogo en UNA fecha exacta, 
+    respetando su rotación semanal, su hora de comida y citas previas.
     """
-    from .models import DiaFestivo, Cita  # import local para evitar circular
+    # 1. Verificar festivos generales y días libres personales
+    if DiaFestivo.objects.filter(fecha=fecha).exists(): return []
+    if psicologo.dias_libres.filter(fecha=fecha).exists(): return []
     
-    # Días festivos generales (bloquean a todos)
-    festivos_generales = set(DiaFestivo.objects.filter(fecha__gte=fecha_inicio, fecha__lte=fecha_fin).values_list('fecha', flat=True))
-    # Días libres personales del psicólogo
-    dias_libres = set(psicologo.dias_libres.filter(fecha__gte=fecha_inicio, fecha__lte=fecha_fin).values_list('fecha', flat=True))
-    # Horarios semanales del psicólogo
-    horarios = psicologo.horarios.filter(activo=True)
-    horarios_por_dia = defaultdict(list)
-    for h in horarios:
-        horarios_por_dia[h.dia_semana].append((h.hora_inicio, h.hora_fin))
+    dia_semana = fecha.weekday()
     
-    # Obtener citas ocupadas del psicólogo en el rango
+    # 2. Calcular a qué semana del mes corresponde
+    if fecha.day <= 7: num_semana = 1
+    elif fecha.day <= 14: num_semana = 2
+    elif fecha.day <= 21: num_semana = 3
+    else: num_semana = 4
+    
+    # El día 1 del mes actual para la búsqueda
+    mes_inicio = date(fecha.year, fecha.month, 1)
+
+    # 3. Buscar el rol exacto de ese doctor para esa semana y día
+    horario = psicologo.horarios.filter(
+        mes=mes_inicio,
+        semana=num_semana,
+        dia_semana=dia_semana,
+        es_descanso=False  # Reemplazamos el viejo "activo=True"
+    ).first()
+
+    # Si no hay rol configurado o no tiene hora de inicio, no trabaja
+    if not horario or not horario.hora_inicio:
+        return []
+        
+    # 4. Obtener citas que ya tiene confirmadas ese día
     citas_ocupadas = set(
-        Cita.objects.filter(
-            psicologo=psicologo,
-            fecha__gte=fecha_inicio,
-            fecha__lte=fecha_fin,
-            estado='Confirmada'
-        ).values_list('fecha', 'hora')
+        Cita.objects.filter(psicologo=psicologo, fecha=fecha, estado='Confirmada')
+        .values_list('hora', flat=True)
     )
     
-    # Generar slots
+    slots = []
+    # Generar slots de 1 hora desde que entra hasta que sale
+    slot_actual = datetime.combine(fecha, horario.hora_inicio)
+    fin_turno = datetime.combine(fecha, horario.hora_fin)
+    
+    while slot_actual < fin_turno:
+        hora_slot = slot_actual.time()
+        
+        # 🔥 MAGIA: Evitar la hora de comida
+        es_hora_comida = False
+        if horario.hora_comida_inicio and horario.hora_comida_fin:
+            if horario.hora_comida_inicio <= hora_slot < horario.hora_comida_fin:
+                es_hora_comida = True
+                
+        # Si no es su hora de comida y no tiene cita, lo agregamos
+        if not es_hora_comida and hora_slot not in citas_ocupadas:
+            slots.append(hora_slot.strftime('%I:%M %p'))
+            
+        slot_actual += timedelta(hours=1)
+        
+    return slots
+
+def obtener_slots_globales(fecha_inicio, fecha_fin):
+    """Unión de disponibilidad de todos los psicólogos activos."""
+    psicologos_activos = PerfilPsicologo.objects.filter(esta_activo=True)
+    if not psicologos_activos.exists(): return {}
+    
+    slots_union = defaultdict(set)
+    dia_actual = fecha_inicio
+    max_iter = 0
+    
+    while len(slots_union) < 30 and max_iter < 120:
+        max_iter += 1
+        if dia_actual > fecha_fin: break
+            
+        for psicologo in psicologos_activos:
+            slots_psic = obtener_slots_psicologo_para_dia(psicologo, dia_actual)
+            for slot_str in slots_psic:
+                slots_union[dia_actual.strftime('%Y-%m-%d')].add(slot_str)
+                
+        dia_actual += timedelta(days=1)
+        
+    resultado = {}
+    for fecha_str, slots_set in slots_union.items():
+        resultado[fecha_str] = sorted(slots_set)
+    return resultado
+
+def obtener_slots_psicologo(psicologo, fecha_inicio, fecha_fin):
+    """
+    Retorna dict { 'YYYY-MM-DD': ['09:00 AM', '10:00 AM'] } iterando día por día.
+    """
     slots_por_fecha = {}
     dia_actual = fecha_inicio
     dias_agregados = 0
@@ -111,105 +173,17 @@ def obtener_slots_psicologo(psicologo, fecha_inicio, fecha_fin):
     
     while dias_agregados < 30 and max_iter < 120:
         max_iter += 1
-        if dia_actual > fecha_fin:
-            break
+        if dia_actual > fecha_fin: break
             
-        if dia_actual in festivos_generales or dia_actual in dias_libres:
-            dia_actual += timedelta(days=1)
-            continue
+        slots_del_dia = obtener_slots_psicologo_para_dia(psicologo, dia_actual)
         
-        dia_semana = dia_actual.weekday()
-        rangos = horarios_por_dia.get(dia_semana, [])
-        if not rangos:
-            dia_actual += timedelta(days=1)
-            continue
-        
-        horas_disponibles = []
-        for inicio, fin in rangos:
-            slot = datetime.combine(dia_actual, inicio)
-            fin_dt = datetime.combine(dia_actual, fin)
-            while slot < fin_dt:
-                hora_slot = slot.time()
-                if (dia_actual, hora_slot) not in citas_ocupadas:
-                    # No filtramos hora actual aquí porque ya se hace en el template o al seleccionar
-                    horas_disponibles.append(hora_slot.strftime('%I:%M %p'))
-                slot += timedelta(hours=1)
-        
-        if horas_disponibles:
-            slots_por_fecha[dia_actual.strftime('%Y-%m-%d')] = horas_disponibles
+        if slots_del_dia:
+            slots_por_fecha[dia_actual.strftime('%Y-%m-%d')] = slots_del_dia
             dias_agregados += 1
-        
-        dia_actual += timedelta(days=1)
-    
-    return slots_por_fecha
-
-def obtener_slots_globales(fecha_inicio, fecha_fin):
-    """
-    Unión de disponibilidad de todos los psicólogos activos.
-    Retorna dict { 'YYYY-MM-DD': ['09:00 AM', ...] } donde un slot es disponible
-    si al menos un psicólogo lo tiene libre.
-    """
-    from .models import PerfilPsicologo
-    
-    psicologos_activos = PerfilPsicologo.objects.filter(esta_activo=True)
-    if not psicologos_activos.exists():
-        return {}
-    
-    slots_union = defaultdict(set)
-    dia_actual = fecha_inicio
-    max_iter = 0
-    
-    while max_iter < 120:
-        max_iter += 1
-        if dia_actual > fecha_fin:
-            break
             
-        for psicologo in psicologos_activos:
-            slots_psic = obtener_slots_psicologo_para_dia(psicologo, dia_actual)
-            for slot_str in slots_psic:
-                slots_union[dia_actual.strftime('%Y-%m-%d')].add(slot_str)
-        
-        # Si ya tenemos 30 fechas con slots, rompemos
-        if len(slots_union) >= 30:
-            break
         dia_actual += timedelta(days=1)
-    
-    # Convertir set a lista ordenada
-    resultado = {}
-    for fecha_str, slots_set in slots_union.items():
-        resultado[fecha_str] = sorted(slots_set)
-    return resultado
-
-def obtener_slots_psicologo_para_dia(psicologo, fecha):
-    """Auxiliar: retorna lista de strings de horas disponibles para un psicólogo en una fecha específica."""
-    from .models import DiaFestivo, Cita
-    
-    # Verificar festivos y días libres
-    if DiaFestivo.objects.filter(fecha=fecha).exists():
-        return []
-    if psicologo.dias_libres.filter(fecha=fecha).exists():
-        return []
-    
-    dia_semana = fecha.weekday()
-    horarios = psicologo.horarios.filter(dia_semana=dia_semana, activo=True)
-    if not horarios.exists():
-        return []
-    
-    citas_ocupadas = set(
-        Cita.objects.filter(psicologo=psicologo, fecha=fecha, estado='Confirmada')
-        .values_list('hora', flat=True)
-    )
-    
-    slots = []
-    for h in horarios:
-        slot = datetime.combine(fecha, h.hora_inicio)
-        fin = datetime.combine(fecha, h.hora_fin)
-        while slot < fin:
-            hora_slot = slot.time()
-            if hora_slot not in citas_ocupadas:
-                slots.append(hora_slot.strftime('%I:%M %p'))
-            slot += timedelta(hours=1)
-    return slots
+        
+    return slots_por_fecha
 
 # =========================================================================
 # 🧠 FUNCIÓN MAESTRA: CREAR ENLACE DE GOOGLE MEET
@@ -611,10 +585,16 @@ def guardar_cita_ajax(request):
                 ).values_list('psicologo_id', flat=True)
                 
                 # 🔥 select_for_update para evitar race conditions
+                # 1. Obtenemos los IDs de los doctores que REALMENTE tienen ese slot disponible ese día
+                doctores_con_slot_valido = []
+                for psicologo in PerfilPsicologo.objects.filter(esta_activo=True):
+                    slots_del_dia = obtener_slots_psicologo_para_dia(psicologo, fecha_obj)
+                    if hora_obj.strftime('%I:%M %p') in slots_del_dia:
+                        doctores_con_slot_valido.append(psicologo.id)
+
+                # 2. Ahora sí filtramos, balanceamos y bloqueamos (select_for_update)
                 psicologos_libres = PerfilPsicologo.objects.filter(
-                    esta_activo=True
-                ).exclude(
-                    id__in=psicologos_ocupados_ids
+                    id__in=doctores_con_slot_valido
                 ).select_for_update().annotate(
                     carga_pacientes=Count('pacientes_asignados')
                 )

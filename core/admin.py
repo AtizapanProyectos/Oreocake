@@ -4,8 +4,8 @@ from .models import *
 
 # ==========================================
 # INLINES PARA EL PERFIL DEL PSICÓLOGO
-# (Tienen que ir arriba para que la clase de abajo los reconozca)
 # ==========================================
+
 class HorarioInline(admin.TabularInline):
     model = HorarioPsicologo
     extra = 1
@@ -15,11 +15,10 @@ class DiaLibreInline(admin.TabularInline):
     extra = 1
 
 # ==========================================
-# 1. PERFIL DEL PSICÓLOGO (FUSIONADO Y CORREGIDO)
+# 1. PERFIL DEL PSICÓLOGO
 # ==========================================
 @admin.register(PerfilPsicologo)
 class PerfilPsicologoAdmin(ImportExportModelAdmin):
-    # Aquí agregamos los Inlines que tenías abajo
     inlines = [HorarioInline, DiaLibreInline] 
     list_display = ('usuario', 'cedula_profesional', 'especialidad', 'genero', 'esta_activo')
     search_fields = ('usuario__first_name', 'usuario__email', 'cedula_profesional')
@@ -30,7 +29,7 @@ class PerfilPsicologoAdmin(ImportExportModelAdmin):
 # ==========================================
 @admin.register(UsuarioPerfil)
 class UsuarioPerfilAdmin(ImportExportModelAdmin):
-    list_display = ('nombre', 'usuario', 'telefono', 'es_psicologo', 'psicologo_asignado')
+    list_display = ('nombre', 'usuario', 'telefono', 'es_psicologo', 'psicologo_assigned_id' if hasattr(UsuarioPerfil, 'psicologo_assigned') else 'psicologo_asignado')
     search_fields = ('nombre', 'usuario__email', 'telefono')
     list_filter = ('es_psicologo',)
 
@@ -97,7 +96,7 @@ class InscripcionTallerAdmin(ImportExportModelAdmin):
     list_filter = ('taller__tipo', 'taller__fecha')
 
 # ==========================================
-# 8. REGISTROS INDIVIDUALES EXTRA
+# 8. REGISTROS EXTRA
 # ==========================================
 admin.site.register(HorarioPsicologo)
 admin.site.register(DiaLibrePsicologo)
