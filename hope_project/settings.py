@@ -22,7 +22,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False 
+DEBUG = True
 
 
 
@@ -93,18 +93,13 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
 
-        'NAME': 'hope',
-        'USER': 'root',
-        'PASSWORD': 'JBVzIRkXKqXsefqrezTQKSQSQiLokjKw',
-        'HOST': 'yamanote.proxy.rlwy.net',
-        'PORT': '48237',
 
 
-        #'NAME': os.environ.get('DB_NAME', 'hope'),
-        #'USER': os.environ.get('DB_USER', 'root'),
-        #'PASSWORD': os.environ.get('DB_PASSWORD'),
-        #'HOST': os.environ.get('DB_HOST'),
-        #'PORT': os.environ.get('DB_PORT', '3306'),
+        'NAME': os.environ.get('DB_NAME', 'hope'),
+        'USER': os.environ.get('DB_USER', 'root'),
+        'PASSWORD': os.environ.get('DB_PASSWORD'),
+        'HOST': os.environ.get('DB_HOST'),
+        'PORT': os.environ.get('DB_PORT', '3306'),
     }
 }
 
