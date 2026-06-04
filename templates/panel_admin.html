@@ -1,266 +1,525 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Dirección General - HOPE{% endblock %}
+{% block title %}Dirección General · HOPE{% endblock %}
 
 {% block content %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/main.min.css">
 <style>
-    /* ==========================================================================
-       IMPORTACIÓN DE FUENTES (ARREGLO PARA RAILWAY)
-       ========================================================================== */
-    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700;900&family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
-    :root {
-        /* Paleta Sólida HOPE */
-        --c-purple: #5A3FA3;
-        --c-pink: #F85B8C;
-        --c-orange: #F27C21;
-        --c-yellow: #F8D33D;
-        --c-teal: #25B8B8;
-        
-        --text-main: #0f0f0f;
-        --font-headings: 'Outfit', sans-serif;
-        --font-body: 'Plus Jakarta Sans', sans-serif;
-    }
+/* ============================================================
+   DESIGN SYSTEM — HOPE CLEAN ARCHITECTURE
+   ============================================================ */
+:root {
+  --bg-main:    #F8FAFC;
+  --surface:    #FFFFFF;
+  --border:     #E2E8F0;
+  --border-2:   #F1F5F9;
+  
+  --c-purple:   #5A3FA3;
+  --c-pink:     #F85B8C;
+  --c-orange:   #F27C21;
+  --c-teal:     #25B8B8;
+  --c-yellow:   #F8D33D;
 
-    /* ==========================================================================
-       FONDO Y CONTENEDOR PRINCIPAL (Limpio y Blanco)
-       ========================================================================== */
-    body { background-color: #f8fafc; font-family: var(--font-body); } 
-    .admin-wrapper { padding: 80px 0; color: var(--text-main); }
-    
-    .admin-title { font-family: var(--font-headings); font-size: 42px; color: var(--c-purple); margin-bottom: 5px; line-height: 1.1; font-weight: 800; }
-    .admin-subtitle { color: #64748b; font-size: 16px; margin-bottom: 0; letter-spacing: 2px; text-transform: uppercase; font-weight: 700; }
+  --text-1:     #0F172A;
+  --text-2:     #475569;
+  --text-3:     #94A3B8;
 
-    /* ==========================================================================
-       ANIMACIONES CHIC
-       ========================================================================== */
-    @keyframes fadeInUpStagger {
-        from { opacity: 0; transform: translateY(30px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-    .animate-card { opacity: 0; animation: fadeInUpStagger 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-    .delay-1 { animation-delay: 0.1s; }
-    .delay-2 { animation-delay: 0.2s; }
-    .delay-3 { animation-delay: 0.3s; }
+  --radius-sm:  10px;
+  --radius:     16px;
+  --radius-lg:  24px;
+  --radius-xl:  32px;
 
-    /* ==========================================================================
-       TARJETAS DE ESTADÍSTICAS TOP
-       ========================================================================== */
-    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 25px; margin-bottom: 50px; }
-    .stat-card { background: #ffffff; border-radius: 24px; padding: 30px; display: flex; align-items: center; gap: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.03); border: 1px solid #f1f5f9; transition: all 0.3s ease; cursor: default; }
-    
-    /* Hover con las sombras de colores correspondientes */
-    .stat-card.card-purple:hover { transform: translateY(-5px); box-shadow: 0 20px 40px rgba(90, 63, 163, 0.15); border-color: var(--c-purple); }
-    .stat-card.card-orange:hover { transform: translateY(-5px); box-shadow: 0 20px 40px rgba(242, 124, 33, 0.15); border-color: var(--c-orange); }
-    .stat-card.card-teal:hover { transform: translateY(-5px); box-shadow: 0 20px 40px rgba(37, 184, 184, 0.15); border-color: var(--c-teal); }
-    .stat-card.card-pink:hover { transform: translateY(-5px); box-shadow: 0 20px 40px rgba(248, 91, 140, 0.15); border-color: var(--c-pink); }
+  --shadow-sm:  0 2px 4px rgba(0, 0, 0, 0.02);
+  --shadow-md:  0 10px 25px rgba(15, 23, 42, 0.05);
+  --shadow-lg:  0 25px 50px -12px rgba(90, 63, 163, 0.1);
 
-    .stat-icon { width: 65px; height: 65px; border-radius: 20px; display: flex; justify-content: center; align-items: center; font-size: 26px; }
-    .stat-info h3 { margin: 0; font-size: 34px; font-weight: 800; color: var(--text-main); line-height: 1; font-family: var(--font-headings); }
-    .stat-info p { margin: 5px 0 0 0; color: #94a3b8; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; font-weight: 700; }
+  --font-headings: 'Outfit', sans-serif;
+  --font-body:     'Plus Jakarta Sans', sans-serif;
+  --transition:    all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
 
-    /* ==========================================================================
-       PANELES DE TABLAS
-       ========================================================================== */
-    .dashboard-grid { display: grid; grid-template-columns: 1fr; gap: 40px; }
-    .admin-panel { background: #ffffff; border-radius: 32px; border: 1px solid #f1f5f9; padding: 40px; box-shadow: 0 20px 50px rgba(0,0,0,0.02); }
-    .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
-    .panel-header h2 { margin: 0; color: var(--text-main); font-family: var(--font-headings); font-size: 28px; }
-    
-    .admin-table { width: 100%; border-collapse: collapse; }
-    .admin-table th { text-align: left; padding: 15px 20px; color: #94a3b8; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; border-bottom: 2px solid #f1f5f9; }
-    .admin-table td { padding: 20px; color: var(--text-main); border-bottom: 1px solid #f8fafc; font-size: 15px; vertical-align: middle; }
-    .admin-table tr:hover td { background-color: #f8fafc; }
-    
-    /* Píldoras de estado */
-    .status-pill { padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 700; letter-spacing: 0.5px; display: inline-flex; align-items: center; gap: 6px; }
+body { background-color: var(--bg-main); color: var(--text-1); font-family: var(--font-body); }
 
-    /* ==========================================================================
-       MAGIA MÓVIL (ANDROID/iOS) - TABLAS A TARJETAS
-       ========================================================================== */
-    @media (max-width: 768px) {
-        .admin-wrapper { padding: 40px 0; }
-        .admin-panel { padding: 25px; border-radius: 24px; }
-        
-        /* Ocultar encabezados de tabla */
-        .admin-table thead { display: none; }
-        
-        /* Convertir filas en tarjetas bloque */
-        .admin-table, .admin-table tbody, .admin-table tr, .admin-table td { display: block; width: 100%; box-sizing: border-box; }
-        .admin-table tr { margin-bottom: 20px; border: 1px solid #e2e8f0; border-radius: 16px; padding: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.02); }
-        .admin-table td { display: flex; justify-content: space-between; align-items: center; border: none; padding: 10px 5px; text-align: right; }
-        
-        /* Inyectar etiquetas para el celular usando el atributo data-label */
-        .admin-table td::before { content: attr(data-label); font-weight: 700; color: #64748b; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; text-align: left; padding-right: 15px; }
-        
-        .patient-info { text-align: right; }
-        .patient-info div:first-child { font-weight: 700; }
-        
-        /* Ajuste para el logo en celular */
-        .header-ceo { flex-direction: column; text-align: center; }
-    }
+.hope-wrapper { max-width: 1550px; margin: 0 auto; padding: 40px 30px; }
+
+/* ── MASTHEAD ─────────────────────────────────────────────── */
+.masthead { display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; background: var(--surface); padding: 25px 40px; border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); border: 1px solid white; }
+.masthead-left { display: flex; align-items: center; gap: 20px; }
+.masthead-logo { height: 45px; width: auto; }
+.masthead-title { font-family: var(--font-headings); font-size: 28px; font-weight: 800; color: var(--text-1); line-height: 1.1; }
+.masthead-title span { color: var(--c-purple); font-weight: 900; }
+.masthead-subtitle { font-size: 13px; color: var(--text-3); font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; margin-top: 4px; }
+
+.masthead-right { display: flex; align-items: center; gap: 15px; }
+.live-pill { display: flex; align-items: center; gap: 8px; background: #F0FDF4; color: #059669; padding: 8px 18px; border-radius: 50px; font-weight: 800; font-size: 12px; border: 1px solid #BBF7D0; text-transform: uppercase; letter-spacing: 1px;}
+.live-dot { width: 8px; height: 8px; background: #10B981; border-radius: 50%; animation: pulse 2s infinite; }
+@keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(16,185,129,0.5); } 70% { box-shadow: 0 0 0 10px rgba(16,185,129,0); } 100% { box-shadow: 0 0 0 0 rgba(16,185,129,0); } }
+
+/* ── CALENDAR SECTION ──────────────────────────── */
+.calendar-section { background: var(--surface); border-radius: var(--radius-xl); padding: 40px; box-shadow: var(--shadow-lg); margin-bottom: 40px; border: 1px solid white; }
+.calendar-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 30px; }
+.calendar-title h2 { font-family: var(--font-headings); font-size: 36px; color: var(--text-1); font-weight: 900; margin: 0; letter-spacing: -0.5px;}
+.calendar-title p { color: var(--text-3); margin: 8px 0 0 0; font-size: 16px; font-weight: 500; }
+
+.cal-search-box { position: relative; width: 380px; }
+.cal-search-box i { position: absolute; left: 18px; top: 50%; transform: translateY(-50%); color: var(--text-3); font-size: 16px; }
+.cal-search-input { width: 100%; padding: 15px 20px 15px 45px; border: 2px solid var(--border-2); border-radius: 16px; font-family: var(--font-body); font-size: 14px; font-weight: 600; color: var(--text-1); outline: none; transition: var(--transition); background: var(--bg-main); }
+.cal-search-input:focus { border-color: var(--c-purple); background: white; box-shadow: 0 0 0 4px rgba(90,63,163,0.1); }
+
+/* ── FULLCALENDAR CLEAN OVERRIDES ─────────────────────────── */
+.fc { font-family: var(--font-body); }
+.fc-theme-standard th { padding: 18px 0; background: var(--surface); color: var(--text-2); font-family: var(--font-headings); font-weight: 800; text-transform: uppercase; font-size: 12px; letter-spacing: 1px; border: none !important; border-bottom: 2px solid var(--border-2) !important; }
+.fc-theme-standard td, .fc-theme-standard .fc-scrollgrid { border-color: var(--border-2) !important; }
+.fc .fc-toolbar-title { font-family: var(--font-headings); font-weight: 900; font-size: 26px !important; color: var(--text-1); }
+.fc .fc-button-primary { background: white !important; color: var(--text-2) !important; border: 1px solid var(--border) !important; border-radius: 12px !important; font-weight: 700 !important; text-transform: capitalize !important; box-shadow: var(--shadow-sm); transition: var(--transition); padding: 8px 16px !important;}
+.fc .fc-button-primary:hover { background: var(--bg-main) !important; color: var(--c-purple) !important; border-color: var(--c-purple) !important; }
+.fc .fc-button-active { background: var(--c-purple) !important; color: white !important; border-color: var(--c-purple) !important; box-shadow: 0 6px 15px rgba(90,63,163,0.2) !important; }
+.fc-day-today { background: #F8FAFC !important; }
+
+/* ── 🔥 PREPARACIÓN DEL GRID ESTRICTO (CERO CHOQUES) ── */
+.fc-event { 
+    border: none !important; 
+    background: transparent !important; 
+    margin: 3px !important; /* Margen estricto para que nunca se toquen */
+    overflow: visible !important; 
+}
+.fc-timegrid-event .fc-event-main { 
+    padding: 0 !important; 
+    height: 100%; 
+    position: relative; 
+}
+.fc-v-event { background: transparent !important; border: none !important; box-shadow: none !important;}
+
+/* ── 🔥 EVENT CARD PREMIUM (GRANDE, ESTRICTA Y EXPANSIVA) ──────────── */
+.hope-event-wrapper {
+    width: 100%; height: 100%;
+}
+
+.hope-event-card {
+    display: flex; flex-direction: column; justify-content: center;
+    padding: 10px 8px; 
+    border-radius: 12px;
+    border-left: 8px solid; 
+    background: #FFFFFF;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+    height: 100%; width: 100%; 
+    border-top: 1px solid var(--border-2); border-right: 1px solid var(--border-2); border-bottom: 1px solid var(--border-2);
+    overflow: hidden; 
+    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease;
+    cursor: pointer;
+    position: relative;
+    z-index: 1; /* Nivel base normal */
+}
+/* 🔥 LA MAGIA: EL EFECTO LUPA AL PASAR EL MOUSE */
+.hope-event-card:hover {
+    transform: scale(1.05) translateY(-4px); /* Efecto lupa estable y hacia arriba */
+    box-shadow: 0 15px 35px rgba(0,0,0,0.12);
+    z-index: 9999 !important; /* Se pone por encima de todas las demás */
+    background: white;
+}
+
+/* HORA ENORME */
+.evt-time-big { 
+    font-size: 20px; 
+    font-weight: 900; 
+    font-family: var(--font-headings); 
+    color: var(--text-1); 
+    line-height: 1.1;
+    margin-bottom: 6px;
+    white-space: nowrap !important; /* Jamás se rompe en dos líneas */
+    letter-spacing: -0.5px;
+}
+
+/* DOCTOR GRANDE */
+.evt-doc-name { 
+    font-size: 14px; 
+    font-weight: 800; 
+    color: var(--text-2); 
+    white-space: nowrap !important; /* Jamás se rompe */
+}
+
+/* Estado cancelado */
+.hope-event-card.canceled { background: #F1F5F9 !important; border-left-color: #94A3B8 !important; opacity: 0.7; }
+.hope-event-card.canceled .evt-time-big { text-decoration: line-through; color: var(--text-3); }
+.hope-event-card.canceled .evt-doc-name { color: var(--text-3); }
+
+/* ── KPI GRID & BOTTOM PANELS ─────────────────────────────── */
+.kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; margin-bottom: 40px; }
+.kpi-card { background: var(--surface); border-radius: var(--radius-lg); padding: 30px; box-shadow: var(--shadow-md); display: flex; align-items: center; gap: 20px; transition: var(--transition); border: 1px solid white; }
+.kpi-card:hover { transform: translateY(-5px); box-shadow: var(--shadow-lg); }
+.kpi-icon { width: 64px; height: 64px; border-radius: 18px; display: flex; align-items: center; justify-content: center; font-size: 26px; flex-shrink: 0; }
+.kpi-val { font-family: var(--font-headings); font-size: 38px; font-weight: 900; color: var(--text-1); line-height: 1; margin-bottom: 6px; letter-spacing: -1px;}
+.kpi-label { font-size: 13px; font-weight: 700; color: var(--text-3); text-transform: uppercase; letter-spacing: 1.5px; }
+
+.bottom-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; }
+.panel { background: var(--surface); border-radius: var(--radius-xl); padding: 40px; box-shadow: var(--shadow-md); display: flex; flex-direction: column; border: 1px solid white; }
+.panel-title { font-family: var(--font-headings); font-size: 24px; font-weight: 900; color: var(--text-1); margin-bottom: 30px; display: flex; align-items: center; gap: 12px; }
+.panel-title i { color: var(--c-purple); font-size: 20px;}
+
+/* DOCTORS */
+.doc-list { display: flex; flex-direction: column; gap: 16px; }
+.doc-card { display: flex; align-items: center; justify-content: space-between; padding: 20px; background: var(--bg-main); border-radius: 16px; border: 1px solid var(--border-2); transition: var(--transition);}
+.doc-card:hover { border-color: var(--border); background: white; box-shadow: var(--shadow-sm);}
+.doc-info h4 { margin: 0; font-size: 16px; font-weight: 800; color: var(--text-1); font-family: var(--font-headings);}
+.doc-info p { margin: 2px 0 0 0; font-size: 13px; color: var(--text-3); font-weight: 600;}
+.doc-stats { text-align: right; }
+.doc-stats .num { font-size: 22px; font-weight: 900; color: var(--c-purple); font-family: var(--font-headings); line-height: 1;}
+
+/* PATIENTS */
+.patient-scroll-container { flex: 1; max-height: 500px; overflow-y: auto; padding-right: 15px; display: flex; flex-direction: column; gap: 14px; }
+.patient-scroll-container::-webkit-scrollbar { width: 6px; }
+.patient-scroll-container::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 10px; }
+.patient-row { display: flex; align-items: center; justify-content: space-between; padding: 18px; border-radius: 16px; border: 1px solid var(--border-2); transition: var(--transition); background: white;}
+.patient-row:hover { border-color: var(--c-teal); background: #F0FDFA; transform: translateX(5px); box-shadow: var(--shadow-sm);}
+.p-avatar { width: 42px; height: 42px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 16px; font-family: var(--font-headings);}
+.p-badge { padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 800; letter-spacing: 0.5px; border: 1px solid transparent;}
+
+.fade-up { animation: fadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; transform: translateY(20px); }
+@keyframes fadeUp { to { opacity: 1; transform: translateY(0); } }
+.d-1 { animation-delay: 0.1s; } .d-2 { animation-delay: 0.2s; } .d-3 { animation-delay: 0.3s; }
 </style>
 
-<div class="admin-wrapper">
-    <div class="container">
+<div class="hope-wrapper">
+
+  <!-- ════ MASTHEAD ════ -->
+  <header class="masthead fade-up">
+    <div class="masthead-left">
+      <img src="{% static 'img/logo_hope_principal.png' %}" alt="HOPE" class="masthead-logo">
+      <div>
+        <div class="masthead-title">Workspace</div>
+        <div class="masthead-subtitle">Panel de Control Global · {{ hoy|date:"d M Y" }}</div>
+      </div>
+    </div>
+    <div class="masthead-right">
+      <div class="live-pill">
+        <span class="live-dot"></span> <span id="poll-indicator">En Vivo</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ════ MAIN CALENDAR ════ -->
+  <div class="calendar-section fade-up d-1">
+    <div class="calendar-header">
+      <div class="calendar-title">
+        <h2>Agenda Clínica</h2>
+        <p>Monitoreo de citas. Pasa el mouse sobre una cita para expandirla o haz clic para ver la información.</p>
+      </div>
+      <div class="cal-search-box">
+        <i class="fas fa-search"></i>
+        <input type="text" id="search-citas" class="cal-search-input" placeholder="Buscar especialista o estado...">
+      </div>
+    </div>
+    <div id="hope-calendar"></div>
+  </div>
+
+  <!-- ════ KPI METRICS ════ -->
+  <div class="kpi-grid">
+    <div class="kpi-card fade-up d-2">
+      <div class="kpi-icon" style="background: #F3E8FF; color: var(--c-purple);"><i class="fas fa-users"></i></div>
+      <div>
+        <div class="kpi-val" id="kpi-pacientes">{{ total_pacientes }}</div>
+        <div class="kpi-label">Pacientes Red</div>
+      </div>
+    </div>
+    <div class="kpi-card fade-up d-2">
+      <div class="kpi-icon" style="background: #F0FDFA; color: var(--c-teal);"><i class="fas fa-user-md"></i></div>
+      <div>
+        <div class="kpi-val" id="kpi-doctores">{{ total_doctores }}</div>
+        <div class="kpi-label">Especialistas</div>
+      </div>
+    </div>
+    <div class="kpi-card fade-up d-3">
+      <div class="kpi-icon" style="background: #FFF7ED; color: var(--c-orange);"><i class="fas fa-calendar-day"></i></div>
+      <div>
+        <div class="kpi-val" id="kpi-hoy">{{ citas_hoy }}</div>
+        <div class="kpi-label">Citas de Hoy</div>
+      </div>
+    </div>
+    <div class="kpi-card fade-up d-3">
+      <div class="kpi-icon" style="background: #FDF2F8; color: var(--c-pink);"><i class="fas fa-check-circle"></i></div>
+      <div>
+        <div class="kpi-val" id="kpi-total">{{ citas_totales }}</div>
+        <div class="kpi-label">Histórico Citas</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════ BOTTOM PANELS ════ -->
+  <div class="bottom-grid">
+    
+    <!-- DOCTORS -->
+    <div class="panel fade-up d-3">
+      <div class="panel-title"><i class="fas fa-stethoscope"></i> Especialistas Activos</div>
+      <div class="doc-list">
+        {% for doc in doctores %}
+        <div class="doc-card">
+          <div class="doc-info">
+            <h4>Dr(a). {{ doc.nombre }}</h4>
+            <p>{{ doc.especialidad }}</p>
+          </div>
+          <div class="doc-stats">
+            <div class="num">{{ doc.pacientes }}</div>
+            <p style="font-size: 11px; font-weight: 800; color: var(--text-3); text-transform: uppercase; margin-top: 2px;">Pacientes</p>
+          </div>
+        </div>
+        {% empty %}
+        <p style="color: var(--text-3); text-align: center;">Sin especialistas registrados.</p>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- PATIENTS (SCROLL) -->
+    <div class="panel fade-up d-3">
+      <div class="panel-title"><i class="fas fa-heartbeat" style="color: var(--c-pink);"></i> Frecuencia de Ingresos</div>
+      <div class="patient-scroll-container" id="patient-list">
+        <div id="scroll-sentinel" style="padding: 20px; text-align: center; color: var(--text-3); font-weight: 600;"><i class="fas fa-circle-notch fa-spin"></i> Sincronizando...</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ==========================================================================
+     🔥 MODAL DE INFORMACIÓN COMPLETA (SE ABRE AL DAR CLIC)
+========================================================================== -->
+<div id="citaModal" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.6); z-index:99999; align-items:center; justify-content:center; backdrop-filter:blur(6px);">
+    <div style="background:white; border-radius:24px; width:100%; max-width:480px; padding:35px; position:relative; box-shadow:0 25px 50px rgba(0,0,0,0.15); animation: fadeUp 0.3s forwards;">
+        <!-- Botón Cerrar -->
+        <button onclick="document.getElementById('citaModal').style.display='none'" style="position:absolute; top:20px; right:20px; background:none; border:none; font-size:20px; cursor:pointer; color:var(--text-3); transition:0.2s;"><i class="fas fa-times"></i></button>
         
-        <div class="header-ceo fade-in-up" style="display: flex; align-items: center; gap: 25px; margin-bottom: 50px;">
-            <div style="background: #ffffff; padding: 15px 20px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); border: 1px solid #f1f5f9;">
-                <img src="{% static 'img/logo_hope_principal.png' %}" alt="HOPE Logo" style="height: 230px; width: auto; display: block;">
-            </div>
+        <!-- Header del Paciente -->
+        <div style="display:flex; align-items:center; gap:20px; margin-bottom:25px;">
+            <div id="m-avatar" style="width:55px; height:55px; border-radius:16px; background:#F3E8FF; color:var(--c-purple); display:flex; align-items:center; justify-content:center; font-size:24px; font-weight:900; font-family:var(--font-headings); flex-shrink:0;">A</div>
             <div>
-                <h1 class="admin-title">Inteligencia Operativa</h1>
-                <p class="admin-subtitle"><i class="fas fa-chart-pie" style="color: var(--c-orange); margin-right: 8px;"></i> Métricas de Impacto Clínico</p>
+                <h3 id="m-paciente" style="margin:0; font-family:var(--font-headings); font-size:24px; font-weight:900; color:var(--text-1); letter-spacing:-0.5px;">Nombre del Paciente</h3>
+                <p id="m-estado" style="margin:4px 0 0 0; font-size:12px; font-weight:800; color:var(--c-teal); text-transform:uppercase; letter-spacing:1.5px;"><i class="fas fa-circle" style="font-size:8px; margin-right:4px;"></i> Confirmada</p>
             </div>
         </div>
 
-        <div class="stats-grid">
-            <div class="stat-card card-purple animate-card">
-                <div class="stat-icon" style="background: rgba(90, 63, 163, 0.1); color: var(--c-purple);">
-                    <i class="fas fa-users"></i>
-                </div>
-                <div class="stat-info">
-                    <h3>{{ total_pacientes }}</h3>
-                    <p>Vidas Impactadas</p>
-                </div>
+        <!-- Tarjeta de Detalles -->
+        <div style="background:var(--bg-main); border-radius:16px; padding:25px; border:1px solid var(--border-2); display:flex; flex-direction:column; gap:20px;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <span style="color:var(--text-2); font-size:14px; font-weight:600;"><i class="fas fa-user-md" style="width:20px; color:var(--text-3);"></i> Especialista</span>
+                <span id="m-doctor" style="font-weight:800; color:var(--text-1); font-size:15px;">Dr.</span>
             </div>
-            
-            <div class="stat-card card-orange animate-card delay-1">
-                <div class="stat-icon" style="background: rgba(242, 124, 33, 0.1); color: var(--c-orange);">
-                    <i class="fas fa-user-md"></i>
-                </div>
-                <div class="stat-info">
-                    <h3>{{ total_doctores }}</h3>
-                    <p>Especialistas en Red</p>
-                </div>
+            <div style="display:flex; justify-content:space-between; align-items:center; padding:15px 0; border-top:1px dashed var(--border); border-bottom:1px dashed var(--border);">
+                <span style="color:var(--text-2); font-size:14px; font-weight:600;"><i class="far fa-clock" style="width:20px; color:var(--text-3);"></i> Horario</span>
+                <span id="m-fecha" style="font-weight:900; color:var(--c-purple); font-size:16px;">...</span>
             </div>
-
-            <div class="stat-card card-teal animate-card delay-2">
-                <div class="stat-icon" style="background: rgba(37, 184, 184, 0.1); color: var(--c-teal);">
-                    <i class="fas fa-calendar-day"></i>
-                </div>
-                <div class="stat-info">
-                    <h3>{{ citas_hoy }}</h3>
-                    <p>Sesiones de Hoy</p>
-                </div>
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <span style="color:var(--text-2); font-size:14px; font-weight:600;"><i class="fas fa-laptop-medical" style="width:20px; color:var(--text-3);"></i> Modalidad</span>
+                <span id="m-modalidad" style="font-weight:800; color:var(--text-1); background:white; padding:6px 12px; border-radius:8px; border:1px solid var(--border); font-size:12px; text-transform:uppercase; letter-spacing:0.5px;">En línea</span>
             </div>
-
-            <div class="stat-card card-pink animate-card delay-3">
-                <div class="stat-icon" style="background: rgba(248, 91, 140, 0.1); color: var(--c-pink);">
-                    <i class="fas fa-check-double"></i>
-                </div>
-                <div class="stat-info">
-                    <h3>{{ citas_totales }}</h3>
-                    <p>Sesiones Impartidas</p>
-                </div>
-            </div>
-        </div>
-
-        <div class="dashboard-grid">
-            
-            <div class="admin-panel animate-card delay-2">
-                <div class="panel-header">
-                    <h2><i class="fas fa-stethoscope" style="color: var(--c-teal); margin-right: 12px;"></i> Rendimiento y Capacidad del Equipo Médico</h2>
-                </div>
-                <table class="admin-table">
-                    <thead>
-                        <tr>
-                            <th>Especialista</th>
-                            <th>Área de Enfoque</th>
-                            <th>Pacientes Activos</th>
-                            <th>Sesiones (Hoy)</th>
-                            <th>Disponibilidad</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for doc in doctores %}
-                        <tr>
-                            <td data-label="Especialista">
-                                <div style="font-weight: 700; color: var(--c-purple);">Dr(a). {{ doc.nombre }}</div>
-                            </td>
-                            <td data-label="Área de Enfoque" style="color: #64748b;">{{ doc.especialidad }}</td>
-                            <td data-label="Pacientes Activos">
-                                <span style="font-size: 18px; font-weight: 800;">{{ doc.pacientes }}</span>
-                            </td>
-                            <td data-label="Sesiones Hoy" style="font-weight: 700;">{{ doc.citas_hoy }}</td>
-                            
-                            <td data-label="Disponibilidad" style="width: 250px;">
-                                <div style="display: flex; flex-direction: column; gap: 8px;">
-                                    <div style="display: flex; justify-content: space-between; align-items: center; font-size: 12px; font-weight: 700; color: {{ doc.color_carga }};">
-                                        <span style="text-transform: uppercase; letter-spacing: 1px;">{{ doc.carga }}</span>
-                                        <span>{{ doc.porcentaje_carga }}%</span>
-                                    </div>
-                                    <div style="width: 100%; height: 8px; background: #e2e8f0; border-radius: 10px; overflow: hidden;">
-                                        <div style="width: {{ doc.porcentaje_carga }}%; height: 100%; background: {{ doc.color_carga }}; border-radius: 10px; transition: width 1s ease-in-out;"></div>
-                                    </div>
-                                </div>
-                            </td>
-                            
-                        </tr>
-                        {% empty %}
-                        <tr><td colspan="5" style="text-align: center; color: #94a3b8;">No hay especialistas registrados en el sistema.</td></tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-
-            <div class="admin-panel animate-card delay-3">
-                <div class="panel-header">
-                    <h2><i class="fas fa-heartbeat" style="color: var(--c-pink); margin-right: 12px;"></i> Monitoreo de Progreso de Pacientes</h2>
-                </div>
-                <table class="admin-table">
-                    <thead>
-                        <tr>
-                            <th>Paciente</th>
-                            <th>Especialista a Cargo</th>
-                            <th>Historial de Sesiones</th>
-                            <th>Estado de Ánimo (Promedio Histórico)</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for pac in pacientes %}
-                        <tr>
-                            <td data-label="Paciente" class="patient-info">
-                                <div style="font-weight: 700; color: var(--c-purple);">{{ pac.nombre }}</div>
-                                <div style="font-size: 13px; color: #94a3b8;">{{ pac.email }}</div>
-                            </td>
-                            <td data-label="Especialista">
-                                {% if pac.doctor == 'Pendiente' %}
-                                    <span style="color: var(--c-pink); font-weight: 600;"><i class="fas fa-exclamation-circle"></i> Pendiente de asignación</span>
-                                {% else %}
-                                    <span style="color: var(--c-purple); font-weight: 600;">Dr(a). {{ pac.doctor }}</span>
-                                {% endif %}
-                            </td>
-                            <td data-label="Sesiones" style="font-size: 16px; font-weight: 800;">{{ pac.sesiones }}</td>
-                            <td data-label="Estado de Ánimo">
-                                <span class="status-pill" style="background: {{ pac.color_animo }}15; color: {{ pac.color_animo }}; border: 1px solid {{ pac.color_animo }}40; font-size: 13px; padding: 8px 16px;">
-                                    <i class="{{ pac.icono_animo }}" style="font-size: 16px; margin-right: 5px;"></i> {{ pac.animo }} 
-                                    
-                                    <span style="font-weight: 400; font-style: italic; opacity: 0.8; margin-left: 5px;">
-                                        {% if pac.sesiones == 0 %}
-                                            (Sin datos)
-                                        {% elif pac.sesiones <= 3 %}
-                                            (Promedio de {{ pac.sesiones }} sesiones)
-                                        {% elif pac.animo == 'Excelente' or pac.animo == 'Bien' %}
-                                            (Tendencia a la alta)
-                                        {% elif pac.animo == 'Muy mal' or pac.animo == 'Triste' %}
-                                            (Requiere atención)
-                                        {% else %}
-                                            (Estable)
-                                        {% endif %}
-                                    </span>
-                                </span>
-                            </td>
-                        </tr>
-                        {% empty %}
-                        <tr><td colspan="4" style="text-align: center; color: #94a3b8;">No hay pacientes registrados en la plataforma.</td></tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-
         </div>
     </div>
 </div>
+
+<!-- ==========================================================================
+     SCRIPTS
+========================================================================== -->
+<script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js'></script>
+<script>
+// --- DATOS INICIALES ---
+const CITAS_JSON = {{ citas_json|safe|default:"[]" }};
+let calendar;
+
+document.addEventListener('DOMContentLoaded', function() {
+  const el = document.getElementById('hope-calendar');
+  
+  // 🔥 COLORES INSTITUCIONALES (Versión suave "blanda" para que no queme la vista)
+  const institutionalThemes = [
+    { border: '#818CF8' }, // Morado Suave
+    { border: '#34D399' }, // Teal Suave
+    { border: '#FB7185' }, // Rosa Suave
+    { border: '#FB923C' }, // Naranja Suave
+    { border: '#60A5FA' }, // Azul Suave
+    { border: '#FBBF24' }  // Amarillo Suave
+  ];
+  
+  const docMap = {}; let cIdx = 0;
+
+  calendar = new FullCalendar.Calendar(el, {
+    locale: 'es',
+    initialView: 'timeGridWeek', 
+    headerToolbar: {
+      left: 'prev,next today',
+      center: 'title',
+      right: 'dayGridMonth,timeGridWeek,timeGridDay'
+    },
+    slotMinTime: '08:00:00',
+    slotMaxTime: '22:00:00',
+    height: 800, 
+    expandRows: true,
+    slotEventOverlap: false, // 🔥 LA ORDEN ESTRICTA: NUNCA SE EMPALMAN
+    eventMinHeight: 110,     // 🔥 TARJETAS GIGANTES HACIA ABAJO
+    stickyHeaderDates: true,
+    events: CITAS_JSON,
+    
+    // 🔥 INYECCIÓN HTML CUSTOM: ENVUELTO EN EL CONTENEDOR EXPANSIVO
+    eventContent: function(arg) {
+      const p = arg.event.extendedProps;
+      const docName = p.psicologo || 'N/A';
+      const estado = p.estado || '';
+      const isCanceled = estado === 'Cancelada';
+
+      const startTime = arg.event.start.toLocaleTimeString('es-MX', {hour: '2-digit', minute:'2-digit'});
+
+      let html = `
+        <div class="hope-event-wrapper">
+          <div class="hope-event-card ${isCanceled ? 'canceled' : ''}">
+              <div class="evt-time-big">${startTime}</div>
+              <div class="evt-doc-name"><i class="fas fa-user-md" style="margin-right:4px;"></i> Dr(a). ${docName}</div>
+          </div>
+        </div>
+      `;
+      return { html: html };
+    },
+
+    // 🔥 APLICAR BORDES INSTITUCIONALES
+    eventDidMount: function(info) {
+      const p = info.event.extendedProps;
+      const doc = p.psicologo || 'N/A';
+      const estado = p.estado || '';
+      
+      if (estado !== 'Cancelada') {
+        if(!docMap[doc]) { docMap[doc] = institutionalThemes[cIdx % institutionalThemes.length]; cIdx++; }
+        const theme = docMap[doc];
+        
+        const card = info.el.querySelector('.hope-event-card');
+        if(card) {
+            card.style.borderLeftColor = theme.border; 
+        }
+      }
+    },
+
+    // 🔥 EL CLIC: ABRE EL MODAL Y MUESTRA AL PACIENTE
+    eventClick: function(info) {
+      const p = info.event.extendedProps;
+      const docName = p.psicologo || 'N/A';
+      const patientName = info.event.title;
+      const estado = p.estado || 'Agendada';
+      const modalidad = p.modalidad || 'En línea';
+      
+      const pInitial = patientName.charAt(0).toUpperCase();
+      const options = { weekday: 'long', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
+      const fechaFull = info.event.start.toLocaleDateString('es-MX', options);
+
+      // Llenar Modal
+      document.getElementById('m-paciente').innerText = patientName;
+      document.getElementById('m-avatar').innerText = pInitial;
+      document.getElementById('m-doctor').innerText = `Dr(a). ${docName}`;
+      document.getElementById('m-fecha').innerText = fechaFull;
+      document.getElementById('m-modalidad').innerText = modalidad;
+      
+      const estadoEl = document.getElementById('m-estado');
+      estadoEl.innerHTML = `<i class="fas fa-circle" style="font-size:8px; margin-right:4px;"></i> ${estado}`;
+      if(estado === 'Cancelada') estadoEl.style.color = '#EF4444';
+      else if(estado === 'Completada') estadoEl.style.color = '#10B981';
+      else estadoEl.style.color = '#3B82F6';
+
+      // Mostrar Modal
+      document.getElementById('citaModal').style.display = 'flex';
+    }
+  });
+  calendar.render();
+
+  // 🔍 BUSCADOR EN VIVO
+  document.getElementById('search-citas').addEventListener('input', function(e) {
+    const term = e.target.value.toLowerCase();
+    const events = calendar.getEvents();
+    
+    events.forEach(ev => {
+      const p = ev.extendedProps;
+      const match = (p.psicologo && p.psicologo.toLowerCase().includes(term)) || 
+                    (p.paciente && p.paciente.toLowerCase().includes(term)) || 
+                    ev.title.toLowerCase().includes(term) ||
+                    (p.estado && p.estado.toLowerCase().includes(term));
+      
+      ev.setProp('display', match ? 'auto' : 'none');
+    });
+  });
+
+  // --- 2. SCROLL INFINITO PACIENTES ---
+  let page = 1, hasMore = true, loading = false;
+  const list = document.getElementById('patient-list');
+  const sentinel = document.getElementById('scroll-sentinel');
+
+  function loadPatients() {
+    if(loading || !hasMore) return;
+    loading = true;
+    
+    fetch(`/api/admin/pacientes/?page=${page}&per_page=15`)
+      .then(r => r.json())
+      .then(data => {
+        data.results.forEach(pac => {
+          let html = `
+            <div class="patient-row">
+              <div style="display:flex; align-items:center; gap:16px;">
+                <div class="p-avatar" style="background:${pac.color_animo}15; color:${pac.color_animo}; border: 1px solid ${pac.color_animo}30;">${pac.nombre.charAt(0)}</div>
+                <div>
+                  <div style="font-weight:800; font-family:var(--font-headings); font-size: 15px;">${pac.nombre}</div>
+                  <div style="font-size:12px; color:var(--text-3); font-weight:600; margin-top:2px;"><i class="fas fa-user-md" style="margin-right:4px;"></i>${pac.doctor}</div>
+                </div>
+              </div>
+              <div class="p-badge" style="background:${pac.color_animo}10; color:${pac.color_animo}; border-color: ${pac.color_animo}30;">
+                <i class="${pac.icono_animo}" style="margin-right:4px;"></i> ${pac.animo}
+              </div>
+            </div>`;
+          list.insertAdjacentHTML('beforeend', html);
+        });
+        list.appendChild(sentinel); 
+        page++;
+        hasMore = data.has_next;
+        loading = false;
+        if(!hasMore) sentinel.style.display = 'none';
+      }).catch(() => loading = false);
+  }
+
+  const observer = new IntersectionObserver(entries => {
+    if(entries[0].isIntersecting) loadPatients();
+  }, { root: list, threshold: 0.1 });
+  observer.observe(sentinel);
+
+  // --- 3. POLLING (LATIDO) LIGERO ---
+  let lastKpiSnapshot = null;
+  setInterval(() => {
+    fetch('/api/admin/stats/', {headers:{'X-Requested-With':'XMLHttpRequest'}})
+      .then(r => r.json())
+      .then(data => {
+        document.getElementById('kpi-pacientes').innerText = data.total_pacientes;
+        document.getElementById('kpi-doctores').innerText = data.total_doctores;
+        document.getElementById('kpi-hoy').innerText = data.citas_hoy;
+        document.getElementById('kpi-total').innerText = data.citas_totales;
+        
+        if(data.citas_json) {
+          if(calendar.getEvents().length !== data.citas_json.length) {
+            calendar.removeAllEvents();
+            calendar.addEventSource(data.citas_json);
+          }
+        }
+        
+        // Notificaciones Automáticas
+        if (lastKpiSnapshot !== null) {
+          const prevHoy = lastKpiSnapshot.citas_hoy || 0;
+          if (data.citas_hoy > prevHoy) {
+             if (Notification.permission === "granted") {
+                 new Notification('HOPE — Nueva Cita', { body: `${data.citas_hoy - prevHoy} cita(s) nueva(s) registradas hoy.`, icon: '/static/img/logo_hope_principal.png'});
+             }
+          }
+          const prevPacientes = lastKpiSnapshot.total_pacientes || 0;
+          if (data.total_pacientes > prevPacientes) {
+             const nuevos = data.total_pacientes - prevPacientes;
+             if (Notification.permission === "granted") {
+                 new Notification('HOPE — Nuevo Registro', { body: `Tienes ${nuevos} paciente(s) nuevo(s) en la red.`, icon: '/static/img/logo_hope_principal.png'});
+             }
+          }
+        }
+        lastKpiSnapshot = data;
+      });
+  }, 10000);
+});
+</script>
 {% endblock %}

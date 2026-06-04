@@ -32,4 +32,6 @@ urlpatterns = [
     path('registro-rapido/', views.registro_rapido_ajax, name='registro_rapido'),
     path('guardar_cita_ajax/', views.guardar_cita_ajax, name='guardar_cita_ajax'),
     path('guardar-expediente-completo/', views.guardar_expediente_completo, name='guardar_expediente_completo'),
+    path('api/admin/pacientes/', views.api_pacientes_paginados, name='api_pacientes'),
+    path('api/admin/stats/', views.api_stats, name='api_stats'),
 ]

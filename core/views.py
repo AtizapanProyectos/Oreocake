@@ -1,5 +1,16 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth.models import User
+
+from django.core.paginator import Paginator
+
+from django.db.models import Avg, Case, When, Value, IntegerField, Q, Prefetch
+from django.utils import timezone
+from django.http import JsonResponse
+from django.shortcuts import render
+from django.core.paginator import Paginator
+from django.contrib.auth.decorators import user_passes_test
+import json
+
 from django.core.mail import send_mail
 from django.contrib.auth.tokens import default_token_generator
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
@@ -13,7 +24,7 @@ from django.http import JsonResponse
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
 from django.contrib.auth import login
-from django.utils import timezone
+
 from django.db.models import Q, Count
 from datetime import datetime, timedelta, time
 import json
@@ -31,14 +42,15 @@ from django.conf import settings
 
 from .models import *
 from .cuestionario_data import CUESTIONARIO_CLINICO
-
+from django.utils import timezone
 from django.utils import timezone as tz
 
 
 
 from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
-from django.http import JsonResponse
+
+
 from django.utils.timezone import localtime, now
 
 import re
@@ -50,7 +62,7 @@ import os
 import fitz          # PyMuPDF  — para leer PDFs
 import docx          # python-docx — para leer .doc/.docx
 from groq import Groq
-from django.http import JsonResponse
+
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.decorators import login_required
  
@@ -1064,6 +1076,152 @@ def guardar_historial(request):
 # 👑 CENTRO DE COMANDO (PANEL DE SUPER ADMIN / CEO)
 # =========================================================================
 
+
+# ================== API PARA SCROLL INFINITO ==================
+def api_pacientes_paginados(request):
+    if not request.user.has_perm('es_admin'): 
+        return JsonResponse({'error': 'No autorizado'}, status=403)
+    
+    page = int(request.GET.get('page', 1))
+    per_page = int(request.GET.get('per_page', 20))
+    
+    # 🚀 OPTIMIZACIÓN: select_related trae al psicólogo en 1 consulta en lugar de 20
+    pacientes_qs = UsuarioPerfil.objects.filter(es_psicologo=False).select_related(
+        'usuario', 'psicologo_asignado__usuario'
+    ).order_by('-id')
+    
+    paginator = Paginator(pacientes_qs, per_page)
+    
+    if page > paginator.num_pages:
+        return JsonResponse({'results': [], 'has_next': False})
+    
+    pacientes_page = paginator.page(page)
+    resultados = []
+    
+    for pac in pacientes_page:
+        animo = calcular_animo_promedio(pac)
+        total_sesiones = Cita.objects.filter(paciente=pac.usuario).exclude(estado='Cancelada').count()
+        doctor_nombre = pac.psicologo_asignado.usuario.first_name if pac.psicologo_asignado else 'Pendiente'
+        resultados.append({
+            'nombre': pac.nombre,
+            'email': pac.usuario.email if pac.usuario else '',
+            'doctor': doctor_nombre,
+            'sesiones': total_sesiones,
+            'animo': animo['texto'],
+            'icono_animo': animo['icono'],
+            'color_animo': animo['color'],
+        })
+    
+    return JsonResponse({
+        'results': resultados,
+        'has_next': page < paginator.num_pages,
+        'current_page': page,
+    })
+
+# ================== API PARA POLLING (estadísticas + citas) ==================
+def api_stats(request):
+    hoy = timezone.now().date()
+    
+    total_pacientes = UsuarioPerfil.objects.filter(es_psicologo=False).count()
+    total_doctores = PerfilPsicologo.objects.filter(esta_activo=True).count()
+    citas_hoy = Cita.objects.filter(fecha=hoy).exclude(estado='Cancelada').count()
+    citas_totales = Cita.objects.exclude(estado='Cancelada').count()
+    
+    inicio_mes = hoy.replace(day=1)
+    inicio_semana = hoy - timezone.timedelta(days=hoy.weekday())
+    nuevos_semana = UsuarioPerfil.objects.filter(
+        es_psicologo=False, usuario__date_joined__date__gte=inicio_semana
+    ).count()
+    completadas_mes = Cita.objects.filter(fecha__gte=inicio_mes, estado='Completada').count()
+    canceladas_mes = Cita.objects.filter(fecha__gte=inicio_mes, estado='Cancelada').count()
+    talleres_activos = Taller.objects.filter(fecha__gte=hoy).count()
+    
+    # 🚀 OPTIMIZACIÓN NIVEL DIOS PARA FOCOS ROJOS: 
+    # Le pedimos a MySQL que calcule el promedio de TODAS las citas matemáticamente en una sola consulta.
+    pacientes_con_promedio = UsuarioPerfil.objects.filter(es_psicologo=False).annotate(
+        promedio_animo=Avg(
+            Case(
+                When(usuario__citas_como_paciente__estado_animo='Muy mal', then=Value(1)),
+                When(usuario__citas_como_paciente__estado_animo='Triste', then=Value(2)),
+                When(usuario__citas_como_paciente__estado_animo='Normal', then=Value(3)),
+                When(usuario__citas_como_paciente__estado_animo='Bien', then=Value(4)),
+                When(usuario__citas_como_paciente__estado_animo='Excelente', then=Value(5)),
+                output_field=IntegerField(),
+            ),
+            filter=~Q(usuario__citas_como_paciente__estado='Cancelada')
+        )
+    )
+    # Foco rojo si el promedio es menor estricto a 2.5 (1=Muy mal, 2=Triste)
+    focos = pacientes_con_promedio.filter(promedio_animo__lt=2.5).count()
+    
+    # Citas para calendario (próximos 60 días)
+    fecha_limite = hoy + timezone.timedelta(days=60)
+    inicio_calendario = hoy - timezone.timedelta(days=30)
+    
+    # 🚀 OPTIMIZACIÓN: select_related evita cargar al paciente y al doctor en cientos de consultas extra.
+    citas_calendario = Cita.objects.filter(
+        fecha__gte=inicio_calendario, fecha__lte=fecha_limite
+    ).select_related('psicologo__usuario', 'paciente')
+    
+    citas_json = []
+    for c in citas_calendario:
+        nombre_pac = f"{c.paciente.first_name} {c.paciente.last_name}" if c.paciente.first_name else c.paciente.username
+        citas_json.append({
+            'title': nombre_pac,
+            'start': f"{c.fecha.isoformat()}T{c.hora.strftime('%H:%M:%S')}",
+            'end': f"{c.fecha.isoformat()}T{(c.hora.hour+1):02d}:{c.hora.minute:02d}:00",
+            'extendedProps': {
+                'psicologo': c.psicologo.usuario.first_name if c.psicologo else 'Sin asignar',
+                'estado': c.estado,
+                'modalidad': c.modalidad
+            }
+        })
+    
+    return JsonResponse({
+        'total_pacientes': total_pacientes,
+        'total_doctores': total_doctores,
+        'citas_hoy': citas_hoy,
+        'citas_totales': citas_totales,
+        'nuevos_semana': nuevos_semana,
+        'completadas_mes': completadas_mes,
+        'canceladas_mes': canceladas_mes,
+        'talleres_activos': talleres_activos,
+        'focos_rojos': focos,
+        'citas_json': citas_json,
+    })
+
+
+def calcular_animo_promedio(perfil_paciente):
+    valores = {'Muy mal': 1, 'Triste': 2, 'Normal': 3, 'Bien': 4, 'Excelente': 5}
+    suma = 0
+    count = 0
+    
+    # 🚀 OPTIMIZACIÓN: Si las citas ya fueron pre-cargadas (Prefetch), úsalas desde la RAM
+    if hasattr(perfil_paciente.usuario, 'citas_precargadas'):
+        citas = perfil_paciente.usuario.citas_precargadas
+    else:
+        citas = Cita.objects.filter(paciente=perfil_paciente.usuario).exclude(estado='Cancelada')
+        
+    for c in citas:
+        if c.estado_animo in valores:
+            suma += valores[c.estado_animo]
+            count += 1
+            
+    if count == 0:
+        return {'texto': 'Sin registro', 'icono': 'fas fa-minus', 'color': '#cbd5e1'}
+    promedio = round(suma / count)
+    texto = {1:'Muy mal',2:'Triste',3:'Normal',4:'Bien',5:'Excelente'}[promedio]
+    icono = {'Muy mal':'fas fa-sad-cry','Triste':'fas fa-frown','Normal':'fas fa-meh','Bien':'fas fa-smile','Excelente':'fas fa-grin-stars'}[texto]
+    color = {'Muy mal':'#ef4444','Triste':'#f97316','Normal':'#64748b','Bien':'#10b981','Excelente':'#B5992D'}[texto]
+    return {'texto': texto, 'icono': icono, 'color': color}
+
+
+
+
+
+
+
+
 def es_admin(user):
     return user.is_superuser
 
@@ -1071,36 +1229,34 @@ def es_admin(user):
 def panel_admin(request):
     hoy = timezone.now().date()
     
-    # 1. Estadísticas Generales (Métricas de Impacto)
     total_pacientes = UsuarioPerfil.objects.filter(es_psicologo=False).count()
     total_doctores = PerfilPsicologo.objects.filter(esta_activo=True).count()
     citas_hoy = Cita.objects.filter(fecha=hoy).exclude(estado='Cancelada').count()
     citas_totales = Cita.objects.exclude(estado='Cancelada').count()
 
-    # 2. Rendimiento por Doctor (Capacidad del Equipo Médico y Barra de Energía)
     doctores_data = []
-    doctores = PerfilPsicologo.objects.all()
+    # 🚀 OPTIMIZACIÓN: Precargamos usuarios de doctores
+    doctores = PerfilPsicologo.objects.all().select_related('usuario')
     for doc in doctores:
         pacientes_activos = doc.pacientes_asignados.count()
         citas_doc_hoy = Cita.objects.filter(psicologo=doc, fecha=hoy).exclude(estado='Cancelada').count()
         citas_doc_total = Cita.objects.filter(psicologo=doc).exclude(estado='Cancelada').count()
         
-        # 🧠 Lógica de la Batería (Barra de Capacidad)
         capacidad_maxima = 20
         porcentaje_carga = min(int((pacientes_activos / capacidad_maxima) * 100), 100) if pacientes_activos > 0 else 0
 
         estado_carga = "Equilibrada"
-        color_carga = "#10b981" # Verde
+        color_carga = "#10b981" 
         
         if pacientes_activos >= 16: 
             estado_carga = "Sobrecarga"
-            color_carga = "#ef4444" # Rojo
+            color_carga = "#ef4444" 
         elif pacientes_activos >= 12:
             estado_carga = "Carga Alta"
-            color_carga = "#f59e0b" # Naranja
+            color_carga = "#f59e0b" 
         elif pacientes_activos == 0: 
             estado_carga = "Disponible"
-            color_carga = "#94a3b8" # Gris
+            color_carga = "#94a3b8" 
 
         doctores_data.append({
             'nombre': doc.usuario.first_name,
@@ -1113,15 +1269,21 @@ def panel_admin(request):
             'porcentaje_carga': porcentaje_carga
         })
 
-    # 3. Listado de Pacientes (Monitoreo de Estado de Ánimo PROMEDIO)
-    pacientes_recientes = UsuarioPerfil.objects.filter(es_psicologo=False).order_by('-id')[:20]
+    # 🚀 OPTIMIZACIÓN: Evitamos ir a la DB en cada vuelta del ciclo.
+    # Usamos prefetch_related para meter todas las citas válidas de los pacientes en la memoria RAM de un solo jalón.
+    pacientes_recientes = UsuarioPerfil.objects.filter(es_psicologo=False).select_related(
+        'usuario', 'psicologo_asignado__usuario'
+    ).prefetch_related(
+        Prefetch('usuario__citas_como_paciente', queryset=Cita.objects.exclude(estado='Cancelada'), to_attr='citas_precargadas')
+    ).order_by('-id')[:20]
+    
     pacientes_data = []
     for pac in pacientes_recientes:
         if pac.usuario:
-            citas_paciente = Cita.objects.filter(paciente=pac.usuario).exclude(estado='Cancelada')
-            total_sesiones = citas_paciente.count()
+            # Ahora esto lee desde la RAM, no desde la Base de Datos
+            citas_paciente = pac.usuario.citas_precargadas 
+            total_sesiones = len(citas_paciente)
             
-            # 🧠 LÓGICA DE PROMEDIO DE ESTADO DE ÁNIMO
             valores_animo = {'Muy mal': 1, 'Triste': 2, 'Normal': 3, 'Bien': 4, 'Excelente': 5}
             textos_animo = {1: 'Muy mal', 2: 'Triste', 3: 'Normal', 4: 'Bien', 5: 'Excelente'}
             
@@ -1133,7 +1295,6 @@ def panel_admin(request):
                     suma_animo += valores_animo[cita.estado_animo]
                     sesiones_validas += 1
             
-            # Calculamos el promedio si hay sesiones válidas
             if sesiones_validas > 0:
                 promedio_num = round(suma_animo / sesiones_validas)
                 animo_actual = textos_animo.get(promedio_num, "Normal")
@@ -1145,26 +1306,18 @@ def panel_admin(request):
             
         doctor_nombre = pac.psicologo_asignado.usuario.first_name if pac.psicologo_asignado else 'Pendiente'
         
-        # Inteligencia: Asignar icono y color según el estado de ánimo PROMEDIO
         if animo_actual == "Muy mal":
-            icono_animo = "fas fa-sad-cry"
-            color_animo = "#ef4444" # Rojo alerta
+            icono_animo, color_animo = "fas fa-sad-cry", "#ef4444"
         elif animo_actual == "Triste":
-            icono_animo = "fas fa-frown"
-            color_animo = "#f97316" # Naranja
+            icono_animo, color_animo = "fas fa-frown", "#f97316"
         elif animo_actual == "Normal":
-            icono_animo = "fas fa-meh"
-            color_animo = "#64748b" # Gris azulado
+            icono_animo, color_animo = "fas fa-meh", "#64748b"
         elif animo_actual == "Bien":
-            icono_animo = "fas fa-smile"
-            color_animo = "#10b981" # Verde
+            icono_animo, color_animo = "fas fa-smile", "#10b981"
         elif animo_actual == "Excelente":
-            icono_animo = "fas fa-grin-stars"
-            color_animo = "#B5992D" # Dorado
+            icono_animo, color_animo = "fas fa-grin-stars", "#B5992D"
         else:
-            animo_actual = "Sin registro"
-            icono_animo = "fas fa-minus"
-            color_animo = "#cbd5e1" # Gris claro
+            icono_animo, color_animo = "fas fa-minus", "#cbd5e1"
 
         pacientes_data.append({
             'nombre': pac.nombre,
@@ -1176,6 +1329,51 @@ def panel_admin(request):
             'color_animo': color_animo
         })
 
+    # Citas para el calendario inicial
+    fecha_limite = hoy + timezone.timedelta(days=60)
+    inicio_calendario = hoy - timezone.timedelta(days=30)
+    citas_calendario = Cita.objects.filter(
+        fecha__gte=inicio_calendario, fecha__lte=fecha_limite
+    ).select_related('psicologo__usuario', 'paciente')
+    
+    citas_json = []
+    for c in citas_calendario:
+        nombre_pac = f"{c.paciente.first_name} {c.paciente.last_name}" if c.paciente.first_name else c.paciente.username
+        citas_json.append({
+            'title': nombre_pac,
+            'start': f"{c.fecha.isoformat()}T{c.hora.strftime('%H:%M:%S')}",
+            'end': f"{c.fecha.isoformat()}T{(c.hora.hour+1):02d}:{c.hora.minute:02d}:00",
+            'extendedProps': {
+                'psicologo': c.psicologo.usuario.first_name if c.psicologo else 'Sin asignar',
+                'estado': c.estado,
+                'modalidad': c.modalidad
+            }
+        })
+
+    # 🚀 OPTIMIZACIÓN: Los mismos Focos Rojos matemáticos en una sola consulta
+    pacientes_con_promedio = UsuarioPerfil.objects.filter(es_psicologo=False).annotate(
+        promedio_animo=Avg(
+            Case(
+                When(usuario__citas_como_paciente__estado_animo='Muy mal', then=Value(1)),
+                When(usuario__citas_como_paciente__estado_animo='Triste', then=Value(2)),
+                When(usuario__citas_como_paciente__estado_animo='Normal', then=Value(3)),
+                When(usuario__citas_como_paciente__estado_animo='Bien', then=Value(4)),
+                When(usuario__citas_como_paciente__estado_animo='Excelente', then=Value(5)),
+                output_field=IntegerField(),
+            ),
+            filter=~Q(usuario__citas_como_paciente__estado='Cancelada')
+        )
+    )
+    focos = pacientes_con_promedio.filter(promedio_animo__lt=2.5).count()
+
+    extra_stats = {
+        'nuevos_semana': UsuarioPerfil.objects.filter(es_psicologo=False, usuario__date_joined__date__gte=(hoy - timezone.timedelta(days=hoy.weekday()))).count(),
+        'completadas_mes': Cita.objects.filter(fecha__gte=hoy.replace(day=1), estado='Completada').count(),
+        'canceladas_mes': Cita.objects.filter(fecha__gte=hoy.replace(day=1), estado='Cancelada').count(),
+        'talleres_activos': Taller.objects.filter(fecha__gte=hoy).count(),
+        'focos_rojos': focos,
+    }
+
     context = {
         'total_pacientes': total_pacientes,
         'total_doctores': total_doctores,
@@ -1183,13 +1381,15 @@ def panel_admin(request):
         'citas_totales': citas_totales,
         'doctores': doctores_data,
         'pacientes': pacientes_data,
-        'hoy': hoy
+        'hoy': hoy,
+        'citas_json': json.dumps(citas_json),
+        'extra_stats_json': json.dumps(extra_stats),
     }
+    
     return render(request, 'panel_admin.html', context)
 
 
-
-
+    
 # Etiquetas y emojis por mood
 MOOD_META = {
     'triste':    {'label': 'Triste 😔',    'emoji': '😔'},

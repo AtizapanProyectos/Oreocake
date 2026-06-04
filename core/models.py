@@ -228,3 +228,56 @@ class DiaLibrePsicologo(models.Model):
 
     def __str__(self):
         return f"{self.psicologo.usuario.first_name} - {self.fecha}"
+
+
+# ============================================================
+# NUEVOS MODELOS PARA PANEL ADMIN (Inteligencia Operativa)
+# ============================================================
+
+class NotificacionSistema(models.Model):
+    TIPO_CHOICES = [
+        ('nueva_cita', 'Nueva cita agendada'),
+        ('cancelacion', 'Cita cancelada'),
+        ('foco_rojo', 'Foco rojo detectado'),
+        ('recordatorio', 'Recordatorio'),
+    ]
+    tipo = models.CharField(max_length=50, choices=TIPO_CHOICES)
+    titulo = models.CharField(max_length=200)
+    mensaje = models.TextField()
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+    leida = models.BooleanField(default=False)
+    destinatarios = models.ManyToManyField(User, related_name='notificaciones_recibidas', blank=True)
+
+    def __str__(self):
+        return f"{self.tipo} - {self.fecha_creacion.strftime('%d/%m %H:%M')}"
+
+
+class MetricaDiaria(models.Model):
+    fecha = models.DateField(unique=True)
+    nuevos_pacientes_semana = models.PositiveIntegerField(default=0)
+    citas_completadas_mes = models.PositiveIntegerField(default=0)
+    citas_canceladas_mes = models.PositiveIntegerField(default=0)
+    talleres_activos = models.PositiveIntegerField(default=0)
+    focos_rojos_activos = models.PositiveIntegerField(default=0)
+
+    def __str__(self):
+        return f"Métrica {self.fecha}"
+
+
+class EventoAuditoria(models.Model):
+    usuario = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    accion = models.CharField(max_length=100)
+    detalles = models.JSONField(default=dict)
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.timestamp} - {self.usuario} - {self.accion}"
+
+
+class PreferenciasUsuario(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='preferencias_notif')
+    notificaciones_activadas = models.BooleanField(default=False)
+    ultima_conexion = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.user.username} - Notif: {self.notificaciones_activadas}"
