@@ -1,624 +1,1646 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Panel de Terapeuta - HOPE{% endblock %}
+{% block title %}Panel de Terapeuta — HOPE{% endblock %}
 
 {% block content %}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js'></script>
 
 <style>
-    /* ==========================================================================
-       IMPORTACIÓN DE FUENTES (ARREGLO PARA RAILWAY)
-       ========================================================================== */
-    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700;900&family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap');
+/* =====================================================
+   HOPE — PANEL TERAPEUTA V2 · DISEÑO PREMIUM
+   Paleta: Purple #5A3FA3 · Pink #F85B8C · Orange #F27C21 · Teal #25B8B8
+   ===================================================== */
 
-    /* ==========================================================================
-       VARIABLES Y RESET (NUEVA PALETA SÓLIDA HOPE)
-       ========================================================================== */
-    :root {
-        --c-purple: #5A3FA3;
-        --c-pink: #F85B8C;
-        --c-orange: #F27C21;
-        --c-yellow: #F8D33D;
-        --c-teal: #25B8B8;
-        
-        --text-main: #0f0f0f;
-        --text-muted: #64748b;
-        --bg-dashboard: #f8fafc; /* Gris ultraclaro muy elegante */
-        --border-soft: #f1f5f9;
-        
-        --font-headings: 'Outfit', sans-serif;
-        --font-body: 'Plus Jakarta Sans', sans-serif;
-    }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-    body { background-color: var(--bg-dashboard); color: var(--text-main); font-family: var(--font-body); }
+:root {
+  --p: #5A3FA3;
+  --p-light: #EDE9FF;
+  --p-mid: #8B72D4;
+  --pink: #F85B8C;
+  --pink-light: #FFF0F5;
+  --orange: #F27C21;
+  --orange-light: #FFF5EC;
+  --teal: #25B8B8;
+  --teal-light: #E8FAFA;
+  --yellow: #F8D33D;
 
-    /* ==========================================================================
-       ESTRUCTURA DASHBOARD (BENTO GRID FRANCÉS)
-       ========================================================================== */
-    .dashboard-wrapper {
-        padding: 40px 20px 100px;
-        max-width: 1400px;
-        margin: 0 auto;
-    }
+  --ink: #0D0D18;
+  --ink-2: #3D3D55;
+  --ink-3: #7A7A99;
+  --ink-4: #B8B8CC;
+  --surface: #F6F4FF;
+  --white: #FFFFFF;
+  --card-border: rgba(90,63,163,0.08);
 
-    /* Cabecera Elegante */
-    .dash-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-end;
-        margin-bottom: 40px;
-        border-bottom: 1px solid var(--border-soft);
-        padding-bottom: 25px;
-        position: relative;
-    }
+  --font-display: 'DM Serif Display', serif;
+  --font-head: 'Syne', sans-serif;
+  --font-body: 'DM Sans', sans-serif;
 
-    .dash-title {
-        font-family: var(--font-headings);
-        color: var(--c-purple);
-        font-size: 42px;
-        margin: 0 0 5px 0;
-        font-weight: 800;
-        letter-spacing: -0.5px;
-    }
+  --r-sm: 14px;
+  --r-md: 20px;
+  --r-lg: 28px;
+  --r-xl: 36px;
 
-    .dash-subtitle {
-        color: var(--text-muted);
-        font-size: 16px;
-        margin: 0;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-    }
+  --shadow-card: 0 2px 20px rgba(90,63,163,0.06), 0 1px 4px rgba(90,63,163,0.04);
+  --shadow-hover: 0 10px 40px rgba(90,63,163,0.12), 0 2px 8px rgba(90,63,163,0.06);
+  --shadow-float: 0 20px 60px rgba(90,63,163,0.16);
+}
 
-    /* Tarjetas Premium */
-    .bento-card {
-        background: #ffffff;
-        border-radius: 24px;
-        padding: 30px;
-        border: 1px solid var(--border-soft);
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.015);
-        transition: transform 0.3s ease, box-shadow 0.3s ease;
-        position: relative;
-        overflow: hidden;
-    }
-    .bento-card:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 12px 30px rgba(90, 63, 163, 0.08); /* Sombra morada suave */
-    }
+html { scroll-behavior: smooth; }
 
-    /* Botánica Discreta */
-    .botanical-icon { color: var(--c-teal); opacity: 0.8; }
-    .leaf-watermark {
-        position: absolute; right: -20px; bottom: -20px;
-        font-size: 150px; color: var(--c-purple); opacity: 0.03;
-        transform: rotate(-15deg); pointer-events: none;
-    }
+body {
+  background: var(--surface);
+  background-image:
+    radial-gradient(ellipse 80% 50% at 20% -10%, rgba(90,63,163,0.06) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 80% 100%, rgba(37,184,184,0.04) 0%, transparent 50%);
+  color: var(--ink);
+  font-family: var(--font-body);
+  min-height: 100vh;
+}
 
-    /* ==========================================================================
-       TABS TIPO SEGMENTED CONTROL (APPLE STYLE)
-       ========================================================================== */
-    .tabs-nav {
-        display: inline-flex;
-        background: #ffffff;
-        padding: 6px;
-        border-radius: 100px;
-        border: 1px solid var(--border-soft);
-        box-shadow: 0 2px 10px rgba(0,0,0,0.01);
-        margin-bottom: 30px;
-        gap: 5px;
-    }
+/* =====================================================
+   LAYOUT PRINCIPAL
+   ===================================================== */
+.hope-wrap {
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: 36px 24px 120px;
+}
 
-    .tab-btn {
-        padding: 12px 24px;
-        border-radius: 100px;
-        font-family: var(--font-headings);
-        font-size: 15px;
-        font-weight: 700;
-        background: transparent;
-        border: none;
-        color: var(--text-muted);
-        cursor: pointer;
-        transition: all 0.3s ease;
-    }
-    .tab-btn:hover { color: var(--c-purple); }
-    .tab-btn.active {
-        background: var(--c-purple);
-        color: white;
-        box-shadow: 0 4px 12px rgba(90, 63, 163, 0.3);
-    }
+/* =====================================================
+   HEADER — IDENTIDAD + SALUDO
+   ===================================================== */
+.hope-header {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 24px;
+  margin-bottom: 44px;
+  position: relative;
+}
 
-    .tab-content { display: none; animation: fadeInElegant 0.4s ease forwards; }
-    .tab-content.active { display: block; }
-    @keyframes fadeInElegant { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+.hope-header::after {
+  content: '';
+  position: absolute;
+  bottom: -22px;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, var(--p-light) 0%, transparent 100%);
+}
 
-    /* ==========================================================================
-       LISTADO DE AGENDA (CLEAN ROW STYLE)
-       ========================================================================== */
-    .agenda-row {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 20px 0;
-        border-bottom: 1px solid var(--border-soft);
-    }
-    .agenda-row:last-child { border-bottom: none; }
-    
-    .time-badge-clean {
-        font-family: var(--font-headings);
-        font-size: 24px;
-        color: var(--c-orange);
-        font-weight: 800;
-        min-width: 100px;
-    }
+.header-identity {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
 
-    .btn-minimal {
-        padding: 10px 20px; border-radius: 12px; font-weight: 700; font-size: 14px;
-        font-family: var(--font-headings); letter-spacing: 0.5px;
-        cursor: pointer; transition: 0.2s; display: inline-flex; align-items: center; gap: 8px; border: 1px solid transparent; text-decoration: none;
-    }
-    
-    /* Botones Sólidos y Claros */
-    .btn-minimal-primary { background: #f3e8ff; color: var(--c-purple); }
-    .btn-minimal-primary:hover { background: var(--c-purple); color: white; }
-    
-    .btn-minimal-video { background: var(--c-pink); color: white; }
-    .btn-minimal-video:hover { background: var(--c-orange); box-shadow: 0 4px 12px rgba(242, 124, 33, 0.3); }
+.avatar-ring {
+  position: relative;
+  flex-shrink: 0;
+  cursor: pointer;
+}
 
-    /* ==========================================================================
-       GRID DIRECTORIO Y TALLERES
-       ========================================================================== */
-    .bento-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 25px; }
-    
-    .avatar-clean {
-        width: 60px; height: 60px; border-radius: 16px; background: #f3e8ff; color: var(--c-purple);
-        display: flex; align-items: center; justify-content: center; font-family: var(--font-headings);
-        font-size: 26px; font-weight: 800; margin-bottom: 15px; border: 1px solid #e9d5ff;
-    }
+.avatar-ring::before {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  background: conic-gradient(var(--p), var(--pink), var(--teal), var(--p));
+  z-index: 0;
+  animation: spin-ring 8s linear infinite;
+}
 
-    .tag-clean {
-        font-size: 11px; text-transform: uppercase; letter-spacing: 1px; font-weight: 800; font-family: var(--font-headings);
-        padding: 6px 12px; border-radius: 8px; display: inline-block; margin-bottom: 10px;
-    }
-    .tag-purple { background: #f3e8ff; color: var(--c-purple); }
-    .tag-orange { background: #fffaf0; color: var(--c-orange); }
+@keyframes spin-ring {
+  to { transform: rotate(360deg); }
+}
 
-    /* Empty States */
-    .empty-box { text-align: center; padding: 60px 20px; }
-    .empty-icon { font-size: 48px; color: #e2e8f0; margin-bottom: 20px; }
+.avatar-ring img {
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  object-fit: cover;
+  position: relative;
+  z-index: 1;
+  border: 3px solid var(--white);
+  display: block;
+}
 
-    /* FullCalendar Ajustes */
-    .fc { font-family: var(--font-body); }
-    .fc-theme-standard td, .fc-theme-standard th { border-color: var(--border-soft); }
-    .fc-toolbar-title { font-family: var(--font-headings) !important; font-weight: 700; color: var(--c-purple); }
-    .fc-button-primary { background-color: var(--c-purple) !important; border-radius: 12px !important; border: none !important; font-family: var(--font-headings); font-weight: 700; transition: 0.3s; }
-    .fc-button-primary:hover { background-color: var(--c-orange) !important; }
+.avatar-badge {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  z-index: 2;
+  background: var(--pink);
+  color: white;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 2px solid var(--white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  cursor: pointer;
+}
 
-    /* ==========================================================================
-       EXPEDIENTE MAESTRO (MODAL MANTENIDO)
-       ========================================================================== */
-    .expediente-modal { background: #ffffff; width: 100%; max-width: 1200px; padding: 0; border-radius: 30px; overflow: hidden; display: flex; flex-direction: column; max-height: 90vh; box-shadow: 0 40px 100px rgba(15, 23, 42, 0.15); position: relative; }
-    .exp-header { padding: 30px 40px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #f1f5f9; background: #fff;}
-    .exp-body { display: flex; flex: 1; overflow: hidden; background: #fafcff; }
-    .exp-sidebar { width: 280px; background: #ffffff; border-right: 1px solid #f1f5f9; padding: 30px 20px; display: flex; flex-direction: column; gap: 5px; }
-    
-    .exp-tab-btn { width: 100%; text-align: left; padding: 14px 20px; background: transparent; border: none; font-size: 14px; font-family: var(--font-headings); font-weight: 700; color: var(--text-muted); cursor: pointer; border-radius: 12px; transition: 0.3s; display: flex; align-items: center; gap: 10px; }
-    .exp-tab-btn:hover { background: #f8fafc; color: var(--c-purple); }
-    .exp-tab-btn.active { background: #f3e8ff; color: var(--c-purple); }
-    
-    .exp-content-area { flex: 1; padding: 40px; overflow-y: auto; text-align: left; }
-    .clin-textarea { width: 100%; border: 2px solid #e2e8f0; border-radius: 16px; padding: 20px; font-family: var(--font-body); font-size: 15px; resize: vertical; min-height: 140px; margin-bottom: 20px; background: #fafafa; transition: 0.3s; line-height: 1.6; }
-    .clin-textarea:focus { outline: none; border-color: var(--c-purple); background: white; box-shadow: 0 0 0 4px rgba(90, 63, 163, 0.1); }
-    
-    /* Alertas en Rosa de la marca */
-    .rojo-alert { border-color: #fbcfe8 !important; background: #fdf2f8; color: var(--c-pink); }
-    .rojo-alert:focus { border-color: var(--c-pink) !important; box-shadow: 0 0 0 4px rgba(248, 91, 140, 0.1); }
-    
-    .label-elegant { font-weight: 800; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; display: block; margin-bottom: 10px; color: var(--text-muted); }
+.header-text { flex: 1; }
 
-    @media (max-width: 768px) {
-        .dash-header { flex-direction: column; align-items: flex-start; gap: 20px; }
-        .agenda-row { flex-direction: column; align-items: flex-start; gap: 15px; }
-        .exp-body { flex-direction: column; }
-        .exp-sidebar { width: 100%; flex-direction: row; overflow-x: auto; border-bottom: 1px solid #f1f5f9; padding: 10px; }
-        .exp-tab-btn { white-space: nowrap; }
-    }
+.header-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--p-light);
+  color: var(--p);
+  font-family: var(--font-head);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  padding: 5px 12px;
+  border-radius: 100px;
+  margin-bottom: 8px;
+}
+
+.header-name {
+  font-family: var(--font-display);
+  font-size: clamp(26px, 4vw, 40px);
+  color: var(--ink);
+  line-height: 1.1;
+  margin-bottom: 6px;
+}
+
+.header-name em {
+  font-style: italic;
+  color: var(--p);
+}
+
+.header-phrase {
+  color: var(--ink-3);
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.header-phrase i { color: var(--teal); font-size: 13px; }
+
+/* Citas hoy — contador derecha */
+.header-counter {
+  text-align: center;
+  background: var(--white);
+  border: 1px solid var(--card-border);
+  border-radius: var(--r-lg);
+  padding: 20px 28px;
+  box-shadow: var(--shadow-card);
+  flex-shrink: 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.header-counter::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--orange), var(--pink));
+}
+
+.counter-label {
+  font-family: var(--font-head);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--ink-3);
+  margin-bottom: 4px;
+}
+
+.counter-num {
+  font-family: var(--font-display);
+  font-size: 52px;
+  color: var(--orange);
+  line-height: 1;
+}
+
+.counter-sub {
+  font-size: 12px;
+  color: var(--ink-4);
+  margin-top: 2px;
+}
+
+/* =====================================================
+   TABS — PILL NAVIGATION
+   ===================================================== */
+.hope-tabs {
+  display: flex;
+  background: var(--white);
+  border-radius: 100px;
+  border: 1px solid var(--card-border);
+  padding: 5px;
+  margin-bottom: 32px;
+  gap: 4px;
+  box-shadow: var(--shadow-card);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.hope-tabs::-webkit-scrollbar { display: none; }
+
+.htab {
+  white-space: nowrap;
+  padding: 11px 22px;
+  border-radius: 100px;
+  font-family: var(--font-head);
+  font-size: 14px;
+  font-weight: 700;
+  background: transparent;
+  border: none;
+  color: var(--ink-3);
+  cursor: pointer;
+  transition: all 0.25s ease;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.htab i { font-size: 15px; }
+
+.htab:hover { color: var(--p); background: var(--p-light); }
+
+.htab.active {
+  background: var(--p);
+  color: white;
+  box-shadow: 0 4px 16px rgba(90,63,163,0.35);
+}
+
+/* =====================================================
+   CARDS BASE
+   ===================================================== */
+.h-card {
+  background: var(--white);
+  border-radius: var(--r-xl);
+  border: 1px solid var(--card-border);
+  box-shadow: var(--shadow-card);
+  transition: transform 0.28s ease, box-shadow 0.28s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.h-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-hover);
+}
+
+.h-card-inner { padding: 28px 32px; }
+
+@media (max-width: 640px) {
+  .h-card-inner { padding: 20px; }
+}
+
+.card-accent-line {
+  height: 4px;
+  width: 100%;
+  background: linear-gradient(90deg, var(--p), var(--teal));
+  border-radius: var(--r-xl) var(--r-xl) 0 0;
+}
+
+/* =====================================================
+   TAB CONTENT
+   ===================================================== */
+.hpane { display: none; animation: fadeUp 0.35s ease both; }
+.hpane.active { display: block; }
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* =====================================================
+   AGENDA — LISTA DE CITAS
+   ===================================================== */
+.agenda-title {
+  font-family: var(--font-head);
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--ink-3);
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.agenda-title::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--card-border);
+}
+
+/* Fila cita */
+.cita-row {
+  display: grid;
+  grid-template-columns: 90px 1fr auto;
+  align-items: center;
+  gap: 20px;
+  padding: 20px 0;
+  border-bottom: 1px solid rgba(90,63,163,0.06);
+  transition: background 0.2s;
+}
+
+.cita-row:last-child { border-bottom: none; }
+
+@media (max-width: 640px) {
+  .cita-row {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    padding: 16px 0;
+  }
+}
+
+.cita-time {
+  font-family: var(--font-display);
+  font-size: 30px;
+  color: var(--orange);
+  line-height: 1;
+  font-weight: 700;
+}
+
+.cita-info { min-width: 0; }
+
+.cita-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 7px;
+}
+
+.ctag {
+  font-family: var(--font-head);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  padding: 4px 10px;
+  border-radius: 100px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.ctag-purple { background: var(--p-light); color: var(--p); }
+.ctag-teal { background: var(--teal-light); color: var(--teal); }
+.ctag-orange { background: var(--orange-light); color: var(--orange); }
+.ctag-pink { background: var(--pink-light); color: var(--pink); }
+.ctag-blue { background: #EEF6FF; color: #1D6FCC; }
+
+.cita-name {
+  font-family: var(--font-head);
+  font-size: 19px;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cita-motivo {
+  font-size: 13px;
+  color: var(--ink-3);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cita-motivo i { color: var(--teal); }
+
+.cita-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-end;
+}
+
+@media (max-width: 640px) {
+  .cita-actions { flex-direction: row; align-items: center; }
+}
+
+/* Fila taller grupal */
+.taller-row {
+  background: linear-gradient(135deg, var(--orange-light) 0%, rgba(255,255,255,0) 60%);
+  border: 1px dashed rgba(242,124,33,0.25);
+  border-radius: var(--r-md);
+  padding: 20px;
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: 90px 1fr auto;
+  align-items: center;
+  gap: 20px;
+}
+
+@media (max-width: 640px) {
+  .taller-row { grid-template-columns: 1fr; gap: 12px; }
+}
+
+/* =====================================================
+   BOTONES
+   ===================================================== */
+.hbtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 10px 18px;
+  border-radius: 12px;
+  font-family: var(--font-head);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  cursor: pointer;
+  border: none;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.hbtn i { font-size: 14px; }
+
+.hbtn-ghost {
+  background: var(--p-light);
+  color: var(--p);
+}
+
+.hbtn-ghost:hover {
+  background: var(--p);
+  color: white;
+  box-shadow: 0 4px 14px rgba(90,63,163,0.3);
+  transform: translateY(-1px);
+}
+
+.hbtn-video {
+  background: var(--pink);
+  color: white;
+}
+
+.hbtn-video:hover {
+  background: var(--orange);
+  box-shadow: 0 4px 14px rgba(242,124,33,0.35);
+  transform: translateY(-1px);
+}
+
+.hbtn-teal {
+  background: var(--teal);
+  color: white;
+}
+
+.hbtn-teal:hover {
+  background: #1D9898;
+  box-shadow: 0 4px 14px rgba(37,184,184,0.3);
+  transform: translateY(-1px);
+}
+
+.hbtn-orange {
+  background: var(--orange);
+  color: white;
+}
+
+.hbtn-orange:hover {
+  box-shadow: 0 4px 14px rgba(242,124,33,0.35);
+  transform: translateY(-1px);
+}
+
+.hbtn-sm { padding: 7px 13px; font-size: 12px; border-radius: 10px; }
+.hbtn-full { width: 100%; }
+
+.pill-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #f1f5f9;
+  color: var(--ink-3);
+  border: 1px solid #e2e8f0;
+  font-family: var(--font-head);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 8px 14px;
+  border-radius: 12px;
+}
+
+/* =====================================================
+   EMPTY STATE
+   ===================================================== */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 70px 20px;
+  text-align: center;
+  gap: 12px;
+}
+
+.empty-icon-ring {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: var(--p-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 34px;
+  color: var(--p-mid);
+  margin-bottom: 8px;
+}
+
+.empty-title {
+  font-family: var(--font-head);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.empty-sub {
+  font-size: 14px;
+  color: var(--ink-3);
+  max-width: 320px;
+}
+
+/* =====================================================
+   PACIENTES GRID
+   ===================================================== */
+.pac-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+@media (max-width: 640px) {
+  .pac-grid { grid-template-columns: 1fr; }
+}
+
+.pac-card {
+  background: var(--white);
+  border-radius: var(--r-lg);
+  border: 1px solid var(--card-border);
+  box-shadow: var(--shadow-card);
+  padding: 24px;
+  transition: transform 0.25s, box-shadow 0.25s;
+  position: relative;
+  overflow: hidden;
+}
+
+.pac-card::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--p-light), var(--p));
+  opacity: 0;
+  transition: opacity 0.25s;
+}
+
+.pac-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-hover); }
+.pac-card:hover::after { opacity: 1; }
+
+.pac-avatar {
+  width: 54px;
+  height: 54px;
+  border-radius: 16px;
+  background: var(--p-light);
+  color: var(--p);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-head);
+  font-size: 22px;
+  font-weight: 800;
+  margin-bottom: 14px;
+  border: 2px solid rgba(90,63,163,0.12);
+}
+
+.pac-name {
+  font-family: var(--font-head);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 3px;
+}
+
+.pac-email {
+  font-size: 12px;
+  color: var(--ink-3);
+  margin-bottom: 16px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pac-stats {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.pac-divider {
+  border-top: 1px solid rgba(90,63,163,0.07);
+  padding-top: 18px;
+}
+
+/* =====================================================
+   TALLERES GRID
+   ===================================================== */
+.talleres-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+@media (max-width: 640px) {
+  .talleres-grid { grid-template-columns: 1fr; }
+}
+
+.taller-card {
+  background: var(--white);
+  border-radius: var(--r-lg);
+  border: 1px solid var(--card-border);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+  transition: transform 0.25s, box-shadow 0.25s;
+}
+
+.taller-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-hover); }
+
+.taller-card-head {
+  background: linear-gradient(135deg, var(--orange-light), rgba(255,255,255,0));
+  padding: 24px;
+  border-bottom: 1px solid rgba(242,124,33,0.1);
+}
+
+.taller-card-body { padding: 20px 24px; }
+
+.taller-name {
+  font-family: var(--font-head);
+  font-size: 19px;
+  font-weight: 700;
+  color: var(--ink);
+  margin: 10px 0 12px;
+  line-height: 1.3;
+}
+
+.taller-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--ink-3);
+}
+
+.taller-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.taller-meta-row i { color: var(--teal); font-size: 14px; width: 16px; }
+
+/* =====================================================
+   CALENDARIO
+   ===================================================== */
+.fc { font-family: var(--font-body); }
+.fc-theme-standard td, .fc-theme-standard th { border-color: rgba(90,63,163,0.06); }
+.fc-toolbar-title { font-family: var(--font-head) !important; font-weight: 700; color: var(--p); font-size: 20px !important; }
+.fc-button-primary { background-color: var(--p) !important; border: none !important; border-radius: 12px !important; font-family: var(--font-head); font-weight: 600; font-size: 13px !important; padding: 8px 16px !important; transition: all 0.2s; }
+.fc-button-primary:hover { background-color: var(--p-mid) !important; box-shadow: 0 4px 14px rgba(90,63,163,0.3) !important; }
+.fc-button-primary:not(:disabled):active { background-color: var(--p) !important; }
+.fc-daygrid-event { border-radius: 8px; font-size: 12px; padding: 2px 6px; border: none !important; font-family: var(--font-head); font-weight: 600; }
+.fc-event-main { padding: 2px; }
+
+/* =====================================================
+   MODALES GENERALES
+   ===================================================== */
+.hope-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(13,13,24,0.65);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  z-index: 9000;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  overflow-y: auto;
+}
+
+.hope-overlay.open { display: flex; }
+
+/* Modal CV */
+.modal-cv {
+  background: var(--white);
+  border-radius: var(--r-xl);
+  width: 100%;
+  max-width: 420px;
+  box-shadow: var(--shadow-float);
+  animation: modalPop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  position: relative;
+  overflow: hidden;
+}
+
+.modal-cv-top {
+  background: linear-gradient(135deg, var(--p-light) 0%, rgba(255,255,255,0) 60%);
+  padding: 40px 32px 30px;
+  text-align: center;
+  border-bottom: 1px solid rgba(90,63,163,0.08);
+}
+
+.modal-cv-body { padding: 24px 32px 32px; }
+
+@keyframes modalPop {
+  from { opacity: 0; transform: scale(0.9) translateY(20px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.modal-close-btn {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.06);
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink-3);
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.modal-close-btn:hover {
+  background: var(--pink);
+  color: white;
+}
+
+.info-field {
+  background: var(--surface);
+  border: 1px solid rgba(90,63,163,0.08);
+  border-radius: var(--r-md);
+  padding: 16px;
+  margin-bottom: 12px;
+}
+
+.info-field-label {
+  font-family: var(--font-head);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--ink-4);
+  margin-bottom: 4px;
+}
+
+.info-field-val {
+  font-size: 14px;
+  color: var(--ink);
+  line-height: 1.5;
+}
+
+/* Modal Expediente */
+.modal-exp {
+  background: var(--white);
+  border-radius: var(--r-xl);
+  width: 100%;
+  max-width: 1160px;
+  box-shadow: var(--shadow-float);
+  animation: modalPop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  display: flex;
+  flex-direction: column;
+  max-height: 90vh;
+  overflow: hidden;
+}
+
+.exp-head {
+  padding: 24px 32px;
+  border-bottom: 1px solid rgba(90,63,163,0.08);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-shrink: 0;
+}
+
+.exp-head-left { min-width: 0; }
+
+.exp-eyebrow {
+  font-family: var(--font-head);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--orange);
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.exp-title {
+  font-family: var(--font-display);
+  font-size: clamp(20px, 3vw, 28px);
+  color: var(--ink);
+}
+
+.exp-title em { font-style: italic; color: var(--p); }
+
+.exp-body {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+.exp-sidebar {
+  width: 240px;
+  flex-shrink: 0;
+  background: var(--surface);
+  border-right: 1px solid rgba(90,63,163,0.08);
+  padding: 20px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overflow-y: auto;
+}
+
+@media (max-width: 768px) {
+  .exp-body { flex-direction: column; }
+  .exp-sidebar {
+    width: 100%;
+    flex-direction: row;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 10px;
+    border-right: none;
+    border-bottom: 1px solid rgba(90,63,163,0.08);
+    flex-shrink: 0;
+  }
+}
+
+.exp-side-btn {
+  width: 100%;
+  text-align: left;
+  padding: 12px 16px;
+  background: transparent;
+  border: none;
+  font-family: var(--font-head);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink-3);
+  cursor: pointer;
+  border-radius: var(--r-sm);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.exp-side-btn i { font-size: 15px; }
+.exp-side-btn:hover { background: var(--p-light); color: var(--p); }
+.exp-side-btn.active { background: var(--p); color: white; box-shadow: 0 4px 12px rgba(90,63,163,0.3); }
+
+.exp-content {
+  flex: 1;
+  padding: 32px;
+  overflow-y: auto;
+}
+
+@media (max-width: 640px) {
+  .exp-content { padding: 20px; }
+}
+
+.exp-pane { display: none; animation: fadeUp 0.3s ease both; }
+.exp-pane.active { display: block; }
+
+.exp-section-title {
+  font-family: var(--font-head);
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.exp-section-title i { font-size: 20px; }
+
+.h-label {
+  font-family: var(--font-head);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--ink-3);
+  display: block;
+  margin-bottom: 8px;
+  margin-top: 18px;
+}
+
+.h-label:first-child { margin-top: 0; }
+
+.h-input {
+  width: 100%;
+  background: var(--surface);
+  border: 1.5px solid rgba(90,63,163,0.12);
+  border-radius: var(--r-md);
+  padding: 14px 18px;
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--ink);
+  resize: vertical;
+  line-height: 1.6;
+  transition: all 0.2s;
+}
+
+.h-input:focus {
+  outline: none;
+  border-color: var(--p);
+  background: white;
+  box-shadow: 0 0 0 4px rgba(90,63,163,0.1);
+}
+
+.h-input-danger {
+  border-color: rgba(248,91,140,0.3);
+  background: var(--pink-light);
+}
+
+.h-input-danger:focus {
+  border-color: var(--pink);
+  box-shadow: 0 0 0 4px rgba(248,91,140,0.1);
+}
+
+/* Bitácora */
+.bitacora-entry {
+  background: var(--white);
+  border: 1px solid rgba(90,63,163,0.08);
+  border-radius: var(--r-md);
+  padding: 18px;
+  margin-bottom: 12px;
+  box-shadow: 0 2px 8px rgba(90,63,163,0.04);
+}
+
+.bit-date-badge {
+  display: inline-block;
+  background: var(--p-light);
+  color: var(--p);
+  font-family: var(--font-head);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  padding: 4px 10px;
+  border-radius: 100px;
+  margin-bottom: 10px;
+}
+
+.bit-notes {
+  font-size: 14px;
+  color: var(--ink-2);
+  line-height: 1.7;
+  margin-bottom: 10px;
+}
+
+.bit-aprendizaje {
+  background: var(--orange-light);
+  border-left: 3px solid var(--orange);
+  border-radius: 0 var(--r-sm) var(--r-sm) 0;
+  padding: 12px 16px;
+  font-size: 13px;
+  font-style: italic;
+  color: var(--ink-2);
+}
+
+/* =====================================================
+   GUARDAR BTN FIJO DENTRO DEL MODAL
+   ===================================================== */
+.exp-save-bar {
+  padding: 16px 32px;
+  border-top: 1px solid rgba(90,63,163,0.08);
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  background: var(--white);
+  flex-shrink: 0;
+}
+
+/* =====================================================
+   RESPONSIVE MÓVIL — HEADER STACKED
+   ===================================================== */
+@media (max-width: 768px) {
+  .hope-header {
+    grid-template-columns: 1fr;
+  }
+
+  .header-counter {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 16px 20px;
+    text-align: left;
+  }
+
+  .counter-num { font-size: 38px; }
+
+  .hope-wrap { padding: 20px 16px 80px; }
+}
+
+/* Presencial badge */
+.badge-presencial {
+  background: #F1F5F9;
+  color: #64748B;
+  border: 1px solid #E2E8F0;
+}
+
 </style>
 
-<div class="dashboard-wrapper">
+<div class="hope-wrap">
 
-    <div class="dash-header fade-in-up">
-        <!-- ✦ NUEVO: CONTENEDOR FOTO DE PERFIL + NOMBRE ✦ -->
-        <div style="display: flex; align-items: center; gap: 20px;">
-            <div style="position: relative; cursor: pointer;" onclick="abrirModalMiCV()" title="Ver mi Perfil Profesional">
-                <img src="{% if psicologo.foto and psicologo.foto.name %}{{ psicologo.foto.url }}{% else %}https://ui-avatars.com/api/?name={{ request.user.first_name }}+{{ request.user.last_name }}&background=E5E7EB&color=5A3FA3&size=150&bold=true{% endif %}" alt="Mi Foto" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 3px solid var(--c-purple); box-shadow: 0 4px 15px rgba(90,63,163,0.2); transition: 0.3s;" onmouseover="this.style.transform='scale(1.05)';" onmouseout="this.style.transform='scale(1)';">
-                <div style="position: absolute; bottom: 0; right: 0; background: var(--c-pink); color: white; width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; border: 2px solid white;">
-                    <i class="fas fa-search"></i>
-                </div>
-            </div>
-            
-            <div>
-                <span class="tag-clean tag-orange"><i class="fas fa-leaf"></i> Espacio Clínico</span>
-                <h1 class="dash-title">Psic. {{ request.user.first_name }} {{ request.user.last_name }}</h1>
-                <p class="dash-subtitle" id="frase-diaria">Cargando inspiración diaria...</p>
-            </div>
-        </div>
+  <!-- ===========================
+       HEADER
+       =========================== -->
+  <div class="hope-header fade-in-up">
 
-        <div style="text-align: right;">
-            <p style="margin: 0; font-size: 13px; color: var(--text-muted); text-transform: uppercase; font-weight: 700; letter-spacing: 1px;">Citas para hoy</p>
-            <h2 style="font-family: var(--font-headings); font-size: 42px; margin: 0; color: var(--c-orange); font-weight: 900; line-height: 1;">{{ citas_hoy.count }}</h2>
-        </div>
+    <div class="header-identity">
+      <div class="avatar-ring" onclick="abrirModalCV()" title="Ver perfil profesional">
+        <img
+          src="{% if psicologo.foto and psicologo.foto.name %}{{ psicologo.foto.url }}{% else %}https://ui-avatars.com/api/?name={{ request.user.first_name }}+{{ request.user.last_name }}&background=EDE9FF&color=5A3FA3&size=150&bold=true{% endif %}"
+          alt="Foto de perfil">
+        <div class="avatar-badge"><i class="fas fa-search"></i></div>
+      </div>
+
+      <div class="header-text">
+        <span class="header-eyebrow"><i class="fas fa-leaf"></i> Espacio Clínico</span>
+        <h1 class="header-name">
+          Psic. <em>{{ request.user.first_name }}</em> {{ request.user.last_name }}
+        </h1>
+        <p class="header-phrase" id="frase-diaria">
+          <i class="fas fa-circle-notch fa-spin"></i> Cargando...
+        </p>
+      </div>
     </div>
 
-    <div class="tabs-nav fade-in-up">
-        <button class="tab-btn active" onclick="openTab('agenda')">Agenda de Hoy</button>
-        <button class="tab-btn" onclick="openTab('calendario')">Calendario</button>
-        <button class="tab-btn" onclick="openTab('pacientes')">Pacientes</button>
-        <button class="tab-btn" onclick="openTab('talleres')">Grupos Clínicos</button>
+    <div class="header-counter">
+      <div>
+        <p class="counter-label">Citas hoy</p>
+        <div class="counter-num">{{ citas_hoy.count }}</div>
+        <p class="counter-sub">sesiones</p>
+      </div>
     </div>
-<div id="agenda" class="tab-content active">
-        <div class="bento-card">
-            <i class="fas fa-seedling leaf-watermark"></i>
-            <h2 style="font-family: var(--font-headings); font-size: 24px; margin-bottom: 20px; border-bottom: 1px solid var(--border-soft); padding-bottom: 15px; color: var(--c-purple);">
-                Tus compromisos de hoy
-            </h2>
 
-            {% if citas_hoy or talleres_hoy %}
-                
-                {% for cita in citas_hoy %}
-                <div class="agenda-row">
-                    <div style="display: flex; align-items: center; gap: 25px;">
-                        <div class="time-badge-clean">{{ cita.hora|time:"H:i" }}</div>
-                        <div>
-                            <span class="tag-clean tag-purple" style="margin-bottom: 5px;">Terapia Individual</span>
-                            
-                            {% if cita.modalidad == 'Presencial' %}
-                                <span class="tag-clean" style="background: #f8fafc; color: var(--text-muted); border: 1px solid #e2e8f0; margin-bottom: 5px; margin-left: 5px;"><i class="fas fa-building"></i> Presencial</span>
-                            {% else %}
-                                <span class="tag-clean" style="background: #e0f2fe; color: #0284c7; border: 1px solid #bae6fd; margin-bottom: 5px; margin-left: 5px;"><i class="fas fa-laptop"></i> En Línea</span>
-                            {% endif %}
-                            
-                            <h3 style="font-family: var(--font-headings); font-size: 20px; font-weight: 700; margin: 0 0 5px 0;">{{ cita.paciente.first_name|title }} {{ cita.paciente.last_name|title }}</h3>
-                            <p style="margin: 0; font-size: 14px; color: var(--text-muted);"><i class="fas fa-stethoscope botanical-icon"></i> {{ cita.motivo }}</p>
-                        </div>
-                    </div>
+  </div>
 
-                    <div style="display: flex; gap: 10px; align-items: center;">
-                    
-                    {% if cita.modalidad == 'Presencial' %}
-                        <span style="font-size: 13px; font-weight: 800; color: var(--text-muted); background: #f1f5f9; padding: 10px 15px; border-radius: 12px; display: inline-flex; align-items: center; gap: 8px;">
-                            <i class="fas fa-door-open"></i> Te espera en clínica
-                        </span>
-                    {% elif cita.enlace_meet %}
-                        <a href="{{ cita.enlace_meet }}" target="_blank" class="btn-minimal btn-minimal-video" onclick="setTimeout(() => { window.location.href = '{% url 'detalle_paciente' cita.paciente.id %}'; }, 100);">
-                            <i class="fas fa-video"></i> Iniciar Meet
-                        </a>
-                    {% endif %}
-                    
-                        <a href="{% url 'detalle_paciente' cita.paciente.id %}" class="btn-minimal btn-minimal-primary">
-                            <i class="fas fa-folder-open"></i> Abrir Expediente
-                        </a>
-                    </div>
-                </div>
-                {% endfor %}
-                
-                {% for taller in talleres_hoy %}
-                <div class="agenda-row" style="background: #fffaf0; padding: 20px; border-radius: 16px; border: 1px dashed #ffedd5; margin-top: 10px;">
-                    <div style="display: flex; align-items: center; gap: 25px;">
-                        <div class="time-badge-clean" style="color: var(--c-orange);">{{ taller.hora|time:"H:i" }}</div>
-                        <div>
-                            <span class="tag-clean tag-orange" style="margin-bottom: 5px;">Sesión Grupal ({{ taller.get_tipo_display }})</span>
-                            <h3 style="font-family: var(--font-headings); font-size: 20px; font-weight: 700; margin: 0 0 5px 0;">{{ taller.nombre }}</h3>
-                            <p style="margin: 0; font-size: 14px; color: var(--text-muted);"><i class="fas fa-users botanical-icon" style="color: var(--c-orange);"></i> {{ taller.inscripciones.count }} Pacientes Inscritos</p>
-                        </div>
-                    </div>
+  <!-- ===========================
+       TABS
+       =========================== -->
+  <div class="hope-tabs fade-in-up" style="animation-delay:0.1s;">
+    <button class="htab active" onclick="openTab('agenda', this)">
+      <i class="fas fa-calendar-day"></i> Agenda de Hoy
+    </button>
+    <button class="htab" onclick="openTab('calendario', this)">
+      <i class="fas fa-calendar-alt"></i> Calendario
+    </button>
+    <button class="htab" onclick="openTab('pacientes', this)">
+      <i class="fas fa-user-friends"></i> Pacientes
+    </button>
+    <button class="htab" onclick="openTab('talleres', this)">
+      <i class="fas fa-users"></i> Grupos Clínicos
+    </button>
+  </div>
 
-                    <div style="display: flex; gap: 10px; align-items: center;">
-                    {% if taller.enlace_meet %}
-                        <a href="{{ taller.enlace_meet }}" target="_blank" class="btn-minimal btn-minimal-video" style="background: var(--c-orange);">
-                            <i class="fas fa-video"></i> Abrir Sala Grupal
-                        </a>
-                    {% else %}
-                        <span style="color: var(--c-pink); font-size: 12px; font-weight: 800; background: #fdf2f8; padding: 8px 12px; border-radius: 8px;">Aún sin enlace Meet</span>
-                    {% endif %}
-                    </div>
-                </div>
-                {% endfor %}
+  <!-- ===========================
+       PANE: AGENDA
+       =========================== -->
+  <div id="agenda" class="hpane active" style="animation-delay:0.15s;">
+    <div class="h-card" style="animation: fadeUp 0.4s ease both;">
+      <div class="card-accent-line"></div>
+      <div class="h-card-inner">
 
+        <p class="agenda-title"><i class="fas fa-sun" style="color:var(--orange)"></i> Compromisos de hoy</p>
+
+        {% if citas_hoy or talleres_hoy %}
+
+          {% for cita in citas_hoy %}
+          <div class="cita-row">
+
+            <div class="cita-time">{{ cita.hora|time:"H:i" }}</div>
+
+            <div class="cita-info">
+              <div class="cita-tags">
+                <span class="ctag ctag-purple"><i class="fas fa-user"></i> Individual</span>
+                {% if cita.modalidad == 'Presencial' %}
+                  <span class="ctag badge-presencial"><i class="fas fa-building"></i> Presencial</span>
+                {% else %}
+                  <span class="ctag ctag-blue"><i class="fas fa-laptop"></i> En Línea</span>
+                {% endif %}
+              </div>
+              <div class="cita-name">{{ cita.paciente.first_name|title }} {{ cita.paciente.last_name|title }}</div>
+              <div class="cita-motivo"><i class="fas fa-stethoscope"></i> {{ cita.motivo }}</div>
+            </div>
+
+            <div class="cita-actions">
+              {% if cita.modalidad == 'Presencial' %}
+                <span class="pill-badge"><i class="fas fa-door-open"></i> Sala de espera</span>
+              {% elif cita.enlace_meet %}
+                <a href="{{ cita.enlace_meet }}" target="_blank" class="hbtn hbtn-video"
+                   onclick="setTimeout(() => { window.location.href = '{% url 'detalle_paciente' cita.paciente.id %}'; }, 100);">
+                  <i class="fas fa-video"></i> Iniciar Meet
+                </a>
+              {% endif %}
+              <a href="{% url 'detalle_paciente' cita.paciente.id %}" class="hbtn hbtn-ghost">
+                <i class="fas fa-folder-open"></i> Expediente
+              </a>
+            </div>
+
+          </div>
+          {% endfor %}
+
+          {% for taller in talleres_hoy %}
+          <div class="taller-row">
+
+            <div class="cita-time" style="color:var(--orange)">{{ taller.hora|time:"H:i" }}</div>
+
+            <div class="cita-info">
+              <div class="cita-tags">
+                <span class="ctag ctag-orange"><i class="fas fa-users"></i> {{ taller.get_tipo_display }}</span>
+              </div>
+              <div class="cita-name">{{ taller.nombre }}</div>
+              <div class="cita-motivo"><i class="fas fa-users" style="color:var(--orange)"></i> {{ taller.inscripciones.count }} pacientes inscritos</div>
+            </div>
+
+            <div class="cita-actions">
+              {% if taller.enlace_meet %}
+                <a href="{{ taller.enlace_meet }}" target="_blank" class="hbtn hbtn-orange">
+                  <i class="fas fa-video"></i> Sala Grupal
+                </a>
+              {% else %}
+                <span style="color:var(--pink); font-size:12px; font-family:var(--font-head); font-weight:700; background:var(--pink-light); padding:8px 14px; border-radius:10px;">Sin enlace Meet</span>
+              {% endif %}
+            </div>
+
+          </div>
+          {% endfor %}
+
+        {% else %}
+          <div class="empty-state">
+            <div class="empty-icon-ring"><i class="fas fa-spa"></i></div>
+            <div class="empty-title">Día despejado</div>
+            <p class="empty-sub">Aprovecha para revisar expedientes o preparar tus próximas sesiones grupales.</p>
+          </div>
+        {% endif %}
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ===========================
+       PANE: CALENDARIO
+       =========================== -->
+  <div id="calendario" class="hpane">
+    <div class="h-card">
+      <div class="h-card-inner" style="padding:32px 36px;">
+        <div id="fullCalendarDiv"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===========================
+       PANE: PACIENTES
+       =========================== -->
+  <div id="pacientes" class="hpane">
+    {% if pacientes_data %}
+      <div class="pac-grid">
+        {% for data in pacientes_data %}
+        <div class="pac-card">
+          <div class="pac-avatar">{{ data.usuario.first_name|first|upper }}</div>
+          <div class="pac-name">{{ data.usuario.first_name|title }} {{ data.usuario.last_name|title }}</div>
+          <div class="pac-email">{{ data.usuario.email }}</div>
+          <div class="pac-stats">
+            <span class="ctag ctag-purple"><i class="fas fa-leaf"></i> {{ data.total_citas }} sesiones</span>
+          </div>
+          <div class="pac-divider">
+            <a href="{% url 'detalle_paciente' data.usuario.id %}" class="hbtn hbtn-ghost hbtn-full">
+              <i class="fas fa-folder-open"></i> Abrir Expediente
+            </a>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="h-card">
+        <div class="h-card-inner">
+          <div class="empty-state">
+            <div class="empty-icon-ring"><i class="fas fa-seedling"></i></div>
+            <div class="empty-title">Sembrando el terreno</div>
+            <p class="empty-sub">Pronto tendrás pacientes asignados a tu cuidado.</p>
+          </div>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- ===========================
+       PANE: TALLERES
+       =========================== -->
+  <div id="talleres" class="hpane">
+    {% if talleres_impartidos %}
+      <div class="talleres-grid">
+        {% for taller in talleres_impartidos %}
+        <div class="taller-card">
+          <div class="taller-card-head">
+            <span class="ctag ctag-orange">{{ taller.get_tipo_display }}</span>
+            <div class="taller-name">{{ taller.nombre }}</div>
+            <div class="taller-meta">
+              <div class="taller-meta-row">
+                <i class="far fa-calendar"></i>
+                {{ taller.fecha|date:"d M Y" }} · {{ taller.hora|time:"H:i" }}
+              </div>
+              <div class="taller-meta-row">
+                <i class="fas fa-users"></i>
+                {{ taller.inscripciones.count }} inscritos
+              </div>
+            </div>
+          </div>
+          <div class="taller-card-body">
+            {% if taller.enlace_meet %}
+              <a href="{{ taller.enlace_meet }}" target="_blank" class="hbtn hbtn-orange hbtn-full">
+                <i class="fas fa-video"></i> Abrir Sala Grupal
+              </a>
             {% else %}
-                <div class="empty-box">
-                    <i class="fas fa-spa empty-icon"></i>
-                    <h3 style="font-family: var(--font-headings); font-size: 24px; margin-bottom: 5px; color: var(--c-purple);">Día Despejado</h3>
-                    <p style="color: var(--text-muted);">Aprovecha este tiempo para revisar expedientes o preparar tus próximos grupos.</p>
-                </div>
+              <div style="text-align:center; color:var(--pink); font-size:12px; font-family:var(--font-head); font-weight:700; background:var(--pink-light); padding:10px; border-radius:10px;">
+                Aún sin enlace Meet
+              </div>
             {% endif %}
+          </div>
         </div>
-    </div>
-
-    <div id="calendario" class="tab-content">
-        <div class="bento-card" style="padding: 40px;">
-            <div id="fullCalendarDiv"></div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="h-card">
+        <div class="h-card-inner">
+          <div class="empty-state">
+            <div class="empty-icon-ring"><i class="fas fa-pagelines"></i></div>
+            <div class="empty-title">Sin grupos activos</div>
+            <p class="empty-sub">No tienes talleres ni terapias grupales por el momento.</p>
+          </div>
         </div>
+      </div>
+    {% endif %}
+  </div>
+
+</div><!-- /hope-wrap -->
+
+<!-- ===========================
+     MODAL: MI PERFIL CV
+     =========================== -->
+<div class="hope-overlay" id="modalCV">
+  <div class="modal-cv">
+    <button class="modal-close-btn" onclick="cerrarModalCV()"><i class="fas fa-times"></i></button>
+
+    <div class="modal-cv-top">
+      <img src="{% if psicologo.foto and psicologo.foto.name %}{{ psicologo.foto.url }}{% else %}https://ui-avatars.com/api/?name={{ request.user.first_name }}+{{ request.user.last_name }}&background=EDE9FF&color=5A3FA3&size=150&bold=true{% endif %}"
+        alt="Foto" style="width:88px;height:88px;border-radius:50%;object-fit:cover;border:4px solid white;box-shadow:0 4px 20px rgba(90,63,163,0.2);margin-bottom:14px;">
+      <div style="font-family:var(--font-display);font-size:24px;color:var(--ink);margin-bottom:4px;">
+        Psic. {{ request.user.first_name }} {{ request.user.last_name }}
+      </div>
+      <div style="color:var(--p);font-family:var(--font-head);font-weight:700;font-size:14px;">
+        {{ psicologo.especialidad|default:"Psicología Clínica" }}
+      </div>
     </div>
 
-    <div id="pacientes" class="tab-content">
-        {% if pacientes_data %}
-            <div class="bento-grid">
-                {% for data in pacientes_data %}
-                <div class="bento-card">
-                    <div class="avatar-clean">{{ data.usuario.first_name|first|upper }}</div>
-                    <h3 style="font-family: var(--font-headings); font-weight: 700; font-size: 20px; margin: 0 0 5px 0;">{{ data.usuario.first_name|title }}</h3>
-                    <p style="color: var(--text-muted); font-size: 13px; margin: 0 0 20px 0;">{{ data.usuario.email }}</p>
-                    
-                    <span class="tag-clean tag-purple"><i class="fas fa-leaf botanical-icon" style="color: var(--c-purple);"></i> {{ data.total_citas }} Sesiones</span>
-                    
-                    <div style="margin-top: 20px; border-top: 1px solid var(--border-soft); padding-top: 20px;">
-                        <a href="{% url 'detalle_paciente' data.usuario.id %}" class="btn-minimal btn-minimal-primary" style="width: 100%; justify-content: center;">
-                            <i class="fas fa-folder-open"></i> Abrir Expediente
-                        </a>
-                    </div>
-                </div>
-                {% endfor %}
-            </div>
-        {% else %}
-            <div class="bento-card empty-box">
-                <i class="fas fa-seedling empty-icon"></i>
-                <h3 style="font-family: var(--font-headings); font-size: 24px; margin-bottom: 5px; color: var(--c-purple);">Sembrando el terreno</h3>
-                <p style="color: var(--text-muted);">Pronto tendrás pacientes asignados a tu cuidado.</p>
-            </div>
-        {% endif %}
+    <div class="modal-cv-body">
+      <div class="info-field">
+        <div class="info-field-label">Cédula Profesional</div>
+        <div class="info-field-val">{{ psicologo.cedula_profesional }}</div>
+      </div>
+      <div class="info-field">
+        <div class="info-field-label">Enfoque Clínico</div>
+        <div class="info-field-val">{{ psicologo.cv_breve|default:"Atención empática, breve y orientada a soluciones, brindando un espacio seguro para el crecimiento y la paz mental." }}</div>
+      </div>
+      <button onclick="cerrarModalCV()" class="hbtn hbtn-ghost hbtn-full" style="margin-top:8px;padding:14px;">Cerrar Perfil</button>
     </div>
-
-    <div id="talleres" class="tab-content">
-        {% if talleres_impartidos %}
-            <div class="bento-grid">
-                {% for taller in talleres_impartidos %}
-                <div class="bento-card">
-                    <span class="tag-clean tag-orange">{{ taller.get_tipo_display }}</span>
-                    <h3 style="font-family: var(--font-headings); font-weight: 700; font-size: 22px; margin: 10px 0 15px 0;">{{ taller.nombre }}</h3>
-                    
-                    <div style="font-size: 13px; color: var(--text-muted); margin-bottom: 25px;">
-                        <p style="margin: 0 0 8px 0;"><i class="far fa-calendar" style="color: var(--c-teal); margin-right: 5px;"></i> {{ taller.fecha|date:"d M Y" }} - {{ taller.hora|time:"H:i" }}</p>
-                        <p style="margin: 0;"><i class="fas fa-users" style="color: var(--c-teal); margin-right: 5px;"></i> {{ taller.inscripciones.count }} Inscritos</p>
-                    </div>
-
-                    <div style="border-top: 1px solid var(--border-soft); padding-top: 20px;">
-                        {% if taller.enlace_meet %}
-                            <a href="{{ taller.enlace_meet }}" target="_blank" class="btn-minimal btn-minimal-video" style="width: 100%; justify-content: center;">
-                                <i class="fas fa-video"></i> Abrir Sala Grupal
-                            </a>
-                        {% else %}
-                            <span style="display: block; text-align: center; color: var(--c-pink); font-size: 12px; font-family: var(--font-headings); font-weight: 700; background: #fdf2f8; padding: 10px; border-radius: 8px;">Aún sin enlace Meet</span>
-                        {% endif %}
-                    </div>
-                </div>
-                {% endfor %}
-            </div>
-        {% else %}
-            <div class="bento-card empty-box">
-                <i class="fas fa-pagelines empty-icon"></i>
-                <h3 style="font-family: var(--font-headings); font-size: 24px; margin-bottom: 5px; color: var(--c-purple);">Sin Grupos</h3>
-                <p style="color: var(--text-muted);">No tienes talleres ni terapias grupales por el momento.</p>
-            </div>
-        {% endif %}
-    </div>
-
+  </div>
 </div>
 
-<!-- ✦ MODAL MI CV DOCTOR ✦ -->
-<div id="modalMiCV" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); backdrop-filter: blur(8px); z-index: 999999; justify-content: center; align-items: center;">
-    <div class="bento-card" style="height: auto; width: 90%; max-width: 450px; text-align: center; padding: 40px; position: relative; animation: fadeInElegant 0.4s ease forwards;">
-        <span onclick="cerrarModalMiCV()" style="position: absolute; top: 15px; right: 20px; cursor: pointer; font-size: 24px; color: #94a3b8; transition: 0.3s;" onmouseover="this.style.color='var(--c-dark)'" onmouseout="this.style.color='#94a3b8'"><i class="fas fa-times"></i></span>
-        
-        <img src="{% if psicologo.foto and psicologo.foto.name %}{{ psicologo.foto.url }}{% else %}https://ui-avatars.com/api/?name={{ request.user.first_name }}+{{ request.user.last_name }}&background=E5E7EB&color=5A3FA3&size=150&bold=true{% endif %}" alt="Mi Foto" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; margin-bottom: 20px; border: 4px solid var(--c-purple); box-shadow: var(--shadow-sm);">
-        
-        <h2 style="font-family: var(--font-headings); font-size: 2rem; color: var(--text-main); margin-bottom: 5px;">Psic. {{ request.user.first_name }} {{ request.user.last_name }}</h2>
-        <p style="color: var(--c-purple); font-weight: 700; margin-bottom: 25px;">{{ psicologo.especialidad|default:"Psicología Clínica" }}</p>
-        
-        <div style="background: var(--bg-dashboard); border-radius: 16px; padding: 25px; text-align: left; margin-bottom: 30px; border: 1px solid var(--border-soft);">
-            <div style="margin-bottom: 15px;">
-                <span style="font-size: 11px; text-transform: uppercase; color: var(--text-muted); font-weight: 800; letter-spacing: 1px;">Cédula Profesional</span>
-                <p style="margin: 5px 0 0 0; font-weight: 600; color: var(--text-main);">{{ psicologo.cedula_profesional }}</p>
-            </div>
-            <div>
-                <span style="font-size: 11px; text-transform: uppercase; color: var(--text-muted); font-weight: 800; letter-spacing: 1px;">Enfoque Clínico</span>
-                <p style="margin: 5px 0 0 0; font-size: 14px; color: var(--text-main); line-height: 1.6;">{{ psicologo.cv_breve|default:"Atención empática, breve y orientada a soluciones, brindando un espacio seguro para el crecimiento y la paz mental." }}</p>
-            </div>
-        </div>
-        
-        <button onclick="cerrarModalMiCV()" class="btn-minimal btn-minimal-primary" style="width: 100%; justify-content: center; padding: 15px;">Cerrar Perfil</button>
+<!-- ===========================
+     MODAL: EXPEDIENTE MAESTRO
+     =========================== -->
+<div class="hope-overlay" id="modalExpediente">
+  <div class="modal-exp">
+
+    <div class="exp-head">
+      <div class="exp-head-left">
+        <div class="exp-eyebrow"><i class="fas fa-seedling"></i> Expediente Clínico</div>
+        <div class="exp-title">Paciente: <em id="expNombre"></em></div>
+      </div>
+      <button class="modal-close-btn" style="position:static;flex-shrink:0;" onclick="cerrarExpediente()">
+        <i class="fas fa-times"></i>
+      </button>
     </div>
-</div>
 
-<div class="modal-backdrop" id="modalExpediente" style="display: none; align-items: center; justify-content: center; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.5); backdrop-filter: blur(8px); z-index: 5000; padding: 20px;">
-    <div class="expediente-modal">
-        <i class="fas fa-leaf leaf-watermark"></i>
-        
-        <div class="exp-header">
-            <div>
-                <p style="margin: 0 0 5px 0; font-size: 12px; text-transform: uppercase; letter-spacing: 2px; font-weight: 800; color: var(--c-orange); font-family: var(--font-headings);"><i class="fas fa-seedling"></i> Registro Clínico Rápido</p>
-                <h2 style="font-family: var(--font-headings); font-weight: 800; font-size: 32px; margin: 0; color: var(--c-purple);">Paciente: <span id="expNombre" style="font-style: italic;"></span></h2>
+    <div class="exp-body">
+
+      <div class="exp-sidebar">
+        <button class="exp-side-btn active" onclick="switchExpTab('tab-perfil', this)">
+          <i class="fas fa-exclamation-circle" style="color:var(--pink)"></i> Alertas
+        </button>
+        <button class="exp-side-btn" onclick="switchExpTab('tab-llegada', this)">
+          <i class="fas fa-book-open" style="color:var(--teal)"></i> Historia Clínica
+        </button>
+        <button class="exp-side-btn" onclick="switchExpTab('tab-bitacora', this)">
+          <i class="fas fa-pen-nib" style="color:var(--orange)"></i> Bitácora
+        </button>
+        <button class="exp-side-btn" onclick="switchExpTab('tab-alta', this)">
+          <i class="fas fa-door-open" style="color:var(--p)"></i> Alta y Cierre
+        </button>
+      </div>
+
+      <div class="exp-content">
+        <form id="formGlobal" onsubmit="guardarGlobal(event)">
+          {% csrf_token %}
+          <input type="hidden" id="expPacienteId" name="paciente_id">
+
+          <!-- Tab: Perfil / Alertas -->
+          <div id="tab-perfil" class="exp-pane active">
+            <div class="exp-section-title" style="color:var(--pink)">
+              <i class="fas fa-exclamation-circle"></i> Focos Rojos y Emergencia
             </div>
-            <div style="background: #f8fafc; width: 40px; height: 40px; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; border: 1px solid #e2e8f0; transition: 0.3s;" onmouseover="this.style.background='var(--c-pink)'; this.style.color='white';" onmouseout="this.style.background='#f8fafc'; this.style.color='var(--text-muted)';" onclick="cerrarExpediente()">
-                <i class="fas fa-times"></i>
+            <label class="h-label">Teléfono de Emergencia</label>
+            <input type="text" name="telefono_emergencia" id="expTelEmerge"
+              class="h-input" style="min-height:0;height:50px;"
+              placeholder="Ej. 55 1234 5678">
+            <label class="h-label" style="color:var(--pink)">Alertas Críticas</label>
+            <textarea name="focos_rojos" id="expFocos" class="h-input h-input-danger"
+              style="min-height:140px;"
+              placeholder="Alergias, riesgos, notas urgentes..."></textarea>
+          </div>
+
+          <!-- Tab: Historia Clínica -->
+          <div id="tab-llegada" class="exp-pane">
+            <div class="exp-section-title" style="color:var(--teal)">
+              <i class="fas fa-book-open"></i> Historia Clínica Inicial
             </div>
+            <textarea name="historia_clinica" id="expHistoria" class="h-input"
+              style="min-height:280px;"
+              placeholder="Redacta la historia clínica completa aquí..."></textarea>
+          </div>
+
+          <!-- Tab: Alta -->
+          <div id="tab-alta" class="exp-pane">
+            <div class="exp-section-title" style="color:var(--p)">
+              <i class="fas fa-door-open"></i> Cierre y Recomendaciones
+            </div>
+            <label class="h-label">Recomendaciones Generales</label>
+            <textarea name="recomendaciones" id="expReco" class="h-input"
+              style="min-height:130px;"
+              placeholder="Hábitos, rutinas, sugerencias..."></textarea>
+            <label class="h-label">Notas de Alta</label>
+            <textarea name="notas_alta" id="expAlta" class="h-input"
+              style="min-height:120px;"
+              placeholder="Resumen final del proceso terapéutico..."></textarea>
+          </div>
+        </form>
+
+        <!-- Tab: Bitácora (fuera del form global) -->
+        <div id="tab-bitacora" class="exp-pane">
+          <div class="exp-section-title" style="color:var(--orange)">
+            <i class="fas fa-pen-nib"></i> Bitácora de Sesiones
+          </div>
+
+          <div style="background:var(--white);border:1.5px solid rgba(90,63,163,0.1);border-radius:var(--r-lg);padding:24px;margin-bottom:28px;">
+            <div style="font-family:var(--font-head);font-weight:700;font-size:16px;color:var(--ink);margin-bottom:16px;">
+              <i class="fas fa-plus-circle" style="color:var(--orange)"></i> Nueva entrada de hoy
+            </div>
+            <form id="formBitacora" onsubmit="guardarBitacora(event)">
+              {% csrf_token %}
+              <input type="hidden" id="bitPacienteId" name="paciente_id">
+              <input type="hidden" id="bitCitaId" name="cita_id">
+              <label class="h-label">Notas de la sesión</label>
+              <textarea name="notas_sesion" required class="h-input" style="min-height:110px;"
+                placeholder="¿Qué ocurrió en la sesión? Observaciones clínicas..."></textarea>
+              <label class="h-label" style="color:var(--orange); margin-top:14px;">
+                <i class="fas fa-star" style="color:var(--yellow)"></i> ¿Qué se lleva el paciente de esta sesión?
+              </label>
+              <textarea name="aprendizaje" required class="h-input"
+                style="min-height:80px;background:var(--orange-light);border-color:rgba(242,124,33,0.3);"
+                placeholder="Respuesta literal del paciente..."></textarea>
+              <button type="submit" class="hbtn hbtn-orange hbtn-full" style="margin-top:16px;padding:14px;">
+                <i class="fas fa-check"></i> Guardar Entrada
+              </button>
+            </form>
+          </div>
+
+          <div style="font-family:var(--font-head);font-weight:700;font-size:16px;color:var(--ink);margin-bottom:14px;">
+            Historial reciente
+          </div>
+          <div id="lista-bitacoras"></div>
         </div>
 
-        <div class="exp-body">
-            <div class="exp-sidebar">
-                <button class="exp-tab-btn active" onclick="switchExpTab('tab-perfil', this)"><i class="fas fa-exclamation-circle" style="color: var(--c-pink);"></i> Perfil y Alertas</button>
-                <button class="exp-tab-btn" onclick="switchExpTab('tab-llegada', this)"><i class="fas fa-book-open" style="color: var(--c-teal);"></i> 1. Cómo Llega</button>
-                <button class="exp-tab-btn" onclick="switchExpTab('tab-bitacora', this)"><i class="fas fa-pen-nib" style="color: var(--c-orange);"></i> 2. Bitácora Sesión</button>
-                <button class="exp-tab-btn" onclick="switchExpTab('tab-alta', this)"><i class="fas fa-door-open" style="color: var(--c-purple);"></i> 3. El Alta</button>
-            </div>
-
-            <div class="exp-content-area">
-                <form id="formGlobal" onsubmit="guardarGlobal(event)">
-                    {% csrf_token %}
-                    <input type="hidden" id="expPacienteId" name="paciente_id">
-                    
-                    <div id="tab-perfil" class="exp-content-pane">
-                        <h3 style="font-family: var(--font-headings); font-weight: 800; font-size: 24px; margin-bottom: 20px; color: var(--c-pink);">Focos Rojos y Emergencia</h3>
-                        <label class="label-elegant">Teléfono de Emergencia:</label>
-                        <input type="text" name="telefono_emergencia" id="expTelEmerge" class="clin-textarea" style="min-height: 50px;" placeholder="Ej. 55 1234 5678">
-                        <label class="label-elegant" style="color: var(--c-pink);">Alertas Críticas:</label>
-                        <textarea name="focos_rojos" id="expFocos" class="clin-textarea rojo-alert" placeholder="Alergias, riesgos..."></textarea>
-                    </div>
-
-                    <div id="tab-llegada" class="exp-content-pane" style="display: none;">
-                        <h3 style="font-family: var(--font-headings); font-weight: 800; font-size: 24px; margin-bottom: 20px; color: var(--c-teal);">Historia Clínica Inicial</h3>
-                        <textarea name="historia_clinica" id="expHistoria" class="clin-textarea" style="min-height: 250px;" placeholder="Redacta la historia clínica aquí..."></textarea>
-                    </div>
-
-                    <div id="tab-alta" class="exp-content-pane" style="display: none;">
-                        <h3 style="font-family: var(--font-headings); font-weight: 800; font-size: 24px; margin-bottom: 20px; color: var(--c-purple);">Cierre y Recomendaciones</h3>
-                        <label class="label-elegant">Recomendaciones Generales:</label>
-                        <textarea name="recomendaciones" id="expReco" class="clin-textarea" placeholder="Hábitos, rutinas..."></textarea>
-                        <label class="label-elegant" style="color: var(--c-purple);">Notas de Alta:</label>
-                        <textarea name="notas_alta" id="expAlta" class="clin-textarea" placeholder="Resumen final..."></textarea>
-                    </div>
-
-                    <div id="btnGuardarGlobalBox" style="text-align: right; margin-top: 10px;">
-                        <button type="submit" class="btn-minimal" style="background: var(--c-purple); color: white; padding: 15px 30px;"><i class="fas fa-save"></i> Guardar Cambios</button>
-                    </div>
-                </form>
-
-                <div id="tab-bitacora" class="exp-content-pane" style="display: none;">
-                    <div style="background: #ffffff; border: 2px solid #e2e8f0; padding: 30px; border-radius: 20px; margin-bottom: 30px;">
-                        <h4 style="font-family: var(--font-headings); font-weight: 800; margin-bottom: 15px; font-size: 20px; color: var(--c-purple);">Redactar bitácora de hoy</h4>
-                        <form id="formBitacora" onsubmit="guardarBitacora(event)">
-                            {% csrf_token %}
-                            <input type="hidden" id="bitPacienteId" name="paciente_id">
-                            <input type="hidden" id="bitCitaId" name="cita_id">
-                            <textarea name="notas_sesion" required class="clin-textarea" style="min-height: 120px;" placeholder="Notas de la sesión..."></textarea>
-                            <label class="label-elegant" style="color: var(--c-orange);"><i class="fas fa-star" style="color: var(--c-yellow);"></i> ¿Qué se lleva de la sesión?</label>
-                            <textarea name="aprendizaje" required class="clin-textarea" style="min-height: 80px; background: #fffaf0; border-color: #ffedd5;" placeholder="Respuesta literal del paciente..."></textarea>
-                            <button type="submit" class="btn-minimal" style="background: var(--c-orange); color: white; width: 100%; justify-content: center; padding: 15px;"><i class="fas fa-check"></i> Guardar Bitácora</button>
-                        </form>
-                    </div>
-
-                    <h4 style="font-family: var(--font-headings); font-weight: 800; font-size: 20px; margin-bottom: 15px; color: var(--c-purple);">Histórico Reciente</h4>
-                    <div id="lista-bitacoras"></div>
-                </div>
-
-            </div>
-        </div>
+      </div>
     </div>
+
+    <!-- Barra guardar (solo fuera de bitácora) -->
+    <div class="exp-save-bar" id="expSaveBar">
+      <button onclick="cerrarExpediente()" class="hbtn hbtn-ghost">Cancelar</button>
+      <button type="submit" form="formGlobal" class="hbtn hbtn-ghost" style="background:var(--p);color:white;box-shadow:0 4px 14px rgba(90,63,163,0.3);">
+        <i class="fas fa-save"></i> Guardar cambios
+      </button>
+    </div>
+
+  </div>
 </div>
 
 <script>
-    // --- LÓGICA DEL MODAL DE CV ---
-    function abrirModalMiCV() { document.getElementById('modalMiCV').style.display = 'flex'; }
-    function cerrarModalMiCV() { document.getElementById('modalMiCV').style.display = 'none'; }
+/* =====================================================
+   FRASES DIARIAS
+   ===================================================== */
+document.addEventListener('DOMContentLoaded', () => {
+  const frases = [
+    "Sembrando bienestar, cosechando sonrisas.",
+    "Cada sesión es un paso hacia la luz.",
+    "Tu empatía transforma realidades.",
+    "El arte de escuchar salva vidas.",
+    "Presencia plena, cambio profundo."
+  ];
+  const el = document.getElementById('frase-diaria');
+  if (el) {
+    const f = frases[Math.floor(Math.random() * frases.length)];
+    el.innerHTML = `<i class="fas fa-leaf" style="color:var(--teal)"></i> ${f}`;
+  }
+});
 
-    document.addEventListener("DOMContentLoaded", () => {
-        const frasesLindas = [
-            "Sembrando bienestar, cosechando sonrisas.",
-            "Cada sesión es un paso hacia la luz.",
-            "Tu empatía transforma realidades.",
-            "El arte de escuchar salva vidas."
-        ];
-        const elemFrase = document.getElementById("frase-diaria");
-        if(elemFrase) {
-            elemFrase.innerHTML = `<i class="fas fa-leaf" style="color: var(--c-teal); margin-right: 5px;"></i> ${frasesLindas[Math.floor(Math.random() * frasesLindas.length)]}`;
-        }
+/* =====================================================
+   TABS PRINCIPALES
+   ===================================================== */
+function openTab(tabId, btn) {
+  document.querySelectorAll('.hpane').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.htab').forEach(b => b.classList.remove('active'));
+  document.getElementById(tabId).classList.add('active');
+  if (btn) btn.classList.add('active');
+  if (tabId === 'calendario' && calendarInstance) {
+    setTimeout(() => calendarInstance.render(), 100);
+  }
+}
+
+/* =====================================================
+   FULLCALENDAR
+   ===================================================== */
+let calendarInstance;
+document.addEventListener('DOMContentLoaded', function () {
+  const calEl = document.getElementById('fullCalendarDiv');
+  if (!calEl) return;
+  const eventos = JSON.parse('{{ eventos_calendario_json|escapejs|default:"[]" }}');
+  calendarInstance = new FullCalendar.Calendar(calEl, {
+    initialView: 'dayGridMonth',
+    locale: 'es',
+    headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek' },
+    events: eventos,
+    eventTimeFormat: { hour: 'numeric', minute: '2-digit', meridiem: 'short' }
+  });
+  calendarInstance.render();
+});
+
+/* =====================================================
+   MODAL CV
+   ===================================================== */
+function abrirModalCV() {
+  document.getElementById('modalCV').classList.add('open');
+}
+
+function cerrarModalCV() {
+  document.getElementById('modalCV').classList.remove('open');
+}
+
+document.getElementById('modalCV').addEventListener('click', function (e) {
+  if (e.target === this) cerrarModalCV();
+});
+
+/* =====================================================
+   MODAL EXPEDIENTE
+   ===================================================== */
+function abrirExpedienteMaestro(pacId, pacName, citaId) {
+  document.getElementById('expPacienteId').value = pacId;
+  document.getElementById('bitPacienteId').value = pacId;
+  document.getElementById('bitCitaId').value = citaId || '';
+  document.getElementById('expNombre').innerText = pacName;
+
+  fetch(`/obtener-expediente/?paciente_id=${pacId}`)
+    .then(r => r.json())
+    .then(d => {
+      if (d.status !== 'success') return;
+      const info = d.data;
+      document.getElementById('expTelEmerge').value = info.telefono_emergencia || '';
+      document.getElementById('expFocos').value = info.focos_rojos || '';
+      document.getElementById('expHistoria').value = info.historia_clinica || '';
+      document.getElementById('expReco').value = info.recomendaciones || '';
+      document.getElementById('expAlta').value = info.notas_alta || '';
+
+      const lista = document.getElementById('lista-bitacoras');
+      lista.innerHTML = (info.historiales && info.historiales.length)
+        ? info.historiales.map(h => `
+          <div class="bitacora-entry">
+            <span class="bit-date-badge">${h.fecha}</span>
+            <p class="bit-notes">${h.notas}</p>
+            <div class="bit-aprendizaje">"${h.aprendizaje || 'Sin registro'}"</div>
+          </div>`).join('')
+        : '<p style="color:var(--ink-3);font-size:14px;">Aún sin historial registrado.</p>';
+
+      document.getElementById('modalExpediente').classList.add('open');
+      switchExpTab('tab-perfil', document.querySelector('.exp-side-btn'));
     });
+}
 
-    function openTab(tabName) {
-        document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
-        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-        document.getElementById(tabName).classList.add('active');
-        event.currentTarget.classList.add('active');
-        if(tabName === 'calendario' && calendarInstance) { setTimeout(() => { calendarInstance.render(); }, 100); }
-    }
+function cerrarExpediente() {
+  document.getElementById('modalExpediente').classList.remove('open');
+}
 
-    let calendarInstance;
-    document.addEventListener('DOMContentLoaded', function() {
-        var calendarEl = document.getElementById('fullCalendarDiv');
-        if(calendarEl) {
-            var eventos = JSON.parse('{{ eventos_calendario_json|escapejs|default:"[]" }}');
-            calendarInstance = new FullCalendar.Calendar(calendarEl, {
-                initialView: 'dayGridMonth', locale: 'es',
-                headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek' },
-                events: eventos, eventTimeFormat: { hour: 'numeric', minute: '2-digit', meridiem: 'short' }
-            });
-            calendarInstance.render();
-        }
+document.getElementById('modalExpediente').addEventListener('click', function (e) {
+  if (e.target === this) cerrarExpediente();
+});
+
+/* =====================================================
+   TABS DEL EXPEDIENTE
+   ===================================================== */
+function switchExpTab(tabId, btnEl) {
+  document.querySelectorAll('.exp-pane').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.exp-side-btn').forEach(b => b.classList.remove('active'));
+  const pane = document.getElementById(tabId);
+  if (pane) pane.classList.add('active');
+  if (btnEl) btnEl.classList.add('active');
+  document.getElementById('expSaveBar').style.display = (tabId === 'tab-bitacora') ? 'none' : 'flex';
+}
+
+/* =====================================================
+   GUARDAR EXPEDIENTE GLOBAL
+   ===================================================== */
+function guardarGlobal(e) {
+  e.preventDefault();
+  const btn = document.querySelector('#expSaveBar button:last-child');
+  const orig = btn.innerHTML;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
+  fetch("{% url 'guardar_expediente_global' %}", {
+    method: 'POST',
+    body: new FormData(e.target),
+    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+  })
+    .then(r => r.json())
+    .then(d => {
+      btn.innerHTML = orig;
+      if (d.status === 'success') {
+        btn.innerHTML = '<i class="fas fa-check"></i> ¡Guardado!';
+        setTimeout(() => btn.innerHTML = orig, 2000);
+      }
     });
+}
 
-    function abrirExpedienteMaestro(pacId, pacName, citaId) {
-        document.getElementById('expPacienteId').value = pacId;
-        document.getElementById('bitPacienteId').value = pacId;
-        document.getElementById('bitCitaId').value = citaId;
-        document.getElementById('expNombre').innerText = pacName;
-        
-        fetch(`/obtener-expediente/?paciente_id=${pacId}`)
-        .then(r => r.json())
-        .then(d => {
-            if(d.status === 'success') {
-                const info = d.data;
-                document.getElementById('expTelEmerge').value = info.telefono_emergencia;
-                document.getElementById('expFocos').value = info.focos_rojos;
-                document.getElementById('expHistoria').value = info.historia_clinica;
-                document.getElementById('expReco').value = info.recomendaciones;
-                document.getElementById('expAlta').value = info.notas_alta;
-
-                let htmlHist = '';
-                info.historiales.forEach(h => {
-                    htmlHist += `
-                    <div style="background: #ffffff; padding: 20px; border-radius: 16px; border: 1px solid #e2e8f0; margin-bottom: 15px;">
-                        <span style="font-size: 11px; font-family: var(--font-headings); font-weight: 800; color: var(--c-purple); background: #f3e8ff; padding: 6px 12px; border-radius: 8px; margin-bottom: 10px; display: inline-block;">${h.fecha}</span>
-                        <p style="font-size: 15px; margin-bottom: 10px; color: var(--text-main); line-height: 1.6;">${h.notas}</p>
-                        <div style="background: #fffaf0; padding: 15px; border-radius: 12px; border-left: 4px solid var(--c-orange);">
-                            <p style="color: var(--text-main); font-size: 14px; font-style: italic; margin: 0;">"${h.aprendizaje || 'Sin registro'}"</p>
-                        </div>
-                    </div>`;
-                });
-                document.getElementById('lista-bitacoras').innerHTML = htmlHist || '<p style="color: var(--text-muted); font-size: 15px;">Aún sin historial clínico registrado.</p>';
-
-                document.getElementById('modalExpediente').style.display = 'flex';
-                switchExpTab('tab-perfil', document.querySelector('.exp-tab-btn')); 
-            }
-        });
-    }
-
-    function cerrarExpediente() { document.getElementById('modalExpediente').style.display = 'none'; }
-
-    function switchExpTab(tabId, btnElement) {
-        document.querySelectorAll('.exp-content-pane').forEach(x => x.style.display = 'none');
-        document.querySelectorAll('.exp-tab-btn').forEach(x => x.classList.remove('active'));
-        document.getElementById(tabId).style.display = 'block';
-        if(btnElement) btnElement.classList.add('active');
-        document.getElementById('btnGuardarGlobalBox').style.display = (tabId === 'tab-bitacora') ? 'none' : 'block';
-    }
-
-    function guardarGlobal(e) {
-        e.preventDefault();
-        const btn = e.target.querySelector('button[type="submit"]');
-        const ogText = btn.innerHTML;
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
-        fetch("{% url 'guardar_expediente_global' %}", { method: 'POST', body: new FormData(e.target), headers: {'X-Requested-With': 'XMLHttpRequest'} })
-        .then(r => r.json()).then(d => {
-            btn.innerHTML = ogText;
-            if(d.status === 'success') alert('Guardado exitosamente.');
-            else alert('Error al guardar.');
-        });
-    }
-
-    function guardarBitacora(e) {
-        e.preventDefault();
-        const btn = e.target.querySelector('button[type="submit"]');
-        const ogText = btn.innerHTML;
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
-        fetch("{% url 'guardar_historial' %}", { method: 'POST', body: new FormData(e.target), headers: {'X-Requested-With': 'XMLHttpRequest'} })
-        .then(r => r.json()).then(d => {
-            btn.innerHTML = ogText;
-            if(d.status === 'success') {
-                alert('Bitácora guardada correctamente.');
-                e.target.reset();
-                abrirExpedienteMaestro(document.getElementById('expPacienteId').value, document.getElementById('expNombre').innerText, ''); 
-            } else { alert('Error: ' + d.message); }
-        });
-    }
+/* =====================================================
+   GUARDAR BITÁCORA
+   ===================================================== */
+function guardarBitacora(e) {
+  e.preventDefault();
+  const btn = e.target.querySelector('button[type="submit"]');
+  const orig = btn.innerHTML;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
+  fetch("{% url 'guardar_historial' %}", {
+    method: 'POST',
+    body: new FormData(e.target),
+    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+  })
+    .then(r => r.json())
+    .then(d => {
+      btn.innerHTML = orig;
+      if (d.status === 'success') {
+        btn.innerHTML = '<i class="fas fa-check"></i> ¡Guardada!';
+        e.target.reset();
+        setTimeout(() => btn.innerHTML = orig, 2000);
+        abrirExpedienteMaestro(
+          document.getElementById('expPacienteId').value,
+          document.getElementById('expNombre').innerText,
+          ''
+        );
+      } else {
+        alert('Error: ' + d.message);
+      }
+    });
+}
 </script>
+
 {% endblock %}

@@ -172,7 +172,7 @@ def obtener_slots_globales(fecha_inicio, fecha_fin, preferencia=""):
         
     resultado = {}
     for fecha_str, slots_set in slots_union.items():
-        resultado[fecha_str] = sorted(slots_set)
+        resultado[fecha_str] = sorted(slots_set, key=lambda x: datetime.strptime(x, '%I:%M %p'))
     return resultado
 
 
@@ -233,7 +233,7 @@ def obtener_slots_psicologo(psicologo, fecha_inicio, fecha_fin):
             slot_actual += timedelta(hours=1)
             
         if slots_del_dia:
-            slots_por_fecha[dia_actual.strftime('%Y-%m-%d')] = slots_del_dia
+            slots_por_fecha[dia_actual.strftime('%Y-%m-%d')] = sorted(slots_del_dia, key=lambda x: datetime.strptime(x, '%I:%M %p'))
             dias_agregados += 1
             
         dia_actual += timedelta(days=1)
