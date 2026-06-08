@@ -524,8 +524,7 @@ def panel_generico(request):
         estado='Confirmada'
     ).order_by('fecha', 'hora').first()
 
-    # =========================================================
-    # NUEVA LÓGICA DE DISPONIBILIDAD (FILTRO APLICADO)
+    # ========================================================= hkgf
     # =========================================================
     fecha_limite = hoy + timedelta(days=90)
 
