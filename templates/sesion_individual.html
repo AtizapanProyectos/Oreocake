@@ -597,7 +597,7 @@ body{font-family:var(--font-b);color:var(--c-dark);background:#fff;display:flex}
   <!-- Pequeña leyenda de comisión -->
   <span class="comision-extra">+ $10 MXN de comisión</span>
   
-  <button class="btn-cta-new" onclick="abrirModal('modalRegistromini')">
+  <button class="btn-cta-new" onclick="abrirModal('modalRegistro')">
     <i class="fas fa-calendar-check"></i> &nbsp;Agendar Mi Sesión
   </button>
   <div class="cta-badges">
@@ -715,7 +715,7 @@ body{font-family:var(--font-b);color:var(--c-dark);background:#fff;display:flex}
         <p>Una plataforma de bienestar mental con enfoque humano. Acompañamos cada proceso con presencia, rigor clínico y genuino cuidado.</p>
         <div class="footer-addr"><i class="fas fa-location-dot"></i><span>Lago Margarita 47, Col. Granada, 11520, CDMX</span></div>
         <div class="footer-addr"><i class="fas fa-globe"></i><a href="https://espaciohope.com" target="_blank" rel="noopener">espaciohope.com</a></div>
-        <a href="#" class="footer-cta" onclick="abrirModal('modalRegistromini'); return false;">Iniciar mi proceso <i class="fas fa-arrow-right"></i></a>
+        <a href="#" class="footer-cta" onclick="abrirModal('modalRegistro'); return false;">Iniciar mi proceso <i class="fas fa-arrow-right"></i></a>
         <div class="footer-tags">
           <span class="footer-tag" style="color:var(--c-teal);border-color:var(--c-teal)">Individual</span>
           <span class="footer-tag" style="color:var(--c-pink);border-color:var(--c-pink)">Parejas</span>
@@ -879,9 +879,9 @@ body{font-family:var(--font-b);color:var(--c-dark);background:#fff;display:flex}
 </div>
 
 
-<div class="modal-overlay" id="modalRegistromini">
+<div class="modal-overlay" id="modalRegistro">
    <div class="modal-box" style="max-width:450px;padding:45px 40px;border-radius:30px">
-    <button class="modal-close" onclick="cerrarModal('modalRegistromini')"><i class="fas fa-times"></i></button>
+    <button class="modal-close" onclick="cerrarModal('modalRegistro')"><i class="fas fa-times"></i></button>
     <img src="{% static 'img/nlogo.png' %}" alt="HOPE Logo" style="height: 50px; margin: 0 auto 25px; display: block;">
     <div style="text-align:center;margin-bottom:35px">
       <h2 style="font-family:var(--font-h);font-size:2.2rem;color:var(--c-dark);margin-bottom:8px;font-weight:800">Tu espacio seguro te espera.</h2>
@@ -906,103 +906,6 @@ body{font-family:var(--font-b);color:var(--c-dark);background:#fff;display:flex}
   </div>
 </div>
 
-
-<div class="modal-overlay" id="modalRegistro">
-    <div class="modal-box" id="triageBox" style="text-align: left; padding: 45px; border-radius: 35px; border-top: 8px solid var(--c-purple);">
-        <button class="modal-close" onclick="cerrarModal('modalRegistro')"><i class="fas fa-times"></i></button>
-        
-        <img src="{% static 'img/nlogo.png' %}" alt="HOPE Logo" style="height: 45px; margin: 0 auto 20px; display: block; animation: fadeInUp 0.5s;">
-
-        <div style="text-align: center; margin-bottom: 25px;" id="triageHeader">
-            <h2 style="font-family: var(--font-h); font-size: 2.2rem; color: var(--c-dark); font-weight: 800;">Registro</h2>
-            <p style="color: var(--text-muted); font-size: 1.05rem;" id="triageSubtitle">Paso a paso, a tu ritmo. 💜</p>
-        </div>
-
-        <div id="triageContainer">
-            <div id="stepPreguntas" style="display: none;">
-                <div class="progress-container"><div id="progressBar"></div></div>
-                <p id="progressText" style="text-align: right; color: var(--c-pink); font-weight: 800; margin-bottom: 20px; font-size: 0.85rem; text-transform: uppercase;"></p>
-                <h3 id="questionText" style="margin-bottom: 25px; font-size: 1.4rem; color: var(--c-dark); font-weight: 800; line-height: 1.4;"></h3>
-                <div id="questionOptionsContainer" style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 30px;"></div>
-                <div style="display: flex; gap: 15px;">
-                    <button type="button" id="btnAtras" class="btn-outline" style="display: none; padding: 15px 25px;"><i class="fas fa-arrow-left"></i></button>
-                    <button type="button" id="btnSiguiente" class="btn-primary" style="flex: 1; justify-content: center; padding: 15px 25px;">Continuar <i class="fas fa-arrow-right"></i></button>
-                </div>
-            </div>
-
-            <form action="{% url 'registro_usuario' %}" method="POST" id="formRegistro" style="display: none;">
-                {% csrf_token %}
-                <input type="hidden" name="flujo_elegido" id="inputFlujoFinal">
-                <input type="hidden" name="respuestas_json" id="inputRespuestasFinal">
-                <input type="hidden" name="servicio_origen" id="inputServicioOrigen">
-
-                <div style="background: #f8fafc; padding: 25px; border-radius: 20px; border: 1px solid #e2e8f0; margin-bottom: 25px;">
-                    <h4 style="font-family: var(--font-h); font-size: 1.4rem; color: var(--c-purple); margin-bottom: 20px; font-weight: 800;">Tus Datos Generales</h4>
-
-                    <div style="margin-bottom: 18px;">
-                        <label style="font-size: 0.85rem; font-weight: 700; color: var(--text-muted); margin-bottom: 8px; display: block; text-transform: uppercase; letter-spacing: 1px;">¿Cómo te llamamos? <span style="color: var(--c-pink);">*</span></label>
-                        <div style="position: relative;">
-                            <i class="fas fa-smile" style="position: absolute; left: 18px; top: 50%; transform: translateY(-50%); color: #cbd5e1; font-size: 1.2rem;"></i>
-                            <input type="text" id="pseudonimoFinal" style="width: 100%; padding: 16px 16px 16px 50px; border-radius: 14px; border: 2px solid #cbd5e1; font-size: 1rem; font-family: var(--font-b); outline: none; transition: 0.3s; color: var(--c-dark);" placeholder="Ej. Alex, Majo..." required>
-                        </div>
-                    </div>
-
-                    <div style="margin-bottom: 18px;">
-                        <label style="font-size: 0.85rem; font-weight: 700; color: var(--text-muted); margin-bottom: 8px; display: block; text-transform: uppercase; letter-spacing: 1px;">Nombre Completo (Privado) <span style="color: var(--c-pink);">*</span></label>
-                        <div style="position: relative;">
-                            <i class="fas fa-id-card" style="position: absolute; left: 18px; top: 50%; transform: translateY(-50%); color: #cbd5e1; font-size: 1.2rem;"></i>
-                            <input type="text" name="nombre" style="width: 100%; padding: 16px 16px 16px 50px; border-radius: 14px; border: 2px solid #cbd5e1; font-size: 1rem; font-family: var(--font-b); outline: none; transition: 0.3s; color: var(--c-dark);" placeholder="Para tu expediente clínico oficial" required>
-                        </div>
-                    </div>
-
-                    <div style="margin-bottom: 18px;">
-                        <label style="font-size: 0.85rem; font-weight: 700; color: var(--text-muted); margin-bottom: 8px; display: block; text-transform: uppercase; letter-spacing: 1px;">Correo electrónico <span style="color: var(--c-pink);">*</span></label>
-                        <div style="position: relative;">
-                            <i class="fas fa-envelope" style="position: absolute; left: 18px; top: 50%; transform: translateY(-50%); color: #cbd5e1; font-size: 1.2rem;"></i>
-                            <input type="email" name="email" style="width: 100%; padding: 16px 16px 16px 50px; border-radius: 14px; border: 2px solid #cbd5e1; font-size: 1rem; font-family: var(--font-b); outline: none; transition: 0.3s; color: var(--c-dark);" placeholder="tucorreo@ejemplo.com" required>
-                        </div>
-                    </div>
-
-                    <div style="display: flex; gap: 15px; flex-wrap: wrap; margin-bottom: 18px;">
-                        <div style="flex: 1; min-width: 200px;">
-                            <label style="font-size: 0.85rem; font-weight: 700; color: var(--text-muted); margin-bottom: 8px; display: block; text-transform: uppercase; letter-spacing: 1px;">Tu Teléfono <span style="color: var(--c-pink);">*</span></label>
-                            <div style="position: relative;">
-                                <i class="fas fa-phone" style="position: absolute; left: 18px; top: 50%; transform: translateY(-50%); color: #cbd5e1; font-size: 1.2rem;"></i>
-                                <input type="tel" name="telefono" style="width: 100%; padding: 16px 16px 16px 50px; border-radius: 14px; border: 2px solid #cbd5e1; font-size: 1rem; font-family: var(--font-b); outline: none; transition: 0.3s; color: var(--c-dark);" placeholder="A 10 dígitos" required>
-                            </div>
-                        </div>
-                        <div style="flex: 1; min-width: 200px;">
-                            <label style="font-size: 0.85rem; font-weight: 700; color: var(--c-pink); margin-bottom: 8px; display: block; text-transform: uppercase; letter-spacing: 1px;">Tel. Emergencia <span style="color: var(--c-pink);">*</span></label>
-                            <div style="position: relative;">
-                                <i class="fas fa-notes-medical" style="position: absolute; left: 18px; top: 50%; transform: translateY(-50%); color: var(--c-pink); font-size: 1.2rem; opacity: 0.8;"></i>
-                                <input type="tel" name="telefono_emergencia" style="width: 100%; padding: 16px 16px 16px 50px; border-radius: 14px; border: 2px solid #fbcfe8; font-size: 1rem; font-family: var(--font-b); outline: none; transition: 0.3s; background: #fdf2f8; color: var(--c-dark);" placeholder="Familiar o amigo" required>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div style="margin-bottom: 5px;">
-                        <label style="font-size: 0.85rem; font-weight: 700; color: var(--text-muted); margin-bottom: 8px; display: block; text-transform: uppercase; letter-spacing: 1px;">Crea una Contraseña <span style="color: var(--c-pink);">*</span></label>
-                        <div style="position: relative;">
-                            <i class="fas fa-lock" style="position: absolute; left: 18px; top: 50%; transform: translateY(-50%); color: #cbd5e1; font-size: 1.2rem;"></i>
-                            <input type="password" name="password" style="width: 100%; padding: 16px 16px 16px 50px; border-radius: 14px; border: 2px solid #cbd5e1; font-size: 1rem; font-family: var(--font-b); outline: none; transition: 0.3s; color: var(--c-dark);" placeholder="Mínimo 8 caracteres" required>
-                        </div>
-                    </div>
-                </div>
-
-                <label style="display: flex; align-items: flex-start; gap: 15px; margin-bottom: 25px; cursor: pointer; background: #fff1f2; padding: 20px; border-radius: 16px; border: 1px solid #fecdd3; transition: 0.3s;" onmouseover="this.style.boxShadow='0 5px 15px rgba(248,91,140,0.1)'" onmouseout="this.style.boxShadow='none'">
-                    <input type="checkbox" name="acepta_privacidad" required style="min-width: 22px; height: 22px; accent-color: var(--c-pink); margin-top: 2px; cursor: pointer;">
-                    <span style="font-size: 0.95rem; color: var(--text-main); line-height: 1.5; font-weight: 500;">
-                        He leído y acepto el <a href="#" onclick="abrirModal('modalPrivacidad'); return false;" style="color: var(--c-pink); font-weight: 800; text-decoration: none; border-bottom: 2px dashed var(--c-pink);">Aviso de Privacidad</a> para la protección de mi expediente clínico.
-                    </span>
-                </label>
-
-                <button type="submit" class="btn-primary" id="btnSubmitFinal" style="width: 100%; justify-content: center; padding: 22px; font-size: 1.2rem; border-radius: 16px; font-weight: 900;">
-                    Finalizar Registro <i class="fas fa-heart" style="margin-left: 8px;"></i>
-                </button>
-            </form>
-        </div>
-    </div>
-</div>
 
 
 <div id="modalMood" class="modal-overlay">
@@ -1162,7 +1065,7 @@ body{font-family:var(--font-b);color:var(--c-dark);background:#fff;display:flex}
             btn.disabled = false;
             
             if (data.status === 'success') {
-                cerrarModal('modalRegistromini');
+                cerrarModal('modalRegistro');
                 abrirModal('modalCalendario');
             } 
             // 🔥 AGREGA ESTO: Si ya existía, lo manda directo a su panel
@@ -1641,7 +1544,7 @@ function abrirRegistroDirecto(flujo, servicioExacto) {
         return;
     }
 
-    abrirModal('modalRegistromini');
+    abrirModal('modalRegistro');
     
     // 🔥 Ya no forzamos la búsqueda de los divs fantasmas, solo los ocultamos si existen
     const stepPrimario = document.getElementById('stepTriagePrimario');
