@@ -4,522 +4,1145 @@
 {% block title %}Dirección General · HOPE{% endblock %}
 
 {% block content %}
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/main.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Syne:wght@400;600;700;800&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+<script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js'></script>
+
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+/* =============================================================
+   HOPE ADMIN DASHBOARD V2 — MOBILE FIRST
+   Paleta: #5A3FA3 · #F85B8C · #F27C21 · #25B8B8
+   ============================================================= */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-/* ============================================================
-   DESIGN SYSTEM — HOPE CLEAN ARCHITECTURE
-   ============================================================ */
 :root {
-  --bg-main:    #F8FAFC;
-  --surface:    #FFFFFF;
-  --border:     #E2E8F0;
-  --border-2:   #F1F5F9;
-  
-  --c-purple:   #5A3FA3;
-  --c-pink:     #F85B8C;
-  --c-orange:   #F27C21;
-  --c-teal:     #25B8B8;
-  --c-yellow:   #F8D33D;
+  --p:      #5A3FA3;
+  --p-lgt:  #EDE9FF;
+  --p-mid:  #8B72D4;
+  --pink:   #F85B8C;
+  --pink-l: #FFF0F5;
+  --org:    #F27C21;
+  --org-l:  #FFF5EC;
+  --teal:   #25B8B8;
+  --teal-l: #E8FAFA;
+  --yel:    #F8D33D;
 
-  --text-1:     #0F172A;
-  --text-2:     #475569;
-  --text-3:     #94A3B8;
+  --ink:   #0D0D18;
+  --ink2:  #3D3D55;
+  --ink3:  #7A7A99;
+  --ink4:  #B8B8CC;
+  --surf:  #F6F4FF;
+  --wht:   #FFFFFF;
+  --bd:    rgba(90,63,163,0.09);
 
-  --radius-sm:  10px;
-  --radius:     16px;
-  --radius-lg:  24px;
-  --radius-xl:  32px;
+  --fd:    'DM Serif Display', serif;
+  --fh:    'Syne', sans-serif;
+  --fb:    'DM Sans', sans-serif;
 
-  --shadow-sm:  0 2px 4px rgba(0, 0, 0, 0.02);
-  --shadow-md:  0 10px 25px rgba(15, 23, 42, 0.05);
-  --shadow-lg:  0 25px 50px -12px rgba(90, 63, 163, 0.1);
+  --rsm:  12px;
+  --rmd:  18px;
+  --rlg:  26px;
+  --rxl:  34px;
 
-  --font-headings: 'Outfit', sans-serif;
-  --font-body:     'Plus Jakarta Sans', sans-serif;
-  --transition:    all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  --shc: 0 2px 16px rgba(90,63,163,0.07);
+  --shh: 0 10px 36px rgba(90,63,163,0.13);
 }
 
-body { background-color: var(--bg-main); color: var(--text-1); font-family: var(--font-body); }
+html { scroll-behavior: smooth; }
 
-.hope-wrapper { max-width: 1550px; margin: 0 auto; padding: 40px 30px; }
-
-/* ── MASTHEAD ─────────────────────────────────────────────── */
-.masthead { display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; background: var(--surface); padding: 25px 40px; border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); border: 1px solid white; }
-.masthead-left { display: flex; align-items: center; gap: 20px; }
-.masthead-logo { height: 45px; width: auto; }
-.masthead-title { font-family: var(--font-headings); font-size: 28px; font-weight: 800; color: var(--text-1); line-height: 1.1; }
-.masthead-title span { color: var(--c-purple); font-weight: 900; }
-.masthead-subtitle { font-size: 13px; color: var(--text-3); font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; margin-top: 4px; }
-
-.masthead-right { display: flex; align-items: center; gap: 15px; }
-.live-pill { display: flex; align-items: center; gap: 8px; background: #F0FDF4; color: #059669; padding: 8px 18px; border-radius: 50px; font-weight: 800; font-size: 12px; border: 1px solid #BBF7D0; text-transform: uppercase; letter-spacing: 1px;}
-.live-dot { width: 8px; height: 8px; background: #10B981; border-radius: 50%; animation: pulse 2s infinite; }
-@keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(16,185,129,0.5); } 70% { box-shadow: 0 0 0 10px rgba(16,185,129,0); } 100% { box-shadow: 0 0 0 0 rgba(16,185,129,0); } }
-
-/* ── CALENDAR SECTION ──────────────────────────── */
-.calendar-section { background: var(--surface); border-radius: var(--radius-xl); padding: 40px; box-shadow: var(--shadow-lg); margin-bottom: 40px; border: 1px solid white; }
-.calendar-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 30px; }
-.calendar-title h2 { font-family: var(--font-headings); font-size: 36px; color: var(--text-1); font-weight: 900; margin: 0; letter-spacing: -0.5px;}
-.calendar-title p { color: var(--text-3); margin: 8px 0 0 0; font-size: 16px; font-weight: 500; }
-
-.cal-search-box { position: relative; width: 380px; }
-.cal-search-box i { position: absolute; left: 18px; top: 50%; transform: translateY(-50%); color: var(--text-3); font-size: 16px; }
-.cal-search-input { width: 100%; padding: 15px 20px 15px 45px; border: 2px solid var(--border-2); border-radius: 16px; font-family: var(--font-body); font-size: 14px; font-weight: 600; color: var(--text-1); outline: none; transition: var(--transition); background: var(--bg-main); }
-.cal-search-input:focus { border-color: var(--c-purple); background: white; box-shadow: 0 0 0 4px rgba(90,63,163,0.1); }
-
-/* ── FULLCALENDAR CLEAN OVERRIDES ─────────────────────────── */
-.fc { font-family: var(--font-body); }
-.fc-theme-standard th { padding: 18px 0; background: var(--surface); color: var(--text-2); font-family: var(--font-headings); font-weight: 800; text-transform: uppercase; font-size: 12px; letter-spacing: 1px; border: none !important; border-bottom: 2px solid var(--border-2) !important; }
-.fc-theme-standard td, .fc-theme-standard .fc-scrollgrid { border-color: var(--border-2) !important; }
-.fc .fc-toolbar-title { font-family: var(--font-headings); font-weight: 900; font-size: 26px !important; color: var(--text-1); }
-.fc .fc-button-primary { background: white !important; color: var(--text-2) !important; border: 1px solid var(--border) !important; border-radius: 12px !important; font-weight: 700 !important; text-transform: capitalize !important; box-shadow: var(--shadow-sm); transition: var(--transition); padding: 8px 16px !important;}
-.fc .fc-button-primary:hover { background: var(--bg-main) !important; color: var(--c-purple) !important; border-color: var(--c-purple) !important; }
-.fc .fc-button-active { background: var(--c-purple) !important; color: white !important; border-color: var(--c-purple) !important; box-shadow: 0 6px 15px rgba(90,63,163,0.2) !important; }
-.fc-day-today { background: #F8FAFC !important; }
-
-/* ── 🔥 PREPARACIÓN DEL GRID ESTRICTO (CERO CHOQUES) ── */
-.fc-event { 
-    border: none !important; 
-    background: transparent !important; 
-    margin: 3px !important; /* Margen estricto para que nunca se toquen */
-    overflow: visible !important; 
-}
-.fc-timegrid-event .fc-event-main { 
-    padding: 0 !important; 
-    height: 100%; 
-    position: relative; 
-}
-.fc-v-event { background: transparent !important; border: none !important; box-shadow: none !important;}
-
-/* ── 🔥 EVENT CARD PREMIUM (GRANDE, ESTRICTA Y EXPANSIVA) ──────────── */
-.hope-event-wrapper {
-    width: 100%; height: 100%;
+body {
+  background: var(--surf);
+  background-image:
+    radial-gradient(ellipse 70% 40% at 15% -5%, rgba(90,63,163,0.07) 0%, transparent 55%),
+    radial-gradient(ellipse 50% 35% at 85% 95%, rgba(37,184,184,0.05) 0%, transparent 50%);
+  color: var(--ink);
+  font-family: var(--fb);
+  min-height: 100vh;
 }
 
-.hope-event-card {
-    display: flex; flex-direction: column; justify-content: center;
-    padding: 10px 8px; 
-    border-radius: 12px;
-    border-left: 8px solid; 
-    background: #FFFFFF;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.06);
-    height: 100%; width: 100%; 
-    border-top: 1px solid var(--border-2); border-right: 1px solid var(--border-2); border-bottom: 1px solid var(--border-2);
-    overflow: hidden; 
-    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease;
-    cursor: pointer;
-    position: relative;
-    z-index: 1; /* Nivel base normal */
-}
-/* 🔥 LA MAGIA: EL EFECTO LUPA AL PASAR EL MOUSE */
-.hope-event-card:hover {
-    transform: scale(1.05) translateY(-4px); /* Efecto lupa estable y hacia arriba */
-    box-shadow: 0 15px 35px rgba(0,0,0,0.12);
-    z-index: 9999 !important; /* Se pone por encima de todas las demás */
-    background: white;
-}
+/* =============================================================
+   WRAPPER
+   ============================================================= */
+.hw { max-width: 1480px; margin: 0 auto; padding: 28px 20px 100px; }
 
-/* HORA ENORME */
-.evt-time-big { 
-    font-size: 20px; 
-    font-weight: 900; 
-    font-family: var(--font-headings); 
-    color: var(--text-1); 
-    line-height: 1.1;
-    margin-bottom: 6px;
-    white-space: nowrap !important; /* Jamás se rompe en dos líneas */
-    letter-spacing: -0.5px;
+@media (min-width: 768px) { .hw { padding: 36px 30px 80px; } }
+
+/* =============================================================
+   MASTHEAD
+   ============================================================= */
+.masthead {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  background: var(--wht);
+  border: 1px solid var(--bd);
+  border-radius: var(--rlg);
+  padding: 18px 22px;
+  margin-bottom: 28px;
+  box-shadow: var(--shc);
+  position: relative;
+  overflow: hidden;
 }
 
-/* DOCTOR GRANDE */
-.evt-doc-name { 
-    font-size: 14px; 
-    font-weight: 800; 
-    color: var(--text-2); 
-    white-space: nowrap !important; /* Jamás se rompe */
+.masthead::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--p), var(--pink), var(--teal));
 }
 
-/* Estado cancelado */
-.hope-event-card.canceled { background: #F1F5F9 !important; border-left-color: #94A3B8 !important; opacity: 0.7; }
-.hope-event-card.canceled .evt-time-big { text-decoration: line-through; color: var(--text-3); }
-.hope-event-card.canceled .evt-doc-name { color: var(--text-3); }
+.mast-left { display: flex; align-items: center; gap: 14px; }
 
-/* ── KPI GRID & BOTTOM PANELS ─────────────────────────────── */
-.kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; margin-bottom: 40px; }
-.kpi-card { background: var(--surface); border-radius: var(--radius-lg); padding: 30px; box-shadow: var(--shadow-md); display: flex; align-items: center; gap: 20px; transition: var(--transition); border: 1px solid white; }
-.kpi-card:hover { transform: translateY(-5px); box-shadow: var(--shadow-lg); }
-.kpi-icon { width: 64px; height: 64px; border-radius: 18px; display: flex; align-items: center; justify-content: center; font-size: 26px; flex-shrink: 0; }
-.kpi-val { font-family: var(--font-headings); font-size: 38px; font-weight: 900; color: var(--text-1); line-height: 1; margin-bottom: 6px; letter-spacing: -1px;}
-.kpi-label { font-size: 13px; font-weight: 700; color: var(--text-3); text-transform: uppercase; letter-spacing: 1.5px; }
+.mast-logo { height: 38px; width: auto; }
 
-.bottom-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; }
-.panel { background: var(--surface); border-radius: var(--radius-xl); padding: 40px; box-shadow: var(--shadow-md); display: flex; flex-direction: column; border: 1px solid white; }
-.panel-title { font-family: var(--font-headings); font-size: 24px; font-weight: 900; color: var(--text-1); margin-bottom: 30px; display: flex; align-items: center; gap: 12px; }
-.panel-title i { color: var(--c-purple); font-size: 20px;}
+.mast-name {
+  font-family: var(--fd);
+  font-size: clamp(18px, 3vw, 26px);
+  color: var(--ink);
+  line-height: 1.1;
+}
 
-/* DOCTORS */
-.doc-list { display: flex; flex-direction: column; gap: 16px; }
-.doc-card { display: flex; align-items: center; justify-content: space-between; padding: 20px; background: var(--bg-main); border-radius: 16px; border: 1px solid var(--border-2); transition: var(--transition);}
-.doc-card:hover { border-color: var(--border); background: white; box-shadow: var(--shadow-sm);}
-.doc-info h4 { margin: 0; font-size: 16px; font-weight: 800; color: var(--text-1); font-family: var(--font-headings);}
-.doc-info p { margin: 2px 0 0 0; font-size: 13px; color: var(--text-3); font-weight: 600;}
-.doc-stats { text-align: right; }
-.doc-stats .num { font-size: 22px; font-weight: 900; color: var(--c-purple); font-family: var(--font-headings); line-height: 1;}
+.mast-name em { font-style: italic; color: var(--p); }
 
-/* PATIENTS */
-.patient-scroll-container { flex: 1; max-height: 500px; overflow-y: auto; padding-right: 15px; display: flex; flex-direction: column; gap: 14px; }
-.patient-scroll-container::-webkit-scrollbar { width: 6px; }
-.patient-scroll-container::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 10px; }
-.patient-row { display: flex; align-items: center; justify-content: space-between; padding: 18px; border-radius: 16px; border: 1px solid var(--border-2); transition: var(--transition); background: white;}
-.patient-row:hover { border-color: var(--c-teal); background: #F0FDFA; transform: translateX(5px); box-shadow: var(--shadow-sm);}
-.p-avatar { width: 42px; height: 42px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 16px; font-family: var(--font-headings);}
-.p-badge { padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 800; letter-spacing: 0.5px; border: 1px solid transparent;}
+.mast-sub {
+  font-family: var(--fh);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--ink3);
+  margin-top: 3px;
+}
 
-.fade-up { animation: fadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; transform: translateY(20px); }
-@keyframes fadeUp { to { opacity: 1; transform: translateY(0); } }
-.d-1 { animation-delay: 0.1s; } .d-2 { animation-delay: 0.2s; } .d-3 { animation-delay: 0.3s; }
+.live-pill {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: #F0FDF4;
+  color: #059669;
+  padding: 7px 14px;
+  border-radius: 100px;
+  font-family: var(--fh);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border: 1px solid #BBF7D0;
+  white-space: nowrap;
+}
+
+.live-dot {
+  width: 7px; height: 7px;
+  background: #10B981;
+  border-radius: 50%;
+  animation: livepulse 2s infinite;
+}
+
+@keyframes livepulse {
+  0%  { box-shadow: 0 0 0 0 rgba(16,185,129,0.5); }
+  70% { box-shadow: 0 0 0 8px rgba(16,185,129,0); }
+  100%{ box-shadow: 0 0 0 0 rgba(16,185,129,0); }
+}
+
+/* =============================================================
+   KPI GRID — 2 cols mobile, 4 desktop
+   ============================================================= */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+  margin-bottom: 28px;
+}
+
+@media (min-width: 900px) {
+  .kpi-grid { grid-template-columns: repeat(4, 1fr); gap: 20px; }
+}
+
+.kpi-card {
+  background: var(--wht);
+  border: 1px solid var(--bd);
+  border-radius: var(--rlg);
+  padding: 20px 18px;
+  box-shadow: var(--shc);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.kpi-card:hover { transform: translateY(-4px); box-shadow: var(--shh); }
+
+.kpi-card::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 3px;
+  opacity: 0;
+  transition: opacity 0.25s;
+}
+
+.kpi-card:hover::after { opacity: 1; }
+.kpi-purple::after { background: var(--p); }
+.kpi-teal::after   { background: var(--teal); }
+.kpi-org::after    { background: var(--org); }
+.kpi-pink::after   { background: var(--pink); }
+
+.kpi-icon {
+  width: 46px; height: 46px;
+  border-radius: 14px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px;
+  margin-bottom: 14px;
+}
+
+.kpi-val {
+  font-family: var(--fd);
+  font-size: clamp(28px, 4vw, 40px);
+  color: var(--ink);
+  line-height: 1;
+  margin-bottom: 5px;
+}
+
+.kpi-lbl {
+  font-family: var(--fh);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--ink3);
+}
+
+/* =============================================================
+   SECCIÓN CALENDARIO
+   ============================================================= */
+.cal-section {
+  background: var(--wht);
+  border: 1px solid var(--bd);
+  border-radius: var(--rxl);
+  box-shadow: var(--shh);
+  margin-bottom: 28px;
+  overflow: hidden;
+}
+
+.cal-header {
+  padding: 24px 24px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+@media (min-width: 768px) {
+  .cal-header {
+    flex-direction: row;
+    align-items: flex-end;
+    justify-content: space-between;
+    padding: 32px 36px 0;
+  }
+}
+
+.cal-title-block {}
+
+.cal-title {
+  font-family: var(--fd);
+  font-size: clamp(22px, 4vw, 34px);
+  color: var(--ink);
+  line-height: 1.1;
+}
+
+.cal-title em { font-style: italic; color: var(--p); }
+
+.cal-desc {
+  font-size: 13px;
+  color: var(--ink3);
+  margin-top: 6px;
+}
+
+/* Buscador */
+.cal-search {
+  position: relative;
+  width: 100%;
+}
+
+@media (min-width: 768px) { .cal-search { width: 320px; } }
+
+.cal-search i {
+  position: absolute;
+  left: 16px; top: 50%;
+  transform: translateY(-50%);
+  color: var(--ink3);
+  font-size: 14px;
+  pointer-events: none;
+}
+
+.cal-search input {
+  width: 100%;
+  padding: 12px 16px 12px 42px;
+  border: 1.5px solid rgba(90,63,163,0.15);
+  border-radius: 14px;
+  font-family: var(--fb);
+  font-size: 14px;
+  color: var(--ink);
+  background: var(--surf);
+  outline: none;
+  transition: all 0.2s;
+}
+
+.cal-search input:focus {
+  border-color: var(--p);
+  background: var(--wht);
+  box-shadow: 0 0 0 4px rgba(90,63,163,0.1);
+}
+
+/* Vista switch móvil */
+.view-switcher {
+  display: flex;
+  gap: 6px;
+  padding: 16px 24px 0;
+}
+
+@media (min-width: 768px) { .view-switcher { display: none; } }
+
+.vsw-btn {
+  flex: 1;
+  padding: 9px 12px;
+  border-radius: 12px;
+  font-family: var(--fh);
+  font-size: 12px;
+  font-weight: 700;
+  border: 1.5px solid rgba(90,63,163,0.15);
+  background: var(--surf);
+  color: var(--ink3);
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+}
+
+.vsw-btn.active {
+  background: var(--p);
+  color: var(--wht);
+  border-color: var(--p);
+  box-shadow: 0 4px 12px rgba(90,63,163,0.3);
+}
+
+.cal-body { padding: 20px 16px 24px; }
+
+@media (min-width: 768px) { .cal-body { padding: 28px 32px 36px; } }
+
+/* =============================================================
+   FULLCALENDAR OVERRIDES — LIMPIO Y MOBILE
+   ============================================================= */
+.fc { font-family: var(--fb); }
+
+.fc-theme-standard th {
+  padding: 12px 0;
+  background: var(--wht);
+  color: var(--ink2);
+  font-family: var(--fh);
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 10px;
+  letter-spacing: 1.2px;
+  border: none !important;
+  border-bottom: 1.5px solid rgba(90,63,163,0.08) !important;
+}
+
+.fc-theme-standard td,
+.fc-theme-standard .fc-scrollgrid {
+  border-color: rgba(90,63,163,0.06) !important;
+}
+
+.fc .fc-toolbar-title {
+  font-family: var(--fh) !important;
+  font-weight: 700 !important;
+  font-size: clamp(15px, 3vw, 22px) !important;
+  color: var(--ink);
+}
+
+/* Botones nav del calendario */
+.fc .fc-button-primary {
+  background: var(--wht) !important;
+  color: var(--ink2) !important;
+  border: 1.5px solid rgba(90,63,163,0.15) !important;
+  border-radius: 12px !important;
+  font-family: var(--fh) !important;
+  font-weight: 700 !important;
+  font-size: 12px !important;
+  padding: 7px 14px !important;
+  box-shadow: none !important;
+  transition: all 0.2s !important;
+  text-transform: capitalize !important;
+}
+
+.fc .fc-button-primary:hover {
+  background: var(--p-lgt) !important;
+  color: var(--p) !important;
+  border-color: var(--p) !important;
+}
+
+.fc .fc-button-active,
+.fc .fc-button-primary:not(:disabled).fc-button-active {
+  background: var(--p) !important;
+  color: var(--wht) !important;
+  border-color: var(--p) !important;
+  box-shadow: 0 4px 12px rgba(90,63,163,0.3) !important;
+}
+
+/* ocultar la toolbar derecha en móvil (solo prev/next/today) */
+@media (max-width: 767px) {
+  .fc .fc-toolbar { flex-wrap: wrap; gap: 8px; }
+  .fc .fc-toolbar-chunk:last-child { display: none; }
+  .fc .fc-toolbar-title { font-size: 15px !important; }
+  .fc .fc-button-primary { padding: 6px 10px !important; font-size: 11px !important; }
+  .fc-daygrid-day-number { font-size: 12px !important; }
+}
+
+/* Hoy */
+.fc .fc-day-today { background: rgba(90,63,163,0.03) !important; }
+.fc .fc-day-today .fc-daygrid-day-number {
+  background: var(--p);
+  color: white;
+  border-radius: 50%;
+  width: 26px; height: 26px;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--fh);
+  font-weight: 700;
+  font-size: 12px;
+}
+
+/* Eventos */
+.fc-event {
+  border: none !important;
+  background: transparent !important;
+  margin: 2px 3px !important;
+}
+
+.fc-v-event { background: transparent !important; border: none !important; box-shadow: none !important; }
+
+/* Tarjeta evento CUSTOM */
+.hev-card {
+  border-radius: 10px;
+  border-left: 4px solid;
+  background: var(--wht);
+  padding: 6px 8px;
+  height: 100%;
+  width: 100%;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.06);
+  transition: transform 0.2s, box-shadow 0.2s;
+  cursor: pointer;
+  overflow: hidden;
+  border-top: 1px solid rgba(90,63,163,0.07);
+  border-right: 1px solid rgba(90,63,163,0.07);
+  border-bottom: 1px solid rgba(90,63,163,0.07);
+}
+
+.hev-card:hover {
+  transform: scale(1.04) translateY(-3px);
+  box-shadow: 0 10px 28px rgba(0,0,0,0.1);
+  z-index: 9999 !important;
+  position: relative;
+}
+
+.hev-time {
+  font-family: var(--fh);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.hev-doc {
+  font-size: 11px;
+  color: var(--ink3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 2px;
+}
+
+/* Pill mes (dayGrid) */
+.hev-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: 100px;
+  padding: 2px 8px;
+  font-family: var(--fh);
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+/* Cancelada */
+.hev-card.canceled {
+  background: #F8FAFC !important;
+  border-left-color: #94A3B8 !important;
+  opacity: 0.65;
+}
+
+.hev-card.canceled .hev-time { text-decoration: line-through; color: var(--ink4); }
+
+/* =============================================================
+   BOTTOM PANELS — stack en móvil, 2 cols en desktop
+   ============================================================= */
+.bot-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+}
+
+@media (min-width: 900px) {
+  .bot-grid { grid-template-columns: 1fr 1fr; gap: 26px; }
+}
+
+.panel {
+  background: var(--wht);
+  border: 1px solid var(--bd);
+  border-radius: var(--rxl);
+  padding: 26px 22px;
+  box-shadow: var(--shc);
+}
+
+@media (min-width: 768px) { .panel { padding: 36px 32px; } }
+
+.panel-title {
+  font-family: var(--fh);
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 22px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.panel-title i { font-size: 18px; }
+
+/* Docs list */
+.doc-list { display: flex; flex-direction: column; gap: 12px; }
+
+.doc-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px;
+  background: var(--surf);
+  border: 1px solid rgba(90,63,163,0.07);
+  border-radius: var(--rmd);
+  transition: all 0.2s;
+}
+
+.doc-row:hover {
+  background: var(--wht);
+  border-color: rgba(90,63,163,0.18);
+  box-shadow: var(--shc);
+  transform: translateX(4px);
+}
+
+.doc-ava {
+  width: 44px; height: 44px;
+  border-radius: 14px;
+  background: var(--p-lgt);
+  color: var(--p);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--fh);
+  font-size: 18px;
+  font-weight: 700;
+  flex-shrink: 0;
+  border: 1.5px solid rgba(90,63,163,0.12);
+}
+
+.doc-name {
+  font-family: var(--fh);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.doc-esp {
+  font-size: 12px;
+  color: var(--ink3);
+  margin-top: 2px;
+}
+
+.doc-count {
+  font-family: var(--fd);
+  font-size: 26px;
+  color: var(--p);
+  line-height: 1;
+  text-align: right;
+}
+
+.doc-count-lbl {
+  font-size: 10px;
+  font-family: var(--fh);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--ink4);
+  text-align: right;
+}
+
+/* Patients scroll */
+.pac-scroll {
+  max-height: 460px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-right: 6px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(90,63,163,0.15) transparent;
+}
+
+.pac-scroll::-webkit-scrollbar { width: 5px; }
+.pac-scroll::-webkit-scrollbar-thumb { background: rgba(90,63,163,0.15); border-radius: 10px; }
+
+.pac-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  background: var(--wht);
+  border: 1px solid rgba(90,63,163,0.07);
+  border-radius: var(--rmd);
+  transition: all 0.2s;
+}
+
+.pac-row:hover {
+  border-color: var(--teal);
+  background: var(--teal-l);
+  transform: translateX(4px);
+  box-shadow: var(--shc);
+}
+
+.pac-ava {
+  width: 40px; height: 40px;
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--fh);
+  font-size: 16px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.pac-name {
+  font-family: var(--fh);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.pac-doc {
+  font-size: 11px;
+  color: var(--ink3);
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.p-animo {
+  font-size: 11px;
+  font-family: var(--fh);
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 100px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* =============================================================
+   MODAL CITA
+   ============================================================= */
+.hope-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(13,13,24,0.6);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  z-index: 99999;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.hope-overlay.open { display: flex; }
+
+.modal-cita {
+  background: var(--wht);
+  border-radius: var(--rxl);
+  width: 100%;
+  max-width: 460px;
+  box-shadow: 0 30px 80px rgba(13,13,24,0.2);
+  animation: mpop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  overflow: hidden;
+  position: relative;
+}
+
+@keyframes mpop {
+  from { opacity: 0; transform: scale(0.88) translateY(24px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.modal-cita-head {
+  padding: 30px 28px 24px;
+  background: linear-gradient(135deg, var(--p-lgt) 0%, rgba(255,255,255,0) 70%);
+  border-bottom: 1px solid rgba(90,63,163,0.09);
+}
+
+.modal-cita-body { padding: 24px 28px 30px; }
+
+.mclose {
+  position: absolute;
+  top: 16px; right: 16px;
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.06);
+  border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--ink3);
+  font-size: 13px;
+  transition: all 0.2s;
+}
+
+.mclose:hover { background: var(--pink); color: white; }
+
+.m-det-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 0;
+  border-bottom: 1px dashed rgba(90,63,163,0.09);
+}
+
+.m-det-row:last-child { border-bottom: none; padding-bottom: 0; }
+
+.m-det-lbl {
+  font-size: 13px;
+  color: var(--ink3);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.m-det-lbl i { color: var(--ink4); width: 16px; }
+
+.m-det-val {
+  font-family: var(--fh);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+/* =============================================================
+   ANIMACIONES ENTRADA
+   ============================================================= */
+.fup { animation: fadeup 0.55s cubic-bezier(0.16,1,0.3,1) both; }
+.fup-1 { animation-delay: 0.05s; }
+.fup-2 { animation-delay: 0.12s; }
+.fup-3 { animation-delay: 0.20s; }
+.fup-4 { animation-delay: 0.28s; }
+
+@keyframes fadeup {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
 </style>
 
-<div class="hope-wrapper">
+<div class="hw">
 
-  <!-- ════ MASTHEAD ════ -->
-  <header class="masthead fade-up">
-    <div class="masthead-left">
-      <img src="{% static 'img/logo_hope_principal.png' %}" alt="HOPE" class="masthead-logo">
+  <!-- ====================== MASTHEAD ====================== -->
+  <header class="masthead fup">
+    <div class="mast-left">
+      <img src="{% static 'img/logo_hope_principal.png' %}" alt="HOPE" class="mast-logo">
       <div>
-        <div class="masthead-title">Workspace</div>
-        <div class="masthead-subtitle">Panel de Control Global · {{ hoy|date:"d M Y" }}</div>
+        <div class="mast-name"><em>Workspace</em> HOPE</div>
+        <div class="mast-sub">Dirección · {{ hoy|date:"d M Y" }}</div>
       </div>
     </div>
-    <div class="masthead-right">
-      <div class="live-pill">
-        <span class="live-dot"></span> <span id="poll-indicator">En Vivo</span>
-      </div>
+    <div class="live-pill">
+      <span class="live-dot"></span>
+      <span id="poll-indicator">En Vivo</span>
     </div>
   </header>
 
-  <!-- ════ MAIN CALENDAR ════ -->
-  <div class="calendar-section fade-up d-1">
-    <div class="calendar-header">
-      <div class="calendar-title">
-        <h2>Agenda Clínica</h2>
-        <p>Monitoreo de citas. Pasa el mouse sobre una cita para expandirla o haz clic para ver la información.</p>
+  <!-- ====================== KPI GRID ====================== -->
+  <div class="kpi-grid fup fup-1">
+    <div class="kpi-card kpi-purple">
+      <div class="kpi-icon" style="background:var(--p-lgt); color:var(--p);">
+        <i class="fas fa-users"></i>
       </div>
-      <div class="cal-search-box">
+      <div class="kpi-val" id="kpi-pacientes">{{ total_pacientes }}</div>
+      <div class="kpi-lbl">Pacientes Red</div>
+    </div>
+    <div class="kpi-card kpi-teal">
+      <div class="kpi-icon" style="background:var(--teal-l); color:var(--teal);">
+        <i class="fas fa-user-md"></i>
+      </div>
+      <div class="kpi-val" id="kpi-doctores">{{ total_doctores }}</div>
+      <div class="kpi-lbl">Especialistas</div>
+    </div>
+    <div class="kpi-card kpi-org">
+      <div class="kpi-icon" style="background:var(--org-l); color:var(--org);">
+        <i class="fas fa-calendar-day"></i>
+      </div>
+      <div class="kpi-val" id="kpi-hoy">{{ citas_hoy }}</div>
+      <div class="kpi-lbl">Citas de Hoy</div>
+    </div>
+    <div class="kpi-card kpi-pink">
+      <div class="kpi-icon" style="background:var(--pink-l); color:var(--pink);">
+        <i class="fas fa-check-circle"></i>
+      </div>
+      <div class="kpi-val" id="kpi-total">{{ citas_totales }}</div>
+      <div class="kpi-lbl">Histórico</div>
+    </div>
+  </div>
+
+  <!-- ====================== CALENDARIO ====================== -->
+  <div class="cal-section fup fup-2">
+
+    <div class="cal-header">
+      <div class="cal-title-block">
+        <div class="cal-title">Agenda <em>Clínica</em></div>
+        <div class="cal-desc">Toca una cita para ver detalles completos</div>
+      </div>
+      <div class="cal-search">
         <i class="fas fa-search"></i>
-        <input type="text" id="search-citas" class="cal-search-input" placeholder="Buscar especialista o estado...">
+        <input type="text" id="search-citas" placeholder="Buscar especialista, paciente...">
       </div>
     </div>
-    <div id="hope-calendar"></div>
+
+    <!-- Switcher de vista — solo visible en móvil -->
+    <div class="view-switcher">
+      <button class="vsw-btn active" id="vsw-mes"   onclick="switchView('dayGridMonth', this)">
+        <i class="fas fa-th-large"></i> Mes
+      </button>
+      <button class="vsw-btn" id="vsw-lista" onclick="switchView('listWeek', this)">
+        <i class="fas fa-list"></i> Lista
+      </button>
+    </div>
+
+    <div class="cal-body">
+      <div id="hope-calendar"></div>
+    </div>
+
   </div>
 
-  <!-- ════ KPI METRICS ════ -->
-  <div class="kpi-grid">
-    <div class="kpi-card fade-up d-2">
-      <div class="kpi-icon" style="background: #F3E8FF; color: var(--c-purple);"><i class="fas fa-users"></i></div>
-      <div>
-        <div class="kpi-val" id="kpi-pacientes">{{ total_pacientes }}</div>
-        <div class="kpi-label">Pacientes Red</div>
-      </div>
-    </div>
-    <div class="kpi-card fade-up d-2">
-      <div class="kpi-icon" style="background: #F0FDFA; color: var(--c-teal);"><i class="fas fa-user-md"></i></div>
-      <div>
-        <div class="kpi-val" id="kpi-doctores">{{ total_doctores }}</div>
-        <div class="kpi-label">Especialistas</div>
-      </div>
-    </div>
-    <div class="kpi-card fade-up d-3">
-      <div class="kpi-icon" style="background: #FFF7ED; color: var(--c-orange);"><i class="fas fa-calendar-day"></i></div>
-      <div>
-        <div class="kpi-val" id="kpi-hoy">{{ citas_hoy }}</div>
-        <div class="kpi-label">Citas de Hoy</div>
-      </div>
-    </div>
-    <div class="kpi-card fade-up d-3">
-      <div class="kpi-icon" style="background: #FDF2F8; color: var(--c-pink);"><i class="fas fa-check-circle"></i></div>
-      <div>
-        <div class="kpi-val" id="kpi-total">{{ citas_totales }}</div>
-        <div class="kpi-label">Histórico Citas</div>
-      </div>
-    </div>
-  </div>
+  <!-- ====================== BOTTOM PANELS ====================== -->
+  <div class="bot-grid fup fup-4">
 
-  <!-- ════ BOTTOM PANELS ════ -->
-  <div class="bottom-grid">
-    
-    <!-- DOCTORS -->
-    <div class="panel fade-up d-3">
-      <div class="panel-title"><i class="fas fa-stethoscope"></i> Especialistas Activos</div>
+    <!-- ESPECIALISTAS -->
+    <div class="panel">
+      <div class="panel-title"><i class="fas fa-stethoscope" style="color:var(--p)"></i> Especialistas Activos</div>
       <div class="doc-list">
         {% for doc in doctores %}
-        <div class="doc-card">
-          <div class="doc-info">
-            <h4>Dr(a). {{ doc.nombre }}</h4>
-            <p>{{ doc.especialidad }}</p>
+        <div class="doc-row">
+          <div class="doc-ava">{{ doc.nombre|first|upper }}</div>
+          <div style="flex:1; min-width:0;">
+            <div class="doc-name">Dr(a). {{ doc.nombre }}</div>
+            <div class="doc-esp">{{ doc.especialidad }}</div>
           </div>
-          <div class="doc-stats">
-            <div class="num">{{ doc.pacientes }}</div>
-            <p style="font-size: 11px; font-weight: 800; color: var(--text-3); text-transform: uppercase; margin-top: 2px;">Pacientes</p>
+          <div>
+            <div class="doc-count">{{ doc.pacientes }}</div>
+            <div class="doc-count-lbl">Pacientes</div>
           </div>
         </div>
         {% empty %}
-        <p style="color: var(--text-3); text-align: center;">Sin especialistas registrados.</p>
+        <p style="color:var(--ink3); text-align:center; font-size:14px; padding:20px 0;">Sin especialistas registrados.</p>
         {% endfor %}
       </div>
     </div>
 
-    <!-- PATIENTS (SCROLL) -->
-    <div class="panel fade-up d-3">
-      <div class="panel-title"><i class="fas fa-heartbeat" style="color: var(--c-pink);"></i> Frecuencia de Ingresos</div>
-      <div class="patient-scroll-container" id="patient-list">
-        <div id="scroll-sentinel" style="padding: 20px; text-align: center; color: var(--text-3); font-weight: 600;"><i class="fas fa-circle-notch fa-spin"></i> Sincronizando...</div>
+    <!-- FRECUENCIA INGRESOS -->
+    <div class="panel">
+      <div class="panel-title"><i class="fas fa-heartbeat" style="color:var(--pink)"></i> Frecuencia de Ingresos</div>
+      <div class="pac-scroll" id="patient-list">
+        <div id="scroll-sentinel" style="padding:16px; text-align:center; color:var(--ink3); font-size:13px; font-weight:600;">
+          <i class="fas fa-circle-notch fa-spin"></i> Sincronizando...
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</div><!-- /hw -->
+
+<!-- ====================== MODAL CITA ====================== -->
+<div class="hope-overlay" id="modalCita">
+  <div class="modal-cita">
+    <button class="mclose" onclick="cerrarModal()"><i class="fas fa-times"></i></button>
+
+    <div class="modal-cita-head">
+      <div style="display:flex; align-items:center; gap:16px;">
+        <div id="m-ava" style="width:52px;height:52px;border-radius:16px;background:var(--p-lgt);color:var(--p);display:flex;align-items:center;justify-content:center;font-family:var(--fh);font-size:22px;font-weight:700;flex-shrink:0;border:2px solid rgba(90,63,163,0.15);">A</div>
+        <div>
+          <div id="m-pac" style="font-family:var(--fd);font-size:22px;color:var(--ink);line-height:1.1;"></div>
+          <div id="m-est" style="margin-top:5px;font-family:var(--fh);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--teal);display:flex;align-items:center;gap:5px;">
+            <i class="fas fa-circle" style="font-size:7px;"></i> Confirmada
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-cita-body">
+      <div class="m-det-row">
+        <span class="m-det-lbl"><i class="fas fa-user-md"></i> Especialista</span>
+        <span class="m-det-val" id="m-doc"></span>
+      </div>
+      <div class="m-det-row">
+        <span class="m-det-lbl"><i class="far fa-clock"></i> Fecha y hora</span>
+        <span class="m-det-val" id="m-fecha" style="color:var(--p);"></span>
+      </div>
+      <div class="m-det-row">
+        <span class="m-det-lbl"><i class="fas fa-laptop-medical"></i> Modalidad</span>
+        <span id="m-mod" style="font-family:var(--fh);font-size:12px;font-weight:700;background:var(--surf);padding:5px 12px;border-radius:100px;border:1px solid rgba(90,63,163,0.12);color:var(--ink2);">En línea</span>
       </div>
     </div>
 
   </div>
 </div>
 
-<!-- ==========================================================================
-     🔥 MODAL DE INFORMACIÓN COMPLETA (SE ABRE AL DAR CLIC)
-========================================================================== -->
-<div id="citaModal" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.6); z-index:99999; align-items:center; justify-content:center; backdrop-filter:blur(6px);">
-    <div style="background:white; border-radius:24px; width:100%; max-width:480px; padding:35px; position:relative; box-shadow:0 25px 50px rgba(0,0,0,0.15); animation: fadeUp 0.3s forwards;">
-        <!-- Botón Cerrar -->
-        <button onclick="document.getElementById('citaModal').style.display='none'" style="position:absolute; top:20px; right:20px; background:none; border:none; font-size:20px; cursor:pointer; color:var(--text-3); transition:0.2s;"><i class="fas fa-times"></i></button>
-        
-        <!-- Header del Paciente -->
-        <div style="display:flex; align-items:center; gap:20px; margin-bottom:25px;">
-            <div id="m-avatar" style="width:55px; height:55px; border-radius:16px; background:#F3E8FF; color:var(--c-purple); display:flex; align-items:center; justify-content:center; font-size:24px; font-weight:900; font-family:var(--font-headings); flex-shrink:0;">A</div>
-            <div>
-                <h3 id="m-paciente" style="margin:0; font-family:var(--font-headings); font-size:24px; font-weight:900; color:var(--text-1); letter-spacing:-0.5px;">Nombre del Paciente</h3>
-                <p id="m-estado" style="margin:4px 0 0 0; font-size:12px; font-weight:800; color:var(--c-teal); text-transform:uppercase; letter-spacing:1.5px;"><i class="fas fa-circle" style="font-size:8px; margin-right:4px;"></i> Confirmada</p>
-            </div>
-        </div>
-
-        <!-- Tarjeta de Detalles -->
-        <div style="background:var(--bg-main); border-radius:16px; padding:25px; border:1px solid var(--border-2); display:flex; flex-direction:column; gap:20px;">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-                <span style="color:var(--text-2); font-size:14px; font-weight:600;"><i class="fas fa-user-md" style="width:20px; color:var(--text-3);"></i> Especialista</span>
-                <span id="m-doctor" style="font-weight:800; color:var(--text-1); font-size:15px;">Dr.</span>
-            </div>
-            <div style="display:flex; justify-content:space-between; align-items:center; padding:15px 0; border-top:1px dashed var(--border); border-bottom:1px dashed var(--border);">
-                <span style="color:var(--text-2); font-size:14px; font-weight:600;"><i class="far fa-clock" style="width:20px; color:var(--text-3);"></i> Horario</span>
-                <span id="m-fecha" style="font-weight:900; color:var(--c-purple); font-size:16px;">...</span>
-            </div>
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-                <span style="color:var(--text-2); font-size:14px; font-weight:600;"><i class="fas fa-laptop-medical" style="width:20px; color:var(--text-3);"></i> Modalidad</span>
-                <span id="m-modalidad" style="font-weight:800; color:var(--text-1); background:white; padding:6px 12px; border-radius:8px; border:1px solid var(--border); font-size:12px; text-transform:uppercase; letter-spacing:0.5px;">En línea</span>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- ==========================================================================
-     SCRIPTS
-========================================================================== -->
-<script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js'></script>
 <script>
-// --- DATOS INICIALES ---
+/* =====================================================
+   DATOS
+   ===================================================== */
 const CITAS_JSON = {{ citas_json|safe|default:"[]" }};
-let calendar;
 
-document.addEventListener('DOMContentLoaded', function() {
+/* =====================================================
+   DETECTAR MÓVIL
+   ===================================================== */
+function isMobile() { return window.innerWidth < 768; }
+
+/* =====================================================
+   COLORES POR DOCTOR
+   ===================================================== */
+const PALETTE = ['#818CF8','#34D399','#FB7185','#FB923C','#60A5FA','#FBBF24','#A78BFA','#2DD4BF'];
+const docColorMap = {};
+let cIdx = 0;
+
+function getDocColor(doc) {
+  if (!docColorMap[doc]) {
+    docColorMap[doc] = PALETTE[cIdx % PALETTE.length];
+    cIdx++;
+  }
+  return docColorMap[doc];
+}
+
+/* =====================================================
+   FULLCALENDAR INIT
+   ===================================================== */
+let calInstance;
+
+document.addEventListener('DOMContentLoaded', function () {
   const el = document.getElementById('hope-calendar');
-  
-  // 🔥 COLORES INSTITUCIONALES (Versión suave "blanda" para que no queme la vista)
-  const institutionalThemes = [
-    { border: '#818CF8' }, // Morado Suave
-    { border: '#34D399' }, // Teal Suave
-    { border: '#FB7185' }, // Rosa Suave
-    { border: '#FB923C' }, // Naranja Suave
-    { border: '#60A5FA' }, // Azul Suave
-    { border: '#FBBF24' }  // Amarillo Suave
-  ];
-  
-  const docMap = {}; let cIdx = 0;
 
-  calendar = new FullCalendar.Calendar(el, {
+  /* Vista inicial: mes en móvil, semana en desktop */
+  const initView = isMobile() ? 'dayGridMonth' : 'timeGridWeek';
+
+  /* En móvil ocultamos la toolbar de vistas porque tenemos nuestros propios botones */
+  const rightTB = isMobile() ? '' : 'dayGridMonth,timeGridWeek,listWeek';
+
+  calInstance = new FullCalendar.Calendar(el, {
     locale: 'es',
-    initialView: 'timeGridWeek', 
+    initialView: initView,
     headerToolbar: {
-      left: 'prev,next today',
+      left:   'prev,next today',
       center: 'title',
-      right: 'dayGridMonth,timeGridWeek,timeGridDay'
+      right:  rightTB
     },
-    slotMinTime: '08:00:00',
-    slotMaxTime: '22:00:00',
-    height: 800, 
-    expandRows: true,
-    slotEventOverlap: false, // 🔥 LA ORDEN ESTRICTA: NUNCA SE EMPALMAN
-    eventMinHeight: 110,     // 🔥 TARJETAS GIGANTES HACIA ABAJO
+    slotMinTime:     '07:00:00',
+    slotMaxTime:     '22:00:00',
+    height:          isMobile() ? 'auto' : 700,
+    expandRows:      true,
+    slotEventOverlap: false,
+    eventMinHeight:  isMobile() ? 30 : 90,
     stickyHeaderDates: true,
     events: CITAS_JSON,
-    
-    // 🔥 INYECCIÓN HTML CUSTOM: ENVUELTO EN EL CONTENEDOR EXPANSIVO
-    eventContent: function(arg) {
-      const p = arg.event.extendedProps;
-      const docName = p.psicologo || 'N/A';
-      const estado = p.estado || '';
-      const isCanceled = estado === 'Cancelada';
 
-      const startTime = arg.event.start.toLocaleTimeString('es-MX', {hour: '2-digit', minute:'2-digit'});
+    /* Render de eventos custom */
+    eventContent: function (arg) {
+      const p       = arg.event.extendedProps;
+      const view    = arg.view.type;
+      const isCan   = (p.estado || '') === 'Cancelada';
+      const color   = getDocColor(p.psicologo || 'N/A');
+      const time    = arg.event.start.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+      const docName = (p.psicologo || 'N/A').split(' ')[0]; /* solo primer nombre */
 
-      let html = `
-        <div class="hope-event-wrapper">
-          <div class="hope-event-card ${isCanceled ? 'canceled' : ''}">
-              <div class="evt-time-big">${startTime}</div>
-              <div class="evt-doc-name"><i class="fas fa-user-md" style="margin-right:4px;"></i> Dr(a). ${docName}</div>
-          </div>
-        </div>
-      `;
-      return { html: html };
+      if (view === 'dayGridMonth') {
+        /* Vista mes: pill pequeña */
+        return {
+          html: `<div class="hev-pill ${isCan ? 'canceled' : ''}"
+                      style="background:${color}18; border-left:3px solid ${color}; color:${color};">
+                   <i class="fas fa-circle" style="font-size:6px;"></i> ${time} ${docName}
+                 </div>`
+        };
+      }
+
+      if (view === 'listWeek') {
+        /* Vista lista: ya tiene su propio render, sólo ajustamos color */
+        return undefined;
+      }
+
+      /* Vista semana/día: tarjeta grande */
+      return {
+        html: `<div class="hev-card ${isCan ? 'canceled' : ''}" style="border-left-color:${color};">
+                 <div class="hev-time">${time}</div>
+                 <div class="hev-doc"><i class="fas fa-user-md" style="margin-right:3px;font-size:10px;"></i>Dr(a). ${docName}</div>
+               </div>`
+      };
     },
 
-    // 🔥 APLICAR BORDES INSTITUCIONALES
-    eventDidMount: function(info) {
-      const p = info.event.extendedProps;
-      const doc = p.psicologo || 'N/A';
-      const estado = p.estado || '';
-      
-      if (estado !== 'Cancelada') {
-        if(!docMap[doc]) { docMap[doc] = institutionalThemes[cIdx % institutionalThemes.length]; cIdx++; }
-        const theme = docMap[doc];
-        
-        const card = info.el.querySelector('.hope-event-card');
-        if(card) {
-            card.style.borderLeftColor = theme.border; 
-        }
+    /* Color de fondo en lista view */
+    eventDidMount: function (info) {
+      const p     = info.event.extendedProps;
+      const color = getDocColor(p.psicologo || 'N/A');
+      if (info.view.type === 'listWeek') {
+        info.el.style.borderLeft = `4px solid ${color}`;
       }
     },
 
-    // 🔥 EL CLIC: ABRE EL MODAL Y MUESTRA AL PACIENTE
-    eventClick: function(info) {
-      const p = info.event.extendedProps;
-      const docName = p.psicologo || 'N/A';
-      const patientName = info.event.title;
+    /* Modal al hacer clic */
+    eventClick: function (info) {
+      const p      = info.event.extendedProps;
+      const pac    = info.event.title;
       const estado = p.estado || 'Agendada';
-      const modalidad = p.modalidad || 'En línea';
-      
-      const pInitial = patientName.charAt(0).toUpperCase();
-      const options = { weekday: 'long', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
-      const fechaFull = info.event.start.toLocaleDateString('es-MX', options);
+      const mod    = p.modalidad || 'En línea';
+      const fecha  = info.event.start.toLocaleDateString('es-MX', {
+        weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'
+      });
 
-      // Llenar Modal
-      document.getElementById('m-paciente').innerText = patientName;
-      document.getElementById('m-avatar').innerText = pInitial;
-      document.getElementById('m-doctor').innerText = `Dr(a). ${docName}`;
-      document.getElementById('m-fecha').innerText = fechaFull;
-      document.getElementById('m-modalidad').innerText = modalidad;
-      
-      const estadoEl = document.getElementById('m-estado');
-      estadoEl.innerHTML = `<i class="fas fa-circle" style="font-size:8px; margin-right:4px;"></i> ${estado}`;
-      if(estado === 'Cancelada') estadoEl.style.color = '#EF4444';
-      else if(estado === 'Completada') estadoEl.style.color = '#10B981';
-      else estadoEl.style.color = '#3B82F6';
+      document.getElementById('m-pac').innerText   = pac;
+      document.getElementById('m-ava').innerText   = pac.charAt(0).toUpperCase();
+      document.getElementById('m-doc').innerText   = `Dr(a). ${p.psicologo || 'N/A'}`;
+      document.getElementById('m-fecha').innerText = fecha;
+      document.getElementById('m-mod').innerText   = mod;
 
-      // Mostrar Modal
-      document.getElementById('citaModal').style.display = 'flex';
+      const est = document.getElementById('m-est');
+      est.innerHTML = `<i class="fas fa-circle" style="font-size:7px;"></i> ${estado}`;
+      est.style.color = estado === 'Cancelada' ? '#EF4444' : estado === 'Completada' ? '#10B981' : '#3B82F6';
+
+      document.getElementById('modalCita').classList.add('open');
     }
   });
-  calendar.render();
 
-  // 🔍 BUSCADOR EN VIVO
-  document.getElementById('search-citas').addEventListener('input', function(e) {
-    const term = e.target.value.toLowerCase();
-    const events = calendar.getEvents();
-    
-    events.forEach(ev => {
-      const p = ev.extendedProps;
-      const match = (p.psicologo && p.psicologo.toLowerCase().includes(term)) || 
-                    (p.paciente && p.paciente.toLowerCase().includes(term)) || 
-                    ev.title.toLowerCase().includes(term) ||
-                    (p.estado && p.estado.toLowerCase().includes(term));
-      
+  calInstance.render();
+
+  /* Redimensionar al rotar pantalla */
+  window.addEventListener('resize', () => {
+    if (isMobile()) {
+      calInstance.setOption('height', 'auto');
+    } else {
+      calInstance.setOption('height', 700);
+    }
+  });
+
+  /* ── Buscador ── */
+  document.getElementById('search-citas').addEventListener('input', function () {
+    const term = this.value.toLowerCase();
+    calInstance.getEvents().forEach(ev => {
+      const p     = ev.extendedProps;
+      const match = ev.title.toLowerCase().includes(term) ||
+                    (p.psicologo  && p.psicologo.toLowerCase().includes(term)) ||
+                    (p.estado     && p.estado.toLowerCase().includes(term));
       ev.setProp('display', match ? 'auto' : 'none');
     });
   });
 
-  // --- 2. SCROLL INFINITO PACIENTES ---
+  /* ── Scroll Infinito Pacientes ── */
   let page = 1, hasMore = true, loading = false;
-  const list = document.getElementById('patient-list');
+  const list     = document.getElementById('patient-list');
   const sentinel = document.getElementById('scroll-sentinel');
 
   function loadPatients() {
-    if(loading || !hasMore) return;
+    if (loading || !hasMore) return;
     loading = true;
-    
     fetch(`/api/admin/pacientes/?page=${page}&per_page=15`)
       .then(r => r.json())
       .then(data => {
         data.results.forEach(pac => {
-          let html = `
-            <div class="patient-row">
-              <div style="display:flex; align-items:center; gap:16px;">
-                <div class="p-avatar" style="background:${pac.color_animo}15; color:${pac.color_animo}; border: 1px solid ${pac.color_animo}30;">${pac.nombre.charAt(0)}</div>
-                <div>
-                  <div style="font-weight:800; font-family:var(--font-headings); font-size: 15px;">${pac.nombre}</div>
-                  <div style="font-size:12px; color:var(--text-3); font-weight:600; margin-top:2px;"><i class="fas fa-user-md" style="margin-right:4px;"></i>${pac.doctor}</div>
-                </div>
-              </div>
-              <div class="p-badge" style="background:${pac.color_animo}10; color:${pac.color_animo}; border-color: ${pac.color_animo}30;">
-                <i class="${pac.icono_animo}" style="margin-right:4px;"></i> ${pac.animo}
-              </div>
+          const row = document.createElement('div');
+          row.className = 'pac-row';
+          row.innerHTML = `
+            <div class="pac-ava" style="background:${pac.color_animo}18; color:${pac.color_animo}; border:1.5px solid ${pac.color_animo}30;">${pac.nombre.charAt(0)}</div>
+            <div style="flex:1;min-width:0;">
+              <div class="pac-name">${pac.nombre}</div>
+              <div class="pac-doc"><i class="fas fa-user-md" style="margin-right:4px;"></i>${pac.doctor}</div>
+            </div>
+            <div class="p-animo" style="background:${pac.color_animo}18; color:${pac.color_animo};">
+              <i class="${pac.icono_animo}" style="margin-right:3px;"></i>${pac.animo}
             </div>`;
-          list.insertAdjacentHTML('beforeend', html);
+          list.insertBefore(row, sentinel);
         });
-        list.appendChild(sentinel); 
         page++;
         hasMore = data.has_next;
         loading = false;
-        if(!hasMore) sentinel.style.display = 'none';
-      }).catch(() => loading = false);
+        if (!hasMore) sentinel.style.display = 'none';
+        else sentinel.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Cargando más...';
+      })
+      .catch(() => { loading = false; });
   }
 
-  const observer = new IntersectionObserver(entries => {
-    if(entries[0].isIntersecting) loadPatients();
-  }, { root: list, threshold: 0.1 });
-  observer.observe(sentinel);
+  const obs = new IntersectionObserver(
+    entries => { if (entries[0].isIntersecting) loadPatients(); },
+    { root: list, threshold: 0.1 }
+  );
+  obs.observe(sentinel);
 
-  // --- 3. POLLING (LATIDO) LIGERO ---
-  let lastKpiSnapshot = null;
+  /* ── Polling KPIs ── */
+  let lastSnap = null;
   setInterval(() => {
-    fetch('/api/admin/stats/', {headers:{'X-Requested-With':'XMLHttpRequest'}})
+    fetch('/api/admin/stats/', { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
       .then(r => r.json())
       .then(data => {
         document.getElementById('kpi-pacientes').innerText = data.total_pacientes;
-        document.getElementById('kpi-doctores').innerText = data.total_doctores;
-        document.getElementById('kpi-hoy').innerText = data.citas_hoy;
-        document.getElementById('kpi-total').innerText = data.citas_totales;
-        
-        if(data.citas_json) {
-          if(calendar.getEvents().length !== data.citas_json.length) {
-            calendar.removeAllEvents();
-            calendar.addEventSource(data.citas_json);
+        document.getElementById('kpi-doctores').innerText  = data.total_doctores;
+        document.getElementById('kpi-hoy').innerText       = data.citas_hoy;
+        document.getElementById('kpi-total').innerText     = data.citas_totales;
+
+        if (data.citas_json && calInstance.getEvents().length !== data.citas_json.length) {
+          calInstance.removeAllEvents();
+          calInstance.addEventSource(data.citas_json);
+        }
+
+        if (lastSnap && Notification.permission === 'granted') {
+          if (data.citas_hoy > (lastSnap.citas_hoy || 0)) {
+            new Notification('HOPE — Nueva Cita', {
+              body: `${data.citas_hoy - lastSnap.citas_hoy} cita(s) nueva(s) hoy.`,
+              icon: '/static/img/logo_hope_principal.png'
+            });
           }
         }
-        
-        // Notificaciones Automáticas
-        if (lastKpiSnapshot !== null) {
-          const prevHoy = lastKpiSnapshot.citas_hoy || 0;
-          if (data.citas_hoy > prevHoy) {
-             if (Notification.permission === "granted") {
-                 new Notification('HOPE — Nueva Cita', { body: `${data.citas_hoy - prevHoy} cita(s) nueva(s) registradas hoy.`, icon: '/static/img/logo_hope_principal.png'});
-             }
-          }
-          const prevPacientes = lastKpiSnapshot.total_pacientes || 0;
-          if (data.total_pacientes > prevPacientes) {
-             const nuevos = data.total_pacientes - prevPacientes;
-             if (Notification.permission === "granted") {
-                 new Notification('HOPE — Nuevo Registro', { body: `Tienes ${nuevos} paciente(s) nuevo(s) en la red.`, icon: '/static/img/logo_hope_principal.png'});
-             }
-          }
-        }
-        lastKpiSnapshot = data;
+        lastSnap = data;
       });
   }, 10000);
+});
+
+/* =====================================================
+   SWITCHER DE VISTA (SOLO MÓVIL)
+   ===================================================== */
+function switchView(view, btn) {
+  calInstance.changeView(view);
+  document.querySelectorAll('.vsw-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+/* =====================================================
+   MODAL
+   ===================================================== */
+function cerrarModal() {
+  document.getElementById('modalCita').classList.remove('open');
+}
+
+document.getElementById('modalCita').addEventListener('click', function (e) {
+  if (e.target === this) cerrarModal();
 });
 </script>
 {% endblock %}
