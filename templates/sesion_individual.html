@@ -597,7 +597,7 @@ body{font-family:var(--font-b);color:var(--c-dark);background:#fff;display:flex}
   <!-- Pequeña leyenda de comisión -->
   <span class="comision-extra">+ $10 MXN de comisión</span>
   
-  <button class="btn-cta-new" onclick="abrirModal('modalRegistro')">
+  <button class="btn-cta-new" onclick="abrirModal('modalRegistromini')">
     <i class="fas fa-calendar-check"></i> &nbsp;Agendar Mi Sesión
   </button>
   <div class="cta-badges">
@@ -715,7 +715,7 @@ body{font-family:var(--font-b);color:var(--c-dark);background:#fff;display:flex}
         <p>Una plataforma de bienestar mental con enfoque humano. Acompañamos cada proceso con presencia, rigor clínico y genuino cuidado.</p>
         <div class="footer-addr"><i class="fas fa-location-dot"></i><span>Lago Margarita 47, Col. Granada, 11520, CDMX</span></div>
         <div class="footer-addr"><i class="fas fa-globe"></i><a href="https://espaciohope.com" target="_blank" rel="noopener">espaciohope.com</a></div>
-        <a href="#" class="footer-cta" onclick="abrirModal('modalRegistro'); return false;">Iniciar mi proceso <i class="fas fa-arrow-right"></i></a>
+        <a href="#" class="footer-cta" onclick="abrirModal('modalRegistromini'); return false;">Iniciar mi proceso <i class="fas fa-arrow-right"></i></a>
         <div class="footer-tags">
           <span class="footer-tag" style="color:var(--c-teal);border-color:var(--c-teal)">Individual</span>
           <span class="footer-tag" style="color:var(--c-pink);border-color:var(--c-pink)">Parejas</span>
@@ -879,9 +879,9 @@ body{font-family:var(--font-b);color:var(--c-dark);background:#fff;display:flex}
 </div>
 
 
-<div class="modal-overlay" id="modalRegistro">
+<div class="modal-overlay" id="modalRegistromini">
    <div class="modal-box" style="max-width:450px;padding:45px 40px;border-radius:30px">
-    <button class="modal-close" onclick="cerrarModal('modalRegistro')"><i class="fas fa-times"></i></button>
+    <button class="modal-close" onclick="cerrarModal('modalRegistromini')"><i class="fas fa-times"></i></button>
     <img src="{% static 'img/nlogo.png' %}" alt="HOPE Logo" style="height: 50px; margin: 0 auto 25px; display: block;">
     <div style="text-align:center;margin-bottom:35px">
       <h2 style="font-family:var(--font-h);font-size:2.2rem;color:var(--c-dark);margin-bottom:8px;font-weight:800">Tu espacio seguro te espera.</h2>
@@ -1162,7 +1162,7 @@ body{font-family:var(--font-b);color:var(--c-dark);background:#fff;display:flex}
             btn.disabled = false;
             
             if (data.status === 'success') {
-                cerrarModal('modalRegistro');
+                cerrarModal('modalRegistromini');
                 abrirModal('modalCalendario');
             } 
             // 🔥 AGREGA ESTO: Si ya existía, lo manda directo a su panel
@@ -1641,7 +1641,7 @@ function abrirRegistroDirecto(flujo, servicioExacto) {
         return;
     }
 
-    abrirModal('modalRegistro');
+    abrirModal('modalRegistromini');
     
     // 🔥 Ya no forzamos la búsqueda de los divs fantasmas, solo los ocultamos si existen
     const stepPrimario = document.getElementById('stepTriagePrimario');
