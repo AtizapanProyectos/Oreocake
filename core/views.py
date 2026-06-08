@@ -89,12 +89,19 @@ from .models import DiaFestivo, Cita, HorarioPsicologo, PerfilPsicologo
 from datetime import datetime, timedelta, time
 from collections import defaultdict
 
-def obtener_slots_globales(fecha_inicio, fecha_fin):
-    """Unión de disponibilidad (SÚPER OPTIMIZADA EN RAM)"""
-    psicologos_activos = list(PerfilPsicologo.objects.filter(esta_activo=True))
+def obtener_slots_globales(fecha_inicio, fecha_fin, preferencia=""):
+    """Unión de disponibilidad filtrada por género y curada de bugs (Semana 5)"""
+    
+    # 🔥 1. EL FILTRO DINÁMICO DE GÉNERO
+    filtro_psicologos = PerfilPsicologo.objects.filter(esta_activo=True)
+    if 'Mujer' in preferencia:
+        filtro_psicologos = filtro_psicologos.filter(genero='Mujer')
+    elif 'Hombre' in preferencia:
+        filtro_psicologos = filtro_psicologos.filter(genero='Hombre')
+        
+    psicologos_activos = list(filtro_psicologos)
     if not psicologos_activos: return {}
     
-    # 1. HACEMOS SOLO 4 QUERIES MASIVAS Y GUARDAMOS EN MEMORIA (RAM)
     festivos = set(DiaFestivo.objects.filter(fecha__gte=fecha_inicio, fecha__lte=fecha_fin).values_list('fecha', flat=True))
     
     dias_libres_db = DiaLibrePsicologo.objects.filter(fecha__gte=fecha_inicio, fecha__lte=fecha_fin)
@@ -106,7 +113,6 @@ def obtener_slots_globales(fecha_inicio, fecha_fin):
     mes_fin = date(fecha_fin.year, fecha_fin.month, 1)
     horarios_db = HorarioPsicologo.objects.filter(mes__gte=mes_inicio, mes__lte=mes_fin, es_descanso=False)
     
-    # Mapeo rápido: (psicologo_id, mes, semana, dia_semana) -> Horario
     horarios_map = {}
     for h in horarios_db:
         horarios_map[(h.psicologo_id, h.mes, h.semana, h.dia_semana)] = h
@@ -116,7 +122,6 @@ def obtener_slots_globales(fecha_inicio, fecha_fin):
     for c in citas_db:
         citas_ocupadas.add((c.psicologo_id, c.fecha, c.hora))
         
-    # 2. PROCESAMIENTO NATIVO EN PYTHON (Tarda milisegundos)
     slots_union = defaultdict(set)
     dia_actual = fecha_inicio
     max_iter = 0
@@ -130,10 +135,14 @@ def obtener_slots_globales(fecha_inicio, fecha_fin):
             continue
             
         dia_semana = dia_actual.weekday()
+        
+        # 🔥 2. CURA DEL BUG DE LA SEMANA 5
         if dia_actual.day <= 7: num_semana = 1
         elif dia_actual.day <= 14: num_semana = 2
         elif dia_actual.day <= 21: num_semana = 3
-        else: num_semana = 4
+        elif dia_actual.day <= 28: num_semana = 4
+        else: num_semana = 5  # <-- ¡Los días 29, 30 y 31 por fin existen!
+        
         mes_actual_buscar = date(dia_actual.year, dia_actual.month, 1)
         
         for psicologo in psicologos_activos:
@@ -193,10 +202,13 @@ def obtener_slots_psicologo(psicologo, fecha_inicio, fecha_fin):
             continue
             
         dia_semana = dia_actual.weekday()
+        # 🔥 CURA DEL BUG DE LA SEMANA 5 PARA DOCTORES ASIGNADOS
         if dia_actual.day <= 7: num_semana = 1
         elif dia_actual.day <= 14: num_semana = 2
         elif dia_actual.day <= 21: num_semana = 3
-        else: num_semana = 4
+        elif dia_actual.day <= 28: num_semana = 4
+        else: num_semana = 5
+        
         mes_actual_buscar = date(dia_actual.year, dia_actual.month, 1)
         
         horario = horarios_map.get((mes_actual_buscar, num_semana, dia_semana))
@@ -470,6 +482,8 @@ def login_usuario(request):
 
     return JsonResponse({'status': 'success', 'redirect_url': redirect_url})
 
+
+
 def panel_generico(request):
     if not request.user.is_authenticated:
         return redirect('modulo_informativo')
@@ -481,8 +495,10 @@ def panel_generico(request):
         logout(request)
         return redirect('modulo_informativo')
 
-    # Tipo de servicio desde cuestionario
+# Tipo de servicio y Preferencia desde cuestionario
     tipo_servicio = "individual"
+    preferencia = ""  # 🔥 INICIAMOS LA VARIABLE VACÍA
+    
     ultimo_cuestionario = CuestionarioRegistro.objects.filter(paciente=request.user).last()
     if ultimo_cuestionario and ultimo_cuestionario.respuestas:
         respuestas = ultimo_cuestionario.respuestas
@@ -492,6 +508,7 @@ def panel_generico(request):
             except:
                 respuestas = {}
         tipo_servicio = respuestas.get("servicio_solicitado", "individual")
+        preferencia = respuestas.get("preferencia_terapeuta", "") # 🔥 EXTRAEMOS LA PREFERENCIA
 
     # Tiempos actuales
     now_local = timezone.localtime(timezone.now())
@@ -508,7 +525,7 @@ def panel_generico(request):
     ).order_by('fecha', 'hora').first()
 
     # =========================================================
-    # NUEVA LÓGICA DE DISPONIBILIDAD (HORARIOS PERSONALIZADOS)
+    # NUEVA LÓGICA DE DISPONIBILIDAD (FILTRO APLICADO)
     # =========================================================
     fecha_limite = hoy + timedelta(days=90)
 
@@ -516,8 +533,8 @@ def panel_generico(request):
         # Paciente con psicólogo asignado: solo sus horarios
         dias_json = obtener_slots_psicologo(psicologo_asignado, hoy, fecha_limite)
     else:
-        # Paciente nuevo: unión de disponibilidad de todos los psicólogos activos
-        dias_json = obtener_slots_globales(hoy, fecha_limite)
+        # 🔥 EL MOMENTO MÁGICO: Le pasamos la 'preferencia' a la función global
+        dias_json = obtener_slots_globales(hoy, fecha_limite, preferencia)
 
     # Convertir a formato que usa el template (dias_html con objetos fecha y hora)
     dias_html = {}
@@ -1389,7 +1406,7 @@ def panel_admin(request):
     return render(request, 'panel_admin.html', context)
 
 
-    
+
 # Etiquetas y emojis por mood
 MOOD_META = {
     'triste':    {'label': 'Triste 😔',    'emoji': '😔'},
