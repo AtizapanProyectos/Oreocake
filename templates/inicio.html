@@ -492,9 +492,17 @@ body{font-family:var(--font-b);color:var(--c-dark);background:#fff;display:flex}
     <img src="{% static 'img/nlogo.png' %}" alt="HOPE Logo">
   </div>
   <a href="#inicio" class="nav-item active"><i class="fas fa-home"></i> Inicio</a>
+{% if request.user.is_authenticated %}
+  <!-- Botón si YA inició sesión -->
+  <a href="{% url 'logout_usuario' %}" class="nav-item btn-login-sidebar" style="background: #ef4444; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.2);">
+    <i class="fas fa-sign-out-alt"></i> Cerrar sesión
+  </a>
+{% else %}
+  <!-- Botón si NO ha iniciado sesión -->
   <a href="#" onclick="abrirModal('modalLogin'); return false;" class="nav-item btn-login-sidebar">
     <i class="fas fa-sign-in-alt"></i> Iniciar sesión
   </a>
+{% endif %}
   <p class="nav-section-title">Terapias</p>
   <a href="#" onclick="abrirRegistroDirecto('individual', 'terapia_individual'); return false;" class="nav-item">
     <i class="fas fa-user"></i> Terapia Individual
@@ -1645,6 +1653,8 @@ let indicePregunta = 0;
 let respuestasGuardadas = {};
 let preguntasFlujo = [];
 let historialNavegacion = [];
+
+
 
 function abrirRegistroDirecto(flujo, servicioExacto) {
     document.getElementById('inputServicioOrigen').value = servicioExacto;

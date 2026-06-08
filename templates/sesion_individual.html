@@ -541,28 +541,35 @@ body{font-family:var(--font-b);color:var(--c-dark);background:#fff;display:flex}
   <div class="brand-container">
     <img src="{% static 'img/nlogo.png' %}" alt="HOPE Logo">
   </div>
-  <a href="#" class="nav-item"><i class="fas fa-home"></i> Inicio</a>
+  <a href="#inicio" class="nav-item active"><i class="fas fa-home"></i> Inicio</a>
   <a href="#" onclick="abrirModal('modalLogin'); return false;" class="nav-item btn-login-sidebar">
     <i class="fas fa-sign-in-alt"></i> Iniciar sesión
   </a>
   <p class="nav-section-title">Terapias</p>
-  <a href="#" class="nav-item active"><i class="fas fa-user"></i> Terapia Individual</a>
-  <a href="#" class="nav-item"><i class="fas fa-heart"></i> Terapia de Pareja</a>
-  <p class="nav-section-title">Talleres para Padres</p>
-  <a href="#" class="nav-item"><i class="fas fa-seedling"></i> Criar con Conciencia</a>
-  <a href="#" class="nav-item"><i class="fas fa-star"></i> Disciplina Inteligente</a>
+  <a href="#" onclick="abrirRegistroDirecto('individual', 'terapia_individual'); return false;" class="nav-item">
+    <i class="fas fa-user"></i> Terapia Individual
+  </a>
+  <a href="#" onclick="abrirRegistroDirecto('pareja', 'terapia_pareja'); return false;" class="nav-item">
+    <i class="fas fa-heart"></i> Terapia de Pareja
+  </a>
+<p class="nav-section-title">Talleres para Padres</p>
+  <a href="#" onclick="abrirRegistroDirecto('solo_talleres', 'Criar con Conciencia'); return false;" class="nav-item"><i class="fas fa-seedling"></i> Criar con Conciencia</a>
+  <a href="#" onclick="abrirRegistroDirecto('solo_talleres', 'Disciplina Inteligente'); return false;" class="nav-item"><i class="fas fa-star"></i> Disciplina Inteligente</a>
+  
   <p class="nav-section-title">Talleres de Pareja</p>
-  <a href="#" class="nav-item"><i class="fas fa-heart"></i> Reconectar en Pareja</a>
-  <a href="#" class="nav-item"><i class="fas fa-people-arrows"></i> Amar sin Herir</a>
+  <a href="#" onclick="abrirRegistroDirecto('solo_talleres', 'Reconectar en Pareja'); return false;" class="nav-item"><i class="fas fa-heart"></i> Reconectar en Pareja</a>
+  <a href="#" onclick="abrirRegistroDirecto('solo_talleres', 'Amar sin Herir'); return false;" class="nav-item"><i class="fas fa-people-arrows"></i> Amar sin Herir</a>
+  
   <p class="nav-section-title">Talleres Grupales</p>
-  <a href="#" class="nav-item"><i class="fas fa-users"></i> Volver a Empezar</a>
-  <a href="#" class="nav-item"><i class="fas fa-dove"></i> Renacer Después del Adiós</a>
-  <a href="#" class="nav-item"><i class="fas fa-gem"></i> Reconstruyendo mi Valor</a>
+  <a href="#" onclick="abrirRegistroDirecto('solo_talleres', 'Volver a Empezar'); return false;" class="nav-item"><i class="fas fa-users"></i> Volver a Empezar</a>
+  <a href="#" onclick="abrirRegistroDirecto('solo_talleres', 'Renacer Después del Adiós'); return false;" class="nav-item"><i class="fas fa-dove"></i> Renacer Después del Adiós</a>
+  <a href="#" onclick="abrirRegistroDirecto('solo_talleres', 'Reconstruyendo mi Valor'); return false;" class="nav-item"><i class="fas fa-gem"></i> Reconstruyendo mi Valor</a>
+  
   <p class="nav-section-title">Profesionales</p>
-  <a href="#" class="nav-item"><i class="fas fa-leaf"></i> Ecovisión</a>
+  <a href="#" onclick="abrirRegistroDirecto('solo_talleres', 'Ecovisión'); return false;" class="nav-item"><i class="fas fa-leaf"></i> Ecovisión</a>
   <p class="nav-section-title">Comunidad</p>
-  <a href="#" class="nav-item"><i class="fas fa-book-open"></i> Blog</a>
-  <a href="#" class="nav-item"><i class="fas fa-newspaper"></i> Estudios HOPE</a>
+  <a href="#blog" class="nav-item"><i class="fas fa-book-open"></i> Blog</a>
+  <a href="#blog" class="nav-item"><i class="fas fa-newspaper"></i> Estudios HOPE</a>
 </nav>
 
 <main class="main-stage">
@@ -1523,6 +1530,325 @@ document.getElementById("formCompletarPerfil").addEventListener("submit", functi
         btn.disabled = false;
     });
 });
+
+
+
+function abrirRegistroDirecto(flujo, servicioExacto) {
+    document.getElementById('inputServicioOrigen').value = servicioExacto;
+    
+    // Validar si el backend mandó la info antes de abrir nada
+    if(Object.keys(dataCuestionario).length === 0) {
+        mostrarAlertaPersonalizada("Error de sistema: Django no envió las preguntas a esta vista. Revisa tu views.py.", "error");
+        return;
+    }
+
+    abrirModal('modalRegistro');
+    
+    // 🔥 Ya no forzamos la búsqueda de los divs fantasmas, solo los ocultamos si existen
+    const stepPrimario = document.getElementById('stepTriagePrimario');
+    if (stepPrimario) stepPrimario.style.display = 'none';
+    
+    const stepFlujo = document.getElementById('stepSeleccionFlujo');
+    if (stepFlujo) stepFlujo.style.display = 'none';
+    
+    // Mostramos las preguntas y ocultamos el formulario final
+    document.getElementById('stepPreguntas').style.display = 'block';
+    document.getElementById('formRegistro').style.display = 'none';
+    
+    iniciarCuestionario(flujo);
+}
+
+function iniciarCuestionario(flujo) {
+    if(!dataCuestionario[flujo]) {
+        mostrarAlertaPersonalizada("El flujo solicitado no existe en la base de datos.", "error");
+        return;
+    }
+    flujoActual = flujo;
+    preguntasFlujo = dataCuestionario[flujoActual].preguntas;
+    
+    document.querySelector("#triageHeader h2").innerText = dataCuestionario[flujoActual].titulo;
+    
+    historialNavegacion = []; 
+    respuestasGuardadas = {}; 
+    indicePregunta = obtenerSiguienteIndiceValido(0); 
+    mostrarPregunta();
+}
+
+function debeMostrarPregunta(pregunta) {
+    if (!pregunta.mostrar_si) return true;
+    const depId = pregunta.mostrar_si.id;
+    const valoresPermitidos = pregunta.mostrar_si.valores;
+    const respuestaPrevia = respuestasGuardadas[depId];
+    if (!respuestaPrevia) return false;
+    if (Array.isArray(respuestaPrevia)) return respuestaPrevia.some(r => valoresPermitidos.includes(r));
+    return valoresPermitidos.includes(respuestaPrevia);
+}
+
+function obtenerSiguienteIndiceValido(inicio) {
+    let nextIndex = inicio;
+    while (nextIndex < preguntasFlujo.length) {
+        if (debeMostrarPregunta(preguntasFlujo[nextIndex])) return nextIndex; 
+        nextIndex++; 
+    }
+    return nextIndex;
+}
+
+function mostrarPregunta() {
+    const optionsContainer = document.getElementById("questionOptionsContainer");
+    optionsContainer.innerHTML = "";
+    
+    if (indicePregunta >= preguntasFlujo.length) {
+        finalizarCuestionario();
+        return;
+    }
+    
+    document.getElementById("progressBar").style.width = (((indicePregunta) / preguntasFlujo.length) * 100) + "%";
+    document.getElementById("progressText").innerText = `Pregunta ${historialNavegacion.length + 1}`;
+    
+    const q = preguntasFlujo[indicePregunta];
+    document.getElementById("questionText").innerText = q.pregunta;
+    document.getElementById("btnAtras").style.display = historialNavegacion.length > 0 ? "block" : "none";
+    
+    const esPreguntaEdad = q.id === 'edad' || q.pregunta.toLowerCase().includes('edad');
+
+    if (q.tipo === "single" || q.tipo === "multiple") {
+        const inputType = q.tipo === "single" ? "radio" : "checkbox";
+        q.opciones.forEach((opcion) => {
+            const checked = respuestasGuardadas[q.id] && respuestasGuardadas[q.id].includes(opcion) ? "checked" : "";
+            const html = `<label class="triage-option-label"><input type="${inputType}" name="${q.id}" value="${opcion}" ${checked}> ${opcion}</label>`;
+            optionsContainer.insertAdjacentHTML('beforeend', html);
+        });
+    } 
+    // --- DISEÑO INTERACTIVO PARA EDAD (13-35) ---
+    else if (esPreguntaEdad) {
+        const minEdad = 13;
+        const maxEdad = 60;
+        const val = respuestasGuardadas[q.id] || 24; 
+        
+        optionsContainer.innerHTML = `
+            <div style="text-align: center; margin-bottom: 20px;">
+                <span id="${q.id}_valDisplay" style="font-size: 6rem; font-weight: 800; color: var(--c-purple); font-family: 'Outfit', sans-serif; line-height: 1;">${val}</span>
+                <span style="font-size: 1.2rem; color: #64748b; font-weight: 500; display: block;">años de edad</span>
+            </div>
+            <div style="padding: 0 10px;">
+                <input type="range" id="${q.id}" min="${minEdad}" max="${maxEdad}" value="${val}" style="width: 100%; height: 8px; background: #e2e8f0; border-radius: 4px; appearance: none; accent-color: var(--c-purple); cursor: pointer;" oninput="document.getElementById('${q.id}_valDisplay').innerText = this.value">
+                <div style="display: flex; justify-content: space-between; font-size: 0.85rem; color: #94a3b8; font-weight: 600; margin-top: 10px;">
+                    <span>13 años</span>
+                    <span>60+ años</span>
+                </div>
+            </div>
+        `;
+    }
+    // --- DISEÑO INTERACTIVO PARA INTENSIDAD (Rango normal) ---
+    else if (q.tipo === "numero" && q.min !== undefined && q.max !== undefined) {
+        const val = respuestasGuardadas[q.id] || Math.ceil((q.min + q.max) / 2);
+        optionsContainer.innerHTML = `
+            <div style="text-align: center; margin-bottom: 20px;">
+                <span id="${q.id}_valDisplay" style="font-size: 5rem; font-weight: 800; color: var(--c-pink); font-family: 'Outfit', sans-serif; line-height: 1;">${val}</span>
+            </div>
+            <div style="padding: 0 10px;">
+                <input type="range" id="${q.id}" min="${q.min}" max="${q.max}" value="${val}" style="width: 100%; height: 8px; background: #e2e8f0; border-radius: 4px; appearance: none; accent-color: var(--c-pink); cursor: pointer;" oninput="document.getElementById('${q.id}_valDisplay').innerText = this.value">
+                <div style="display: flex; justify-content: space-between; font-size: 0.85rem; color: #94a3b8; font-weight: 600; margin-top: 10px;">
+                    <span>${q.min}</span>
+                    <span>${q.max}</span>
+                </div>
+            </div>
+        `;
+    } else {
+        const val = respuestasGuardadas[q.id] || "";
+        const inputType = q.tipo === "numero" ? "number" : "text";
+        optionsContainer.innerHTML = `<input type="${inputType}" id="${q.id}" class="custom-input-triage" placeholder="Escribe aquí..." value="${val}">`;
+    }
+}
+
+document.getElementById("btnSiguiente").addEventListener("click", function () {
+    const q = preguntasFlujo[indicePregunta];
+    let hayRespuesta = false;
+    if (q.tipo === "single") {
+        const sel = document.querySelector(`input[name="${q.id}"]:checked`);
+        if (sel) { respuestasGuardadas[q.id] = sel.value; hayRespuesta = true; }
+    } else if (q.tipo === "multiple") {
+        const sels = Array.from(document.querySelectorAll(`input[name="${q.id}"]:checked`)).map(el => el.value);
+        if (sels.length > 0) { respuestasGuardadas[q.id] = sels; hayRespuesta = true; }
+    } else {
+        const val = document.getElementById(q.id).value.trim();
+        if (val !== "") { 
+            // Validar límites si es un número
+            if (q.tipo === "numero") {
+                const num = parseInt(val);
+                if (q.min !== undefined && num < q.min) {
+                    mostrarAlertaPersonalizada(`Por favor ingresa un número que sea mínimo ${q.min}.`, "info");
+                    return; // Detenemos el avance
+                }
+                if (q.max !== undefined && num > q.max) {
+                    mostrarAlertaPersonalizada(`Por favor ingresa un número que sea máximo ${q.max}.`, "info");
+                    return; // Detenemos el avance
+                }
+            }
+            respuestasGuardadas[q.id] = val; 
+            hayRespuesta = true; 
+        }
+    }
+    
+    if (!hayRespuesta) {
+        mostrarAlertaPersonalizada("Por favor, selecciona una respuesta para continuar.", "info");
+        return;
+    }
+    historialNavegacion.push(indicePregunta);
+    indicePregunta = obtenerSiguienteIndiceValido(indicePregunta + 1);
+    mostrarPregunta();
+});
+
+document.getElementById("btnAtras").addEventListener("click", function () {
+    if (historialNavegacion.length > 0) {
+        indicePregunta = historialNavegacion.pop();
+        mostrarPregunta();
+    }
+});
+
+function finalizarCuestionario() {
+    document.getElementById("stepPreguntas").style.display = "none";
+    document.getElementById("formRegistro").style.display = "block";
+    document.querySelector("#triageHeader h2").innerText = "Crea tu cuenta segura";
+    document.getElementById("inputFlujoFinal").value = flujoActual;
+    document.getElementById("progressBar").style.width = "100%";
+}
+
+// ── ENVÍO AJAX DEL REGISTRO FINAL ──
+
+// ── ENVÍO AJAX DEL REGISTRO FINAL ──
+const formReg = document.getElementById("formRegistro");
+if(formReg) {
+    formReg.addEventListener("submit", function (e) {
+        e.preventDefault(); 
+        if (formReg.dataset.enviando === "true") return;
+        formReg.dataset.enviando = "true";
+
+        // 1. Guardamos el seudónimo
+        respuestasGuardadas["pseudonimo"] = document.getElementById("pseudonimoFinal").value;
+        
+        // 🔥 NUEVO: CAPTURAMOS EL TALLER/SERVICIO Y LO METEMOS AL JSON 🔥
+        const servicioElegido = document.getElementById("inputServicioOrigen").value;
+        if (servicioElegido) {
+            respuestasGuardadas["servicio_solicitado"] = servicioElegido;
+        }
+
+        // 2. Ahora sí, convertimos todo a texto JSON y lo ponemos en el input oculto
+        document.getElementById("inputRespuestasFinal").value = JSON.stringify(respuestasGuardadas);
+
+        const btnSubmitFinal = document.getElementById("btnSubmitFinal");
+        const originalText = btnSubmitFinal.innerHTML;
+        btnSubmitFinal.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Creando expediente...';
+        btnSubmitFinal.disabled = true;
+
+        fetch(formReg.getAttribute("action"), {
+            method: "POST",
+            body: new FormData(formReg),
+            headers: { 
+                "X-Requested-With": "XMLHttpRequest",
+                "X-CSRFToken": formReg.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        })
+        .then(r => r.json())
+        .then(data => {
+            btnSubmitFinal.innerHTML = originalText;
+            btnSubmitFinal.disabled = false;
+            formReg.dataset.enviando = "false";
+
+            if (data.status === "success") {
+                // 🔥 Redirigimos directamente en lugar de abrir el modal
+                window.location.href = data.redirect_url;
+            } else {
+                mostrarAlertaPersonalizada(data.message || "Error desconocido.", "error");
+            }
+        })
+        .catch(err => {
+            btnSubmitFinal.innerHTML = originalText;
+            btnSubmitFinal.disabled = false;
+            formReg.dataset.enviando = "false";
+            mostrarAlertaPersonalizada("Error de conexión.", "error");
+        });
+    });
+}
+
+// ── FUNCIÓN DE ALERTAS BONITAS ──
+function mostrarAlertaPersonalizada(mensaje, tipo = "info") {
+    const msg = document.getElementById("feedbackMessage");
+    const iconDiv = document.getElementById("feedbackIcon");
+    msg.innerHTML = mensaje;
+    
+    if (tipo === "error") {
+        document.getElementById("feedbackTitle").innerText = "Hubo un problema";
+        iconDiv.innerHTML = '<i class="fas fa-exclamation-triangle" style="color: #ef4444;"></i>';
+    } else {
+        document.getElementById("feedbackTitle").innerText = "Atención";
+        iconDiv.innerHTML = '<i class="fas fa-info-circle" style="color: var(--c-purple);"></i>';
+    }
+    abrirModal("modalFeedback");
+}
+
+// ── NAV ACTIVO ──
+document.querySelectorAll('.nav-item').forEach(item=>{
+  item.addEventListener('click',function(){
+    // Condición mágica: Ignoramos los botones de Iniciar Sesión para que no se pongan blancos
+    if (!this.classList.contains('btn-login-sidebar') && !this.classList.contains('btn-login-mobile')) {
+        document.querySelectorAll('.nav-item').forEach(i=>i.classList.remove('active'));
+        this.classList.add('active');
+    }
+  });
+});
+
+// ── LÓGICA MOOD MODAL (FOOTER) ──
+function abrirMoodModal(mood){
+  if(mood){ goMoodStep(2, mood); } else { goMoodStep(1, null); }
+  abrirModal('modalMood');
+}
+function goMoodStep(step, mood){
+  ['moodStep1','moodStep2','moodStep3'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el) el.classList.remove('active');
+  });
+  const currentStep = document.getElementById('moodStep'+step);
+  if(currentStep) currentStep.classList.add('active');
+
+  if(mood){
+    currentMood = mood;
+    const d = MOODS[mood];
+    document.getElementById('moodModalTitle').textContent = d.title;
+    document.getElementById('moodModalMsg').textContent = d.msg;
+    document.getElementById('moodModalText').placeholder = d.placeholder;
+    document.getElementById('moodModalText').value = '';
+    const igInput = document.getElementById('moodIgInput');
+    if(igInput) igInput.value = '';
+  }
+}
+function elegirMood(mood, btn){
+  document.querySelectorAll('.mood-emoji-btn').forEach(b=>b.classList.remove('selected'));
+  btn.classList.add('selected');
+  setTimeout(()=>goMoodStep(2, mood), 200);
+}
+function enviarMood(){
+  const msg = document.getElementById('moodModalText').value;
+  const igInput = document.getElementById('moodIgInput');
+  const ig = igInput ? igInput.value.trim().replace(/^@/,'') : '';
+  const csrfMatch = document.cookie.match(/csrftoken=([^;]+)/);
+  if(csrfMatch){
+    fetch('/enviar-mood/',{
+      method:'POST',
+      headers:{'X-CSRFToken':csrfMatch[1],'Content-Type':'application/x-www-form-urlencoded'},
+      body:'mood='+currentMood+'&mensaje='+encodeURIComponent(msg)+'&instagram='+encodeURIComponent(ig)
+    }).catch(e => console.error("Error al enviar mood:", e));
+  }
+  const d = MOODS[currentMood];
+  document.getElementById('moodConfirmEmoji').textContent = d.confirmEmoji;
+  document.getElementById('moodConfirmText').textContent = d.confirmMsg;
+  goMoodStep(3, null);
+  setTimeout(()=>cerrarModal('modalMood'), 4000);
+}
+
+
+
+
 </script>
 
 {% if mostrar_completar_perfil %}

@@ -1,0 +1,122 @@
+        /* Pegamos TU CSS exacto aquí para que no falle nada */
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+
+        :root {
+            --p-dark: #4d4383;
+            --p-light: #6767a5;
+            --accent: #b64f80;
+            --teal: #56858d;
+            --blue: #79b0cc;
+            --bg-body: #f8fafc;
+            --white: #ffffff;
+            --glass: rgba(255, 255, 255, 0.95);
+            --danger: #dc2626;
+            --success: #10b981;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
+
+        body {
+            background-color: var(--bg-body);
+            background-image: radial-gradient(#e2e8f0 1px, transparent 1px);
+            background-size: 40px 40px;
+            color: #1e293b;
+            min-height: 100vh;
+        }
+
+        /* --- TOP BAR (Flotante) --- */
+        .top-bar {
+            position: absolute; 
+            width: 95%; 
+            top: 0; 
+            left: 2.5%; /* Centrado relativo */
+            z-index: 10; 
+            display: flex; 
+            justify-content: space-between; 
+            padding: 20px 0; 
+            background: transparent; 
+        }
+
+        .top-location, .top-social {
+            display: flex; align-items: center; gap: 14px; padding: 12px 22px;
+            border-radius: 30px; background: linear-gradient(135deg, #6f3fa1, #1aa3c8); color: #fff;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1); 
+        }
+        .top-social a { color: #fff; font-size: 16px; transition: 0.3s; }
+        .top-social a:hover { transform: scale(1.1); }
+
+        /* --- LOGO --- */
+        .header-brand { text-align: center; padding: 30px 0 25px; }
+        .header-brand img { max-height: 150px; width: auto; }
+
+        /* --- NAV --- */
+        .main-nav { display: flex; justify-content: center; gap: 36px; position: relative; }
+        .nav-link { font-weight: 600; font-size: 14px; color: #2f2f2f; cursor: pointer; transition: 0.3s; }
+        .nav-link:hover { color: var(--accent); }
+        .simple { padding-top: 2px; }
+
+        /* --- DROPDOWNS --- */
+        .nav-item { position: relative; }
+        .dropdown {
+            position: absolute; top: 100%; left: 0; min-width: 260px; background: #f8f9fb;
+            border-radius: 6px; box-shadow: 0 8px 25px rgba(0,0,0,.15);
+            display: flex; flex-direction: column; opacity: 0; transform: translateY(10px);
+            pointer-events: none; transition: all .3s ease; z-index: 1000;
+        }
+        .nav-item:hover .dropdown { opacity: 1; transform: translateY(0); pointer-events: auto; }
+        .dropdown a, .dropdown span {
+            display: flex; align-items: center; gap: 12px; padding: 12px 16px; font-size: 14px;
+            color: #425b76; border-bottom: 1px solid #e4e7ee;
+        }
+        .dropdown a:hover { background: #eef1f7; }
+
+        .header-gradient { height: 6px; margin-top: 20px; background: linear-gradient(90deg, #a45b7c, #6f7bb0, #4f8f8a); }
+
+        /* --- LAYOUT DEL BUSCADOR --- */
+        .dashboard-container { max-width: 600px; margin: 60px auto; padding: 0 20px; }
+        
+        .glass-card {
+            background: var(--white); border-radius: 24px; padding: 40px;
+            box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.05); border: 1px solid rgba(0, 0, 0, 0.02);
+            position: relative; overflow: hidden;
+        }
+
+        .section-title { font-size: 1.8rem; font-weight: 800; color: var(--p-dark); margin-bottom: 25px; text-align: center; }
+
+        /* --- FORMULARIOS --- */
+        .form-group { margin-bottom: 20px; }
+        .form-label { display: block; margin-bottom: 8px; font-weight: 700; color: var(--p-dark); font-size: 0.95rem; }
+        .form-control {
+            width: 100%; padding: 14px 15px; border-radius: 12px; border: 2px solid #e2e8f0;
+            font-size: 1rem; color: var(--p-dark); background: white; transition: 0.3s; outline: none;
+        }
+        .form-control:focus { border-color: var(--accent); box-shadow: 0 0 0 4px rgba(182, 79, 128, 0.1); }
+
+        /* --- BOTONES --- */
+        .btn { padding: 12px 20px; border-radius: 12px; font-weight: 700; border: none; cursor: pointer; transition: 0.3s; width: 100%; font-size: 1rem; margin-bottom: 10px; }
+        .btn-primary { background: var(--p-dark); color: white; }
+        .btn-primary:hover { background: var(--accent); transform: translateY(-2px); }
+        .btn-secondary { background: #e2e8f0; color: var(--p-dark); }
+        .btn-secondary:hover { background: #cbd5e1; }
+
+        /* --- ALERTAS --- */
+        .alert { padding: 15px; border-radius: 12px; margin-top: 20px; font-weight: 600; font-size: 0.95rem; }
+        .alert-error { background: #fee2e2; color: var(--danger); border: 1px solid #fecaca; }
+        .alert-success { background: #d1fae5; color: var(--success); border: 1px solid #a7f3d0; }
+
+        /* --- FOOTER --- */
+        .site-footer { background: #fff; border-top: 4px solid #00bcd4; margin-top: 60px; }
+        .footer-container { max-width: 1200px; margin: auto; padding: 40px 20px; display: grid; grid-template-columns: 1.2fr 2fr 1.3fr; gap: 40px; }
+        .footer-col h4 { margin-bottom: 10px; font-size: 16px; color: var(--p-dark); }
+        .footer-col p { font-size: 14px; line-height: 1.6; color: #475569; }
+        .footer-logo { max-width: 220px; margin-bottom: 15px; }
+        .footer-btn {
+            display: inline-flex; align-items: center; gap: 10px; padding: 10px 18px; border-radius: 25px;
+            background: linear-gradient(#fff, #fff) padding-box, linear-gradient(90deg, #7e3f98, #00bcd4) border-box;
+            border: 2px solid transparent; color: #333; font-size: 14px; transition: all 0.3s ease; margin-top: 15px;
+        }
+        .footer-btn:hover { background: linear-gradient(90deg, #7e3f98, #00bcd4) padding-box, linear-gradient(90deg, #7e3f98, #00bcd4) border-box; color: #fff; }
+        .social-icons { display: flex; gap: 12px; margin: 10px 0; }
+        .social-icons a { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, #7e3f98, #00bcd4); color: #fff; display: flex; align-items: center; justify-content: center; transition: 0.3s; }
+        .social-icons a:hover { transform: translateY(-3px); }
+        .footer-bottom { text-align: center; padding: 15px 10px; color: #fff; font-size: 13px; background: linear-gradient(90deg, #1aa3a3, #4b3f91); }
