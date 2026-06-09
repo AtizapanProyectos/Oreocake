@@ -1072,6 +1072,46 @@ body {
   border: 1px solid #E2E8F0;
 }
 
+
+/* =====================================================
+   WHATSAPP WEB STYLE (CHAT P2P)
+   ===================================================== */
+.chat-wrapper {
+  display: grid; grid-template-columns: 320px 1fr;
+  height: 600px; background: var(--white);
+  border-radius: var(--r-xl); border: 1px solid var(--card-border);
+  box-shadow: var(--shadow-card); overflow: hidden;
+}
+@media(max-width: 768px) { .chat-wrapper { grid-template-columns: 1fr; } }
+.chat-sidebar { border-right: 1px solid var(--card-border); display: flex; flex-direction: column; background: var(--surface); }
+.chat-sidebar-header { padding: 20px; border-bottom: 1px solid var(--card-border); font-family: var(--font-head); font-weight: 800; }
+.chat-contacts { flex: 1; overflow-y: auto; }
+.contact-item { padding: 15px 20px; display: flex; align-items: center; gap: 12px; cursor: pointer; border-bottom: 1px solid rgba(0,0,0,0.03); transition: background 0.2s; }
+.contact-item:hover, .contact-item.active { background: white; }
+.c-avatar { width: 45px; height: 45px; border-radius: 50%; background: var(--p-light); color: var(--p); display: flex; align-items: center; justify-content: center; font-weight: 800; font-family: var(--font-head); flex-shrink: 0; }
+.c-info { flex: 1; min-width: 0; }
+.c-name { font-weight: 700; font-family: var(--font-head); font-size: 15px; margin-bottom: 3px; display: flex; justify-content: space-between; }
+.c-time { font-size: 11px; color: var(--ink-4); font-weight: 400; }
+.c-msg { font-size: 13px; color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.c-badge { background: var(--pink); color: white; font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 10px; margin-left: 5px; }
+
+.chat-main { display: flex; flex-direction: column; background: #FAF9FF; position: relative; }
+.chat-header { padding: 20px; background: white; border-bottom: 1px solid var(--card-border); display: flex; align-items: center; gap: 12px; }
+.chat-body { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+.chat-footer { padding: 15px 20px; background: white; border-top: 1px solid var(--card-border); }
+
+.msg-bubble { max-width: 75%; padding: 12px 16px; border-radius: 16px; font-size: 14px; position: relative; line-height: 1.4; }
+.msg-mine { align-self: flex-end; background: var(--p); color: white; border-bottom-right-radius: 4px; box-shadow: 0 4px 10px rgba(90,63,163,0.2); }
+.msg-theirs { align-self: flex-start; background: white; color: var(--ink); border: 1px solid var(--card-border); border-bottom-left-radius: 4px; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
+.msg-time { font-size: 10px; opacity: 0.7; text-align: right; margin-top: 5px; display: block; }
+.chat-input-row { display: flex; gap: 10px; }
+.chat-input-row input { flex: 1; border: 1px solid var(--card-border); border-radius: 100px; padding: 12px 20px; font-family: var(--font-body); outline: none; transition: 0.3s; }
+.chat-input-row input:focus { border-color: var(--p); }
+.chat-input-row button { background: var(--p); color: white; border: none; width: 45px; height: 45px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
+.chat-input-row button:hover { transform: scale(1.05); background: var(--orange); }
+.chat-placeholder { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--ink-4); }
+</style>
+
 </style>
 
 <div class="hope-wrap">
@@ -1126,6 +1166,11 @@ body {
     <button class="htab" onclick="openTab('talleres', this)">
       <i class="fas fa-users"></i> Grupos Clínicos
     </button>
+
+    <button class="htab" onclick="openTab('chat', this)">
+      <i class="fas fa-comments"></i> Mensajes
+    </button>
+
   </div>
 
   <!-- ===========================
@@ -1310,6 +1355,39 @@ body {
 
 </div><!-- /hope-wrap -->
 
+
+<div id="chat" class="hpane">
+    <div class="chat-wrapper fade-in-up">
+      <div class="chat-sidebar">
+        <div class="chat-sidebar-header">Mis Pacientes</div>
+        <div class="chat-contacts" id="chat-contact-list">
+          <div style="padding:20px; text-align:center; color:var(--ink-4);"><i class="fas fa-spinner fa-spin"></i> Cargando...</div>
+        </div>
+      </div>
+      <div class="chat-main" id="chat-main-window" style="display:none;">
+        <div class="chat-header">
+          <div class="c-avatar" id="chat-active-avatar">P</div>
+          <div class="c-name" id="chat-active-name" style="margin:0; font-size:18px;">Nombre Paciente</div>
+        </div>
+        <div class="chat-body" id="chat-messages">
+          </div>
+        <div class="chat-footer">
+          <form class="chat-input-row" onsubmit="enviarMensajeDoc(event)">
+            {% csrf_token %}
+            <input type="hidden" id="chat-destinatario-id" name="destinatario_id">
+            <input type="text" id="chat-input-text" name="contenido" placeholder="Escribe un mensaje seguro..." autocomplete="off" required>
+            <button type="submit"><i class="fas fa-paper-plane"></i></button>
+          </form>
+        </div>
+      </div>
+      <div class="chat-placeholder" id="chat-placeholder">
+        <div style="width:80px;height:80px;border-radius:50%;background:var(--p-light);display:flex;align-items:center;justify-content:center;font-size:30px;color:var(--p);margin-bottom:20px;"><i class="fas fa-comments"></i></div>
+        <h3 style="font-family:var(--font-head); color:var(--ink);">Mensajes Clínicos</h3>
+        <p style="font-size:14px; max-width:250px; text-align:center; line-height:1.5;">Selecciona a un paciente de la lista para ver su historial de mensajes.</p>
+      </div>
+    </div>
+  </div>
+
 <!-- ===========================
      MODAL: MI PERFIL CV
      =========================== -->
@@ -1471,6 +1549,97 @@ body {
 </div>
 
 <script>
+
+
+/* =====================================================
+   LÓGICA DEL CHAT P2P (DOCTOR)
+   ===================================================== */
+let chatActivoId = null;
+
+function cargarContactosChat() {
+  fetch('/api/chat/contactos/')
+    .then(r => r.json())
+    .then(d => {
+      if(d.status === 'success') {
+        const list = document.getElementById('chat-contact-list');
+        list.innerHTML = '';
+        d.contactos.forEach(c => {
+          const badge = c.no_leidos > 0 ? `<span class="c-badge">${c.no_leidos}</span>` : '';
+          const activeClass = chatActivoId == c.id ? 'active' : '';
+          list.innerHTML += `
+            <div class="contact-item ${activeClass}" onclick="abrirChat(${c.id}, '${c.nombre}', '${c.inicial}')">
+              <div class="c-avatar">${c.inicial}</div>
+              <div class="c-info">
+                <div class="c-name">${c.nombre} <span class="c-time">${c.hora_ultimo}</span></div>
+                <div class="c-msg">${c.ultimo_mensaje} ${badge}</div>
+              </div>
+            </div>`;
+        });
+      }
+    });
+}
+
+function abrirChat(id, nombre, inicial) {
+  chatActivoId = id;
+  document.getElementById('chat-placeholder').style.display = 'none';
+  document.getElementById('chat-main-window').style.display = 'flex';
+  document.getElementById('chat-destinatario-id').value = id;
+  document.getElementById('chat-active-name').innerText = nombre;
+  document.getElementById('chat-active-avatar').innerText = inicial;
+  cargarMensajes();
+  cargarContactosChat(); // Refrescar para quitar la alerta roja
+}
+
+function cargarMensajes() {
+  if(!chatActivoId) return;
+  fetch(`/api/chat/historial/${chatActivoId}/`)
+    .then(r => r.json())
+    .then(d => {
+      if(d.status === 'success') {
+        const box = document.getElementById('chat-messages');
+        const isScrolledToBottom = box.scrollHeight - box.clientHeight <= box.scrollTop + 50;
+        
+        box.innerHTML = d.mensajes.map(m => {
+          const clase = m.es_mio ? 'msg-mine' : 'msg-theirs';
+          return `<div class="msg-bubble ${clase}">${m.contenido} <span class="msg-time">${m.fecha}</span></div>`;
+        }).join('');
+        
+        // Auto-scroll solo si estaba hasta abajo
+        if(isScrolledToBottom) box.scrollTop = box.scrollHeight;
+      }
+    });
+}
+
+function enviarMensajeDoc(e) {
+  e.preventDefault();
+  const input = document.getElementById('chat-input-text');
+  if(!input.value.trim()) return;
+  
+  let formData = new FormData(e.target);
+  fetch('/api/chat/enviar/', { method: 'POST', body: formData })
+    .then(r => r.json())
+    .then(d => {
+      if(d.status === 'success') {
+        input.value = '';
+        cargarMensajes();
+        cargarContactosChat();
+      }
+    });
+}
+
+// Polling silencioso cada 3 segundos
+setInterval(() => {
+  const chatPane = document.getElementById('chat');
+  if(chatPane.classList.contains('active')) {
+    cargarContactosChat();
+    if(chatActivoId) cargarMensajes();
+  }
+}, 3000);
+
+// Cargar una vez al iniciar
+document.addEventListener('DOMContentLoaded', cargarContactosChat);
+
+
 /* =====================================================
    FRASES DIARIAS
    ===================================================== */

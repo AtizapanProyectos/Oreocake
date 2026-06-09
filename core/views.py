@@ -2035,3 +2035,105 @@ def guardar_expediente_completo(request):
 
         return JsonResponse({'status': 'success', 'redirect_url': '/panel/'})
     return JsonResponse({'status': 'error', 'message': 'Método no permitido'}, status=400)
+
+
+
+# =========================================================================
+# 💬 API DEL CHAT P2P (PACIENTE - DOCTOR)
+# =========================================================================
+from .models import MensajeChat
+
+def enviar_mensaje_chat(request):
+    """Guarda un mensaje nuevo en la base de datos"""
+    if request.method == 'POST' and request.user.is_authenticated:
+        destinatario_id = request.POST.get('destinatario_id')
+        contenido = request.POST.get('contenido', '').strip()
+
+        if not destinatario_id or not contenido:
+            return JsonResponse({'status': 'error', 'message': 'Mensaje vacío.'})
+
+        try:
+            destinatario = User.objects.get(id=destinatario_id)
+            mensaje = MensajeChat.objects.create(
+                remitente=request.user,
+                destinatario=destinatario,
+                contenido=contenido
+            )
+            return JsonResponse({
+                'status': 'success',
+                'mensaje': {
+                    'id': mensaje.id,
+                    'contenido': mensaje.contenido,
+                    'fecha': mensaje.fecha_envio.strftime('%H:%M'),
+                    'es_mio': True
+                }
+            })
+        except User.DoesNotExist:
+            return JsonResponse({'status': 'error', 'message': 'Usuario no encontrado.'})
+            
+    return JsonResponse({'status': 'error'})
+
+def obtener_mensajes_chat(request, usuario_id):
+    """Trae el historial de chat entre el usuario logueado y otro usuario"""
+    if not request.user.is_authenticated:
+        return JsonResponse({'status': 'error'})
+
+    # 1. Marcar como leídos los mensajes que me envió la otra persona
+    MensajeChat.objects.filter(
+        remitente_id=usuario_id,
+        destinatario=request.user,
+        leido=False
+    ).update(leido=True)
+
+    # 2. Buscar toda la conversación entre ambos
+    mensajes_db = MensajeChat.objects.filter(
+        Q(remitente=request.user, destinatario_id=usuario_id) |
+        Q(remitente_id=usuario_id, destinatario=request.user)
+    ).order_by('fecha_envio') # Cronológico: Viejos arriba, nuevos abajo
+
+    data = []
+    for m in mensajes_db:
+        data.append({
+            'id': m.id,
+            'contenido': m.contenido,
+            'fecha': m.fecha_envio.strftime('%H:%M'),
+            'es_mio': m.remitente == request.user
+        })
+
+    return JsonResponse({'status': 'success', 'mensajes': data})
+
+def obtener_contactos_chat(request):
+    """Carga la lista de pacientes en el panel izquierdo del Doctor al estilo WhatsApp"""
+    if not request.user.is_authenticated or not hasattr(request.user, 'perfil_psicologo'):
+        return JsonResponse({'status': 'error', 'message': 'No autorizado'})
+
+    psicologo = request.user.perfil_psicologo
+    
+    # Traemos a todos los pacientes asignados a este doctor
+    pacientes = User.objects.filter(perfil__psicologo_asignado=psicologo)
+
+    contactos = []
+    for p in pacientes:
+        # ¿Cuántos mensajes sin leer me mandó este paciente?
+        no_leidos = MensajeChat.objects.filter(remitente=p, destinatario=request.user, leido=False).count()
+        
+        # ¿Cuál fue el último mensaje que nos mandamos para ponerlo como previsualización?
+        ultimo_msg = MensajeChat.objects.filter(
+            Q(remitente=request.user, destinatario=p) |
+            Q(remitente=p, destinatario=request.user)
+        ).order_by('-fecha_envio').first()
+
+        contactos.append({
+            'id': p.id,
+            'nombre': f"{p.first_name} {p.last_name}".strip() or p.username,
+            'inicial': p.first_name[0].upper() if p.first_name else 'P',
+            'no_leidos': no_leidos,
+            'ultimo_mensaje': ultimo_msg.contenido if ultimo_msg else 'Inicia la conversación',
+            'fecha_orden': ultimo_msg.fecha_envio.isoformat() if ultimo_msg else '1970-01-01T00:00:00',
+            'hora_ultimo': ultimo_msg.fecha_envio.strftime('%H:%M') if ultimo_msg else ''
+        })
+
+    # Ordenar contactos como en WhatsApp: El que mandó mensaje más reciente va hasta arriba
+    contactos.sort(key=lambda x: x['fecha_orden'], reverse=True)
+
+    return JsonResponse({'status': 'success', 'contactos': contactos})

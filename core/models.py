@@ -281,3 +281,28 @@ class PreferenciasUsuario(models.Model):
 
     def __str__(self):
         return f"{self.user.username} - Notif: {self.notificaciones_activadas}"
+
+
+
+# ==========================================
+# 8. CHAT P2P (PACIENTE - DOCTOR)
+# ==========================================
+class MensajeChat(models.Model):
+    remitente = models.ForeignKey(User, on_delete=models.CASCADE, related_name='mensajes_enviados')
+    destinatario = models.ForeignKey(User, on_delete=models.CASCADE, related_name='mensajes_recibidos')
+    contenido = models.TextField(verbose_name="Contenido del mensaje")
+    fecha_envio = models.DateTimeField(auto_now_add=True, verbose_name="Fecha y hora de envío")
+    leido = models.BooleanField(default=False, verbose_name="¿Fue leído?")
+
+    class Meta:
+        # Ordenamos por fecha de envío para que el chat se vea cronológico (los más viejos arriba, los nuevos abajo)
+        ordering = ['fecha_envio']
+        indexes = [
+            # Estos índices hacen que las consultas del chat sean ultra rápidas en la base de datos
+            models.Index(fields=['remitente', 'destinatario']),
+            models.Index(fields=['leido']),
+        ]
+
+    def __str__(self):
+        estado = "Leído" if self.leido else "No leído"
+        return f"De {self.remitente.first_name} para {self.destinatario.first_name} ({estado})"

@@ -162,6 +162,37 @@
 
         .btn-brutal { padding: 15px !important; font-size: 15px !important; }
     }
+
+
+    /* ==========================================================================
+   CHAT FLOTANTE DEL PACIENTE
+   ========================================================================== */
+.chat-patient-widget {
+    position: fixed; bottom: 110px; right: 30px; width: 350px;
+    background: white; border-radius: 24px; box-shadow: 0 15px 40px rgba(90,63,163,0.15);
+    border: 1px solid #f1f5f9; display: none; flex-direction: column;
+    overflow: hidden; z-index: 999998; opacity: 0; transform: translateY(20px);
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.chat-patient-widget.open { display: flex; opacity: 1; transform: translateY(0); }
+@media(max-width: 768px) { .chat-patient-widget { bottom: 90px; right: 15px; left: 15px; width: auto; } }
+
+.c-pat-head { background: var(--c-purple); color: white; padding: 20px; display: flex; align-items: center; justify-content: space-between; }
+.c-pat-doc { display: flex; align-items: center; gap: 12px; }
+.c-pat-avatar { width: 40px; height: 40px; border-radius: 50%; background: white; color: var(--c-purple); display: flex; align-items: center; justify-content: center; font-weight: 800; font-family: var(--font-headings); }
+.c-pat-body { height: 350px; background: #f8fafc; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
+.c-pat-foot { background: white; padding: 15px; border-top: 1px solid #f1f5f9; }
+
+.btn-flotante-chat {
+    position: fixed; bottom: 110px; right: 30px; background-color: var(--c-purple);
+    color: white; width: 65px; height: 65px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center; font-size: 30px;
+    box-shadow: 0 10px 25px rgba(90,63,163,0.4); z-index: 999999; cursor: pointer; transition: 0.3s;
+}
+.btn-flotante-chat:hover { transform: scale(1.05); background: var(--c-pink); }
+@media(max-width: 768px) { .btn-flotante-chat { bottom: 90px; right: 20px; width: 55px; height: 55px; font-size: 24px; } }
+.chat-unseen-badge { position: absolute; top: 0; right: 0; background: var(--c-pink); width: 20px; height: 20px; border-radius: 50%; font-size: 11px; font-weight: 800; display: flex; align-items: center; justify-content: center; display: none; }
+
 </style>
 
 <div class="dashboard-header">
@@ -822,6 +853,102 @@
   </div>
 </div>
 
+
+{% if psicologo_asignado %}
+<div class="btn-flotante-chat" onclick="togglePatientChat()">
+    <i class="fas fa-comment-dots"></i>
+    <div class="chat-unseen-badge" id="pat-unseen-badge">0</div>
+</div>
+
+<div class="chat-patient-widget" id="patientChatWidget">
+    <div class="c-pat-head">
+        <div class="c-pat-doc">
+            <div class="c-pat-avatar">D</div>
+            <div>
+                <div style="font-family:var(--font-headings); font-weight:800; font-size:16px;">Dr(a). {{ psicologo_asignado.usuario.first_name }}</div>
+                <div style="font-size:11px; opacity:0.8;">Tu terapeuta</div>
+            </div>
+        </div>
+        <i class="fas fa-times" style="cursor:pointer; font-size:20px;" onclick="togglePatientChat()"></i>
+    </div>
+    <div class="c-pat-body" id="pat-chat-messages">
+        </div>
+    <div class="c-pat-foot">
+        <form style="display:flex; gap:10px;" onsubmit="enviarMensajePaciente(event)">
+            {% csrf_token %}
+            <input type="hidden" name="destinatario_id" value="{{ psicologo_asignado.usuario.id }}">
+            <input type="text" id="pat-chat-input" name="contenido" placeholder="Escribe tu mensaje..." required style="flex:1; border:1px solid #e2e8f0; border-radius:100px; padding:10px 15px; outline:none; font-family:var(--font-body);">
+            <button type="submit" style="background:var(--c-purple); color:white; border:none; width:40px; height:40px; border-radius:50%; cursor:pointer;"><i class="fas fa-paper-plane"></i></button>
+        </form>
+    </div>
+</div>
+
+<script>
+let chatPatAbierto = false;
+const docId = "{{ psicologo_asignado.usuario.id }}";
+
+function togglePatientChat() {
+    const w = document.getElementById('patientChatWidget');
+    chatPatAbierto = !chatPatAbierto;
+    if(chatPatAbierto) {
+        w.classList.add('open');
+        document.getElementById('pat-unseen-badge').style.display = 'none';
+        cargarMensajesPaciente();
+    } else {
+        w.classList.remove('open');
+    }
+}
+
+function cargarMensajesPaciente() {
+    fetch(`/api/chat/historial/${docId}/`)
+        .then(r => r.json())
+        .then(d => {
+            if(d.status === 'success') {
+                const box = document.getElementById('pat-chat-messages');
+                const wasBottom = box.scrollHeight - box.clientHeight <= box.scrollTop + 30;
+                
+                box.innerHTML = d.mensajes.map(m => {
+                    // Reutilizamos las clases CSS del doctor para los mensajes
+                    const clase = m.es_mio ? 'msg-mine' : 'msg-theirs';
+                    return `<div class="msg-bubble ${clase}" style="max-width:85%; padding:10px 14px;">${m.contenido} <span class="msg-time">${m.fecha}</span></div>`;
+                }).join('');
+                
+                if(wasBottom || d.mensajes.length > 0) box.scrollTop = box.scrollHeight;
+            }
+        });
+}
+
+function enviarMensajePaciente(e) {
+    e.preventDefault();
+    const input = document.getElementById('pat-chat-input');
+    if(!input.value.trim()) return;
+    
+    fetch('/api/chat/enviar/', { method: 'POST', body: new FormData(e.target) })
+        .then(r => r.json())
+        .then(d => {
+            if(d.status === 'success') {
+                input.value = '';
+                cargarMensajesPaciente();
+            }
+        });
+}
+
+// Revisar si hay mensajes nuevos para la campanita
+setInterval(() => {
+    if(chatPatAbierto) {
+        cargarMensajesPaciente();
+    } else {
+        // Truco rápido: llamamos al historial sin abrir para ver si hay nuevos (opcionalmente podrías hacer un endpoint de "check_unread")
+        fetch(`/api/chat/historial/${docId}/`)
+            .then(r=>r.json())
+            .then(d => {
+                // Si tienes un endpoint para no_leidos sería mejor, pero por ahora se actualiza el chat en background
+            });
+    }
+}, 3000);
+</script>
+{% endif %}
+
 <!-- ==========================================================================
      💬 BOTÓN FLOTANTE DE WHATSAPP (SOPORTE GLOBAL)
      ========================================================================== -->
@@ -1381,4 +1508,7 @@ window.modalidadSeleccionada = 'En línea'; // Por defecto
 
 
 </script>
+
+
+
 {% endblock %}
