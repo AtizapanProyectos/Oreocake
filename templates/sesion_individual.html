@@ -529,6 +529,49 @@ body{font-family:var(--font-b);color:var(--c-dark);background:#fff;display:flex}
     width: auto;
     align-self: center;
   }
+
+
+
+/* ── BOTÓN WHATSAPP FLOTANTE ── */
+.whatsapp-float {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  background-color: #25D366;
+  color: #FFF;
+  border-radius: 50px;
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  font-family: var(--font-h);
+  font-weight: 800;
+  font-size: 1rem;
+  box-shadow: 0 10px 25px rgba(37, 211, 102, 0.4);
+  z-index: 4000;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.whatsapp-float i {
+  font-size: 1.5rem;
+}
+.whatsapp-float:hover {
+  transform: translateY(-5px) scale(1.05);
+  box-shadow: 0 15px 35px rgba(37, 211, 102, 0.5);
+  background-color: #128C7E;
+  color: white;
+}
+@media (max-width: 768px) {
+  .whatsapp-float {
+    bottom: 20px;
+    right: 20px;
+    padding: 12px;
+    border-radius: 50%;
+  }
+  .whatsapp-float span {
+    display: none; /* Oculta el texto en móviles para que quede solo el círculo */
+  }
+}
 </style>
 
 
@@ -536,40 +579,47 @@ body{font-family:var(--font-b);color:var(--c-dark);background:#fff;display:flex}
 </head>
 <body>
 
-<!-- ── SIDEBAR ── -->
 <nav class="sidebar">
   <div class="brand-container">
     <img src="{% static 'img/nlogo.png' %}" alt="HOPE Logo">
   </div>
-  <a href="#inicio" class="nav-item active"><i class="fas fa-home"></i> Inicio</a>
-  <a href="#" onclick="abrirModal('modalLogin'); return false;" class="nav-item btn-login-sidebar">
-    <i class="fas fa-sign-in-alt"></i> Iniciar sesión
-  </a>
+  <a href="{% url 'inicio' %}#inicio" class="nav-item"><i class="fas fa-home"></i> Inicio</a>
+  
+  {% if request.user.is_authenticated %}
+    <a href="{% url 'logout_usuario' %}" class="nav-item btn-login-sidebar" style="background: #ef4444; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.2);">
+      <i class="fas fa-sign-out-alt"></i> Cerrar sesión
+    </a>
+  {% else %}
+    <a href="#" onclick="abrirModal('modalLogin'); return false;" class="nav-item btn-login-sidebar">
+      <i class="fas fa-sign-in-alt"></i> Iniciar sesión
+    </a>
+  {% endif %}
+
   <p class="nav-section-title">Terapias</p>
-  <a href="#" onclick="abrirRegistroDirecto('individual', 'terapia_individual'); return false;" class="nav-item">
+  <a href="{% url 'inicio' %}#terapias" class="nav-item active">
     <i class="fas fa-user"></i> Terapia Individual
   </a>
-  <a href="#" onclick="abrirRegistroDirecto('pareja', 'terapia_pareja'); return false;" class="nav-item">
+  <a href="{% url 'inicio' %}#terapias" class="nav-item">
     <i class="fas fa-heart"></i> Terapia de Pareja
   </a>
-<p class="nav-section-title">Talleres para Padres</p>
-  <a href="#" onclick="abrirRegistroDirecto('solo_talleres', 'Criar con Conciencia'); return false;" class="nav-item"><i class="fas fa-seedling"></i> Criar con Conciencia</a>
-  <a href="#" onclick="abrirRegistroDirecto('solo_talleres', 'Disciplina Inteligente'); return false;" class="nav-item"><i class="fas fa-star"></i> Disciplina Inteligente</a>
+  
+  <p class="nav-section-title">Talleres para Padres</p>
+  <a href="{% url 'inicio' %}#talleres-padres" class="nav-item"><i class="fas fa-seedling"></i> Criar con Conciencia</a>
+  <a href="{% url 'inicio' %}#talleres-padres" class="nav-item"><i class="fas fa-star"></i> Disciplina Inteligente</a>
   
   <p class="nav-section-title">Talleres de Pareja</p>
-  <a href="#" onclick="abrirRegistroDirecto('solo_talleres', 'Reconectar en Pareja'); return false;" class="nav-item"><i class="fas fa-heart"></i> Reconectar en Pareja</a>
-  <a href="#" onclick="abrirRegistroDirecto('solo_talleres', 'Amar sin Herir'); return false;" class="nav-item"><i class="fas fa-people-arrows"></i> Amar sin Herir</a>
+  <a href="{% url 'inicio' %}#talleres-pareja" class="nav-item"><i class="fas fa-heart"></i> Reconectar en Pareja</a>
+  <a href="{% url 'inicio' %}#talleres-pareja" class="nav-item"><i class="fas fa-people-arrows"></i> Amar sin Herir</a>
   
   <p class="nav-section-title">Talleres Grupales</p>
-  <a href="#" onclick="abrirRegistroDirecto('solo_talleres', 'Volver a Empezar'); return false;" class="nav-item"><i class="fas fa-users"></i> Volver a Empezar</a>
-  <a href="#" onclick="abrirRegistroDirecto('solo_talleres', 'Renacer Después del Adiós'); return false;" class="nav-item"><i class="fas fa-dove"></i> Renacer Después del Adiós</a>
-  <a href="#" onclick="abrirRegistroDirecto('solo_talleres', 'Reconstruyendo mi Valor'); return false;" class="nav-item"><i class="fas fa-gem"></i> Reconstruyendo mi Valor</a>
+  <a href="{% url 'inicio' %}#talleres-grupales" class="nav-item"><i class="fas fa-users"></i> Volver a Empezar</a>
+  <a href="{% url 'inicio' %}#talleres-grupales" class="nav-item"><i class="fas fa-dove"></i> Renacer Después del Adiós</a>
+  <a href="{% url 'inicio' %}#talleres-autoestima" class="nav-item"><i class="fas fa-gem"></i> Reconstruyendo mi Valor</a>
   
   <p class="nav-section-title">Profesionales</p>
-  <a href="#" onclick="abrirRegistroDirecto('solo_talleres', 'Ecovisión'); return false;" class="nav-item"><i class="fas fa-leaf"></i> Ecovisión</a>
+  <a href="{% url 'inicio' %}#ecovision" class="nav-item"><i class="fas fa-leaf"></i> Ecovisión</a>
   <p class="nav-section-title">Comunidad</p>
-  <a href="#blog" class="nav-item"><i class="fas fa-book-open"></i> Blog</a>
-  <a href="#blog" class="nav-item"><i class="fas fa-newspaper"></i> Estudios HOPE</a>
+  <a href="{% url 'inicio' %}#blog" class="nav-item"><i class="fas fa-book-open"></i> Blog</a>
 </nav>
 
 <main class="main-stage">
@@ -1867,6 +1917,13 @@ setTimeout(() => {
 
 </script>
 {% endif %}
+
+
+<!-- ── BURBUJA WHATSAPP ── -->
+<a href="https://wa.me/525547343603?text=Hola,%20me%20gustar%C3%ADa%20recibir%20informaci%C3%B3n%20sobre%20las%20terapias." class="whatsapp-float" target="_blank" rel="noopener">
+  <i class="fab fa-whatsapp"></i>
+  <span>¿Necesitas ayuda?</span>
+</a>
 
 </body>
 </html>
