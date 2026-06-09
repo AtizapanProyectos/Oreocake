@@ -597,24 +597,13 @@ body{font-family:var(--font-b);color:var(--c-dark);background:#fff;display:flex}
   <!-- Pequeña leyenda de comisión -->
   <span class="comision-extra">+ $10 MXN de comisión</span>
   
-  <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 15px;">
-    <!-- Botón para Primera Vez (Cuestionario) -->
-    <button class="btn-cta-new" onclick="abrirRegistroDirecto('individual', 'terapia_individual'); return false;">
-      <i class="fas fa-user-plus"></i> &nbsp;Agendar Primera Vez
-    </button>
-    
-    <!-- Botón para Segunda Sesión (Si ya tiene cuenta) -->
-    {% if request.user.is_authenticated %}
-      <button class="btn-cta-new" style="background: linear-gradient(135deg, var(--c-purple), #7c5cbf); box-shadow: 0 8px 20px rgba(90,63,163,.3);" onclick="abrirModal('modalCalendario'); return false;">
-        <i class="fas fa-calendar-check"></i> &nbsp;Agendar Nueva Sesión
-      </button>
-    {% else %}
-      <button class="btn-cta-new" style="background: linear-gradient(135deg, var(--c-purple), #7c5cbf); box-shadow: 0 8px 20px rgba(90,63,163,.3);" onclick="abrirModal('modalLogin'); return false;">
-        <i class="fas fa-sign-in-alt"></i> &nbsp;Ya soy paciente
-      </button>
-    {% endif %}
-  </div>
+  <button class="btn-cta-new" onclick="abrirModal('modalRegistro')">
+    <i class="fas fa-calendar-check"></i> &nbsp;Agendar por Primera vez
+  </button>
 
+  <button class="btn-cta-new" style="background: linear-gradient(135deg, var(--c-purple), #7c5cbf); box-shadow: 0 8px 20px rgba(90,63,163,.3);" onclick="abrirModal('modalRegistro'); return false;">
+        <i class="fas fa-sign-in-alt"></i> &nbsp;Ya soy paciente
+  </button>
   <div class="cta-badges">
     <span class="cta-badge"><i class="fas fa-lock"></i> Confidencial</span>
     <span class="cta-badge"><i class="fas fa-shield-alt"></i> Seguro</span>
