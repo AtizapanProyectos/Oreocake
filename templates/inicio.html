@@ -739,21 +739,28 @@ body{font-family:var(--font-b);color:var(--c-dark);background:#fff;display:flex}
 
 
     <!-- BLOG -->
-<section id="blog" class="section" style="background:#f8fafc; text-align: center;">
+<!-- BLOG DINÁMICO -->
+  <section id="blog" class="section" style="background:#f8fafc; text-align: center;">
     <h2 class="section-title">Nuestro Blog.</h2>
     
-    <div class="grid" style="max-width: 400px; margin: 0 auto; text-align: left;">
+    <div class="grid" style="max-width: 1000px; margin: 0 auto; text-align: left;">
       
-      <div class="card" onclick="abrirModal('modalBlog1')">
-        <div class="card-img">
-            <img src="https://images.unsplash.com/photo-1604594849809-dfedbc827105?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" alt="Salud Mental" loading="lazy">
-        </div>
-        <div class="card-body">
-          <p style="font-size:.85rem;color:var(--c-orange);font-weight:800;margin-bottom:8px;letter-spacing:1px;">SALUD MENTAL</p>
-          <h3 style="color:var(--c-dark); font-size:1.6rem; margin-bottom:12px; line-height:1.2;">Cuando ir al psicólogo parece un lujo</h3>
-          <p style="font-size:1.05rem;">La realidad de la salud mental en México y las opciones que sí están al alcance.</p>
-        </div>
-      </div>
+      {% for articulo in articulos_prensa %}
+      <a href="{% url 'detalle_prensa' articulo.slug %}" style="text-decoration: none; color: inherit;">
+          <div class="card">
+            <div class="card-img">
+                <img src="{{ articulo.get_imagen }}" alt="{{ articulo.titulo }}" loading="lazy">
+            </div>
+            <div class="card-body">
+              <p style="font-size:.85rem;color:var(--c-orange);font-weight:800;margin-bottom:8px;letter-spacing:1px;">PRENSA & SALUD MENTAL</p>
+              <h3 style="color:var(--c-dark); font-size:1.6rem; margin-bottom:12px; line-height:1.2;">{{ articulo.titulo }}</h3>
+              <p style="font-size:1.05rem;">{{ articulo.resumen }}</p>
+            </div>
+          </div>
+      </a>
+      {% empty %}
+        <p style="text-align:center; color:var(--text-muted); width: 100%;">Próximamente publicaremos nuevos artículos.</p>
+      {% endfor %}
       
     </div>
   </section>

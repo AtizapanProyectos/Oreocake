@@ -306,3 +306,32 @@ class MensajeChat(models.Model):
     def __str__(self):
         estado = "Leído" if self.leido else "No leído"
         return f"De {self.remitente.first_name} para {self.destinatario.first_name} ({estado})"
+
+
+
+# ==========================================
+# 9. PRENSA Y BLOG HOPE
+# ==========================================
+class ArticuloPrensa(models.Model):
+    titulo = models.CharField(max_length=250, verbose_name="Título del Artículo")
+    slug = models.SlugField(unique=True, max_length=250, help_text="URL amigable (ej: la-salud-mental-en-mexico)")
+    resumen = models.TextField(help_text="Texto breve para la tarjeta de inicio")
+    contenido = models.TextField(help_text="Contenido completo del artículo (Soporta etiquetas HTML como <h3>, <p>, <ul>)")
+    imagen = models.ImageField(upload_to='prensa/', blank=True, null=True, verbose_name="Imagen de Portada")
+    imagen_url_externa = models.URLField(blank=True, null=True, help_text="O usa un enlace directo de Unsplash/Google")
+    fecha_publicacion = models.DateField(auto_now_add=True)
+    publicado = models.BooleanField(default=True, verbose_name="¿Mostrar en la página?")
+
+    class Meta:
+        ordering = ['-fecha_publicacion']
+
+    def __str__(self):
+        return self.titulo
+    
+    @property
+    def get_imagen(self):
+        if self.imagen:
+            return self.imagen.url
+        elif self.imagen_url_externa:
+            return self.imagen_url_externa
+        return '/static/img/default_blog.jpg' # Imagen por defecto si olvidas poner una

@@ -37,4 +37,5 @@ urlpatterns = [
     path('api/chat/enviar/', views.enviar_mensaje_chat, name='enviar_mensaje_chat'),
     path('api/chat/historial/<int:usuario_id>/', views.obtener_mensajes_chat, name='obtener_mensajes_chat'),
     path('api/chat/contactos/', views.obtener_contactos_chat, name='obtener_contactos_chat'),
+    path('blog/<slug:slug>/', views.detalle_prensa, name='detalle_prensa'),
 ]

@@ -318,9 +318,12 @@ def generar_link_meet(fecha_obj, hora_obj, paciente_nombre, psicologo_nombre, pa
 # =========================================================================
 # 🏠 NUEVA VISTA: PÁGINA DE INICIO (LANDING PAGE)
 def inicio(request):
+
+    articulos = ArticuloPrensa.objects.filter(publicado=True)[:6]
     context = {
         'cuestionario_json': json.dumps(CUESTIONARIO_CLINICO),
         'paypal_client_id': settings.PAYPAL_CLIENT_ID,
+        'articulos_prensa': articulos,
     }
     
     # ¡AQUÍ ESTÁ LA MAGIA! Pasamos el 'context' a la plantilla
@@ -2137,3 +2140,11 @@ def obtener_contactos_chat(request):
     contactos.sort(key=lambda x: x['fecha_orden'], reverse=True)
 
     return JsonResponse({'status': 'success', 'contactos': contactos})
+
+
+
+
+# 📖 NUEVA VISTA: LECTURA DEL ARTÍCULO COMPLETO
+def detalle_prensa(request, slug):
+    articulo = get_object_or_404(ArticuloPrensa, slug=slug, publicado=True)
+    return render(request, 'detalle_prensa.html', {'articulo': articulo}) 
