@@ -1,8 +1,6 @@
 from django.contrib import admin
 from import_export.admin import ImportExportModelAdmin
-from .models import * 
-
-# ==========================================
+from .models import * # ==========================================
 # INLINES PARA EL PERFIL DEL PSICÓLOGO
 # ==========================================
 
@@ -29,7 +27,7 @@ class PerfilPsicologoAdmin(ImportExportModelAdmin):
 # ==========================================
 @admin.register(UsuarioPerfil)
 class UsuarioPerfilAdmin(ImportExportModelAdmin):
-    list_display = ('nombre', 'usuario', 'telefono', 'es_psicologo', 'psicologo_assigned_id' if hasattr(UsuarioPerfil, 'psicologo_assigned') else 'psicologo_asignado')
+    list_display = ('nombre', 'usuario', 'telefono', 'es_psicologo', 'psicologo_asignado')
     search_fields = ('nombre', 'usuario__email', 'telefono')
     list_filter = ('es_psicologo',)
 
@@ -96,8 +94,41 @@ class InscripcionTallerAdmin(ImportExportModelAdmin):
     list_filter = ('taller__tipo', 'taller__fecha')
 
 # ==========================================
-# 8. REGISTROS EXTRA
+# 8. CHAT P2P (PACIENTE - DOCTOR)
+# ==========================================
+@admin.register(MensajeChat)
+class MensajeChatAdmin(ImportExportModelAdmin):
+    list_display = ('remitente', 'destinatario', 'fecha_envio', 'leido')
+    search_fields = ('remitente__first_name', 'destinatario__first_name', 'contenido')
+    list_filter = ('leido', 'fecha_envio')
+
+# ==========================================
+# 9. PRENSA Y BLOG HOPE
+# ==========================================
+@admin.register(ArticuloPrensa)
+class ArticuloPrensaAdmin(ImportExportModelAdmin):
+    list_display = ('titulo', 'fecha_publicacion', 'publicado')
+    search_fields = ('titulo', 'resumen')
+    list_filter = ('publicado', 'fecha_publicacion')
+    # 🔥 MAGIA PURA: Esto llena el "Slug" automáticamente mientras escribes el título
+    prepopulated_fields = {'slug': ('titulo',)} 
+
+# ==========================================
+# 10. INTELIGENCIA OPERATIVA (KPIs y Alertas)
+# ==========================================
+@admin.register(MetricaDiaria)
+class MetricaDiariaAdmin(ImportExportModelAdmin):
+    list_display = ('fecha', 'nuevos_pacientes_semana', 'citas_completadas_mes', 'focos_rojos_activos')
+
+@admin.register(NotificacionSistema)
+class NotificacionSistemaAdmin(ImportExportModelAdmin):
+    list_display = ('titulo', 'tipo', 'fecha_creacion', 'leida')
+    list_filter = ('tipo', 'leida')
+
+# ==========================================
+# REGISTROS EXTRA (Sin configuración avanzada)
 # ==========================================
 admin.site.register(HorarioPsicologo)
 admin.site.register(DiaLibrePsicologo)
-admin.site.register(detalle_prensa)
+admin.site.register(EventoAuditoria)
+admin.site.register(PreferenciasUsuario)
