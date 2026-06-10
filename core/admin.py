@@ -100,3 +100,4 @@ class InscripcionTallerAdmin(ImportExportModelAdmin):
 # ==========================================
 admin.site.register(HorarioPsicologo)
 admin.site.register(DiaLibrePsicologo)
+admin.site.register(detalle_prensa)
