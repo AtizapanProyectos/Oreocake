@@ -622,7 +622,6 @@ def inscribir_taller_ajax(request):
     return JsonResponse({'status': 'error', 'message': 'Petición no válida.'})
 
 from django.db import transaction
-
 @transaction.atomic
 def guardar_cita_ajax(request):
     if request.method == 'POST':
@@ -652,37 +651,33 @@ def guardar_cita_ajax(request):
                 except:
                     pass
 
-                # Obtener psicólogos ocupados en ese horario
-                psicologos_ocupados_ids = Cita.objects.filter(
-                    fecha=fecha_obj, hora=hora_obj, estado='Confirmada'
-                ).values_list('psicologo_id', flat=True)
-                
-                # 🔥 select_for_update para evitar race conditions
                 # 1. Obtenemos los IDs de los doctores que REALMENTE tienen ese slot disponible ese día
                 doctores_con_slot_valido = []
-                for psicologo in PerfilPsicologo.objects.filter(esta_activo=True):
-                    slots_del_dia = obtener_slots_psicologo_para_dia(psicologo, fecha_obj)
+                for psicologo_temp in PerfilPsicologo.objects.filter(esta_activo=True):
+                    slots_del_dia = obtener_slots_psicologo_para_dia(psicologo_temp, fecha_obj)
                     if hora_obj.strftime('%I:%M %p') in slots_del_dia:
-                        doctores_con_slot_valido.append(psicologo.id)
+                        doctores_con_slot_valido.append(psicologo_temp.id)
 
-                # 2. Ahora sí filtramos, balanceamos y bloqueamos (select_for_update)
+                # 2. Bloqueamos (select_for_update) y anotamos la carga histórica (excluyendo canceladas)
                 psicologos_libres = PerfilPsicologo.objects.filter(
                     id__in=doctores_con_slot_valido
                 ).select_for_update().annotate(
-                    carga_pacientes=Count('pacientes_asignados')
+                    carga_historica=Count('citas_agendadas', filter=~Q(citas_agendadas__estado='Cancelada'))
                 )
 
                 if not psicologos_libres.exists():
                     return JsonResponse({'status': 'error', 'message': 'Lo sentimos, este horario acaba de ser ocupado. Elige otro.'})
 
+                # 3. Asignamos ordenando por el total histórico de citas y desempate al azar ('?')
                 if 'Mujer' in preferencia:
-                    psicologo = psicologos_libres.filter(genero='Mujer').order_by('carga_pacientes').first()
+                    psicologo = psicologos_libres.filter(genero='Mujer').order_by('carga_historica', '?').first()
                 elif 'Hombre' in preferencia:
-                    psicologo = psicologos_libres.filter(genero='Hombre').order_by('carga_pacientes').first()
+                    psicologo = psicologos_libres.filter(genero='Hombre').order_by('carga_historica', '?').first()
 
                 if not psicologo:
-                    psicologo = psicologos_libres.order_by('carga_pacientes').first()
+                    psicologo = psicologos_libres.order_by('carga_historica', '?').first()
 
+                # Guardamos la asignación en el perfil del paciente
                 perfil.psicologo_asignado = psicologo
                 perfil.save()
                 
@@ -746,6 +741,7 @@ def guardar_cita_ajax(request):
 
     return JsonResponse({'status': 'error'})
 
+    
 def panel_doctor(request):
     if not request.user.is_authenticated or not hasattr(request.user, 'perfil_psicologo'):
         return redirect('modulo_informativo')
@@ -1897,53 +1893,27 @@ def resetear_password_form(request, uidb64, token):
         return render(request, 'verificacion_resultado.html', {'exito': False, 'mensaje': 'El enlace de recuperación ha expirado o ya fue utilizado.'})
 
 
+
 def sesion_individual(request):
-    # Lógica de tiempos y citas libres (Igualita a la del panel_generico)
     now_local = timezone.localtime(timezone.now())
     hoy = now_local.date()
-    hora_actual = now_local.time().replace(second=0, microsecond=0)
-    festivos = set(DiaFestivo.objects.filter(fecha__gte=hoy).values_list('fecha', flat=True))
-    horas_base = [time(h, 0) for h in range(9, 21)]
-    total_psicologos_activos = PerfilPsicologo.objects.filter(esta_activo=True).count()
+    fecha_limite = hoy + timedelta(days=90)
 
-    dias_json = {}
+    # 🔥 MAGIA PURA: Ahora llamamos a la función que SÍ revisa turnos, comidas y días libres
+    dias_json = obtener_slots_globales(hoy, fecha_limite, "")
+
     dias_html = {}
-
-    
-    # Calculamos espacios globales (ya que es un paciente nuevo sin psicólogo asignado)
-    if total_psicologos_activos > 0:
-        fecha_limite = hoy + timedelta(days=90)
-        citas_agrupadas = Cita.objects.filter(fecha__gte=hoy, fecha__lte=fecha_limite, estado='Confirmada').values('fecha', 'hora').annotate(total=Count('id'))
-        citas_ocupadas = {(c['fecha'], c['hora'].replace(second=0, microsecond=0)): c['total'] for c in citas_agrupadas}
-
-        dias_agregados = 0
-        dia_actual = hoy
-        dias_iterados = 0
-        while dias_agregados < 30 and dias_iterados < 120:
-            dias_iterados += 1
-            if dia_actual not in festivos:
-                horas_del_dia_str = []
-                horas_del_dia_obj = []
-                for h in horas_base:
-                    if dia_actual == hoy and h < hora_actual: continue
-                    ocupadas = citas_ocupadas.get((dia_actual, h), 0)
-                    if ocupadas < total_psicologos_activos:
-                        horas_del_dia_str.append(h.strftime('%I:%M %p'))
-                        horas_del_dia_obj.append(h)
-                if horas_del_dia_str:
-                    dias_json[dia_actual.strftime('%Y-%m-%d')] = horas_del_dia_str
-                    dias_html[dia_actual] = horas_del_dia_obj
-                    dias_agregados += 1
-            dia_actual += timedelta(days=1)
+    for fecha_str, horas_str in dias_json.items():
+        fecha_obj = datetime.strptime(fecha_str, '%Y-%m-%d').date()
+        horas_obj = [datetime.strptime(h, '%I:%M %p').time() for h in horas_str]
+        dias_html[fecha_obj] = horas_obj
 
     context = {
         'dias_disponibles_json': dias_json,
         'dias_disponibles': dias_html,
-        'paypal_client_id': settings.PAYPAL_CLIENT_ID,
         'mostrar_completar_perfil': request.GET.get('completar_perfil') == '1',  
         'cuestionario_json': json.dumps(CUESTIONARIO_CLINICO),
         'paypal_client_id': settings.PAYPAL_CLIENT_ID,
-    
     }
     return render(request, 'sesion_individual.html', context)
 
