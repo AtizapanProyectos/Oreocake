@@ -884,7 +884,7 @@ body{font-family:var(--font-b);color:var(--c-dark);background:#fff;display:flex}
   <div id="paypal-button-container-individual" style="margin-top: 10px;"></div>
 
   <button type="button" class="btn-brutal" style="width: 100%; background: #10b981; color: white; margin-bottom: 15px; border-radius: 14px;" onclick="guardarCitaSinPago()">
-                            ELIMINAR MI CUENTA Y TODAS MIS SESIÓNES  <i class="fas fa-magic"></i>
+  ELIMINAR MI CUENTA Y TODAS MIS SESIÓNES  <i class="fas fa-magic"></i>
   </button>
 
   <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 15px;">
@@ -1196,6 +1196,55 @@ function getCookie(name) {
         document.getElementById('step-2-payment').style.display = 'none';
         document.getElementById('step-1-schedule').style.display = 'block';
     });
+
+
+
+function guardarCitaSinPago() {
+
+    // Mostrar loading
+    document.getElementById('step-2-payment').style.display = 'none';
+    document.getElementById('step-3-loading').style.display = 'block';
+
+    let formData = new FormData();
+
+    formData.append('fecha', window.fechaSeleccionada);
+    formData.append('hora', window.horaSeleccionada);
+    formData.append('animo', window.animoSeleccionado);
+    formData.append('modalidad', window.modalidadSeleccionada);
+    formData.append('tipo_servicio', window.tipoServicioAgendado);
+
+    fetch("{% url 'guardar_cita' %}", {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+
+        document.getElementById('step-3-loading').style.display = 'none';
+
+        if(data.status === 'success') {
+
+            document.getElementById('alerta-exito-cita').style.display = 'flex';
+
+        } else {
+
+            alert(data.message || 'Error al guardar cita');
+
+        }
+    })
+    .catch(error => {
+
+        document.getElementById('step-3-loading').style.display = 'none';
+
+        console.error(error);
+        alert('Error de conexión');
+
+    });
+}
+
 
 
 function iniciarCuestionarioFinal() {
