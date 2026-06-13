@@ -1198,54 +1198,54 @@ function getCookie(name) {
     });
 
 
-
 function guardarCitaSinPago() {
 
     // Mostrar loading
     document.getElementById('step-2-payment').style.display = 'none';
     document.getElementById('step-3-loading').style.display = 'block';
 
+    // 1. Obtenemos el token limpio desde la cookie
+    const csrfToken = getCookie('csrftoken');
+    
     let formData = new FormData();
-
     formData.append('fecha', window.fechaSeleccionada);
     formData.append('hora', window.horaSeleccionada);
     formData.append('animo', window.animoSeleccionado);
     formData.append('modalidad', window.modalidadSeleccionada);
     formData.append('tipo_servicio', window.tipoServicioAgendado);
+    
+    // Lo agregamos también al cuerpo de la petición por si Django lo requiere ahí
+    formData.append('csrfmiddlewaretoken', csrfToken); 
 
-    fetch("{% url 'guardar_cita' %}", {
+    // 2. Apuntamos a la URL correcta de tu views.py
+    fetch("/guardar_cita_ajax/", { 
         method: 'POST',
         headers: {
-            'X-CSRFToken': '{{ csrf_token }}'
+            'X-Requested-With': 'XMLHttpRequest', // Le decimos a Django que es AJAX
+            'X-CSRFToken': csrfToken              // Mandamos el token limpio
         },
         body: formData
     })
     .then(response => response.json())
     .then(data => {
-
         document.getElementById('step-3-loading').style.display = 'none';
 
         if(data.status === 'success') {
-
-            document.getElementById('alerta-exito-cita').style.display = 'flex';
-
+            // Mandamos al usuario al paso de completar perfil
+            window.location.href = '/sesion-individual/?completar_perfil=1';
         } else {
-
+            // Volvemos a mostrar el botón si hay error
+            document.getElementById('step-2-payment').style.display = 'block';
             alert(data.message || 'Error al guardar cita');
-
         }
     })
     .catch(error => {
-
         document.getElementById('step-3-loading').style.display = 'none';
-
+        document.getElementById('step-2-payment').style.display = 'block';
         console.error(error);
-        alert('Error de conexión');
-
+        alert('Error de conexión con el servidor.');
     });
 }
-
-
 
 function iniciarCuestionarioFinal() {
     // Abrimos el mismo modal de Triage que usaste en el registro
