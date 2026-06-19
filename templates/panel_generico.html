@@ -564,13 +564,12 @@
                         </div>
                         
 
-
-                        <div id="paypal-button-container" style="margin-top: 15px;"></div>
-                        
-                        <button type="button" class="btn-brutal" style="width: 100%; background: #10b981; color: white; margin-bottom: 15px; border-radius: 14px;" onclick="guardarCitaSinPago()">
-                            ELIMINAR CUENTA <i class="fas fa-magic"></i>
-                        </button>
-
+                        <div id="clip-button-container" style="margin-top: 15px; text-align: center;">
+                            <button id="btn-pagar-clip" type="button" style="background: #ffffff; border: 2px solid #f3f4f6; border-radius: 14px; padding: 10px 20px; width: 100%; cursor: pointer; transition: 0.3s; display: flex; align-items: center; justify-content: center; gap: 10px;">
+                                <span style="font-family: var(--font-headings); font-weight: 800; font-size: 16px; color: var(--text-main);">Pagar con</span>
+                                <img src="https://assets-global.website-files.com/62588b32d8d6105ab7aa9721/63bf568610f3fdf437235192_Preview.svg" alt="Logo Paga con Clip" style="height: 30px;">
+                            </button>
+                        </div>
 
                     </div>
                 </div>
@@ -1049,7 +1048,7 @@ setInterval(() => {
     }
 </style>
 
-<script src="https://www.paypal.com/sdk/js?client-id={{ paypal_client_id }}&currency=MXN"></script>
+
 <script>
 
 
@@ -1404,93 +1403,71 @@ function guardarCitaSinPago() {
 
 // --- PAYPAL SMART BUTTONS ---
         
-        if (document.getElementById('paypal-button-container')) {
-            paypal.Buttons({
-                
-                // 1. ANTES DE ABRIR PAYPAL: Validamos reglas de HOPE
-                onClick: function(data, actions) {
-                    const checkConsentimiento = document.getElementById('check-consentimiento');
-                    if (checkConsentimiento && !checkConsentimiento.checked) {
-                        document.getElementById('alerta-consentimiento').style.display = 'flex';
-                        return actions.reject();
-                    }
-                    if (!window.fechaSeleccionada || !window.horaSeleccionada) {
-                        alert("Por favor, selecciona una fecha y una hora válida.");
-                        return actions.reject();
-                    }
-                    return actions.resolve();
-                },
+document.addEventListener("DOMContentLoaded", function () {
+    const btnClip = document.getElementById('btn-pagar-clip');
+    
+    if (btnClip) {
+        btnClip.addEventListener('click', function() {
+            
+            // 1. ANTES DE INICIAR EL PAGO: Validamos reglas de HOPE (Igual que hacias en PayPal)
+            const checkConsentimiento = document.getElementById('check-consentimiento');
+            if (checkConsentimiento && !checkConsentimiento.checked) {
+                document.getElementById('alerta-consentimiento').style.display = 'flex';
+                return;
+            }
+            if (!window.fechaSeleccionada || !window.horaSeleccionada) {
+                alert("Por favor, selecciona una fecha y una hora válida.");
+                return;
+            }
 
-                // 2. CREAR LA ORDEN DE COBRO — monto se determina en tiempo real
-                createOrder: function(data, actions) {
-                    // Leemos el tipo elegido por el usuario en este momento
-                    let montoCobro = (window.tipoServicioAgendado === 'pareja') ? '215.00' : '110.00';
-                    let descripcion = (window.tipoServicioAgendado === 'pareja')
-                        ? 'Sesión Psicológica HOPE — Pareja'
-                        : 'Sesión Psicológica HOPE — Individual';
-                    return actions.order.create({
-                        purchase_units: [{
-                            description: descripcion,
-                            amount: { value: montoCobro }
-                        }]
-                    });
-                },
+            // 2. MOSTRAR LOADING
+            document.getElementById('step-2-payment').style.display = 'none';
+            document.getElementById('step-3-loading').style.display = 'block';
 
-                // 3. ¡PAGO EXITOSO! GUARDAMOS EN DJANGO
-                onApprove: function(data, actions) {
-                    document.getElementById('step-2-payment').style.display = 'none';
-                    document.getElementById('step-3-loading').style.display = 'block';
+            // 3. PREPARAR DATOS (Precios dinámicos)
+            let montoCobro = (window.tipoServicioAgendado === 'pareja') ? '215.00' : '110.00';
+            
+            let formData = new URLSearchParams();
+            formData.append('fecha', window.fechaSeleccionada);
+            formData.append('hora', window.horaSeleccionada);
+            formData.append('animo', window.animoSeleccionado);
+            formData.append('modalidad', window.modalidadSeleccionada);
+            formData.append('tipo_servicio', window.tipoServicioAgendado);
+            formData.append('monto', montoCobro); // Enviamos el monto para que Django genere el link de Clip
+            formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
 
-                    return actions.order.capture().then(function(detallesPago) {
-                        let formData = new URLSearchParams();
-                        formData.append('fecha', window.fechaSeleccionada);
-                        formData.append('hora', window.horaSeleccionada);
-                        formData.append('animo', window.animoSeleccionado);
-                        formData.append('modalidad', window.modalidadSeleccionada);
-                        // ✅ Pasamos el tipo de servicio elegido al backend
-                        formData.append('tipo_servicio', window.tipoServicioAgendado);
-                        formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
-
-                        fetch("{% url 'guardar_cita' %}", {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-Requested-With': 'XMLHttpRequest' },
-                            body: formData.toString()
-                        })
-                        .then(response => response.json())
-                        .then(data => {
-                            document.getElementById('step-3-loading').style.display = 'none';
-                            if(data.status === 'success') {
-                                document.getElementById('texto-exito-dinamico').innerText = "Tu sesión y pago han sido confirmados con éxito.";
-                                document.getElementById('alerta-exito-cita').style.display = 'flex';
-                            } else {
-                                document.getElementById('texto-error-cita').innerText = data.message;
-                                document.getElementById('alerta-error-cita').style.display = 'flex';
-                            }
-                        }).catch(error => {
-                            document.getElementById('step-3-loading').style.display = 'none';
-                            document.getElementById('texto-error-cita').innerText = 'Error guardando tu cita, pero tu pago está seguro. Contáctanos.';
-                            document.getElementById('alerta-error-cita').style.display = 'flex';
-                        });
-                    });
-                },
-
-                // 4. SI CANCELA LA VENTANITA
-                onCancel: function (data) {
-                    // No hacemos nada grave, solo le avisamos
-                    console.log("El paciente cerró la ventana de PayPal.");
-                },
-
-                // 5. SI ALGO EXPLOTA EN PAYPAL
-                onError: function (err) {
-                    console.error("Error PayPal:", err);
-                    document.getElementById('texto-error-cita').innerText = 'Hubo un error de conexión con tu banco o PayPal. Intenta de nuevo.';
+            // 4. LLAMAR A DJANGO PARA GENERAR EL LINK DE CLIP
+            // Nota: Debes crear esta vista 'iniciar_pago_clip' en tu views.py
+            fetch("{% url 'iniciar_pago_clip' %}", {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-Requested-With': 'XMLHttpRequest' },
+                body: formData.toString()
+            })
+            .then(response => response.json())
+            .then(data => {
+                if(data.status === 'success' && data.payment_url) {
+                    // ¡Éxito! Redirigimos al paciente a la pasarela segura de Clip
+                    window.location.href = data.payment_url;
+                } else {
+                    // SI ALGO EXPLOTA EN EL BACKEND
+                    document.getElementById('step-3-loading').style.display = 'none';
+                    document.getElementById('texto-error-cita').innerText = data.message || 'Error al conectar con Clip. Intenta de nuevo.';
                     document.getElementById('alerta-error-cita').style.display = 'flex';
                 }
-                
-            }).render('#paypal-button-container');
-        }
+            })
+            .catch(error => {
+                // SI ALGO EXPLOTA EN LA RED
+                console.error("Error Clip:", error);
+                document.getElementById('step-3-loading').style.display = 'none';
+                document.getElementById('texto-error-cita').innerText = 'Hubo un error de conexión. Intenta de nuevo.';
+                document.getElementById('alerta-error-cita').style.display = 'flex';
+            });
+        });
+    }
+});
+        
 
-    });
+
 
 
 window.modalidadSeleccionada = 'En línea'; // Por defecto

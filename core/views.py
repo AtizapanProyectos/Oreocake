@@ -741,7 +741,7 @@ def guardar_cita_ajax(request):
 
     return JsonResponse({'status': 'error'})
 
-    
+
 def panel_doctor(request):
     if not request.user.is_authenticated or not hasattr(request.user, 'perfil_psicologo'):
         return redirect('modulo_informativo')
@@ -2124,3 +2124,199 @@ def obtener_contactos_chat(request):
 def detalle_prensa(request, slug):
     articulo = get_object_or_404(ArticuloPrensa, slug=slug, publicado=True)
     return render(request, 'detalle_prensa.html', {'articulo': articulo}) 
+
+
+@csrf_exempt
+@transaction.atomic
+def iniciar_pago_clip(request):
+    if request.method == 'POST':
+        try:
+            monto = request.POST.get('monto')
+            tipo_servicio = request.POST.get('tipo_servicio', 'individual')
+            
+            # Si es un donativo, saltamos la creación de la cita
+            if tipo_servicio == 'donativo':
+                cita_id = "DONATIVO"
+            else:
+                # 1. ES UNA CITA: Capturamos datos y pre-apartamos el lugar
+                fecha_str = request.POST.get('fecha')
+                hora_str = request.POST.get('hora')
+                animo = request.POST.get('animo', 'No especificó')
+                modalidad = request.POST.get('modalidad', 'En línea')
+                
+                fecha_obj = datetime.strptime(fecha_str, '%Y-%m-%d').date()
+                hora_obj = datetime.strptime(hora_str, '%H:%M').time()
+
+                # Guardamos la cita en estado 'Pendiente' usando tus campos originales
+                cita = Cita.objects.create(
+                    paciente=request.user if request.user.is_authenticated else None,
+                    fecha=fecha_obj,
+                    hora=hora_obj,
+                    estado='Pendiente',
+                    tipo_sesion=tipo_servicio,
+                    estado_animo=animo,
+                    modalidad=modalidad,
+                    motivo='Primera Sesión' if not getattr(request.user.perfil, 'psicologo_asignado', None) else 'Sesión de Seguimiento'
+                )
+                cita_id = cita.id
+
+            # 2. Configuración de Clip para Producción
+            api_key = os.environ.get("CLIP_API_KEY_PROD")
+            clave_secreta = os.environ.get("CLIP_CLAVE_SECRETA_PROD")
+            
+            credenciales_puras = f"{api_key}:{clave_secreta}"
+            base64_token = base64.b64encode(credenciales_puras.encode('utf-8')).decode('utf-8')
+            
+            url = "https://api.clip.mx/checkout" 
+            dominio = "https://espaciohope.com" # <--- Pon tu dominio real
+
+            payload = json.dumps({
+                "amount": float(monto),
+                "currency": "MXN",
+                "purchase_description": f"HOPE - {tipo_servicio.capitalize()}",
+                "redirection_url": {
+                    "success": f"{dominio}/pago-exitoso/{cita_id}/",
+                    "error": f"{dominio}/pago-cancelado/{cita_id}/",
+                    "default": f"{dominio}/panel/"
+                },
+                "custom_transaction_id": f"HOPE_{cita_id}_{timezone.now().strftime('%M%S')}"
+            })
+
+            headers = {
+                'accept': 'application/vnd.clip.v2+json', 
+                'content-type': 'application/json',
+                'Authorization': f"Basic {base64_token}"
+            }
+
+            # 3. Lanzamos petición
+            response = requests.post(url, headers=headers, data=payload)
+            clip_data = response.json()
+
+            if response.status_code == 200 and 'payment_request_url' in clip_data:
+                return JsonResponse({'status': 'success', 'payment_url': clip_data['payment_request_url']})
+            else:
+                if tipo_servicio != 'donativo':
+                    cita.delete() # Borramos la basura si Clip falla
+                return JsonResponse({'status': 'error', 'message': 'Clip no generó el link.'})
+
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)})
+            
+    return JsonResponse({'status': 'error', 'message': 'Método no permitido'})
+
+
+@transaction.atomic
+def pago_exitoso_clip(request, cita_id):
+    # Caso 1: Fue un donativo
+    if cita_id == "DONATIVO":
+        messages.success(request, "¡Gracias por tu donativo! Eres un puente hacia la esperanza 🤍")
+        return redirect('inicio')
+
+    # Caso 2: Fue una Cita (Copiamos TU lógica original de PayPal)
+    try:
+        cita = Cita.objects.get(id=cita_id)
+        
+        if cita.estado == 'Pendiente':
+            paciente = cita.paciente
+            perfil = paciente.perfil
+            psicologo = perfil.psicologo_asignado
+
+            # --- ASIGNACIÓN DE PSICÓLOGO ---
+            if not psicologo:
+                preferencia = ""
+                try:
+                    cuestionario = paciente.cuestionario_inicial
+                    preferencia = cuestionario.respuestas.get('preferencia_terapeuta', '')
+                except:
+                    pass
+
+                doctores_con_slot_valido = []
+                for psicologo_temp in PerfilPsicologo.objects.filter(esta_activo=True):
+                    slots_del_dia = obtener_slots_psicologo_para_dia(psicologo_temp, cita.fecha)
+                    if cita.hora.strftime('%I:%M %p') in slots_del_dia:
+                        doctores_con_slot_valido.append(psicologo_temp.id)
+
+                psicologos_libres = PerfilPsicologo.objects.filter(
+                    id__in=doctores_con_slot_valido
+                ).select_for_update().annotate(
+                    carga_historica=Count('citas_agendadas', filter=~Q(citas_agendadas__estado='Cancelada'))
+                )
+
+                if not psicologos_libres.exists():
+                    cita.delete()
+                    messages.error(request, "Tu pago fue exitoso, pero el horario se ocupó. Contáctanos por WhatsApp para reagendar.")
+                    return redirect('panel_generico')
+
+                if 'Mujer' in preferencia:
+                    psicologo = psicologos_libres.filter(genero='Mujer').order_by('carga_historica', '?').first()
+                elif 'Hombre' in preferencia:
+                    psicologo = psicologos_libres.filter(genero='Hombre').order_by('carga_historica', '?').first()
+
+                if not psicologo:
+                    psicologo = psicologos_libres.order_by('carga_historica', '?').first()
+
+                perfil.psicologo_asignado = psicologo
+                perfil.save()
+            else:
+                if Cita.objects.filter(psicologo=psicologo, fecha=cita.fecha, hora=cita.hora, estado='Confirmada').exists():
+                    cita.delete()
+                    messages.error(request, "Tu pago fue exitoso, pero tu terapeuta ya agendó a alguien en ese minuto. Contáctanos para reagendar.")
+                    return redirect('panel_generico')
+
+            # --- GOOGLE MEET ---
+            link_final = None
+            id_google = None
+            if cita.modalidad == 'En línea':
+                datos_meet = generar_link_meet(
+                    fecha_obj=cita.fecha,
+                    hora_obj=cita.hora,
+                    paciente_nombre=paciente.first_name,
+                    psicologo_nombre=psicologo.usuario.first_name,
+                    paciente_email=paciente.email,             
+                    psicologo_email=psicologo.usuario.email        
+                )
+                if datos_meet:
+                    link_final = datos_meet['link']
+                    id_google = datos_meet['id_evento']
+
+            # --- GUARDADO FINAL ---
+            cita.psicologo = psicologo
+            cita.estado = 'Confirmada'
+            cita.enlace_meet = link_final
+            cita.id_evento_google = id_google
+            cita.save()
+
+            # --- CORREO ---
+            asunto = 'Confirmación de tu sesión en HOPE'
+            link_correo = link_final if link_final else "Cita Presencial (Revisa tu panel para ver la dirección)"
+            contexto = {
+                'nombre': paciente.first_name,
+                'psicologo_nombre': psicologo.usuario.first_name,
+                'fecha': cita.fecha.strftime('%d/%m/%Y'),
+                'hora': cita.hora.strftime('%H:%M'),
+                'link_meet': link_correo
+            }
+            mensaje_html = render_to_string('correo_cita.html', contexto)
+            mensaje_plano = strip_tags(mensaje_html)
+            send_mail(asunto, mensaje_plano, 'Espacio HOPE <no-reply@espaciohope.com>', [paciente.email], html_message=mensaje_html, fail_silently=True)
+
+            messages.success(request, "¡Todo listo! Tu pago fue procesado con éxito y tu sesión ha sido agendada en tu panel.")
+        
+        return redirect('panel_generico')
+
+    except Cita.DoesNotExist:
+        messages.error(request, "Hubo un problema verificando tu cita, por favor contacta a soporte.")
+        return redirect('panel_generico')
+
+
+def pago_cancelado_clip(request, cita_id):
+    if cita_id != "DONATIVO":
+        try:
+            cita = Cita.objects.get(id=cita_id)
+            if cita.estado == 'Pendiente':
+                cita.delete() # Liberamos el horario para que otro lo ocupe
+        except Cita.DoesNotExist:
+            pass
+        messages.error(request, "El pago fue cancelado o la tarjeta fue rechazada. Puedes intentar agendar nuevamente.")
+        
+    return redirect('panel_generico')

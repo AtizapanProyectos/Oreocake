@@ -9,7 +9,6 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700;900&family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-<script src="https://www.paypal.com/sdk/js?client-id={{ paypal_client_id }}&currency=MXN&locale=es_MX"></script>
 <style>
 /* ── VARIABLES ── */
 :root {
@@ -880,13 +879,16 @@ body{font-family:var(--font-b);color:var(--c-dark);background:#fff;display:flex}
     + $10 MXN de comisión
   </span>
 
-  <!-- 🔥 BOTÓN REAL DE PAYPAL -->
-  <div id="paypal-button-container-individual" style="margin-top: 10px;"></div>
-
+<div id="clip-button-container" style="margin-top: 15px; text-align: center;">
+    <button id="btn-pagar-clip" type="button" style="background: #ffffff; border: 2px solid #f3f4f6; border-radius: 14px; padding: 10px 20px; width: 100%; cursor: pointer; transition: 0.3s; display: flex; align-items: center; justify-content: center; gap: 10px;">
+        <span style="font-family: var(--font-headings); font-weight: 800; font-size: 16px; color: var(--text-main);">Pagar con</span>
+        <img src="https://assets-global.website-files.com/62588b32d8d6105ab7aa9721/63bf568610f3fdf437235192_Preview.svg" alt="Logo Paga con Clip" style="height: 30px;">
+    </button>
+</div>
 
 
   <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 15px;">
-    <i class="fas fa-lock"></i> Pago 100% seguro procesado por PayPal
+    <i class="fas fa-lock"></i> Pago 100% seguro procesado por CLIP
   </p>
 </div>
 </div>
@@ -1265,75 +1267,66 @@ function renderizarBotonPayPalIndividual() {
     const container = document.getElementById('paypal-button-container-individual');
     if (!container || container.children.length > 0) return; // Ya fue renderizado
 
-    paypal.Buttons({
-        style: {
-            layout: 'vertical',
-            color:  'blue',
-            shape:  'rect',
-            label:  'pay'
-        },
-        createOrder: function(data, actions) {
-            return actions.order.create({
-                purchase_units: [{
-                    description: 'Sesión Individual HOPE — ' + window.fechaSeleccionada + ' ' + window.horaSeleccionada,
-                    amount: {
-                        currency_code: 'MXN',
-                        value: '110.00'
-                    }
-                }]
-            });
-        },
-        onApprove: function(data, actions) {
-            // Mostramos pantalla de carga
+document.addEventListener("DOMContentLoaded", function () {
+    const btnClip = document.getElementById('btn-pagar-clip');
+    
+    if (btnClip) {
+        btnClip.addEventListener('click', function() {
+            
+            // 1. Validaciones
+            const checkConsentimiento = document.getElementById('check-consentimiento');
+            if (checkConsentimiento && !checkConsentimiento.checked) {
+                document.getElementById('alerta-consentimiento').style.display = 'flex';
+                return;
+            }
+            if (!window.fechaSeleccionada || !window.horaSeleccionada) {
+                alert("Por favor, selecciona una fecha y una hora válida.");
+                return;
+            }
+            
+            // Capturar datos del formulario rápido si existen
+            const nombre = document.getElementById('nombre_paciente') ? document.getElementById('nombre_paciente').value : '';
+            const email = document.getElementById('email_paciente') ? document.getElementById('email_paciente').value : '';
+
+            // 2. Loading
             document.getElementById('step-2-payment').style.display = 'none';
             document.getElementById('step-3-loading').style.display = 'block';
 
-            return actions.order.capture().then(function(details) {
-                // Pago exitoso — ahora guardamos la cita
-                const csrfToken = getCookie('csrftoken');
-                let formData = new FormData();
-                formData.append('fecha', window.fechaSeleccionada);
-                formData.append('hora', window.horaSeleccionada);
-                formData.append('animo', window.animoSeleccionado);
-                formData.append('modalidad', window.modalidadSeleccionada);
-                formData.append('tipo_servicio', window.tipoServicioAgendado);
-                formData.append('paypal_order_id', details.id);
-                formData.append('paypal_payer_email', details.payer.email_address || '');
-                formData.append('csrfmiddlewaretoken', csrfToken);
+            // 3. Preparar datos
+            let montoCobro = '110.00'; // Ajusta según tu lógica de precios aquí
+            
+            let formData = new URLSearchParams();
+            formData.append('fecha', window.fechaSeleccionada);
+            formData.append('hora', window.horaSeleccionada);
+            formData.append('monto', montoCobro);
+            formData.append('nombre', nombre);
+            formData.append('email', email);
+            formData.append('tipo_servicio', 'individual');
+            formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
 
-                fetch("/guardar_cita_ajax/", {
-                    method: 'POST',
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest',
-                        'X-CSRFToken': csrfToken
-                    },
-                    body: formData
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.status === 'success') {
-                        window.location.href = '/sesion-individual/?completar_perfil=1';
-                    } else {
-                        document.getElementById('step-3-loading').style.display = 'none';
-                        document.getElementById('step-2-payment').style.display = 'block';
-                        mostrarAlertaPersonalizada(data.message || 'Error al guardar la cita', 'error');
-                    }
-                })
-                .catch(() => {
+            // 4. Llamada al backend
+            fetch("{% url 'iniciar_pago_clip' %}", {  // Usamos la misma vista base
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-Requested-With': 'XMLHttpRequest' },
+                body: formData.toString()
+            })
+            .then(response => response.json())
+            .then(data => {
+                if(data.status === 'success' && data.payment_url) {
+                    window.location.href = data.payment_url;
+                } else {
                     document.getElementById('step-3-loading').style.display = 'none';
-                    document.getElementById('step-2-payment').style.display = 'block';
-                    mostrarAlertaPersonalizada('Error de conexión', 'error');
-                });
+                    alert(data.message || 'Error al conectar con Clip. Intenta de nuevo.');
+                }
+            })
+            .catch(error => {
+                console.error("Error Clip:", error);
+                document.getElementById('step-3-loading').style.display = 'none';
+                alert('Hubo un error de conexión. Intenta de nuevo.');
             });
-        },
-        onError: function(err) {
-            console.error('PayPal error:', err);
-            mostrarAlertaPersonalizada('Ocurrió un error con PayPal. Intenta de nuevo.', 'error');
-        },
-        onCancel: function() {
-            mostrarAlertaPersonalizada('Pago cancelado. Puedes intentarlo cuando quieras.', 'info');
-        }
-    }).render('#paypal-button-container-individual');
+        });
+    }
+});
 }
     // Funciones Auxiliares
     function abrirModal(id){ const el=document.getElementById(id); if(el) el.style.display='flex'; }
