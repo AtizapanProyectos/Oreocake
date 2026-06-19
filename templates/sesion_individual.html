@@ -1264,13 +1264,11 @@ function iniciarCuestionarioFinal() {
 // 3. GUARDAR LA CITA Y REDIRIGIR AL PANEL
 // ── PAYPAL PARA SESIÓN INDIVIDUAL ──
 function renderizarBotonPayPalIndividual() {
-    const container = document.getElementById('paypal-button-container-individual');
-    if (!container || container.children.length > 0) return; // Ya fue renderizado
-
-document.addEventListener("DOMContentLoaded", function () {
     const btnClip = document.getElementById('btn-pagar-clip');
     
-    if (btnClip) {
+    // Verificamos que exista el botón y que no le hayamos puesto el evento antes
+    if (btnClip && !btnClip.dataset.eventoAgregado) {
+        btnClip.dataset.eventoAgregado = "true";
         btnClip.addEventListener('click', function() {
             
             // 1. Validaciones
@@ -1293,19 +1291,17 @@ document.addEventListener("DOMContentLoaded", function () {
             document.getElementById('step-3-loading').style.display = 'block';
 
             // 3. Preparar datos
-            let montoCobro = '110.00'; // Ajusta según tu lógica de precios aquí
-            
             let formData = new URLSearchParams();
             formData.append('fecha', window.fechaSeleccionada);
             formData.append('hora', window.horaSeleccionada);
-            formData.append('monto', montoCobro);
+            formData.append('monto', '110.00'); 
             formData.append('nombre', nombre);
             formData.append('email', email);
             formData.append('tipo_servicio', 'individual');
             formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
 
             // 4. Llamada al backend
-            fetch("{% url 'iniciar_pago_clip' %}", {  // Usamos la misma vista base
+            fetch("{% url 'iniciar_pago_clip' %}", {  
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-Requested-With': 'XMLHttpRequest' },
                 body: formData.toString()
@@ -1326,7 +1322,6 @@ document.addEventListener("DOMContentLoaded", function () {
             });
         });
     }
-});
 }
     // Funciones Auxiliares
     function abrirModal(id){ const el=document.getElementById(id); if(el) el.style.display='flex'; }
