@@ -61,7 +61,7 @@ import re
 
 import base64
 import os
-
+import requests
 
 import fitz          # PyMuPDF  — para leer PDFs
 import docx          # python-docx — para leer .doc/.docx
