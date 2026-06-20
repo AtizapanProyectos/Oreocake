@@ -2167,7 +2167,7 @@ def iniciar_pago_clip(request):
             credenciales_puras = f"{api_key}:{clave_secreta}"
             base64_token = base64.b64encode(credenciales_puras.encode('utf-8')).decode('utf-8')
             
-            url = "https://api.clip.mx/checkout" 
+            url = "https://api.payclip.com/v2/checkout"
             dominio = "https://espaciohope.com" # <--- Pon tu dominio real
 
             payload = json.dumps({
