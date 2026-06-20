@@ -61,8 +61,13 @@ class Cita(models.Model):
     )
 
     def __str__(self):
-        return f"Cita: {self.paciente.first_name} con {self.psicologo.usuario.first_name} el {self.fecha.strftime('%d/%m')}"
-
+        # Verificamos si tiene psicólogo asignado para evitar que el sistema choque
+        nombre_psicologo = self.psicologo.usuario.first_name if self.psicologo else "Sin asignar"
+        
+        # También protegemos la fecha por si acaso
+        fecha_str = self.fecha.strftime('%d/%m') if self.fecha else "Sin fecha"
+        
+        return f"Cita: {self.paciente.first_name} con {nombre_psicologo} el {fecha_str}"
     class Meta:
         unique_together = [['psicologo', 'fecha', 'hora']]
 
