@@ -879,13 +879,18 @@ body{font-family:var(--font-b);color:var(--c-dark);background:#fff;display:flex}
     + $10 MXN de comisión
   </span>
 
-<div id="clip-button-container" style="margin-top: 15px; text-align: center;">
-    <button id="btn-pagar-clip" type="button" style="background: #ffffff; border: 2px solid #f3f4f6; border-radius: 14px; padding: 10px 20px; width: 100%; cursor: pointer; transition: 0.3s; display: flex; align-items: center; justify-content: center; gap: 10px;">
-        <span style="font-family: var(--font-headings); font-weight: 800; font-size: 16px; color: var(--text-main);">Pagar con</span>
-        <img src="https://assets-global.website-files.com/62588b32d8d6105ab7aa9721/63bf568610f3fdf437235192_Preview.svg" alt="Logo Paga con Clip" style="height: 30px;">
-    </button>
-</div>
-
+                        <div id="clip-button-container" style="margin-top: 20px;">
+                            <button id="btn-pagar-clip" type="button" 
+                                style="width: 100%; background: #ffffff; border: 2px solid #e2e8f0; border-radius: 16px; padding: 16px 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 12px; transition: all 0.3s ease; box-shadow: 0 4px 10px rgba(0,0,0,0.03);"
+                                onmouseover="this.style.borderColor='#FC4C02'; this.style.boxShadow='0 10px 25px rgba(252, 76, 2, 0.15)'; this.style.transform='translateY(-3px)';" 
+                                onmouseout="this.style.borderColor='#e2e8f0'; this.style.boxShadow='0 4px 10px rgba(0,0,0,0.03)'; this.style.transform='translateY(0)';">
+                                
+                                <i class="fas fa-lock" style="color: #10b981; font-size: 1.1rem;"></i>
+                                <span style="font-family: var(--font-headings); font-weight: 800; font-size: 1.15rem; color: var(--text-main);">Pago con</span>
+                                <img src="https://assets-global.website-files.com/62588b32d8d6105ab7aa9721/63bf568610f3fdf437235192_Preview.svg" alt="Clip" style="height: 28px; margin-top: 2px;">
+                            
+                            </button>
+                        </div>
 
   <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 15px;">
     <i class="fas fa-lock"></i> Pago 100% seguro procesado por CLIP
