@@ -41,4 +41,5 @@ urlpatterns = [
     path('iniciar_pago_clip/', views.iniciar_pago_clip, name='iniciar_pago_clip'),
     path('pago-exitoso/<int:cita_id>/', views.pago_exitoso_clip, name='pago_exitoso_clip'),
     path('pago-cancelado/<int:cita_id>/', views.pago_cancelado_clip, name='pago_cancelado_clip'),
+    path('talleres/', views.inscribir_taller_ajax, name='inscribir_taller'),
 ]
