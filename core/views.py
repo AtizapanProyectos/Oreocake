@@ -2320,3 +2320,9 @@ def pago_cancelado_clip(request, cita_id):
         messages.error(request, "El pago fue cancelado o la tarjeta fue rechazada. Puedes intentar agendar nuevamente.")
         
     return redirect('panel_generico')
+
+
+
+    def talleres_view(request):
+    # Aquí podrías pasar variables desde la base de datos si después los haces dinámicos
+     return render(request, 'talleres.html')

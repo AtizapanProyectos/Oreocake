@@ -1,0 +1,234 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Talleres y Grupos | Espacio HOPE</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700;900&family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+<style>
+/* ── VARIABLES Y ESTILOS BASE (Copiados de tu diseño original) ── */
+:root {
+  --c-purple: #5A3FA3;
+  --c-pink: #F85B8C;
+  --c-orange: #F27C21;
+  --c-yellow: #F8D33D;
+  --c-teal: #25B8B8;
+  --c-dark: #0f0f0f;
+  --text-muted: #64748b;
+  --sidebar-width: 320px;
+  --font-h: 'Outfit', sans-serif;
+  --font-b: 'Plus Jakarta Sans', sans-serif;
+}
+
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{overflow-x:hidden;scroll-behavior:smooth}
+body{font-family:var(--font-b);color:var(--c-dark);background:#fff;display:flex}
+
+/* ── SIDEBAR Y LAYOUT ── */
+.sidebar{width:var(--sidebar-width);height:100vh;background:#fff;position:fixed;top:0;left:0;border-right:1px solid #f1f5f9;z-index:1000;display:flex;flex-direction:column;padding:50px 35px;overflow-y:auto}
+.brand-container{margin-bottom:40px;text-align:center}
+.brand-container img{width:170px;height:auto;display:inline-block}
+.nav-section-title{font-size:.75rem;text-transform:uppercase;letter-spacing:1px;color:#aaa;font-weight:800;margin:15px 0 5px}
+.nav-item{display:flex;align-items:center;padding:12px 15px;color:var(--text-muted);font-weight:700;font-size:.95rem;text-decoration:none;transition:.3s;border-radius:12px;margin-bottom:5px}
+.nav-item:hover,.nav-item.active{background:#f8f8f8;color:var(--c-purple);transform:translateX(8px)}
+.nav-item i{font-size:1.1rem;width:30px;text-align:center;color:var(--text-muted);transition:.3s}
+.nav-item:hover i,.nav-item.active i{color:var(--c-pink);transform:scale(1.1)}
+.main-stage{margin-left:var(--sidebar-width);width:calc(100% - var(--sidebar-width));min-height:100vh}
+
+/* ── BOTONES ── */
+.btn-primary {padding:16px 30px;border-radius:100px;font-weight:800;font-size:15px;font-family:var(--font-h);text-transform:uppercase;letter-spacing:1px;display:inline-flex;align-items:center;gap:12px;transition:.4s;cursor:pointer;border:none;background:var(--c-purple);color:#fff;box-shadow:0 15px 30px rgba(90,63,163,.2)}
+.btn-primary:hover{transform:translateY(-5px);filter:brightness(1.1)}
+
+/* ── HERO ── */
+.hero-new { padding: 80px 80px 60px; background: linear-gradient(135deg, rgba(90,63,163,.04) 0%, rgba(248,91,140,.04) 100%); position: relative; overflow: hidden; }
+.hero-new-heading { font-family: var(--font-h); font-size: clamp(2.4rem, 4vw, 3.6rem); font-weight: 900; line-height: 1.05; color: var(--c-dark); margin-bottom: 20px; letter-spacing: -1px; }
+.hero-new-heading span { color: var(--c-purple); }
+.hero-new-subtitle { font-size: 1.15rem; color: var(--text-muted); line-height: 1.7; max-width: 600px; }
+
+/* ── TARJETAS DE TALLERES (NUEVO) ── */
+.talleres-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 30px; padding: 60px 80px; background: #fff; }
+.taller-card { background: #fff; border-radius: 24px; padding: 40px 30px; border: 1.5px solid #f1f5f9; box-shadow: 0 10px 30px rgba(0,0,0,.03); transition: .4s; display: flex; flex-direction: column; height: 100%; position: relative; overflow: hidden; }
+.taller-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 5px; background: linear-gradient(90deg, var(--c-purple), var(--c-pink)); opacity: 0; transition: .4s; }
+.taller-card:hover { transform: translateY(-10px); box-shadow: 0 20px 40px rgba(90,63,163,.1); border-color: rgba(90,63,163,.2); }
+.taller-card:hover::before { opacity: 1; }
+.taller-tag { display: inline-block; padding: 6px 16px; border-radius: 100px; font-size: 12px; font-weight: 800; font-family: var(--font-h); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 20px; }
+.taller-title { font-family: var(--font-h); font-size: 1.6rem; font-weight: 800; color: var(--c-dark); margin-bottom: 20px; line-height: 1.2; }
+.taller-details { list-style: none; margin-bottom: 30px; flex-grow: 1; }
+.taller-details li { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 12px; font-size: 0.95rem; color: var(--text-muted); font-weight: 500; }
+.taller-details i { color: var(--c-purple); font-size: 1.1rem; margin-top: 2px; width: 20px; text-align: center; }
+
+/* ── MODALES ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(15,23,42,.8);backdrop-filter:blur(10px);z-index:5000;display:none;align-items:center;justify-content:center;padding:20px}
+.modal-box{background:#fff;width:100%;max-width:500px;padding:50px;border-radius:35px;text-align:center;position:relative;box-shadow:0 50px 100px rgba(0,0,0,.2)}
+.modal-close{position:absolute;top:20px;right:20px;font-size:20px;color:#ef4444;background:#fef2f2;border:2px solid #fecaca;width:40px;height:40px;border-radius:50%;cursor:pointer;transition:0.3s;display:flex;align-items:center;justify-content:center;z-index:50}
+.modal-close:hover{background:#ef4444;color:white;transform:scale(1.15) rotate(90deg);}
+.custom-input { width: 100%; padding: 18px 20px; border-radius: 16px; border: 2px solid #e2e8f0; font-family: var(--font-b); font-size: 1rem; background: #f8fafc; transition: .3s; color: var(--c-dark); margin-bottom: 15px; outline: none; }
+.custom-input:focus { border-color: var(--c-purple); background: #fff; box-shadow: 0 10px 25px rgba(90,63,163,0.1); }
+
+/* MOBILE RESPONSIVE (Mismo que el tuyo) */
+.mobile-nav{display:none}
+@media(max-width:1100px){
+  .sidebar{display:none}
+  .main-stage{margin-left:0;width:100%}
+  .hero-new{padding:100px 20px 40px}
+  .talleres-grid { padding: 40px 20px; }
+  .mobile-nav{display:flex;position:fixed;top:15px;left:50%;transform:translateX(-50%);width:92%;background:rgba(255,255,255,.95);backdrop-filter:blur(12px);border-radius:50px;box-shadow:0 10px 30px rgba(90,63,163,.15);padding:12px 20px;justify-content:space-between;align-items:center;z-index:4000;border:1px solid rgba(255,255,255,.5)}
+  .mobile-logo-text{font-family:var(--font-h);font-size:1.4rem;font-weight:900;color:var(--c-purple);letter-spacing:1px}
+}
+</style>
+</head>
+<body>
+
+<!-- MENÚ LATERAL (Idéntico a tu layout) -->
+<nav class="sidebar">
+  <div class="brand-container">
+    <img src="{% static 'img/nlogo.png' %}" alt="HOPE Logo">
+  </div>
+  <a href="{% url 'inicio' %}" class="nav-item"><i class="fas fa-home"></i> Inicio</a>
+  <p class="nav-section-title">Nuevos Espacios</p>
+  <a href="#" class="nav-item active"><i class="fas fa-users"></i> Talleres HOPE</a>
+</nav>
+
+<main class="main-stage">
+  <!-- MENÚ MÓVIL -->
+  <nav class="mobile-nav">
+    <span class="mobile-logo-text">HOPE</span>
+  </nav>
+
+  <!-- HERO SECTION -->
+  <section class="hero-new">
+    <h1 class="hero-new-heading">Aprender y sanar <br><span>en comunidad.</span></h1>
+    <p class="hero-new-subtitle">Explora nuestros talleres diseñados para brindarte herramientas prácticas en un espacio seguro, guiados por nuestros especialistas.</p>
+  </section>
+
+  <!-- GRID DE TALLERES -->
+  <section class="talleres-grid">
+    
+    <!-- Taller 1 -->
+    <div class="taller-card">
+      <span class="taller-tag" style="background: rgba(90,63,163,.1); color: var(--c-purple);">Comunidad</span>
+      <h3 class="taller-title">Diversidad, Inclusión y comunidad LGBTTTIQ: "La autenticidad es parte del orgullo"</h3>
+      <ul class="taller-details">
+        <li><i class="fas fa-user-md"></i> <span><strong>Talleristas:</strong> Andrea y Abraham</span></li>
+        <li><i class="fas fa-users"></i> <span><strong>Cupo:</strong> Max 15 personas</span></li>
+        <li><i class="fas fa-calendar-alt"></i> <span><strong>Fecha:</strong> 4 de julio</span></li>
+        <li><i class="fas fa-clock"></i> <span><strong>Horario:</strong> 2:00 pm</span></li>
+      </ul>
+      <button class="btn-primary" style="width: 100%; justify-content: center;" onclick="abrirInscripcion('Diversidad e Inclusión LGBTTTIQ')">Inscribirme <i class="fas fa-arrow-right"></i></button>
+    </div>
+
+    <!-- Taller 2 -->
+    <div class="taller-card">
+      <span class="taller-tag" style="background: rgba(248,91,140,.1); color: var(--c-pink);">Adolescentes y Jóvenes</span>
+      <h3 class="taller-title">Desarmando la Violencia Digital y Cotidiana</h3>
+      <ul class="taller-details">
+        <li><i class="fas fa-user-md"></i> <span><strong>Tallerista:</strong> Christopher Yamashiro</span></li>
+        <li><i class="fas fa-users"></i> <span><strong>Cupo:</strong> Max 20 personas <br><small>(12 a 29 años)</small></span></li>
+        <li><i class="fas fa-calendar-alt"></i> <span><strong>Fecha:</strong> Sábado 11 de julio</span></li>
+        <li><i class="fas fa-clock"></i> <span><strong>Horario:</strong> 7:00 pm</span></li>
+      </ul>
+      <button class="btn-primary" style="width: 100%; justify-content: center; background: var(--c-pink); box-shadow: 0 15px 30px rgba(248,91,140,.2);" onclick="abrirInscripcion('Desarmando la Violencia Digital')">Inscribirme <i class="fas fa-arrow-right"></i></button>
+    </div>
+
+    <!-- Taller 3 -->
+    <div class="taller-card">
+      <span class="taller-tag" style="background: rgba(37,184,184,.1); color: var(--c-teal);">Crecimiento Personal</span>
+      <h3 class="taller-title">Sin perderme a mí</h3>
+      <ul class="taller-details">
+        <li><i class="fas fa-user-md"></i> <span><strong>Tallerista:</strong> Sarahí</span></li>
+        <li><i class="fas fa-users"></i> <span><strong>Cupo:</strong> 10 personas</span></li>
+        <li><i class="fas fa-calendar-alt"></i> <span><strong>Fechas:</strong> 5 sesiones de 1 hora<br><small>(Lunes 6, Jueves 9, Lunes 13, Jueves 16 y Lunes 20 de julio)</small></span></li>
+        <li><i class="fas fa-clock"></i> <span><strong>Hora:</strong> 7:00 pm</span></li>
+      </ul>
+      <button class="btn-primary" style="width: 100%; justify-content: center; background: var(--c-teal); box-shadow: 0 15px 30px rgba(37,184,184,.2);" onclick="abrirInscripcion('Sin perderme a mí')">Inscribirme <i class="fas fa-arrow-right"></i></button>
+    </div>
+
+  </section>
+
+</main>
+
+<!-- ── MODAL DE INSCRIPCIÓN ── -->
+<div class="modal-overlay" id="modalInscripcion">
+  <div class="modal-box" style="padding: 45px 40px;">
+    <button class="modal-close" onclick="cerrarModal('modalInscripcion')"><i class="fas fa-times"></i></button>
+    
+    <!-- Estado 1: Formulario -->
+    <div id="form-estado">
+      <img src="{% static 'img/nlogo.png' %}" alt="HOPE" style="height: 40px; margin: 0 auto 20px; display: block;">
+      <h2 style="font-family: var(--font-h); font-size: 1.8rem; color: var(--c-dark); margin-bottom: 5px; font-weight: 800;">Registro al Taller</h2>
+      <p id="nombre-taller-display" style="color: var(--c-purple); font-weight: 700; margin-bottom: 25px;"></p>
+
+      <form id="formTaller" onsubmit="procesarInscripcion(event)">
+        <input type="hidden" id="taller_seleccionado" name="taller_seleccionado">
+        
+        <input type="text" id="nombre_tallerista" class="custom-input" placeholder="Tu nombre completo" required>
+        <input type="tel" id="telefono_tallerista" class="custom-input" placeholder="Teléfono a 10 dígitos" required>
+        <input type="email" id="correo_tallerista" class="custom-input" placeholder="Correo electrónico" required>
+        
+        <button type="submit" id="btnSubmitTaller" class="btn-primary" style="width: 100%; justify-content: center; margin-top: 10px; padding: 18px;">
+          Confirmar Asistencia <i class="fas fa-check-circle"></i>
+        </button>
+      </form>
+    </div>
+
+    <!-- Estado 2: Éxito (Lo que pediste) -->
+    <div id="exito-estado" style="display: none; padding: 20px 0;">
+      <div style="font-size: 60px; color: var(--c-teal); margin-bottom: 20px; animation: bounceIn .5s;"><i class="fas fa-check-circle"></i></div>
+      <h2 style="font-family: var(--font-h); font-size: 2rem; color: var(--c-dark); margin-bottom: 15px;">¡Registro exitoso!</h2>
+      <p style="color: var(--text-muted); font-size: 1.1rem; line-height: 1.6; margin-bottom: 25px;">
+        Mil gracias, la liga de acceso se enviará por correo un par de días después.
+      </p>
+      <button class="btn-primary" style="width: 100%; justify-content: center; background: var(--c-teal);" onclick="cerrarModal('modalInscripcion')">Entendido <i class="fas fa-thumbs-up"></i></button>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  // Funciones para abrir y cerrar modales reutilizadas de tu código[cite: 4]
+  function abrirModal(id){ const el=document.getElementById(id); if(el) el.style.display='flex'; }
+  function cerrarModal(id){ const el=document.getElementById(id); if(el) el.style.display='none'; }
+
+  // Función para preparar el modal cuando le dan clic a "Inscribirme"
+  function abrirInscripcion(nombreTaller) {
+    // Reseteamos las vistas por si cerraron el modal en la pantalla de éxito antes
+    document.getElementById('form-estado').style.display = 'block';
+    document.getElementById('exito-estado').style.display = 'none';
+    document.getElementById('formTaller').reset();
+    
+    // Ponemos el nombre del taller en el modal
+    document.getElementById('nombre-taller-display').innerText = nombreTaller;
+    document.getElementById('taller_seleccionado').value = nombreTaller;
+    
+    abrirModal('modalInscripcion');
+  }
+
+  // Simulación de envío AJAX para mostrar el mensaje de éxito
+  function procesarInscripcion(e) {
+    e.preventDefault();
+    const btn = document.getElementById('btnSubmitTaller');
+    const originalText = btn.innerHTML;
+    
+    // Efecto de carga
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Registrando...';
+    btn.disabled = true;
+
+    // Aquí iría tu fetch('/ruta-backend/') para guardar los datos en BD
+    // Como pediste solo la vista y el mensaje, lo simulamos con un setTimeout corto
+    setTimeout(() => {
+      btn.innerHTML = originalText;
+      btn.disabled = false;
+      
+      // Ocultamos el formulario y mostramos el mensaje de éxito
+      document.getElementById('form-estado').style.display = 'none';
+      document.getElementById('exito-estado').style.display = 'block';
+    }, 1500);
+  }
+</script>
+
+</body>
+</html>
