@@ -569,11 +569,22 @@ body{font-family:var(--font-b);color:var(--c-dark);background:#F5F4F9;display:fl
       <button class="btn-primary" style="width:100%;justify-content:center;background:var(--c-teal);box-shadow:0 14px 28px rgba(37,184,184,.28);" onclick="cerrarModal('modalInscripcion')">¡Nos vemos pronto! <i class="fas fa-thumbs-up"></i></button>
     </div>
 
+
+    <!-- Estado 3: Error / Ya registrado -->
+    <div id="error-estado" style="display:none;padding:28px 0 8px;">
+      <div style="font-size:76px;color:var(--c-orange);margin-bottom:22px;animation:bounceIn .6s cubic-bezier(.175,.885,.32,1.275);"><i class="fas fa-exclamation-circle"></i></div>
+      <h2 style="font-family:var(--font-h);font-size:2rem;color:var(--c-dark);margin-bottom:14px;font-weight:900;">¡Aviso! ✋</h2>
+      <p id="error-mensaje-texto" style="color:var(--text-muted);font-size:1.05rem;line-height:1.65;margin-bottom:32px;padding:0 8px;">
+        <!-- Aquí inyectaremos el mensaje de Django -->
+      </p>
+      <button class="btn-primary" style="width:100%;justify-content:center;background:var(--c-orange);box-shadow:0 14px 28px rgba(242,124,33,.28);" onclick="cerrarModal('modalInscripcion')">Entendido <i class="fas fa-check"></i></button>
+    </div>
+
   </div>
 </div>
 
 <script>
-  function abrirModal(id){ const el=document.getElementById(id); if(el) el.style.display='flex'; }
+function abrirModal(id){ const el=document.getElementById(id); if(el) el.style.display='flex'; }
   function cerrarModal(id){ const el=document.getElementById(id); if(el) el.style.display='none'; }
 
   // Cerrar al hacer clic en el overlay
@@ -582,26 +593,15 @@ body{font-family:var(--font-b);color:var(--c-dark);background:#F5F4F9;display:fl
   });
 
   function abrirInscripcion(nombreTaller) {
+    // Reseteamos las vistas, ocultando éxito y error
     document.getElementById('form-estado').style.display = 'block';
     document.getElementById('exito-estado').style.display = 'none';
+    document.getElementById('error-estado').style.display = 'none';
+    
     document.getElementById('formTaller').reset();
     document.getElementById('nombre-taller-display').innerText = nombreTaller;
     document.getElementById('taller_seleccionado').value = nombreTaller;
     abrirModal('modalInscripcion');
-  }
-
-  function procesarInscripcion(e) {
-    e.preventDefault();
-    const btn = document.getElementById('btnSubmitTaller');
-    const originalText = btn.innerHTML;
-    btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Asegurando tu lugar...';
-    btn.disabled = true;
-    setTimeout(() => {
-      btn.innerHTML = originalText;
-      btn.disabled = false;
-      document.getElementById('form-estado').style.display = 'none';
-      document.getElementById('exito-estado').style.display = 'block';
-    }, 1800);
   }
 
   function procesarInscripcion(e) {
@@ -635,22 +635,28 @@ body{font-family:var(--font-b);color:var(--c-dark);background:#F5F4F9;display:fl
         btn.innerHTML = originalText;
         btn.disabled = false;
         
+        // Ocultamos el formulario siempre que haya una respuesta
+        document.getElementById('form-estado').style.display = 'none';
+        
         if (data.status === 'success') {
-            // Todo chido: Mostrar mensaje de éxito
-            document.getElementById('form-estado').style.display = 'none';
+            // Mostrar la ventana de ÉXITO
             document.getElementById('exito-estado').style.display = 'block';
         } else {
-            // Error: El correo ya existe (o algún otro error)
-            alert(data.message); 
+            // Mostrar la ventana de ERROR BONITA
+            document.getElementById('error-mensaje-texto').innerText = data.message;
+            document.getElementById('error-estado').style.display = 'block';
         }
     })
     .catch(error => {
         btn.innerHTML = originalText;
         btn.disabled = false;
-        alert('Hubo un problema de conexión. Intenta de nuevo.');
+        
+        // Error de red también con diseño bonito
+        document.getElementById('form-estado').style.display = 'none';
+        document.getElementById('error-mensaje-texto').innerText = 'Hubo un problema de conexión. Revisa tu internet e intenta de nuevo.';
+        document.getElementById('error-estado').style.display = 'block';
     });
   }
-
 
 </script>
 

@@ -2327,7 +2327,6 @@ def talleres_view(request):
     # Aquí podrías pasar variables desde la base de datos si después los haces dinámicos
      return render(request, 'talleres.html')
 
-
 def procesar_registro_taller(request):
     if request.method == 'POST':
         nombre = request.POST.get('nombre')
@@ -2335,14 +2334,17 @@ def procesar_registro_taller(request):
         correo = request.POST.get('correo')
         taller = request.POST.get('taller_seleccionado')
 
-        # 1. Revisar si el correo ya está registrado en ESTE taller específico
-        if RegistroTallerPublico.objects.filter(correo=correo, taller_seleccionado=taller).exists():
+        # 1. Buscamos si este correo YA se registró en algún lado
+        registro_previo = RegistroTallerPublico.objects.filter(correo=correo).first()
+
+        if registro_previo:
+            # 🔥 Si ya existe, le mandamos el mensaje exacto que pediste
             return JsonResponse({
                 'status': 'error',
-                'message': '¡Ups! Este correo ya está registrado para este taller.'
+                'message': f'¡Ups! Ya estás registrado en el taller "{registro_previo.taller_seleccionado}". Solo puedes asistir a un taller para dar oportunidad a los demás.'
             })
 
-        # 2. Si no existe, lo guardamos en la base de datos
+        # 2. Si no tiene registros previos, lo guardamos felizmente
         RegistroTallerPublico.objects.create(
             nombre=nombre,
             telefono=telefono,
