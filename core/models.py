@@ -340,3 +340,21 @@ class ArticuloPrensa(models.Model):
         elif self.imagen_url_externa:
             return self.imagen_url_externa
         return '/static/img/default_blog.jpg' # Imagen por defecto si olvidas poner una
+
+
+
+class RegistroTallerPublico(models.Model):
+    nombre = models.CharField(max_length=150, verbose_name="Nombre Completo")
+    telefono = models.CharField(max_length=20, verbose_name="Teléfono")
+    correo = models.EmailField(verbose_name="Correo Electrónico")
+    taller_seleccionado = models.CharField(max_length=200, verbose_name="Taller")
+    fecha_registro = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        # 🔥 EL TRUCO MAGICO: Evita duplicados exactos 🔥
+        unique_together = ['correo', 'taller_seleccionado']
+        verbose_name = "Registro de Taller"
+        verbose_name_plural = "Registros de Talleres"
+
+    def __str__(self):
+        return f"{self.nombre} - {self.taller_seleccionado}"

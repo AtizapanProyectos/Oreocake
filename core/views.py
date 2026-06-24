@@ -2326,3 +2326,30 @@ def pago_cancelado_clip(request, cita_id):
 def talleres_view(request):
     # Aquí podrías pasar variables desde la base de datos si después los haces dinámicos
      return render(request, 'talleres.html')
+
+
+def procesar_registro_taller(request):
+    if request.method == 'POST':
+        nombre = request.POST.get('nombre')
+        telefono = request.POST.get('telefono')
+        correo = request.POST.get('correo')
+        taller = request.POST.get('taller_seleccionado')
+
+        # 1. Revisar si el correo ya está registrado en ESTE taller específico
+        if RegistroTallerPublico.objects.filter(correo=correo, taller_seleccionado=taller).exists():
+            return JsonResponse({
+                'status': 'error',
+                'message': '¡Ups! Este correo ya está registrado para este taller.'
+            })
+
+        # 2. Si no existe, lo guardamos en la base de datos
+        RegistroTallerPublico.objects.create(
+            nombre=nombre,
+            telefono=telefono,
+            correo=correo,
+            taller_seleccionado=taller
+        )
+
+        return JsonResponse({'status': 'success'})
+        
+    return JsonResponse({'status': 'error', 'message': 'Método no permitido'})
