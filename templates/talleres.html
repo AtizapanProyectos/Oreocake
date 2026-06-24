@@ -7,505 +7,146 @@
 <title>Talleres y Grupos | Espacio HOPE</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;700;900&family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,600;0,800;1,300&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700;900&family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 <style>
-
-/* ── TOKENS ── */
+/* ── VARIABLES Y ESTILOS BASE ── */
 :root {
-  --c-purple:   #5A3FA3;
-  --c-pink:     #F85B8C;
-  --c-orange:   #F27C21;
-  --c-yellow:   #F8D33D;
-  --c-teal:     #25B8B8;
-  --c-dark:     #0D0D1A;
-  --c-ink:      #2D2B3D;
-  --text-muted: #7C7A93;
-  --bg-page:    #F6F5FA;
-  --bg-card:    #FFFFFF;
-  --sidebar-w:  300px;
-  --font-h:     'Outfit', sans-serif;
-  --font-b:     'Plus Jakarta Sans', sans-serif;
-  --radius-card: 28px;
-  --radius-pill: 100px;
-  --shadow-sm:  0 4px 20px rgba(13,13,26,.06);
-  --shadow-md:  0 20px 50px rgba(90,63,163,.13);
-  --shadow-lg:  0 40px 80px rgba(90,63,163,.18);
+  --c-purple: #5A3FA3;
+  --c-pink: #F85B8C;
+  --c-orange: #F27C21;
+  --c-yellow: #F8D33D;
+  --c-teal: #25B8B8;
+  --c-dark: #0f0f0f;
+  --text-muted: #64748b;
+  --sidebar-width: 320px;
+  --font-h: 'Outfit', sans-serif;
+  --font-b: 'Plus Jakarta Sans', sans-serif;
+  --shadow-sm: 0 10px 25px rgba(0,0,0,.05);
+  --shadow-md: 0 20px 40px rgba(90,63,163,.1);
 }
 
-/* ── RESET ── */
-*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
-html { scroll-behavior: smooth; }
-body { font-family: var(--font-b); color: var(--c-dark); background: var(--bg-page); display: flex; overflow-x: hidden; }
-img { display: block; max-width: 100%; }
-a { text-decoration: none; color: inherit; }
-button { font-family: inherit; cursor: pointer; border: none; background: none; }
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{overflow-x:hidden;scroll-behavior:smooth}
+body{font-family:var(--font-b);color:var(--c-dark);background:#f8fafc;display:flex}
 
-/* ─────────────────────────────────────────
-   SIDEBAR
-───────────────────────────────────────── */
-.sidebar {
-  width: var(--sidebar-w);
-  height: 100vh;
-  background: #fff;
-  position: fixed; top: 0; left: 0;
-  border-right: 1px solid rgba(90,63,163,.08);
-  z-index: 1000;
-  display: flex; flex-direction: column;
-  padding: 44px 28px;
-  overflow-y: auto;
-}
+/* ── SIDEBAR (COMPLETA) ── */
+.sidebar{width:var(--sidebar-width);height:100vh;background:#fff;position:fixed;top:0;left:0;border-right:1px solid #f1f5f9;z-index:1000;display:flex;flex-direction:column;padding:50px 35px;overflow-y:auto}
+.brand-container{margin-bottom:40px;text-align:center}
+.brand-container img{width:170px;height:auto;display:inline-block}
+.nav-section-title{font-size:.75rem;text-transform:uppercase;letter-spacing:1px;color:#aaa;font-weight:800;margin:15px 0 5px}
+.nav-item{display:flex;align-items:center;padding:12px 15px;color:var(--text-muted);font-weight:700;font-size:.95rem;text-decoration:none;transition:.3s;border-radius:12px;margin-bottom:5px}
+.nav-item:hover,.nav-item.active{background:#f8f8f8;color:var(--c-purple);transform:translateX(8px)}
+.nav-item i{font-size:1.1rem;width:30px;text-align:center;color:var(--text-muted);transition:.3s}
+.nav-item:hover i,.nav-item.active i{color:var(--c-pink);transform:scale(1.1)}
+.btn-login-sidebar{background:var(--c-purple);color:white !important;box-shadow:0 4px 15px rgba(90,63,163,.2);justify-content:center;margin-top:10px;margin-bottom:20px}
+.btn-login-sidebar i{color:white !important}
+.btn-login-sidebar:hover{background:var(--c-pink);transform:translateY(-3px) translateX(0) !important;box-shadow:0 8px 20px rgba(248,91,140,.3)}
+.main-stage{margin-left:var(--sidebar-width);width:calc(100% - var(--sidebar-width));min-height:100vh}
 
-.brand-container { margin-bottom: 36px; }
-.brand-container img { width: 140px; height: auto; }
+/* ── BOTONES ── */
+.btn-primary {padding:18px 35px;border-radius:100px;font-weight:800;font-size:15px;font-family:var(--font-h);text-transform:uppercase;letter-spacing:1px;display:inline-flex;align-items:center;gap:12px;transition:.4s;cursor:pointer;border:none;background:var(--c-purple);color:#fff;box-shadow:0 15px 30px rgba(90,63,163,.2)}
+.btn-primary:hover{transform:translateY(-5px);filter:brightness(1.1);box-shadow:0 20px 35px rgba(90,63,163,.3)}
 
-.nav-section-title {
-  font-size: .68rem; text-transform: uppercase; letter-spacing: 1.5px;
-  color: #bbb; font-weight: 800; margin: 20px 0 6px; padding-left: 12px;
-}
-
-.nav-item {
-  display: flex; align-items: center; gap: 10px;
-  padding: 11px 14px; color: var(--text-muted); font-weight: 600;
-  font-size: .88rem; border-radius: 14px; margin-bottom: 2px; transition: .25s;
-}
-.nav-item:hover, .nav-item.active {
-  background: rgba(90,63,163,.07); color: var(--c-purple);
-}
-.nav-item i { width: 22px; text-align: center; font-size: 1rem; }
-.nav-item:hover i, .nav-item.active i { color: var(--c-pink); }
-
-.btn-login-sidebar {
-  background: var(--c-purple); color: #fff !important;
-  border-radius: var(--radius-pill); justify-content: center;
-  margin: 8px 0 16px; padding: 13px 20px; font-weight: 800;
-  box-shadow: 0 6px 18px rgba(90,63,163,.25);
-}
-.btn-login-sidebar i { color: #fff !important; }
-.btn-login-sidebar:hover {
-  background: var(--c-pink);
-  box-shadow: 0 10px 24px rgba(248,91,140,.3);
-  transform: translateY(-2px) !important;
-}
-
-/* ─────────────────────────────────────────
-   MAIN
-───────────────────────────────────────── */
-.main-stage {
-  margin-left: var(--sidebar-w);
-  width: calc(100% - var(--sidebar-w));
-  min-height: 100vh;
-}
-
-/* ─────────────────────────────────────────
-   HERO — editorial, no img noise
-───────────────────────────────────────── */
-.hero {
+/* ── HERO PREMIUM ── */
+.hero-premium {
   position: relative;
-  padding: 90px 72px 80px;
-  background: var(--c-dark);
+  padding: 120px 80px 100px;
+  background: linear-gradient(135deg, rgba(15, 10, 30, 0.85) 0%, rgba(90, 63, 163, 0.9) 100%), url('https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=1200&auto=format&fit=crop&q=80') center/cover;
+  text-align: center;
   overflow: hidden;
-  min-height: 460px;
-  display: flex; align-items: center;
 }
+.hero-premium::before {
+  content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 100px; background: linear-gradient(to top, #f8fafc, transparent);
+}
+.hero-tag {
+  display: inline-block; background: rgba(248,91,140,.2); color: #ff9cbd; padding: 8px 20px; border-radius: 100px; font-weight: 800; font-family: var(--font-h); font-size: 13px; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 25px; border: 1px solid rgba(248,91,140,.4);
+}
+.hero-new-heading { font-family: var(--font-h); font-size: clamp(2.8rem, 5vw, 4.5rem); font-weight: 900; line-height: 1.1; color: #fff; margin-bottom: 25px; letter-spacing: -1px; text-shadow: 0 10px 30px rgba(0,0,0,0.3); position: relative; z-index: 2; }
+.hero-new-heading span { color: var(--c-yellow); }
+.hero-new-subtitle { font-size: 1.25rem; color: rgba(255,255,255,0.9); line-height: 1.7; max-width: 700px; margin: 0 auto; position: relative; z-index: 2; font-weight: 300; }
 
-/* noise texture overlay */
-.hero::after {
-  content: '';
-  position: absolute; inset: 0;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
-  opacity: .03;
-  pointer-events: none;
-}
+/* ── TARJETAS DE TALLERES (DISEÑO ESPECTACULAR) ── */
+.talleres-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 40px; padding: 60px 80px 100px; background: #f8fafc; max-width: 1400px; margin: 0 auto; }
+.taller-card { background: #fff; border-radius: 30px; border: 1px solid #f1f5f9; box-shadow: var(--shadow-sm); transition: .5s; display: flex; flex-direction: column; position: relative; overflow: hidden; }
+.taller-card:hover { transform: translateY(-15px); box-shadow: var(--shadow-md); border-color: transparent; }
+.taller-img-container { width: 100%; height: 240px; position: relative; overflow: hidden; }
+.taller-img { width: 100%; height: 100%; object-fit: cover; transition: .8s cubic-bezier(0.16, 1, 0.3, 1); }
+.taller-card:hover .taller-img { transform: scale(1.1) rotate(2deg); }
+.taller-overlay { position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.6), transparent); }
+.taller-tag-flotante { position: absolute; top: 20px; left: 20px; padding: 8px 18px; border-radius: 100px; font-size: 11px; font-weight: 900; font-family: var(--font-h); text-transform: uppercase; letter-spacing: 1.5px; z-index: 2; box-shadow: 0 10px 20px rgba(0,0,0,0.2); backdrop-filter: blur(5px); }
+.taller-body { padding: 40px 35px; flex-grow: 1; display: flex; flex-direction: column; background: #fff; position: relative; }
+.taller-title { font-family: var(--font-h); font-size: 1.6rem; font-weight: 800; color: var(--c-dark); margin-bottom: 25px; line-height: 1.3; letter-spacing: -0.5px; }
+.taller-details { list-style: none; margin-bottom: 35px; flex-grow: 1; background: #f8fafc; padding: 25px; border-radius: 20px; border: 1px solid #f1f5f9; }
+.taller-details li { display: flex; align-items: flex-start; gap: 15px; margin-bottom: 16px; font-size: 0.95rem; color: var(--text-muted); font-weight: 600; line-height: 1.5; }
+.taller-details li:last-child { margin-bottom: 0; }
+.icon-box { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 0.9rem; }
 
-/* color blobs */
-.hero-blob {
-  position: absolute; border-radius: 50%; pointer-events: none; filter: blur(80px);
-}
-.hero-blob-1 { width: 500px; height: 500px; background: var(--c-purple); opacity: .35; top: -120px; right: -80px; }
-.hero-blob-2 { width: 300px; height: 300px; background: var(--c-pink); opacity: .2; bottom: -60px; left: 10%; }
-.hero-blob-3 { width: 200px; height: 200px; background: var(--c-teal); opacity: .15; top: 40px; left: 40%; }
+/* ── MODALES Y FORMULARIOS (DISEÑO LIMPIO) ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(15,10,30,.8);backdrop-filter:blur(12px);z-index:5000;display:none;align-items:center;justify-content:center;padding:20px}
+.modal-box{background:#fff;width:100%;max-width:480px;padding:50px;border-radius:40px;text-align:center;position:relative;box-shadow:0 50px 100px rgba(0,0,0,.3); animation: fadeInUp 0.4s ease-out;}
+.modal-close{position:absolute;top:20px;right:20px;font-size:20px;color:#ef4444;background:#fef2f2;border:2px solid #fecaca;width:45px;height:45px;border-radius:50%;cursor:pointer;transition:0.3s;display:flex;align-items:center;justify-content:center;z-index:50}
+.modal-close:hover{background:#ef4444;color:white;transform:scale(1.15) rotate(90deg);}
+.input-group { position: relative; margin-bottom: 15px; }
+.input-group i { position: absolute; left: 22px; top: 50%; transform: translateY(-50%); color: #cbd5e1; font-size: 1.2rem; transition: 0.3s; }
+.custom-input { width: 100%; padding: 20px 20px 20px 60px; border-radius: 18px; border: 2px solid #e2e8f0; font-family: var(--font-b); font-size: 1.05rem; background: #f8fafc; transition: .3s; color: var(--c-dark); outline: none; }
+.custom-input:focus { border-color: var(--c-purple); background: #fff; box-shadow: 0 10px 25px rgba(90,63,163,0.1); }
+.custom-input:focus + i, .input-group:focus-within i { color: var(--c-purple); }
 
-.hero-content { position: relative; z-index: 2; max-width: 760px; }
+/* ── FOOTER OFICIAL ── */
+.footer{background:#fff;border-top:1px solid #e2e8f0;padding:70px 80px 0;font-family:var(--font-b);position:relative;overflow:hidden}
+.footer::before{content:'HOPE';position:absolute;bottom:-20px;right:-10px;font-family:var(--font-h);font-size:14rem;font-weight:900;color:rgba(90,63,163,.03);pointer-events:none;letter-spacing:-5px;user-select:none}
+.footer-top{display:grid;grid-template-columns:1.8fr 1fr 1fr 1fr;gap:60px;padding-bottom:50px;border-bottom:1px solid #e2e8f0}
+.footer-logo{height:55px;width:auto;object-fit:contain;margin-bottom:18px;display:block}
+.footer-brand p{font-size:.95rem;color:var(--text-muted);line-height:1.7;max-width:280px;margin-bottom:18px}
+.footer-addr{display:flex;align-items:flex-start;gap:10px;margin-bottom:10px;font-size:.88rem;color:var(--text-muted);line-height:1.5}
+.footer-addr i{color:var(--c-purple);margin-top:2px;flex-shrink:0;width:14px}
+.footer-addr a{color:var(--c-purple);text-decoration:none;font-weight:600;transition:.2s}
+.footer-addr a:hover{color:var(--c-pink)}
+.footer-col h4{font-family:var(--font-h);font-size:.75rem;text-transform:uppercase;letter-spacing:2px;color:var(--c-dark);font-weight:800;margin-bottom:20px}
+.footer-col ul{list-style:none;display:flex;flex-direction:column;gap:11px}
+.footer-col ul li a{color:var(--text-muted);text-decoration:none;font-size:.92rem;transition:.25s;display:flex;align-items:center;gap:8px}
+.footer-col ul li a:hover{color:var(--c-purple);padding-left:4px}
+.footer-alert{background:rgba(248,91,140,.06);border:1px solid rgba(248,91,140,.25);border-radius:16px;padding:16px 24px;margin:40px 0 50px;display:flex;align-items:center;gap:14px;font-size:.88rem;color:#475569;line-height:1.5}
+.footer-alert i{color:var(--c-pink);font-size:1.1rem;flex-shrink:0}
+.footer-bottom{display:flex;align-items:center;justify-content:space-between;padding:24px 0;flex-wrap:wrap;gap:16px;border-top:1px solid #e2e8f0}
+.footer-bottom-left{font-size:.82rem;color:#94a3b8}
 
-.hero-eyebrow {
-  display: inline-flex; align-items: center; gap: 8px;
-  background: rgba(248,91,140,.18); color: #ff9cbd;
-  padding: 6px 16px; border-radius: var(--radius-pill);
-  font-size: .72rem; font-weight: 800; text-transform: uppercase; letter-spacing: 2px;
-  margin-bottom: 28px; border: 1px solid rgba(248,91,140,.3);
-}
-.hero-eyebrow i { font-size: .65rem; }
+@keyframes bounceIn { 0%{transform:scale(.3);opacity:0} 50%{transform:scale(1.1)} 100%{transform:scale(1);opacity:1} }
+@keyframes fadeInUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
 
-.hero-h1 {
-  font-family: var(--font-h);
-  font-size: clamp(2.8rem, 4.5vw, 4.2rem);
-  font-weight: 900; line-height: 1.06; color: #fff;
-  letter-spacing: -1.5px; margin-bottom: 22px;
+/* MOBILE RESPONSIVE */
+.mobile-nav{display:none}
+@media(max-width:1100px){
+  .sidebar{display:none}
+  .main-stage{margin-left:0;width:100%}
+  .hero-premium{padding:140px 20px 80px}
+  .talleres-grid { padding: 40px 20px 80px; }
+  .footer{padding:50px 20px 0}
+  .footer-top{grid-template-columns:1fr 1fr;gap:40px}
+  .footer-brand{grid-column:1/-1}
+  .mobile-nav{display:flex;position:fixed;top:15px;left:50%;transform:translateX(-50%);width:92%;background:rgba(255,255,255,.95);backdrop-filter:blur(12px);border-radius:50px;box-shadow:0 10px 30px rgba(90,63,163,.15);padding:12px 20px;justify-content:space-between;align-items:center;z-index:4000;border:1px solid rgba(255,255,255,.5)}
+  .mobile-logo{height:35px}
+  .btn-login-mobile{background:var(--c-purple);color:white !important;text-decoration:none;padding:10px 20px;border-radius:100px;font-weight:800;font-family:var(--font-h);font-size:.85rem;display:flex;align-items:center;gap:8px;box-shadow:0 4px 15px rgba(90,63,163,.2)}
 }
-.hero-h1 em { font-style: normal; color: var(--c-yellow); }
-
-.hero-sub {
-  font-size: 1.1rem; color: rgba(255,255,255,.6);
-  line-height: 1.75; max-width: 540px; font-weight: 300;
+@media(max-width:600px){
+  .footer-top{grid-template-columns:1fr}
 }
-
-/* stat pills */
-.hero-stats {
-  display: flex; gap: 12px; flex-wrap: wrap; margin-top: 40px;
-}
-.stat-pill {
-  display: flex; align-items: center; gap: 8px;
-  background: rgba(255,255,255,.08); backdrop-filter: blur(12px);
-  border: 1px solid rgba(255,255,255,.12);
-  padding: 10px 18px; border-radius: var(--radius-pill);
-  font-size: .82rem; font-weight: 700; color: rgba(255,255,255,.85);
-}
-.stat-pill i { color: var(--c-yellow); }
-
-/* ─────────────────────────────────────────
-   SECTION HEADER (above grid)
-───────────────────────────────────────── */
-.section-intro {
-  padding: 60px 72px 20px;
-}
-.section-intro-inner {
-  display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 16px;
-}
-.section-label {
-  font-size: .72rem; text-transform: uppercase; letter-spacing: 2px;
-  color: var(--c-purple); font-weight: 800;
-}
-.section-h2 {
-  font-family: var(--font-h); font-size: clamp(1.8rem, 3vw, 2.6rem);
-  font-weight: 900; color: var(--c-dark); letter-spacing: -0.5px; margin-top: 4px;
-}
-.section-count {
-  font-size: .82rem; color: var(--text-muted); font-weight: 600;
-  background: #fff; padding: 8px 16px; border-radius: 100px;
-  border: 1px solid rgba(0,0,0,.07);
-}
-
-/* ─────────────────────────────────────────
-   TALLERES GRID
-───────────────────────────────────────── */
-.talleres-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-  gap: 28px;
-  padding: 28px 72px 100px;
-}
-
-/* ─────────────────────────────────────────
-   TALLER CARD — clean, airy, intentional
-───────────────────────────────────────── */
-.taller-card {
-  background: var(--bg-card);
-  border-radius: var(--radius-card);
-  overflow: hidden;
-  border: 1px solid rgba(13,13,26,.07);
-  box-shadow: var(--shadow-sm);
-  transition: transform .45s cubic-bezier(0.16,1,0.3,1), box-shadow .45s;
-  display: flex; flex-direction: column;
-  position: relative;
-}
-.taller-card:hover {
-  transform: translateY(-8px);
-  box-shadow: var(--shadow-md);
-}
-
-/* image zone */
-.taller-img-wrap {
-  position: relative; height: 220px; overflow: hidden; flex-shrink: 0;
-}
-.taller-img-wrap img {
-  width: 100%; height: 100%; object-fit: cover;
-  transition: transform .7s cubic-bezier(0.16,1,0.3,1);
-}
-.taller-card:hover .taller-img-wrap img { transform: scale(1.06); }
-.taller-img-overlay {
-  position: absolute; inset: 0;
-  background: linear-gradient(160deg, rgba(13,13,26,.0) 30%, rgba(13,13,26,.55));
-}
-
-/* accent badge */
-.taller-badge {
-  position: absolute; bottom: 16px; left: 18px;
-  padding: 5px 14px; border-radius: 100px;
-  font-family: var(--font-h); font-size: .65rem; font-weight: 900;
-  text-transform: uppercase; letter-spacing: 1.5px; color: #fff;
-  backdrop-filter: blur(8px); z-index: 2;
-}
-
-/* body */
-.taller-body {
-  padding: 30px 28px 28px;
-  flex-grow: 1; display: flex; flex-direction: column; gap: 20px;
-}
-
-.taller-title {
-  font-family: var(--font-h);
-  font-size: 1.22rem; font-weight: 800;
-  color: var(--c-dark); line-height: 1.3;
-  letter-spacing: -.2px;
-}
-
-/* key info row — 3 compact chips */
-.taller-meta {
-  display: grid; grid-template-columns: 1fr 1fr;
-  gap: 10px;
-}
-.meta-chip {
-  display: flex; align-items: center; gap: 10px;
-  background: var(--bg-page); border-radius: 14px;
-  padding: 12px 14px; min-width: 0;
-}
-.meta-chip-icon {
-  width: 30px; height: 30px; border-radius: 9px;
-  display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0; font-size: .8rem;
-}
-.meta-chip-text { min-width: 0; }
-.meta-chip-label {
-  font-size: .62rem; text-transform: uppercase; letter-spacing: 1px;
-  font-weight: 800; color: var(--text-muted); display: block; line-height: 1;
-}
-.meta-chip-val {
-  font-size: .88rem; font-weight: 700; color: var(--c-ink);
-  display: block; margin-top: 2px; line-height: 1.3;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
-
-/* date chip spans full width */
-.meta-chip.wide { grid-column: 1 / -1; }
-
-/* CTA button */
-.taller-cta {
-  display: flex; align-items: center; justify-content: center; gap: 10px;
-  width: 100%; padding: 16px 20px; border-radius: var(--radius-pill);
-  font-family: var(--font-h); font-weight: 800; font-size: .88rem;
-  text-transform: uppercase; letter-spacing: .8px; color: #fff;
-  transition: .35s; margin-top: auto;
-}
-.taller-cta:hover {
-  transform: translateY(-3px);
-  filter: brightness(1.08);
-}
-
-/* ─────────────────────────────────────────
-   FOOTER
-───────────────────────────────────────── */
-.footer {
-  background: #fff;
-  border-top: 1px solid rgba(13,13,26,.07);
-  padding: 64px 72px 0;
-  position: relative; overflow: hidden;
-}
-.footer::after {
-  content: 'HOPE';
-  position: absolute; bottom: -12px; right: 0;
-  font-family: var(--font-h); font-size: 11rem; font-weight: 900;
-  color: rgba(90,63,163,.03); pointer-events: none; user-select: none;
-  letter-spacing: -4px; line-height: 1;
-}
-
-.footer-top {
-  display: grid; grid-template-columns: 2fr 1fr 1fr 1fr;
-  gap: 52px; padding-bottom: 52px; border-bottom: 1px solid rgba(13,13,26,.07);
-}
-
-.footer-logo { height: 48px; width: auto; object-fit: contain; margin-bottom: 16px; }
-.footer-brand p { font-size: .9rem; color: var(--text-muted); line-height: 1.75; max-width: 270px; margin-bottom: 16px; }
-
-.footer-addr {
-  display: flex; align-items: flex-start; gap: 10px;
-  margin-bottom: 8px; font-size: .84rem; color: var(--text-muted); line-height: 1.5;
-}
-.footer-addr i { color: var(--c-purple); margin-top: 2px; flex-shrink: 0; }
-.footer-addr a { color: var(--c-purple); font-weight: 700; }
-.footer-addr a:hover { color: var(--c-pink); }
-
-.footer-col h4 {
-  font-family: var(--font-h); font-size: .68rem; text-transform: uppercase;
-  letter-spacing: 2px; color: var(--c-dark); font-weight: 800; margin-bottom: 18px;
-}
-.footer-col ul { list-style: none; display: flex; flex-direction: column; gap: 10px; }
-.footer-col ul li a {
-  color: var(--text-muted); font-size: .88rem; transition: .22s;
-  display: flex; align-items: center; gap: 7px;
-}
-.footer-col ul li a:hover { color: var(--c-purple); padding-left: 3px; }
-
-.footer-alert {
-  background: rgba(248,91,140,.05); border: 1px solid rgba(248,91,140,.2);
-  border-radius: 16px; padding: 16px 22px; margin: 36px 0 44px;
-  display: flex; align-items: center; gap: 14px;
-  font-size: .84rem; color: #5a5070; line-height: 1.6;
-}
-.footer-alert i { color: var(--c-pink); font-size: 1.05rem; flex-shrink: 0; }
-
-.footer-bottom {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 22px 0; flex-wrap: wrap; gap: 14px;
-  border-top: 1px solid rgba(13,13,26,.07);
-}
-.footer-copy { font-size: .78rem; color: #a0a0b8; }
-.footer-copy strong { color: var(--text-muted); }
-
-/* ─────────────────────────────────────────
-   MODAL
-───────────────────────────────────────── */
-.modal-overlay {
-  position: fixed; inset: 0;
-  background: rgba(13,13,26,.75);
-  backdrop-filter: blur(14px);
-  z-index: 5000; display: none;
-  align-items: center; justify-content: center; padding: 20px;
-}
-.modal-overlay.open { display: flex; }
-
-.modal-box {
-  background: #fff; width: 100%; max-width: 460px;
-  padding: 48px 44px; border-radius: 36px;
-  position: relative; box-shadow: 0 60px 120px rgba(0,0,0,.25);
-  animation: modalIn .4s cubic-bezier(0.16,1,0.3,1);
-  max-height: 95vh; overflow-y: auto;
-}
-@keyframes modalIn {
-  from { opacity: 0; transform: translateY(24px) scale(.97); }
-  to   { opacity: 1; transform: translateY(0) scale(1); }
-}
-
-.modal-close {
-  position: absolute; top: 18px; right: 18px;
-  width: 40px; height: 40px; border-radius: 50%;
-  background: #fef2f2; border: 1.5px solid #fecaca;
-  color: #ef4444; font-size: 1rem;
-  display: flex; align-items: center; justify-content: center;
-  cursor: pointer; transition: .3s;
-}
-.modal-close:hover {
-  background: #ef4444; color: #fff;
-  transform: scale(1.12) rotate(90deg);
-  box-shadow: 0 8px 18px rgba(239,68,68,.25);
-}
-
-.modal-logo { height: 38px; margin: 0 auto 20px; }
-.modal-h2 {
-  font-family: var(--font-h); font-size: 1.75rem; font-weight: 900;
-  color: var(--c-dark); letter-spacing: -.4px; margin-bottom: 6px; text-align: center;
-}
-.modal-taller-name {
-  font-size: .9rem; color: var(--c-purple); font-weight: 700;
-  text-align: center; margin-bottom: 28px;
-  padding-bottom: 20px; border-bottom: 1.5px dashed rgba(90,63,163,.15);
-}
-
-.input-group { position: relative; margin-bottom: 12px; }
-.input-group i {
-  position: absolute; left: 20px; top: 50%; transform: translateY(-50%);
-  color: #c8cadf; font-size: 1rem; transition: .25s; pointer-events: none;
-}
-.custom-input {
-  width: 100%; padding: 18px 18px 18px 52px;
-  border-radius: 16px; border: 1.5px solid #e8e8f0;
-  font-family: var(--font-b); font-size: .98rem;
-  background: #f9f9fc; color: var(--c-dark); outline: none; transition: .25s;
-}
-.custom-input:focus { border-color: var(--c-purple); background: #fff; box-shadow: 0 8px 24px rgba(90,63,163,.1); }
-.custom-input:focus ~ i, .input-group:focus-within i { color: var(--c-purple); }
-
-.btn-modal-submit {
-  width: 100%; margin-top: 18px; padding: 19px 24px;
-  border-radius: var(--radius-pill);
-  background: var(--c-purple); color: #fff;
-  font-family: var(--font-h); font-weight: 800; font-size: .98rem;
-  text-transform: uppercase; letter-spacing: .8px;
-  display: flex; align-items: center; justify-content: center; gap: 10px;
-  transition: .35s; box-shadow: 0 12px 28px rgba(90,63,163,.25);
-}
-.btn-modal-submit:hover { transform: translateY(-3px); filter: brightness(1.08); box-shadow: 0 18px 36px rgba(90,63,163,.3); }
-
-/* success state */
-.success-icon { font-size: 4.5rem; color: var(--c-teal); text-align: center; margin-bottom: 20px; animation: bounceIn .6s cubic-bezier(.17,.89,.32,1.27); }
-.success-h2 { font-family: var(--font-h); font-size: 2rem; font-weight: 900; color: var(--c-dark); text-align: center; margin-bottom: 12px; }
-.success-p { font-size: 1rem; color: var(--text-muted); line-height: 1.7; text-align: center; margin-bottom: 32px; padding: 0 8px; }
-
-/* ─────────────────────────────────────────
-   MOBILE NAV
-───────────────────────────────────────── */
-.mobile-nav { display: none; }
-
-/* ─────────────────────────────────────────
-   ANIMATIONS
-───────────────────────────────────────── */
-@keyframes bounceIn {
-  0%   { transform: scale(.3); opacity: 0; }
-  50%  { transform: scale(1.12); }
-  100% { transform: scale(1); opacity: 1; }
-}
-@keyframes fadeInUp {
-  from { opacity: 0; transform: translateY(16px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-/* ─────────────────────────────────────────
-   RESPONSIVE
-───────────────────────────────────────── */
-@media (max-width: 1100px) {
-  .sidebar { display: none; }
-  .main-stage { margin-left: 0; width: 100%; }
-
-  .mobile-nav {
-    display: flex; position: fixed; top: 12px; left: 50%;
-    transform: translateX(-50%); width: 92%;
-    background: rgba(255,255,255,.96); backdrop-filter: blur(14px);
-    border-radius: 50px; padding: 11px 18px;
-    justify-content: space-between; align-items: center;
-    z-index: 4000; box-shadow: 0 8px 28px rgba(90,63,163,.12);
-    border: 1px solid rgba(255,255,255,.6);
-  }
-  .mobile-logo { height: 32px; }
-  .btn-login-mobile {
-    background: var(--c-purple); color: #fff;
-    padding: 9px 18px; border-radius: 100px;
-    font-weight: 800; font-family: var(--font-h); font-size: .8rem;
-    display: flex; align-items: center; gap: 7px;
-    box-shadow: 0 4px 14px rgba(90,63,163,.22);
-  }
-
-  .hero { padding: 130px 24px 72px; min-height: auto; }
-  .section-intro { padding: 44px 24px 16px; }
-  .talleres-grid { padding: 20px 24px 80px; grid-template-columns: 1fr; gap: 22px; }
-  .footer { padding: 52px 24px 0; }
-  .footer-top { grid-template-columns: 1fr 1fr; gap: 36px; }
-  .footer-brand { grid-column: 1 / -1; }
-  .footer-bottom { flex-direction: column; text-align: center; }
-}
-
-@media (max-width: 600px) {
-  .footer-top { grid-template-columns: 1fr; }
-  .hero-stats { gap: 8px; }
-  .stat-pill { font-size: .76rem; padding: 8px 14px; }
-  .taller-meta { grid-template-columns: 1fr; }
-  .meta-chip.wide { grid-column: auto; }
-  .modal-box { padding: 36px 24px; }
-}
-
 </style>
 </head>
 <body>
 
-<!-- ── SIDEBAR ── -->
+<!-- ── MENÚ LATERAL COMPLETO (Oficial de Espacio HOPE) ── -->
 <nav class="sidebar">
   <div class="brand-container">
-    <img src="{% static 'img/nlogo.png' %}" alt="HOPE">
+    <img src="{% static 'img/nlogo.png' %}" alt="HOPE Logo">
   </div>
-
+  
   <a href="{% url 'inicio' %}" class="nav-item"><i class="fas fa-home"></i> Inicio</a>
 
+  <!-- Botones de Sesión -->
   {% if request.user.is_authenticated %}
-    <a href="{% url 'logout_usuario' %}" class="nav-item btn-login-sidebar" style="background:#ef4444; box-shadow:0 6px 18px rgba(239,68,68,.2);">
+    <a href="{% url 'logout_usuario' %}" class="nav-item btn-login-sidebar" style="background: #ef4444; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.2);">
       <i class="fas fa-sign-out-alt"></i> Cerrar sesión
     </a>
   {% else %}
@@ -515,218 +156,142 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   {% endif %}
 
   <p class="nav-section-title">Terapias</p>
-  <a href="{% url 'inicio' %}#terapias" class="nav-item"><i class="fas fa-user"></i> Individual</a>
-  <a href="{% url 'inicio' %}#terapias" class="nav-item"><i class="fas fa-heart"></i> Pareja</a>
-
-  <p class="nav-section-title">Talleres</p>
-  <a href="{% url 'inicio' %}#talleres-padres" class="nav-item"><i class="fas fa-seedling"></i> Para Padres</a>
-  <a href="{% url 'inicio' %}#talleres-pareja" class="nav-item"><i class="fas fa-people-arrows"></i> De Pareja</a>
-  <a href="#" class="nav-item active"><i class="fas fa-users"></i> Grupales</a>
-
-  <p class="nav-section-title">Explorar</p>
+  <a href="{% url 'inicio' %}#terapias" class="nav-item"><i class="fas fa-user"></i> Terapia Individual</a>
+  <a href="{% url 'inicio' %}#terapias" class="nav-item"><i class="fas fa-heart"></i> Terapia de Pareja</a>
+  
+  <p class="nav-section-title">Talleres para Padres</p>
+  <a href="{% url 'inicio' %}#talleres-padres" class="nav-item"><i class="fas fa-seedling"></i> Criar con Conciencia</a>
+  <a href="{% url 'inicio' %}#talleres-padres" class="nav-item"><i class="fas fa-star"></i> Disciplina Inteligente</a>
+  
+  <p class="nav-section-title">Talleres de Pareja</p>
+  <a href="{% url 'inicio' %}#talleres-pareja" class="nav-item"><i class="fas fa-heart"></i> Reconectar en Pareja</a>
+  <a href="{% url 'inicio' %}#talleres-pareja" class="nav-item"><i class="fas fa-people-arrows"></i> Amar sin Herir</a>
+  
+  <p class="nav-section-title">Talleres Grupales</p>
+  <!-- Aquí marcamos en activo porque estamos en la sección de talleres -->
+  <a href="#" class="nav-item active"><i class="fas fa-users"></i> Eventos y Talleres Especiales</a>
+  
+  <p class="nav-section-title">Profesionales</p>
   <a href="{% url 'inicio' %}#ecovision" class="nav-item"><i class="fas fa-leaf"></i> Ecovisión</a>
+  
+  <p class="nav-section-title">Comunidad</p>
   <a href="{% url 'inicio' %}#blog" class="nav-item"><i class="fas fa-book-open"></i> Blog</a>
 </nav>
 
 <main class="main-stage">
-
-  <!-- MOBILE NAV -->
+  
+  <!-- MENÚ MÓVIL -->
   <nav class="mobile-nav">
-    <img src="{% static 'img/nlogo.png' %}" alt="HOPE" class="mobile-logo">
+    <img src="{% static 'img/nlogo.png' %}" alt="HOPE Logo" class="mobile-logo">
     <a href="{% url 'inicio' %}" class="btn-login-mobile">
       Entrar <i class="fas fa-sign-in-alt"></i>
     </a>
   </nav>
 
-  <!-- ── HERO ── -->
-  <section class="hero">
-    <div class="hero-blob hero-blob-1"></div>
-    <div class="hero-blob hero-blob-2"></div>
-    <div class="hero-blob hero-blob-3"></div>
-
-    <div class="hero-content">
-      <span class="hero-eyebrow">
-        <i class="fas fa-circle-dot"></i> Agenda activa
-      </span>
-
-      <h1 class="hero-h1">
-        Sanar también<br>se aprende <em>en grupo.</em>
-      </h1>
-
-      <p class="hero-sub">
-        Espacios pequeños, intencionados y con guía profesional. Cada taller es una oportunidad de crecer desde adentro.
-      </p>
-
-      <div class="hero-stats">
-        <div class="stat-pill"><i class="fas fa-shield-heart"></i> Espacio seguro y confidencial</div>
-        <div class="stat-pill"><i class="fas fa-user-check"></i> Cupo limitado</div>
-        <div class="stat-pill"><i class="fas fa-calendar-check"></i> Julio 2025</div>
-      </div>
-    </div>
+  <!-- HERO SECTION VIP -->
+  <section class="hero-premium">
+    <span class="hero-tag"><i class="fas fa-sparkles"></i> Nuevos Espacios</span>
+    <h1 class="hero-new-heading">Aprender y sanar <br><span>en comunidad.</span></h1>
+    <p class="hero-new-subtitle">Conecta con personas que entienden tu proceso. Explora nuestros talleres diseñados para brindarte herramientas prácticas en un espacio seguro y guiado por nuestros especialistas.</p>
   </section>
 
-  <!-- ── SECTION HEADER ── -->
-  <div class="section-intro">
-    <div class="section-intro-inner">
-      <div>
-        <p class="section-label">Próximos eventos</p>
-        <h2 class="section-h2">Elige tu espacio</h2>
-      </div>
-      <span class="section-count">3 talleres disponibles</span>
-    </div>
-  </div>
-
-  <!-- ── CARDS GRID ── -->
+  <!-- GRID DE TALLERES (DISEÑO MEJORADO) -->
   <section class="talleres-grid">
-
-    <!-- ── TALLER 1: LGBTTTIQ+ ── -->
-    <article class="taller-card">
-      <div class="taller-img-wrap">
-        <img src="https://images.unsplash.com/photo-1573339889412-f0449ec9cbf1?w=800&auto=format&fit=crop&q=80" alt="Diversidad e Inclusión">
-        <div class="taller-img-overlay"></div>
-        <span class="taller-badge" style="background: rgba(90,63,163,.88);">LGBTTTIQ+</span>
+    
+    <!-- Taller 1 -->
+    <div class="taller-card">
+      <div class="taller-img-container">
+        <span class="taller-tag-flotante" style="background: rgba(90,63,163,.9); color: #fff;">LGBTTTIQ+</span>
+        <img src="https://images.unsplash.com/photo-1573339889412-f0449ec9cbf1?w=800&auto=format&fit=crop&q=80" alt="Comunidad" class="taller-img">
+        <div class="taller-overlay"></div>
       </div>
       <div class="taller-body">
-        <h3 class="taller-title">La autenticidad es parte del orgullo</h3>
-        <div class="taller-meta">
-          <div class="meta-chip">
-            <div class="meta-chip-icon" style="background:rgba(90,63,163,.1); color:var(--c-purple);">
-              <i class="fas fa-user-tie"></i>
-            </div>
-            <div class="meta-chip-text">
-              <span class="meta-chip-label">Guía</span>
-              <span class="meta-chip-val">Andrea y Abraham</span>
-            </div>
-          </div>
-          <div class="meta-chip">
-            <div class="meta-chip-icon" style="background:rgba(90,63,163,.1); color:var(--c-purple);">
-              <i class="fas fa-users"></i>
-            </div>
-            <div class="meta-chip-text">
-              <span class="meta-chip-label">Cupo</span>
-              <span class="meta-chip-val">Máx. 15 personas</span>
-            </div>
-          </div>
-          <div class="meta-chip wide">
-            <div class="meta-chip-icon" style="background:rgba(248,211,61,.15); color:#c8a200;">
-              <i class="fas fa-calendar"></i>
-            </div>
-            <div class="meta-chip-text">
-              <span class="meta-chip-label">Fecha y hora</span>
-              <span class="meta-chip-val">Viernes 4 de julio · 2:00 pm</span>
-            </div>
-          </div>
-        </div>
-        <button class="taller-cta" style="background:var(--c-purple); box-shadow:0 12px 28px rgba(90,63,163,.25);"
-          onclick="abrirInscripcion('Diversidad e Inclusión LGBTTTIQ+')">
-          Reservar mi lugar <i class="fas fa-arrow-right"></i>
-        </button>
+        <h3 class="taller-title">Diversidad, Inclusión y comunidad: "La autenticidad es parte del orgullo"</h3>
+        <ul class="taller-details">
+          <li>
+            <div class="icon-box" style="background: rgba(90,63,163,.1); color: var(--c-purple);"><i class="fas fa-user-md"></i></div>
+            <div><strong style="color:var(--c-dark); display:block;">Talleristas</strong> Andrea y Abraham</div>
+          </li>
+          <li>
+            <div class="icon-box" style="background: rgba(90,63,163,.1); color: var(--c-purple);"><i class="fas fa-users"></i></div>
+            <div><strong style="color:var(--c-dark); display:block;">Cupo Limitado</strong> Max 15 personas</div>
+          </li>
+          <li>
+            <div class="icon-box" style="background: rgba(90,63,163,.1); color: var(--c-purple);"><i class="fas fa-calendar-alt"></i></div>
+            <div><strong style="color:var(--c-dark); display:block;">Fecha y Hora</strong> 4 de julio • 2:00 pm</div>
+          </li>
+        </ul>
+        <button class="btn-primary" style="width: 100%; justify-content: center; padding: 20px; font-size: 1.1rem;" onclick="abrirInscripcion('Diversidad e Inclusión LGBTTTIQ')">Quiero Inscribirme <i class="fas fa-check-circle"></i></button>
       </div>
-    </article>
+    </div>
 
-    <!-- ── TALLER 2: Violencia Digital ── -->
-    <article class="taller-card">
-      <div class="taller-img-wrap">
-        <img src="https://images.unsplash.com/photo-1521737604893-d14cc237f11d?w=800&auto=format&fit=crop&q=80" alt="Violencia Digital">
-        <div class="taller-img-overlay"></div>
-        <span class="taller-badge" style="background: rgba(248,91,140,.88);">Jóvenes</span>
+    <!-- Taller 2 -->
+    <div class="taller-card">
+      <div class="taller-img-container">
+        <span class="taller-tag-flotante" style="background: rgba(248,91,140,.9); color: #fff;">Jóvenes</span>
+        <img src="https://images.unsplash.com/photo-1521737604893-d14cc237f11d?w=800&auto=format&fit=crop&q=80" alt="Violencia Digital" class="taller-img">
+        <div class="taller-overlay"></div>
       </div>
       <div class="taller-body">
-        <h3 class="taller-title">Desarmando la violencia digital y cotidiana</h3>
-        <div class="taller-meta">
-          <div class="meta-chip">
-            <div class="meta-chip-icon" style="background:rgba(248,91,140,.1); color:var(--c-pink);">
-              <i class="fas fa-user-tie"></i>
-            </div>
-            <div class="meta-chip-text">
-              <span class="meta-chip-label">Guía</span>
-              <span class="meta-chip-val">Christopher Yamashiro</span>
-            </div>
-          </div>
-          <div class="meta-chip">
-            <div class="meta-chip-icon" style="background:rgba(248,91,140,.1); color:var(--c-pink);">
-              <i class="fas fa-users"></i>
-            </div>
-            <div class="meta-chip-text">
-              <span class="meta-chip-label">Edad</span>
-              <span class="meta-chip-val">12 a 29 años</span>
-            </div>
-          </div>
-          <div class="meta-chip wide">
-            <div class="meta-chip-icon" style="background:rgba(248,211,61,.15); color:#c8a200;">
-              <i class="fas fa-calendar"></i>
-            </div>
-            <div class="meta-chip-text">
-              <span class="meta-chip-label">Fecha y hora</span>
-              <span class="meta-chip-val">Sábado 11 de julio · 7:00 pm</span>
-            </div>
-          </div>
-        </div>
-        <button class="taller-cta" style="background:var(--c-pink); box-shadow:0 12px 28px rgba(248,91,140,.25);"
-          onclick="abrirInscripcion('Desarmando la Violencia Digital')">
-          Reservar mi lugar <i class="fas fa-arrow-right"></i>
-        </button>
+        <h3 class="taller-title">Desarmando la Violencia Digital y Cotidiana</h3>
+        <ul class="taller-details">
+          <li>
+            <div class="icon-box" style="background: rgba(248,91,140,.1); color: var(--c-pink);"><i class="fas fa-user-md"></i></div>
+            <div><strong style="color:var(--c-dark); display:block;">Tallerista</strong> Christopher Yamashiro</div>
+          </li>
+          <li>
+            <div class="icon-box" style="background: rgba(248,91,140,.1); color: var(--c-pink);"><i class="fas fa-users"></i></div>
+            <div><strong style="color:var(--c-dark); display:block;">Adolescentes</strong> 12 a 29 años (Max 20 pax)</div>
+          </li>
+          <li>
+            <div class="icon-box" style="background: rgba(248,91,140,.1); color: var(--c-pink);"><i class="fas fa-calendar-alt"></i></div>
+            <div><strong style="color:var(--c-dark); display:block;">Fecha y Hora</strong> Sábado 11 de julio • 7:00 pm</div>
+          </li>
+        </ul>
+        <button class="btn-primary" style="width: 100%; justify-content: center; background: var(--c-pink); box-shadow: 0 15px 30px rgba(248,91,140,.2); padding: 20px; font-size: 1.1rem;" onclick="abrirInscripcion('Desarmando la Violencia Digital')">Quiero Inscribirme <i class="fas fa-check-circle"></i></button>
       </div>
-    </article>
+    </div>
 
-    <!-- ── TALLER 3: Autoestima ── -->
-    <article class="taller-card">
-      <div class="taller-img-wrap">
-        <img src="https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=800&auto=format&fit=crop&q=80" alt="Autoestima">
-        <div class="taller-img-overlay"></div>
-        <span class="taller-badge" style="background: rgba(37,184,184,.88);">Autoestima</span>
+    <!-- Taller 3 -->
+    <div class="taller-card">
+      <div class="taller-img-container">
+        <span class="taller-tag-flotante" style="background: rgba(37,184,184,.9); color: #fff;">Autoestima</span>
+        <img src="https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=800&auto=format&fit=crop&q=80" alt="Autoestima" class="taller-img">
+        <div class="taller-overlay"></div>
       </div>
       <div class="taller-body">
-        <h3 class="taller-title">Sin perderme a mí: reconstruyendo mi valor</h3>
-        <div class="taller-meta">
-          <div class="meta-chip">
-            <div class="meta-chip-icon" style="background:rgba(37,184,184,.1); color:var(--c-teal);">
-              <i class="fas fa-user-tie"></i>
-            </div>
-            <div class="meta-chip-text">
-              <span class="meta-chip-label">Guía</span>
-              <span class="meta-chip-val">Sarahí</span>
-            </div>
-          </div>
-          <div class="meta-chip">
-            <div class="meta-chip-icon" style="background:rgba(37,184,184,.1); color:var(--c-teal);">
-              <i class="fas fa-layer-group"></i>
-            </div>
-            <div class="meta-chip-text">
-              <span class="meta-chip-label">Sesiones</span>
-              <span class="meta-chip-val">5 encuentros</span>
-            </div>
-          </div>
-          <div class="meta-chip wide">
-            <div class="meta-chip-icon" style="background:rgba(248,211,61,.15); color:#c8a200;">
-              <i class="fas fa-calendar"></i>
-            </div>
-            <div class="meta-chip-text">
-              <span class="meta-chip-label">Inicio · 7:00 pm</span>
-              <span class="meta-chip-val">Lunes 6 jul — cierra lun 20 jul</span>
-            </div>
-          </div>
-        </div>
-        <button class="taller-cta" style="background:var(--c-teal); box-shadow:0 12px 28px rgba(37,184,184,.25);"
-          onclick="abrirInscripcion('Sin perderme a mí: reconstruyendo mi valor')">
-          Reservar mi lugar <i class="fas fa-arrow-right"></i>
-        </button>
+        <h3 class="taller-title">Sin perderme a mí: Reconstruyendo mi valor</h3>
+        <ul class="taller-details">
+          <li>
+            <div class="icon-box" style="background: rgba(37,184,184,.1); color: var(--c-teal);"><i class="fas fa-user-md"></i></div>
+            <div><strong style="color:var(--c-dark); display:block;">Tallerista</strong> Sarahí</div>
+          </li>
+          <li>
+            <div class="icon-box" style="background: rgba(37,184,184,.1); color: var(--c-teal);"><i class="fas fa-users"></i></div>
+            <div><strong style="color:var(--c-dark); display:block;">Grupo Íntimo</strong> Max 10 personas</div>
+          </li>
+          <li>
+            <div class="icon-box" style="background: rgba(37,184,184,.1); color: var(--c-teal);"><i class="fas fa-calendar-check"></i></div>
+            <div><strong style="color:var(--c-dark); display:block;">5 Sesiones (7:00 pm)</strong> Lunes 6, Jueves 9, Lun 13, Jue 16, Lun 20.</div>
+          </li>
+        </ul>
+        <button class="btn-primary" style="width: 100%; justify-content: center; background: var(--c-teal); box-shadow: 0 15px 30px rgba(37,184,184,.2); padding: 20px; font-size: 1.1rem;" onclick="abrirInscripcion('Sin perderme a mí')">Quiero Inscribirme <i class="fas fa-check-circle"></i></button>
       </div>
-    </article>
+    </div>
 
   </section>
 
-  <!-- ── FOOTER ── -->
+  <!-- PIE DE PÁGINA COMPLETO (Oficial de Espacio HOPE) -->
   <footer class="footer">
     <div class="footer-top">
       <div class="footer-brand">
-        <img src="{% static 'img/nlogo.png' %}" alt="HOPE" class="footer-logo">
-        <p>Bienestar mental con enfoque humano. Acompañamos cada proceso con presencia, rigor clínico y genuino cuidado.</p>
+        <img src="{% static 'img/nlogo.png' %}" alt="HOPE Logo" class="footer-logo">
+        <p>Una plataforma de bienestar mental con enfoque humano. Acompañamos cada proceso con presencia, rigor clínico y genuino cuidado.</p>
         <div class="footer-addr"><i class="fas fa-location-dot"></i><span>Lago Margarita 47, Col. Granada, 11520, CDMX</span></div>
         <div class="footer-addr"><i class="fas fa-globe"></i><a href="https://espaciohope.com" target="_blank" rel="noopener">espaciohope.com</a></div>
       </div>
       <div class="footer-col">
-        <h4>Terapias</h4>
+        <h4>Terapias y Programas</h4>
         <ul>
           <li><a href="{% url 'inicio' %}#terapias">Terapia Individual</a></li>
           <li><a href="{% url 'inicio' %}#terapias">Terapia de Pareja</a></li>
@@ -744,109 +309,100 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
       <div class="footer-col">
         <h4>Ayuda</h4>
         <ul>
-          <li><a href="#">Privacidad</a></li>
+          <li><a href="#">Aviso de Privacidad</a></li>
           <li><a href="#">Términos de uso</a></li>
           <li><a href="#">Contacto</a></li>
         </ul>
       </div>
     </div>
-
     <div class="footer-alert">
       <i class="fas fa-shield-heart"></i>
-      <span>Si tú o alguien que conoces está en peligro, comunícate con los servicios de emergencia de inmediato. Tu vida importa.</span>
+      <span>Si tú o alguien que conoces está en peligro, comunícate con los servicios de emergencia para recibir atención inmediata. Tu vida importa.</span>
     </div>
-
     <div class="footer-bottom">
-      <p class="footer-copy">© 2026 <strong>HOPE — Todo lo que sientes importa.</strong> Todos los derechos reservados.</p>
+      <div class="footer-bottom-left">© 2026 <strong>HOPE — Todo lo que sientes importa.</strong> Todos los derechos reservados.</div>
     </div>
   </footer>
 
 </main>
 
-<!-- ── MODAL DE INSCRIPCIÓN ── -->
+<!-- ── MODAL DE INSCRIPCIÓN PREMIUM ── -->
 <div class="modal-overlay" id="modalInscripcion">
-  <div class="modal-box">
-    <button class="modal-close" onclick="cerrarModal('modalInscripcion')">
-      <i class="fas fa-times"></i>
-    </button>
-
-    <!-- Formulario -->
+  <div class="modal-box" style="padding: 50px 45px;">
+    <button class="modal-close" onclick="cerrarModal('modalInscripcion')"><i class="fas fa-times"></i></button>
+    
+    <!-- Estado 1: Formulario -->
     <div id="form-estado">
-      <img src="{% static 'img/nlogo.png' %}" alt="HOPE" class="modal-logo">
-      <h2 class="modal-h2">Reserva tu lugar</h2>
-      <p class="modal-taller-name" id="nombre-taller-display"></p>
+      <img src="{% static 'img/nlogo.png' %}" alt="HOPE" style="height: 45px; margin: 0 auto 20px; display: block;">
+      <h2 style="font-family: var(--font-h); font-size: 2rem; color: var(--c-dark); margin-bottom: 8px; font-weight: 900; letter-spacing: -0.5px;">Reserva tu lugar</h2>
+      <p id="nombre-taller-display" style="color: var(--c-purple); font-weight: 800; font-size: 1.1rem; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px dashed #f1f5f9;"></p>
 
       <form id="formTaller" onsubmit="procesarInscripcion(event)">
         <input type="hidden" id="taller_seleccionado" name="taller_seleccionado">
-
+        
         <div class="input-group">
-          <input type="text" id="nombre_tallerista" class="custom-input" placeholder="Tu nombre completo" required>
-          <i class="fas fa-user"></i>
-        </div>
-        <div class="input-group">
-          <input type="tel" id="telefono_tallerista" class="custom-input" placeholder="Teléfono a 10 dígitos" required>
-          <i class="fas fa-phone"></i>
-        </div>
-        <div class="input-group">
-          <input type="email" id="correo_tallerista" class="custom-input" placeholder="Correo electrónico" required>
-          <i class="fas fa-envelope"></i>
+            <i class="fas fa-user"></i>
+            <input type="text" id="nombre_tallerista" class="custom-input" placeholder="Tu nombre completo" required>
         </div>
 
-        <button type="submit" id="btnSubmitTaller" class="btn-modal-submit">
-          Confirmar asistencia <i class="fas fa-heart"></i>
+        <div class="input-group">
+            <i class="fas fa-phone"></i>
+            <input type="tel" id="telefono_tallerista" class="custom-input" placeholder="Teléfono a 10 dígitos" required>
+        </div>
+
+        <div class="input-group">
+            <i class="fas fa-envelope"></i>
+            <input type="email" id="correo_tallerista" class="custom-input" placeholder="Correo electrónico" required>
+        </div>
+        
+        <button type="submit" id="btnSubmitTaller" class="btn-primary" style="width: 100%; justify-content: center; margin-top: 20px; padding: 22px; font-size: 1.15rem;">
+          Confirmar Asistencia <i class="fas fa-heart"></i>
         </button>
       </form>
     </div>
 
-    <!-- Éxito -->
-    <div id="exito-estado" style="display:none; padding: 20px 0 8px;">
-      <div class="success-icon"><i class="fas fa-envelope-open-text"></i></div>
-      <h2 class="success-h2">¡Ya estás dentro! 🎉</h2>
-      <p class="success-p">
-        Gracias por registrarte. Te enviaremos el acceso a tu correo unos días antes del evento.
+    <!-- Estado 2: Éxito con Celebración -->
+    <div id="exito-estado" style="display: none; padding: 30px 0 10px;">
+      <div style="font-size: 80px; color: var(--c-teal); margin-bottom: 25px; animation: bounceIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);"><i class="fas fa-envelope-open-text"></i></div>
+      <h2 style="font-family: var(--font-h); font-size: 2.2rem; color: var(--c-dark); margin-bottom: 15px; font-weight: 900;">¡Estás dentro! 🎉</h2>
+      <p style="color: var(--text-muted); font-size: 1.15rem; line-height: 1.6; margin-bottom: 35px; padding: 0 10px;">
+        Mil gracias por registrarte. Te estaremos enviando la liga de acceso directo a tu correo un par de días antes del evento.
       </p>
-      <button class="btn-modal-submit" style="background:var(--c-teal); box-shadow:0 12px 28px rgba(37,184,184,.25);"
-        onclick="cerrarModal('modalInscripcion')">
-        ¡Nos vemos pronto! <i class="fas fa-thumbs-up"></i>
-      </button>
+      <button class="btn-primary" style="width: 100%; justify-content: center; background: var(--c-teal); box-shadow: 0 15px 30px rgba(37,184,184,.3);" onclick="cerrarModal('modalInscripcion')">¡Nos vemos pronto! <i class="fas fa-thumbs-up"></i></button>
     </div>
 
   </div>
 </div>
 
 <script>
-  function abrirModal(id) {
-    const el = document.getElementById(id);
-    if (el) el.classList.add('open');
-  }
-  function cerrarModal(id) {
-    const el = document.getElementById(id);
-    if (el) el.classList.remove('open');
-  }
+  // Funciones para abrir y cerrar modales
+  function abrirModal(id){ const el=document.getElementById(id); if(el) el.style.display='flex'; }
+  function cerrarModal(id){ const el=document.getElementById(id); if(el) el.style.display='none'; }
 
-  // Close on overlay click
-  document.getElementById('modalInscripcion').addEventListener('click', function(e) {
-    if (e.target === this) cerrarModal('modalInscripcion');
-  });
-
+  // Preparar modal al dar clic a "Quiero Inscribirme"
   function abrirInscripcion(nombreTaller) {
     document.getElementById('form-estado').style.display = 'block';
     document.getElementById('exito-estado').style.display = 'none';
     document.getElementById('formTaller').reset();
-    document.getElementById('nombre-taller-display').textContent = nombreTaller;
+    
+    document.getElementById('nombre-taller-display').innerText = "Taller: " + nombreTaller;
     document.getElementById('taller_seleccionado').value = nombreTaller;
+    
     abrirModal('modalInscripcion');
   }
 
+  // Simulación del botón de enviar
   function procesarInscripcion(e) {
     e.preventDefault();
     const btn = document.getElementById('btnSubmitTaller');
-    const original = btn.innerHTML;
+    const originalText = btn.innerHTML;
+    
     btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Asegurando tu lugar...';
     btn.disabled = true;
 
+    // Aquí conectarías con tu View de Django. Por ahora lo simulamos:
     setTimeout(() => {
-      btn.innerHTML = original;
+      btn.innerHTML = originalText;
       btn.disabled = false;
       document.getElementById('form-estado').style.display = 'none';
       document.getElementById('exito-estado').style.display = 'block';
