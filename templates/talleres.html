@@ -10,7 +10,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700;900&family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 <style>
-/* ── VARIABLES Y ESTILOS BASE ── */
+/* ── VARIABLES ── */
 :root {
   --c-purple: #5A3FA3;
   --c-pink: #F85B8C;
@@ -19,115 +19,291 @@
   --c-teal: #25B8B8;
   --c-dark: #0f0f0f;
   --text-muted: #64748b;
-  --sidebar-width: 320px;
+  --sidebar-width: 300px;
   --font-h: 'Outfit', sans-serif;
   --font-b: 'Plus Jakarta Sans', sans-serif;
-  --shadow-sm: 0 10px 25px rgba(0,0,0,.05);
-  --shadow-md: 0 20px 40px rgba(90,63,163,.1);
+  --shadow-sm: 0 4px 20px rgba(0,0,0,.06);
+  --shadow-md: 0 20px 50px rgba(90,63,163,.13);
+  --radius-card: 26px;
 }
 
 *{margin:0;padding:0;box-sizing:border-box}
 html,body{overflow-x:hidden;scroll-behavior:smooth}
-body{font-family:var(--font-b);color:var(--c-dark);background:#f8fafc;display:flex}
+body{font-family:var(--font-b);color:var(--c-dark);background:#F5F4F9;display:flex}
 
-/* ── SIDEBAR (COMPLETA) ── */
-.sidebar{width:var(--sidebar-width);height:100vh;background:#fff;position:fixed;top:0;left:0;border-right:1px solid #f1f5f9;z-index:1000;display:flex;flex-direction:column;padding:50px 35px;overflow-y:auto}
-.brand-container{margin-bottom:40px;text-align:center}
-.brand-container img{width:170px;height:auto;display:inline-block}
-.nav-section-title{font-size:.75rem;text-transform:uppercase;letter-spacing:1px;color:#aaa;font-weight:800;margin:15px 0 5px}
-.nav-item{display:flex;align-items:center;padding:12px 15px;color:var(--text-muted);font-weight:700;font-size:.95rem;text-decoration:none;transition:.3s;border-radius:12px;margin-bottom:5px}
-.nav-item:hover,.nav-item.active{background:#f8f8f8;color:var(--c-purple);transform:translateX(8px)}
-.nav-item i{font-size:1.1rem;width:30px;text-align:center;color:var(--text-muted);transition:.3s}
-.nav-item:hover i,.nav-item.active i{color:var(--c-pink);transform:scale(1.1)}
-.btn-login-sidebar{background:var(--c-purple);color:white !important;box-shadow:0 4px 15px rgba(90,63,163,.2);justify-content:center;margin-top:10px;margin-bottom:20px}
+/* ── SIDEBAR ── */
+.sidebar{
+  width:var(--sidebar-width);height:100vh;background:#fff;
+  position:fixed;top:0;left:0;
+  border-right:1px solid rgba(90,63,163,.08);
+  z-index:1000;display:flex;flex-direction:column;
+  padding:44px 28px;overflow-y:auto;
+}
+.brand-container{margin-bottom:36px;text-align:center}
+.brand-container img{width:150px;height:auto;display:inline-block}
+.nav-section-title{
+  font-size:.68rem;text-transform:uppercase;letter-spacing:1.5px;
+  color:#c0bdd4;font-weight:800;margin:18px 0 6px;padding-left:4px;
+}
+.nav-item{
+  display:flex;align-items:center;gap:10px;padding:11px 14px;
+  color:var(--text-muted);font-weight:700;font-size:.9rem;
+  text-decoration:none;transition:.25s;border-radius:12px;margin-bottom:2px;
+}
+.nav-item:hover,.nav-item.active{
+  background:rgba(90,63,163,.07);color:var(--c-purple);
+  transform:translateX(4px);
+}
+.nav-item i{font-size:1rem;width:22px;text-align:center;color:var(--text-muted);transition:.25s;flex-shrink:0}
+.nav-item:hover i,.nav-item.active i{color:var(--c-pink)}
+
+.btn-login-sidebar{
+  background:var(--c-purple);color:white !important;
+  box-shadow:0 6px 18px rgba(90,63,163,.22);
+  justify-content:center;margin-top:8px;margin-bottom:18px;
+  border-radius:100px;
+}
 .btn-login-sidebar i{color:white !important}
-.btn-login-sidebar:hover{background:var(--c-pink);transform:translateY(-3px) translateX(0) !important;box-shadow:0 8px 20px rgba(248,91,140,.3)}
+.btn-login-sidebar:hover{
+  background:var(--c-pink);transform:translateY(-2px) !important;
+  box-shadow:0 10px 24px rgba(248,91,140,.28);
+}
+
+/* ── MAIN ── */
 .main-stage{margin-left:var(--sidebar-width);width:calc(100% - var(--sidebar-width));min-height:100vh}
 
-/* ── BOTONES ── */
-.btn-primary {padding:18px 35px;border-radius:100px;font-weight:800;font-size:15px;font-family:var(--font-h);text-transform:uppercase;letter-spacing:1px;display:inline-flex;align-items:center;gap:12px;transition:.4s;cursor:pointer;border:none;background:var(--c-purple);color:#fff;box-shadow:0 15px 30px rgba(90,63,163,.2)}
-.btn-primary:hover{transform:translateY(-5px);filter:brightness(1.1);box-shadow:0 20px 35px rgba(90,63,163,.3)}
-
-/* ── HERO PREMIUM ── */
-.hero-premium {
-  position: relative;
-  padding: 120px 80px 100px;
-  background: linear-gradient(135deg, rgba(15, 10, 30, 0.85) 0%, rgba(90, 63, 163, 0.9) 100%), url('https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=1200&auto=format&fit=crop&q=80') center/cover;
-  text-align: center;
-  overflow: hidden;
+/* ── HERO ── */
+.hero-premium{
+  position:relative;
+  padding:110px 80px 120px;
+  background:
+    linear-gradient(145deg, rgba(13,8,28,.82) 0%, rgba(90,63,163,.88) 100%),
+    url('https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=1400&auto=format&fit=crop&q=80') center/cover;
+  text-align:center;overflow:hidden;
 }
-.hero-premium::before {
-  content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 100px; background: linear-gradient(to top, #f8fafc, transparent);
+/* fade suave al color del body */
+.hero-premium::after{
+  content:'';position:absolute;bottom:0;left:0;right:0;height:90px;
+  background:linear-gradient(to top,#F5F4F9,transparent);
+  pointer-events:none;
 }
-.hero-tag {
-  display: inline-block; background: rgba(248,91,140,.2); color: #ff9cbd; padding: 8px 20px; border-radius: 100px; font-weight: 800; font-family: var(--font-h); font-size: 13px; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 25px; border: 1px solid rgba(248,91,140,.4);
+/* puntos de luz decorativos */
+.hero-premium::before{
+  content:'';position:absolute;inset:0;
+  background:
+    radial-gradient(circle at 20% 50%, rgba(248,91,140,.18) 0%, transparent 55%),
+    radial-gradient(circle at 80% 20%, rgba(37,184,184,.12) 0%, transparent 45%);
+  pointer-events:none;
 }
-.hero-new-heading { font-family: var(--font-h); font-size: clamp(2.8rem, 5vw, 4.5rem); font-weight: 900; line-height: 1.1; color: #fff; margin-bottom: 25px; letter-spacing: -1px; text-shadow: 0 10px 30px rgba(0,0,0,0.3); position: relative; z-index: 2; }
-.hero-new-heading span { color: var(--c-yellow); }
-.hero-new-subtitle { font-size: 1.25rem; color: rgba(255,255,255,0.9); line-height: 1.7; max-width: 700px; margin: 0 auto; position: relative; z-index: 2; font-weight: 300; }
 
-/* ── TARJETAS DE TALLERES (DISEÑO ESPECTACULAR) ── */
-.talleres-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 40px; padding: 60px 80px 100px; background: #f8fafc; max-width: 1400px; margin: 0 auto; }
-.taller-card { background: #fff; border-radius: 30px; border: 1px solid #f1f5f9; box-shadow: var(--shadow-sm); transition: .5s; display: flex; flex-direction: column; position: relative; overflow: hidden; }
-.taller-card:hover { transform: translateY(-15px); box-shadow: var(--shadow-md); border-color: transparent; }
-.taller-img-container { width: 100%; height: 240px; position: relative; overflow: hidden; }
-.taller-img { width: 100%; height: 100%; object-fit: cover; transition: .8s cubic-bezier(0.16, 1, 0.3, 1); }
-.taller-card:hover .taller-img { transform: scale(1.1) rotate(2deg); }
-.taller-overlay { position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.6), transparent); }
-.taller-tag-flotante { position: absolute; top: 20px; left: 20px; padding: 8px 18px; border-radius: 100px; font-size: 11px; font-weight: 900; font-family: var(--font-h); text-transform: uppercase; letter-spacing: 1.5px; z-index: 2; box-shadow: 0 10px 20px rgba(0,0,0,0.2); backdrop-filter: blur(5px); }
-.taller-body { padding: 40px 35px; flex-grow: 1; display: flex; flex-direction: column; background: #fff; position: relative; }
-.taller-title { font-family: var(--font-h); font-size: 1.6rem; font-weight: 800; color: var(--c-dark); margin-bottom: 25px; line-height: 1.3; letter-spacing: -0.5px; }
-.taller-details { list-style: none; margin-bottom: 35px; flex-grow: 1; background: #f8fafc; padding: 25px; border-radius: 20px; border: 1px solid #f1f5f9; }
-.taller-details li { display: flex; align-items: flex-start; gap: 15px; margin-bottom: 16px; font-size: 0.95rem; color: var(--text-muted); font-weight: 600; line-height: 1.5; }
-.taller-details li:last-child { margin-bottom: 0; }
-.icon-box { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 0.9rem; }
+.hero-tag{
+  display:inline-flex;align-items:center;gap:8px;
+  background:rgba(248,91,140,.18);color:#ffb3cc;
+  padding:7px 20px;border-radius:100px;font-weight:800;
+  font-family:var(--font-h);font-size:.72rem;text-transform:uppercase;
+  letter-spacing:2px;margin-bottom:28px;
+  border:1px solid rgba(248,91,140,.3);
+  position:relative;z-index:2;
+}
+.hero-new-heading{
+  font-family:var(--font-h);font-size:clamp(2.6rem,5vw,4.2rem);
+  font-weight:900;line-height:1.08;color:#fff;margin-bottom:22px;
+  letter-spacing:-1.5px;text-shadow:0 8px 28px rgba(0,0,0,.25);
+  position:relative;z-index:2;
+}
+.hero-new-heading span{color:var(--c-yellow)}
+.hero-new-subtitle{
+  font-size:1.15rem;color:rgba(255,255,255,.78);line-height:1.75;
+  max-width:620px;margin:0 auto;position:relative;z-index:2;font-weight:300;
+}
 
-/* ── MODALES Y FORMULARIOS (DISEÑO LIMPIO) ── */
-.modal-overlay{position:fixed;inset:0;background:rgba(15,10,30,.8);backdrop-filter:blur(12px);z-index:5000;display:none;align-items:center;justify-content:center;padding:20px}
-.modal-box{background:#fff;width:100%;max-width:480px;padding:50px;border-radius:40px;text-align:center;position:relative;box-shadow:0 50px 100px rgba(0,0,0,.3); animation: fadeInUp 0.4s ease-out;}
-.modal-close{position:absolute;top:20px;right:20px;font-size:20px;color:#ef4444;background:#fef2f2;border:2px solid #fecaca;width:45px;height:45px;border-radius:50%;cursor:pointer;transition:0.3s;display:flex;align-items:center;justify-content:center;z-index:50}
-.modal-close:hover{background:#ef4444;color:white;transform:scale(1.15) rotate(90deg);}
-.input-group { position: relative; margin-bottom: 15px; }
-.input-group i { position: absolute; left: 22px; top: 50%; transform: translateY(-50%); color: #cbd5e1; font-size: 1.2rem; transition: 0.3s; }
-.custom-input { width: 100%; padding: 20px 20px 20px 60px; border-radius: 18px; border: 2px solid #e2e8f0; font-family: var(--font-b); font-size: 1.05rem; background: #f8fafc; transition: .3s; color: var(--c-dark); outline: none; }
-.custom-input:focus { border-color: var(--c-purple); background: #fff; box-shadow: 0 10px 25px rgba(90,63,163,0.1); }
-.custom-input:focus + i, .input-group:focus-within i { color: var(--c-purple); }
+/* ── GRID DE TALLERES ── */
+.talleres-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(320px,1fr));
+  gap:32px;
+  padding:56px 72px 100px;
+  max-width:1380px;margin:0 auto;
+}
 
-/* ── FOOTER OFICIAL ── */
-.footer{background:#fff;border-top:1px solid #e2e8f0;padding:70px 80px 0;font-family:var(--font-b);position:relative;overflow:hidden}
-.footer::before{content:'HOPE';position:absolute;bottom:-20px;right:-10px;font-family:var(--font-h);font-size:14rem;font-weight:900;color:rgba(90,63,163,.03);pointer-events:none;letter-spacing:-5px;user-select:none}
-.footer-top{display:grid;grid-template-columns:1.8fr 1fr 1fr 1fr;gap:60px;padding-bottom:50px;border-bottom:1px solid #e2e8f0}
-.footer-logo{height:55px;width:auto;object-fit:contain;margin-bottom:18px;display:block}
-.footer-brand p{font-size:.95rem;color:var(--text-muted);line-height:1.7;max-width:280px;margin-bottom:18px}
-.footer-addr{display:flex;align-items:flex-start;gap:10px;margin-bottom:10px;font-size:.88rem;color:var(--text-muted);line-height:1.5}
+/* ── CARD ── */
+.taller-card{
+  background:#fff;border-radius:var(--radius-card);
+  border:1px solid rgba(0,0,0,.06);box-shadow:var(--shadow-sm);
+  transition:transform .45s cubic-bezier(.16,1,.3,1),box-shadow .45s;
+  display:flex;flex-direction:column;overflow:hidden;
+}
+.taller-card:hover{
+  transform:translateY(-10px);
+  box-shadow:var(--shadow-md);
+  border-color:transparent;
+}
+
+/* imagen */
+.taller-img-container{width:100%;height:230px;position:relative;overflow:hidden;flex-shrink:0}
+.taller-img{width:100%;height:100%;object-fit:cover;transition:.7s cubic-bezier(.16,1,.3,1)}
+.taller-card:hover .taller-img{transform:scale(1.07)}
+.taller-overlay{position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.55),transparent 55%)}
+
+.taller-tag-flotante{
+  position:absolute;top:18px;left:18px;
+  padding:6px 16px;border-radius:100px;
+  font-size:.68rem;font-weight:900;font-family:var(--font-h);
+  text-transform:uppercase;letter-spacing:1.5px;z-index:2;
+  backdrop-filter:blur(6px);box-shadow:0 4px 14px rgba(0,0,0,.18);
+}
+
+/* cuerpo */
+.taller-body{
+  padding:32px 28px 28px;
+  flex-grow:1;display:flex;flex-direction:column;
+}
+.taller-title{
+  font-family:var(--font-h);font-size:1.3rem;font-weight:800;
+  color:var(--c-dark);margin-bottom:22px;line-height:1.3;letter-spacing:-.3px;
+}
+
+/* detalles: mismo diseño original, pequeños ajustes */
+.taller-details{
+  list-style:none;margin-bottom:28px;flex-grow:1;
+  background:#F5F4F9;padding:22px;border-radius:18px;
+  border:1px solid rgba(0,0,0,.05);
+}
+.taller-details li{
+  display:flex;align-items:flex-start;gap:13px;
+  margin-bottom:14px;font-size:.9rem;
+  color:var(--text-muted);font-weight:600;line-height:1.5;
+}
+.taller-details li:last-child{margin-bottom:0}
+.icon-box{
+  width:30px;height:30px;border-radius:8px;
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;font-size:.85rem;
+}
+
+/* botón inscripción */
+.btn-primary{
+  padding:17px 30px;border-radius:100px;font-weight:800;font-size:.9rem;
+  font-family:var(--font-h);text-transform:uppercase;letter-spacing:.8px;
+  display:inline-flex;align-items:center;gap:10px;transition:.35s;
+  cursor:pointer;border:none;background:var(--c-purple);color:#fff;
+  box-shadow:0 12px 28px rgba(90,63,163,.22);
+}
+.btn-primary:hover{transform:translateY(-3px);filter:brightness(1.08);box-shadow:0 18px 36px rgba(90,63,163,.3)}
+
+/* ── MODAL ── */
+.modal-overlay{
+  position:fixed;inset:0;background:rgba(13,8,28,.8);
+  backdrop-filter:blur(14px);z-index:5000;display:none;
+  align-items:center;justify-content:center;padding:20px;
+}
+.modal-box{
+  background:#fff;width:100%;max-width:460px;
+  padding:50px 44px;border-radius:36px;text-align:center;
+  position:relative;box-shadow:0 50px 100px rgba(0,0,0,.28);
+  animation:fadeInUp .4s cubic-bezier(.16,1,.3,1);
+  max-height:95vh;overflow-y:auto;
+}
+.modal-close{
+  position:absolute;top:18px;right:18px;font-size:18px;
+  color:#ef4444;background:#fef2f2;border:2px solid #fecaca;
+  width:42px;height:42px;border-radius:50%;cursor:pointer;transition:.3s;
+  display:flex;align-items:center;justify-content:center;z-index:50;
+}
+.modal-close:hover{background:#ef4444;color:white;transform:scale(1.15) rotate(90deg)}
+
+.input-group{position:relative;margin-bottom:12px}
+.input-group i{
+  position:absolute;left:20px;top:50%;transform:translateY(-50%);
+  color:#cbd5e1;font-size:1.1rem;transition:.25s;pointer-events:none;
+}
+.custom-input{
+  width:100%;padding:18px 18px 18px 52px;
+  border-radius:16px;border:1.5px solid #e2e8f0;
+  font-family:var(--font-b);font-size:.98rem;
+  background:#f8fafc;transition:.25s;color:var(--c-dark);outline:none;
+}
+.custom-input:focus{border-color:var(--c-purple);background:#fff;box-shadow:0 8px 24px rgba(90,63,163,.1)}
+.input-group:focus-within i{color:var(--c-purple)}
+
+/* ── FOOTER ── */
+.footer{
+  background:#fff;border-top:1px solid rgba(0,0,0,.06);
+  padding:70px 80px 0;font-family:var(--font-b);
+  position:relative;overflow:hidden;
+}
+.footer::before{
+  content:'HOPE';position:absolute;bottom:-18px;right:-8px;
+  font-family:var(--font-h);font-size:13rem;font-weight:900;
+  color:rgba(90,63,163,.03);pointer-events:none;letter-spacing:-4px;user-select:none;
+}
+.footer-top{
+  display:grid;grid-template-columns:1.8fr 1fr 1fr 1fr;
+  gap:56px;padding-bottom:48px;border-bottom:1px solid rgba(0,0,0,.07);
+}
+.footer-logo{height:52px;width:auto;object-fit:contain;margin-bottom:16px;display:block}
+.footer-brand p{font-size:.92rem;color:var(--text-muted);line-height:1.75;max-width:270px;margin-bottom:16px}
+.footer-addr{display:flex;align-items:flex-start;gap:10px;margin-bottom:9px;font-size:.86rem;color:var(--text-muted);line-height:1.5}
 .footer-addr i{color:var(--c-purple);margin-top:2px;flex-shrink:0;width:14px}
 .footer-addr a{color:var(--c-purple);text-decoration:none;font-weight:600;transition:.2s}
 .footer-addr a:hover{color:var(--c-pink)}
-.footer-col h4{font-family:var(--font-h);font-size:.75rem;text-transform:uppercase;letter-spacing:2px;color:var(--c-dark);font-weight:800;margin-bottom:20px}
-.footer-col ul{list-style:none;display:flex;flex-direction:column;gap:11px}
-.footer-col ul li a{color:var(--text-muted);text-decoration:none;font-size:.92rem;transition:.25s;display:flex;align-items:center;gap:8px}
+.footer-col h4{
+  font-family:var(--font-h);font-size:.7rem;text-transform:uppercase;
+  letter-spacing:2px;color:var(--c-dark);font-weight:800;margin-bottom:18px;
+}
+.footer-col ul{list-style:none;display:flex;flex-direction:column;gap:10px}
+.footer-col ul li a{
+  color:var(--text-muted);text-decoration:none;font-size:.9rem;
+  transition:.22s;display:flex;align-items:center;gap:7px;
+}
 .footer-col ul li a:hover{color:var(--c-purple);padding-left:4px}
-.footer-alert{background:rgba(248,91,140,.06);border:1px solid rgba(248,91,140,.25);border-radius:16px;padding:16px 24px;margin:40px 0 50px;display:flex;align-items:center;gap:14px;font-size:.88rem;color:#475569;line-height:1.5}
-.footer-alert i{color:var(--c-pink);font-size:1.1rem;flex-shrink:0}
-.footer-bottom{display:flex;align-items:center;justify-content:space-between;padding:24px 0;flex-wrap:wrap;gap:16px;border-top:1px solid #e2e8f0}
-.footer-bottom-left{font-size:.82rem;color:#94a3b8}
+.footer-alert{
+  background:rgba(248,91,140,.06);border:1px solid rgba(248,91,140,.22);
+  border-radius:15px;padding:15px 22px;margin:38px 0 48px;
+  display:flex;align-items:center;gap:14px;
+  font-size:.86rem;color:#475569;line-height:1.6;
+}
+.footer-alert i{color:var(--c-pink);font-size:1.05rem;flex-shrink:0}
+.footer-bottom{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:22px 0;flex-wrap:wrap;gap:14px;
+  border-top:1px solid rgba(0,0,0,.07);
+}
+.footer-bottom-left{font-size:.8rem;color:#94a3b8}
+.footer-bottom-left strong{color:var(--text-muted)}
 
-@keyframes bounceIn { 0%{transform:scale(.3);opacity:0} 50%{transform:scale(1.1)} 100%{transform:scale(1);opacity:1} }
-@keyframes fadeInUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+/* ── ANIMACIONES ── */
+@keyframes bounceIn{0%{transform:scale(.3);opacity:0}50%{transform:scale(1.1)}100%{transform:scale(1);opacity:1}}
+@keyframes fadeInUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
 
-/* MOBILE RESPONSIVE */
+/* ── MOBILE NAV ── */
 .mobile-nav{display:none}
+
+/* ── RESPONSIVE ── */
 @media(max-width:1100px){
   .sidebar{display:none}
   .main-stage{margin-left:0;width:100%}
-  .hero-premium{padding:140px 20px 80px}
-  .talleres-grid { padding: 40px 20px 80px; }
+  .hero-premium{padding:130px 24px 90px}
+  .talleres-grid{padding:40px 20px 80px}
   .footer{padding:50px 20px 0}
-  .footer-top{grid-template-columns:1fr 1fr;gap:40px}
+  .footer-top{grid-template-columns:1fr 1fr;gap:36px}
   .footer-brand{grid-column:1/-1}
-  .mobile-nav{display:flex;position:fixed;top:15px;left:50%;transform:translateX(-50%);width:92%;background:rgba(255,255,255,.95);backdrop-filter:blur(12px);border-radius:50px;box-shadow:0 10px 30px rgba(90,63,163,.15);padding:12px 20px;justify-content:space-between;align-items:center;z-index:4000;border:1px solid rgba(255,255,255,.5)}
-  .mobile-logo{height:35px}
-  .btn-login-mobile{background:var(--c-purple);color:white !important;text-decoration:none;padding:10px 20px;border-radius:100px;font-weight:800;font-family:var(--font-h);font-size:.85rem;display:flex;align-items:center;gap:8px;box-shadow:0 4px 15px rgba(90,63,163,.2)}
+  .footer-bottom{flex-direction:column;text-align:center}
+  .mobile-nav{
+    display:flex;position:fixed;top:14px;left:50%;transform:translateX(-50%);
+    width:92%;background:rgba(255,255,255,.95);backdrop-filter:blur(14px);
+    border-radius:50px;box-shadow:0 8px 28px rgba(90,63,163,.14);
+    padding:11px 20px;justify-content:space-between;align-items:center;
+    z-index:4000;border:1px solid rgba(255,255,255,.6);
+  }
+  .mobile-logo{height:34px}
+  .btn-login-mobile{
+    background:var(--c-purple);color:white !important;text-decoration:none;
+    padding:10px 20px;border-radius:100px;font-weight:800;
+    font-family:var(--font-h);font-size:.82rem;
+    display:flex;align-items:center;gap:8px;
+    box-shadow:0 4px 14px rgba(90,63,163,.22);
+  }
 }
 @media(max-width:600px){
   .footer-top{grid-template-columns:1fr}
@@ -136,17 +312,16 @@ body{font-family:var(--font-b);color:var(--c-dark);background:#f8fafc;display:fl
 </head>
 <body>
 
-<!-- ── MENÚ LATERAL COMPLETO (Oficial de Espacio HOPE) ── -->
+<!-- ── MENÚ LATERAL COMPLETO ── -->
 <nav class="sidebar">
   <div class="brand-container">
     <img src="{% static 'img/nlogo.png' %}" alt="HOPE Logo">
   </div>
-  
+
   <a href="{% url 'inicio' %}" class="nav-item"><i class="fas fa-home"></i> Inicio</a>
 
-  <!-- Botones de Sesión -->
   {% if request.user.is_authenticated %}
-    <a href="{% url 'logout_usuario' %}" class="nav-item btn-login-sidebar" style="background: #ef4444; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.2);">
+    <a href="{% url 'logout_usuario' %}" class="nav-item btn-login-sidebar" style="background:#ef4444;box-shadow:0 4px 15px rgba(239,68,68,.2);">
       <i class="fas fa-sign-out-alt"></i> Cerrar sesión
     </a>
   {% else %}
@@ -158,28 +333,27 @@ body{font-family:var(--font-b);color:var(--c-dark);background:#f8fafc;display:fl
   <p class="nav-section-title">Terapias</p>
   <a href="{% url 'inicio' %}#terapias" class="nav-item"><i class="fas fa-user"></i> Terapia Individual</a>
   <a href="{% url 'inicio' %}#terapias" class="nav-item"><i class="fas fa-heart"></i> Terapia de Pareja</a>
-  
+
   <p class="nav-section-title">Talleres para Padres</p>
   <a href="{% url 'inicio' %}#talleres-padres" class="nav-item"><i class="fas fa-seedling"></i> Criar con Conciencia</a>
   <a href="{% url 'inicio' %}#talleres-padres" class="nav-item"><i class="fas fa-star"></i> Disciplina Inteligente</a>
-  
+
   <p class="nav-section-title">Talleres de Pareja</p>
   <a href="{% url 'inicio' %}#talleres-pareja" class="nav-item"><i class="fas fa-heart"></i> Reconectar en Pareja</a>
   <a href="{% url 'inicio' %}#talleres-pareja" class="nav-item"><i class="fas fa-people-arrows"></i> Amar sin Herir</a>
-  
+
   <p class="nav-section-title">Talleres Grupales</p>
-  <!-- Aquí marcamos en activo porque estamos en la sección de talleres -->
   <a href="#" class="nav-item active"><i class="fas fa-users"></i> Eventos y Talleres Especiales</a>
-  
+
   <p class="nav-section-title">Profesionales</p>
   <a href="{% url 'inicio' %}#ecovision" class="nav-item"><i class="fas fa-leaf"></i> Ecovisión</a>
-  
+
   <p class="nav-section-title">Comunidad</p>
   <a href="{% url 'inicio' %}#blog" class="nav-item"><i class="fas fa-book-open"></i> Blog</a>
 </nav>
 
 <main class="main-stage">
-  
+
   <!-- MENÚ MÓVIL -->
   <nav class="mobile-nav">
     <img src="{% static 'img/nlogo.png' %}" alt="HOPE Logo" class="mobile-logo">
@@ -188,105 +362,111 @@ body{font-family:var(--font-b);color:var(--c-dark);background:#f8fafc;display:fl
     </a>
   </nav>
 
-  <!-- HERO SECTION VIP -->
+  <!-- ── HERO ── -->
   <section class="hero-premium">
-    <span class="hero-tag"><i class="fas fa-sparkles"></i> Nuevos Espacios</span>
-    <h1 class="hero-new-heading">Aprender y sanar <br><span>en comunidad.</span></h1>
-    <p class="hero-new-subtitle">Conecta con personas que entienden tu proceso. Explora nuestros talleres diseñados para brindarte herramientas prácticas en un espacio seguro y guiado por nuestros especialistas.</p>
+    <span class="hero-tag"><i class="fas fa-circle-dot"></i> Agenda activa · Julio 2025</span>
+    <h1 class="hero-new-heading">Sanar también<br>se aprende <span>en comunidad.</span></h1>
+    <p class="hero-new-subtitle">Espacios pequeños, con guía profesional y cupo limitado. Cada taller es una herramienta real para tu proceso — no una charla genérica.</p>
   </section>
 
-  <!-- GRID DE TALLERES (DISEÑO MEJORADO) -->
+  <!-- ── GRID DE TALLERES ── -->
   <section class="talleres-grid">
-    
-    <!-- Taller 1 -->
+
+    <!-- Taller 1: LGBTTTIQ+ -->
     <div class="taller-card">
       <div class="taller-img-container">
-        <span class="taller-tag-flotante" style="background: rgba(90,63,163,.9); color: #fff;">LGBTTTIQ+</span>
-        <img src="https://images.unsplash.com/photo-1573339889412-f0449ec9cbf1?w=800&auto=format&fit=crop&q=80" alt="Comunidad" class="taller-img">
+        <span class="taller-tag-flotante" style="background:rgba(90,63,163,.9);color:#fff;">LGBTTTIQ+</span>
+        <img src="https://images.unsplash.com/photo-1573339889412-f0449ec9cbf1?w=800&auto=format&fit=crop&q=80" alt="Diversidad e Inclusión" class="taller-img">
         <div class="taller-overlay"></div>
       </div>
       <div class="taller-body">
-        <h3 class="taller-title">Diversidad, Inclusión y comunidad: "La autenticidad es parte del orgullo"</h3>
+        <h3 class="taller-title">La autenticidad es parte del orgullo</h3>
         <ul class="taller-details">
           <li>
-            <div class="icon-box" style="background: rgba(90,63,163,.1); color: var(--c-purple);"><i class="fas fa-user-md"></i></div>
-            <div><strong style="color:var(--c-dark); display:block;">Talleristas</strong> Andrea y Abraham</div>
+
+            <div><strong style="color:var(--c-dark);display:block;">Guía</strong>Andrea y Abraham</div>
           </li>
           <li>
-            <div class="icon-box" style="background: rgba(90,63,163,.1); color: var(--c-purple);"><i class="fas fa-users"></i></div>
-            <div><strong style="color:var(--c-dark); display:block;">Cupo Limitado</strong> Max 15 personas</div>
+
+            <div><strong style="color:var(--c-dark);display:block;">Cupo</strong>Máx. 15 personas</div>
           </li>
           <li>
-            <div class="icon-box" style="background: rgba(90,63,163,.1); color: var(--c-purple);"><i class="fas fa-calendar-alt"></i></div>
-            <div><strong style="color:var(--c-dark); display:block;">Fecha y Hora</strong> 4 de julio • 2:00 pm</div>
+
+            <div><strong style="color:var(--c-dark);display:block;">Fecha</strong>Viernes 4 de julio · 2:00 pm</div>
           </li>
         </ul>
-        <button class="btn-primary" style="width: 100%; justify-content: center; padding: 20px; font-size: 1.1rem;" onclick="abrirInscripcion('Diversidad e Inclusión LGBTTTIQ')">Quiero Inscribirme <i class="fas fa-check-circle"></i></button>
+        <button class="btn-primary" style="width:100%;justify-content:center;padding:18px;" onclick="abrirInscripcion('La autenticidad es parte del orgullo')">
+          Reservar mi lugar <i class="fas fa-arrow-right"></i>
+        </button>
       </div>
     </div>
 
-    <!-- Taller 2 -->
+    <!-- Taller 2: Violencia Digital -->
     <div class="taller-card">
       <div class="taller-img-container">
-        <span class="taller-tag-flotante" style="background: rgba(248,91,140,.9); color: #fff;">Jóvenes</span>
+        <span class="taller-tag-flotante" style="background:rgba(248,91,140,.9);color:#fff;">Jóvenes</span>
         <img src="https://images.unsplash.com/photo-1521737604893-d14cc237f11d?w=800&auto=format&fit=crop&q=80" alt="Violencia Digital" class="taller-img">
         <div class="taller-overlay"></div>
       </div>
       <div class="taller-body">
-        <h3 class="taller-title">Desarmando la Violencia Digital y Cotidiana</h3>
+        <h3 class="taller-title">Desarmando la violencia digital y cotidiana</h3>
         <ul class="taller-details">
           <li>
-            <div class="icon-box" style="background: rgba(248,91,140,.1); color: var(--c-pink);"><i class="fas fa-user-md"></i></div>
-            <div><strong style="color:var(--c-dark); display:block;">Tallerista</strong> Christopher Yamashiro</div>
+            <div class="icon-box" style="background:rgba(248,91,140,.1);color:var(--c-pink);"><i class="fas fa-user-tie"></i></div>
+            <div><strong style="color:var(--c-dark);display:block;">Guía</strong>Christopher Yamashiro</div>
           </li>
           <li>
-            <div class="icon-box" style="background: rgba(248,91,140,.1); color: var(--c-pink);"><i class="fas fa-users"></i></div>
-            <div><strong style="color:var(--c-dark); display:block;">Adolescentes</strong> 12 a 29 años (Max 20 pax)</div>
+            <div class="icon-box" style="background:rgba(248,91,140,.1);color:var(--c-pink);"><i class="fas fa-users"></i></div>
+            <div><strong style="color:var(--c-dark);display:block;">Para quién</strong>12 a 29 años · Máx. 20 personas</div>
           </li>
           <li>
-            <div class="icon-box" style="background: rgba(248,91,140,.1); color: var(--c-pink);"><i class="fas fa-calendar-alt"></i></div>
-            <div><strong style="color:var(--c-dark); display:block;">Fecha y Hora</strong> Sábado 11 de julio • 7:00 pm</div>
+            <div class="icon-box" style="background:rgba(248,91,140,.1);color:var(--c-pink);"><i class="fas fa-calendar-alt"></i></div>
+            <div><strong style="color:var(--c-dark);display:block;">Fecha</strong>Sábado 11 de julio · 7:00 pm</div>
           </li>
         </ul>
-        <button class="btn-primary" style="width: 100%; justify-content: center; background: var(--c-pink); box-shadow: 0 15px 30px rgba(248,91,140,.2); padding: 20px; font-size: 1.1rem;" onclick="abrirInscripcion('Desarmando la Violencia Digital')">Quiero Inscribirme <i class="fas fa-check-circle"></i></button>
+        <button class="btn-primary" style="width:100%;justify-content:center;background:var(--c-pink);box-shadow:0 12px 28px rgba(248,91,140,.22);padding:18px;" onclick="abrirInscripcion('Desarmando la Violencia Digital y Cotidiana')">
+          Reservar mi lugar <i class="fas fa-arrow-right"></i>
+        </button>
       </div>
     </div>
 
-    <!-- Taller 3 -->
+    <!-- Taller 3: Autoestima -->
     <div class="taller-card">
       <div class="taller-img-container">
-        <span class="taller-tag-flotante" style="background: rgba(37,184,184,.9); color: #fff;">Autoestima</span>
+        <span class="taller-tag-flotante" style="background:rgba(37,184,184,.9);color:#fff;">Autoestima</span>
         <img src="https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=800&auto=format&fit=crop&q=80" alt="Autoestima" class="taller-img">
         <div class="taller-overlay"></div>
       </div>
       <div class="taller-body">
-        <h3 class="taller-title">Sin perderme a mí: Reconstruyendo mi valor</h3>
+        <h3 class="taller-title">Sin perderme a mí: reconstruyendo mi valor</h3>
         <ul class="taller-details">
           <li>
-            <div class="icon-box" style="background: rgba(37,184,184,.1); color: var(--c-teal);"><i class="fas fa-user-md"></i></div>
-            <div><strong style="color:var(--c-dark); display:block;">Tallerista</strong> Sarahí</div>
+            <div class="icon-box" style="background:rgba(37,184,184,.1);color:var(--c-teal);"><i class="fas fa-user-tie"></i></div>
+            <div><strong style="color:var(--c-dark);display:block;">Guía</strong>Sarahí</div>
           </li>
           <li>
-            <div class="icon-box" style="background: rgba(37,184,184,.1); color: var(--c-teal);"><i class="fas fa-users"></i></div>
-            <div><strong style="color:var(--c-dark); display:block;">Grupo Íntimo</strong> Max 10 personas</div>
+            <div class="icon-box" style="background:rgba(37,184,184,.1);color:var(--c-teal);"><i class="fas fa-users"></i></div>
+            <div><strong style="color:var(--c-dark);display:block;">Grupo íntimo</strong>Máx. 10 personas</div>
           </li>
           <li>
-            <div class="icon-box" style="background: rgba(37,184,184,.1); color: var(--c-teal);"><i class="fas fa-calendar-check"></i></div>
-            <div><strong style="color:var(--c-dark); display:block;">5 Sesiones (7:00 pm)</strong> Lunes 6, Jueves 9, Lun 13, Jue 16, Lun 20.</div>
+            <div class="icon-box" style="background:rgba(37,184,184,.1);color:var(--c-teal);"><i class="fas fa-calendar-check"></i></div>
+            <div><strong style="color:var(--c-dark);display:block;">5 sesiones · 7:00 pm</strong>Lun 6, Jue 9, Lun 13, Jue 16, Lun 20 jul</div>
           </li>
         </ul>
-        <button class="btn-primary" style="width: 100%; justify-content: center; background: var(--c-teal); box-shadow: 0 15px 30px rgba(37,184,184,.2); padding: 20px; font-size: 1.1rem;" onclick="abrirInscripcion('Sin perderme a mí')">Quiero Inscribirme <i class="fas fa-check-circle"></i></button>
+        <button class="btn-primary" style="width:100%;justify-content:center;background:var(--c-teal);box-shadow:0 12px 28px rgba(37,184,184,.22);padding:18px;" onclick="abrirInscripcion('Sin perderme a mí: reconstruyendo mi valor')">
+          Reservar mi lugar <i class="fas fa-arrow-right"></i>
+        </button>
       </div>
     </div>
 
   </section>
 
-  <!-- PIE DE PÁGINA COMPLETO (Oficial de Espacio HOPE) -->
+  <!-- ── FOOTER COMPLETO ── -->
   <footer class="footer">
     <div class="footer-top">
       <div class="footer-brand">
         <img src="{% static 'img/nlogo.png' %}" alt="HOPE Logo" class="footer-logo">
-        <p>Una plataforma de bienestar mental con enfoque humano. Acompañamos cada proceso con presencia, rigor clínico y genuino cuidado.</p>
+        <p>Bienestar mental con enfoque humano. Acompañamos cada proceso con presencia, rigor clínico y genuino cuidado.</p>
         <div class="footer-addr"><i class="fas fa-location-dot"></i><span>Lago Margarita 47, Col. Granada, 11520, CDMX</span></div>
         <div class="footer-addr"><i class="fas fa-globe"></i><a href="https://espaciohope.com" target="_blank" rel="noopener">espaciohope.com</a></div>
       </div>
@@ -317,7 +497,7 @@ body{font-family:var(--font-b);color:var(--c-dark);background:#f8fafc;display:fl
     </div>
     <div class="footer-alert">
       <i class="fas fa-shield-heart"></i>
-      <span>Si tú o alguien que conoces está en peligro, comunícate con los servicios de emergencia para recibir atención inmediata. Tu vida importa.</span>
+      <span>Si tú o alguien que conoces está en peligro, comunícate con los servicios de emergencia de inmediato. Tu vida importa.</span>
     </div>
     <div class="footer-bottom">
       <div class="footer-bottom-left">© 2026 <strong>HOPE — Todo lo que sientes importa.</strong> Todos los derechos reservados.</div>
@@ -326,81 +506,76 @@ body{font-family:var(--font-b);color:var(--c-dark);background:#f8fafc;display:fl
 
 </main>
 
-<!-- ── MODAL DE INSCRIPCIÓN PREMIUM ── -->
+<!-- ── MODAL DE INSCRIPCIÓN ── -->
 <div class="modal-overlay" id="modalInscripcion">
-  <div class="modal-box" style="padding: 50px 45px;">
+  <div class="modal-box" style="padding:48px 42px;">
     <button class="modal-close" onclick="cerrarModal('modalInscripcion')"><i class="fas fa-times"></i></button>
-    
+
     <!-- Estado 1: Formulario -->
     <div id="form-estado">
-      <img src="{% static 'img/nlogo.png' %}" alt="HOPE" style="height: 45px; margin: 0 auto 20px; display: block;">
-      <h2 style="font-family: var(--font-h); font-size: 2rem; color: var(--c-dark); margin-bottom: 8px; font-weight: 900; letter-spacing: -0.5px;">Reserva tu lugar</h2>
-      <p id="nombre-taller-display" style="color: var(--c-purple); font-weight: 800; font-size: 1.1rem; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px dashed #f1f5f9;"></p>
+      <img src="{% static 'img/nlogo.png' %}" alt="HOPE" style="height:42px;margin:0 auto 18px;display:block;">
+      <h2 style="font-family:var(--font-h);font-size:1.85rem;color:var(--c-dark);margin-bottom:6px;font-weight:900;letter-spacing:-.4px;">Reserva tu lugar</h2>
+      <p id="nombre-taller-display" style="color:var(--c-purple);font-weight:800;font-size:.95rem;margin-bottom:28px;padding-bottom:18px;border-bottom:2px dashed rgba(90,63,163,.12);"></p>
 
       <form id="formTaller" onsubmit="procesarInscripcion(event)">
         <input type="hidden" id="taller_seleccionado" name="taller_seleccionado">
-        
-        <div class="input-group">
-            <i class="fas fa-user"></i>
-            <input type="text" id="nombre_tallerista" class="custom-input" placeholder="Tu nombre completo" required>
-        </div>
 
         <div class="input-group">
-            <i class="fas fa-phone"></i>
-            <input type="tel" id="telefono_tallerista" class="custom-input" placeholder="Teléfono a 10 dígitos" required>
+          <i class="fas fa-user"></i>
+          <input type="text" id="nombre_tallerista" class="custom-input" placeholder="Tu nombre completo" required>
+        </div>
+        <div class="input-group">
+          <i class="fas fa-phone"></i>
+          <input type="tel" id="telefono_tallerista" class="custom-input" placeholder="Teléfono a 10 dígitos" required>
+        </div>
+        <div class="input-group">
+          <i class="fas fa-envelope"></i>
+          <input type="email" id="correo_tallerista" class="custom-input" placeholder="Correo electrónico" required>
         </div>
 
-        <div class="input-group">
-            <i class="fas fa-envelope"></i>
-            <input type="email" id="correo_tallerista" class="custom-input" placeholder="Correo electrónico" required>
-        </div>
-        
-        <button type="submit" id="btnSubmitTaller" class="btn-primary" style="width: 100%; justify-content: center; margin-top: 20px; padding: 22px; font-size: 1.15rem;">
-          Confirmar Asistencia <i class="fas fa-heart"></i>
+        <button type="submit" id="btnSubmitTaller" class="btn-primary" style="width:100%;justify-content:center;margin-top:18px;padding:20px;font-size:1rem;">
+          Confirmar asistencia <i class="fas fa-heart"></i>
         </button>
       </form>
     </div>
 
-    <!-- Estado 2: Éxito con Celebración -->
-    <div id="exito-estado" style="display: none; padding: 30px 0 10px;">
-      <div style="font-size: 80px; color: var(--c-teal); margin-bottom: 25px; animation: bounceIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);"><i class="fas fa-envelope-open-text"></i></div>
-      <h2 style="font-family: var(--font-h); font-size: 2.2rem; color: var(--c-dark); margin-bottom: 15px; font-weight: 900;">¡Estás dentro! 🎉</h2>
-      <p style="color: var(--text-muted); font-size: 1.15rem; line-height: 1.6; margin-bottom: 35px; padding: 0 10px;">
-        Mil gracias por registrarte. Te estaremos enviando la liga de acceso directo a tu correo un par de días antes del evento.
+    <!-- Estado 2: Éxito -->
+    <div id="exito-estado" style="display:none;padding:28px 0 8px;">
+      <div style="font-size:76px;color:var(--c-teal);margin-bottom:22px;animation:bounceIn .6s cubic-bezier(.175,.885,.32,1.275);"><i class="fas fa-envelope-open-text"></i></div>
+      <h2 style="font-family:var(--font-h);font-size:2rem;color:var(--c-dark);margin-bottom:14px;font-weight:900;">¡Ya estás dentro! 🎉</h2>
+      <p style="color:var(--text-muted);font-size:1.05rem;line-height:1.65;margin-bottom:32px;padding:0 8px;">
+        Gracias por registrarte. Te mandamos el acceso a tu correo unos días antes del taller.
       </p>
-      <button class="btn-primary" style="width: 100%; justify-content: center; background: var(--c-teal); box-shadow: 0 15px 30px rgba(37,184,184,.3);" onclick="cerrarModal('modalInscripcion')">¡Nos vemos pronto! <i class="fas fa-thumbs-up"></i></button>
+      <button class="btn-primary" style="width:100%;justify-content:center;background:var(--c-teal);box-shadow:0 14px 28px rgba(37,184,184,.28);" onclick="cerrarModal('modalInscripcion')">¡Nos vemos pronto! <i class="fas fa-thumbs-up"></i></button>
     </div>
 
   </div>
 </div>
 
 <script>
-  // Funciones para abrir y cerrar modales
   function abrirModal(id){ const el=document.getElementById(id); if(el) el.style.display='flex'; }
   function cerrarModal(id){ const el=document.getElementById(id); if(el) el.style.display='none'; }
 
-  // Preparar modal al dar clic a "Quiero Inscribirme"
+  // Cerrar al hacer clic en el overlay
+  document.getElementById('modalInscripcion').addEventListener('click', function(e){
+    if(e.target === this) cerrarModal('modalInscripcion');
+  });
+
   function abrirInscripcion(nombreTaller) {
     document.getElementById('form-estado').style.display = 'block';
     document.getElementById('exito-estado').style.display = 'none';
     document.getElementById('formTaller').reset();
-    
-    document.getElementById('nombre-taller-display').innerText = "Taller: " + nombreTaller;
+    document.getElementById('nombre-taller-display').innerText = nombreTaller;
     document.getElementById('taller_seleccionado').value = nombreTaller;
-    
     abrirModal('modalInscripcion');
   }
 
-  // Simulación del botón de enviar
   function procesarInscripcion(e) {
     e.preventDefault();
     const btn = document.getElementById('btnSubmitTaller');
     const originalText = btn.innerHTML;
-    
     btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Asegurando tu lugar...';
     btn.disabled = true;
-
-    // Aquí conectarías con tu View de Django. Por ahora lo simulamos:
     setTimeout(() => {
       btn.innerHTML = originalText;
       btn.disabled = false;
