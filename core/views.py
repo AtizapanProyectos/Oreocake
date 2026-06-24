@@ -2216,7 +2216,7 @@ def pago_exitoso_clip(request, cita_id):
     try:
         cita = Cita.objects.get(id=cita_id)
         
-        if cita.estado == 'Pendiente':
+        if cita.estado == 'Pendiente de Pago':
             paciente = cita.paciente
             perfil = paciente.perfil
             psicologo = perfil.psicologo_asignado
