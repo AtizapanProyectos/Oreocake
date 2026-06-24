@@ -72,49 +72,69 @@ body{font-family:var(--font-b);color:var(--c-dark);background:#F5F4F9;display:fl
 /* ── MAIN ── */
 .main-stage{margin-left:var(--sidebar-width);width:calc(100% - var(--sidebar-width));min-height:100vh}
 
-/* ── HERO ── */
+/* ── HERO PREMIUM CON BURBUJAS CSS ── */
 .hero-premium{
   position:relative;
-  padding:110px 80px 120px;
-  background:
-    linear-gradient(145deg, rgba(13,8,28,.82) 0%, rgba(90,63,163,.88) 100%),
-    url('https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=1400&auto=format&fit=crop&q=80') center/cover;
+  padding:120px 80px 130px;
+  /* Fondo limpio y oscuro, sin imagen */
+  background: linear-gradient(145deg, #0a0514 0%, #241647 50%, #392266 100%);
   text-align:center;overflow:hidden;
 }
-/* fade suave al color del body */
+/* Degradado para fundirse con el fondo de la página */
 .hero-premium::after{
-  content:'';position:absolute;bottom:0;left:0;right:0;height:90px;
+  content:'';position:absolute;bottom:0;left:0;right:0;height:100px;
   background:linear-gradient(to top,#F5F4F9,transparent);
-  pointer-events:none;
+  pointer-events:none;z-index:3;
 }
-/* puntos de luz decorativos */
-.hero-premium::before{
-  content:'';position:absolute;inset:0;
-  background:
-    radial-gradient(circle at 20% 50%, rgba(248,91,140,.18) 0%, transparent 55%),
-    radial-gradient(circle at 80% 20%, rgba(37,184,184,.12) 0%, transparent 45%);
-  pointer-events:none;
+
+/* Contenedor de las burbujas flotantes */
+.burbujas-container {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  z-index: 1;
+  pointer-events: none;
+}
+.burbuja {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(40px); /* Hace que parezcan orbes de luz suaves */
+  animation: flotar infinite ease-in-out alternate;
+  opacity: 0.7;
+}
+/* Posiciones, tamaños y colores de las burbujas HOPE */
+.b1 { width: 350px; height: 350px; left: -10%; top: -10%; background: var(--c-purple); animation-duration: 14s; }
+.b2 { width: 450px; height: 450px; right: -10%; top: -20%; background: var(--c-teal); animation-duration: 18s; animation-delay: -2s; opacity: 0.5; }
+.b3 { width: 300px; height: 300px; left: 35%; bottom: -30%; background: var(--c-pink); animation-duration: 16s; animation-delay: -5s; opacity: 0.6; }
+.b4 { width: 200px; height: 200px; right: 20%; top: 40%; background: var(--c-orange); animation-duration: 12s; animation-delay: -1s; opacity: 0.4; }
+.b5 { width: 400px; height: 400px; left: 10%; bottom: 0%; background: #4a2d80; animation-duration: 20s; animation-delay: -8s; }
+
+@keyframes flotar {
+  0% { transform: translateY(0) translateX(0) scale(1); }
+  50% { transform: translateY(-40px) translateX(30px) scale(1.1); }
+  100% { transform: translateY(30px) translateX(-20px) scale(0.9); }
 }
 
 .hero-tag{
   display:inline-flex;align-items:center;gap:8px;
-  background:rgba(248,91,140,.18);color:#ffb3cc;
-  padding:7px 20px;border-radius:100px;font-weight:800;
-  font-family:var(--font-h);font-size:.72rem;text-transform:uppercase;
+  background:rgba(248,91,140,.15);color:#ffb3cc;
+  padding:8px 22px;border-radius:100px;font-weight:800;
+  font-family:var(--font-h);font-size:.75rem;text-transform:uppercase;
   letter-spacing:2px;margin-bottom:28px;
   border:1px solid rgba(248,91,140,.3);
   position:relative;z-index:2;
+  box-shadow: 0 5px 15px rgba(248,91,140,.15);
 }
 .hero-new-heading{
-  font-family:var(--font-h);font-size:clamp(2.6rem,5vw,4.2rem);
+  font-family:var(--font-h);font-size:clamp(2.8rem,5vw,4.5rem);
   font-weight:900;line-height:1.08;color:#fff;margin-bottom:22px;
-  letter-spacing:-1.5px;text-shadow:0 8px 28px rgba(0,0,0,.25);
+  letter-spacing:-1.5px;text-shadow:0 10px 30px rgba(0,0,0,.3);
   position:relative;z-index:2;
 }
 .hero-new-heading span{color:var(--c-yellow)}
 .hero-new-subtitle{
-  font-size:1.15rem;color:rgba(255,255,255,.78);line-height:1.75;
-  max-width:620px;margin:0 auto;position:relative;z-index:2;font-weight:300;
+  font-size:1.2rem;color:rgba(255,255,255,.85);line-height:1.75;
+  max-width:650px;margin:0 auto;position:relative;z-index:2;font-weight:300;
 }
 
 /* ── GRID DE TALLERES ── */
@@ -132,6 +152,8 @@ body{font-family:var(--font-b);color:var(--c-dark);background:#F5F4F9;display:fl
   border:1px solid rgba(0,0,0,.06);box-shadow:var(--shadow-sm);
   transition:transform .45s cubic-bezier(.16,1,.3,1),box-shadow .45s;
   display:flex;flex-direction:column;overflow:hidden;
+  position:relative;
+  z-index: 4; /* Para que quede arriba del fade del hero */
 }
 .taller-card:hover{
   transform:translateY(-10px);
@@ -163,7 +185,7 @@ body{font-family:var(--font-b);color:var(--c-dark);background:#F5F4F9;display:fl
   color:var(--c-dark);margin-bottom:22px;line-height:1.3;letter-spacing:-.3px;
 }
 
-/* detalles: mismo diseño original, pequeños ajustes */
+/* detalles */
 .taller-details{
   list-style:none;margin-bottom:28px;flex-grow:1;
   background:#F5F4F9;padding:22px;border-radius:18px;
@@ -362,9 +384,18 @@ body{font-family:var(--font-b);color:var(--c-dark);background:#F5F4F9;display:fl
     </a>
   </nav>
 
-  <!-- ── HERO ── -->
+  <!-- ── HERO (CSS MÁGICO) ── -->
   <section class="hero-premium">
-    <span class="hero-tag"><i class="fas fa-circle-dot"></i> Agenda activa · Julio 2025</span>
+    <!-- Burbujas flotantes animadas -->
+    <div class="burbujas-container">
+      <div class="burbuja b1"></div>
+      <div class="burbuja b2"></div>
+      <div class="burbuja b3"></div>
+      <div class="burbuja b4"></div>
+      <div class="burbuja b5"></div>
+    </div>
+    
+    <span class="hero-tag"><i class="fas fa-circle-dot"></i> Agenda activa · Julio 2026</span>
     <h1 class="hero-new-heading">Sanar también<br>se aprende <span>en comunidad.</span></h1>
     <p class="hero-new-subtitle">Espacios pequeños, con guía profesional y cupo limitado. Cada taller es una herramienta real para tu proceso — no una charla genérica.</p>
   </section>
@@ -376,7 +407,7 @@ body{font-family:var(--font-b);color:var(--c-dark);background:#F5F4F9;display:fl
     <div class="taller-card">
       <div class="taller-img-container">
         <span class="taller-tag-flotante" style="background:rgba(90,63,163,.9);color:#fff;">LGBTTTIQ+</span>
-        <img src="https://images.unsplash.com/photo-1573339889412-f0449ec9cbf1?w=800&auto=format&fit=crop&q=80" alt="Diversidad e Inclusión" class="taller-img">
+        <img src="https://images.unsplash.com/photo-1628538060442-0e54be1d2497?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" alt="Diversidad e Inclusión" class="taller-img">
         <div class="taller-overlay"></div>
       </div>
       <div class="taller-body">
@@ -401,7 +432,7 @@ body{font-family:var(--font-b);color:var(--c-dark);background:#F5F4F9;display:fl
     <div class="taller-card">
       <div class="taller-img-container">
         <span class="taller-tag-flotante" style="background:rgba(248,91,140,.9);color:#fff;">Jóvenes</span>
-        <img src="https://images.unsplash.com/photo-1521737604893-d14cc237f11d?w=800&auto=format&fit=crop&q=80" alt="Violencia Digital" class="taller-img">
+        <img src="https://images.unsplash.com/photo-1586425255124-21ba8dc6851e?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" alt="Violencia Digital" class="taller-img">
         <div class="taller-overlay"></div>
       </div>
       <div class="taller-body">
