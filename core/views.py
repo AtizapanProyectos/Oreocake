@@ -2323,6 +2323,6 @@ def pago_cancelado_clip(request, cita_id):
 
 
 
-    def talleres_view(request):
+def talleres_view(request):
     # Aquí podrías pasar variables desde la base de datos si después los haces dinámicos
      return render(request, 'talleres.html')
