@@ -132,3 +132,18 @@ admin.site.register(HorarioPsicologo)
 admin.site.register(DiaLibrePsicologo)
 admin.site.register(EventoAuditoria)
 admin.site.register(PreferenciasUsuario)
+
+
+@admin.register(RegistroTallerPublico)
+class RegistroTallerPublicoAdmin(admin.ModelAdmin):
+    # Columnas que vas a ver en la tabla principal
+    list_display = ('nombre', 'correo', 'telefono', 'taller_seleccionado', 'fecha_registro')
+    
+    # Barra de búsqueda (puedes buscar por nombre, correo o teléfono)
+    search_fields = ('nombre', 'correo', 'telefono', 'taller_seleccionado')
+    
+    # Filtros laterales mágicos (para que filtres rápido a los de un taller específico)
+    list_filter = ('taller_seleccionado', 'fecha_registro')
+    
+    # Proteger la fecha para que nadie la modifique por error
+    readonly_fields = ('fecha_registro',)
