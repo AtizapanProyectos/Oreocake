@@ -346,7 +346,7 @@ class ArticuloPrensa(models.Model):
 class RegistroTallerPublico(models.Model):
     nombre = models.CharField(max_length=150, verbose_name="Nombre Completo")
     telefono = models.CharField(max_length=20, verbose_name="Teléfono")
-    correo = models.EmailField(verbose_name="Correo Electrónico", unique=True)python manage.py makemigration
+    correo = models.EmailField(verbose_name="Correo Electrónico", unique=True)
     taller_seleccionado = models.CharField(max_length=200, verbose_name="Taller")
     fecha_registro = models.DateTimeField(auto_now_add=True)
 
