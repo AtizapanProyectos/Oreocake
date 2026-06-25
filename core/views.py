@@ -1357,9 +1357,14 @@ def panel_admin(request):
         fecha__gte=inicio_calendario, fecha__lte=fecha_limite
     ).select_related('psicologo__usuario', 'paciente')
     
+
+
     citas_json = []
     for c in citas_calendario:
         nombre_pac = f"{c.paciente.first_name} {c.paciente.last_name}" if c.paciente.first_name else c.paciente.username
+
+        telefono_pac = c.paciente.perfil.telefono if hasattr(c.paciente, 'perfil') and c.paciente.perfil.telefono else 'Sin registrar'
+
         citas_json.append({
             'title': nombre_pac,
             'start': f"{c.fecha.isoformat()}T{c.hora.strftime('%H:%M:%S')}",
@@ -1367,7 +1372,10 @@ def panel_admin(request):
             'extendedProps': {
                 'psicologo': c.psicologo.usuario.first_name if c.psicologo else 'Sin asignar',
                 'estado': c.estado,
-                'modalidad': c.modalidad
+                'modalidad': c.modalidad,
+                'enlace_meet': c.enlace_meet or '',
+                'email': c.paciente.email or 'Sin registrar',
+                'telefono': telefono_pac
             }
         })
 
