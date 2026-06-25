@@ -986,21 +986,26 @@ document.addEventListener('DOMContentLoaded', function () {
     stickyHeaderDates: true,
     events: CITAS_JSON,
 
-    /* Render de eventos custom */
+/* Render de eventos custom */
     eventContent: function (arg) {
       const p       = arg.event.extendedProps;
       const view    = arg.view.type;
       const isCan   = (p.estado || '') === 'Cancelada';
-      const color   = getDocColor(p.psicologo || 'N/A');
+      const isPend  = (p.estado || '') === 'Pendiente'; /* <-- Detectamos si falta pago */
+      
+      /* Si falta pago, forzamos un tono rojito (#EF4444), de lo contrario usamos el color del doctor */
+      const color   = isPend ? '#EF4444' : getDocColor(p.psicologo || 'N/A');
+      
       const time    = arg.event.start.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
       const docName = (p.psicologo || 'N/A').split(' ')[0]; /* solo primer nombre */
 
       if (view === 'dayGridMonth') {
         /* Vista mes: pill pequeña */
+        /* Le ponemos un ícono de exclamación en vez de un círculo normal si debe pago */
         return {
           html: `<div class="hev-pill ${isCan ? 'canceled' : ''}"
                       style="background:${color}18; border-left:3px solid ${color}; color:${color};">
-                   <i class="fas fa-circle" style="font-size:6px;"></i> ${time} ${docName}
+                   <i class="fas fa-${isPend ? 'exclamation-circle' : 'circle'}" style="font-size:8px;"></i> ${time} ${docName}
                  </div>`
         };
       }
@@ -1011,24 +1016,32 @@ document.addEventListener('DOMContentLoaded', function () {
       }
 
       /* Vista semana/día: tarjeta grande */
+      /* Le ponemos un fondo rosado/rojito tenue (#FEF2F2) y pintamos los textos de rojo para que brinque a la vista */
       return {
-        html: `<div class="hev-card ${isCan ? 'canceled' : ''}" style="border-left-color:${color};">
-                 <div class="hev-time">${time}</div>
-                 <div class="hev-doc"><i class="fas fa-user-md" style="margin-right:3px;font-size:10px;"></i>Dr(a). ${docName}</div>
+        html: `<div class="hev-card ${isCan ? 'canceled' : ''}" style="border-left-color:${color}; ${isPend ? 'background:#FEF2F2;' : ''}">
+                 <div class="hev-time" style="${isPend ? 'color:#EF4444;' : ''}">${time}</div>
+                 <div class="hev-doc" style="${isPend ? 'color:#DC2626;' : ''}">
+                   <i class="fas fa-${isPend ? 'exclamation-circle' : 'user-md'}" style="margin-right:3px;font-size:10px;"></i>Dr(a). ${docName}
+                 </div>
                </div>`
       };
     },
 
     /* Color de fondo en lista view */
     eventDidMount: function (info) {
-      const p     = info.event.extendedProps;
-      const color = getDocColor(p.psicologo || 'N/A');
+      const p      = info.event.extendedProps;
+      const isPend = (p.estado || '') === 'Pendiente';
+      const color  = isPend ? '#EF4444' : getDocColor(p.psicologo || 'N/A');
+      
       if (info.view.type === 'listWeek') {
         info.el.style.borderLeft = `4px solid ${color}`;
+        
+        /* Si está en la vista de lista, también le damos el fondito rojo tenue */
+        if(isPend) {
+            info.el.style.backgroundColor = '#FEF2F2';
+        }
       }
     },
-
-
 
     /* Modal al hacer clic */
     eventClick: function (info) {
