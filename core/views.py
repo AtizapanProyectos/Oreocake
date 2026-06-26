@@ -775,13 +775,30 @@ def panel_doctor(request):
 
 
     # ✅ FIX 4: Calendario también con hora local
-    citas_todas = Cita.objects.filter(psicologo=psicologo)
-    eventos_calendario = [{
-        'title': f"{c.paciente.first_name} ({c.hora.strftime('%H:%M')})",
-        'start': f"{c.fecha.isoformat()}T{c.hora.strftime('%H:%M:%S')}",
-        'backgroundColor': '#297E7E' if c.fecha >= hoy else '#D1D5DB',
-        'borderColor': '#297E7E' if c.fecha >= hoy else '#D1D5DB'
-    } for c in citas_todas]
+    # Agregamos select_related para traer los datos del paciente y su perfil más rápido
+    citas_todas = Cita.objects.filter(psicologo=psicologo).select_related('paciente', 'paciente__perfil')
+    
+    eventos_calendario = []
+    for c in citas_todas:
+        # Extraemos el teléfono validando que el perfil exista
+        telefono_pac = c.paciente.perfil.telefono if hasattr(c.paciente, 'perfil') and c.paciente.perfil.telefono else 'Sin registrar'
+        
+        eventos_calendario.append({
+            'title': f"{c.paciente.first_name} ({c.hora.strftime('%H:%M')})",
+            'start': f"{c.fecha.isoformat()}T{c.hora.strftime('%H:%M:%S')}",
+            'backgroundColor': '#297E7E' if c.fecha >= hoy else '#D1D5DB',
+            'borderColor': '#297E7E' if c.fecha >= hoy else '#D1D5DB',
+            'extendedProps': {
+                'estado': c.estado,
+                'psicologo': psicologo.usuario.first_name,
+                'modalidad': c.modalidad,
+                'enlace_meet': c.enlace_meet or '',
+                'email': c.paciente.email or 'Sin registrar',
+                'telefono': telefono_pac
+            }
+        })
+
+
 
     mis_pacientes_db = User.objects.filter(perfil__psicologo_asignado=psicologo).distinct()
     pacientes_data = [
