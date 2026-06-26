@@ -1201,6 +1201,28 @@ body {
               </div>
               <div class="cita-name">{{ cita.paciente.first_name|title }} {{ cita.paciente.last_name|title }}</div>
               <div class="cita-motivo"><i class="fas fa-stethoscope"></i> {{ cita.motivo }}</div>
+
+              <!-- INICIO DE LA NUEVA ALERTA DE FALTA DE PAGO -->
+              {% if cita.estado == 'Pendiente' %}
+              <div style="margin-top: 12px; background: #FEF2F2; border: 1px dashed #FCA5A5; border-radius: 12px; padding: 14px; color: #DC2626; box-shadow: 0 2px 8px rgba(239, 68, 68, 0.1);">
+                <div style="font-family: var(--font-head); font-size: 13px; font-weight: 700; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+                  <i class="fas fa-exclamation-triangle" style="font-size: 14px;"></i> ¡Aviso: Falta de Pago!
+                </div>
+                <div style="font-size: 12px; color: #EF4444; margin-bottom: 10px; line-height: 1.4;">
+                  Por favor, confirma el pago antes de iniciar la sesión o contacta al paciente:
+                </div>
+                <div style="display: flex; gap: 8px; flex-wrap: wrap; font-size: 11px;">
+                  <a href="mailto:{{ cita.paciente.email }}" style="text-decoration: none; background: white; padding: 6px 10px; border-radius: 8px; border: 1px solid #FECACA; display: flex; align-items: center; gap: 6px; color: #B91C1C; font-weight: 600; transition: all 0.2s;">
+                    <i class="fas fa-envelope"></i> {{ cita.paciente.email|default:"Sin correo" }}
+                  </a>
+                  <a href="tel:{{ cita.paciente.perfil.telefono }}" style="text-decoration: none; background: white; padding: 6px 10px; border-radius: 8px; border: 1px solid #FECACA; display: flex; align-items: center; gap: 6px; color: #B91C1C; font-weight: 600; transition: all 0.2s;">
+                    <i class="fas fa-phone"></i> {{ cita.paciente.perfil.telefono|default:"Sin teléfono" }}
+                  </a>
+                </div>
+              </div>
+              {% endif %}
+              <!-- FIN DE LA NUEVA ALERTA DE FALTA DE PAGO -->
+
             </div>
 
             <div class="cita-actions">
