@@ -1322,6 +1322,18 @@ body {
         </div>
         {% endfor %}
       </div>
+    {% else %}
+      <div class="h-card">
+        <div class="h-card-inner">
+          <div class="empty-state">
+            <div class="empty-icon-ring"><i class="fas fa-seedling"></i></div>
+            <div class="empty-title">Sembrando el terreno</div>
+            <p class="empty-sub">Pronto tendrás pacientes asignados a tu cuidado.</p>
+          </div>
+        </div>
+      </div>
+    {% endif %}
+  </div>
 
   <!-- ===========================
        PANE: TALLERES
