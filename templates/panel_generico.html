@@ -299,13 +299,20 @@
                         setInterval(revisarHoraCita, 60000); 
                     });
                 </script>
-            {% else %}
-                <div style="background: #fffaf0; border: 2px solid #ffedd5; padding: 25px; border-radius: 20px; color: var(--c-orange); max-width: 500px; margin: 0 auto; text-align: center;">
-                    <i class="fas fa-hourglass-half" style="font-size: 30px; margin-bottom: 12px; animation: pulse 2s infinite;"></i>
-                    <p style="font-weight: 800; font-family: var(--font-headings); font-size: 18px;">Generando enlace seguro...</p>
-                    <p style="font-size: 14px; margin: 5px 0 0 0;">Danos un momento para preparar tu sala virtual.</p>
-                </div>
-            {% endif %}
+    {% else %}
+    <div style="background: #fffaf0; border: 2px solid #ffedd5; padding: 25px; border-radius: 20px; color: var(--c-orange); max-width: 500px; margin: 0 auto; text-align: center;">
+        <i class="fas fa-file-invoice-dollar" style="font-size: 30px; margin-bottom: 12px;"></i>
+        <p style="font-weight: 800; font-family: var(--font-headings); font-size: 18px;">Validación de pago requerida</p>
+        <p style="font-size: 14px; margin: 5px 0 20px 0; color: var(--text-main);">Aún no se ha generado tu enlace de Meet. Para liberar tu sala virtual, por favor envíanos tu comprobante de pago.</p>
+        
+        <a href="https://wa.me/525521130230?text=Hola,%20adjunto%20mi%20comprobante%20de%20pago%20para%20mi%20sesi%C3%B3n" 
+           target="_blank" 
+           style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; background: #25D366; color: white; padding: 12px 24px; border-radius: 20px; text-decoration: none; font-weight: 600; font-size: 14px; transition: 0.3s; width: 100%;">
+            <i class="fab fa-whatsapp" style="font-size: 20px;"></i>
+            Enviar comprobante por WhatsApp
+        </a>
+    </div>
+    {% endif %}
         {% endif %}
 
         {% if psicologo_asignado %}

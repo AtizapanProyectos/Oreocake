@@ -1,3 +1,4 @@
+from requests import request
 from django.shortcuts import render, redirect
 from django.contrib.auth.models import User
 
@@ -525,10 +526,10 @@ def panel_generico(request):
     hora_actual = now_local.time().replace(second=0, microsecond=0)
 
     psicologo_asignado = perfil_usuario.psicologo_asignado
-
+    hora_limite_paciente = (now_local - timedelta(hours=1)).time().replace(second=0, microsecond=0)
     # Cita próxima
     cita_proxima = Cita.objects.filter(
-        Q(fecha__gt=hoy) | Q(fecha=hoy, hora__gte=hora_actual),
+        Q(fecha__gt=hoy) | Q(fecha=hoy, hora__gte=hora_limite_paciente), # ¡Cambio aquí!
         paciente=request.user,
         estado='Confirmada'
     ).order_by('fecha', 'hora').first()
