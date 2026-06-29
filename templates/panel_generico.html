@@ -6,7 +6,7 @@
 {% block content %}
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 <link rel="stylesheet" type="text/css" href="https://npmcdn.com/flatpickr/dist/themes/airbnb.css">
-
+<script src="https://www.paypal.com/sdk/js?client-id={{ paypal_client_id }}&currency=MXN"></script>
 {{ dias_disponibles_json|json_script:"dias-data" }}
 {% csrf_token %}
 
@@ -571,19 +571,7 @@
                         </div>
                         
 
-                        <div id="clip-button-container" style="margin-top: 20px;">
-                            <button id="btn-pagar-clip" type="button" 
-                                style="width: 100%; background: #ffffff; border: 2px solid #e2e8f0; border-radius: 16px; padding: 16px 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 12px; transition: all 0.3s ease; box-shadow: 0 4px 10px rgba(0,0,0,0.03);"
-                                onmouseover="this.style.borderColor='#FC4C02'; this.style.boxShadow='0 10px 25px rgba(252, 76, 2, 0.15)'; this.style.transform='translateY(-3px)';" 
-                                onmouseout="this.style.borderColor='#e2e8f0'; this.style.boxShadow='0 4px 10px rgba(0,0,0,0.03)'; this.style.transform='translateY(0)';">
-                                
-                                <i class="fas fa-lock" style="color: #10b981; font-size: 1.1rem;"></i>
-                                <span style="font-family: var(--font-headings); font-weight: 800; font-size: 1.15rem; color: var(--text-main);">Pago con</span>
-                                <img src="https://assets-global.website-files.com/62588b32d8d6105ab7aa9721/63bf568610f3fdf437235192_Preview.svg" alt="Clip" style="height: 28px; margin-top: 2px;">
-
-
-                            </button>
-                        </div>
+                        <div id="paypal-button-container" style="margin-top: 15px;"></div>
 
                     </div>
                 </div>
@@ -1286,6 +1274,9 @@ function guardarCitaSinPago() {
 
     // --- AL CARGAR LA PÁGINA ---
     document.addEventListener("DOMContentLoaded", function () {
+
+
+
         window.fechaSeleccionada = "";
         window.horaSeleccionada = "";
         window.animoSeleccionado = "No especificó";
@@ -1416,70 +1407,62 @@ function guardarCitaSinPago() {
 });
 
 // --- PAYPAL SMART BUTTONS ---
-        
+        // --- PAYPAL SMART BUTTONS ---
 document.addEventListener("DOMContentLoaded", function () {
-    const btnClip = document.getElementById('btn-pagar-clip');
-    
-    if (btnClip) {
-        btnClip.addEventListener('click', function() {
+    if (document.getElementById('paypal-button-container')) {
+        paypal.Buttons({
             
-            // 1. ANTES DE INICIAR EL PAGO: Validamos reglas de HOPE (Igual que hacias en PayPal)
-            const checkConsentimiento = document.getElementById('check-consentimiento');
-            if (checkConsentimiento && !checkConsentimiento.checked) {
-                document.getElementById('alerta-consentimiento').style.display = 'flex';
-                return;
-            }
-            if (!window.fechaSeleccionada || !window.horaSeleccionada) {
-                alert("Por favor, selecciona una fecha y una hora válida.");
-                return;
-            }
-
-            // 2. MOSTRAR LOADING
-            document.getElementById('step-2-payment').style.display = 'none';
-            document.getElementById('step-3-loading').style.display = 'block';
-
-            // 3. PREPARAR DATOS (Precios dinámicos)
-            let montoCobro = (window.tipoServicioAgendado === 'pareja') ? '215.00' : '110.00';
-            
-            let formData = new URLSearchParams();
-            formData.append('fecha', window.fechaSeleccionada);
-            formData.append('hora', window.horaSeleccionada);
-            formData.append('animo', window.animoSeleccionado);
-            formData.append('modalidad', window.modalidadSeleccionada);
-            formData.append('tipo_servicio', window.tipoServicioAgendado);
-            formData.append('monto', montoCobro); // Enviamos el monto para que Django genere el link de Clip
-            formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
-
-            // 4. LLAMAR A DJANGO PARA GENERAR EL LINK DE CLIP
-            // Nota: Debes crear esta vista 'iniciar_pago_clip' en tu views.py
-            fetch("{% url 'iniciar_pago_clip' %}", {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-Requested-With': 'XMLHttpRequest' },
-                body: formData.toString()
-            })
-            .then(response => response.json())
-            .then(data => {
-                if(data.status === 'success' && data.payment_url) {
-                    // ¡Éxito! Redirigimos al paciente a la pasarela segura de Clip
-                    window.location.href = data.payment_url;
-                } else {
-                    // SI ALGO EXPLOTA EN EL BACKEND
-                    document.getElementById('step-3-loading').style.display = 'none';
-                    document.getElementById('texto-error-cita').innerText = data.message || 'Error al conectar con Clip. Intenta de nuevo.';
-                    document.getElementById('alerta-error-cita').style.display = 'flex';
+            // 1. Validaciones ANTES de abrir la ventana de PayPal
+            onClick: function(data, actions) {
+                const checkConsentimiento = document.getElementById('check-consentimiento');
+                if (checkConsentimiento && !checkConsentimiento.checked) {
+                    document.getElementById('alerta-consentimiento').style.display = 'flex';
+                    return actions.reject();
                 }
-            })
-            .catch(error => {
-                // SI ALGO EXPLOTA EN LA RED
-                console.error("Error Clip:", error);
-                document.getElementById('step-3-loading').style.display = 'none';
-                document.getElementById('texto-error-cita').innerText = 'Hubo un error de conexión. Intenta de nuevo.';
+                if (!window.fechaSeleccionada || !window.horaSeleccionada) {
+                    alert("Por favor, selecciona una fecha y una hora válida.");
+                    return actions.reject();
+                }
+                return actions.resolve();
+            },
+
+            // 2. Preparar el cobro (Precio dinámico)
+            createOrder: function(data, actions) {
+                let montoCobro = (window.tipoServicioAgendado === 'pareja') ? '1.00' : '2.00';
+                
+                return actions.order.create({
+                    purchase_units: [{
+                        amount: {
+                            value: montoCobro
+                        },
+                        description: "Sesión HOPE - " + window.tipoServicioAgendado
+                    }]
+                });
+            },
+
+            // 3. SI EL PAGO SE APRUEBA CON ÉXITO
+            onApprove: function(data, actions) {
+                return actions.order.capture().then(function(details) {
+                    // ¡Dinero recibido! Disparamos tu función original para guardar la cita en Django
+                    guardarCitaSinPago();
+                });
+            },
+
+            // 4. SI CANCELA LA VENTANITA
+            onCancel: function (data) {
+                console.log("El paciente cerró la ventana de PayPal.");
+            },
+
+            // 5. SI ALGO EXPLOTA EN PAYPAL
+            onError: function (err) {
+                console.error("Error PayPal:", err);
+                document.getElementById('texto-error-cita').innerText = 'Hubo un error de conexión con tu banco o PayPal. Intenta de nuevo.';
                 document.getElementById('alerta-error-cita').style.display = 'flex';
-            });
-        });
+            }
+            
+        }).render('#paypal-button-container');
     }
 });
-        
 
 
 
