@@ -1428,7 +1428,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
             // 2. Preparar el cobro (Precio dinámico)
             createOrder: function(data, actions) {
-                let montoCobro = (window.tipoServicioAgendado === 'pareja') ? '1.00' : '2.00';
+                let montoCobro = (window.tipoServicioAgendado === 'pareja') ? '215.00' : '110.00';
                 
                 return actions.order.create({
                     purchase_units: [{
