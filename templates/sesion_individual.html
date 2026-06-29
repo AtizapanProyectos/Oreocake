@@ -9,6 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700;900&family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+<script src="https://www.paypal.com/sdk/js?client-id={{ paypal_client_id }}&currency=MXN&locale=es_MX"></script>
 <style>
 /* ── VARIABLES ── */
 :root {
@@ -879,19 +880,7 @@ body{font-family:var(--font-b);color:var(--c-dark);background:#fff;display:flex}
     + $10 MXN de comisión
   </span>
 
-                        <div id="clip-button-container" style="margin-top: 20px;">
-                            <button id="btn-pagar-clip" type="button" 
-                                style="width: 100%; background: #ffffff; border: 2px solid #e2e8f0; border-radius: 16px; padding: 16px 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 12px; transition: all 0.3s ease; box-shadow: 0 4px 10px rgba(0,0,0,0.03);"
-                                onmouseover="this.style.borderColor='#FC4C02'; this.style.boxShadow='0 10px 25px rgba(252, 76, 2, 0.15)'; this.style.transform='translateY(-3px)';" 
-                                onmouseout="this.style.borderColor='#e2e8f0'; this.style.boxShadow='0 4px 10px rgba(0,0,0,0.03)'; this.style.transform='translateY(0)';">
-                                
-                                <i class="fas fa-lock" style="color: #10b981; font-size: 1.1rem;"></i>
-                                <span style="font-family: var(--font-headings); font-weight: 800; font-size: 1.15rem; color: var(--text-main);">Pago con</span>
-                                <img src="https://assets-global.website-files.com/62588b32d8d6105ab7aa9721/63bf568610f3fdf437235192_Preview.svg" alt="Clip" style="height: 28px; margin-top: 2px;">
-
-
-                            </button>
-                        </div>
+<div id="paypal-button-container" style="margin-top: 15px;"></div>
 
   <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 15px;">
     <i class="fas fa-lock"></i> Pago 100% seguro procesado por CLIP
@@ -1145,6 +1134,54 @@ body{font-family:var(--font-b);color:var(--c-dark);background:#fff;display:flex}
         });
     });
 
+
+
+// --- PAYPAL SMART BUTTONS INTEGRADO ---
+document.addEventListener("DOMContentLoaded", function () {
+    // Verificamos que el contenedor exista antes de intentar renderizar
+    if (document.getElementById('paypal-button-container')) {
+        paypal.Buttons({
+            // 1. Validaciones antes de abrir el pop-up de PayPal
+            onClick: function(data, actions) {
+                const checkConsentimiento = document.getElementById('check-consentimiento');
+                if (checkConsentimiento && !checkConsentimiento.checked) {
+                    document.getElementById('alerta-consentimiento').style.display = 'flex';
+                    return actions.reject();
+                }
+                if (!window.fechaSeleccionada || !window.horaSeleccionada) {
+                    alert("Por favor, selecciona una fecha y una hora válida.");
+                    return actions.reject();
+                }
+                return actions.resolve();
+            },
+
+            // 2. Crear la orden con el monto correcto
+            createOrder: function(data, actions) {
+                let montoCobro = (window.tipoServicioAgendado === 'pareja') ? '215.00' : '110.00';
+                return actions.order.create({
+                    purchase_units: [{
+                        amount: { currency_code: 'MXN', value: montoCobro },
+                        description: "Sesión HOPE - " + window.tipoServicioAgendado
+                    }]
+                });
+            },
+
+            // 3. PAGO EXITOSO
+            onApprove: function(data, actions) {
+                return actions.order.capture().then(function(details) {
+                    // ¡Ya pagó! Ahora disparas tu lógica original
+                    guardarCitaSinPago();
+                });
+            },
+
+            onError: function(err) {
+                console.error("Error PayPal:", err);
+                alert('Ocurrió un error con el pago. Intenta de nuevo.');
+            }
+        }).render('#paypal-button-container');
+    }
+});
+    
 // Reemplaza tu función getCookie actual por esta versión más robusta
 function getCookie(name) {
     let cookieValue = null;
@@ -1300,7 +1337,7 @@ function renderizarBotonPayPalIndividual() {
             let formData = new URLSearchParams();
             formData.append('fecha', window.fechaSeleccionada);
             formData.append('hora', window.horaSeleccionada);
-            formData.append('monto', '110.00'); 
+            formData.append('monto', '1.00'); 
             formData.append('nombre', nombre);
             formData.append('email', email);
             formData.append('tipo_servicio', 'individual');
