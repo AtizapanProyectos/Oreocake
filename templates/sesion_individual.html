@@ -1157,7 +1157,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
             // 2. Crear la orden con el monto correcto
             createOrder: function(data, actions) {
-                let montoCobro = (window.tipoServicioAgendado === 'pareja') ? '215.00' : '110.00';
+                let montoCobro = (window.tipoServicioAgendado === 'pareja') ? '2.00' : '1.00';
                 return actions.order.create({
                     purchase_units: [{
                         amount: { currency_code: 'MXN', value: montoCobro },
