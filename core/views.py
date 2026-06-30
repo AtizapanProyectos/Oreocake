@@ -1,3 +1,5 @@
+from core import cuestionario_data
+from core import cuestionario_data
 from requests import request
 from django.shortcuts import render, redirect
 from django.contrib.auth.models import User
@@ -837,9 +839,31 @@ def obtener_expediente_ajax(request):
     paciente = User.objects.get(id=paciente_id)
     perfil = paciente.perfil
     
-    historiales = HistorialClinico.objects.filter(paciente=paciente, psicologo=request.user.perfil_psicologo).order_by('-fecha_registro')
-    hist_data = [{'fecha': h.fecha_registro.strftime('%d/%m/%Y'), 'notas': h.notas_sesion, 'aprendizaje': h.aprendizaje_paciente} for h in historiales]
+    # BUSCAMOS LAS CITAS PASADAS EN LUGAR DE SOLO LOS HISTORIALES
+    now_local = timezone.localtime(timezone.now())
+    citas = Cita.objects.filter(
+        paciente=paciente, 
+        psicologo=request.user.perfil_psicologo,
+        fecha__lte=now_local.date()
+    ).order_by('-fecha', '-hora').select_related('nota_clinica')
     
+    hist_data = []
+    for c in citas:
+        if hasattr(c, 'nota_clinica') and c.nota_clinica:
+            h = c.nota_clinica
+            hist_data.append({
+                'fecha': c.fecha.strftime('%d/%m/%Y'), 
+                'notas': h.notas_sesion, 
+                'aprendizaje': h.aprendizaje_paciente
+            })
+        else:
+            # PINTA LA CITA AUNQUE NO TENGA NOTAS
+            hist_data.append({
+                'fecha': c.fecha.strftime('%d/%m/%Y'), 
+                'notas': '⚠️ Sesión pendiente de captura de bitácora.', 
+                'aprendizaje': 'Sin registro'
+            })
+            
     return JsonResponse({'status': 'success', 'data': {
         'telefono_emergencia': perfil.telefono_emergencia or '',
         'focos_rojos': perfil.focos_rojos or '',
@@ -1002,18 +1026,17 @@ def detalle_paciente(request, paciente_id):
         tiene_meet = bool(cita.id_evento_google)
         tiene_historial = historial is not None
  
-        if tiene_meet or tiene_historial:
-            sesiones.append({
-                'tipo': 'completa',          # tiene cita base
-                'cita': cita,
-                'historial': historial,
-                'tiene_meet': tiene_meet,
-                'tiene_historial': tiene_historial,
-                # Fecha canónica para ordenar: usamos la de la cita
-                'fecha_orden': cita.fecha,
-                'hora_orden': cita.hora,
-                'slug': f"c-{cita.id}", # <--- 1. AGREGA ESTA LÍNEA AQUÍ
-            })
+        #if tiene_meet or tiene_historial:
+        sesiones.append({
+            'tipo': 'completa',          
+            'cita': cita,
+            'historial': historial,
+            'tiene_meet': tiene_meet,
+            'tiene_historial': tiene_historial,
+            'fecha_orden': cita.fecha,
+            'hora_orden': cita.hora,
+            'slug': f"c-{cita.id}", 
+        })
  
     # Historiales huérfanos: creados manualmente sin asociar a ninguna cita
     historiales_huerfanos = HistorialClinico.objects.filter(
