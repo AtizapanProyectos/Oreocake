@@ -196,7 +196,7 @@ ALLOWED_HOSTS = ['espaciohope.com',
  'www.espaciohope.mx',
  'espaciohope.org',
  'www.espaciohope.org',
- 'https://oreocake.onrender.com',
+ 'oreocake.onrender.com',
 
  ]
 
