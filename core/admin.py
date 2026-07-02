@@ -3,7 +3,6 @@ from import_export.admin import ImportExportModelAdmin
 from .models import * # ==========================================
 # INLINES PARA EL PERFIL DEL PSICÓLOGO
 # ==========================================
-
 class HorarioInline(admin.TabularInline):
     model = HorarioPsicologo
     extra = 1
@@ -21,6 +20,8 @@ class PerfilPsicologoAdmin(ImportExportModelAdmin):
     list_display = ('usuario', 'cedula_profesional', 'especialidad', 'genero', 'esta_activo')
     search_fields = ('usuario__first_name', 'usuario__email', 'cedula_profesional')
     list_filter = ('genero', 'esta_activo')
+    # 🔥 MAGIA DE VELOCIDAD: Evita múltiples consultas a la tabla User
+    list_select_related = ('usuario',)
 
 # ==========================================
 # 2. PERFIL DEL PACIENTE
@@ -30,6 +31,8 @@ class UsuarioPerfilAdmin(ImportExportModelAdmin):
     list_display = ('nombre', 'usuario', 'telefono', 'es_psicologo', 'psicologo_asignado')
     search_fields = ('nombre', 'usuario__email', 'telefono')
     list_filter = ('es_psicologo',)
+    # 🔥 MAGIA DE VELOCIDAD
+    list_select_related = ('usuario', 'psicologo_asignado', 'psicologo_asignado__usuario')
 
 # ==========================================
 # 3. CITAS
@@ -37,20 +40,14 @@ class UsuarioPerfilAdmin(ImportExportModelAdmin):
 @admin.register(Cita)
 class CitaAdmin(ImportExportModelAdmin):
     list_display = (
-        'id', 
-        'paciente', 
-        'psicologo', 
-        'fecha', 
-        'hora', 
-        'estado', 
-        'motivo', 
-        'estado_animo', 
-        'enlace_meet', 
-        'id_evento_google'
+        'id', 'paciente', 'psicologo', 'fecha', 'hora', 
+        'estado', 'motivo', 'estado_animo', 'enlace_meet', 'id_evento_google'
     )
     search_fields = ('paciente__first_name', 'paciente__email', 'psicologo__usuario__first_name', 'id_evento_google')
     list_filter = ('estado', 'fecha', 'psicologo')
     readonly_fields = ('fecha_creacion',)
+    # 🔥 MAGIA DE VELOCIDAD: Esta era la tabla que seguro más se trababa
+    list_select_related = ('paciente', 'psicologo', 'psicologo__usuario')
 
 # ==========================================
 # 4. HISTORIAL CLÍNICO (EXPEDIENTE)
@@ -60,6 +57,8 @@ class HistorialClinicoAdmin(ImportExportModelAdmin):
     list_display = ('paciente', 'psicologo', 'fecha_registro')
     search_fields = ('paciente__first_name', 'psicologo__usuario__first_name')
     list_filter = ('fecha_registro', 'psicologo')
+    # 🔥 MAGIA DE VELOCIDAD
+    list_select_related = ('paciente', 'psicologo', 'psicologo__usuario')
 
 # ==========================================
 # 5. CUESTIONARIO INICIAL
@@ -69,9 +68,11 @@ class CuestionarioRegistroAdmin(ImportExportModelAdmin):
     list_display = ('paciente', 'flujo_elegido', 'fecha_completado')
     search_fields = ('paciente__first_name', 'paciente__email')
     list_filter = ('flujo_elegido', 'fecha_completado')
+    # 🔥 MAGIA DE VELOCIDAD
+    list_select_related = ('paciente',)
 
 # ==========================================
-# 6. DÍAS FESTIVOS (BLOQUEOS DE CALENDARIO)
+# 6. DÍAS FESTIVOS
 # ==========================================
 @admin.register(DiaFestivo)
 class DiaFestivoAdmin(ImportExportModelAdmin):
@@ -87,11 +88,14 @@ class TallerAdmin(ImportExportModelAdmin):
     list_display = ('nombre', 'tipo', 'fecha', 'hora', 'cupo_maximo', 'cupos_disponibles')
     list_filter = ('tipo', 'fecha')
     search_fields = ('nombre',)
+    list_select_related = ('psicologo',)
 
 @admin.register(InscripcionTaller)
 class InscripcionTallerAdmin(ImportExportModelAdmin):
     list_display = ('paciente', 'taller', 'fecha_inscripcion')
     list_filter = ('taller__tipo', 'taller__fecha')
+    # 🔥 MAGIA DE VELOCIDAD
+    list_select_related = ('paciente', 'taller')
 
 # ==========================================
 # 8. CHAT P2P (PACIENTE - DOCTOR)
@@ -101,6 +105,8 @@ class MensajeChatAdmin(ImportExportModelAdmin):
     list_display = ('remitente', 'destinatario', 'fecha_envio', 'leido')
     search_fields = ('remitente__first_name', 'destinatario__first_name', 'contenido')
     list_filter = ('leido', 'fecha_envio')
+    # 🔥 MAGIA DE VELOCIDAD
+    list_select_related = ('remitente', 'destinatario')
 
 # ==========================================
 # 9. PRENSA Y BLOG HOPE
@@ -110,7 +116,6 @@ class ArticuloPrensaAdmin(ImportExportModelAdmin):
     list_display = ('titulo', 'fecha_publicacion', 'publicado')
     search_fields = ('titulo', 'resumen')
     list_filter = ('publicado', 'fecha_publicacion')
-    # 🔥 MAGIA PURA: Esto llena el "Slug" automáticamente mientras escribes el título
     prepopulated_fields = {'slug': ('titulo',)} 
 
 # ==========================================
@@ -126,24 +131,16 @@ class NotificacionSistemaAdmin(ImportExportModelAdmin):
     list_filter = ('tipo', 'leida')
 
 # ==========================================
-# REGISTROS EXTRA (Sin configuración avanzada)
+# REGISTROS EXTRA
 # ==========================================
 admin.site.register(HorarioPsicologo)
 admin.site.register(DiaLibrePsicologo)
 admin.site.register(EventoAuditoria)
 admin.site.register(PreferenciasUsuario)
 
-
 @admin.register(RegistroTallerPublico)
 class RegistroTallerPublicoAdmin(admin.ModelAdmin):
-    # Columnas que vas a ver en la tabla principal
     list_display = ('nombre', 'correo', 'telefono', 'taller_seleccionado', 'fecha_registro')
-    
-    # Barra de búsqueda (puedes buscar por nombre, correo o teléfono)
     search_fields = ('nombre', 'correo', 'telefono', 'taller_seleccionado')
-    
-    # Filtros laterales mágicos (para que filtres rápido a los de un taller específico)
     list_filter = ('taller_seleccionado', 'fecha_registro')
-    
-    # Proteger la fecha para que nadie la modifique por error
     readonly_fields = ('fecha_registro',)
