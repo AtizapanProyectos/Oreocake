@@ -802,11 +802,14 @@ def panel_doctor(request):
 
 
 
-    mis_pacientes_db = User.objects.filter(perfil__psicologo_asignado=psicologo).distinct()
+    mis_pacientes_db = User.objects.filter(perfil__psicologo_asignado=psicologo).annotate(
+        total_citas_paciente=Count('citas_como_paciente', filter=Q(citas_como_paciente__psicologo=psicologo))
+    ).distinct()
+
     pacientes_data = [
         {
             'usuario': p,
-            'total_citas': Cita.objects.filter(paciente=p, psicologo=psicologo).count()
+            'total_citas': p.total_citas_paciente
         }
         for p in mis_pacientes_db
     ]
@@ -1298,11 +1301,15 @@ def panel_admin(request):
 
     doctores_data = []
     # 🚀 OPTIMIZACIÓN: Precargamos usuarios de doctores
-    doctores = PerfilPsicologo.objects.all().select_related('usuario')
+    doctores = PerfilPsicologo.objects.all().select_related('usuario').annotate(
+        conteo_pacientes=Count('pacientes_asignados', distinct=True),
+        conteo_citas_hoy=Count('citas_agendadas', filter=Q(citas_agendadas__fecha=hoy) & ~Q(citas_agendadas__estado='Cancelada'), distinct=True),
+        conteo_citas_total=Count('citas_agendadas', filter=~Q(citas_agendadas__estado='Cancelada'), distinct=True)
+    )
     for doc in doctores:
-        pacientes_activos = doc.pacientes_asignados.count()
-        citas_doc_hoy = Cita.objects.filter(psicologo=doc, fecha=hoy).exclude(estado='Cancelada').count()
-        citas_doc_total = Cita.objects.filter(psicologo=doc).exclude(estado='Cancelada').count()
+        pacientes_activos = doc.conteo_pacientes
+        citas_doc_hoy = doc.conteo_citas_hoy
+        citas_doc_total = doc.conteo_citas_total
         
         capacidad_maxima = 20
         porcentaje_carga = min(int((pacientes_activos / capacidad_maxima) * 100), 100) if pacientes_activos > 0 else 0
