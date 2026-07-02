@@ -180,6 +180,7 @@ CSRF_TRUSTED_ORIGINS = [
     'https://www.espaciohope.mx',
     'https://espaciohope.org',
     'https://www.espaciohope.org',
+    'https://oreocake.onrender.com',
 
 ]
 
@@ -195,6 +196,7 @@ ALLOWED_HOSTS = ['espaciohope.com',
  'www.espaciohope.mx',
  'espaciohope.org',
  'www.espaciohope.org',
+ 'https://oreocake.onrender.com',
 
  ]
 
