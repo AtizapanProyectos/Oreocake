@@ -10,6 +10,17 @@
 {{ dias_disponibles_json|json_script:"dias-data" }}
 {% csrf_token %}
 
+<!-- Toast de notificaciones y overlay de carga (reemplazan los alert()) -->
+<div class="loading-overlay-hope" id="loadingOverlayHope">
+    <div class="spinner-hope"></div>
+    <p style="font-weight: 700; color: var(--text-main); font-family: var(--font-body);" id="loadingOverlayTexto">Procesando...</p>
+</div>
+<div class="toast-hope" id="toastHope">
+    <i class="fas fa-check-circle"></i>
+    <span id="toastHopeTexto">Listo</span>
+</div>
+
+
 <style>
     /* ==========================================================================
        IMPORTACIÓN DE FUENTES
@@ -111,6 +122,80 @@
         color: white;
         transform: translateY(-2px);
     }
+
+    /* Sección de reagendar: se desliza dentro de la misma página, sin modal */
+    .seccion-reagendar {
+        max-height: 0;
+        overflow: hidden;
+        opacity: 0;
+        transition: max-height 0.5s ease, opacity 0.4s ease, margin 0.4s ease;
+        max-width: 550px;
+        margin: 0 auto;
+        background: #faf8ff;
+        border: 1px solid #ede4ff;
+        border-radius: 20px;
+    }
+    .seccion-reagendar.abierta {
+        max-height: 900px;
+        opacity: 1;
+        margin: 15px auto 25px;
+    }
+    .seccion-reagendar-inner {
+        padding: 22px 20px 25px;
+    }
+
+    /* Toast de confirmación / error, reemplaza los alert() feos */
+    .toast-hope {
+        position: fixed;
+        bottom: 30px;
+        left: 50%;
+        transform: translateX(-50%) translateY(20px);
+        background: white;
+        color: var(--text-main);
+        padding: 16px 24px;
+        border-radius: 16px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-weight: 700;
+        font-size: 14px;
+        z-index: 9000;
+        opacity: 0;
+        pointer-events: none;
+        transition: 0.35s ease;
+        max-width: 90vw;
+        border-left: 5px solid var(--c-purple);
+    }
+    .toast-hope.mostrar { opacity: 1; transform: translateX(-50%) translateY(0); pointer-events: auto; }
+    .toast-hope.exito { border-left-color: #22c55e; }
+    .toast-hope.error { border-left-color: #ef4444; }
+    .toast-hope i { font-size: 20px; }
+    .toast-hope.exito i { color: #22c55e; }
+    .toast-hope.error i { color: #ef4444; }
+
+    /* Overlay de carga mientras se procesa el reagendo */
+    .loading-overlay-hope {
+        position: fixed;
+        inset: 0;
+        background: rgba(255,255,255,0.75);
+        backdrop-filter: blur(3px);
+        z-index: 9500;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        gap: 15px;
+    }
+    .loading-overlay-hope.mostrar { display: flex; }
+    .spinner-hope {
+        width: 46px; height: 46px;
+        border: 4px solid #ede4ff;
+        border-top-color: var(--c-purple);
+        border-radius: 50%;
+        animation: girar-spinner 0.8s linear infinite;
+    }
+    @keyframes girar-spinner { to { transform: rotate(360deg); } }
     
     .btn-brutal { padding: 20px; border-radius: 15px; font-weight: 800; font-family: var(--font-headings); border: none; cursor: pointer; transition: 0.3s; display: inline-flex; align-items: center; justify-content: center; gap: 10px; text-transform: uppercase; letter-spacing: 1px;}
     .btn-primary { background: var(--c-purple); color: white; }
@@ -270,9 +355,40 @@
 
 
                     <div id="btn-reagendar-container" style="text-align: center; margin: 10px 0 5px;">
-            <button type="button" onclick="abrirModalReagendar()" class="btn-reagendar-suave">
+            <button type="button" onclick="toggleSeccionReagendar()" class="btn-reagendar-suave" id="btn-toggle-reagendar">
                 <i class="fas fa-calendar-alt"></i> Reagendar mi cita
             </button>
+            </div>
+
+            <div id="seccionReagendar" class="seccion-reagendar">
+              <div class="seccion-reagendar-inner">
+                <p style="font-weight: 800; font-family: var(--font-headings); color: var(--text-main); margin-bottom: 5px; font-size: 18px;">Elige tu nuevo horario</p>
+                <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 15px;">Desliza para ver más días disponibles</p>
+
+                <div class="date-carousel" id="dateCarouselReagendar">
+                  {% for dia, horas in dias_disponibles.items %}
+                  <button type="button" class="date-chip {% if forloop.first %}active{% endif %}"
+                    data-target="slots-re-{{ dia|date:'Ymd' }}" data-fecha="{{ dia|date:'Y-m-d' }}">
+                    <span style="font-size:11px;display:block;text-transform:uppercase;">{{ dia|date:"D" }}</span>
+                    <span style="font-size:28px;font-weight:800;">{{ dia|date:"d" }}</span>
+                    <span style="font-size:11px;display:block;text-transform:uppercase;">{{ dia|date:"M" }}</span>
+                  </button>
+                  {% endfor %}
+                </div>
+
+                <div style="margin-top:10px;">
+                  {% for dia, horas in dias_disponibles.items %}
+                  <div class="slots-container" id="slots-re-{{ dia|date:'Ymd' }}" {% if not forloop.first %}style="display:none;"{% endif %}>
+                    {% for h in horas %}
+                    <button class="time-slot-btn" data-fecha="{{ dia|date:'Y-m-d' }}" data-hora="{{ h|time:'H:i' }}">{{ h|time:"h:i A" }}</button>
+                    {% endfor %}
+                  </div>
+                  {% endfor %}
+                </div>
+
+                <button id="btn-confirmar-reagendo" style="display:none; width:100%; margin-top:20px; justify-content:center;"
+                  class="btn-brutal btn-primary" onclick="confirmarReagendo()">Confirmar nuevo horario</button>
+              </div>
             </div>
             {% if cita_proxima.enlace_meet %}
                 <div id="btn-locked" style="background: #f1f5f9; padding: 25px; border-radius: 20px; color: #64748b; max-width: 500px; margin: 0 auto; text-align: center; border: 2px dashed #cbd5e1;">
@@ -317,6 +433,7 @@
                             const diff = citaDate - now;
                             if (diff <= 3600000 && diff >= -3600000) {
                                 document.getElementById('btn-reagendar-container').style.display = 'none';
+                                document.getElementById('seccionReagendar').classList.remove('abierta');
                                 document.getElementById('btn-locked').style.display = 'none';
                                 document.getElementById('btn-unlocked').style.display = 'block';
                             } else {
@@ -563,10 +680,11 @@
                                     <i class="fas fa-video"></i> En Línea
                                 </div>
                             </label>
-                            <label style="flex: 1; cursor: pointer;">
-                                <input type="radio" name="modalidad_opcion" value="Presencial" style="display: none;" onclick="seleccionarModalidad('Presencial')">
-                                <div id="mod-card-presencial" class="mod-card" style="border: 2px solid #e2e8f0; background: #f8fafc; color: var(--text-muted); padding: 15px; border-radius: 15px; font-weight: 700; transition: 0.3s; text-align: center;">
+                            <label style="flex: 1; cursor: not-allowed;">
+                                <input type="radio" name="modalidad_opcion" value="Presencial" disabled style="display: none;">
+                                <div id="mod-card-presencial" class="mod-card" style="border: 2px dashed #e2e8f0; background: #f8fafc; color: #cbd5e1; padding: 15px; border-radius: 15px; font-weight: 700; transition: 0.3s; text-align: center; position: relative;">
                                     <i class="fas fa-user-friends"></i> Presencial
+                                    <span style="display:block; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; margin-top: 4px; color: var(--c-pink);">(Próximamente)</span>
                                 </div>
                             </label>
                         </div>
@@ -887,38 +1005,7 @@
   </div>
 </div>
 
-{% comment %} 🔥 MODAL DE REAGENDAR: colocado fuera del bloque condicional del chat, para que siempre exista en el DOM {% endcomment %}
-<div id="modalReagendar" class="modal-overlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.6); backdrop-filter:blur(5px); z-index:7000; align-items:center; justify-content:center; padding:20px;">
-  <div class="modal-box" style="width:100%; max-width:650px; background:#fff; border-radius:24px; padding:30px; position:relative;">
-    <button onclick="document.getElementById('modalReagendar').style.display='none'"
-      style="position:absolute; top:20px; right:20px; background:none; border:none; font-size:20px; color:#94a3b8; cursor:pointer;"><i class="fas fa-times"></i></button>
-    <h2 style="font-family:var(--font-headings); margin-bottom:20px;">Elige tu nuevo horario</h2>
-
-    <div class="date-carousel" id="dateCarouselReagendar">
-      {% for dia, horas in dias_disponibles.items %}
-      <button type="button" class="date-chip {% if forloop.first %}active{% endif %}"
-        data-target="slots-re-{{ dia|date:'Ymd' }}" data-fecha="{{ dia|date:'Y-m-d' }}">
-        <span style="font-size:11px;display:block;text-transform:uppercase;">{{ dia|date:"D" }}</span>
-        <span style="font-size:28px;font-weight:800;">{{ dia|date:"d" }}</span>
-        <span style="font-size:11px;display:block;text-transform:uppercase;">{{ dia|date:"M" }}</span>
-      </button>
-      {% endfor %}
-    </div>
-
-    <div style="margin-top:20px;">
-      {% for dia, horas in dias_disponibles.items %}
-      <div class="slots-container" id="slots-re-{{ dia|date:'Ymd' }}" {% if not forloop.first %}style="display:none;"{% endif %}>
-        {% for h in horas %}
-        <button class="time-slot-btn" data-fecha="{{ dia|date:'Y-m-d' }}" data-hora="{{ h|time:'H:i' }}">{{ h|time:"h:i A" }}</button>
-        {% endfor %}
-      </div>
-      {% endfor %}
-    </div>
-
-    <button id="btn-confirmar-reagendo" style="display:none; width:100%; margin-top:25px;"
-      class="btn-brutal btn-primary" onclick="confirmarReagendo()">Confirmar nuevo horario</button>
-  </div>
-</div>
+{% comment %} La sección de reagendar ahora vive inline junto al botón, no como modal {% endcomment %}
 
 {% if psicologo_asignado %}
 <div class="btn-flotante-chat" onclick="togglePatientChat()">
@@ -1547,52 +1634,105 @@ window.modalidadSeleccionada = 'En línea'; // Por defecto
 
 
 
+// ===== Helpers de UI: toast y overlay de carga (reemplazan los alert() feos) =====
+let toastTimeoutHope = null;
+function mostrarToast(mensaje, tipo) {
+    const toast = document.getElementById('toastHope');
+    const texto = document.getElementById('toastHopeTexto');
+    const icono = toast.querySelector('i');
+    toast.classList.remove('exito', 'error');
+    toast.classList.add(tipo === 'error' ? 'error' : 'exito');
+    icono.className = tipo === 'error' ? 'fas fa-circle-exclamation' : 'fas fa-check-circle';
+    texto.textContent = mensaje;
+    toast.classList.add('mostrar');
+    clearTimeout(toastTimeoutHope);
+    toastTimeoutHope = setTimeout(() => toast.classList.remove('mostrar'), 4000);
+}
+function mostrarCarga(texto) {
+    document.getElementById('loadingOverlayTexto').textContent = texto || 'Procesando...';
+    document.getElementById('loadingOverlayHope').classList.add('mostrar');
+}
+function ocultarCarga() {
+    document.getElementById('loadingOverlayHope').classList.remove('mostrar');
+}
+
+// ===== Sección de reagendar (inline, sin modal) =====
 window.fechaReagendoSeleccionada = "";
 window.horaReagendoSeleccionada = "";
 
-function abrirModalReagendar() {
-  document.getElementById('modalReagendar').style.display = 'flex';
+function toggleSeccionReagendar() {
+    const seccion = document.getElementById('seccionReagendar');
+    const btn = document.getElementById('btn-toggle-reagendar');
+    const seVaAbrir = !seccion.classList.contains('abierta');
+    seccion.classList.toggle('abierta');
+
+    if (seVaAbrir) {
+        btn.innerHTML = '<i class="fas fa-chevron-up"></i> Ocultar horarios';
+        setTimeout(() => seccion.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 200);
+    } else {
+        btn.innerHTML = '<i class="fas fa-calendar-alt"></i> Reagendar mi cita';
+    }
 }
 
 document.addEventListener("DOMContentLoaded", function () {
-  document.querySelectorAll('#dateCarouselReagendar .date-chip').forEach(chip => {
-    chip.addEventListener('click', function () {
-      document.querySelectorAll('#dateCarouselReagendar .date-chip').forEach(c => c.classList.remove('active'));
-      this.classList.add('active');
-      document.querySelectorAll('#modalReagendar .slots-container').forEach(s => s.style.display = 'none');
-      document.getElementById(this.dataset.target).style.display = 'flex';
+    document.querySelectorAll('#dateCarouselReagendar .date-chip').forEach(chip => {
+        chip.addEventListener('click', function () {
+            document.querySelectorAll('#dateCarouselReagendar .date-chip').forEach(c => c.classList.remove('active'));
+            this.classList.add('active');
+            document.querySelectorAll('#seccionReagendar .slots-container').forEach(s => s.style.display = 'none');
+            document.getElementById(this.dataset.target).style.display = 'grid';
+        });
     });
-  });
 
-  document.querySelectorAll('#modalReagendar .time-slot-btn').forEach(btn => {
-    btn.addEventListener('click', function () {
-      document.querySelectorAll('#modalReagendar .time-slot-btn').forEach(b => b.classList.remove('active'));
-      this.classList.add('active');
-      window.fechaReagendoSeleccionada = this.dataset.fecha;
-      window.horaReagendoSeleccionada = this.dataset.hora;
-      document.getElementById('btn-confirmar-reagendo').style.display = 'block';
+    document.querySelectorAll('#seccionReagendar .time-slot-btn').forEach(btn => {
+        btn.addEventListener('click', function () {
+            document.querySelectorAll('#seccionReagendar .time-slot-btn').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            window.fechaReagendoSeleccionada = this.dataset.fecha;
+            window.horaReagendoSeleccionada = this.dataset.hora;
+            const btnConfirmar = document.getElementById('btn-confirmar-reagendo');
+            btnConfirmar.style.display = 'flex';
+            setTimeout(() => btnConfirmar.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 100);
+        });
     });
-  });
 });
 
 function confirmarReagendo() {
-  if (!window.fechaReagendoSeleccionada || !window.horaReagendoSeleccionada) return;
-  let formData = new FormData();
-  formData.append('cita_id', '{{ cita_proxima.id }}');
-  formData.append('fecha', window.fechaReagendoSeleccionada);
-  formData.append('hora', window.horaReagendoSeleccionada);
+    if (!window.fechaReagendoSeleccionada || !window.horaReagendoSeleccionada) {
+        mostrarToast('Primero elige un día y una hora.', 'error');
+        return;
+    }
 
-  fetch("{% url 'reagendar_cita' %}", {
-    method: 'POST',
-    headers: { 'X-CSRFToken': '{{ csrf_token }}' },
-    body: formData
-  })
-  .then(r => r.json())
-  .then(data => {
-    if (data.status === 'success') { alert('¡Listo! Tu cita fue reagendada.'); location.reload(); }
-    else { alert(data.message || 'No se pudo reagendar.'); }
-  })
-  .catch(() => alert('Error de conexión.'));
+    const btnConfirmar = document.getElementById('btn-confirmar-reagendo');
+    btnConfirmar.disabled = true;
+    mostrarCarga('Reagendando tu cita...');
+
+    let formData = new FormData();
+    formData.append('cita_id', '{{ cita_proxima.id }}');
+    formData.append('fecha', window.fechaReagendoSeleccionada);
+    formData.append('hora', window.horaReagendoSeleccionada);
+
+    fetch("{% url 'reagendar_cita' %}", {
+        method: 'POST',
+        headers: { 'X-CSRFToken': '{{ csrf_token }}' },
+        body: formData
+    })
+    .then(r => r.json())
+    .then(data => {
+        ocultarCarga();
+        btnConfirmar.disabled = false;
+        if (data.status === 'success') {
+            mostrarToast('¡Listo! Tu cita fue reagendada 💜', 'exito');
+            setTimeout(() => location.reload(), 1600);
+        } else {
+            mostrarToast(data.message || 'No se pudo reagendar.', 'error');
+        }
+    })
+    .catch(() => {
+        ocultarCarga();
+        btnConfirmar.disabled = false;
+        mostrarToast('Error de conexión. Intenta de nuevo.', 'error');
+    });
 }
 
 
