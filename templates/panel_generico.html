@@ -246,6 +246,14 @@
             </div>
 
         {% else %}
+
+
+                    <div id="btn-reagendar-container" style="max-width:500px; margin:15px auto 0;">
+            <button type="button" onclick="abrirModalReagendar()" class="btn-brutal"
+                style="width:100%; justify-content:center; border-radius:20px; background:#fff; border:2px solid var(--c-purple); color:var(--c-purple); font-weight:700; padding:14px;">
+                <i class="fas fa-calendar-alt"></i> Reagendar mi cita
+            </button>
+            </div>
             {% if cita_proxima.enlace_meet %}
                 <div id="btn-locked" style="background: #f1f5f9; padding: 25px; border-radius: 20px; color: #64748b; max-width: 500px; margin: 0 auto; text-align: center; border: 2px dashed #cbd5e1;">
                     <i class="fas fa-clock" style="font-size: 32px; margin-bottom: 12px; color: #94a3b8;"></i>
@@ -288,11 +296,13 @@
                             const now = new Date();
                             const diff = citaDate - now;
                             if (diff <= 3600000 && diff >= -3600000) {
+                                document.getElementById('btn-reagendar-container').style.display = 'none';
                                 document.getElementById('btn-locked').style.display = 'none';
                                 document.getElementById('btn-unlocked').style.display = 'block';
                             } else {
                                 document.getElementById('btn-locked').style.display = 'block';
                                 document.getElementById('btn-unlocked').style.display = 'none';
+                                document.getElementById('btn-reagendar-container').style.display = 'block';
                             }
                         }
                         revisarHoraCita(); 
@@ -885,6 +895,39 @@
             <button type="submit" style="background:var(--c-purple); color:white; border:none; width:40px; height:40px; border-radius:50%; cursor:pointer;"><i class="fas fa-paper-plane"></i></button>
         </form>
     </div>
+</div>
+
+
+<div id="modalReagendar" class="modal-overlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.6); backdrop-filter:blur(5px); z-index:7000; align-items:center; justify-content:center; padding:20px;">
+  <div class="modal-box" style="width:100%; max-width:650px; background:#fff; border-radius:24px; padding:30px; position:relative;">
+    <button onclick="document.getElementById('modalReagendar').style.display='none'"
+      style="position:absolute; top:20px; right:20px; background:none; border:none; font-size:20px; color:#94a3b8; cursor:pointer;"><i class="fas fa-times"></i></button>
+    <h2 style="font-family:var(--font-headings); margin-bottom:20px;">Elige tu nuevo horario</h2>
+
+    <div class="date-carousel" id="dateCarouselReagendar">
+      {% for dia, horas in dias_disponibles.items %}
+      <button type="button" class="date-chip {% if forloop.first %}active{% endif %}"
+        data-target="slots-re-{{ dia|date:'Ymd' }}" data-fecha="{{ dia|date:'Y-m-d' }}">
+        <span style="font-size:11px;display:block;text-transform:uppercase;">{{ dia|date:"D" }}</span>
+        <span style="font-size:28px;font-weight:800;">{{ dia|date:"d" }}</span>
+        <span style="font-size:11px;display:block;text-transform:uppercase;">{{ dia|date:"M" }}</span>
+      </button>
+      {% endfor %}
+    </div>
+
+    <div style="margin-top:20px;">
+      {% for dia, horas in dias_disponibles.items %}
+      <div class="slots-container" id="slots-re-{{ dia|date:'Ymd' }}" {% if not forloop.first %}style="display:none;"{% endif %}>
+        {% for h in horas %}
+        <button class="time-slot-btn" data-fecha="{{ dia|date:'Y-m-d' }}" data-hora="{{ h|time:'H:i' }}">{{ h|time:"h:i A" }}</button>
+        {% endfor %}
+      </div>
+      {% endfor %}
+    </div>
+
+    <button id="btn-confirmar-reagendo" style="display:none; width:100%; margin-top:25px;"
+      class="btn-brutal btn-primary" onclick="confirmarReagendo()">Confirmar nuevo horario</button>
+  </div>
 </div>
 
 <script>
@@ -1481,6 +1524,57 @@ window.modalidadSeleccionada = 'En línea'; // Por defecto
         selected.style.color = 'var(--c-purple)';
         selected.style.background = '#f3e8ff';
     }
+
+
+
+
+window.fechaReagendoSeleccionada = "";
+window.horaReagendoSeleccionada = "";
+
+function abrirModalReagendar() {
+  document.getElementById('modalReagendar').style.display = 'flex';
+}
+
+document.addEventListener("DOMContentLoaded", function () {
+  document.querySelectorAll('#dateCarouselReagendar .date-chip').forEach(chip => {
+    chip.addEventListener('click', function () {
+      document.querySelectorAll('#dateCarouselReagendar .date-chip').forEach(c => c.classList.remove('active'));
+      this.classList.add('active');
+      document.querySelectorAll('#modalReagendar .slots-container').forEach(s => s.style.display = 'none');
+      document.getElementById(this.dataset.target).style.display = 'flex';
+    });
+  });
+
+  document.querySelectorAll('#modalReagendar .time-slot-btn').forEach(btn => {
+    btn.addEventListener('click', function () {
+      document.querySelectorAll('#modalReagendar .time-slot-btn').forEach(b => b.classList.remove('active'));
+      this.classList.add('active');
+      window.fechaReagendoSeleccionada = this.dataset.fecha;
+      window.horaReagendoSeleccionada = this.dataset.hora;
+      document.getElementById('btn-confirmar-reagendo').style.display = 'block';
+    });
+  });
+});
+
+function confirmarReagendo() {
+  if (!window.fechaReagendoSeleccionada || !window.horaReagendoSeleccionada) return;
+  let formData = new FormData();
+  formData.append('cita_id', '{{ cita_proxima.id }}');
+  formData.append('fecha', window.fechaReagendoSeleccionada);
+  formData.append('hora', window.horaReagendoSeleccionada);
+
+  fetch("{% url 'reagendar_cita' %}", {
+    method: 'POST',
+    headers: { 'X-CSRFToken': '{{ csrf_token }}' },
+    body: formData
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.status === 'success') { alert('¡Listo! Tu cita fue reagendada.'); location.reload(); }
+    else { alert(data.message || 'No se pudo reagendar.'); }
+  })
+  .catch(() => alert('Error de conexión.'));
+}
 
 
 

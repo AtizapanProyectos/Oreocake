@@ -43,4 +43,5 @@ urlpatterns = [
     path('pago-cancelado/<int:cita_id>/', views.pago_cancelado_clip, name='pago_cancelado_clip'),
     path('talleres/', views.talleres_view, name='talleres'),
     path('api/registrar-taller/', views.procesar_registro_taller, name='registrar_taller_ajax'),
+    path('reagendar-cita/', views.reagendar_cita_ajax, name='reagendar_cita'),
 ]

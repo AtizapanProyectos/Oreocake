@@ -745,6 +745,61 @@ def guardar_cita_ajax(request):
     return JsonResponse({'status': 'error'})
 
 
+
+
+@transaction.atomic
+def reagendar_cita_ajax(request):
+    if request.method != 'POST' or not request.user.is_authenticated:
+        return JsonResponse({'status': 'error', 'message': 'Petición no válida.'})
+
+    cita_id = request.POST.get('cita_id')
+    nueva_fecha_str = request.POST.get('fecha')
+    nueva_hora_str = request.POST.get('hora')
+
+    try:
+        cita = Cita.objects.select_for_update().select_related('psicologo').get(
+            id=cita_id, paciente=request.user, estado='Confirmada'
+        )
+    except Cita.DoesNotExist:
+        return JsonResponse({'status': 'error', 'message': 'No encontramos esa cita.'})
+
+    # Regla: solo se puede reagendar hasta 1 hora antes de la sesión ACTUAL
+    ahora = timezone.localtime(timezone.now())
+    inicio_actual = timezone.make_aware(datetime.combine(cita.fecha, cita.hora))
+    if inicio_actual - ahora < timedelta(hours=1):
+        return JsonResponse({'status': 'error', 'message': 'Ya no puedes reagendar: falta menos de 1 hora para tu sesión.'})
+
+    try:
+        nueva_fecha = datetime.strptime(nueva_fecha_str, '%Y-%m-%d').date()
+        nueva_hora = datetime.strptime(nueva_hora_str, '%H:%M').time()
+    except (TypeError, ValueError):
+        return JsonResponse({'status': 'error', 'message': 'Fecha u hora inválida.'})
+
+    if not cita.psicologo:
+        return JsonResponse({'status': 'error', 'message': 'Esta cita no tiene terapeuta asignado.'})
+
+    # 🔒 MISMA LÓGICA que usamos al agendar: solo slots realmente libres del doctor
+    slots_del_dia = obtener_slots_psicologo_para_dia(cita.psicologo, nueva_fecha)
+    if nueva_hora.strftime('%I:%M %p') not in slots_del_dia:
+        return JsonResponse({'status': 'error', 'message': 'Ese horario ya no está disponible.'})
+
+    # doble-check anti condición-de-carrera
+    if Cita.objects.filter(psicologo=cita.psicologo, fecha=nueva_fecha, hora=nueva_hora,
+                            estado='Confirmada').exclude(id=cita.id).exists():
+        return JsonResponse({'status': 'error', 'message': 'Ese horario acaba de ser ocupado.'})
+
+    cita.fecha = nueva_fecha
+    cita.hora = nueva_hora
+    cita.save(update_fields=['fecha', 'hora'])
+
+    return JsonResponse({
+        'status': 'success',
+        'nueva_fecha': nueva_fecha.strftime('%d/%m/%Y'),
+        'nueva_hora': nueva_hora.strftime('%H:%M'),
+    })
+
+    
+
 def panel_doctor(request):
     if not request.user.is_authenticated or not hasattr(request.user, 'perfil_psicologo'):
         return redirect('modulo_informativo')
