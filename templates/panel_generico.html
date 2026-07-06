@@ -90,6 +90,27 @@
     .slots-container { gap: 15px !important; margin-top: 15px; display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
     .time-slot-btn { padding: 15px !important; border-radius: 12px; border: 2px solid #f3f4f6; background: white; color: var(--text-main); font-weight: 700; cursor: pointer; transition: all 0.2s; font-family: var(--font-body); }
     .time-slot-btn:hover, .time-slot-btn.active { background: var(--c-purple); color: white; border-color: var(--c-purple); transform: translateY(-2px); }
+
+    .btn-reagendar-suave {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: #f3e8ff;
+        color: var(--c-purple);
+        border: none;
+        padding: 12px 24px;
+        border-radius: 50px;
+        font-weight: 700;
+        font-size: 14px;
+        font-family: var(--font-body);
+        cursor: pointer;
+        transition: 0.3s;
+    }
+    .btn-reagendar-suave:hover {
+        background: var(--c-purple);
+        color: white;
+        transform: translateY(-2px);
+    }
     
     .btn-brutal { padding: 20px; border-radius: 15px; font-weight: 800; font-family: var(--font-headings); border: none; cursor: pointer; transition: 0.3s; display: inline-flex; align-items: center; justify-content: center; gap: 10px; text-transform: uppercase; letter-spacing: 1px;}
     .btn-primary { background: var(--c-purple); color: white; }
@@ -193,29 +214,6 @@
 @media(max-width: 768px) { .btn-flotante-chat { bottom: 90px; right: 20px; width: 55px; height: 55px; font-size: 24px; } }
 .chat-unseen-badge { position: absolute; top: 0; right: 0; background: var(--c-pink); width: 20px; height: 20px; border-radius: 50%; font-size: 11px; font-weight: 800; display: flex; align-items: center; justify-content: center; display: none; }
 
-
-.btn-reagendar-suave {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    background: #f3e8ff;
-    color: var(--c-purple);
-    border: none;
-    padding: 12px 24px;
-    border-radius: 50px;
-    font-weight: 700;
-    font-size: 14px;
-    font-family: var(--font-body);
-    cursor: pointer;
-    transition: 0.3s;
-}
-.btn-reagendar-suave:hover {
-    background: var(--c-purple);
-    color: white;
-    transform: translateY(-2px);
-}
-
-
 </style>
 
 <div class="dashboard-header">
@@ -271,11 +269,11 @@
         {% else %}
 
 
-        <div id="btn-reagendar-container" style="text-align: center; margin: 10px 0 5px;">
+                    <div id="btn-reagendar-container" style="text-align: center; margin: 10px 0 5px;">
             <button type="button" onclick="abrirModalReagendar()" class="btn-reagendar-suave">
                 <i class="fas fa-calendar-alt"></i> Reagendar mi cita
             </button>
-        </div>
+            </div>
             {% if cita_proxima.enlace_meet %}
                 <div id="btn-locked" style="background: #f1f5f9; padding: 25px; border-radius: 20px; color: #64748b; max-width: 500px; margin: 0 auto; text-align: center; border: 2px dashed #cbd5e1;">
                     <i class="fas fa-clock" style="font-size: 32px; margin-bottom: 12px; color: #94a3b8;"></i>
@@ -889,37 +887,7 @@
   </div>
 </div>
 
-
-{% if psicologo_asignado %}
-<div class="btn-flotante-chat" onclick="togglePatientChat()">
-    <i class="fas fa-comment-dots"></i>
-    <div class="chat-unseen-badge" id="pat-unseen-badge">0</div>
-</div>
-
-<div class="chat-patient-widget" id="patientChatWidget">
-    <div class="c-pat-head">
-        <div class="c-pat-doc">
-            <div class="c-pat-avatar">D</div>
-            <div>
-                <div style="font-family:var(--font-headings); font-weight:800; font-size:16px;">Dr(a). {{ psicologo_asignado.usuario.first_name }}</div>
-                <div style="font-size:11px; opacity:0.8;">Tu terapeuta</div>
-            </div>
-        </div>
-        <i class="fas fa-times" style="cursor:pointer; font-size:20px;" onclick="togglePatientChat()"></i>
-    </div>
-    <div class="c-pat-body" id="pat-chat-messages">
-        </div>
-    <div class="c-pat-foot">
-        <form style="display:flex; gap:10px;" onsubmit="enviarMensajePaciente(event)">
-            {% csrf_token %}
-            <input type="hidden" name="destinatario_id" value="{{ psicologo_asignado.usuario.id }}">
-            <input type="text" id="pat-chat-input" name="contenido" placeholder="Escribe tu mensaje..." required style="flex:1; border:1px solid #e2e8f0; border-radius:100px; padding:10px 15px; outline:none; font-family:var(--font-body);">
-            <button type="submit" style="background:var(--c-purple); color:white; border:none; width:40px; height:40px; border-radius:50%; cursor:pointer;"><i class="fas fa-paper-plane"></i></button>
-        </form>
-    </div>
-</div>
-
-
+{% comment %} 🔥 MODAL DE REAGENDAR: colocado fuera del bloque condicional del chat, para que siempre exista en el DOM {% endcomment %}
 <div id="modalReagendar" class="modal-overlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.6); backdrop-filter:blur(5px); z-index:7000; align-items:center; justify-content:center; padding:20px;">
   <div class="modal-box" style="width:100%; max-width:650px; background:#fff; border-radius:24px; padding:30px; position:relative;">
     <button onclick="document.getElementById('modalReagendar').style.display='none'"
@@ -950,6 +918,35 @@
     <button id="btn-confirmar-reagendo" style="display:none; width:100%; margin-top:25px;"
       class="btn-brutal btn-primary" onclick="confirmarReagendo()">Confirmar nuevo horario</button>
   </div>
+</div>
+
+{% if psicologo_asignado %}
+<div class="btn-flotante-chat" onclick="togglePatientChat()">
+    <i class="fas fa-comment-dots"></i>
+    <div class="chat-unseen-badge" id="pat-unseen-badge">0</div>
+</div>
+
+<div class="chat-patient-widget" id="patientChatWidget">
+    <div class="c-pat-head">
+        <div class="c-pat-doc">
+            <div class="c-pat-avatar">D</div>
+            <div>
+                <div style="font-family:var(--font-headings); font-weight:800; font-size:16px;">Dr(a). {{ psicologo_asignado.usuario.first_name }}</div>
+                <div style="font-size:11px; opacity:0.8;">Tu terapeuta</div>
+            </div>
+        </div>
+        <i class="fas fa-times" style="cursor:pointer; font-size:20px;" onclick="togglePatientChat()"></i>
+    </div>
+    <div class="c-pat-body" id="pat-chat-messages">
+        </div>
+    <div class="c-pat-foot">
+        <form style="display:flex; gap:10px;" onsubmit="enviarMensajePaciente(event)">
+            {% csrf_token %}
+            <input type="hidden" name="destinatario_id" value="{{ psicologo_asignado.usuario.id }}">
+            <input type="text" id="pat-chat-input" name="contenido" placeholder="Escribe tu mensaje..." required style="flex:1; border:1px solid #e2e8f0; border-radius:100px; padding:10px 15px; outline:none; font-family:var(--font-body);">
+            <button type="submit" style="background:var(--c-purple); color:white; border:none; width:40px; height:40px; border-radius:50%; cursor:pointer;"><i class="fas fa-paper-plane"></i></button>
+        </form>
+    </div>
 </div>
 
 <script>
