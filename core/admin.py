@@ -133,13 +133,38 @@ class NotificacionSistemaAdmin(ImportExportModelAdmin):
 # ==========================================
 # REGISTROS EXTRA
 # ==========================================
-admin.site.register(HorarioPsicologo)
-admin.site.register(DiaLibrePsicologo)
-admin.site.register(EventoAuditoria)
-admin.site.register(PreferenciasUsuario)
+@admin.register(HorarioPsicologo)
+class HorarioPsicologoAdmin(ImportExportModelAdmin):
+    list_display = ('psicologo', 'mes', 'semana', 'dia_semana', 'turno', 'es_descanso')
+    list_filter = ('psicologo', 'es_descanso', 'turno')
+    # 🔥 MAGIA DE VELOCIDAD
+    list_select_related = ('psicologo', 'psicologo__usuario')
 
+@admin.register(DiaLibrePsicologo)
+class DiaLibrePsicologoAdmin(ImportExportModelAdmin):
+    list_display = ('psicologo', 'fecha', 'motivo')
+    list_filter = ('fecha', 'psicologo')
+    # 🔥 MAGIA DE VELOCIDAD
+    list_select_related = ('psicologo', 'psicologo__usuario')
+
+@admin.register(EventoAuditoria)
+class EventoAuditoriaAdmin(ImportExportModelAdmin):
+    list_display = ('timestamp', 'usuario', 'accion')
+    list_filter = ('accion', 'timestamp')
+    search_fields = ('usuario__username', 'accion')
+    # 🔥 MAGIA DE VELOCIDAD
+    list_select_related = ('usuario',)
+
+@admin.register(PreferenciasUsuario)
+class PreferenciasUsuarioAdmin(ImportExportModelAdmin):
+    list_display = ('user', 'notificaciones_activadas', 'ultima_conexion')
+    list_filter = ('notificaciones_activadas',)
+    # 🔥 MAGIA DE VELOCIDAD
+    list_select_related = ('user',)
+
+# 🔥 Aquí cambiamos admin.ModelAdmin por ImportExportModelAdmin
 @admin.register(RegistroTallerPublico)
-class RegistroTallerPublicoAdmin(admin.ModelAdmin):
+class RegistroTallerPublicoAdmin(ImportExportModelAdmin):
     list_display = ('nombre', 'correo', 'telefono', 'taller_seleccionado', 'fecha_registro')
     search_fields = ('nombre', 'correo', 'telefono', 'taller_seleccionado')
     list_filter = ('taller_seleccionado', 'fecha_registro')
