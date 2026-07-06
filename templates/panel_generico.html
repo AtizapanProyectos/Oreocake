@@ -193,6 +193,29 @@
 @media(max-width: 768px) { .btn-flotante-chat { bottom: 90px; right: 20px; width: 55px; height: 55px; font-size: 24px; } }
 .chat-unseen-badge { position: absolute; top: 0; right: 0; background: var(--c-pink); width: 20px; height: 20px; border-radius: 50%; font-size: 11px; font-weight: 800; display: flex; align-items: center; justify-content: center; display: none; }
 
+
+.btn-reagendar-suave {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: #f3e8ff;
+    color: var(--c-purple);
+    border: none;
+    padding: 12px 24px;
+    border-radius: 50px;
+    font-weight: 700;
+    font-size: 14px;
+    font-family: var(--font-body);
+    cursor: pointer;
+    transition: 0.3s;
+}
+.btn-reagendar-suave:hover {
+    background: var(--c-purple);
+    color: white;
+    transform: translateY(-2px);
+}
+
+
 </style>
 
 <div class="dashboard-header">
@@ -248,12 +271,11 @@
         {% else %}
 
 
-                    <div id="btn-reagendar-container" style="max-width:500px; margin:15px auto 0;">
-            <button type="button" onclick="abrirModalReagendar()" class="btn-brutal"
-                style="width:100%; justify-content:center; border-radius:20px; background:#fff; border:2px solid var(--c-purple); color:var(--c-purple); font-weight:700; padding:14px;">
+        <div id="btn-reagendar-container" style="text-align: center; margin: 10px 0 5px;">
+            <button type="button" onclick="abrirModalReagendar()" class="btn-reagendar-suave">
                 <i class="fas fa-calendar-alt"></i> Reagendar mi cita
             </button>
-            </div>
+        </div>
             {% if cita_proxima.enlace_meet %}
                 <div id="btn-locked" style="background: #f1f5f9; padding: 25px; border-radius: 20px; color: #64748b; max-width: 500px; margin: 0 auto; text-align: center; border: 2px dashed #cbd5e1;">
                     <i class="fas fa-clock" style="font-size: 32px; margin-bottom: 12px; color: #94a3b8;"></i>
