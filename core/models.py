@@ -7,12 +7,26 @@ from django.contrib.auth.models import User
 class PerfilPsicologo(models.Model):
     usuario = models.OneToOneField(User, on_delete=models.CASCADE, related_name='perfil_psicologo')
     cedula_profesional = models.CharField(max_length=50, unique=True, verbose_name="Cédula Profesional")
-    genero = models.CharField(max_length=20, choices=[('Hombre', 'Hombre'), ('Mujer', 'Mujer')], verbose_name="Género")
+    genero = models.CharField(max_length=20, choices=[('Hombre', 'Hombre'), ('Mujer', 'Mujer')], verbose_name="Género", db_index=True)
     especialidad = models.CharField(max_length=150, blank=True, null=True, verbose_name="Especialidad")
-    esta_activo = models.BooleanField(default=True, verbose_name="Aceptando nuevos pacientes")
+    esta_activo = models.BooleanField(default=True, verbose_name="Aceptando nuevos pacientes", db_index=True)
     foto = models.ImageField(upload_to='fotos_doctores/', blank=True, null=True, verbose_name="Foto de Perfil")
     cv_breve = models.TextField(blank=True, null=True, verbose_name="Breve CV o Enfoque Clínico")
-    
+
+    # 🔥 NUEVO: Modalidades de atención habilitadas por psicólogo.
+    # Permiten filtrar la búsqueda de disponibilidad según el tipo de sesión
+    # solicitado por el paciente (individual / pareja / familiar).
+    atiende_individual = models.BooleanField(default=True, verbose_name="Atiende Terapia Individual")
+    atiende_pareja = models.BooleanField(default=False, verbose_name="Atiende Terapia de Pareja")
+    atiende_familiar = models.BooleanField(default=False, verbose_name="Atiende Terapia Familiar")
+
+    class Meta:
+        indexes = [
+            # 🔥 OPTIMIZACIÓN: acelera el filtro combinado usado en la búsqueda
+            # global de disponibilidad (activos + género + modalidad).
+            models.Index(fields=['esta_activo', 'genero']),
+        ]
+
     def __str__(self):
         # 🔥 OPTIMIZACIÓN: Protección por si el usuario pierde el first_name
         nombre = self.usuario.first_name if self.usuario and self.usuario.first_name else self.usuario.username
@@ -55,10 +69,23 @@ class Cita(models.Model):
     enlace_meet = models.URLField(blank=True, null=True)
     id_evento_google = models.CharField(max_length=255, blank=True, null=True)
     modalidad = models.CharField(max_length=50, default='En línea', choices=[('En línea', 'En línea'), ('Presencial', 'Presencial')])
-    tipo_sesion = models.CharField(max_length=50, default='individual', choices=[('individual', 'Individual'), ('pareja', 'En Pareja')])
+    tipo_sesion = models.CharField(max_length=50, default='individual', choices=[
+        ('individual', 'Individual'),
+        ('pareja', 'En Pareja'),
+        ('familiar', 'Terapia Familiar'),
+    ])
+    # 🔥 NUEVO: solo aplica cuando tipo_sesion == 'familiar'. Usado para el
+    # cálculo de precio (base + $100 MXN por integrante adicional).
+    integrantes_familia = models.PositiveSmallIntegerField(blank=True, null=True, verbose_name="Número de integrantes (Terapia Familiar)")
 
     class Meta:
         unique_together = [['psicologo', 'fecha', 'hora']]
+        indexes = [
+            # 🔥 OPTIMIZACIÓN: acelera las búsquedas de disponibilidad y de
+            # "próxima cita" que filtran por fecha + estado constantemente.
+            models.Index(fields=['fecha', 'estado']),
+            models.Index(fields=['psicologo', 'fecha', 'estado']),
+        ]
 
     def __str__(self):
         # 🔥 OPTIMIZACIÓN: Protegido contra atributos nulos

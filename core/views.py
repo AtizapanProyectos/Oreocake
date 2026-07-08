@@ -89,6 +89,73 @@ def logout_usuario(request):
     logout(request)
     return redirect('inicio')
 
+# =========================================================================
+# 🔥 NUEVO: MODALIDADES DE SESIÓN (Individual / Pareja / Familiar)
+# =========================================================================
+# Mapea cada tipo de sesión al campo booleano del psicólogo que indica si
+# puede atenderla. Única fuente de verdad usada tanto en la búsqueda de
+# disponibilidad como en la asignación automática.
+CAPACIDAD_POR_TIPO_SESION = {
+    'individual': 'atiende_individual',
+    'pareja': 'atiende_pareja',
+    'familiar': 'atiende_familiar',
+}
+TIPOS_SESION_VALIDOS = tuple(CAPACIDAD_POR_TIPO_SESION.keys())
+
+# =========================================================================
+# 💰 NUEVO: PRECIOS Y COMISIONES (única fuente de verdad del backend)
+# =========================================================================
+# El monto que se cobra SIEMPRE se recalcula en el servidor a partir de
+# estas constantes; nunca se confía en el monto que mande el navegador.
+PRECIO_BASE_SESION = {
+    'individual': 100,
+    'pareja': 200,
+    'familiar': 200,
+}
+# Comisión de plataforma, expresada como % sobre el subtotal (mantiene la
+# proporción usada históricamente: $10 sobre $100 y $15 sobre $200).
+COMISION_PORCENTAJE_SESION = {
+    'individual': 0.10,
+    'pareja': 0.075,
+    'familiar': 0.075,
+}
+INCREMENTO_POR_INTEGRANTE_FAMILIAR = 100  # MXN por integrante adicional
+MIN_INTEGRANTES_FAMILIAR = 2  # una terapia familiar implica mínimo 2 personas
+
+
+def calcular_precio_sesion(tipo_sesion, integrantes_familia=None):
+    """
+    Calcula subtotal, comisión y total para cualquier tipo de sesión.
+    Es la ÚNICA función que debe usarse para mostrar o cobrar un precio,
+    de modo que el resumen de costos y el cobro real jamás se desincronicen.
+    """
+    tipo_sesion = tipo_sesion if tipo_sesion in PRECIO_BASE_SESION else 'individual'
+    base = PRECIO_BASE_SESION[tipo_sesion]
+    integrantes_normalizados = None
+
+    if tipo_sesion == 'familiar':
+        try:
+            n = int(integrantes_familia)
+        except (TypeError, ValueError):
+            n = MIN_INTEGRANTES_FAMILIAR
+        n = max(n, MIN_INTEGRANTES_FAMILIAR)
+        integrantes_normalizados = n
+        integrantes_adicionales = n - MIN_INTEGRANTES_FAMILIAR
+        subtotal = base + (integrantes_adicionales * INCREMENTO_POR_INTEGRANTE_FAMILIAR)
+    else:
+        subtotal = base
+
+    comision = round(subtotal * COMISION_PORCENTAJE_SESION[tipo_sesion], 2)
+    total = round(subtotal + comision, 2)
+
+    return {
+        'tipo_sesion': tipo_sesion,
+        'integrantes_familia': integrantes_normalizados,
+        'subtotal': subtotal,
+        'comision': comision,
+        'total': total,
+    }
+
 from datetime import datetime, timedelta, time, date
 from collections import defaultdict
 from .models import DiaFestivo, Cita, HorarioPsicologo, PerfilPsicologo
@@ -96,38 +163,50 @@ from .models import DiaFestivo, Cita, HorarioPsicologo, PerfilPsicologo
 from datetime import datetime, timedelta, time
 from collections import defaultdict
 
-def obtener_slots_globales(fecha_inicio, fecha_fin, preferencia=""):
-    """Unión de disponibilidad filtrada por género y curada de bugs (Semana 5)"""
-    
+def obtener_slots_globales(fecha_inicio, fecha_fin, preferencia="", tipo_sesion="individual"):
+    """Unión de disponibilidad filtrada por género, modalidad y curada de bugs (Semana 5)"""
+
     # 🔥 1. EL FILTRO DINÁMICO DE GÉNERO
     filtro_psicologos = PerfilPsicologo.objects.filter(esta_activo=True)
     if 'Mujer' in preferencia:
         filtro_psicologos = filtro_psicologos.filter(genero='Mujer')
     elif 'Hombre' in preferencia:
         filtro_psicologos = filtro_psicologos.filter(genero='Hombre')
-        
-    psicologos_activos = list(filtro_psicologos)
+
+    # 🔥 NUEVO: filtro por modalidad habilitada (individual / pareja / familiar)
+    campo_capacidad = CAPACIDAD_POR_TIPO_SESION.get(tipo_sesion, 'atiende_individual')
+    filtro_psicologos = filtro_psicologos.filter(**{campo_capacidad: True})
+
+    # 🔥 OPTIMIZACIÓN: solo traemos los campos que realmente se usan aquí
+    psicologos_activos = list(filtro_psicologos.only('id', 'genero', 'esta_activo'))
     if not psicologos_activos: return {}
-    
+
     festivos = set(DiaFestivo.objects.filter(fecha__gte=fecha_inicio, fecha__lte=fecha_fin).values_list('fecha', flat=True))
-    
-    dias_libres_db = DiaLibrePsicologo.objects.filter(fecha__gte=fecha_inicio, fecha__lte=fecha_fin)
+
+    dias_libres_db = DiaLibrePsicologo.objects.filter(
+        fecha__gte=fecha_inicio, fecha__lte=fecha_fin,
+        psicologo_id__in=[p.id for p in psicologos_activos],
+    ).values_list('psicologo_id', 'fecha')
     dias_libres = defaultdict(set)
-    for dl in dias_libres_db:
-        dias_libres[dl.psicologo_id].add(dl.fecha)
-        
+    for psicologo_id, fecha_libre in dias_libres_db:
+        dias_libres[psicologo_id].add(fecha_libre)
+
     mes_inicio = date(fecha_inicio.year, fecha_inicio.month, 1)
     mes_fin = date(fecha_fin.year, fecha_fin.month, 1)
-    horarios_db = HorarioPsicologo.objects.filter(mes__gte=mes_inicio, mes__lte=mes_fin, es_descanso=False)
-    
+    horarios_db = HorarioPsicologo.objects.filter(
+        mes__gte=mes_inicio, mes__lte=mes_fin, es_descanso=False,
+        psicologo_id__in=[p.id for p in psicologos_activos],
+    )
+
     horarios_map = {}
     for h in horarios_db:
         horarios_map[(h.psicologo_id, h.mes, h.semana, h.dia_semana)] = h
-        
-    citas_db = Cita.objects.filter(fecha__gte=fecha_inicio, fecha__lte=fecha_fin, estado='Confirmada')
-    citas_ocupadas = set()
-    for c in citas_db:
-        citas_ocupadas.add((c.psicologo_id, c.fecha, c.hora))
+
+    # 🔥 OPTIMIZACIÓN: values_list evita instanciar objetos Cita innecesarios
+    citas_db = Cita.objects.filter(
+        fecha__gte=fecha_inicio, fecha__lte=fecha_fin, estado='Confirmada',
+    ).values_list('psicologo_id', 'fecha', 'hora')
+    citas_ocupadas = set(citas_db)
         
     slots_union = defaultdict(set)
     dia_actual = fecha_inicio
@@ -183,8 +262,13 @@ def obtener_slots_globales(fecha_inicio, fecha_fin, preferencia=""):
     return resultado
 
 
-def obtener_slots_psicologo(psicologo, fecha_inicio, fecha_fin):
+def obtener_slots_psicologo(psicologo, fecha_inicio, fecha_fin, tipo_sesion="individual"):
     """Versión ultraligera en RAM para un solo psicólogo"""
+    # 🔥 NUEVO: si el psicólogo no tiene habilitada esta modalidad, no hay slots.
+    campo_capacidad = CAPACIDAD_POR_TIPO_SESION.get(tipo_sesion, 'atiende_individual')
+    if not getattr(psicologo, campo_capacidad, False):
+        return {}
+
     festivos = set(DiaFestivo.objects.filter(fecha__gte=fecha_inicio, fecha__lte=fecha_fin).values_list('fecha', flat=True))
     dias_libres = set(psicologo.dias_libres.filter(fecha__gte=fecha_inicio, fecha__lte=fecha_fin).values_list('fecha', flat=True))
     
@@ -247,9 +331,9 @@ def obtener_slots_psicologo(psicologo, fecha_inicio, fecha_fin):
         
     return slots_por_fecha
 
-def obtener_slots_psicologo_para_dia(psicologo, fecha):
+def obtener_slots_psicologo_para_dia(psicologo, fecha, tipo_sesion="individual"):
     """Función auxiliar simple por si la usas en otro lado."""
-    slots_map = obtener_slots_psicologo(psicologo, fecha, fecha)
+    slots_map = obtener_slots_psicologo(psicologo, fecha, fecha, tipo_sesion=tipo_sesion)
     return slots_map.get(fecha.strftime('%Y-%m-%d'), [])
 
 
@@ -530,7 +614,9 @@ def panel_generico(request):
     psicologo_asignado = perfil_usuario.psicologo_asignado
     hora_limite_paciente = (now_local - timedelta(hours=1)).time().replace(second=0, microsecond=0)
     # Cita próxima
-    cita_proxima = Cita.objects.filter(
+    # 🔥 OPTIMIZACIÓN: select_related evita un query extra al acceder a
+    # cita_proxima.psicologo.usuario más abajo en el template.
+    cita_proxima = Cita.objects.select_related('psicologo__usuario').filter(
         Q(fecha__gt=hoy) | Q(fecha=hoy, hora__gte=hora_limite_paciente), # ¡Cambio aquí!
         paciente=request.user,
         estado='Confirmada'
@@ -540,12 +626,16 @@ def panel_generico(request):
     # =========================================================
     fecha_limite = hoy + timedelta(days=90)
 
+    # 🔥 Normalizamos el tipo de sesión inicial (viene del cuestionario) para
+    # que la búsqueda de disponibilidad respete la modalidad desde el arranque.
+    tipo_sesion_inicial = tipo_servicio if tipo_servicio in TIPOS_SESION_VALIDOS else 'individual'
+
     if psicologo_asignado:
         # Paciente con psicólogo asignado: solo sus horarios
-        dias_json = obtener_slots_psicologo(psicologo_asignado, hoy, fecha_limite)
+        dias_json = obtener_slots_psicologo(psicologo_asignado, hoy, fecha_limite, tipo_sesion=tipo_sesion_inicial)
     else:
         # 🔥 EL MOMENTO MÁGICO: Le pasamos la 'preferencia' a la función global
-        dias_json = obtener_slots_globales(hoy, fecha_limite, preferencia)
+        dias_json = obtener_slots_globales(hoy, fecha_limite, preferencia, tipo_sesion=tipo_sesion_inicial)
 
     # Convertir a formato que usa el template (dias_html con objetos fecha y hora)
     dias_html = {}
@@ -583,6 +673,14 @@ def panel_generico(request):
         'mis_talleres': mis_talleres,
         'paypal_client_id': settings.PAYPAL_CLIENT_ID,
         'psicologo_asignado': psicologo_asignado,
+        # 🔥 NUEVO: se manda al frontend para que el resumen de costos en
+        # tiempo real (JS) use exactamente los mismos números que el backend.
+        'precios_config_json': json.dumps({
+            'base': PRECIO_BASE_SESION,
+            'comision_pct': COMISION_PORCENTAJE_SESION,
+            'incremento_integrante_familiar': INCREMENTO_POR_INTEGRANTE_FAMILIAR,
+            'min_integrantes_familiar': MIN_INTEGRANTES_FAMILIAR,
+        }),
     })
 
 
@@ -624,6 +722,62 @@ def inscribir_taller_ajax(request):
             return JsonResponse({'status': 'error', 'message': 'El programa no existe.'})
     return JsonResponse({'status': 'error', 'message': 'Petición no válida.'})
 
+def obtener_disponibilidad_por_tipo_ajax(request):
+    """
+    🔥 NUEVO: Cuando el paciente cambia de modalidad en el wizard
+    (individual / pareja / familiar), el frontend llama a este endpoint
+    para refrescar el calendario mostrando SOLO los horarios de los
+    psicólogos habilitados para esa modalidad.
+    """
+    if not request.user.is_authenticated:
+        return JsonResponse({'status': 'error', 'message': 'Debes iniciar sesión.'}, status=403)
+
+    tipo_sesion = request.GET.get('tipo_sesion', 'individual')
+    if tipo_sesion not in TIPOS_SESION_VALIDOS:
+        tipo_sesion = 'individual'
+
+    try:
+        perfil_usuario = request.user.perfil
+    except Exception:
+        return JsonResponse({'status': 'error', 'message': 'Perfil no encontrado.'}, status=400)
+
+    preferencia = ""
+    ultimo_cuestionario = CuestionarioRegistro.objects.filter(paciente=request.user).last()
+    if ultimo_cuestionario and ultimo_cuestionario.respuestas:
+        respuestas = ultimo_cuestionario.respuestas
+        if isinstance(respuestas, str):
+            try:
+                respuestas = json.loads(respuestas)
+            except Exception:
+                respuestas = {}
+        preferencia = respuestas.get("preferencia_terapeuta", "")
+
+    hoy = timezone.localtime(timezone.now()).date()
+    fecha_limite = hoy + timedelta(days=90)
+    psicologo_asignado = perfil_usuario.psicologo_asignado
+
+    if psicologo_asignado:
+        dias_json = obtener_slots_psicologo(psicologo_asignado, hoy, fecha_limite, tipo_sesion=tipo_sesion)
+        if not dias_json:
+            return JsonResponse({
+                'status': 'success',
+                'dias': {},
+                'aviso': 'Tu terapeuta asignado no atiende esta modalidad todavía. Contáctanos para reasignarte.',
+            })
+    else:
+        dias_json = obtener_slots_globales(hoy, fecha_limite, preferencia, tipo_sesion=tipo_sesion)
+
+    return JsonResponse({'status': 'success', 'dias': dias_json})
+
+
+def calcular_precio_sesion_ajax(request):
+    """🔥 NUEVO: fuente de verdad del precio para el resumen en tiempo real del frontend."""
+    tipo_sesion = request.GET.get('tipo_sesion', 'individual')
+    integrantes_familia = request.GET.get('integrantes_familia')
+    resultado = calcular_precio_sesion(tipo_sesion, integrantes_familia)
+    return JsonResponse({'status': 'success', **resultado})
+
+
 from django.db import transaction
 @transaction.atomic
 def guardar_cita_ajax(request):
@@ -636,14 +790,27 @@ def guardar_cita_ajax(request):
         animo = request.POST.get('animo', 'No especificó')
         modalidad_str = request.POST.get('modalidad', 'En línea')
         tipo_sesion_str = request.POST.get('tipo_servicio', 'individual')
-        if tipo_sesion_str not in ['individual', 'pareja']:
+        if tipo_sesion_str not in TIPOS_SESION_VALIDOS:
             tipo_sesion_str = 'individual'
+
+        # 🔥 NUEVO: integrantes de la familia (solo aplica a terapia familiar)
+        integrantes_familia = None
+        if tipo_sesion_str == 'familiar':
+            precio_info = calcular_precio_sesion(tipo_sesion_str, request.POST.get('integrantes_familia'))
+            integrantes_familia = precio_info['integrantes_familia']
+
+        campo_capacidad = CAPACIDAD_POR_TIPO_SESION[tipo_sesion_str]
 
         try:
             fecha_obj = datetime.strptime(fecha_str, '%Y-%m-%d').date()
             hora_obj = datetime.strptime(hora_str, '%H:%M').time()
             perfil = request.user.perfil
             psicologo = perfil.psicologo_asignado
+
+            # 🔥 Si ya tiene psicólogo asignado pero éste no atiende la modalidad
+            # solicitada, no podemos agendarlo con él: se requiere reasignación.
+            if psicologo and not getattr(psicologo, campo_capacidad, False):
+                return JsonResponse({'status': 'error', 'message': 'Tu terapeuta asignado no atiende esta modalidad. Contáctanos para asignarte a un especialista.'})
 
             # Lógica de asignación automática (si no tiene psicólogo)
             if not psicologo:
@@ -655,9 +822,10 @@ def guardar_cita_ajax(request):
                     pass
 
                 # 1. Obtenemos los IDs de los doctores que REALMENTE tienen ese slot disponible ese día
+                #    y que además atienden la modalidad solicitada.
                 doctores_con_slot_valido = []
-                for psicologo_temp in PerfilPsicologo.objects.filter(esta_activo=True):
-                    slots_del_dia = obtener_slots_psicologo_para_dia(psicologo_temp, fecha_obj)
+                for psicologo_temp in PerfilPsicologo.objects.filter(esta_activo=True, **{campo_capacidad: True}):
+                    slots_del_dia = obtener_slots_psicologo_para_dia(psicologo_temp, fecha_obj, tipo_sesion=tipo_sesion_str)
                     if hora_obj.strftime('%I:%M %p') in slots_del_dia:
                         doctores_con_slot_valido.append(psicologo_temp.id)
 
@@ -669,7 +837,7 @@ def guardar_cita_ajax(request):
                 )
 
                 if not psicologos_libres.exists():
-                    return JsonResponse({'status': 'error', 'message': 'Lo sentimos, este horario acaba de ser ocupado. Elige otro.'})
+                    return JsonResponse({'status': 'error', 'message': 'Lo sentimos, este horario acaba de ser ocupado o no hay especialistas disponibles para esta modalidad. Elige otro horario.'})
 
                 # 3. Asignamos ordenando por el total histórico de citas y desempate al azar ('?')
                 if 'Mujer' in preferencia:
@@ -718,6 +886,7 @@ def guardar_cita_ajax(request):
                 estado_animo=animo,
                 modalidad=modalidad_str,
                 tipo_sesion=tipo_sesion_str,
+                integrantes_familia=integrantes_familia,
                 motivo='Primera Sesión' if not perfil.psicologo_asignado else 'Sesión de Seguimiento',
                 estado='Confirmada',
                 enlace_meet=link_final,
@@ -779,7 +948,8 @@ def reagendar_cita_ajax(request):
         return JsonResponse({'status': 'error', 'message': 'Esta cita no tiene terapeuta asignado.'})
 
     # 🔒 MISMA LÓGICA que usamos al agendar: solo slots realmente libres del doctor
-    slots_del_dia = obtener_slots_psicologo_para_dia(cita.psicologo, nueva_fecha)
+    # (respetando la modalidad de la cita original: individual/pareja/familiar)
+    slots_del_dia = obtener_slots_psicologo_para_dia(cita.psicologo, nueva_fecha, tipo_sesion=cita.tipo_sesion)
     if nueva_hora.strftime('%I:%M %p') not in slots_del_dia:
         return JsonResponse({'status': 'error', 'message': 'Ese horario ya no está disponible.'})
 
@@ -2242,19 +2412,33 @@ def detalle_prensa(request, slug):
 def iniciar_pago_clip(request):
     if request.method == 'POST':
         try:
-            monto = request.POST.get('monto')
             tipo_servicio = request.POST.get('tipo_servicio', 'individual')
             
-            # Si es un donativo, saltamos la creación de la cita
+            # Si es un donativo, saltamos la creación de la cita y respetamos
+            # el monto libre que decide la persona que dona.
             if tipo_servicio == 'donativo':
+                monto = request.POST.get('monto')
                 cita_id = "DONATIVO"
             else:
+                if tipo_servicio not in TIPOS_SESION_VALIDOS:
+                    tipo_servicio = 'individual'
+
                 # 1. ES UNA CITA: Capturamos datos y pre-apartamos el lugar
                 fecha_str = request.POST.get('fecha')
                 hora_str = request.POST.get('hora')
                 animo = request.POST.get('animo', 'No especificó')
                 modalidad = request.POST.get('modalidad', 'En línea')
-                
+
+                # 🔥 NUNCA confiamos en el "monto" que manda el navegador: se
+                # recalcula aquí con la misma función usada en el resumen.
+                integrantes_familia = None
+                if tipo_servicio == 'familiar':
+                    precio_info = calcular_precio_sesion(tipo_servicio, request.POST.get('integrantes_familia'))
+                    integrantes_familia = precio_info['integrantes_familia']
+                else:
+                    precio_info = calcular_precio_sesion(tipo_servicio)
+                monto = precio_info['total']
+
                 fecha_obj = datetime.strptime(fecha_str, '%Y-%m-%d').date()
                 hora_obj = datetime.strptime(hora_str, '%H:%M').time()
 
@@ -2265,6 +2449,7 @@ def iniciar_pago_clip(request):
                     hora=hora_obj,
                     estado='Pendiente',
                     tipo_sesion=tipo_servicio,
+                    integrantes_familia=integrantes_familia,
                     estado_animo=animo,
                     modalidad=modalidad,
                     motivo='Primera Sesión' if not getattr(request.user.perfil, 'psicologo_asignado', None) else 'Sesión de Seguimiento'
