@@ -308,22 +308,33 @@ class MensajeChat(models.Model):
         return f"De {rem} para {dest} ({estado})"
 
 class ArticuloPrensa(models.Model):
-    titulo = models.CharField(max_length=150, verbose_name="Título del Artículo", db_index=True) # 👈 Reducido de 250 a 150 para seguridad del índice
-    slug = models.SlugField(unique=True, max_length=150) # 👈 Emparejado con el título
-    resumen = models.TextField()
-    contenido = models.TextField()
-    imagen = models.ImageField(upload_to='prensa/', blank=True, null=True)
-    imagen_url_externa = models.URLField(blank=True, null=True)
-    fecha_publicacion = models.DateField(auto_now_add=True, db_index=True)
-    publicado = models.BooleanField(default=True, db_index=True)
+    titulo = models.CharField(max_length=150, verbose_name="Título del Artículo", db_index=True) #
+    slug = models.SlugField(unique=True, max_length=150) #[cite: 1]
+    resumen = models.TextField() #[cite: 1]
+    contenido = models.TextField() #[cite: 1]
+    imagen = models.ImageField(upload_to='prensa/', blank=True, null=True) #[cite: 1]
+    imagen_url_externa = models.URLField(blank=True, null=True) #[cite: 1]
+    fecha_publicacion = models.DateField(auto_now_add=True, db_index=True) #[cite: 1]
+    publicado = models.BooleanField(default=True, db_index=True) #[cite: 1]
 
     class Meta: 
-        ordering = ['-fecha_publicacion']
+        ordering = ['-fecha_publicacion'] #[cite: 1]
         indexes = [
-            models.Index(fields=['publicado', 'fecha_publicacion']),
+            models.Index(fields=['publicado', 'fecha_publicacion']), #[cite: 1]
         ]
         
-    def __str__(self): return self.titulo
+    def __str__(self): return self.titulo #[cite: 1]
+
+    # 🔥 AGREGAR ESTO: Método para renderizar la ruta correcta
+    def get_imagen(self):
+        # 1. Prioriza la imagen subida localmente (tu volumen en Docker)
+        if self.imagen:
+            return self.imagen.url
+        # 2. Si no hay archivo físico, usa la URL externa
+        elif self.imagen_url_externa:
+            return self.imagen_url_externa
+        # 3. Fallback: Si no tiene ninguna, muestra una imagen por defecto para no romper el diseño
+        return '/static/img/default-blog.jpg'
 
 class RegistroTallerPublico(models.Model):
     nombre = models.CharField(max_length=100, db_index=True)
