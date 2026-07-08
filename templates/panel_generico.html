@@ -6,7 +6,7 @@
 {% block content %}
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 <link rel="stylesheet" type="text/css" href="https://npmcdn.com/flatpickr/dist/themes/airbnb.css">
-<script src="https://www.paypal.com/sdk/js?client-id={{ paypal_client_id }}&currency=MXN"></script>
+<script src="https://www.paypal.com/sdk/js?client-id={{ paypal_client_id }}&currency=MXN" defer></script>
 {{ dias_disponibles_json|json_script:"dias-data" }}
 {% csrf_token %}
 
@@ -467,7 +467,7 @@
             <div style="text-align: left; background: #f8fafc; border-radius: 24px; padding: 25px; margin-top: 20px;">
                 <div style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap;">
                     {% if psicologo_asignado.foto %}
-                        <img src="{{ psicologo_asignado.foto.url }}" alt="Foto del psicólogo" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 3px solid var(--c-purple);">
+                        <img src="{{ psicologo_asignado.foto.url }}" alt="Foto del psicólogo" loading="lazy" decoding="async" width="100" height="100" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 3px solid var(--c-purple);">
                     {% else %}
                         <div style="width: 100px; height: 100px; border-radius: 50%; background: #e2e8f0; display: flex; align-items: center; justify-content: center; color: var(--c-purple); font-size: 40px;">
                             <i class="fas fa-user-md"></i>
@@ -547,7 +547,21 @@
                 </div>
             </div>
 
-{% elif tipo_servicio != 'individual' and tipo_servicio != 'terapia_individual' and tipo_servicio != 'terapia_pareja' and tipo_servicio != '' %}
+{% elif tipo_servicio == 'terapia_familiar' %}
+            <div class="chic-card fade-in-up" style="border-top: 6px solid var(--c-orange); margin-bottom: 40px; background: #fff7ed;">
+                <div style="display: flex; align-items: center; gap: 30px; flex-wrap: wrap; justify-content: center; text-align: center;">
+                    <i class="fas fa-people-roof" style="font-size: 60px; color: var(--c-orange);"></i>
+                    <div>
+                        <h3 style="font-family: var(--font-headings); font-size: 2.5rem; color: var(--text-main); margin-bottom: 10px;">Un espacio para sanar en familia</h3>
+                        <p style="color: var(--text-muted); font-size: 16px; margin-bottom: 20px; max-width: 500px;">Bienvenidos a su espacio HOPE. Muy pronto se les asignará un especialista en terapia familiar.</p>
+                        <button onclick="seleccionarServicio('familiar')" class="btn-brutal btn-primary" style="background: var(--c-orange); color: white; border-radius: 30px; padding: 15px 30px;">
+                            Agendar primera sesión <i class="fas fa-arrow-right"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+{% elif tipo_servicio != 'individual' and tipo_servicio != 'terapia_individual' and tipo_servicio != 'terapia_pareja' and tipo_servicio != 'terapia_familiar' and tipo_servicio != '' %}
             <div class="chic-card fade-in-up" style="border-top: 6px solid var(--c-purple); margin-bottom: 40px; background: #f3e8ff;">
                 <div style="text-align: center; margin-bottom: 30px;">
                     <i class="fas fa-seedling" style="font-size: 60px; color: var(--c-purple); margin-bottom: 15px;"></i>
@@ -622,6 +636,27 @@
             <h4 style="font-family: var(--font-headings); margin: 0 0 8px 0;">En Pareja</h4>
             <p style="font-size: 13px; color: var(--text-muted); margin: 0;">$200 MXN</p>
         </div>
+
+        <div class="chic-card" onclick="seleccionarServicio('familiar')" style="cursor: pointer; width: 220px; text-align: center; padding: 30px; border: 2px solid #f1f5f9; transition: 0.3s;">
+            <i class="fas fa-people-roof" style="font-size: 40px; color: var(--c-orange); margin-bottom: 15px;"></i>
+            <h4 style="font-family: var(--font-headings); margin: 0 0 8px 0;">Terapia Familiar</h4>
+            <p style="font-size: 13px; color: var(--text-muted); margin: 0;">Desde $200 MXN</p>
+        </div>
+    </div>
+
+    <!-- 🔥 NUEVO: Selector de número de integrantes, solo visible para terapia familiar -->
+    <div id="familiar-integrantes-box" style="display: none; max-width: 420px; margin: 25px auto 0 auto; background: #fff7ed; border: 1px solid #fed7aa; border-radius: 16px; padding: 20px;">
+        <p style="font-size: 14px; font-weight: 700; color: var(--text-main); margin-bottom: 12px;">
+            ¿Cuántos integrantes de la familia asistirán?
+        </p>
+        <div style="display: flex; align-items: center; justify-content: center; gap: 20px;">
+            <button type="button" onclick="cambiarIntegrantesFamilia(-1)" style="width: 40px; height: 40px; border-radius: 50%; border: none; background: var(--c-purple); color: white; font-size: 20px; font-weight: 800; cursor: pointer;">−</button>
+            <span id="familiar-integrantes-valor" style="font-size: 28px; font-weight: 800; min-width: 40px; text-align: center;">2</span>
+            <button type="button" onclick="cambiarIntegrantesFamilia(1)" style="width: 40px; height: 40px; border-radius: 50%; border: none; background: var(--c-purple); color: white; font-size: 20px; font-weight: 800; cursor: pointer;">+</button>
+        </div>
+        <p style="font-size: 12px; color: var(--text-muted); text-align: center; margin: 10px 0 0 0;">
+            Precio base + $100 MXN por cada integrante adicional (mínimo 2).
+        </p>
     </div>
 </div>
 
@@ -1202,6 +1237,113 @@ setInterval(() => {
 
 <script>
 
+// 🔥 NUEVO: config de precios que manda el backend (views.py -> calcular_precio_sesion)
+// Así el resumen en tiempo real siempre coincide con lo que realmente se cobra.
+const PRECIOS_CONFIG = JSON.parse('{{ precios_config_json|escapejs }}');
+window.integrantesFamilia = PRECIOS_CONFIG.min_integrantes_familiar || 2;
+
+function calcularPrecioFrontend(tipo, integrantes) {
+    const base = PRECIOS_CONFIG.base[tipo] ?? PRECIOS_CONFIG.base.individual;
+    const pct = PRECIOS_CONFIG.comision_pct[tipo] ?? PRECIOS_CONFIG.comision_pct.individual;
+    let subtotal = base;
+    if (tipo === 'familiar') {
+        const min = PRECIOS_CONFIG.min_integrantes_familiar || 2;
+        const n = Math.max(parseInt(integrantes || min, 10), min);
+        subtotal = base + (n - min) * PRECIOS_CONFIG.incremento_integrante_familiar;
+    }
+    const comision = Math.round(subtotal * pct * 100) / 100;
+    const total = Math.round((subtotal + comision) * 100) / 100;
+    return { subtotal, comision, total };
+}
+
+function actualizarResumenPrecio() {
+    const tipo = window.tipoServicioAgendado || 'individual';
+    const { comision, total } = calcularPrecioFrontend(tipo, window.integrantesFamilia);
+
+    document.getElementById('precio-dinamico').innerHTML = `$${total.toFixed(2)} <span style="font-size: 16px;">MXN</span>`;
+    document.getElementById('desglose-precio').innerHTML = `+ <span style="color: var(--c-orange); font-weight: 600;">$${comision.toFixed(2)} de comisión</span>`;
+
+    const descripciones = {
+        individual: 'Consulta Psicológica Online Individual',
+        pareja: 'Sesión para dos personas (Pareja)',
+        familiar: `Terapia Familiar (${window.integrantesFamilia} integrantes)`,
+    };
+    document.getElementById('desc-dinamica').innerText = descripciones[tipo] || descripciones.individual;
+}
+
+function cambiarIntegrantesFamilia(delta) {
+    const min = PRECIOS_CONFIG.min_integrantes_familiar || 2;
+    window.integrantesFamilia = Math.max(min, (window.integrantesFamilia || min) + delta);
+    document.getElementById('familiar-integrantes-valor').innerText = window.integrantesFamilia;
+    actualizarResumenPrecio();
+}
+
+// 🔥 NUEVO: refresca el calendario según la modalidad elegida, mostrando
+// solo los horarios de psicólogos habilitados para esa modalidad.
+function refrescarDisponibilidadPorTipo(tipo) {
+    const carousel = document.getElementById('dateCarousel');
+    if (!carousel) return;
+    carousel.style.opacity = '0.4';
+
+    fetch(`{% url 'disponibilidad_por_tipo' %}?tipo_sesion=${encodeURIComponent(tipo)}`)
+        .then(r => r.json())
+        .then(data => {
+            carousel.style.opacity = '1';
+            if (data.status !== 'success') return;
+
+            if (data.aviso) {
+                alert(data.aviso);
+            }
+
+            // Reconstruimos el carrusel de fechas y los slots con la nueva data
+            const slotsWrapper = carousel.parentElement.querySelector('div[style*="margin-top: 30px"]') || carousel.parentElement;
+            carousel.innerHTML = '';
+            const contenedores = document.querySelectorAll('.slots-container');
+            contenedores.forEach(c => c.remove());
+
+            const fechas = Object.keys(data.dias);
+            if (fechas.length === 0) {
+                carousel.innerHTML = '<p style="color: var(--text-muted); font-style: italic;">No hay fechas disponibles para esta modalidad por el momento.</p>';
+                return;
+            }
+
+            fechas.forEach((fechaStr, idx) => {
+                const fechaObj = new Date(fechaStr + 'T00:00:00');
+                const dia = fechaObj.toLocaleDateString('es-MX', { weekday: 'short' }).toUpperCase();
+                const num = fechaObj.getDate();
+                const mes = fechaObj.toLocaleDateString('es-MX', { month: 'short' }).toUpperCase();
+                const idTarget = 'slots-' + fechaStr.replace(/-/g, '');
+
+                const chip = document.createElement('button');
+                chip.type = 'button';
+                chip.className = 'date-chip' + (idx === 0 ? ' active' : '');
+                chip.dataset.target = idTarget;
+                chip.dataset.fecha = fechaStr;
+                chip.innerHTML = `<span style="font-size: 11px; display: block; text-transform: uppercase; font-weight: 600; letter-spacing: 1px;">${dia}</span><span style="font-size: 28px; font-weight: 800; line-height: 1.1;">${num}</span><span style="font-size: 11px; display: block; text-transform: uppercase; font-weight: 700; opacity: 0.8; margin-top: 2px;">${mes}</span>`;
+                carousel.appendChild(chip);
+
+                const slotsDiv = document.createElement('div');
+                slotsDiv.className = 'slots-container';
+                slotsDiv.id = idTarget;
+                if (idx !== 0) slotsDiv.style.display = 'none';
+                data.dias[fechaStr].forEach(horaStr => {
+                    const btn = document.createElement('button');
+                    btn.className = 'time-slot-btn';
+                    btn.dataset.fecha = fechaStr;
+                    // convierte "09:00 AM" a "09:00" para data-hora
+                    const [hm, ampm] = horaStr.split(' ');
+                    let [hh, mm] = hm.split(':').map(Number);
+                    if (ampm === 'PM' && hh !== 12) hh += 12;
+                    if (ampm === 'AM' && hh === 12) hh = 0;
+                    btn.dataset.hora = String(hh).padStart(2, '0') + ':' + String(mm).padStart(2, '0');
+                    btn.innerText = horaStr;
+                    slotsDiv.appendChild(btn);
+                });
+                slotsWrapper.appendChild(slotsDiv);
+            });
+        })
+        .catch(() => { carousel.style.opacity = '1'; });
+}
 
 function guardarCitaSinPago() {
 
@@ -1216,6 +1358,9 @@ function guardarCitaSinPago() {
     formData.append('animo', window.animoSeleccionado);
     formData.append('modalidad', window.modalidadSeleccionada);
     formData.append('tipo_servicio', window.tipoServicioAgendado);
+    if (window.tipoServicioAgendado === 'familiar') {
+        formData.append('integrantes_familia', window.integrantesFamilia);
+    }
 
     fetch("{% url 'guardar_cita' %}", {
         method: 'POST',
@@ -1261,22 +1406,28 @@ function guardarCitaSinPago() {
     function seleccionarServicio(tipo) {
         // 1. Guardamos la selección
         window.tipoServicioAgendado = tipo;
-        
-        // 2. Actualizamos el precio y descripción visibles
-        if (tipo === 'pareja') {
-            document.getElementById('precio-dinamico').innerHTML = '$200.00 <span style="font-size: 16px;">MXN</span>';
-            document.getElementById('desglose-precio').innerHTML = '+ <span style="color: var(--c-orange); font-weight: 600;">$15.00 de comisión</span>';
-            document.getElementById('desc-dinamica').innerText = 'Sesión para dos personas (Pareja)';
-        } else {
-            document.getElementById('precio-dinamico').innerHTML = '$100.00 <span style="font-size: 16px;">MXN</span>';
-            document.getElementById('desglose-precio').innerHTML = '+ <span style="color: var(--c-orange); font-weight: 600;">$10.00 de comisión</span>';
-            document.getElementById('desc-dinamica').innerText = 'Consulta Psicológica Online Individual';
+
+        // 2. Mostramos/ocultamos el stepper de integrantes (solo terapia familiar)
+        const integrantesBox = document.getElementById('familiar-integrantes-box');
+        if (integrantesBox) {
+            integrantesBox.style.display = (tipo === 'familiar') ? 'block' : 'none';
+        }
+        if (tipo === 'familiar') {
+            window.integrantesFamilia = PRECIOS_CONFIG.min_integrantes_familiar || 2;
+            document.getElementById('familiar-integrantes-valor').innerText = window.integrantesFamilia;
         }
 
-        // 3. Ocultamos el selector de terapia
+        // 3. Actualizamos el precio y descripción visibles (tiempo real)
+        actualizarResumenPrecio();
+
+        // 4. Refrescamos la disponibilidad para mostrar solo psicólogos
+        //    habilitados para esta modalidad (individual / pareja / familiar)
+        refrescarDisponibilidadPorTipo(tipo);
+
+        // 5. Ocultamos el selector de terapia
         document.getElementById('selector-servicio').style.display = 'none';
-        
-        // 4. Disparamos la función que despliega el calendario
+
+        // 6. Disparamos la función que despliega el calendario
         mostrarCalendario(); 
         
         console.log("Tipo de servicio seleccionado:", tipo);
@@ -1575,9 +1726,10 @@ document.addEventListener("DOMContentLoaded", function () {
                 return actions.resolve();
             },
 
-            // 2. Preparar el cobro (Precio dinámico)
+            // 2. Preparar el cobro (Precio dinámico, incluye Individual/Pareja/Familiar)
             createOrder: function(data, actions) {
-                let montoCobro = (window.tipoServicioAgendado === 'pareja') ? '215.00' : '110.00';
+                const { total } = calcularPrecioFrontend(window.tipoServicioAgendado || 'individual', window.integrantesFamilia);
+                let montoCobro = total.toFixed(2);
                 
                 return actions.order.create({
                     purchase_units: [{
