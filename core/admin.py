@@ -1,6 +1,8 @@
 from django.contrib import admin
 from import_export.admin import ImportExportModelAdmin
-from .models import * # ==========================================
+from .models import * 
+from django.db.models import Count
+# ==========================================
 # INLINES PARA EL PERFIL DEL PSICÓLOGO
 # ==========================================
 class HorarioInline(admin.TabularInline):
@@ -85,10 +87,21 @@ class DiaFestivoAdmin(ImportExportModelAdmin):
 # ==========================================
 @admin.register(Taller)
 class TallerAdmin(ImportExportModelAdmin):
-    list_display = ('nombre', 'tipo', 'fecha', 'hora', 'cupo_maximo', 'cupos_disponibles')
+    # Usamos 'cupos_disponibles_annotated' en lugar de la propiedad del modelo
+    list_display = ('nombre', 'tipo', 'fecha', 'hora', 'cupo_maximo', 'cupos_disponibles_annotated')
     list_filter = ('tipo', 'fecha')
     search_fields = ('nombre',)
     list_select_related = ('psicologo',)
+
+    def get_queryset(self, request):
+        queryset = super().get_queryset(request)
+        # Hacemos que la base de datos cuente todo en un solo viaje limpio
+        return queryset.annotate(total_inscritos=Count('inscripciones'))
+
+    @admin.display(description='Cupos Disponibles')
+    def cupos_disponibles_annotated(self, obj):
+        # Evita consultas extra usando el valor precalculado por la anotación
+        return max(0, obj.cupo_maximo - obj.total_inscritos)
 
 @admin.register(InscripcionTaller)
 class InscripcionTallerAdmin(ImportExportModelAdmin):
