@@ -308,36 +308,36 @@ class MensajeChat(models.Model):
         return f"De {rem} para {dest} ({estado})"
 
 class ArticuloPrensa(models.Model):
-    titulo = models.CharField(max_length=250, verbose_name="Título del Artículo", db_index=True) # 🔥 OPTIMIZADO
-    slug = models.SlugField(unique=True, max_length=250)
+    titulo = models.CharField(max_length=150, verbose_name="Título del Artículo", db_index=True) # 👈 Reducido de 250 a 150 para seguridad del índice
+    slug = models.SlugField(unique=True, max_length=150) # 👈 Emparejado con el título
     resumen = models.TextField()
     contenido = models.TextField()
     imagen = models.ImageField(upload_to='prensa/', blank=True, null=True)
     imagen_url_externa = models.URLField(blank=True, null=True)
-    fecha_publicacion = models.DateField(auto_now_add=True, db_index=True) # 🔥 OPTIMIZADO
-    publicado = models.BooleanField(default=True, db_index=True) # 🔥 OPTIMIZADO
+    fecha_publicacion = models.DateField(auto_now_add=True, db_index=True)
+    publicado = models.BooleanField(default=True, db_index=True)
 
     class Meta: 
         ordering = ['-fecha_publicacion']
         indexes = [
-            models.Index(fields=['publicado', 'fecha_publicacion']), # 🔥 Perfecto para tu vista pública del Blog
+            models.Index(fields=['publicado', 'fecha_publicacion']),
         ]
         
     def __str__(self): return self.titulo
 
 class RegistroTallerPublico(models.Model):
-    nombre = models.CharField(max_length=150, db_index=True) # 🔥 OPTIMIZADO
-    telefono = models.CharField(max_length=20, db_index=True) # 🔥 OPTIMIZADO
-    correo = models.EmailField()
-    taller_seleccionado = models.CharField(max_length=200)
-    fecha_registro = models.DateTimeField(auto_now_add=True, db_index=True) # 🔥 OPTIMIZADO
+    nombre = models.CharField(max_length=100, db_index=True)
+    telefono = models.CharField(max_length=20, db_index=True)
+    correo = models.EmailField() # 👈 Deja el EmailField normal
+    taller_seleccionado = models.CharField(max_length=120) # 👈 ¡CLAVE! Reducido de 200 a 120 para que el índice quepa sin problemas
+    fecha_registro = models.DateTimeField(auto_now_add=True, db_index=True)
     
     class Meta:
-        unique_together = ['correo', 'taller_seleccionado']
+        unique_together = ['correo', 'taller_seleccionado'] # 👈 Ahora la suma de bytes es totalmente segura
         verbose_name = "Registro de Taller"
         verbose_name_plural = "Registros de Talleres"
         indexes = [
-            models.Index(fields=['taller_seleccionado', 'fecha_registro']), # 🔥 Para reportes por taller ordenados
+            models.Index(fields=['taller_seleccionado', 'fecha_registro']),
         ]
         
     def __str__(self): return f"{self.nombre} - {self.taller_seleccionado}"
