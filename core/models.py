@@ -13,22 +13,21 @@ class PerfilPsicologo(models.Model):
     foto = models.ImageField(upload_to='fotos_doctores/', blank=True, null=True, verbose_name="Foto de Perfil")
     cv_breve = models.TextField(blank=True, null=True, verbose_name="Breve CV o Enfoque Clínico")
 
-    # 🔥 NUEVO: Modalidades de atención habilitadas por psicólogo.
-    # Permiten filtrar la búsqueda de disponibilidad según el tipo de sesión
-    # solicitado por el paciente (individual / pareja / familiar).
-    atiende_individual = models.BooleanField(default=True, verbose_name="Atiende Terapia Individual")
-    atiende_pareja = models.BooleanField(default=False, verbose_name="Atiende Terapia de Pareja")
-    atiende_familiar = models.BooleanField(default=False, verbose_name="Atiende Terapia Familiar")
+    # Modalidades de atención habilitadas por psicólogo
+    atiende_individual = models.BooleanField(default=True, verbose_name="Atiende Terapia Individual", db_index=True) # 🔥 OPTIMIZADO
+    atiende_pareja = models.BooleanField(default=False, verbose_name="Atiende Terapia de Pareja", db_index=True) # 🔥 OPTIMIZADO
+    atiende_familiar = models.BooleanField(default=False, verbose_name="Atiende Terapia Familiar", db_index=True) # 🔥 OPTIMIZADO
 
     class Meta:
         indexes = [
-            # 🔥 OPTIMIZACIÓN: acelera el filtro combinado usado en la búsqueda
-            # global de disponibilidad (activos + género + modalidad).
+            # Filtro combinado crucial para la búsqueda global de disponibilidad por estado, género y modalidad
             models.Index(fields=['esta_activo', 'genero']),
+            models.Index(fields=['esta_activo', 'atiende_individual']),
+            models.Index(fields=['esta_activo', 'atiende_pareja']),
+            models.Index(fields=['esta_activo', 'atiende_familiar']),
         ]
 
     def __str__(self):
-        # 🔥 OPTIMIZACIÓN: Protección por si el usuario pierde el first_name
         nombre = self.usuario.first_name if self.usuario and self.usuario.first_name else self.usuario.username
         return f"Psicólogo/a: {nombre} ({self.genero})"
 
@@ -37,9 +36,9 @@ class PerfilPsicologo(models.Model):
 # ==========================================
 class UsuarioPerfil(models.Model):
     usuario = models.OneToOneField(User, on_delete=models.CASCADE, related_name='perfil', null=True, blank=True)
-    nombre = models.CharField(max_length=100)
-    es_psicologo = models.BooleanField(default=False)
-    telefono = models.CharField(max_length=20, blank=True, null=True)
+    nombre = models.CharField(max_length=100, db_index=True) # 🔥 OPTIMIZADO: Para búsquedas por nombre en el admin
+    es_psicologo = models.BooleanField(default=False, db_index=True) # 🔥 OPTIMIZADO: Filtro frecuente en list_filter
+    telefono = models.CharField(max_length=20, blank=True, null=True, db_index=True) # 🔥 OPTIMIZADO: search_fields frecuente
     telefono_emergencia = models.CharField(max_length=20, blank=True, null=True, verbose_name="Teléfono de Emergencia")
     es_padre = models.BooleanField(default=False, verbose_name="¿Es padre/madre de familia?")
     psicologo_asignado = models.ForeignKey(PerfilPsicologo, on_delete=models.SET_NULL, null=True, blank=True, related_name='pacientes_asignados', verbose_name="Psicólogo Asignado")
@@ -58,37 +57,33 @@ class UsuarioPerfil(models.Model):
 class Cita(models.Model):
     paciente = models.ForeignKey(User, on_delete=models.CASCADE, related_name='citas_como_paciente')
     psicologo = models.ForeignKey(PerfilPsicologo, on_delete=models.CASCADE, related_name='citas_agendadas', null=True)
-    fecha = models.DateField(verbose_name='Fecha de la sesión')
+    fecha = models.DateField(verbose_name='Fecha de la sesión', db_index=True) # 🔥 OPTIMIZADO
     hora = models.TimeField(verbose_name='Hora de la sesión')
     motivo = models.CharField(max_length=150, verbose_name='Motivo de consulta', default='Primera sesión')
     estado_animo = models.CharField(max_length=50, blank=True, null=True, verbose_name='Estado de ánimo')
     estado = models.CharField(max_length=50, default='Confirmada', choices=[
         ('Pendiente', 'Pendiente'), ('Confirmada', 'Confirmada'), ('Completada', 'Completada'), ('Cancelada', 'Cancelada'),
-    ])
+    ], db_index=True) # 🔥 OPTIMIZADO
     fecha_creacion = models.DateTimeField(auto_now_add=True)
     enlace_meet = models.URLField(blank=True, null=True)
-    id_evento_google = models.CharField(max_length=255, blank=True, null=True)
+    id_evento_google = models.CharField(max_length=255, blank=True, null=True, db_index=True) # 🔥 OPTIMIZADO: Búsquedas API Google Calendar
     modalidad = models.CharField(max_length=50, default='En línea', choices=[('En línea', 'En línea'), ('Presencial', 'Presencial')])
     tipo_sesion = models.CharField(max_length=50, default='individual', choices=[
         ('individual', 'Individual'),
         ('pareja', 'En Pareja'),
         ('familiar', 'Terapia Familiar'),
     ])
-    # 🔥 NUEVO: solo aplica cuando tipo_sesion == 'familiar'. Usado para el
-    # cálculo de precio (base + $100 MXN por integrante adicional).
     integrantes_familia = models.PositiveSmallIntegerField(blank=True, null=True, verbose_name="Número de integrantes (Terapia Familiar)")
 
     class Meta:
         unique_together = [['psicologo', 'fecha', 'hora']]
         indexes = [
-            # 🔥 OPTIMIZACIÓN: acelera las búsquedas de disponibilidad y de
-            # "próxima cita" que filtran por fecha + estado constantemente.
             models.Index(fields=['fecha', 'estado']),
             models.Index(fields=['psicologo', 'fecha', 'estado']),
+            models.Index(fields=['paciente', 'estado']), # 🔥 OPTIMIZADO: Historial del paciente rápido
         ]
 
     def __str__(self):
-        # 🔥 OPTIMIZACIÓN: Protegido contra atributos nulos
         nombre_psicologo = self.psicologo.usuario.first_name if (self.psicologo and self.psicologo.usuario) else "Sin asignar"
         nombre_paciente = self.paciente.first_name if self.paciente else "Desconocido"
         fecha_str = self.fecha.strftime('%d/%m') if self.fecha else "Sin fecha"
@@ -109,10 +104,9 @@ class HistorialClinico(models.Model):
     archivo_adjunto = models.FileField(upload_to='bitacoras_adjuntos/', blank=True, null=True, verbose_name="Documento Escaneado o Foto")
     transcripcion_meet = models.FileField(upload_to='transcripciones_meet/', blank=True, null=True, verbose_name="Transcripción de Meet")
     diagnostico_temporal = models.CharField(max_length=250, blank=True, null=True)
-    fecha_registro = models.DateTimeField(auto_now_add=True)
+    fecha_registro = models.DateTimeField(auto_now_add=True, db_index=True) # 🔥 OPTIMIZADO: list_filter rápido
 
     def __str__(self):
-        # 🔥 AQUÍ ESTABA UN POSIBLE ERROR str(obj). Si no hay fecha aún, strftime explotaba.
         fecha_str = self.fecha_registro.strftime('%d/%m/%Y') if self.fecha_registro else "Borrador"
         paciente_str = self.paciente.first_name if self.paciente else "Sin paciente"
         return f"Sesión de {paciente_str} - {fecha_str}"
@@ -122,11 +116,10 @@ class HistorialClinico(models.Model):
 # ==========================================
 class CuestionarioRegistro(models.Model):
     paciente = models.OneToOneField(User, on_delete=models.CASCADE, related_name='cuestionario_inicial')
-    flujo_elegido = models.CharField(max_length=50, verbose_name="Tipo de Terapia")
+    flujo_elegido = models.CharField(max_length=50, verbose_name="Tipo de Terapia", db_index=True) # 🔥 OPTIMIZADO
     respuestas = models.JSONField(verbose_name="Respuestas", default=dict)
-    fecha_completado = models.DateTimeField(auto_now_add=True)
+    fecha_completado = models.DateTimeField(auto_now_add=True, db_index=True) # 🔥 OPTIMIZADO
 
-    # 🔥 NUEVO: Faltaba método str
     def __str__(self):
         paciente_str = self.paciente.first_name if self.paciente else "Desconocido"
         return f"Cuestionario: {paciente_str} ({self.flujo_elegido})"
@@ -150,10 +143,10 @@ class Taller(models.Model):
         ('autoestima', 'Taller de Autoestima'),
         ('profesional', 'Eco-visión'),
     ]
-    nombre = models.CharField(max_length=200, verbose_name="Nombre del Programa")
+    nombre = models.CharField(max_length=200, verbose_name="Nombre del Programa", db_index=True) # 🔥 OPTIMIZADO
     descripcion = models.TextField(verbose_name="Descripción Breve")
-    tipo = models.CharField(max_length=50, choices=TIPO_CHOICES, verbose_name="Categoría")
-    fecha = models.DateField(verbose_name="Fecha")
+    tipo = models.CharField(max_length=50, choices=TIPO_CHOICES, verbose_name="Categoría", db_index=True) # 🔥 OPTIMIZADO
+    fecha = models.DateField(verbose_name="Fecha", db_index=True) # 🔥 OPTIMIZADO
     hora = models.TimeField(verbose_name="Hora")
     cupo_maximo = models.PositiveIntegerField(default=20, verbose_name="Cupo Máximo")
     psicologo = models.ForeignKey(PerfilPsicologo, on_delete=models.SET_NULL, null=True, blank=True, related_name='talleres_impartidos')
@@ -163,19 +156,17 @@ class Taller(models.Model):
     def cupos_disponibles(self):
         return max(0, self.cupo_maximo - self.inscripciones.count())
 
-    # 🔥 NUEVO: Faltaba método str
     def __str__(self):
         return f"{self.nombre} ({self.get_tipo_display()})"
 
 class InscripcionTaller(models.Model):
     paciente = models.ForeignKey(User, on_delete=models.CASCADE, related_name='talleres_inscritos')
     taller = models.ForeignKey(Taller, on_delete=models.CASCADE, related_name='inscripciones')
-    fecha_inscripcion = models.DateTimeField(auto_now_add=True)
+    fecha_inscripcion = models.DateTimeField(auto_now_add=True, db_index=True) # 🔥 OPTIMIZADO
     
     class Meta:
         unique_together = ('paciente', 'taller')
 
-    # 🔥 NUEVO: Faltaba método str
     def __str__(self):
         paciente_str = self.paciente.first_name if self.paciente else "Desconocido"
         taller_str = self.taller.nombre if self.taller else "Taller vacío"
@@ -190,11 +181,11 @@ class HorarioPsicologo(models.Model):
     TURNOS = [('matutino', 'Turno Matutino (8:00 am - 4:00 pm)'), ('vespertino', 'Turno Vespertino (1:00 pm - 9:00 pm)')]
 
     psicologo = models.ForeignKey(PerfilPsicologo, on_delete=models.CASCADE, related_name='horarios')
-    mes = models.DateField(null=True, blank=True, help_text="Usa el día 1 del mes")
-    semana = models.IntegerField(choices=SEMANAS_MES, null=True, blank=True)
-    dia_semana = models.IntegerField(choices=DIAS_SEMANA)
-    es_descanso = models.BooleanField(default=False, verbose_name="¿Es día de Descanso?")
-    turno = models.CharField(max_length=20, choices=TURNOS, blank=True, null=True)
+    mes = models.DateField(null=True, blank=True, help_text="Usa el día 1 del mes", db_index=True) # 🔥 OPTIMIZADO
+    semana = models.IntegerField(choices=SEMANAS_MES, null=True, blank=True, db_index=True) # 🔥 OPTIMIZADO
+    dia_semana = models.IntegerField(choices=DIAS_SEMANA, db_index=True) # 🔥 OPTIMIZADO
+    es_descanso = models.BooleanField(default=False, verbose_name="¿Es día de Descanso?", db_index=True) # 🔥 OPTIMIZADO
+    turno = models.CharField(max_length=20, choices=TURNOS, blank=True, null=True, db_index=True) # 🔥 OPTIMIZADO
 
     hora_inicio = models.TimeField(blank=True, null=True, editable=False)
     hora_fin = models.TimeField(blank=True, null=True, editable=False)
@@ -203,6 +194,9 @@ class HorarioPsicologo(models.Model):
 
     class Meta:
         unique_together = [['psicologo', 'mes', 'semana', 'dia_semana']]
+        indexes = [
+            models.Index(fields=['psicologo', 'es_descanso']), # 🔥 Para búsquedas veloces de días laborables
+        ]
 
     def save(self, *args, **kwargs):
         from datetime import time
@@ -232,10 +226,12 @@ class HorarioPsicologo(models.Model):
 
 class DiaLibrePsicologo(models.Model):
     psicologo = models.ForeignKey(PerfilPsicologo, on_delete=models.CASCADE, related_name='dias_libres')
-    fecha = models.DateField()
+    fecha = models.DateField(db_index=True) # 🔥 OPTIMIZADO
     motivo = models.CharField(max_length=100, blank=True, null=True)
+    
     class Meta:
         unique_together = [['psicologo', 'fecha']]
+
     def __str__(self):
         doc = self.psicologo.usuario.first_name if (self.psicologo and self.psicologo.usuario) else "Doc"
         return f"{doc} - {self.fecha}"
@@ -245,15 +241,20 @@ class DiaLibrePsicologo(models.Model):
 # ==========================================
 class NotificacionSistema(models.Model):
     TIPO_CHOICES = [('nueva_cita', 'Nueva cita'), ('cancelacion', 'Cita cancelada'), ('foco_rojo', 'Foco rojo'), ('recordatorio', 'Recordatorio')]
-    tipo = models.CharField(max_length=50, choices=TIPO_CHOICES)
+    tipo = models.CharField(max_length=50, choices=TIPO_CHOICES, db_index=True) # 🔥 OPTIMIZADO
     titulo = models.CharField(max_length=200)
     mensaje = models.TextField()
-    fecha_creacion = models.DateTimeField(auto_now_add=True)
-    leida = models.BooleanField(default=False)
+    fecha_creacion = models.DateTimeField(auto_now_add=True, db_index=True) # 🔥 OPTIMIZADO: Para ordenar por más reciente
+    leida = models.BooleanField(default=False, db_index=True) # 🔥 OPTIMIZADO: Panel de pendientes rápido
     destinatarios = models.ManyToManyField(User, related_name='notificaciones_recibidas', blank=True)
 
+    class Meta:
+        ordering = ['-fecha_creacion']
+        indexes = [
+            models.Index(fields=['leida', 'fecha_creacion']), # 🔥 Combo letal para contadores de no leídas
+        ]
+
     def __str__(self):
-        # 🔥 AQUÍ HABÍA OTRO POSIBLE ERROR str(obj) con fechas auto_now_add
         fecha = self.fecha_creacion.strftime('%d/%m %H:%M') if self.fecha_creacion else "Ahora"
         return f"{self.tipo} - {fecha}"
 
@@ -268,16 +269,20 @@ class MetricaDiaria(models.Model):
 
 class EventoAuditoria(models.Model):
     usuario = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
-    accion = models.CharField(max_length=100)
+    accion = models.CharField(max_length=100, db_index=True) # 🔥 OPTIMIZADO
     detalles = models.JSONField(default=dict)
-    timestamp = models.DateTimeField(auto_now_add=True)
+    timestamp = models.DateTimeField(auto_now_add=True, db_index=True) # 🔥 OPTIMIZADO
+
+    class Meta:
+        ordering = ['-timestamp']
+
     def __str__(self): 
         usr = self.usuario.username if self.usuario else "Sistema"
         return f"{self.timestamp} - {usr} - {self.accion}"
 
 class PreferenciasUsuario(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='preferencias_notif')
-    notificaciones_activadas = models.BooleanField(default=False)
+    notificaciones_activadas = models.BooleanField(default=False, db_index=True) # 🔥 OPTIMIZADO
     ultima_conexion = models.DateTimeField(auto_now=True)
     def __str__(self): return f"{self.user.username} - Notif: {self.notificaciones_activadas}"
 
@@ -285,12 +290,16 @@ class MensajeChat(models.Model):
     remitente = models.ForeignKey(User, on_delete=models.CASCADE, related_name='mensajes_enviados')
     destinatario = models.ForeignKey(User, on_delete=models.CASCADE, related_name='mensajes_recibidos')
     contenido = models.TextField(verbose_name="Contenido del mensaje")
-    fecha_envio = models.DateTimeField(auto_now_add=True, verbose_name="Fecha y hora de envío")
-    leido = models.BooleanField(default=False, verbose_name="¿Fue leído?")
+    fecha_envio = models.DateTimeField(auto_now_add=True, verbose_name="Fecha y hora de envío", db_index=True) # 🔥 OPTIMIZADO
+    leido = models.BooleanField(default=False, verbose_name="¿Fue leído?", db_index=True) # 🔥 OPTIMIZADO
 
     class Meta:
         ordering = ['fecha_envio']
-        indexes = [models.Index(fields=['remitente', 'destinatario']), models.Index(fields=['leido'])]
+        indexes = [
+            models.Index(fields=['remitente', 'destinatario']),
+            models.Index(fields=['destinatario', 'leido']), # 🔥 Crucial para cargar alertas de "mensajes nuevos" por usuario
+            models.Index(fields=['destinatario', 'fecha_envio']), # 🔥 Para ordenar y recuperar hilos rápido
+        ]
 
     def __str__(self):
         rem = self.remitente.first_name if self.remitente else "Desconocido"
@@ -299,25 +308,36 @@ class MensajeChat(models.Model):
         return f"De {rem} para {dest} ({estado})"
 
 class ArticuloPrensa(models.Model):
-    titulo = models.CharField(max_length=250, verbose_name="Título del Artículo")
+    titulo = models.CharField(max_length=250, verbose_name="Título del Artículo", db_index=True) # 🔥 OPTIMIZADO
     slug = models.SlugField(unique=True, max_length=250)
     resumen = models.TextField()
     contenido = models.TextField()
     imagen = models.ImageField(upload_to='prensa/', blank=True, null=True)
     imagen_url_externa = models.URLField(blank=True, null=True)
-    fecha_publicacion = models.DateField(auto_now_add=True)
-    publicado = models.BooleanField(default=True)
-    class Meta: ordering = ['-fecha_publicacion']
+    fecha_publicacion = models.DateField(auto_now_add=True, db_index=True) # 🔥 OPTIMIZADO
+    publicado = models.BooleanField(default=True, db_index=True) # 🔥 OPTIMIZADO
+
+    class Meta: 
+        ordering = ['-fecha_publicacion']
+        indexes = [
+            models.Index(fields=['publicado', 'fecha_publicacion']), # 🔥 Perfecto para tu vista pública del Blog
+        ]
+        
     def __str__(self): return self.titulo
 
 class RegistroTallerPublico(models.Model):
-    nombre = models.CharField(max_length=150)
-    telefono = models.CharField(max_length=20)
-    correo = models.EmailField(unique=True)
+    nombre = models.CharField(max_length=150, db_index=True) # 🔥 OPTIMIZADO
+    telefono = models.CharField(max_length=20, db_index=True) # 🔥 OPTIMIZADO
+    correo = models.EmailField()
     taller_seleccionado = models.CharField(max_length=200)
-    fecha_registro = models.DateTimeField(auto_now_add=True)
+    fecha_registro = models.DateTimeField(auto_now_add=True, db_index=True) # 🔥 OPTIMIZADO
+    
     class Meta:
         unique_together = ['correo', 'taller_seleccionado']
         verbose_name = "Registro de Taller"
         verbose_name_plural = "Registros de Talleres"
+        indexes = [
+            models.Index(fields=['taller_seleccionado', 'fecha_registro']), # 🔥 Para reportes por taller ordenados
+        ]
+        
     def __str__(self): return f"{self.nombre} - {self.taller_seleccionado}"
