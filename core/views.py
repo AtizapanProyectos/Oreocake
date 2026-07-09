@@ -14,7 +14,7 @@ from django.core.paginator import Paginator
 # pyrefly: ignore [missing-import]
 from django.contrib.auth.decorators import user_passes_test
 import json
-
+from django.core.cache import cache
 # pyrefly: ignore [missing-import]
 from django.shortcuts import render, redirect, get_object_or_404  
 
@@ -1378,6 +1378,8 @@ def api_pacientes_paginados(request):
     # 🚀 OPTIMIZACIÓN: select_related trae al psicólogo en 1 consulta en lugar de 20
     pacientes_qs = UsuarioPerfil.objects.filter(es_psicologo=False).select_related(
         'usuario', 'psicologo_asignado__usuario'
+    ).prefetch_related(
+        Prefetch('usuario__citas_como_paciente', queryset=Cita.objects.exclude(estado='Cancelada'), to_attr='citas_precargadas')
     ).order_by('-id')
     
     paginator = Paginator(pacientes_qs, per_page)
@@ -1389,8 +1391,8 @@ def api_pacientes_paginados(request):
     resultados = []
     
     for pac in pacientes_page:
-        animo = calcular_animo_promedio(pac)
-        total_sesiones = Cita.objects.filter(paciente=pac.usuario).exclude(estado='Cancelada').count()
+        animo = calcular_animo_promedio(pac)  # ya detecta citas_precargadas y no hace query extra
+        total_sesiones = len(pac.usuario.citas_precargadas) if pac.usuario else 0
         doctor_nombre = pac.psicologo_asignado.usuario.first_name if pac.psicologo_asignado else 'Pendiente'
         resultados.append({
             'nombre': pac.nombre,
@@ -1407,6 +1409,27 @@ def api_pacientes_paginados(request):
         'has_next': page < paginator.num_pages,
         'current_page': page,
     })
+
+
+def obtener_focos_rojos():
+    focos = cache.get('focos_rojos_cache')
+    if focos is None:
+        pacientes_con_promedio = UsuarioPerfil.objects.filter(es_psicologo=False).annotate(
+            promedio_animo=Avg(
+                Case(
+                    When(usuario__citas_como_paciente__estado_animo='Muy mal', then=Value(1)),
+                    When(usuario__citas_como_paciente__estado_animo='Triste', then=Value(2)),
+                    When(usuario__citas_como_paciente__estado_animo='Normal', then=Value(3)),
+                    When(usuario__citas_como_paciente__estado_animo='Bien', then=Value(4)),
+                    When(usuario__citas_como_paciente__estado_animo='Excelente', then=Value(5)),
+                    output_field=IntegerField(),
+                ),
+                filter=~Q(usuario__citas_como_paciente__estado='Cancelada')
+            )
+        )
+        focos = pacientes_con_promedio.filter(promedio_animo__lt=2.5).count()
+        cache.set('focos_rojos_cache', focos, 60)  # se recalcula máximo 1 vez por minuto
+    return focos
 
 # ================== API PARA POLLING (estadísticas + citas) ==================
 def api_stats(request):
@@ -1426,23 +1449,9 @@ def api_stats(request):
     canceladas_mes = Cita.objects.filter(fecha__gte=inicio_mes, estado='Cancelada').count()
     talleres_activos = Taller.objects.filter(fecha__gte=hoy).count()
     
-    # 🚀 OPTIMIZACIÓN NIVEL DIOS PARA FOCOS ROJOS: 
-    # Le pedimos a MySQL que calcule el promedio de TODAS las citas matemáticamente en una sola consulta.
-    pacientes_con_promedio = UsuarioPerfil.objects.filter(es_psicologo=False).annotate(
-        promedio_animo=Avg(
-            Case(
-                When(usuario__citas_como_paciente__estado_animo='Muy mal', then=Value(1)),
-                When(usuario__citas_como_paciente__estado_animo='Triste', then=Value(2)),
-                When(usuario__citas_como_paciente__estado_animo='Normal', then=Value(3)),
-                When(usuario__citas_como_paciente__estado_animo='Bien', then=Value(4)),
-                When(usuario__citas_como_paciente__estado_animo='Excelente', then=Value(5)),
-                output_field=IntegerField(),
-            ),
-            filter=~Q(usuario__citas_como_paciente__estado='Cancelada')
-        )
-    )
+
     # Foco rojo si el promedio es menor estricto a 2.5 (1=Muy mal, 2=Triste)
-    focos = pacientes_con_promedio.filter(promedio_animo__lt=2.5).count()
+    focos = obtener_focos_rojos()
     
     # Citas para calendario (próximos 60 días)
     fecha_limite = hoy + timezone.timedelta(days=60)
@@ -1451,7 +1460,7 @@ def api_stats(request):
     # 🚀 OPTIMIZACIÓN: select_related evita cargar al paciente y al doctor en cientos de consultas extra.
     citas_calendario = Cita.objects.filter(
         fecha__gte=inicio_calendario, fecha__lte=fecha_limite
-    ).select_related('psicologo__usuario', 'paciente')
+    ).select_related('psicologo__usuario', 'paciente__perfil')
     
     citas_json = []
     for c in citas_calendario:
@@ -1652,21 +1661,8 @@ def panel_admin(request):
             }
         })
 
-    # 🚀 OPTIMIZACIÓN: Los mismos Focos Rojos matemáticos en una sola consulta
-    pacientes_con_promedio = UsuarioPerfil.objects.filter(es_psicologo=False).annotate(
-        promedio_animo=Avg(
-            Case(
-                When(usuario__citas_como_paciente__estado_animo='Muy mal', then=Value(1)),
-                When(usuario__citas_como_paciente__estado_animo='Triste', then=Value(2)),
-                When(usuario__citas_como_paciente__estado_animo='Normal', then=Value(3)),
-                When(usuario__citas_como_paciente__estado_animo='Bien', then=Value(4)),
-                When(usuario__citas_como_paciente__estado_animo='Excelente', then=Value(5)),
-                output_field=IntegerField(),
-            ),
-            filter=~Q(usuario__citas_como_paciente__estado='Cancelada')
-        )
-    )
-    focos = pacientes_con_promedio.filter(promedio_animo__lt=2.5).count()
+
+    focos = obtener_focos_rojos()
 
     extra_stats = {
         'nuevos_semana': UsuarioPerfil.objects.filter(es_psicologo=False, usuario__date_joined__date__gte=(hoy - timezone.timedelta(days=hoy.weekday()))).count(),
