@@ -27,8 +27,15 @@ class PerfilPsicologo(models.Model):
             models.Index(fields=['esta_activo', 'atiende_familiar']),
         ]
 
+# En models.py -> Class PerfilPsicologo
     def __str__(self):
-        nombre = self.usuario.first_name if self.usuario and self.usuario.first_name else self.usuario.username
+        try:
+            if self.usuario and self.usuario.first_name:
+                nombre = self.usuario.first_name
+            else:
+                nombre = self.usuario.username if self.usuario else "Sin Usuario"
+        except Exception:
+            nombre = f"ID: {self.pk}"
         return f"Psicólogo/a: {nombre} ({self.genero})"
 
 # ==========================================
@@ -218,10 +225,21 @@ class HorarioPsicologo(models.Model):
                     self.hora_comida_inicio, self.hora_comida_fin = time(15, 0), time(16, 0)
         super().save(*args, **kwargs)
 
+# En models.py -> Class HorarioPsicologo
     def __str__(self):
         mes_str = self.mes.strftime("%B %Y") if self.mes else "Sin Mes"
         estado = "DESCANSO" if self.es_descanso else f"Turno {self.turno}"
-        doc_str = self.psicologo.usuario.first_name if (self.psicologo and self.psicologo.usuario) else "Psicólogo"
+        
+        # SOLUCIÓN: Evitamos el triple salto relacional en el str
+        try:
+            if self.psicologo:
+                # Esto llamará al __str__ seguro de PerfilPsicologo sin romper el hilo
+                doc_str = str(self.psicologo) 
+            else:
+                doc_str = "Psicólogo"
+        except Exception:
+            doc_str = f"Psicólogo Ref:{self.psicologo_id}"
+
         return f"[{mes_str} - Sem {self.semana}] {doc_str} - {self.get_dia_semana_display()}: {estado}"
 
 class DiaLibrePsicologo(models.Model):
