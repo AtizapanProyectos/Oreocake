@@ -91,8 +91,14 @@ class Cita(models.Model):
         ]
 
     def __str__(self):
-        nombre_psicologo = self.psicologo.usuario.first_name if (self.psicologo and self.psicologo.usuario) else "Sin asignar"
-        nombre_paciente = self.paciente.first_name if self.paciente else "Desconocido"
+        try:
+            nombre_psicologo = self.psicologo.usuario.first_name if (self.psicologo and self.psicologo.usuario) else "Sin asignar"
+        except Exception:
+            nombre_psicologo = "Sin asignar"
+        try:
+            nombre_paciente = self.paciente.first_name if self.paciente else "Desconocido"
+        except Exception:
+            nombre_paciente = "Desconocido"
         fecha_str = self.fecha.strftime('%d/%m') if self.fecha else "Sin fecha"
         return f"Cita: {nombre_paciente} con {nombre_psicologo} el {fecha_str}"
 
@@ -115,7 +121,10 @@ class HistorialClinico(models.Model):
 
     def __str__(self):
         fecha_str = self.fecha_registro.strftime('%d/%m/%Y') if self.fecha_registro else "Borrador"
-        paciente_str = self.paciente.first_name if self.paciente else "Sin paciente"
+        try:
+            paciente_str = self.paciente.first_name if self.paciente else "Sin paciente"
+        except Exception:
+            paciente_str = "Sin paciente"
         return f"Sesión de {paciente_str} - {fecha_str}"
 
 # ==========================================
@@ -175,8 +184,14 @@ class InscripcionTaller(models.Model):
         unique_together = ('paciente', 'taller')
 
     def __str__(self):
-        paciente_str = self.paciente.first_name if self.paciente else "Desconocido"
-        taller_str = self.taller.nombre if self.taller else "Taller vacío"
+        try:
+            paciente_str = self.paciente.first_name if self.paciente else "Desconocido"
+        except Exception:
+            paciente_str = "Desconocido"
+        try:
+            taller_str = self.taller.nombre if self.taller else "Taller vacío"
+        except Exception:
+            taller_str = "Taller vacío"
         return f"Inscripción: {paciente_str} a {taller_str}"
 
 # ==========================================
@@ -251,7 +266,10 @@ class DiaLibrePsicologo(models.Model):
         unique_together = [['psicologo', 'fecha']]
 
     def __str__(self):
-        doc = self.psicologo.usuario.first_name if (self.psicologo and self.psicologo.usuario) else "Doc"
+        try:
+            doc = self.psicologo.usuario.first_name if (self.psicologo and self.psicologo.usuario) else "Doc"
+        except Exception:
+            doc = "Doc"
         return f"{doc} - {self.fecha}"
 
 # ==========================================
@@ -320,8 +338,14 @@ class MensajeChat(models.Model):
         ]
 
     def __str__(self):
-        rem = self.remitente.first_name if self.remitente else "Desconocido"
-        dest = self.destinatario.first_name if self.destinatario else "Desconocido"
+        try:
+            rem = self.remitente.first_name if self.remitente else "Desconocido"
+        except Exception:
+            rem = "Desconocido"
+        try:
+            dest = self.destinatario.first_name if self.destinatario else "Desconocido"
+        except Exception:
+            dest = "Desconocido"
         estado = "Leído" if self.leido else "No leído"
         return f"De {rem} para {dest} ({estado})"
 

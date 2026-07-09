@@ -7,11 +7,19 @@ from django.db.models import Count
 # ==========================================
 class HorarioInline(admin.TabularInline):
     model = HorarioPsicologo
+    fk_name = 'psicologo'
     extra = 1
+    # 🔥 Evita N+1 al renderizar el __str__ de cada fila en el inline
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related('psicologo__usuario')
 
 class DiaLibreInline(admin.TabularInline):
     model = DiaLibrePsicologo
+    fk_name = 'psicologo'
     extra = 1
+    # 🔥 Evita N+1 al renderizar el __str__ de cada fila en el inline
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related('psicologo__usuario')
 
 # ==========================================
 # 1. PERFIL DEL PSICÓLOGO
@@ -24,6 +32,8 @@ class PerfilPsicologoAdmin(ImportExportModelAdmin):
     list_filter = ('genero', 'esta_activo')
     # 🔥 MAGIA DE VELOCIDAD: Evita múltiples consultas a la tabla User
     list_select_related = ('usuario',)
+    autocomplete_fields = ('usuario',)
+    show_full_result_count = False
 
 # ==========================================
 # 2. PERFIL DEL PACIENTE
@@ -35,6 +45,9 @@ class UsuarioPerfilAdmin(ImportExportModelAdmin):
     list_filter = ('es_psicologo',)
     # 🔥 MAGIA DE VELOCIDAD
     list_select_related = ('usuario', 'psicologo_asignado', 'psicologo_asignado__usuario')
+    autocomplete_fields = ('usuario', 'psicologo_asignado')
+    list_per_page = 50
+    show_full_result_count = False
 
 # ==========================================
 # 3. CITAS
@@ -50,6 +63,9 @@ class CitaAdmin(ImportExportModelAdmin):
     readonly_fields = ('fecha_creacion',)
     # 🔥 MAGIA DE VELOCIDAD: Esta era la tabla que seguro más se trababa
     list_select_related = ('paciente', 'psicologo', 'psicologo__usuario')
+    autocomplete_fields = ('paciente', 'psicologo')
+    list_per_page = 50
+    show_full_result_count = False
 
 # ==========================================
 # 4. HISTORIAL CLÍNICO (EXPEDIENTE)
@@ -61,6 +77,9 @@ class HistorialClinicoAdmin(ImportExportModelAdmin):
     list_filter = ('fecha_registro', 'psicologo')
     # 🔥 MAGIA DE VELOCIDAD
     list_select_related = ('paciente', 'psicologo', 'psicologo__usuario')
+    autocomplete_fields = ('paciente', 'psicologo')
+    list_per_page = 50
+    show_full_result_count = False
 
 # ==========================================
 # 5. CUESTIONARIO INICIAL
@@ -72,6 +91,9 @@ class CuestionarioRegistroAdmin(ImportExportModelAdmin):
     list_filter = ('flujo_elegido', 'fecha_completado')
     # 🔥 MAGIA DE VELOCIDAD
     list_select_related = ('paciente',)
+    autocomplete_fields = ('paciente',)
+    list_per_page = 50
+    show_full_result_count = False
 
 # ==========================================
 # 6. DÍAS FESTIVOS
@@ -92,6 +114,9 @@ class TallerAdmin(ImportExportModelAdmin):
     list_filter = ('tipo', 'fecha')
     search_fields = ('nombre',)
     list_select_related = ('psicologo',)
+    autocomplete_fields = ('psicologo',)
+    list_per_page = 50
+    show_full_result_count = False
 
     def get_queryset(self, request):
         queryset = super().get_queryset(request)
@@ -109,6 +134,9 @@ class InscripcionTallerAdmin(ImportExportModelAdmin):
     list_filter = ('taller__tipo', 'taller__fecha')
     # 🔥 MAGIA DE VELOCIDAD
     list_select_related = ('paciente', 'taller')
+    autocomplete_fields = ('paciente', 'taller')
+    list_per_page = 50
+    show_full_result_count = False
 
 # ==========================================
 # 8. CHAT P2P (PACIENTE - DOCTOR)
@@ -120,6 +148,9 @@ class MensajeChatAdmin(ImportExportModelAdmin):
     list_filter = ('leido', 'fecha_envio')
     # 🔥 MAGIA DE VELOCIDAD
     list_select_related = ('remitente', 'destinatario')
+    autocomplete_fields = ('remitente', 'destinatario')
+    list_per_page = 50
+    show_full_result_count = False
 
 # ==========================================
 # 9. PRENSA Y BLOG HOPE
@@ -152,6 +183,9 @@ class HorarioPsicologoAdmin(ImportExportModelAdmin):
     list_filter = ('psicologo', 'es_descanso', 'turno')
     # 🔥 MAGIA DE VELOCIDAD
     list_select_related = ('psicologo', 'psicologo__usuario')
+    autocomplete_fields = ('psicologo',)
+    list_per_page = 50
+    show_full_result_count = False
 
 @admin.register(DiaLibrePsicologo)
 class DiaLibrePsicologoAdmin(ImportExportModelAdmin):
@@ -159,6 +193,9 @@ class DiaLibrePsicologoAdmin(ImportExportModelAdmin):
     list_filter = ('fecha', 'psicologo')
     # 🔥 MAGIA DE VELOCIDAD
     list_select_related = ('psicologo', 'psicologo__usuario')
+    autocomplete_fields = ('psicologo',)
+    list_per_page = 50
+    show_full_result_count = False
 
 @admin.register(EventoAuditoria)
 class EventoAuditoriaAdmin(ImportExportModelAdmin):
@@ -167,6 +204,9 @@ class EventoAuditoriaAdmin(ImportExportModelAdmin):
     search_fields = ('usuario__username', 'accion')
     # 🔥 MAGIA DE VELOCIDAD
     list_select_related = ('usuario',)
+    autocomplete_fields = ('usuario',)
+    list_per_page = 50
+    show_full_result_count = False
 
 @admin.register(PreferenciasUsuario)
 class PreferenciasUsuarioAdmin(ImportExportModelAdmin):
@@ -174,6 +214,9 @@ class PreferenciasUsuarioAdmin(ImportExportModelAdmin):
     list_filter = ('notificaciones_activadas',)
     # 🔥 MAGIA DE VELOCIDAD
     list_select_related = ('user',)
+    autocomplete_fields = ('user',)
+    list_per_page = 50
+    show_full_result_count = False
 
 # 🔥 Aquí cambiamos admin.ModelAdmin por ImportExportModelAdmin
 @admin.register(RegistroTallerPublico)
@@ -182,3 +225,5 @@ class RegistroTallerPublicoAdmin(ImportExportModelAdmin):
     search_fields = ('nombre', 'correo', 'telefono', 'taller_seleccionado')
     list_filter = ('taller_seleccionado', 'fecha_registro')
     readonly_fields = ('fecha_registro',)
+    list_per_page = 50
+    show_full_result_count = False
