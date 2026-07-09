@@ -1,23 +1,27 @@
 from django.contrib import admin
 from import_export.admin import ImportExportModelAdmin
-from .models import * 
+from .models import *
 from django.db.models import Count
+
 # ==========================================
 # INLINES PARA EL PERFIL DEL PSICÓLOGO
 # ==========================================
-class HorarioInline(admin.TabularInline):
-    model = HorarioPsicologo
-    fk_name = 'psicologo'
-    extra = 1
-    # 🔥 Evita N+1 al renderizar el __str__ de cada fila en el inline
+
+# 1. El nuevo inline para la configuración de Horario Fijo
+class HorarioFijoInline(admin.StackedInline):
+    model = HorarioFijoPsicologo
+    can_delete = False
+    verbose_name_plural = 'Configuración de Horario Fijo'
+
     def get_queryset(self, request):
         return super().get_queryset(request).select_related('psicologo__usuario')
 
+# 2. El inline de días libres (se queda igual)
 class DiaLibreInline(admin.TabularInline):
     model = DiaLibrePsicologo
     fk_name = 'psicologo'
     extra = 1
-    # 🔥 Evita N+1 al renderizar el __str__ de cada fila en el inline
+
     def get_queryset(self, request):
         return super().get_queryset(request).select_related('psicologo__usuario')
 
@@ -26,14 +30,12 @@ class DiaLibreInline(admin.TabularInline):
 # ==========================================
 @admin.register(PerfilPsicologo)
 class PerfilPsicologoAdmin(ImportExportModelAdmin):
-    inlines = [HorarioInline, DiaLibreInline] 
+    # 🔥 AQUÍ QUITAMOS EL HORARIO INLINE VIEJO Y PONEMOS EL NUEVO FIJO
+    inlines = [HorarioFijoInline, DiaLibreInline] 
     list_display = ('usuario', 'cedula_profesional', 'especialidad', 'genero', 'esta_activo')
-    search_fields = ('usuario__first_name', 'usuario__email', 'cedula_profesional')
+    search_fields = ('usuario__first_name', 'usuario__last_name', 'cedula_profesional')
     list_filter = ('genero', 'esta_activo')
-    # 🔥 MAGIA DE VELOCIDAD: Evita múltiples consultas a la tabla User
-    list_select_related = ('usuario',)
-    autocomplete_fields = ('usuario',)
-    show_full_result_count = False
+    list_per_page = 20
 
 # ==========================================
 # 2. PERFIL DEL PACIENTE
@@ -177,15 +179,7 @@ class NotificacionSistemaAdmin(ImportExportModelAdmin):
 # ==========================================
 # REGISTROS EXTRA
 # ==========================================
-@admin.register(HorarioPsicologo)
-class HorarioPsicologoAdmin(ImportExportModelAdmin):
-    list_display = ('psicologo', 'mes', 'semana', 'dia_semana', 'turno', 'es_descanso')
-    list_filter = ('psicologo', 'es_descanso', 'turno')
-    # 🔥 MAGIA DE VELOCIDAD
-    list_select_related = ('psicologo', 'psicologo__usuario')
-    autocomplete_fields = ('psicologo',)
-    list_per_page = 50
-    show_full_result_count = False
+
 
 @admin.register(DiaLibrePsicologo)
 class DiaLibrePsicologoAdmin(ImportExportModelAdmin):

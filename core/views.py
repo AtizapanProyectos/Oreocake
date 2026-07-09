@@ -158,176 +158,123 @@ def calcular_precio_sesion(tipo_sesion, integrantes_familia=None):
 
 from datetime import datetime, timedelta, time, date
 from collections import defaultdict
-from .models import DiaFestivo, Cita, HorarioPsicologo, PerfilPsicologo
+from .models import DiaFestivo, Cita, PerfilPsicologo
 
 from datetime import datetime, timedelta, time
 from collections import defaultdict
 
-def obtener_slots_globales(fecha_inicio, fecha_fin, preferencia="", tipo_sesion="individual"):
-    """Unión de disponibilidad filtrada por género, modalidad y curada de bugs (Semana 5)"""
-
-    # 🔥 1. EL FILTRO DINÁMICO DE GÉNERO
-    filtro_psicologos = PerfilPsicologo.objects.filter(esta_activo=True)
-    if 'Mujer' in preferencia:
-        filtro_psicologos = filtro_psicologos.filter(genero='Mujer')
-    elif 'Hombre' in preferencia:
-        filtro_psicologos = filtro_psicologos.filter(genero='Hombre')
-
-    # 🔥 NUEVO: filtro por modalidad habilitada (individual / pareja / familiar)
+def obtener_slots_globales(fecha_inicio, fecha_fin, tipo_sesion="individual"):
+    """
+    Agrupa y consolida la disponibilidad de TODOS los psicólogos activos para armar la vista 
+    del calendario unificado. Evita colisiones agrupando las horas disponibles por día.
+    Retorna un diccionario: {'YYYY-MM-DD': ['08:00 AM', '09:00 AM', ...]}
+    """
     campo_capacidad = CAPACIDAD_POR_TIPO_SESION.get(tipo_sesion, 'atiende_individual')
-    filtro_psicologos = filtro_psicologos.filter(**{campo_capacidad: True})
-
-    # 🔥 OPTIMIZACIÓN: solo traemos los campos que realmente se usan aquí
-    psicologos_activos = list(filtro_psicologos.only('id', 'genero', 'esta_activo'))
-    if not psicologos_activos: return {}
-
-    festivos = set(DiaFestivo.objects.filter(fecha__gte=fecha_inicio, fecha__lte=fecha_fin).values_list('fecha', flat=True))
-
-    dias_libres_db = DiaLibrePsicologo.objects.filter(
-        fecha__gte=fecha_inicio, fecha__lte=fecha_fin,
-        psicologo_id__in=[p.id for p in psicologos_activos],
-    ).values_list('psicologo_id', 'fecha')
-    dias_libres = defaultdict(set)
-    for psicologo_id, fecha_libre in dias_libres_db:
-        dias_libres[psicologo_id].add(fecha_libre)
-
-    mes_inicio = date(fecha_inicio.year, fecha_inicio.month, 1)
-    mes_fin = date(fecha_fin.year, fecha_fin.month, 1)
-    horarios_db = HorarioPsicologo.objects.filter(
-        mes__gte=mes_inicio, mes__lte=mes_fin, es_descanso=False,
-        psicologo_id__in=[p.id for p in psicologos_activos],
-    )
-
-    horarios_map = {}
-    for h in horarios_db:
-        horarios_map[(h.psicologo_id, h.mes, h.semana, h.dia_semana)] = h
-
-    # 🔥 OPTIMIZACIÓN: values_list evita instanciar objetos Cita innecesarios
-    citas_db = Cita.objects.filter(
-        fecha__gte=fecha_inicio, fecha__lte=fecha_fin, estado='Confirmada',
-    ).values_list('psicologo_id', 'fecha', 'hora')
-    citas_ocupadas = set(citas_db)
-        
-    slots_union = defaultdict(set)
-    dia_actual = fecha_inicio
-    max_iter = 0
     
-    while len(slots_union) < 30 and max_iter < 120:
-        max_iter += 1
-        if dia_actual > fecha_fin: break
-            
-        if dia_actual in festivos:
-            dia_actual += timedelta(days=1)
-            continue
-            
-        dia_semana = dia_actual.weekday()
-        
-        # 🔥 2. CURA DEL BUG DE LA SEMANA 5
-        if dia_actual.day <= 7: num_semana = 1
-        elif dia_actual.day <= 14: num_semana = 2
-        elif dia_actual.day <= 21: num_semana = 3
-        elif dia_actual.day <= 28: num_semana = 4
-        else: num_semana = 5  # <-- ¡Los días 29, 30 y 31 por fin existen!
-        
-        mes_actual_buscar = date(dia_actual.year, dia_actual.month, 1)
-        
-        for psicologo in psicologos_activos:
-            if dia_actual in dias_libres[psicologo.id]:
-                continue
-                
-            horario = horarios_map.get((psicologo.id, mes_actual_buscar, num_semana, dia_semana))
-            if not horario or not horario.hora_inicio:
-                continue
-                
-            slot_actual = datetime.combine(dia_actual, horario.hora_inicio)
-            fin_turno = datetime.combine(dia_actual, horario.hora_fin)
-            
-            while slot_actual < fin_turno:
-                hora_slot = slot_actual.time()
-                es_hora_comida = False
-                if horario.hora_comida_inicio and horario.hora_comida_fin:
-                    if horario.hora_comida_inicio <= hora_slot < horario.hora_comida_fin:
-                        es_hora_comida = True
-                        
-                if not es_hora_comida and (psicologo.id, dia_actual, hora_slot) not in citas_ocupadas:
-                    slots_union[dia_actual.strftime('%Y-%m-%d')].add(hora_slot.strftime('%I:%M %p'))
-                    
-                slot_actual += timedelta(hours=1)
-                
-        dia_actual += timedelta(days=1)
-        
-    resultado = {}
-    for fecha_str, slots_set in slots_union.items():
-        resultado[fecha_str] = sorted(slots_set, key=lambda x: datetime.strptime(x, '%I:%M %p'))
-    return resultado
+    # Traemos solo los psicólogos aptos junto con su relación horaria precargada (Evita consultas N+1)
+    psicologos_activos = PerfilPsicologo.objects.filter(
+        **{campo_capacidad: True},
+        esta_activo=True
+    ).select_related('horario_fijo', 'usuario')
 
+    slots_globales = {}
+
+    for psicologo in psicologos_activos:
+        slots_psicologo = obtener_slots_psicologo(psicologo, fecha_inicio, fecha_fin, tipo_sesion)
+        
+        for fecha_str, lista_horas in slots_psicologo.items():
+            if fecha_str not in slots_globales:
+                slots_globales[fecha_str] = set()
+            
+            # Agregamos los slots usando un set para unificar horas idénticas entre distintos especialistas
+            slots_globales[fecha_str].update(lista_horas)
+
+    # Convertimos los sets internos a listas ordenadas cronológicamente para el consumo del frontend
+    slots_globales_ordenados = {
+        fecha: sorted(list(horas), key=lambda x: datetime.strptime(x, '%I:%M %p'))
+        for fecha, horas in slots_globales.items() if horas
+    }
+
+    return slots_globales_ordenados
 
 def obtener_slots_psicologo(psicologo, fecha_inicio, fecha_fin, tipo_sesion="individual"):
-    """Versión ultraligera en RAM para un solo psicólogo"""
-    # 🔥 NUEVO: si el psicólogo no tiene habilitada esta modalidad, no hay slots.
+    """
+    Calcula los slots disponibles para un psicólogo específico dentro de un rango de fechas.
+    Retorna un diccionario: {'YYYY-MM-DD': ['08:00 AM', '09:00 AM', ...]}
+    """
+    # 1. Validar si el psicólogo está activo y atiende la modalidad solicitada
     campo_capacidad = CAPACIDAD_POR_TIPO_SESION.get(tipo_sesion, 'atiende_individual')
-    if not getattr(psicologo, campo_capacidad, False):
+    if not psicologo.esta_activo or not getattr(psicologo, campo_capacidad, False):
         return {}
 
-    festivos = set(DiaFestivo.objects.filter(fecha__gte=fecha_inicio, fecha__lte=fecha_fin).values_list('fecha', flat=True))
-    dias_libres = set(psicologo.dias_libres.filter(fecha__gte=fecha_inicio, fecha__lte=fecha_fin).values_list('fecha', flat=True))
+    # 2. Verificar si cuenta con la configuración de horario fijo indispensable para el cálculo
+    if not hasattr(psicologo, 'horario_fijo'):
+        return {}
+        
+    horario = psicologo.horario_fijo
+    dias_descanso = [horario.dia_descanso_1, horario.dia_descanso_2]
+    h_inicio, h_fin, h_comida_ini, h_comida_fin = horario.obtener_horas_operativas()
+
+    # 3. Recuperar excepciones globales e individuales del rango en una sola consulta estructurada
+    festivos = set(
+        DiaFestivo.objects.filter(fecha__gte=fecha_inicio, fecha__lte=fecha_fin)
+        .values_list('fecha', flat=True)
+    )
+    dias_libres = set(
+        psicologo.dias_libres.filter(fecha__gte=fecha_inicio, fecha__lte=fecha_fin)
+        .values_list('fecha', flat=True)
+    )
     
-    mes_inicio = date(fecha_inicio.year, fecha_inicio.month, 1)
-    mes_fin = date(fecha_fin.year, fecha_fin.month, 1)
-    horarios_db = psicologo.horarios.filter(mes__gte=mes_inicio, mes__lte=mes_fin, es_descanso=False)
-    horarios_map = {(h.mes, h.semana, h.dia_semana): h for h in horarios_db}
-    
-    citas_ocupadas = set(Cita.objects.filter(psicologo=psicologo, fecha__gte=fecha_inicio, fecha__lte=fecha_fin, estado='Confirmada').values_list('fecha', 'hora'))
+    # Citas ya ocupadas (solo tomamos las confirmadas o activas que bloquean horario)
+    citas_ocupadas = set(
+        Cita.objects.filter(
+            psicologo=psicologo, 
+            fecha__gte=fecha_inicio, 
+            fecha__lte=fecha_fin
+        )
+        .exclude(estado__in=['Cancelada', 'No asistió'])
+        .values_list('fecha', 'hora')
+    )
     
     slots_por_fecha = {}
     dia_actual = fecha_inicio
-    dias_agregados = 0
-    max_iter = 0
-    
-    while dias_agregados < 30 and max_iter < 120:
-        max_iter += 1
-        if dia_actual > fecha_fin: break
-            
-        if dia_actual in festivos or dia_actual in dias_libres:
+    dias_procesados = 0
+    max_iteraciones = 120 # Salvaguarda para evitar bucles infinitos
+
+    while dia_actual <= fecha_fin and dias_procesados < max_iteraciones:
+        # 4. Regla de exclusión inmediata: días de descanso fijo, festivos o días libres solicitados
+        if dia_actual.weekday() in dias_descanso or dia_actual in festivos or dia_actual in dias_libres:
             dia_actual += timedelta(days=1)
-            continue
-            
-        dia_semana = dia_actual.weekday()
-        # 🔥 CURA DEL BUG DE LA SEMANA 5 PARA DOCTORES ASIGNADOS
-        if dia_actual.day <= 7: num_semana = 1
-        elif dia_actual.day <= 14: num_semana = 2
-        elif dia_actual.day <= 21: num_semana = 3
-        elif dia_actual.day <= 28: num_semana = 4
-        else: num_semana = 5
-        
-        mes_actual_buscar = date(dia_actual.year, dia_actual.month, 1)
-        
-        horario = horarios_map.get((mes_actual_buscar, num_semana, dia_semana))
-        if not horario or not horario.hora_inicio:
-            dia_actual += timedelta(days=1)
+            dias_procesados += 1
             continue
             
         slots_del_dia = []
-        slot_actual = datetime.combine(dia_actual, horario.hora_inicio)
-        fin_turno = datetime.combine(dia_actual, horario.hora_fin)
+        slot_actual = datetime.combine(dia_actual, h_inicio)
+        fin_turno = datetime.combine(dia_actual, h_fin)
         
+        # 5. Iteración por bloques de 1 hora dentro del rango operativo del turno
         while slot_actual < fin_turno:
             hora_slot = slot_actual.time()
-            es_hora_comida = False
-            if horario.hora_comida_inicio and horario.hora_comida_fin:
-                if horario.hora_comida_inicio <= hora_slot < horario.hora_comida_fin:
-                    es_hora_comida = True
-                    
+            
+            # Validar que no interfiera con la hora de almuerzo específica
+            es_hora_comida = (h_comida_ini <= hora_slot < h_comida_fin)
+            
+            # Validar que el espacio exacto no esté reservado en el set de citas ocupadas
             if not es_hora_comida and (dia_actual, hora_slot) not in citas_ocupadas:
                 slots_del_dia.append(hora_slot.strftime('%I:%M %p'))
                 
             slot_actual += timedelta(hours=1)
             
+        # Si el día generó horarios útiles, lo agregamos al mapa final
         if slots_del_dia:
-            slots_por_fecha[dia_actual.strftime('%Y-%m-%d')] = sorted(slots_del_dia, key=lambda x: datetime.strptime(x, '%I:%M %p'))
-            dias_agregados += 1
+            fecha_str = dia_actual.strftime('%Y-%m-%d')
+            slots_por_fecha[fecha_str] = sorted(
+                slots_del_dia, 
+                key=lambda x: datetime.strptime(x, '%I:%M %p')
+            )
             
         dia_actual += timedelta(days=1)
+        dias_procesados += 1
         
     return slots_por_fecha
 

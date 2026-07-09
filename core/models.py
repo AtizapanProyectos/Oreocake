@@ -197,80 +197,58 @@ class InscripcionTaller(models.Model):
 # ==========================================
 # 7. HORARIOS Y DÍAS LIBRES
 # ==========================================
-class HorarioPsicologo(models.Model):
-    DIAS_SEMANA = [(0, 'Lunes'), (1, 'Martes'), (2, 'Miércoles'), (3, 'Jueves'), (4, 'Viernes'), (5, 'Sábado'), (6, 'Domingo')]
-    SEMANAS_MES = [(1, 'Semana 1'), (2, 'Semana 2'), (3, 'Semana 3'), (4, 'Semana 4'), (5, 'Semana 5')]
-    TURNOS = [('matutino', 'Turno Matutino (8:00 am - 4:00 pm)'), ('vespertino', 'Turno Vespertino (1:00 pm - 9:00 pm)')]
-
-    psicologo = models.ForeignKey(PerfilPsicologo, on_delete=models.CASCADE, related_name='horarios')
-    mes = models.DateField(null=True, blank=True, help_text="Usa el día 1 del mes", db_index=True) # 🔥 OPTIMIZADO
-    semana = models.IntegerField(choices=SEMANAS_MES, null=True, blank=True, db_index=True) # 🔥 OPTIMIZADO
-    dia_semana = models.IntegerField(choices=DIAS_SEMANA, db_index=True) # 🔥 OPTIMIZADO
-    es_descanso = models.BooleanField(default=False, verbose_name="¿Es día de Descanso?", db_index=True) # 🔥 OPTIMIZADO
-    turno = models.CharField(max_length=20, choices=TURNOS, blank=True, null=True, db_index=True) # 🔥 OPTIMIZADO
-
-    hora_inicio = models.TimeField(blank=True, null=True, editable=False)
-    hora_fin = models.TimeField(blank=True, null=True, editable=False)
-    hora_comida_inicio = models.TimeField(blank=True, null=True, editable=False)
-    hora_comida_fin = models.TimeField(blank=True, null=True, editable=False)
-
-    class Meta:
-        unique_together = [['psicologo', 'mes', 'semana', 'dia_semana']]
-        indexes = [
-            models.Index(fields=['psicologo', 'es_descanso']), # 🔥 Para búsquedas veloces de días laborables
-        ]
-
-    def save(self, *args, **kwargs):
-        from datetime import time
-        if self.es_descanso:
-            self.turno = self.hora_inicio = self.hora_fin = self.hora_comida_inicio = self.hora_comida_fin = None
-        elif self.turno and self.psicologo and self.psicologo.usuario:
-            nombre_doc = self.psicologo.usuario.first_name.upper() if self.psicologo.usuario.first_name else ""
-            if self.turno == 'matutino':
-                self.hora_inicio, self.hora_fin = time(8, 0), time(16, 0)
-                if "ABRAHAM" in nombre_doc or "CLAUDIA" in nombre_doc:
-                    self.hora_comida_inicio, self.hora_comida_fin = time(13, 0), time(14, 0)
-                else: 
-                    self.hora_comida_inicio, self.hora_comida_fin = time(14, 0), time(15, 0)
-            elif self.turno == 'vespertino':
-                self.hora_inicio, self.hora_fin = time(13, 0), time(21, 0)
-                if "GWEYNETH" in nombre_doc or "MIGUEL" in nombre_doc:
-                    self.hora_comida_inicio, self.hora_comida_fin = time(14, 0), time(15, 0)
-                else:
-                    self.hora_comida_inicio, self.hora_comida_fin = time(15, 0), time(16, 0)
-        super().save(*args, **kwargs)
-
-# En models.py -> Class HorarioPsicologo
-    def __str__(self):
-        mes_str = self.mes.strftime("%B %Y") if self.mes else "Sin Mes"
-        estado = "DESCANSO" if self.es_descanso else f"Turno {self.turno}"
-        
-        # SOLUCIÓN: Evitamos el triple salto relacional en el str
-        try:
-            if self.psicologo:
-                # Esto llamará al __str__ seguro de PerfilPsicologo sin romper el hilo
-                doc_str = str(self.psicologo) 
-            else:
-                doc_str = "Psicólogo"
-        except Exception:
-            doc_str = f"Psicólogo Ref:{self.psicologo_id}"
-
-        return f"[{mes_str} - Sem {self.semana}] {doc_str} - {self.get_dia_semana_display()}: {estado}"
-
+# Elimina el modelo viejo HorarioPsicologo y crea este:
 class DiaLibrePsicologo(models.Model):
     psicologo = models.ForeignKey(PerfilPsicologo, on_delete=models.CASCADE, related_name='dias_libres')
-    fecha = models.DateField(db_index=True) # 🔥 OPTIMIZADO
-    motivo = models.CharField(max_length=100, blank=True, null=True)
-    
+    fecha = models.DateField(verbose_name="Día libre")
+    motivo = models.CharField(max_length=200, blank=True, null=True, verbose_name="Motivo (Opcional)")
+
     class Meta:
-        unique_together = [['psicologo', 'fecha']]
+        unique_together = ['psicologo', 'fecha']
+        verbose_name = "Día Libre"
+        verbose_name_plural = "Días Libres"
 
     def __str__(self):
-        try:
-            doc = self.psicologo.usuario.first_name if (self.psicologo and self.psicologo.usuario) else "Doc"
-        except Exception:
-            doc = "Doc"
-        return f"{doc} - {self.fecha}"
+        return f"{self.psicologo} - {self.fecha.strftime('%d/%m/%Y')}"
+
+        
+class HorarioFijoPsicologo(models.Model):
+    TURNOS = [
+        ('matutino', 'Turno Matutino (8:00 am - 4:00 pm)'), 
+        ('vespertino', 'Turno Vespertino (1:00 pm - 9:00 pm)')
+    ]
+    DIAS_SEMANA = [
+        (0, 'Lunes'), (1, 'Martes'), (2, 'Miércoles'), 
+        (3, 'Jueves'), (4, 'Viernes'), (5, 'Sábado'), (6, 'Domingo')
+    ]
+
+    psicologo = models.OneToOneField(PerfilPsicologo, on_delete=models.CASCADE, related_name='horario_fijo')
+    turno = models.CharField(max_length=20, choices=TURNOS)
+    dia_descanso_1 = models.IntegerField(choices=DIAS_SEMANA, verbose_name="Primer día de descanso")
+    dia_descanso_2 = models.IntegerField(choices=DIAS_SEMANA, verbose_name="Segundo día de descanso")
+
+    def obtener_horas_operativas(self):
+        """Retorna las horas de inicio, fin y comida dinámicamente según el turno y el nombre."""
+        from datetime import time
+        nombre_doc = self.psicologo.usuario.first_name.upper() if self.psicologo.usuario.first_name else ""
+        
+        if self.turno == 'matutino':
+            h_inicio, h_fin = time(8, 0), time(16, 0)
+            if "ABRAHAM" in nombre_doc or "CLAUDIA" in nombre_doc:
+                h_comida_ini, h_comida_fin = time(13, 0), time(14, 0)
+            else: 
+                h_comida_ini, h_comida_fin = time(14, 0), time(15, 0)
+        else: # vespertino
+            h_inicio, h_fin = time(13, 0), time(21, 0)
+            if "GWEYNETH" in nombre_doc or "MIGUEL" in nombre_doc:
+                h_comida_ini, h_comida_fin = time(14, 0), time(15, 0)
+            else:
+                h_comida_ini, h_comida_fin = time(15, 0), time(16, 0)
+                
+        return h_inicio, h_fin, h_comida_ini, h_comida_fin
+
+    def __str__(self):
+        return f"Horario Fijo de {self.psicologo} - {self.get_turno_display()}"
 
 # ==========================================
 # OTROS MODELOS
