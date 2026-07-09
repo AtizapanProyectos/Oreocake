@@ -1614,42 +1614,46 @@ function guardarCitaSinPago() {
             });
         }
 
-        // Lógica de Días (Chips)
-        const dateChips = document.querySelectorAll('.date-chip');
-        const slotContainers = document.querySelectorAll('.slots-container');
-        
-        dateChips.forEach(chip => {
-            chip.addEventListener('click', function() {
-                dateChips.forEach(c => c.classList.remove('active'));
-                slotContainers.forEach(c => c.style.display = 'none');
-                
-                this.classList.add('active');
-                const targetId = this.getAttribute('data-target');
-                const containerReal = document.getElementById(targetId);
-                if(containerReal) containerReal.style.display = 'grid';
+        // Lógica de Días (Chips) y Horas — DELEGACIÓN DE EVENTOS
+        // OJO: usamos delegación (listener en el contenedor #step-1-schedule, que nunca
+        // se destruye) en vez de poner el listener en cada botón. Esto es importante porque
+        // refrescarDisponibilidadPorTipo() borra y vuelve a crear los .date-chip y
+        // .time-slot-btn cada vez que cambias de modalidad (Individual/Pareja/Familiar);
+        // si el listener estuviera en los botones viejos, los nuevos quedarían "muertos".
+        const stepSchedule = document.getElementById('step-1-schedule');
+        if (stepSchedule) {
+            stepSchedule.addEventListener('click', function(e) {
+                const chip = e.target.closest('.date-chip');
+                if (chip) {
+                    stepSchedule.querySelectorAll('.date-chip').forEach(c => c.classList.remove('active'));
+                    stepSchedule.querySelectorAll('.slots-container').forEach(c => c.style.display = 'none');
+
+                    chip.classList.add('active');
+                    const targetId = chip.getAttribute('data-target');
+                    const containerReal = document.getElementById(targetId);
+                    if (containerReal) containerReal.style.display = 'grid';
+                    return;
+                }
+
+                const slotBtn = e.target.closest('.time-slot-btn');
+                if (slotBtn) {
+                    stepSchedule.querySelectorAll('.time-slot-btn').forEach(b => b.classList.remove('active'));
+                    slotBtn.classList.add('active');
+
+                    window.horaSeleccionada = slotBtn.getAttribute('data-hora');
+                    window.fechaSeleccionada = slotBtn.getAttribute('data-fecha');
+
+                    let partes = window.fechaSeleccionada.split('-');
+                    let fechaObj = new Date(partes[0], partes[1] - 1, partes[2]);
+                    const opciones = { weekday: 'long', month: 'long', day: 'numeric' };
+
+                    document.getElementById('selected-time-text').innerHTML = `Has seleccionado el <strong>${fechaObj.toLocaleDateString('es-ES', opciones)}</strong> a las <strong>${slotBtn.innerText}</strong>`;
+
+                    document.getElementById('step-1-schedule').style.display = 'none';
+                    document.getElementById('step-2-payment').style.display = 'block';
+                }
             });
-        });
-
-        // Lógica de Horas
-        const timeSlotBtns = document.querySelectorAll('#step-1-schedule .time-slot-btn');
-        timeSlotBtns.forEach(btn => {
-            btn.addEventListener('click', function() {
-                timeSlotBtns.forEach(b => b.classList.remove('active'));
-                this.classList.add('active');
-
-                window.horaSeleccionada = this.getAttribute('data-hora'); 
-                window.fechaSeleccionada = this.getAttribute('data-fecha'); 
-                
-                let partes = window.fechaSeleccionada.split('-');
-                let fechaObj = new Date(partes[0], partes[1]-1, partes[2]);
-                const opciones = { weekday: 'long', month: 'long', day: 'numeric' };
-
-                document.getElementById('selected-time-text').innerHTML = `Has seleccionado el <strong>${fechaObj.toLocaleDateString('es-ES', opciones)}</strong> a las <strong>${this.innerText}</strong>`;
-
-                document.getElementById('step-1-schedule').style.display = 'none';
-                document.getElementById('step-2-payment').style.display = 'block';
-            });
-        });
+        }
 
 
         /*
