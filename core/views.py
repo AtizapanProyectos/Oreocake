@@ -169,18 +169,19 @@ def obtener_slots_globales(fecha_inicio, fecha_fin, preferencia=None, tipo_sesio
     campo_capacidad = CAPACIDAD_POR_TIPO_SESION.get(tipo_sesion, 'atiende_individual')
     
     # 2. Armamos los filtros base (los que aplican a todos)
+# 1. Filtros obligatorios por defecto
     filtros = {
         campo_capacidad: True,
         'esta_activo': True
     }
     
-    # 3. SI HAY PREFERENCIA, LA APLICAMOS AL QUERY
-    if preferencia:
-        # Aquí tienes que usar el campo real de tu modelo PerfilPsicologo
-        # Ejemplo: si la preferencia es que sea mujer u hombre
+    # 2. VALIDACIÓN: Solo filtramos por preferencia si es un valor real
+    # Evitamos que filtre si viene vacío (''), 'todos', o 'cualquiera'
+    if preferencia and preferencia.strip() not in ["", "todos", "cualquiera", "Cualquiera"]:
+        # CAMBIA 'genero' por el nombre real de tu campo en el modelo PerfilPsicologo
         filtros['genero'] = preferencia 
 
-    # 4. Buscamos a los psicólogos aplicando los filtros dinámicos
+    # 3. Hacemos la consulta con los filtros limpios
     psicologos_activos = PerfilPsicologo.objects.filter(
         **filtros
     ).select_related('horario_fijo', 'usuario')
