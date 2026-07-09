@@ -839,41 +839,9 @@ body {
   </div>
 
   <!-- ====================== BOTTOM PANELS ====================== -->
-  <div class="bot-grid fup fup-4">
-
-    <!-- ESPECIALISTAS -->
-    <div class="panel">
-      <div class="panel-title"><i class="fas fa-stethoscope" style="color:var(--p)"></i> Especialistas Activos</div>
-      <div class="doc-list">
-        {% for doc in doctores %}
-        <div class="doc-row">
-          <div class="doc-ava">{{ doc.nombre|first|upper }}</div>
-          <div style="flex:1; min-width:0;">
-            <div class="doc-name">Dr(a). {{ doc.nombre }}</div>
-            <div class="doc-esp">{{ doc.especialidad }}</div>
-          </div>
-          <div>
-            <div class="doc-count">{{ doc.pacientes }}</div>
-            <div class="doc-count-lbl">Pacientes</div>
-          </div>
-        </div>
-        {% empty %}
-        <p style="color:var(--ink3); text-align:center; font-size:14px; padding:20px 0;">Sin especialistas registrados.</p>
-        {% endfor %}
-      </div>
-    </div>
-
-    <!-- FRECUENCIA INGRESOS -->
-    <div class="panel">
-      <div class="panel-title"><i class="fas fa-heartbeat" style="color:var(--pink)"></i> Frecuencia de Ingresos</div>
-      <div class="pac-scroll" id="patient-list">
-        <div id="scroll-sentinel" style="padding:16px; text-align:center; color:var(--ink3); font-size:13px; font-weight:600;">
-          <i class="fas fa-circle-notch fa-spin"></i> Sincronizando...
-        </div>
-      </div>
-    </div>
-
-  </div>
+  <!-- 🚀 Se quitaron "Especialistas Activos" y "Frecuencia de Ingresos": eran los -->
+  <!-- paneles que disparaban las consultas pesadas (todos los doctores + hasta 20 -->
+  <!-- pacientes con sus citas, más el scroll infinito de /api/admin/pacientes/). -->
 
 </div><!-- /hw -->
 
@@ -1116,45 +1084,8 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   });
 
-  /* ── Scroll Infinito Pacientes ── */
-  let page = 1, hasMore = true, loading = false;
-  const list     = document.getElementById('patient-list');
-  const sentinel = document.getElementById('scroll-sentinel');
-
-  function loadPatients() {
-    if (loading || !hasMore) return;
-    loading = true;
-    fetch(`/api/admin/pacientes/?page=${page}&per_page=15`)
-      .then(r => r.json())
-      .then(data => {
-        data.results.forEach(pac => {
-          const row = document.createElement('div');
-          row.className = 'pac-row';
-          row.innerHTML = `
-            <div class="pac-ava" style="background:${pac.color_animo}18; color:${pac.color_animo}; border:1.5px solid ${pac.color_animo}30;">${pac.nombre.charAt(0)}</div>
-            <div style="flex:1;min-width:0;">
-              <div class="pac-name">${pac.nombre}</div>
-              <div class="pac-doc"><i class="fas fa-user-md" style="margin-right:4px;"></i>${pac.doctor}</div>
-            </div>
-            <div class="p-animo" style="background:${pac.color_animo}18; color:${pac.color_animo};">
-              <i class="${pac.icono_animo}" style="margin-right:3px;"></i>${pac.animo}
-            </div>`;
-          list.insertBefore(row, sentinel);
-        });
-        page++;
-        hasMore = data.has_next;
-        loading = false;
-        if (!hasMore) sentinel.style.display = 'none';
-        else sentinel.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Cargando más...';
-      })
-      .catch(() => { loading = false; });
-  }
-
-  const obs = new IntersectionObserver(
-    entries => { if (entries[0].isIntersecting) loadPatients(); },
-    { root: list, threshold: 0.1 }
-  );
-  obs.observe(sentinel);
+  /* 🚀 Se quitó el scroll infinito de pacientes (loadPatients / IntersectionObserver): */
+  /* ya no existe #patient-list ni #scroll-sentinel en el HTML.                         */
 
   /* ── Polling KPIs ── */
   let lastSnap = null;

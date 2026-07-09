@@ -1411,57 +1411,26 @@ def api_pacientes_paginados(request):
     })
 
 
-def obtener_focos_rojos():
-    focos = cache.get('focos_rojos_cache')
-    if focos is None:
-        pacientes_con_promedio = UsuarioPerfil.objects.filter(es_psicologo=False).annotate(
-            promedio_animo=Avg(
-                Case(
-                    When(usuario__citas_como_paciente__estado_animo='Muy mal', then=Value(1)),
-                    When(usuario__citas_como_paciente__estado_animo='Triste', then=Value(2)),
-                    When(usuario__citas_como_paciente__estado_animo='Normal', then=Value(3)),
-                    When(usuario__citas_como_paciente__estado_animo='Bien', then=Value(4)),
-                    When(usuario__citas_como_paciente__estado_animo='Excelente', then=Value(5)),
-                    output_field=IntegerField(),
-                ),
-                filter=~Q(usuario__citas_como_paciente__estado='Cancelada')
-            )
-        )
-        focos = pacientes_con_promedio.filter(promedio_animo__lt=2.5).count()
-        cache.set('focos_rojos_cache', focos, 60)  # se recalcula máximo 1 vez por minuto
-    return focos
-
 # ================== API PARA POLLING (estadísticas + citas) ==================
+# 🚀 Ya NO se calculan focos_rojos/nuevos_semana/completadas_mes/canceladas_mes/talleres_activos:
+# el HTML nunca los leía (ningún elemento ni línea de JS los usaba), solo consumían consultas
+# caras cada 10 segundos por el polling. Además el calendario ahora solo trae la semana en curso.
 def api_stats(request):
     hoy = timezone.now().date()
-    
+
     total_pacientes = UsuarioPerfil.objects.filter(es_psicologo=False).count()
     total_doctores = PerfilPsicologo.objects.filter(esta_activo=True).count()
     citas_hoy = Cita.objects.filter(fecha=hoy).exclude(estado='Cancelada').count()
     citas_totales = Cita.objects.exclude(estado='Cancelada').count()
-    
-    inicio_mes = hoy.replace(day=1)
-    inicio_semana = hoy - timezone.timedelta(days=hoy.weekday())
-    nuevos_semana = UsuarioPerfil.objects.filter(
-        es_psicologo=False, usuario__date_joined__date__gte=inicio_semana
-    ).count()
-    completadas_mes = Cita.objects.filter(fecha__gte=inicio_mes, estado='Completada').count()
-    canceladas_mes = Cita.objects.filter(fecha__gte=inicio_mes, estado='Cancelada').count()
-    talleres_activos = Taller.objects.filter(fecha__gte=hoy).count()
-    
 
-    # Foco rojo si el promedio es menor estricto a 2.5 (1=Muy mal, 2=Triste)
-    focos = obtener_focos_rojos()
-    
-    # Citas para calendario (próximos 60 días)
-    fecha_limite = hoy + timezone.timedelta(days=60)
-    inicio_calendario = hoy - timezone.timedelta(days=30)
-    
-    # 🚀 OPTIMIZACIÓN: select_related evita cargar al paciente y al doctor en cientos de consultas extra.
+    # 🚀 Solo la semana en curso (lunes a domingo) en vez de -30/+60 días
+    inicio_semana = hoy - timezone.timedelta(days=hoy.weekday())
+    fin_semana = inicio_semana + timezone.timedelta(days=6)
+
     citas_calendario = Cita.objects.filter(
-        fecha__gte=inicio_calendario, fecha__lte=fecha_limite
-    ).select_related('psicologo__usuario', 'paciente__perfil')
-    
+        fecha__gte=inicio_semana, fecha__lte=fin_semana
+    ).select_related('psicologo__usuario', 'paciente')
+
     citas_json = []
     for c in citas_calendario:
         nombre_pac = f"{c.paciente.first_name} {c.paciente.last_name}" if c.paciente.first_name else c.paciente.username
@@ -1475,17 +1444,12 @@ def api_stats(request):
                 'modalidad': c.modalidad
             }
         })
-    
+
     return JsonResponse({
         'total_pacientes': total_pacientes,
         'total_doctores': total_doctores,
         'citas_hoy': citas_hoy,
         'citas_totales': citas_totales,
-        'nuevos_semana': nuevos_semana,
-        'completadas_mes': completadas_mes,
-        'canceladas_mes': canceladas_mes,
-        'talleres_activos': talleres_activos,
-        'focos_rojos': focos,
         'citas_json': citas_json,
     })
 
@@ -1527,124 +1491,28 @@ def es_admin(user):
 @user_passes_test(es_admin, login_url='/')
 def panel_admin(request):
     hoy = timezone.now().date()
-    
+
     total_pacientes = UsuarioPerfil.objects.filter(es_psicologo=False).count()
     total_doctores = PerfilPsicologo.objects.filter(esta_activo=True).count()
     citas_hoy = Cita.objects.filter(fecha=hoy).exclude(estado='Cancelada').count()
     citas_totales = Cita.objects.exclude(estado='Cancelada').count()
 
-    doctores_data = []
-    # 🚀 OPTIMIZACIÓN: Precargamos usuarios de doctores
-    doctores = PerfilPsicologo.objects.all().select_related('usuario').annotate(
-        conteo_pacientes=Count('pacientes_asignados', distinct=True),
-        conteo_citas_hoy=Count('citas_agendadas', filter=Q(citas_agendadas__fecha=hoy) & ~Q(citas_agendadas__estado='Cancelada'), distinct=True),
-        conteo_citas_total=Count('citas_agendadas', filter=~Q(citas_agendadas__estado='Cancelada'), distinct=True)
-    )
-    for doc in doctores:
-        pacientes_activos = doc.conteo_pacientes
-        citas_doc_hoy = doc.conteo_citas_hoy
-        citas_doc_total = doc.conteo_citas_total
-        
-        capacidad_maxima = 20
-        porcentaje_carga = min(int((pacientes_activos / capacidad_maxima) * 100), 100) if pacientes_activos > 0 else 0
+    # 🚀 Se eliminaron por completo "Especialistas Activos" y "Frecuencia de Ingresos":
+    # esos dos bloques armaban listas de TODOS los doctores y hasta 20 pacientes con sus
+    # citas precargadas en cada carga del panel. Ya no se calculan ni se envían al template.
 
-        estado_carga = "Equilibrada"
-        color_carga = "#10b981" 
-        
-        if pacientes_activos >= 16: 
-            estado_carga = "Sobrecarga"
-            color_carga = "#ef4444" 
-        elif pacientes_activos >= 12:
-            estado_carga = "Carga Alta"
-            color_carga = "#f59e0b" 
-        elif pacientes_activos == 0: 
-            estado_carga = "Disponible"
-            color_carga = "#94a3b8" 
+    # 🚀 El calendario ahora solo trae la semana en curso (lunes a domingo) en vez del
+    # rango de -30/+60 días, así se recorta drásticamente el volumen de citas por request.
+    inicio_semana = hoy - timezone.timedelta(days=hoy.weekday())
+    fin_semana = inicio_semana + timezone.timedelta(days=6)
 
-        doctores_data.append({
-            'nombre': doc.usuario.first_name,
-            'especialidad': doc.especialidad or 'Psicología Clínica',
-            'pacientes': pacientes_activos,
-            'citas_hoy': citas_doc_hoy,
-            'citas_historicas': citas_doc_total,
-            'carga': estado_carga,
-            'color_carga': color_carga,
-            'porcentaje_carga': porcentaje_carga
-        })
-
-    # 🚀 OPTIMIZACIÓN: Evitamos ir a la DB en cada vuelta del ciclo.
-    # Usamos prefetch_related para meter todas las citas válidas de los pacientes en la memoria RAM de un solo jalón.
-    pacientes_recientes = UsuarioPerfil.objects.filter(es_psicologo=False).select_related(
-        'usuario', 'psicologo_asignado__usuario'
-    ).prefetch_related(
-        Prefetch('usuario__citas_como_paciente', queryset=Cita.objects.exclude(estado='Cancelada'), to_attr='citas_precargadas')
-    ).order_by('-id')[:20]
-    
-    pacientes_data = []
-    for pac in pacientes_recientes:
-        if pac.usuario:
-            # Ahora esto lee desde la RAM, no desde la Base de Datos
-            citas_paciente = pac.usuario.citas_precargadas 
-            total_sesiones = len(citas_paciente)
-            
-            valores_animo = {'Muy mal': 1, 'Triste': 2, 'Normal': 3, 'Bien': 4, 'Excelente': 5}
-            textos_animo = {1: 'Muy mal', 2: 'Triste', 3: 'Normal', 4: 'Bien', 5: 'Excelente'}
-            
-            suma_animo = 0
-            sesiones_validas = 0
-            
-            for cita in citas_paciente:
-                if cita.estado_animo in valores_animo:
-                    suma_animo += valores_animo[cita.estado_animo]
-                    sesiones_validas += 1
-            
-            if sesiones_validas > 0:
-                promedio_num = round(suma_animo / sesiones_validas)
-                animo_actual = textos_animo.get(promedio_num, "Normal")
-            else:
-                animo_actual = "Sin registro"
-        else:
-            total_sesiones = 0
-            animo_actual = "Sin registro"
-            
-        doctor_nombre = pac.psicologo_asignado.usuario.first_name if pac.psicologo_asignado else 'Pendiente'
-        
-        if animo_actual == "Muy mal":
-            icono_animo, color_animo = "fas fa-sad-cry", "#ef4444"
-        elif animo_actual == "Triste":
-            icono_animo, color_animo = "fas fa-frown", "#f97316"
-        elif animo_actual == "Normal":
-            icono_animo, color_animo = "fas fa-meh", "#64748b"
-        elif animo_actual == "Bien":
-            icono_animo, color_animo = "fas fa-smile", "#10b981"
-        elif animo_actual == "Excelente":
-            icono_animo, color_animo = "fas fa-grin-stars", "#B5992D"
-        else:
-            icono_animo, color_animo = "fas fa-minus", "#cbd5e1"
-
-        pacientes_data.append({
-            'nombre': pac.nombre,
-            'email': pac.usuario.email if pac.usuario else 'Sin email registrado',
-            'doctor': doctor_nombre,
-            'sesiones': total_sesiones,
-            'animo': animo_actual,
-            'icono_animo': icono_animo,
-            'color_animo': color_animo
-        })
-
-    # Citas para el calendario inicial
-    fecha_limite = hoy + timezone.timedelta(days=60)
-    inicio_calendario = hoy - timezone.timedelta(days=30)
     citas_calendario = Cita.objects.filter(
-        fecha__gte=inicio_calendario, fecha__lte=fecha_limite
-    ).select_related('psicologo__usuario', 'paciente')
-    
-
+        fecha__gte=inicio_semana, fecha__lte=fin_semana
+    ).select_related('psicologo__usuario', 'paciente__perfil')
 
     citas_json = []
     for c in citas_calendario:
         nombre_pac = f"{c.paciente.first_name} {c.paciente.last_name}" if c.paciente.first_name else c.paciente.username
-
         telefono_pac = c.paciente.perfil.telefono if hasattr(c.paciente, 'perfil') and c.paciente.perfil.telefono else 'Sin registrar'
 
         citas_json.append({
@@ -1661,29 +1529,15 @@ def panel_admin(request):
             }
         })
 
-
-    focos = obtener_focos_rojos()
-
-    extra_stats = {
-        'nuevos_semana': UsuarioPerfil.objects.filter(es_psicologo=False, usuario__date_joined__date__gte=(hoy - timezone.timedelta(days=hoy.weekday()))).count(),
-        'completadas_mes': Cita.objects.filter(fecha__gte=hoy.replace(day=1), estado='Completada').count(),
-        'canceladas_mes': Cita.objects.filter(fecha__gte=hoy.replace(day=1), estado='Cancelada').count(),
-        'talleres_activos': Taller.objects.filter(fecha__gte=hoy).count(),
-        'focos_rojos': focos,
-    }
-
     context = {
         'total_pacientes': total_pacientes,
         'total_doctores': total_doctores,
         'citas_hoy': citas_hoy,
         'citas_totales': citas_totales,
-        'doctores': doctores_data,
-        'pacientes': pacientes_data,
         'hoy': hoy,
         'citas_json': json.dumps(citas_json),
-        'extra_stats_json': json.dumps(extra_stats),
     }
-    
+
     return render(request, 'panel_admin.html', context)
 
 
