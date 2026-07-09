@@ -108,16 +108,16 @@ TIPOS_SESION_VALIDOS = tuple(CAPACIDAD_POR_TIPO_SESION.keys())
 # El monto que se cobra SIEMPRE se recalcula en el servidor a partir de
 # estas constantes; nunca se confía en el monto que mande el navegador.
 PRECIO_BASE_SESION = {
-    'individual': 1,
-    'pareja': 2,
-    'familiar': 3,
+    'individual': 100,
+    'pareja': 200,
+    'familiar': 200,
 }
 # Comisión de plataforma, expresada como % sobre el subtotal (mantiene la
 # proporción usada históricamente: $10 sobre $100 y $15 sobre $200).
 COMISION_PORCENTAJE_SESION = {
-    'individual': 0.1,
-    'pareja': 0.01,
-    'familiar': 0.01,
+    'individual': 0.10,
+    'pareja': 0.075,
+    'familiar': 0.075,
 }
 INCREMENTO_POR_INTEGRANTE_FAMILIAR = 100  # MXN por integrante adicional
 MIN_INTEGRANTES_FAMILIAR = 2  # una terapia familiar implica mínimo 2 personas
