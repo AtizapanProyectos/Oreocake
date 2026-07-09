@@ -163,22 +163,31 @@ from .models import DiaFestivo, Cita, PerfilPsicologo
 from datetime import datetime, timedelta, time
 from collections import defaultdict
 
-def obtener_slots_globales(fecha_inicio, fecha_fin, tipo_sesion="individual"):
-    """
-    Agrupa y consolida la disponibilidad de TODOS los psicólogos activos para armar la vista 
-    del calendario unificado. Evita colisiones agrupando las horas disponibles por día.
-    Retorna un diccionario: {'YYYY-MM-DD': ['08:00 AM', '09:00 AM', ...]}
-    """
+# 1. Agregamos 'preferencia' como parámetro (le ponemos None por defecto por si acaso)
+def obtener_slots_globales(fecha_inicio, fecha_fin, preferencia=None, tipo_sesion="individual"):
+    
     campo_capacidad = CAPACIDAD_POR_TIPO_SESION.get(tipo_sesion, 'atiende_individual')
     
-    # Traemos solo los psicólogos aptos junto con su relación horaria precargada (Evita consultas N+1)
+    # 2. Armamos los filtros base (los que aplican a todos)
+    filtros = {
+        campo_capacidad: True,
+        'esta_activo': True
+    }
+    
+    # 3. SI HAY PREFERENCIA, LA APLICAMOS AL QUERY
+    if preferencia:
+        # Aquí tienes que usar el campo real de tu modelo PerfilPsicologo
+        # Ejemplo: si la preferencia es que sea mujer u hombre
+        filtros['genero'] = preferencia 
+
+    # 4. Buscamos a los psicólogos aplicando los filtros dinámicos
     psicologos_activos = PerfilPsicologo.objects.filter(
-        **{campo_capacidad: True},
-        esta_activo=True
+        **filtros
     ).select_related('horario_fijo', 'usuario')
 
     slots_globales = {}
 
+    # El resto de tu código de los for loops se queda igualito
     for psicologo in psicologos_activos:
         slots_psicologo = obtener_slots_psicologo(psicologo, fecha_inicio, fecha_fin, tipo_sesion)
         
@@ -186,10 +195,8 @@ def obtener_slots_globales(fecha_inicio, fecha_fin, tipo_sesion="individual"):
             if fecha_str not in slots_globales:
                 slots_globales[fecha_str] = set()
             
-            # Agregamos los slots usando un set para unificar horas idénticas entre distintos especialistas
             slots_globales[fecha_str].update(lista_horas)
 
-    # Convertimos los sets internos a listas ordenadas cronológicamente para el consumo del frontend
     slots_globales_ordenados = {
         fecha: sorted(list(horas), key=lambda x: datetime.strptime(x, '%I:%M %p'))
         for fecha, horas in slots_globales.items() if horas
