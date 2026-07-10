@@ -471,6 +471,14 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+    function convertirHoraA24(hora12) {
+        let [time, modifier] = hora12.split(' ');
+        let [hours, minutes] = time.split(':');
+        if (hours === '12') hours = '00';
+        if (modifier === 'PM') hours = parseInt(hours, 10) + 12;
+        return `${hours.toString().padStart(2, '0')}:${minutes}`;
+    }
+
     function actualizarResumen() {
         document.getElementById('hpa-resumen-fecha').textContent = fechaSeleccionada || 'Sin seleccionar';
         document.getElementById('hpa-resumen-hora').textContent = horaSeleccionada || 'Sin seleccionar';
@@ -579,7 +587,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const formData = new FormData();
         formData.append('paciente_id', pacienteId);
         formData.append('fecha', fechaSeleccionada);
-        formData.append('hora', horaSeleccionada);
+        formData.append('hora', convertirHoraA24(horaSeleccionada));
         formData.append('animo', document.getElementById('hpa-animo').value);
         formData.append('modalidad', modalidad);
         formData.append('tipo_servicio', tipoSesion);

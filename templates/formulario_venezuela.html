@@ -5,217 +5,191 @@
 
 {% block content %}
 <style>
-    /* 
-      Variables con tonos venezolanos "suavizados" (Pasteles y translúcidos) 
-      para lograr ese efecto "suavecito" y relajante.
-    */
-    .vz-soft-wrap {
-        --vz-soft-yellow: rgba(252, 209, 22, 0.15); 
-        --vz-soft-blue: rgba(0, 56, 147, 0.08); 
-        --vz-soft-red: rgba(206, 17, 38, 0.06);
-        --vz-main-blue: #1E50A8; /* Un azul un poco más amigable y menos duro */
-        --vz-main-yellow: #FCD116;
-        
+    /* Fondo ultra suave y relajante */
+    .vz-bubbles-wrap {
         position: relative;
-        padding: 120px 20px 80px;
+        padding: 120px 20px 100px;
         min-height: 100vh;
-        overflow: hidden;
-        background: #fcfcfd; /* Blanco un poco más cálido */
+        background: #f8fafc;
         display: flex;
+        flex-direction: column;
         align-items: center;
-        justify-content: center;
-    }
-
-    /* Esferas de color flotantes y suaves de fondo */
-    @keyframes floatOrbs {
-        0% { transform: translate(0, 0) scale(1); }
-        50% { transform: translate(20px, -20px) scale(1.05); }
-        100% { transform: translate(0, 0) scale(1); }
-    }
-
-    .vz-soft-wrap::before { 
-        content:''; position:absolute; top:-5%; right:-5%; width:500px; height:500px; 
-        border-radius:50%; background:radial-gradient(circle, var(--vz-soft-yellow), transparent 70%); 
-        z-index:0; pointer-events: none; animation: floatOrbs 8s ease-in-out infinite; 
-    }
-    .vz-soft-wrap::after { 
-        content:''; position:absolute; bottom:-5%; left:-5%; width:450px; height:450px; 
-        border-radius:50%; background:radial-gradient(circle, var(--vz-soft-blue), transparent 70%); 
-        z-index:0; pointer-events: none; animation: floatOrbs 10s ease-in-out infinite reverse; 
-    }
-    .vz-bg-red { 
-        position:absolute; top:35%; left:-10%; width:350px; height:350px; 
-        border-radius:50%; background:radial-gradient(circle, var(--vz-soft-red), transparent 70%); 
-        z-index:0; pointer-events: none; animation: floatOrbs 12s ease-in-out infinite; 
-    }
-
-    /* Contenedor principal: Ultra redondo, sombra súper difuminada */
-    .vz-soft-box {
-        background: rgba(255, 255, 255, 0.85);
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
-        width: 100%;
-        max-width: 620px;
-        padding: 60px 50px;
-        border-radius: 40px; /* Súper redondo */
-        position: relative;
-        box-shadow: 0 30px 60px rgba(0, 56, 147, 0.05), 0 0 0 4px rgba(255, 255, 255, 0.5) inset;
-        border: 1px solid rgba(255, 255, 255, 0.8);
-        z-index: 10;
         overflow: hidden;
     }
-    @media(max-width: 600px) { .vz-soft-box { padding: 45px 30px; border-radius: 32px; } }
 
-    /* Cinta Tricolor superior pero en tonos pastel/suaves */
-    .vz-soft-ribbon {
-        height: 6px;
+    /* Esferas de fondo flotantes (colores de Venezuela muy pastel) */
+    @keyframes floatSoftly {
+        0% { transform: translateY(0px) scale(1); }
+        50% { transform: translateY(-20px) scale(1.05); }
+        100% { transform: translateY(0px) scale(1); }
+    }
+    .vz-bubbles-wrap::before { 
+        content:''; position:absolute; top:-10%; right:-10%; width:600px; height:600px; 
+        border-radius:50%; background:radial-gradient(circle, rgba(252, 209, 22, 0.08), transparent 70%); 
+        z-index:0; pointer-events: none; animation: floatSoftly 10s ease-in-out infinite; 
+    }
+    .vz-bubbles-wrap::after { 
+        content:''; position:absolute; bottom:-10%; left:-10%; width:500px; height:500px; 
+        border-radius:50%; background:radial-gradient(circle, rgba(0, 56, 147, 0.06), transparent 70%); 
+        z-index:0; pointer-events: none; animation: floatSoftly 12s ease-in-out infinite reverse; 
+    }
+
+    /* Contenedor del formulario (Grid para separar burbujas) */
+    .vz-form-container {
+        position: relative;
+        z-index: 10;
         width: 100%;
-        background: linear-gradient(to right, #FDE047 33.3%, #60A5FA 33.3% 66.6%, #FDA4AF 66.6%);
-        position: absolute;
-        top: 0;
-        left: 0;
-        opacity: 0.8;
+        max-width: 550px;
+        display: flex;
+        flex-direction: column;
+        gap: 20px; /* Separación entre burbujas */
     }
 
-    /* Encabezado */
-    .vz-soft-header { text-align: center; margin-bottom: 40px; }
-    .vz-soft-header img { width: 150px; height: auto; margin-bottom: 24px; display: inline-block; filter: drop-shadow(0 10px 15px rgba(0,0,0,0.03)); }
-    .vz-soft-header h2 { 
-        font-family: var(--font-h, 'Outfit', sans-serif);
-        font-size: clamp(1.6rem, 4vw, 2.1rem); 
-        font-weight: 900; 
-        color: #1e293b; 
-        letter-spacing: -0.5px; 
-        margin-bottom: 14px; 
-        line-height: 1.2;
+    /* Estilo base de cada "Burbuja" */
+    .vz-bubble {
+        background: rgba(255, 255, 255, 0.9);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        padding: 30px 35px;
+        border-radius: 30px;
+        box-shadow: 0 15px 35px rgba(0, 56, 147, 0.04), 0 0 0 2px rgba(255, 255, 255, 0.8) inset;
+        border: 1px solid #f1f5f9;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
     }
-    .vz-soft-header p { color: #64748b; font-size: 16px; line-height: 1.6; margin: 0; }
+    .vz-bubble:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 20px 40px rgba(0, 56, 147, 0.08), 0 0 0 2px rgba(255, 255, 255, 0.9) inset;
+    }
+    @media(max-width: 600px) { .vz-bubble { padding: 25px 20px; border-radius: 24px; } }
 
-    /* 8 Estrellas más delicadas y espaciadas */
-    .vz-soft-estrellas {
-        display: flex; justify-content: center; gap: 8px; color: var(--vz-main-blue);
-        font-size: 16px; margin-top: 18px; opacity: 0.4; /* Opacidad bajita para que se vean suaves */
-        transition: opacity 0.3s;
+    /* Burbuja Header Especial */
+    .vz-bubble-header {
+        text-align: center;
+        padding: 40px 35px;
+        position: relative;
+        overflow: hidden;
     }
-    .vz-soft-box:hover .vz-soft-estrellas { opacity: 0.6; } /* Se iluminan un poquito al hacer hover en la tarjeta */
+    .vz-bubble-header::before {
+        content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 6px;
+        background: linear-gradient(to right, rgba(252,209,22,0.8) 33.3%, rgba(0,56,147,0.8) 33.3% 66.6%, rgba(206,17,38,0.8) 66.6%);
+    }
+    .vz-bubble-header img { width: 140px; margin-bottom: 20px; }
+    .vz-bubble-header h2 { font-family: var(--font-h, 'Outfit', sans-serif); font-size: 1.8rem; font-weight: 900; color: #1e293b; margin-bottom: 12px; line-height: 1.2; }
+    .vz-bubble-header p { color: #64748b; font-size: 15px; margin: 0; }
+    
+    .vz-soft-estrellas { display: flex; justify-content: center; gap: 8px; color: #003893; font-size: 14px; margin-top: 15px; opacity: 0.3; }
 
-    /* Inputs súper suaves */
-    .vz-soft-input {
-        width: 100%; padding: 20px 24px; border: 2px solid #f1f5f9; border-radius: 20px;
-        font-size: 15px; font-family: inherit; background: #f8fafc; color: #334155;
-        transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); margin-bottom: 18px;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.01) inset;
+    /* Inputs dentro de burbujas */
+    .vz-bubble-label { display: block; font-family: var(--font-h, 'Outfit', sans-serif); font-size: 13px; text-transform: uppercase; letter-spacing: 1px; color: #003893; font-weight: 800; margin-bottom: 12px; opacity: 0.8; }
+    
+    .vz-input-clean {
+        width: 100%; padding: 16px 20px; border: none; border-radius: 16px;
+        font-size: 16px; font-family: inherit; background: #f8fafc; color: #334155;
+        transition: all 0.3s; box-shadow: 0 2px 5px rgba(0,0,0,0.02) inset;
     }
-    .vz-soft-input:focus { 
-        outline: none; border-color: #bfdbfe; background: #fff; 
-        box-shadow: 0 10px 25px rgba(0, 56, 147, 0.08); transform: translateY(-2px);
-    }
-    .vz-soft-input::placeholder { color: #94a3b8; font-weight: 500; }
+    .vz-input-clean:focus { outline: none; background: #fff; box-shadow: 0 0 0 2px #bfdbfe, 0 10px 20px rgba(0, 56, 147, 0.05); }
+    .vz-input-clean::placeholder { color: #94a3b8; }
 
-    /* Sección de horarios (Chips como "nubes") */
-    .vz-soft-label {
-        display: block; font-family: var(--font-h, 'Outfit', sans-serif); font-size: 13px;
-        text-transform: uppercase; letter-spacing: 1.5px; color: var(--vz-main-blue);
-        font-weight: 800; margin-bottom: 16px; text-align: left; opacity: 0.8;
+    /* Burbuja de Chips (Horarios) */
+    .vz-chips-container { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    @media(max-width: 480px) { .vz-chips-container { grid-template-columns: 1fr; } }
+    
+    .vz-chip-btn {
+        padding: 16px; border: 2px solid #f1f5f9; border-radius: 20px; font-weight: 700;
+        cursor: pointer; transition: all .2s; color: #64748b; font-size: 14px; background: #fff; text-align: center;
     }
-    .vz-soft-chips { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 8px; }
-    .vz-soft-chip {
-        padding: 14px 22px; border: 2px solid transparent; border-radius: 100px; font-weight: 700;
-        cursor: pointer; transition: all .3s cubic-bezier(0.16, 1, 0.3, 1); color: #64748b;
-        font-size: 14px; background: #f1f5f9; flex: 1 1 auto; text-align: center;
-    }
-    .vz-soft-chip:hover { 
-        background: #fff; transform: translateY(-3px); 
-        box-shadow: 0 10px 20px rgba(0, 56, 147, 0.06); color: var(--vz-main-blue);
-    }
-    .vz-soft-chip.active { 
-        background: var(--vz-main-blue); color: #fff; 
-        box-shadow: 0 10px 25px rgba(0, 56, 147, 0.2); transform: translateY(-2px);
-    }
+    .vz-chip-btn:hover { border-color: rgba(252,209,22,0.5); color: #003893; transform: translateY(-2px); }
+    .vz-chip-btn.active { background: #003893; color: #fff; border-color: #003893; box-shadow: 0 8px 20px rgba(0, 56, 147, 0.2); }
 
-    .vz-soft-error { display: none; color: #ef4444; font-size: 13px; font-weight: 600; margin-top: 10px; text-align: left; background: #fef2f2; padding: 10px 16px; border-radius: 12px;}
+    .vz-soft-error { display: none; color: #ef4444; font-size: 13px; font-weight: 600; margin-top: 12px; text-align: center; background: #fef2f2; padding: 12px; border-radius: 14px; }
 
-    /* Botón Submit gordito y suave */
-    .vz-soft-btn {
+    /* Botón Submit Flotante */
+    .vz-btn-submit {
         width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 10px;
-        background: var(--vz-main-blue); color: #fff !important; text-decoration: none; font-size: 16px;
-        font-weight: 800; font-family: var(--font-h, 'Outfit', sans-serif); padding: 20px 24px;
-        border-radius: 100px; border: none; cursor: pointer; text-transform: uppercase;
-        letter-spacing: 1px; transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); margin-top: 30px;
-        box-shadow: 0 10px 25px rgba(0, 56, 147, 0.15);
+        background: #003893; color: #fff !important; font-size: 16px; font-weight: 800;
+        font-family: var(--font-h, 'Outfit', sans-serif); padding: 22px; border-radius: 24px; border: none;
+        cursor: pointer; text-transform: uppercase; letter-spacing: 1px; transition: all 0.3s;
+        box-shadow: 0 15px 30px rgba(0, 56, 147, 0.2);
     }
-    .vz-soft-btn:hover { transform: translateY(-5px); box-shadow: 0 20px 40px rgba(0, 56, 147, 0.25); filter: brightness(1.1); }
+    .vz-btn-submit:hover { transform: translateY(-4px) scale(1.02); box-shadow: 0 20px 40px rgba(0, 56, 147, 0.3); background: #002b70; }
 
-    /* Alertas de Django con bordes redonditos */
-    .vz-soft-alert {
-        background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 20px; padding: 18px 24px;
-        margin-bottom: 25px; display: flex; align-items: center; gap: 14px; font-size: 14px;
-        color: #15803d; font-weight: 600; text-align: left; box-shadow: 0 10px 20px rgba(21, 128, 61, 0.05);
+    /* Alertas de Django */
+    .vz-alert-bubble {
+        background: #f0fdf4; border: none; border-radius: 24px; padding: 18px 24px;
+        display: flex; align-items: center; gap: 14px; font-size: 14px; color: #15803d; font-weight: 600;
+        box-shadow: 0 10px 25px rgba(21, 128, 61, 0.08);
     }
-    .vz-soft-alert.error { background: #fef2f2; border-color: #fecaca; color: #b91c1c; box-shadow: 0 10px 20px rgba(185, 28, 28, 0.05); }
-    .vz-soft-alert i { font-size: 20px; }
+    .vz-alert-bubble.error { background: #fef2f2; color: #b91c1c; box-shadow: 0 10px 25px rgba(185, 28, 28, 0.08); }
 </style>
 
-<div class="vz-soft-wrap">
-    <div class="vz-bg-red"></div>
+<div class="vz-bubbles-wrap">
     
-    <div class="vz-soft-box">
-        <div class="vz-soft-ribbon"></div>
-
-        <div class="vz-soft-header">
+    <div class="vz-form-container">
+        
+        <!-- Burbuja 1: Encabezado -->
+        <div class="vz-bubble vz-bubble-header">
             <img src="{% static 'img/nlogo.png' %}" alt="Espacio HOPE">
-            <h2>Estamos para ti, donde sea que estés</h2>
-            <p>Cuéntanos un poco de ti y te contactaremos para coordinar tu atención psicológica de manera cálida y cercana.</p>
+            <h2>Estamos para ti</h2>
+            <p>Cuéntanos un poco de ti y te contactaremos para coordinar tu atención psicológica.</p>
             <div class="vz-soft-estrellas">
-                <i class="fas fa-star"></i>
-                <i class="fas fa-star"></i>
-                <i class="fas fa-star"></i>
-                <i class="fas fa-star"></i>
-                <i class="fas fa-star"></i>
-                <i class="fas fa-star"></i>
-                <i class="fas fa-star"></i>
-                <i class="fas fa-star"></i>
+                <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
+                <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
             </div>
         </div>
 
         {% if messages %}
             {% for message in messages %}
-                <div class="vz-soft-alert {% if message.tags == 'error' %}error{% endif %}">
+                <div class="vz-bubble vz-alert-bubble {% if message.tags == 'error' %}error{% endif %}">
                     <i class="fas {% if message.tags == 'error' %}fa-circle-exclamation{% else %}fa-check-circle{% endif %}"></i>
                     <span>{{ message }}</span>
                 </div>
             {% endfor %}
         {% endif %}
 
-        <form action="{% url 'formulario_venezuela' %}" method="POST" id="form-venezuela" style="text-align:left;">
+        <form action="{% url 'formulario_venezuela' %}" method="POST" id="form-venezuela" style="display: contents;">
             {% csrf_token %}
 
-            <input type="email" name="correo" class="vz-soft-input" placeholder="Correo electrónico" required>
-            <input type="text" name="nombre" class="vz-soft-input" placeholder="Nombre completo" required>
-            <input type="tel" name="celular" class="vz-soft-input" placeholder="Número de celular (Ej: 0414...)" required>
-            <input type="text" name="lugar_vivienda" class="vz-soft-input" placeholder="Ciudad / Estado donde vives" required style="margin-bottom: 30px;">
-
-            <span class="vz-soft-label">Horario de preferencia para tu atención</span>
-            <div class="vz-soft-chips" id="horario-chips">
-                <div class="vz-soft-chip" data-valor="Mañana (9:00 - 12:00)">Mañana</div>
-                <div class="vz-soft-chip" data-valor="Tarde (12:00 - 17:00)">Tarde</div>
-                <div class="vz-soft-chip" data-valor="Noche (17:00 - 21:00)">Noche</div>
-                <div class="vz-soft-chip" data-valor="Fin de semana">Fin de semana</div>
+            <!-- Burbuja 2: Datos de Contacto -->
+            <div class="vz-bubble">
+                <span class="vz-bubble-label"><i class="fas fa-user" style="margin-right: 6px;"></i> Tus Datos</span>
+                <div style="display: flex; flex-direction: column; gap: 14px;">
+                    <input type="text" name="nombre" class="vz-input-clean" placeholder="Nombre completo" required>
+                    <input type="email" name="correo" class="vz-input-clean" placeholder="Correo electrónico" required>
+                    <input type="tel" name="celular" class="vz-input-clean" placeholder="Celular (Ej: 0414...)" required>
+                </div>
             </div>
-            
-            <p id="horario-error" class="vz-soft-error"><i class="fas fa-exclamation-circle" style="margin-right:6px;"></i> Por favor, dinos qué horario prefieres.</p>
-            <input type="hidden" name="horario_preferencia" id="horario_preferencia_input">
 
-            <button type="submit" class="vz-soft-btn">
-                Enviar mis datos <i class="fas fa-paper-plane" style="margin-left: 4px;"></i>
+            <!-- Burbuja 3: Ubicación -->
+            <div class="vz-bubble">
+                <span class="vz-bubble-label"><i class="fas fa-map-marker-alt" style="margin-right: 6px;"></i> ¿Dónde te encuentras?</span>
+                <input type="text" name="lugar_vivienda" class="vz-input-clean" placeholder="Ciudad / Estado de residencia" required>
+            </div>
+
+            <!-- Burbuja 4: Horario -->
+            <div class="vz-bubble">
+                <span class="vz-bubble-label"><i class="fas fa-clock" style="margin-right: 6px;"></i> Horario preferido</span>
+                <div class="vz-chips-container" id="horario-chips">
+                    <div class="vz-chip-btn" data-valor="Mañana (9:00 - 12:00)">Mañana <br><small style="font-weight:400; font-size:11px;">9:00 - 12:00</small></div>
+                    <div class="vz-chip-btn" data-valor="Tarde (12:00 - 17:00)">Tarde <br><small style="font-weight:400; font-size:11px;">12:00 - 17:00</small></div>
+                    <div class="vz-chip-btn" data-valor="Noche (17:00 - 21:00)">Noche <br><small style="font-weight:400; font-size:11px;">17:00 - 21:00</small></div>
+                    <div class="vz-chip-btn" data-valor="Fin de semana">Fin de <br><small style="font-weight:400; font-size:11px;">Semana</small></div>
+                </div>
+                <p id="horario-error" class="vz-soft-error"><i class="fas fa-exclamation-circle" style="margin-right:6px;"></i> Selecciona un horario</p>
+                <input type="hidden" name="horario_preferencia" id="horario_preferencia_input">
+            </div>
+
+            <!-- Burbuja 5: Botón -->
+            <button type="submit" class="vz-btn-submit">
+                Enviar Solicitud <i class="fas fa-paper-plane" style="margin-left: 6px;"></i>
             </button>
         </form>
+
     </div>
 </div>
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    const chips = document.querySelectorAll('#horario-chips .vz-soft-chip');
+    const chips = document.querySelectorAll('#horario-chips .vz-chip-btn');
     const inputHorario = document.getElementById('horario_preferencia_input');
     const errorMsg = document.getElementById('horario-error');
     const form = document.getElementById('form-venezuela');
@@ -233,6 +207,8 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!inputHorario.value) {
             e.preventDefault();
             errorMsg.style.display = 'block';
+            // Scroll suave hacia el error si el usuario no lo ha llenado
+            errorMsg.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
     });
 });
