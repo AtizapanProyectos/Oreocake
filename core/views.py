@@ -2735,3 +2735,52 @@ def admin_guardar_cita_ajax(request):
         return JsonResponse({'status': 'success'})
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)})
+
+
+# =========================================================================
+# 🇻🇪 MINI FORMULARIO DE CONTACTO — COMUNIDAD VENEZOLANA
+# =========================================================================
+# Formulario público (no requiere cuenta, no toca ningún modelo nuevo).
+# Igual que ya hace enviar_mood_ajax con el buzón de ánimo: solo notifica
+# por correo al equipo de HOPE con los datos de contacto. Al enviarse,
+# regresa a la página de inicio con un mensaje de confirmación.
+def formulario_venezuela(request):
+    if request.method == 'POST':
+        correo = request.POST.get('correo', '').strip()
+        nombre = request.POST.get('nombre', '').strip()
+        celular = request.POST.get('celular', '').strip()
+        lugar_vivienda = request.POST.get('lugar_vivienda', '').strip()
+        horario_preferencia = request.POST.get('horario_preferencia', '').strip()
+
+        if not correo or not nombre or not celular:
+            messages.error(request, 'Por favor completa al menos tu nombre, correo y celular.')
+            return render(request, 'formulario_venezuela.html')
+
+        fecha_str = localtime(now()).strftime('%d %b %Y, %H:%M')
+
+        texto_plano = (
+            "Nuevo contacto desde el formulario para la comunidad venezolana:\n\n"
+            f"Nombre: {nombre}\n"
+            f"Correo: {correo}\n"
+            f"Celular: {celular}\n"
+            f"Lugar de vivienda en Venezuela: {lugar_vivienda or 'No especificado'}\n"
+            f"Horario de preferencia: {horario_preferencia or 'No especificado'}\n"
+            f"Fecha: {fecha_str}"
+        )
+
+        try:
+            send_mail(
+                subject=f'🇻🇪 Nuevo contacto: {nombre}',
+                message=texto_plano,
+                from_email='Espacio HOPE <no-reply@espaciohope.com>',
+                recipient_list=['contacto@espaciohope.com'],
+                fail_silently=True,
+            )
+        except Exception as exc:
+            import logging
+            logging.getLogger(__name__).error('Error enviando formulario Venezuela: %s', exc)
+
+        messages.success(request, '¡Gracias! Ya recibimos tus datos, pronto nos pondremos en contacto contigo.')
+        return redirect('inicio')
+
+    return render(request, 'formulario_venezuela.html')

@@ -55,5 +55,7 @@ urlpatterns = [
     path('admin/buscar-pacientes/', views.admin_buscar_pacientes_ajax, name='admin_buscar_pacientes'),
     path('admin/disponibilidad-paciente/', views.admin_disponibilidad_ajax, name='admin_disponibilidad_paciente'),
     path('admin/guardar-cita-paciente/', views.admin_guardar_cita_ajax, name='admin_guardar_cita_paciente'),
+#Conatcto venezuela
+    path('contacto-venezuela/', views.formulario_venezuela, name='formulario_venezuela'),
 
 ]

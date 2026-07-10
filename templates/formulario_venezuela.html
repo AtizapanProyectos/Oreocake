@@ -1,0 +1,98 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Contáctanos - HOPE{% endblock %}
+
+{% block content %}
+<section class="section" style="padding-top:150px;">
+    <div style="max-width:650px;margin:0 auto;">
+        <div class="modal-box" style="max-width:100%;">
+
+            <div style="text-align:center;margin-bottom:10px;">
+                <img src="{% static 'img/nlogo.png' %}" alt="Espacio HOPE" style="width:170px;height:auto;margin-bottom:24px;display:inline-block;">
+                <h2 style="font-family:var(--font-h);font-size:1.9rem;font-weight:900;color:var(--c-dark);letter-spacing:-0.5px;margin-bottom:10px;">
+                    Estamos para ti, donde sea que estés
+                </h2>
+                <p style="color:var(--text-muted);font-size:1rem;line-height:1.6;margin-bottom:35px;">
+                    Cuéntanos un poco de ti y te contactamos para agendar tu atención.
+                </p>
+            </div>
+
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="footer-alert"
+                         style="text-align:left;margin:0 0 24px;
+                         {% if message.tags == 'error' %}background:rgba(239,68,68,.06);border-color:rgba(239,68,68,.25);{% endif %}">
+                        <i class="fas {% if message.tags == 'error' %}fa-circle-exclamation{% else %}fa-circle-check{% endif %}"
+                           style="{% if message.tags == 'error' %}color:#ef4444;{% endif %}"></i>
+                        <span>{{ message }}</span>
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            <form action="{% url 'formulario_venezuela' %}" method="POST" id="form-venezuela" style="text-align:left;">
+                {% csrf_token %}
+
+                <div style="margin-bottom:18px;">
+                    <input type="email" name="correo" class="custom-input-triage" placeholder="Correo electrónico" required>
+                </div>
+
+                <div style="margin-bottom:18px;">
+                    <input type="text" name="nombre" class="custom-input-triage" placeholder="Nombre completo" required>
+                </div>
+
+                <div style="margin-bottom:18px;">
+                    <input type="tel" name="celular" class="custom-input-triage" placeholder="Número de celular" required>
+                </div>
+
+                <div style="margin-bottom:30px;">
+                    <input type="text" name="lugar_vivienda" class="custom-input-triage" placeholder="Ciudad/estado donde vives en Venezuela" required>
+                </div>
+
+                <p style="font-family:var(--font-h);font-size:.78rem;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted);font-weight:800;margin-bottom:14px;">
+                    Horario de preferencia para tu atención
+                </p>
+                <div class="donation-chips" id="horario-chips" style="justify-content:flex-start;margin-bottom:6px;">
+                    <div class="chip" data-valor="Mañana (9:00 - 12:00)">Mañana</div>
+                    <div class="chip" data-valor="Tarde (12:00 - 17:00)">Tarde</div>
+                    <div class="chip" data-valor="Noche (17:00 - 21:00)">Noche</div>
+                    <div class="chip" data-valor="Fin de semana">Fin de semana</div>
+                </div>
+                <p id="horario-error" style="display:none;color:#ef4444;font-size:.8rem;font-weight:700;margin-bottom:10px;">
+                    Elige un horario de preferencia.
+                </p>
+                <input type="hidden" name="horario_preferencia" id="horario_preferencia_input">
+
+                <button type="submit" class="btn-primary" style="width:100%;justify-content:center;margin-top:14px;">
+                    Enviar mis datos <i class="fas fa-arrow-right"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+</section>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const chips = document.querySelectorAll('#horario-chips .chip');
+    const inputHorario = document.getElementById('horario_preferencia_input');
+    const errorMsg = document.getElementById('horario-error');
+    const form = document.getElementById('form-venezuela');
+
+    chips.forEach(function (chip) {
+        chip.addEventListener('click', function () {
+            chips.forEach(function (c) { c.classList.remove('active'); });
+            chip.classList.add('active');
+            inputHorario.value = chip.dataset.valor;
+            errorMsg.style.display = 'none';
+        });
+    });
+
+    form.addEventListener('submit', function (e) {
+        if (!inputHorario.value) {
+            e.preventDefault();
+            errorMsg.style.display = 'block';
+        }
+    });
+});
+</script>
+{% endblock %}
