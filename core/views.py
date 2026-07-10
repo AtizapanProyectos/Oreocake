@@ -2482,3 +2482,256 @@ def procesar_registro_taller(request):
         return JsonResponse({'status': 'success'})
         
     return JsonResponse({'status': 'error', 'message': 'Método no permitido'})
+
+
+
+
+# =========================================================================
+# 👑 ADMIN: AGENDAR CITA A NOMBRE DE CUALQUIER PACIENTE
+# =========================================================================
+# Diferencia clave frente al flujo normal (agendar_cita / guardar_cita_ajax):
+# aquí el "paciente" NO es request.user, sino el paciente_id que el admin
+# eligió en el buscador. Todo lo demás -verificación real de horario,
+# asignación automática de psicólogo, generación de Google Meet, envío de
+# correo- es exactamente la misma lógica ya probada, así no se desincroniza
+# nunca del resto del sistema. Y no se cobra nada, igual que ya pasaba
+# antes en guardar_cita_ajax (el cobro solo vive en iniciar_pago_clip,
+# que aquí ni se toca).
+
+@user_passes_test(es_admin, login_url='/')
+def panel_admin_agendar_cita(request):
+    """Pantalla para que el admin busque un paciente y le agende la cita."""
+    return render(request, 'admin_agendar_cita.html', {
+        'precios_config_json': json.dumps({
+            'base': PRECIO_BASE_SESION,
+            'comision_pct': COMISION_PORCENTAJE_SESION,
+            'incremento_integrante_familiar': INCREMENTO_POR_INTEGRANTE_FAMILIAR,
+            'min_integrantes_familiar': MIN_INTEGRANTES_FAMILIAR,
+        }),
+    })
+
+
+@user_passes_test(es_admin, login_url='/')
+def admin_buscar_pacientes_ajax(request):
+    """
+    Autocompletar de pacientes para el buscador del admin.
+    Busca por nombre, correo o teléfono (mínimo 2 caracteres).
+    """
+    q = request.GET.get('q', '').strip()
+    if len(q) < 2:
+        return JsonResponse({'status': 'success', 'resultados': []})
+
+    pacientes = UsuarioPerfil.objects.filter(
+        es_psicologo=False
+    ).filter(
+        Q(nombre__icontains=q) | Q(usuario__email__icontains=q) | Q(telefono__icontains=q)
+    ).select_related('usuario', 'psicologo_asignado__usuario')[:10]
+
+    resultados = [{
+        'id': p.usuario.id,
+        'nombre': p.nombre or (p.usuario.first_name if p.usuario else 'Sin nombre'),
+        'email': p.usuario.email if p.usuario else '',
+        'psicologo_asignado': p.psicologo_asignado.usuario.first_name if p.psicologo_asignado else None,
+    } for p in pacientes if p.usuario]
+
+    return JsonResponse({'status': 'success', 'resultados': resultados})
+
+
+@user_passes_test(es_admin, login_url='/')
+def admin_disponibilidad_ajax(request):
+    """
+    Igual que obtener_disponibilidad_por_tipo_ajax, pero para cuando el
+    ADMIN consulta la disponibilidad del paciente que él eligió (en vez de
+    usar request.user). Usa las mismas funciones de slots de siempre.
+    """
+    paciente_id = request.GET.get('paciente_id')
+    tipo_sesion = request.GET.get('tipo_sesion', 'individual')
+    if tipo_sesion not in TIPOS_SESION_VALIDOS:
+        tipo_sesion = 'individual'
+
+    if not paciente_id:
+        return JsonResponse({'status': 'error', 'message': 'Selecciona primero un paciente.'}, status=400)
+
+    try:
+        paciente = User.objects.select_related('perfil__psicologo_asignado__usuario').get(id=paciente_id)
+        perfil_paciente = paciente.perfil
+    except Exception:
+        return JsonResponse({'status': 'error', 'message': 'Paciente no encontrado o sin perfil.'}, status=404)
+
+    preferencia = ""
+    ultimo_cuestionario = CuestionarioRegistro.objects.filter(paciente=paciente).last()
+    if ultimo_cuestionario and ultimo_cuestionario.respuestas:
+        respuestas = ultimo_cuestionario.respuestas
+        if isinstance(respuestas, str):
+            try:
+                respuestas = json.loads(respuestas)
+            except Exception:
+                respuestas = {}
+        preferencia = respuestas.get("preferencia_terapeuta", "")
+
+    hoy = timezone.localtime(timezone.now()).date()
+    fecha_limite = hoy + timedelta(days=90)
+    psicologo_asignado = perfil_paciente.psicologo_asignado
+
+    if psicologo_asignado:
+        dias_json = obtener_slots_psicologo(psicologo_asignado, hoy, fecha_limite, tipo_sesion=tipo_sesion)
+        if not dias_json:
+            return JsonResponse({
+                'status': 'success',
+                'dias': {},
+                'psicologo_asignado': psicologo_asignado.usuario.first_name,
+                'aviso': 'El terapeuta asignado a este paciente no atiende esta modalidad todavía.',
+            })
+    else:
+        dias_json = obtener_slots_globales(hoy, fecha_limite, preferencia, tipo_sesion=tipo_sesion)
+
+    return JsonResponse({
+        'status': 'success',
+        'dias': dias_json,
+        'psicologo_asignado': psicologo_asignado.usuario.first_name if psicologo_asignado else None,
+    })
+
+
+@user_passes_test(es_admin, login_url='/')
+@transaction.atomic
+def admin_guardar_cita_ajax(request):
+    """
+    Versión admin de guardar_cita_ajax: crea la Cita para el paciente_id que
+    el admin eligió (no para request.user). Mantiene íntegra la lógica de
+    asignación automática de psicólogo, verificación anti-empalme y Meet.
+    """
+    if request.method != 'POST':
+        return JsonResponse({'status': 'error', 'message': 'Método no permitido.'}, status=405)
+
+    paciente_id = request.POST.get('paciente_id')
+    if not paciente_id:
+        return JsonResponse({'status': 'error', 'message': 'Selecciona un paciente antes de confirmar.'})
+
+    try:
+        paciente_user = User.objects.get(id=paciente_id)
+        perfil = paciente_user.perfil
+    except Exception:
+        return JsonResponse({'status': 'error', 'message': 'Paciente no encontrado o sin perfil.'})
+
+    fecha_str = request.POST.get('fecha')
+    hora_str = request.POST.get('hora')
+    animo = request.POST.get('animo', 'No especificó')
+    modalidad_str = request.POST.get('modalidad', 'En línea')
+    tipo_sesion_str = request.POST.get('tipo_servicio', 'individual')
+
+    if tipo_sesion_str not in TIPOS_SESION_VALIDOS:
+        tipo_sesion_str = 'individual'
+
+    integrantes_familia = None
+    if tipo_sesion_str == 'familiar':
+        precio_info = calcular_precio_sesion(tipo_sesion_str, request.POST.get('integrantes_familia'))
+        integrantes_familia = precio_info['integrantes_familia']
+
+    campo_capacidad = CAPACIDAD_POR_TIPO_SESION[tipo_sesion_str]
+
+    try:
+        fecha_obj = datetime.strptime(fecha_str, '%Y-%m-%d').date()
+        hora_obj = datetime.strptime(hora_str, '%H:%M').time()
+        psicologo = perfil.psicologo_asignado
+
+        if psicologo and not getattr(psicologo, campo_capacidad, False):
+            return JsonResponse({'status': 'error', 'message': 'El terapeuta asignado a este paciente no atiende esta modalidad.'})
+
+        # Asignación automática (misma lógica que guardar_cita_ajax)
+        if not psicologo:
+            preferencia = ""
+            try:
+                cuestionario = paciente_user.cuestionario_inicial
+                preferencia = cuestionario.respuestas.get('preferencia_terapeuta', '')
+            except Exception:
+                pass
+
+            esquemas_del_dia = EsquemaHorarioPsicologo.objects.filter(
+                activo=True, fecha_inicio__lte=fecha_obj, fecha_fin__gte=fecha_obj
+            )
+            psicologos_candidatos = PerfilPsicologo.objects.filter(
+                esta_activo=True, **{campo_capacidad: True}
+            ).prefetch_related(
+                Prefetch('esquemas_horarios', queryset=esquemas_del_dia, to_attr='_esquemas_rango')
+            )
+
+            doctores_con_slot_valido = []
+            for psicologo_temp in psicologos_candidatos:
+                slots_del_dia = obtener_slots_psicologo_para_dia(psicologo_temp, fecha_obj, tipo_sesion=tipo_sesion_str)
+                if hora_obj.strftime('%I:%M %p') in slots_del_dia:
+                    doctores_con_slot_valido.append(psicologo_temp.id)
+
+            psicologos_libres = PerfilPsicologo.objects.filter(
+                id__in=doctores_con_slot_valido
+            ).select_for_update().annotate(
+                carga_historica=Count('citas_agendadas', filter=~Q(citas_agendadas__estado='Cancelada'))
+            )
+
+            if not psicologos_libres.exists():
+                return JsonResponse({'status': 'error', 'message': 'No hay especialistas disponibles para ese horario y modalidad.'})
+
+            if 'Mujer' in preferencia:
+                psicologo = psicologos_libres.filter(genero='Mujer').order_by('carga_historica', '?').first()
+            elif 'Hombre' in preferencia:
+                psicologo = psicologos_libres.filter(genero='Hombre').order_by('carga_historica', '?').first()
+
+            if not psicologo:
+                psicologo = psicologos_libres.order_by('carga_historica', '?').first()
+
+            perfil.psicologo_asignado = psicologo
+            perfil.save()
+
+            if Cita.objects.filter(psicologo=psicologo, fecha=fecha_obj, hora=hora_obj, estado='Confirmada').exists():
+                return JsonResponse({'status': 'error', 'message': 'Ese horario acaba de ser ocupado. Elige otro.'})
+        else:
+            if Cita.objects.filter(psicologo=psicologo, fecha=fecha_obj, hora=hora_obj, estado='Confirmada').exists():
+                return JsonResponse({'status': 'error', 'message': 'El terapeuta ya tiene una cita en ese horario. Elige otro.'})
+
+        # Google Meet (misma función que ya usa todo el sistema)
+        link_final = None
+        id_google = None
+        if modalidad_str == 'En línea':
+            datos_meet = generar_link_meet(
+                fecha_obj=fecha_obj,
+                hora_obj=hora_obj,
+                paciente_nombre=paciente_user.first_name,
+                psicologo_nombre=psicologo.usuario.first_name,
+                paciente_email=paciente_user.email,
+                psicologo_email=psicologo.usuario.email
+            )
+            if datos_meet:
+                link_final = datos_meet['link']
+                id_google = datos_meet['id_evento']
+
+        Cita.objects.create(
+            paciente=paciente_user,
+            psicologo=psicologo,
+            fecha=fecha_obj,
+            hora=hora_obj,
+            estado_animo=animo,
+            modalidad=modalidad_str,
+            tipo_sesion=tipo_sesion_str,
+            integrantes_familia=integrantes_familia,
+            motivo='Agendada por administración',
+            estado='Confirmada',
+            enlace_meet=link_final,
+            id_evento_google=id_google
+        )
+
+        # Mismo correo de confirmación que ya usa el flujo normal
+        asunto = 'Confirmación de tu sesión en HOPE'
+        link_correo = link_final if link_final else "Cita Presencial (Revisa tu panel para ver la dirección)"
+        contexto = {
+            'nombre': paciente_user.first_name,
+            'psicologo_nombre': psicologo.usuario.first_name,
+            'fecha': fecha_obj.strftime('%d/%m/%Y'),
+            'hora': hora_obj.strftime('%H:%M'),
+            'link_meet': link_correo
+        }
+        mensaje_html = render_to_string('correo_cita.html', contexto)
+        mensaje_plano = strip_tags(mensaje_html)
+        send_mail(asunto, mensaje_plano, 'Espacio HOPE <no-reply@espaciohope.com>', [paciente_user.email], html_message=mensaje_html, fail_silently=True)
+
+        return JsonResponse({'status': 'success'})
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)})

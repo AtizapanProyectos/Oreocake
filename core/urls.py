@@ -46,4 +46,14 @@ urlpatterns = [
     path('talleres/', views.talleres_view, name='talleres'),
     path('api/registrar-taller/', views.procesar_registro_taller, name='registrar_taller_ajax'),
     path('reagendar-cita/', views.reagendar_cita_ajax, name='reagendar_cita'),
+
+#Pruebas y produccion
+# Agrega estas líneas dentro de tu `urlpatterns` en urls.py
+# (junto a las demás rutas de panel-admin / admin):
+
+    path('panel-admin/agendar-cita/', views.panel_admin_agendar_cita, name='panel_admin_agendar_cita'),
+    path('admin/buscar-pacientes/', views.admin_buscar_pacientes_ajax, name='admin_buscar_pacientes'),
+    path('admin/disponibilidad-paciente/', views.admin_disponibilidad_ajax, name='admin_disponibilidad_paciente'),
+    path('admin/guardar-cita-paciente/', views.admin_guardar_cita_ajax, name='admin_guardar_cita_paciente'),
+
 ]
