@@ -525,3 +525,22 @@ class RegistroTallerPublico(models.Model):
         ]
         
     def __str__(self): return f"{self.nombre} - {self.taller_seleccionado}"
+
+
+
+
+class ContactoVenezuela(models.Model):
+    nombre = models.CharField(max_length=200, verbose_name="Nombre completo")
+    correo = models.EmailField(verbose_name="Correo electrónico")
+    celular = models.CharField(max_length=50, verbose_name="Número de celular")
+    lugar_vivienda = models.CharField(max_length=200, verbose_name="Lugar de vivienda", blank=True, null=True)
+    horario_preferencia = models.CharField(max_length=100, verbose_name="Horario de preferencia", blank=True, null=True)
+    fecha_registro = models.DateTimeField(default=timezone.now, verbose_name="Fecha de registro")
+
+    def __str__(self):
+        return f"{self.nombre} - {self.correo}"
+
+    class Meta:
+        verbose_name = "Contacto Venezuela"
+        verbose_name_plural = "Contactos Venezuela"
+        ordering = ['-fecha_registro']

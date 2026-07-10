@@ -5,7 +5,7 @@ from django.shortcuts import render, redirect
 from django.contrib.auth.models import User
 
 from django.core.paginator import Paginator
-
+import logging
 from django.db.models import Avg, Case, When, Value, IntegerField, Q, Prefetch
 from django.utils import timezone
 from django.http import JsonResponse
@@ -2756,8 +2756,17 @@ def formulario_venezuela(request):
             messages.error(request, 'Por favor completa al menos tu nombre, correo y celular.')
             return render(request, 'formulario_venezuela.html')
 
-        fecha_str = localtime(now()).strftime('%d %b %Y, %H:%M')
+        # 1. Guardar en BD
+        ContactoVenezuela.objects.create(
+            nombre=nombre,
+            correo=correo,
+            celular=celular,
+            lugar_vivienda=lugar_vivienda,
+            horario_preferencia=horario_preferencia
+        )
 
+        # 2. Enviar correo
+        fecha_str = localtime(now()).strftime('%d %b %Y, %H:%M')
         texto_plano = (
             "Nuevo contacto desde el formulario para la comunidad venezolana:\n\n"
             f"Nombre: {nombre}\n"
@@ -2777,10 +2786,9 @@ def formulario_venezuela(request):
                 fail_silently=True,
             )
         except Exception as exc:
-            import logging
             logging.getLogger(__name__).error('Error enviando formulario Venezuela: %s', exc)
 
-        messages.success(request, '¡Gracias! Ya recibimos tus datos, pronto nos pondremos en contacto contigo.')
-        return redirect('inicio')
+        # 3. ¡LA MAGIA! Retornamos el mismo HTML pero le pasamos exito=True
+        return render(request, 'formulario_venezuela.html', {'exito': True})
 
     return render(request, 'formulario_venezuela.html')

@@ -1082,6 +1082,24 @@
 </div>
 
 <script>
+// 🔐 Lee siempre el csrftoken vigente desde la cookie (no del HTML ya renderizado).
+// Evita el error "CSRF token ... incorrect" cuando la página lleva un rato abierta
+// y el token horneado en {{ csrf_token }} queda desincronizado de la cookie real.
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
 let chatPatAbierto = false;
 const docId = "{{ psicologo_asignado.usuario.id }}";
 
@@ -1375,7 +1393,7 @@ function guardarCitaSinPago() {
     fetch("{% url 'guardar_cita' %}", {
         method: 'POST',
         headers: {
-            'X-CSRFToken': '{{ csrf_token }}'
+            'X-CSRFToken': getCookie('csrftoken')
         },
         body: formData
     })
@@ -1487,7 +1505,7 @@ function guardarCitaSinPago() {
 
         let formData = new URLSearchParams();
         formData.append('taller_id', tallerSeleccionadoId);
-        formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+        formData.append('csrfmiddlewaretoken', getCookie('csrftoken'));
 
         fetch("{% url 'inscribir_taller' %}", {
             method: 'POST',
@@ -1880,7 +1898,7 @@ function confirmarReagendo() {
 
     fetch("{% url 'reagendar_cita' %}", {
         method: 'POST',
-        headers: { 'X-CSRFToken': '{{ csrf_token }}' },
+        headers: { 'X-CSRFToken': getCookie('csrftoken') },
         body: formData
     })
     .then(r => r.json())

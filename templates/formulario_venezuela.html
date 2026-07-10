@@ -17,7 +17,7 @@
         overflow: hidden;
     }
 
-    /* Esferas de fondo flotantes (colores de Venezuela muy pastel) */
+    /* Esferas de fondo flotantes */
     @keyframes floatSoftly {
         0% { transform: translateY(0px) scale(1); }
         50% { transform: translateY(-20px) scale(1.05); }
@@ -34,7 +34,7 @@
         z-index:0; pointer-events: none; animation: floatSoftly 12s ease-in-out infinite reverse; 
     }
 
-    /* Contenedor del formulario (Grid para separar burbujas) */
+    /* Contenedor del formulario */
     .vz-form-container {
         position: relative;
         z-index: 10;
@@ -42,7 +42,7 @@
         max-width: 550px;
         display: flex;
         flex-direction: column;
-        gap: 20px; /* Separación entre burbujas */
+        gap: 20px;
     }
 
     /* Estilo base de cada "Burbuja" */
@@ -113,14 +113,105 @@
     }
     .vz-btn-submit:hover { transform: translateY(-4px) scale(1.02); box-shadow: 0 20px 40px rgba(0, 56, 147, 0.3); background: #002b70; }
 
-    /* Alertas de Django */
+    /* Alertas de Django (Errores de validación) */
     .vz-alert-bubble {
-        background: #f0fdf4; border: none; border-radius: 24px; padding: 18px 24px;
-        display: flex; align-items: center; gap: 14px; font-size: 14px; color: #15803d; font-weight: 600;
-        box-shadow: 0 10px 25px rgba(21, 128, 61, 0.08);
+        background: #fef2f2; border: none; border-radius: 24px; padding: 18px 24px;
+        display: flex; align-items: center; gap: 14px; font-size: 14px; color: #b91c1c; font-weight: 600;
+        box-shadow: 0 10px 25px rgba(185, 28, 28, 0.08);
     }
-    .vz-alert-bubble.error { background: #fef2f2; color: #b91c1c; box-shadow: 0 10px 25px rgba(185, 28, 28, 0.08); }
+
+    /* ---------------------------------------------------
+       DISEÑO DEL MODAL DE ÉXITO CHINGÓN (OVERLAY)
+       --------------------------------------------------- */
+    .vz-success-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(248, 250, 252, 0.85); /* Blanco semi-transparente */
+        backdrop-filter: blur(15px);
+        -webkit-backdrop-filter: blur(15px);
+        z-index: 9999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        animation: fadeInOverlay 0.4s ease-out;
+    }
+    .vz-success-modal {
+        background: #fff;
+        width: 100%;
+        max-width: 450px;
+        padding: 50px 40px;
+        border-radius: 40px;
+        text-align: center;
+        box-shadow: 0 30px 60px rgba(0, 56, 147, 0.1), 0 0 0 4px rgba(255, 255, 255, 0.5) inset;
+        border: 1px solid #f1f5f9;
+        position: relative;
+        overflow: hidden;
+        animation: popModal 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .vz-success-modal h3 {
+        font-family: var(--font-h, 'Outfit', sans-serif);
+        font-size: 1.8rem;
+        font-weight: 900;
+        color: #1e293b;
+        margin-top: 25px;
+        margin-bottom: 15px;
+    }
+    .vz-success-modal p { color: #64748b; font-size: 16px; line-height: 1.6; margin-bottom: 30px; }
+    
+    /* El icono de palomita con animación saltarina */
+    .vz-check-circle {
+        width: 80px; height: 80px; background: #dcfce7; color: #16a34a;
+        border-radius: 50%; display: flex; align-items: center; justify-content: center;
+        font-size: 35px; margin: 0 auto;
+        box-shadow: 0 10px 25px rgba(22, 163, 74, 0.2), 0 0 0 10px rgba(22, 163, 74, 0.05);
+        animation: scaleCheck 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        transform: scale(0);
+    }
+
+    /* Barra de tiempo de rebote */
+    .vz-loader-bar {
+        height: 6px; width: 100%; background: #f1f5f9; border-radius: 10px; overflow: hidden;
+    }
+    .vz-loader-fill {
+        height: 100%; width: 0%; background: linear-gradient(to right, #003893, #60A5FA); border-radius: 10px;
+        animation: fillLoader 3.5s linear forwards; /* 3.5 segundos de carga */
+    }
+
+    @keyframes fadeInOverlay { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes popModal { 0% { transform: scale(0.8) translateY(20px); opacity: 0; } 100% { transform: scale(1) translateY(0); opacity: 1; } }
+    @keyframes scaleCheck { 0% { transform: scale(0); } 70% { transform: scale(1.2); } 100% { transform: scale(1); } }
+    @keyframes fillLoader { to { width: 100%; } }
+
 </style>
+
+<!-- SI LA VISTA MANDÓ exito=True, RENDERIZAMOS EL MODAL Y EL SCRIPT DE REBOTE -->
+{% if exito %}
+<div class="vz-success-overlay">
+    <div class="vz-success-modal">
+        <div class="vz-check-circle">
+            <i class="fas fa-check"></i>
+        </div>
+        <h3>¡Datos enviados con éxito!</h3>
+        <p>Un experto te contactará muy pronto para apoyarte. Gracias por confiar en HOPE.</p>
+        
+        <div class="vz-loader-bar">
+            <div class="vz-loader-fill"></div>
+        </div>
+        <p style="font-size: 12px; color: #94a3b8; margin-top: 15px; margin-bottom: 0;">Redirigiendo al inicio...</p>
+    </div>
+</div>
+
+<script>
+    // Este script se ejecuta si el formulario fue exitoso
+    // Espera 3.5 segundos (mientras se llena la barrita) y te manda a 'inicio'
+    setTimeout(function() {
+        window.location.href = "{% url 'inicio' %}";
+    }, 3500);
+</script>
+{% endif %}
+<!-- FIN DEL MODAL DE ÉXITO -->
+
 
 <div class="vz-bubbles-wrap">
     
@@ -137,12 +228,15 @@
             </div>
         </div>
 
+        <!-- Alertas de validación de Django -->
         {% if messages %}
             {% for message in messages %}
-                <div class="vz-bubble vz-alert-bubble {% if message.tags == 'error' %}error{% endif %}">
-                    <i class="fas {% if message.tags == 'error' %}fa-circle-exclamation{% else %}fa-check-circle{% endif %}"></i>
+                {% if message.tags == 'error' %}
+                <div class="vz-bubble vz-alert-bubble error">
+                    <i class="fas fa-circle-exclamation"></i>
                     <span>{{ message }}</span>
                 </div>
+                {% endif %}
             {% endfor %}
         {% endif %}
 
@@ -207,7 +301,6 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!inputHorario.value) {
             e.preventDefault();
             errorMsg.style.display = 'block';
-            // Scroll suave hacia el error si el usuario no lo ha llenado
             errorMsg.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
     });
