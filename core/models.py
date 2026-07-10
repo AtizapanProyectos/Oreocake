@@ -46,10 +46,11 @@ class PerfilPsicologo(models.Model):
 # En models.py -> Class PerfilPsicologo
     def __str__(self):
         try:
-            if self.usuario and self.usuario.first_name:
-                nombre = self.usuario.first_name
+            # Usamos hasattr para evitar el crash del OneToOneField
+            if hasattr(self, 'usuario') and self.usuario:
+                nombre = self.usuario.first_name if self.usuario.first_name else self.usuario.username
             else:
-                nombre = self.usuario.username if self.usuario else "Sin Usuario"
+                nombre = "Sin Usuario"
         except Exception:
             nombre = f"ID: {self.pk}"
         return f"Psicólogo/a: {nombre} ({self.genero})"
@@ -165,13 +166,19 @@ class Cita(models.Model):
 
     def __str__(self):
         try:
-            nombre_psicologo = self.psicologo.usuario.first_name if (self.psicologo and self.psicologo.usuario) else "Sin asignar"
+            # Verificamos de forma segura que exista el psicólogo y su usuario
+            if self.psicologo and hasattr(self.psicologo, 'usuario') and self.psicologo.usuario:
+                nombre_psicologo = self.psicologo.usuario.first_name if self.psicologo.usuario.first_name else self.psicologo.usuario.username
+            else:
+                nombre_psicologo = "Sin asignar"
         except Exception:
             nombre_psicologo = "Sin asignar"
+            
         try:
             nombre_paciente = self.paciente.first_name if self.paciente else "Desconocido"
         except Exception:
             nombre_paciente = "Desconocido"
+            
         fecha_str = self.fecha.strftime('%d/%m') if self.fecha else "Sin fecha"
         return f"Cita: {nombre_paciente} con {nombre_psicologo} el {fecha_str}"
 
