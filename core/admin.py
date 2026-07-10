@@ -82,7 +82,20 @@ class PerfilPsicologoAdmin(ImportExportModelAdmin):
 # Si tenías clases de configuración personalizadas para estos modelos, 
 # puedes pegarlas aquí abajo sin problema. Si no, con esto quedan registrados:
 admin.site.register(UsuarioPerfil)
-admin.site.register(Cita)
+@admin.register(Cita)
+class CitaAdmin(admin.ModelAdmin):
+    # 1. Mostramos los campos directamente en vez de evaluar el pesado __str__
+    list_display = ('id', 'paciente', 'psicologo', 'fecha', 'hora', 'estado', 'modalidad')
+    
+    # 2. 🔥 ESTA ES LA MAGIA: Trae todas las relaciones en 1 sola consulta SQL (Adiós N+1)
+    list_select_related = ('paciente', 'psicologo', 'psicologo__usuario')
+    
+    # 3. Paginación estricta para que no cargue miles de registros de golpe y sature la RAM
+    list_per_page = 25
+    
+    # Extras útiles para que el panel quede funcional
+    list_filter = ('estado', 'modalidad', 'tipo_sesion', 'fecha')
+    search_fields = ('paciente__first_name', 'paciente__username', 'psicologo__usuario__first_name')
 admin.site.register(HistorialClinico)
 admin.site.register(CuestionarioRegistro)
 admin.site.register(DiaFestivo)

@@ -4,90 +4,191 @@
 {% block title %}Contáctanos - HOPE{% endblock %}
 
 {% block content %}
-<section class="section" style="padding-top:150px;">
-    <div style="max-width:650px;margin:0 auto;">
-        <div class="modal-box" style="max-width:100%;">
+<style>
+    /* Variables y esquema de colores venezolano */
+    .vz-wrap {
+        --vz-yellow: #FCD116; 
+        --vz-blue: #003893; 
+        --vz-red: #CE1126;
+        position: relative;
+        padding: 120px 20px 80px;
+        min-height: 100vh;
+        overflow: hidden;
+        background: #f8fafc;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
 
-            <div style="text-align:center;margin-bottom:10px;">
-                <img src="{% static 'img/nlogo.png' %}" alt="Espacio HOPE" style="width:170px;height:auto;margin-bottom:24px;display:inline-block;">
-                <h2 style="font-family:var(--font-h);font-size:1.9rem;font-weight:900;color:var(--c-dark);letter-spacing:-0.5px;margin-bottom:10px;">
-                    Estamos para ti, donde sea que estés
-                </h2>
-                <p style="color:var(--text-muted);font-size:1rem;line-height:1.6;margin-bottom:35px;">
-                    Cuéntanos un poco de ti y te contactamos para agendar tu atención.
-                </p>
+    /* Gradientes sutiles de fondo */
+    .vz-wrap::before { content:''; position:absolute; top:-10%; right:-5%; width:450px; height:450px; border-radius:50%; background:radial-gradient(circle, rgba(252, 209, 22, 0.1), transparent 70%); z-index:0; pointer-events: none;}
+    .vz-wrap::after { content:''; position:absolute; bottom:-10%; left:-5%; width:400px; height:400px; border-radius:50%; background:radial-gradient(circle, rgba(0, 56, 147, 0.08), transparent 70%); z-index:0; pointer-events: none;}
+    .vz-bg-red { position:absolute; top:40%; left:-10%; width:300px; height:300px; border-radius:50%; background:radial-gradient(circle, rgba(206, 17, 38, 0.05), transparent 70%); z-index:0; pointer-events: none;}
+
+    /* Contenedor principal estilo tarjeta */
+    .vz-modal-box {
+        background: #ffffff;
+        width: 100%;
+        max-width: 650px;
+        padding: 55px 45px;
+        border-radius: 28px;
+        position: relative;
+        box-shadow: 0 20px 50px rgba(0, 56, 147, 0.08);
+        border: 1px solid #f1f5f9;
+        z-index: 10;
+        overflow: hidden;
+    }
+    @media(max-width: 600px) { .vz-modal-box { padding: 40px 24px; } }
+
+    /* Cinta Tricolor superior */
+    .vz-ribbon {
+        height: 6px;
+        width: 100%;
+        background: linear-gradient(to right, var(--vz-yellow) 33.3%, var(--vz-blue) 33.3% 66.6%, var(--vz-red) 66.6%);
+        position: absolute;
+        top: 0;
+        left: 0;
+    }
+
+    /* Encabezado */
+    .vz-header { text-align: center; margin-bottom: 35px; }
+    .vz-header img { width: 160px; height: auto; margin-bottom: 20px; display: inline-block; }
+    .vz-header h2 { 
+        font-family: var(--font-h, 'Outfit', sans-serif);
+        font-size: clamp(1.6rem, 4vw, 2.2rem); 
+        font-weight: 900; 
+        color: var(--c-dark, #0f0f0f); 
+        letter-spacing: -0.5px; 
+        margin-bottom: 12px; 
+        line-height: 1.2;
+    }
+    .vz-header p { color: var(--text-muted, #64748b); font-size: 16px; line-height: 1.6; margin: 0; }
+
+    /* 8 Estrellas */
+    .vz-estrellas {
+        display: flex; justify-content: center; gap: 6px; color: var(--vz-blue);
+        font-size: 18px; margin-top: 15px; opacity: 0.8;
+    }
+    .vz-estrellas i { text-shadow: 0 2px 4px rgba(0, 56, 147, 0.2); }
+
+    /* Inputs */
+    .vz-input {
+        width: 100%; padding: 18px 22px; border: 2px solid #e2e8f0; border-radius: 16px;
+        font-size: 15px; font-family: inherit; background: #f8fafc; color: var(--c-dark, #0f0f0f);
+        transition: .3s; margin-bottom: 16px;
+    }
+    .vz-input:focus { outline: none; border-color: var(--vz-blue); background: #fff; box-shadow: 0 8px 20px rgba(0, 56, 147, 0.1); }
+    .vz-input::placeholder { color: #cbd5e1; font-weight: 500; }
+
+    /* Sección de horarios (Chips) */
+    .vz-label {
+        display: block; font-family: var(--font-h, 'Outfit', sans-serif); font-size: 13px;
+        text-transform: uppercase; letter-spacing: 1px; color: var(--vz-blue);
+        font-weight: 800; margin-bottom: 14px; text-align: left;
+    }
+    .vz-chips-wrap { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 8px; }
+    .vz-chip {
+        padding: 14px 20px; border: 2px solid #e2e8f0; border-radius: 100px; font-weight: 700;
+        cursor: pointer; transition: all .2s cubic-bezier(0.16, 1, 0.3, 1); color: var(--text-muted, #64748b);
+        font-size: 14px; background: #fff; flex: 1 1 auto; text-align: center;
+    }
+    .vz-chip:hover { border-color: var(--vz-yellow); color: var(--vz-blue); transform: translateY(-3px); box-shadow: 0 6px 15px rgba(252, 209, 22, 0.15); }
+    .vz-chip.active { background: rgba(0, 56, 147, 0.05); color: var(--vz-blue); border-color: var(--vz-blue); }
+
+    .vz-error-text { display: none; color: var(--vz-red); font-size: 13px; font-weight: 700; margin-top: 8px; text-align: left; }
+
+    /* Botón Submit */
+    .vz-btn {
+        width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+        background: var(--vz-blue); color: #fff !important; text-decoration: none; font-size: 16px;
+        font-weight: 800; font-family: var(--font-h, 'Outfit', sans-serif); padding: 18px 24px;
+        border-radius: 100px; border: none; cursor: pointer; text-transform: uppercase;
+        letter-spacing: 1px; transition: .3s; margin-top: 25px;
+    }
+    .vz-btn:hover { transform: translateY(-4px); box-shadow: 0 15px 30px rgba(0, 56, 147, 0.25); background: #002b70; }
+
+    /* Alertas de Django */
+    .vz-alert {
+        background: #eefdf5; border-left: 4px solid #16a34a; border-radius: 16px; padding: 16px 20px;
+        margin-bottom: 24px; display: flex; align-items: center; gap: 14px; font-size: 14px;
+        color: #16a34a; font-weight: 600; text-align: left;
+    }
+    .vz-alert.error { background: #fef2f2; border-color: var(--vz-red); color: var(--vz-red); }
+    .vz-alert i { font-size: 18px; }
+</style>
+
+<div class="vz-wrap">
+    <div class="vz-bg-red"></div>
+    
+    <div class="vz-modal-box">
+        <div class="vz-ribbon"></div>
+
+        <div class="vz-header">
+            <img src="{% static 'img/nlogo.png' %}" alt="Espacio HOPE">
+            <h2>Estamos para ti, donde sea que estés</h2>
+            <p>Cuéntanos un poco de ti y te contactaremos para coordinar tu atención psicológica.</p>
+            <div class="vz-estrellas">
+                <i>★</i><i>★</i><i>★</i><i>★</i><i>★</i><i>★</i><i>★</i><i>★</i>
             </div>
-
-            {% if messages %}
-                {% for message in messages %}
-                    <div class="footer-alert"
-                         style="text-align:left;margin:0 0 24px;
-                         {% if message.tags == 'error' %}background:rgba(239,68,68,.06);border-color:rgba(239,68,68,.25);{% endif %}">
-                        <i class="fas {% if message.tags == 'error' %}fa-circle-exclamation{% else %}fa-circle-check{% endif %}"
-                           style="{% if message.tags == 'error' %}color:#ef4444;{% endif %}"></i>
-                        <span>{{ message }}</span>
-                    </div>
-                {% endfor %}
-            {% endif %}
-
-            <form action="{% url 'formulario_venezuela' %}" method="POST" id="form-venezuela" style="text-align:left;">
-                {% csrf_token %}
-
-                <div style="margin-bottom:18px;">
-                    <input type="email" name="correo" class="custom-input-triage" placeholder="Correo electrónico" required>
-                </div>
-
-                <div style="margin-bottom:18px;">
-                    <input type="text" name="nombre" class="custom-input-triage" placeholder="Nombre completo" required>
-                </div>
-
-                <div style="margin-bottom:18px;">
-                    <input type="tel" name="celular" class="custom-input-triage" placeholder="Número de celular" required>
-                </div>
-
-                <div style="margin-bottom:30px;">
-                    <input type="text" name="lugar_vivienda" class="custom-input-triage" placeholder="Ciudad/estado donde vives en Venezuela" required>
-                </div>
-
-                <p style="font-family:var(--font-h);font-size:.78rem;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted);font-weight:800;margin-bottom:14px;">
-                    Horario de preferencia para tu atención
-                </p>
-                <div class="donation-chips" id="horario-chips" style="justify-content:flex-start;margin-bottom:6px;">
-                    <div class="chip" data-valor="Mañana (9:00 - 12:00)">Mañana</div>
-                    <div class="chip" data-valor="Tarde (12:00 - 17:00)">Tarde</div>
-                    <div class="chip" data-valor="Noche (17:00 - 21:00)">Noche</div>
-                    <div class="chip" data-valor="Fin de semana">Fin de semana</div>
-                </div>
-                <p id="horario-error" style="display:none;color:#ef4444;font-size:.8rem;font-weight:700;margin-bottom:10px;">
-                    Elige un horario de preferencia.
-                </p>
-                <input type="hidden" name="horario_preferencia" id="horario_preferencia_input">
-
-                <button type="submit" class="btn-primary" style="width:100%;justify-content:center;margin-top:14px;">
-                    Enviar mis datos <i class="fas fa-arrow-right"></i>
-                </button>
-            </form>
         </div>
+
+        {% if messages %}
+            {% for message in messages %}
+                <div class="vz-alert {% if message.tags == 'error' %}error{% endif %}">
+                    <i class="fas {% if message.tags == 'error' %}fa-circle-exclamation{% else %}fa-check-circle{% endif %}"></i>
+                    <span>{{ message }}</span>
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <form action="{% url 'formulario_venezuela' %}" method="POST" id="form-venezuela" style="text-align:left;">
+            {% csrf_token %}
+
+            <input type="email" name="correo" class="vz-input" placeholder="Correo electrónico" required>
+            <input type="text" name="nombre" class="vz-input" placeholder="Nombre completo" required>
+            <input type="tel" name="celular" class="vz-input" placeholder="Número de celular (Ej: 0414...)" required>
+            <input type="text" name="lugar_vivienda" class="vz-input" placeholder="Ciudad / Estado donde vives" required style="margin-bottom: 25px;">
+
+            <span class="vz-label">Horario de preferencia para tu atención</span>
+            <div class="vz-chips-wrap" id="horario-chips">
+                <div class="vz-chip" data-valor="Mañana (9:00 - 12:00)">Mañana</div>
+                <div class="vz-chip" data-valor="Tarde (12:00 - 17:00)">Tarde</div>
+                <div class="vz-chip" data-valor="Noche (17:00 - 21:00)">Noche</div>
+                <div class="vz-chip" data-valor="Fin de semana">Fin de semana</div>
+            </div>
+            
+            <p id="horario-error" class="vz-error-text">Por favor, elige al menos un horario de preferencia.</p>
+            <input type="hidden" name="horario_preferencia" id="horario_preferencia_input">
+
+            <button type="submit" class="vz-btn">
+                Enviar mis datos <i class="fas fa-arrow-right"></i>
+            </button>
+        </form>
     </div>
-</section>
+</div>
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    const chips = document.querySelectorAll('#horario-chips .chip');
+    const chips = document.querySelectorAll('#horario-chips .vz-chip');
     const inputHorario = document.getElementById('horario_preferencia_input');
     const errorMsg = document.getElementById('horario-error');
     const form = document.getElementById('form-venezuela');
 
     chips.forEach(function (chip) {
         chip.addEventListener('click', function () {
+            // Remueve la clase active de todos los chips
             chips.forEach(function (c) { c.classList.remove('active'); });
+            // Agrega la clase active al seleccionado
             chip.classList.add('active');
+            // Actualiza el input oculto
             inputHorario.value = chip.dataset.valor;
+            // Oculta el mensaje de error si existía
             errorMsg.style.display = 'none';
         });
     });
 
     form.addEventListener('submit', function (e) {
+        // Valida que se haya seleccionado un horario antes de enviar
         if (!inputHorario.value) {
             e.preventDefault();
             errorMsg.style.display = 'block';
