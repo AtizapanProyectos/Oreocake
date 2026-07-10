@@ -1,5 +1,21 @@
+import calendar
+from datetime import date
+
 from django.db import models
 from django.contrib.auth.models import User
+from django.core.exceptions import ValidationError
+from django.utils import timezone
+
+
+def _sumar_meses(fecha, meses):
+    """Suma 'meses' meses a una fecha, sin depender de librerías externas
+    (dateutil). Ajusta automáticamente al último día del mes si hace falta
+    (ej. 31 de enero + 1 mes -> 28/29 de febrero)."""
+    mes_index = fecha.month - 1 + meses
+    anio = fecha.year + mes_index // 12
+    mes = mes_index % 12 + 1
+    dia = min(fecha.day, calendar.monthrange(anio, mes)[1])
+    return date(anio, mes, dia)
 
 # ==========================================
 # 1. PERFIL DEL PSICÓLOGO (DOCTORES)
@@ -38,6 +54,62 @@ class PerfilPsicologo(models.Model):
             nombre = f"ID: {self.pk}"
         return f"Psicólogo/a: {nombre} ({self.genero})"
 
+    def esquema_vigente(self, fecha=None):
+        """
+        Devuelve el EsquemaHorarioPsicologo vigente para este psicólogo en la
+        fecha indicada (hoy por defecto), o None si no tiene uno configurado.
+        """
+        from django.utils import timezone
+        fecha = fecha or timezone.localdate()
+        
+        # Busca si ya precargamos los esquemas (para evitar doble consulta)
+        esquemas = getattr(self, '_esquemas_rango', None)
+        if esquemas is not None:
+            for esquema in esquemas:
+                if esquema.fecha_inicio <= fecha <= esquema.fecha_fin:
+                    return esquema
+            return None
+            
+        # Si no están precargados, hace la consulta a la base de datos
+        return self.esquemas_horarios.filter(
+            activo=True, fecha_inicio__lte=fecha, fecha_fin__gte=fecha
+        ).order_by('-fecha_inicio').first()
+
+
+
+
+
+class EsquemaHorarioPsicologo(models.Model):
+    psicologo = models.ForeignKey(PerfilPsicologo, on_delete=models.CASCADE, related_name='esquemas_horarios')
+    fecha_inicio = models.DateField(default=timezone.localdate, db_index=True)
+    fecha_fin = models.DateField(db_index=True)
+    
+    # Jornada base
+    hora_inicio = models.TimeField(verbose_name="Inicio Jornada")
+    hora_fin = models.TimeField(verbose_name="Fin Jornada")
+    
+    # 🔥 HORA DE COMIDA (Opcional pero completamente integrada)
+    hora_comida_inicio = models.TimeField(null=True, blank=True, verbose_name="Inicio Comida")
+    hora_comida_fin = models.TimeField(null=True, blank=True, verbose_name="Fin Comida")
+    
+    dias_descanso = models.JSONField(default=list, help_text="Ej: [0, 1] para Lunes y Martes")
+    activo = models.BooleanField(default=True, db_index=True)
+
+    class Meta:
+        verbose_name = "Esquema de Horario"
+        verbose_name_plural = "Esquemas de Horarios"
+
+    def clean(self):
+        # Validación extra: Si pones inicio de comida, debes poner fin de comida
+        if bool(self.hora_comida_inicio) != bool(self.hora_comida_fin):
+            raise ValidationError("Si defines una hora de comida, debes rellenar tanto el inicio como el fin.")
+            
+        if self.hora_comida_inicio and self.hora_comida_fin:
+            if self.hora_comida_inicio >= self.hora_comida_fin:
+                raise ValidationError({"hora_comida_fin": "El fin de la comida debe ser posterior al inicio."})
+            if self.hora_comida_inicio < self.hora_inicio or self.hora_comida_fin > self.hora_fin:
+                raise ValidationError("La hora de comida debe estar dentro del rango de la jornada laboral.")
+
 # ==========================================
 # 2. PERFIL DEL PACIENTE
 # ==========================================
@@ -73,7 +145,8 @@ class Cita(models.Model):
     ], db_index=True) # 🔥 OPTIMIZADO
     fecha_creacion = models.DateTimeField(auto_now_add=True)
     enlace_meet = models.URLField(blank=True, null=True)
-    id_evento_google = models.CharField(max_length=255, blank=True, null=True, db_index=True) # 🔥 OPTIMIZADO: Búsquedas API Google Calendar
+    # En models.py -> class Cita
+    id_evento_google = models.CharField(max_length=200, blank=True, null=True, db_index=True) # 200 * 4 = 800 bytes (¡Seguro!) 🔥 OPTIMIZADO: Búsquedas API Google Calendar
     modalidad = models.CharField(max_length=50, default='En línea', choices=[('En línea', 'En línea'), ('Presencial', 'Presencial')])
     tipo_sesion = models.CharField(max_length=50, default='individual', choices=[
         ('individual', 'Individual'),
@@ -211,44 +284,117 @@ class DiaLibrePsicologo(models.Model):
     def __str__(self):
         return f"{self.psicologo} - {self.fecha.strftime('%d/%m/%Y')}"
 
-        
 class HorarioFijoPsicologo(models.Model):
-    TURNOS = [
-        ('matutino', 'Turno Matutino (8:00 am - 4:00 pm)'), 
-        ('vespertino', 'Turno Vespertino (1:00 pm - 9:00 pm)')
-    ]
+    """
+    Horario de trabajo de un psicólogo, vigente durante un periodo de tiempo
+    (por defecto 3 meses desde que se crea — su "caducidad"). Cuando el
+    periodo termina, deja de generar citas disponibles automáticamente hasta
+    que se le cargue (o se renueve) un horario nuevo. Los registros viejos
+    NO se borran: quedan como historial de horarios pasados.
+
+    Nada aquí se calcula a partir del nombre del psicólogo: las horas de
+    inicio/fin/comida y los días de descanso se capturan explícitamente al
+    dar de alta el registro (en el admin).
+    """
     DIAS_SEMANA = [
-        (0, 'Lunes'), (1, 'Martes'), (2, 'Miércoles'), 
-        (3, 'Jueves'), (4, 'Viernes'), (5, 'Sábado'), (6, 'Domingo')
+        (0, 'Lunes'), (1, 'Martes'), (2, 'Miércoles'),
+        (3, 'Jueves'), (4, 'Viernes'), (5, 'Sábado'), (6, 'Domingo'),
     ]
 
-    psicologo = models.OneToOneField(PerfilPsicologo, on_delete=models.CASCADE, related_name='horario_fijo')
-    turno = models.CharField(max_length=20, choices=TURNOS)
-    dia_descanso_1 = models.IntegerField(choices=DIAS_SEMANA, verbose_name="Primer día de descanso")
-    dia_descanso_2 = models.IntegerField(choices=DIAS_SEMANA, verbose_name="Segundo día de descanso")
+    # 🔥 "Caducidad" del horario: si no se especifica fecha_fin, se calcula
+    # automáticamente a partir de fecha_inicio + DURACION_DEFAULT_MESES.
+    DURACION_DEFAULT_MESES = 3
 
-    def obtener_horas_operativas(self):
-        """Retorna las horas de inicio, fin y comida dinámicamente según el turno y el nombre."""
-        from datetime import time
-        nombre_doc = self.psicologo.usuario.first_name.upper() if self.psicologo.usuario.first_name else ""
-        
-        if self.turno == 'matutino':
-            h_inicio, h_fin = time(8, 0), time(16, 0)
-            if "ABRAHAM" in nombre_doc or "CLAUDIA" in nombre_doc:
-                h_comida_ini, h_comida_fin = time(13, 0), time(14, 0)
-            else: 
-                h_comida_ini, h_comida_fin = time(14, 0), time(15, 0)
-        else: # vespertino
-            h_inicio, h_fin = time(13, 0), time(21, 0)
-            if "GWEYNETH" in nombre_doc or "MIGUEL" in nombre_doc:
-                h_comida_ini, h_comida_fin = time(14, 0), time(15, 0)
-            else:
-                h_comida_ini, h_comida_fin = time(15, 0), time(16, 0)
-                
-        return h_inicio, h_fin, h_comida_ini, h_comida_fin
+    psicologo = models.ForeignKey(
+        PerfilPsicologo, on_delete=models.CASCADE, related_name='horarios_fijos',
+        verbose_name="Psicólogo/a"
+    )
+
+    # 👇 AQUÍ ESTÁ LA CORRECCIÓN: Agregamos null=True, blank=True 👇
+    hora_inicio = models.TimeField(verbose_name="Hora de inicio de jornada", null=True, blank=True)
+    hora_fin = models.TimeField(verbose_name="Hora de fin de jornada", null=True, blank=True)
+    hora_comida_inicio = models.TimeField(verbose_name="Inicio de comida", null=True, blank=True)
+    hora_comida_fin = models.TimeField(verbose_name="Fin de comida", null=True, blank=True)
+
+    # Lista de enteros 0-6 (ver DIAS_SEMANA). JSONField en vez de dos campos
+    # fijos para permitir 1, 2 o más días de descanso según cada psicólogo.
+    dias_descanso = models.JSONField(
+        default=list, verbose_name="Días de descanso fijos",
+        help_text="Días de la semana en que el psicólogo NO atiende (ej. Lunes y Martes)."
+    )
+
+    fecha_inicio = models.DateField(default=timezone.localdate, db_index=True, verbose_name="Vigente desde")
+    fecha_fin = models.DateField(
+        blank=True, null=True, db_index=True, verbose_name="Vigente hasta (caducidad)",
+        help_text="Si se deja en blanco, se calcula automáticamente a 3 meses de la fecha de inicio."
+    )
+    activo = models.BooleanField(default=True, db_index=True, verbose_name="Activo")
+
+    class Meta:
+        verbose_name = "Horario Fijo"
+        verbose_name_plural = "Horarios Fijos"
+        ordering = ['-fecha_inicio']
+        indexes = [
+            models.Index(fields=['psicologo', 'activo', 'fecha_inicio', 'fecha_fin']),
+        ]
+
+    def _calcular_fecha_fin_default(self):
+        base = self.fecha_inicio or timezone.localdate()
+        return _sumar_meses(base, self.DURACION_DEFAULT_MESES)
+
+    def clean(self):
+        errores = {}
+
+        if self.hora_inicio and self.hora_fin and self.hora_inicio >= self.hora_fin:
+            errores['hora_fin'] = "La hora de fin debe ser posterior a la hora de inicio."
+
+        if self.hora_comida_inicio and self.hora_comida_fin and self.hora_comida_inicio >= self.hora_comida_fin:
+            errores['hora_comida_fin'] = "La hora de fin de comida debe ser posterior a la de inicio."
+
+        if not isinstance(self.dias_descanso, list) or not all(
+            isinstance(d, int) and 0 <= d <= 6 for d in self.dias_descanso
+        ):
+            errores['dias_descanso'] = "Debe ser una lista de días 0 (Lunes) a 6 (Domingo)."
+
+        fecha_fin_efectiva = self.fecha_fin or self._calcular_fecha_fin_default()
+        if self.fecha_inicio and fecha_fin_efectiva <= self.fecha_inicio:
+            errores['fecha_fin'] = "La fecha de fin (caducidad) debe ser posterior a la fecha de inicio."
+
+        # Evita traslapes con otro horario activo del mismo psicólogo.
+        if self.psicologo_id and self.fecha_inicio:
+            otros = HorarioFijoPsicologo.objects.filter(
+                psicologo_id=self.psicologo_id, activo=True
+            ).exclude(pk=self.pk)
+            for otro in otros:
+                otro_fin = otro.fecha_fin or otro._calcular_fecha_fin_default()
+                if self.fecha_inicio <= otro_fin and otro.fecha_inicio <= fecha_fin_efectiva:
+                    errores['fecha_inicio'] = (
+                        f"Se traslapa con un horario ya existente de este psicólogo "
+                        f"({otro.fecha_inicio} a {otro_fin})."
+                    )
+                    break
+
+        if errores:
+            raise ValidationError(errores)
+
+    def save(self, *args, **kwargs):
+        if not self.fecha_inicio:
+            self.fecha_inicio = timezone.localdate()
+        if not self.fecha_fin:
+            self.fecha_fin = self._calcular_fecha_fin_default()
+        super().save(*args, **kwargs)
+
+    def esta_vigente(self, fecha=None):
+        fecha = fecha or timezone.localdate()
+        return bool(self.activo and self.fecha_inicio <= fecha <= (self.fecha_fin or fecha))
+
+    def dias_descanso_display(self):
+        nombres = dict(self.DIAS_SEMANA)
+        return ", ".join(nombres.get(d, "?") for d in sorted(self.dias_descanso or []))
+    dias_descanso_display.short_description = "Días de descanso"
 
     def __str__(self):
-        return f"Horario Fijo de {self.psicologo} - {self.get_turno_display()}"
+        return f"Horario de {self.psicologo} ({self.fecha_inicio} a {self.fecha_fin})"
 
 # ==========================================
 # OTROS MODELOS
@@ -359,8 +505,8 @@ class ArticuloPrensa(models.Model):
 class RegistroTallerPublico(models.Model):
     nombre = models.CharField(max_length=100, db_index=True)
     telefono = models.CharField(max_length=20, db_index=True)
-    correo = models.EmailField() # 👈 Deja el EmailField normal
-    taller_seleccionado = models.CharField(max_length=120) # 👈 ¡CLAVE! Reducido de 200 a 120 para que el índice quepa sin problemas
+    correo = models.EmailField(max_length=120) # 120 * 4 = 480 bytes
+    taller_seleccionado = models.CharField(max_length=120) # 120 * 4 = 480 bytes
     fecha_registro = models.DateTimeField(auto_now_add=True, db_index=True)
     
     class Meta:

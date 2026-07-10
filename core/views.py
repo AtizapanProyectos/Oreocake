@@ -163,39 +163,38 @@ from .models import DiaFestivo, Cita, PerfilPsicologo
 from datetime import datetime, timedelta, time
 from collections import defaultdict
 
-# 1. Agregamos 'preferencia' como parámetro (le ponemos None por defecto por si acaso)
 def obtener_slots_globales(fecha_inicio, fecha_fin, preferencia=None, tipo_sesion="individual"):
-    
+    """
+    🔥 BÚSQUEDA GLOBAL: usada cuando el paciente TODAVÍA NO tiene psicólogo asignado.
+    """
     campo_capacidad = CAPACIDAD_POR_TIPO_SESION.get(tipo_sesion, 'atiende_individual')
-    
-    # 2. Armamos los filtros base (los que aplican a todos)
-# 1. Filtros obligatorios por defecto
+
     filtros = {
         campo_capacidad: True,
-        'esta_activo': True
+        'esta_activo': True,
     }
-    
-    # 2. VALIDACIÓN: Solo filtramos por preferencia si es un valor real
-    # Evitamos que filtre si viene vacío (''), 'todos', o 'cualquiera'
-    if preferencia and preferencia.strip() not in ["", "todos", "cualquiera", "Cualquiera"]:
-        # CAMBIA 'genero' por el nombre real de tu campo en el modelo PerfilPsicologo
-        filtros['genero'] = preferencia 
 
-    # 3. Hacemos la consulta con los filtros limpios
-    psicologos_activos = PerfilPsicologo.objects.filter(
-        **filtros
-    ).select_related('horario_fijo', 'usuario')
+    if preferencia and preferencia.strip() not in ["", "todos", "cualquiera", "Cualquiera"]:
+        filtros['genero'] = preferencia
+
+    # 1. ACTUALIZACIÓN: Usamos el nuevo EsquemaHorarioPsicologo
+    esquemas_en_rango = EsquemaHorarioPsicologo.objects.filter(
+        activo=True, fecha_inicio__lte=fecha_fin, fecha_fin__gte=fecha_inicio,
+    ).order_by('fecha_inicio')
+
+    # 2. ACTUALIZACIÓN: Ajustamos el Prefetch para usar el related_name 'esquemas_horarios'
+    psicologos_activos = PerfilPsicologo.objects.filter(**filtros).select_related('usuario').prefetch_related(
+        Prefetch('esquemas_horarios', queryset=esquemas_en_rango, to_attr='_esquemas_rango')
+    )
 
     slots_globales = {}
 
-    # El resto de tu código de los for loops se queda igualito
     for psicologo in psicologos_activos:
         slots_psicologo = obtener_slots_psicologo(psicologo, fecha_inicio, fecha_fin, tipo_sesion)
-        
+
         for fecha_str, lista_horas in slots_psicologo.items():
             if fecha_str not in slots_globales:
                 slots_globales[fecha_str] = set()
-            
             slots_globales[fecha_str].update(lista_horas)
 
     slots_globales_ordenados = {
@@ -205,25 +204,34 @@ def obtener_slots_globales(fecha_inicio, fecha_fin, preferencia=None, tipo_sesio
 
     return slots_globales_ordenados
 
+
 def obtener_slots_psicologo(psicologo, fecha_inicio, fecha_fin, tipo_sesion="individual"):
     """
-    Calcula los slots disponibles para un psicólogo específico dentro de un rango de fechas.
-    Retorna un diccionario: {'YYYY-MM-DD': ['08:00 AM', '09:00 AM', ...]}
+    🔥 BÚSQUEDA POR PSICÓLOGO: usada una vez que el paciente YA tiene un psicólogo asignado.
     """
-    # 1. Validar si el psicólogo está activo y atiende la modalidad solicitada
     campo_capacidad = CAPACIDAD_POR_TIPO_SESION.get(tipo_sesion, 'atiende_individual')
     if not psicologo.esta_activo or not getattr(psicologo, campo_capacidad, False):
         return {}
 
-    # 2. Verificar si cuenta con la configuración de horario fijo indispensable para el cálculo
-    if not hasattr(psicologo, 'horario_fijo'):
-        return {}
-        
-    horario = psicologo.horario_fijo
-    dias_descanso = [horario.dia_descanso_1, horario.dia_descanso_2]
-    h_inicio, h_fin, h_comida_ini, h_comida_fin = horario.obtener_horas_operativas()
+    # 3. ACTUALIZACIÓN: Buscamos en _esquemas_rango precargado o hacemos la consulta al nuevo modelo
+    esquemas_rango = getattr(psicologo, '_esquemas_rango', None)
+    if esquemas_rango is None:
+        esquemas_rango = list(
+            EsquemaHorarioPsicologo.objects.filter(
+                psicologo=psicologo, activo=True,
+                fecha_inicio__lte=fecha_fin, fecha_fin__gte=fecha_inicio,
+            ).order_by('fecha_inicio')
+        )
 
-    # 3. Recuperar excepciones globales e individuales del rango en una sola consulta estructurada
+    if not esquemas_rango:
+        return {}
+
+    def _esquema_del_dia(dia):
+        for e in esquemas_rango:
+            if e.fecha_inicio <= dia <= e.fecha_fin:
+                return e
+        return None
+
     festivos = set(
         DiaFestivo.objects.filter(fecha__gte=fecha_inicio, fecha__lte=fecha_fin)
         .values_list('fecha', flat=True)
@@ -232,67 +240,79 @@ def obtener_slots_psicologo(psicologo, fecha_inicio, fecha_fin, tipo_sesion="ind
         psicologo.dias_libres.filter(fecha__gte=fecha_inicio, fecha__lte=fecha_fin)
         .values_list('fecha', flat=True)
     )
-    
-    # Citas ya ocupadas (solo tomamos las confirmadas o activas que bloquean horario)
+
     citas_ocupadas = set(
         Cita.objects.filter(
-            psicologo=psicologo, 
-            fecha__gte=fecha_inicio, 
-            fecha__lte=fecha_fin
+            psicologo=psicologo, fecha__gte=fecha_inicio, fecha__lte=fecha_fin
         )
         .exclude(estado__in=['Cancelada', 'No asistió'])
         .values_list('fecha', 'hora')
     )
-    
+
     slots_por_fecha = {}
     dia_actual = fecha_inicio
     dias_procesados = 0
-    max_iteraciones = 120 # Salvaguarda para evitar bucles infinitos
+    max_iteraciones = 120  
 
     while dia_actual <= fecha_fin and dias_procesados < max_iteraciones:
-        # 4. Regla de exclusión inmediata: días de descanso fijo, festivos o días libres solicitados
-        if dia_actual.weekday() in dias_descanso or dia_actual in festivos or dia_actual in dias_libres:
+        esquema = _esquema_del_dia(dia_actual)
+
+        # 4. ACTUALIZACIÓN: La lógica de exclusión de días de descanso se mantiene intacta, 
+        # pero ahora lee de nuestro JSONField limpio
+        if (
+            esquema is None
+            or dia_actual.weekday() in (esquema.dias_descanso or [])
+            or dia_actual in festivos
+            or dia_actual in dias_libres
+        ):
             dia_actual += timedelta(days=1)
             dias_procesados += 1
             continue
-            
+
+        h_inicio, h_fin = esquema.hora_inicio, esquema.hora_fin
+        h_comida_ini, h_comida_fin = esquema.hora_comida_inicio, esquema.hora_comida_fin
+        
+        # 5. NUEVO FILTRO DE SEGURIDAD: Checar si de verdad hay horario de comida
+        tiene_comida = bool(h_comida_ini and h_comida_fin)
+
         slots_del_dia = []
         slot_actual = datetime.combine(dia_actual, h_inicio)
         fin_turno = datetime.combine(dia_actual, h_fin)
-        
-        # 5. Iteración por bloques de 1 hora dentro del rango operativo del turno
+
         while slot_actual < fin_turno:
             hora_slot = slot_actual.time()
-            
-            # Validar que no interfiera con la hora de almuerzo específica
-            es_hora_comida = (h_comida_ini <= hora_slot < h_comida_fin)
-            
-            # Validar que el espacio exacto no esté reservado en el set de citas ocupadas
+
+            # 6. ACTUALIZACIÓN: Validación segura para evitar crashear comparando contra None
+            es_hora_comida = False
+            if tiene_comida:
+                if h_comida_ini <= hora_slot < h_comida_fin:
+                    es_hora_comida = True
+
             if not es_hora_comida and (dia_actual, hora_slot) not in citas_ocupadas:
                 slots_del_dia.append(hora_slot.strftime('%I:%M %p'))
-                
+
             slot_actual += timedelta(hours=1)
-            
-        # Si el día generó horarios útiles, lo agregamos al mapa final
+
         if slots_del_dia:
             fecha_str = dia_actual.strftime('%Y-%m-%d')
             slots_por_fecha[fecha_str] = sorted(
-                slots_del_dia, 
+                slots_del_dia,
                 key=lambda x: datetime.strptime(x, '%I:%M %p')
             )
-            
+
         dia_actual += timedelta(days=1)
         dias_procesados += 1
-        
+
     return slots_por_fecha
 
+
 def obtener_slots_psicologo_para_dia(psicologo, fecha, tipo_sesion="individual"):
-    """Función auxiliar simple por si la usas en otro lado."""
+    """
+    Función auxiliar para consultar los espacios de un solo día.
+    Llama a la función principal que ya actualizamos con el nuevo modelo.
+    """
     slots_map = obtener_slots_psicologo(psicologo, fecha, fecha, tipo_sesion=tipo_sesion)
     return slots_map.get(fecha.strftime('%Y-%m-%d'), [])
-
-
-
 # =========================================================================
 # 🧠 FUNCIÓN MAESTRA: CREAR ENLACE DE GOOGLE MEET
 # =========================================================================
@@ -745,10 +765,10 @@ def guardar_cita_ajax(request):
         animo = request.POST.get('animo', 'No especificó')
         modalidad_str = request.POST.get('modalidad', 'En línea')
         tipo_sesion_str = request.POST.get('tipo_servicio', 'individual')
+        
         if tipo_sesion_str not in TIPOS_SESION_VALIDOS:
             tipo_sesion_str = 'individual'
 
-        # 🔥 NUEVO: integrantes de la familia (solo aplica a terapia familiar)
         integrantes_familia = None
         if tipo_sesion_str == 'familiar':
             precio_info = calcular_precio_sesion(tipo_sesion_str, request.POST.get('integrantes_familia'))
@@ -762,8 +782,6 @@ def guardar_cita_ajax(request):
             perfil = request.user.perfil
             psicologo = perfil.psicologo_asignado
 
-            # 🔥 Si ya tiene psicólogo asignado pero éste no atiende la modalidad
-            # solicitada, no podemos agendarlo con él: se requiere reasignación.
             if psicologo and not getattr(psicologo, campo_capacidad, False):
                 return JsonResponse({'status': 'error', 'message': 'Tu terapeuta asignado no atiende esta modalidad. Contáctanos para asignarte a un especialista.'})
 
@@ -776,15 +794,25 @@ def guardar_cita_ajax(request):
                 except:
                     pass
 
-                # 1. Obtenemos los IDs de los doctores que REALMENTE tienen ese slot disponible ese día
-                #    y que además atienden la modalidad solicitada.
+                # 🔥 OPTIMIZACIÓN VITAL PARA EL PAGO: 
+                # Precargamos los esquemas de horario del día exacto para no hacer N consultas.
+                esquemas_del_dia = EsquemaHorarioPsicologo.objects.filter(
+                    activo=True, fecha_inicio__lte=fecha_obj, fecha_fin__gte=fecha_obj
+                )
+                psicologos_candidatos = PerfilPsicologo.objects.filter(
+                    esta_activo=True, **{campo_capacidad: True}
+                ).prefetch_related(
+                    Prefetch('esquemas_horarios', queryset=esquemas_del_dia, to_attr='_esquemas_rango')
+                )
+
+                # 1. Filtramos doctores que tengan el slot válido
                 doctores_con_slot_valido = []
-                for psicologo_temp in PerfilPsicologo.objects.filter(esta_activo=True, **{campo_capacidad: True}):
+                for psicologo_temp in psicologos_candidatos:
                     slots_del_dia = obtener_slots_psicologo_para_dia(psicologo_temp, fecha_obj, tipo_sesion=tipo_sesion_str)
                     if hora_obj.strftime('%I:%M %p') in slots_del_dia:
                         doctores_con_slot_valido.append(psicologo_temp.id)
 
-                # 2. Bloqueamos (select_for_update) y anotamos la carga histórica (excluyendo canceladas)
+                # 2. Bloqueamos para evitar empalmes y anotamos carga histórica
                 psicologos_libres = PerfilPsicologo.objects.filter(
                     id__in=doctores_con_slot_valido
                 ).select_for_update().annotate(
@@ -794,7 +822,7 @@ def guardar_cita_ajax(request):
                 if not psicologos_libres.exists():
                     return JsonResponse({'status': 'error', 'message': 'Lo sentimos, este horario acaba de ser ocupado o no hay especialistas disponibles para esta modalidad. Elige otro horario.'})
 
-                # 3. Asignamos ordenando por el total histórico de citas y desempate al azar ('?')
+                # 3. Asignación con preferencia y desempate
                 if 'Mujer' in preferencia:
                     psicologo = psicologos_libres.filter(genero='Mujer').order_by('carga_historica', '?').first()
                 elif 'Hombre' in preferencia:
@@ -803,16 +831,14 @@ def guardar_cita_ajax(request):
                 if not psicologo:
                     psicologo = psicologos_libres.order_by('carga_historica', '?').first()
 
-                # Guardamos la asignación en el perfil del paciente
                 perfil.psicologo_asignado = psicologo
                 perfil.save()
                 
-                # Verificación final: asegurar que el horario sigue libre para este psicólogo
+                # Verificación final
                 if Cita.objects.filter(psicologo=psicologo, fecha=fecha_obj, hora=hora_obj, estado='Confirmada').exists():
                     return JsonResponse({'status': 'error', 'message': 'El horario fue ocupado mientras procesabas. Elige otro.'})
                     
             else:
-                # Validar disponibilidad si ya tiene psicólogo
                 if Cita.objects.filter(psicologo=psicologo, fecha=fecha_obj, hora=hora_obj, estado='Confirmada').exists():
                     return JsonResponse({'status': 'error', 'message': 'Tu terapeuta ya tiene una cita en ese horario. Elige otro.'})
 
@@ -848,7 +874,7 @@ def guardar_cita_ajax(request):
                 id_evento_google=id_google  
             )
 
-            # Enviar correo
+            # Enviar correo (asumiendo que las funciones render_to_string, strip_tags y send_mail están importadas)
             asunto = 'Confirmación de tu sesión en HOPE'
             link_correo = link_final if link_final else "Cita Presencial (Revisa tu panel para ver la dirección)"
             contexto = {
