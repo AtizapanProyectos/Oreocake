@@ -129,7 +129,7 @@ class UsuarioPerfil(models.Model):
     notas_alta = models.TextField(blank=True, null=True, verbose_name="3. Cómo se va (El Alta)")
 
     def __str__(self):
-        return str(self.nombre) if self.nombre else "Usuario sin nombre"
+        return str(self.usuario) if self.usuario else "Usuario sin nombre"
 
 # ==========================================
 # 3. CITAS
