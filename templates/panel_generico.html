@@ -757,13 +757,52 @@
                         <div id="paypal-button-container" style="margin-top: 15px;"></div>
 
                         <div style="margin-top: 24px; padding: 28px 24px; border-radius: 24px; background: linear-gradient(135deg, #f8fafc 0%, #f3e8ff 100%); border: 2px dashed #d8b4fe; text-align: center;">
-                            <p style="font-size: 14px; color: var(--text-muted); margin-bottom: 18px; line-height: 1.5; font-weight: 500;">
-                                ¿Tuviste problemas para pagar con PayPal? Paga con este link seguro y envíanos tu comprobante por WhatsApp.
+                            
+                            <p style="font-size: 16px; color: var(--text-main); margin-bottom: 15px; line-height: 1.5; font-weight: 600; font-family: var(--font-body);">
+                                ¿Prefieres transferencia directa amigo? Paga a estos números de cuenta y envíanos tu comprobante por WhatsApp jeje.
                             </p>
-                            <a href="https://pago.clip.mx/v3/dd17159c-b010-4ec9-be54-7a7a32ba76b8" target="_blank" rel="noopener" style="display: inline-flex; align-items: center; gap: 14px; background: #ffffff; border: 2px solid #e2e8f0; padding: 16px 32px; border-radius: 60px; text-decoration: none; font-weight: 800; font-size: 17px; font-family: var(--font-headings); color: var(--text-main); box-shadow: 0 10px 25px rgba(90, 63, 163, 0.12); transition: 0.3s;" onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 15px 30px rgba(90, 63, 163, 0.2)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 10px 25px rgba(90, 63, 163, 0.12)';">
-                                <img src="{% static 'img/clip-seeklogo.png' %}" alt="Clip" style="width: 40px; height: 40px; border-radius: 50%; object-fit: contain;">
-                                Pagar con Clip
-                            </a>
+
+                            <div style="background: white; border-radius: 12px; padding: 10px; margin-bottom: 24px; display: inline-block; box-shadow: 0 4px 10px rgba(0,0,0,0.02);">
+                                <p style="margin: 0; font-size: 14px; color: var(--text-muted); font-family: var(--font-body);">
+                                    <strong>Titular:</strong> Servicios de Atención Emocional Juvenil SAPI de CV<br>
+                                    <strong>Banco:</strong> BBVA
+                                </p>
+                            </div>
+
+                            <!-- Contenedor de las dos monedas -->
+                            <div style="display: flex; flex-wrap: wrap; gap: 20px; justify-content: center;">
+                                
+                                <!-- Tarjeta MXN -->
+                                <div style="background: #ffffff; border: 2px solid #e2e8f0; padding: 20px; border-radius: 20px; flex: 1; min-width: 240px; box-shadow: 0 10px 25px rgba(90, 63, 163, 0.08); transition: 0.3s;" onmouseover="this.style.borderColor='var(--c-purple)'" onmouseout="this.style.borderColor='#e2e8f0'">
+                                    <h4 style="margin: 0 0 15px 0; color: var(--c-purple); font-family: var(--font-headings); font-size: 18px; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                                        🇲🇽 Moneda MXN
+                                    </h4>
+                                    <p style="margin: 8px 0; font-size: 15px; color: var(--text-main); font-family: var(--font-body);">
+                                        <span style="color: var(--text-muted); font-size: 13px; display: block;">No. de Cuenta</span>
+                                        <strong>0127845901</strong>
+                                    </p>
+                                    <p style="margin: 8px 0; font-size: 15px; color: var(--text-main); font-family: var(--font-body);">
+                                        <span style="color: var(--text-muted); font-size: 13px; display: block;">CLABE</span>
+                                        <strong>01218000127845901</strong>
+                                    </p>
+                                </div>
+
+                                <!-- Tarjeta USD -->
+                                <div style="background: #ffffff; border: 2px solid #e2e8f0; padding: 20px; border-radius: 20px; flex: 1; min-width: 240px; box-shadow: 0 10px 25px rgba(90, 63, 163, 0.08); transition: 0.3s;" onmouseover="this.style.borderColor='var(--c-teal)'" onmouseout="this.style.borderColor='#e2e8f0'">
+                                    <h4 style="margin: 0 0 15px 0; color: var(--c-teal); font-family: var(--font-headings); font-size: 18px; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                                        🇺🇸 Moneda USD
+                                    </h4>
+                                    <p style="margin: 8px 0; font-size: 15px; color: var(--text-main); font-family: var(--font-body);">
+                                        <span style="color: var(--text-muted); font-size: 13px; display: block;">No. de Cuenta</span>
+                                        <strong>0127845960</strong>
+                                    </p>
+                                    <p style="margin: 8px 0; font-size: 15px; color: var(--text-main); font-family: var(--font-body);">
+                                        <span style="color: var(--text-muted); font-size: 13px; display: block;">CLABE</span>
+                                        <strong>012180001278459604</strong>
+                                    </p>
+                                </div>
+
+                            </div>
                         </div>
 
                     </div>
