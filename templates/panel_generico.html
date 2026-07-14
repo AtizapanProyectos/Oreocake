@@ -10,6 +10,96 @@
 {{ dias_disponibles_json|json_script:"dias-data" }}
 {% csrf_token %}
 
+<script>
+// =============================================================================
+// 🔐 GLOBAL: getCookie() y helper de errores con WhatsApp
+// -----------------------------------------------------------------------------
+// IMPORTANTE: esta función NO debe vivir dentro de ningún {% if %} de Django.
+// Antes estaba definida solo dentro de {% if psicologo_asignado %}, así que
+// para un paciente nuevo (sin psicólogo asignado todavía) getCookie() no
+// existía -> ReferenceError -> el pago de PayPal se cobraba pero la cita
+// nunca se guardaba. Va aquí arriba, global, para que SIEMPRE esté disponible.
+// =============================================================================
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// Número de WhatsApp de soporte (mismo que usa el botón flotante de la página)
+window.WHATSAPP_SOPORTE = '525521130230';
+
+/**
+ * Muestra el modal de error (#alerta-error-cita) con un mensaje y, SIEMPRE,
+ * un botón directo a WhatsApp para que el usuario no se quede sin salida.
+ *
+ * @param {string} mensaje - Texto del error a mostrar.
+ * @param {object} [opts]
+ * @param {boolean} [opts.pagoConfirmado] - true si YA se le cobró al usuario
+ *        (PayPal capturó el pago) pero algo falló después. Esto muestra una
+ *        advertencia extra para que NO vuelva a pagar.
+ * @param {string} [opts.referencia] - ID de la orden/transacción de PayPal,
+ *        si existe, para incluirlo en el mensaje de WhatsApp.
+ */
+function mostrarErrorCita(mensaje, opts) {
+    opts = opts || {};
+    const cont = document.getElementById('texto-error-cita');
+    const modal = document.getElementById('alerta-error-cita');
+    if (!cont || !modal) {
+        // Fallback por si el modal no existe en esta vista
+        alert(mensaje + '\n\nSi el problema persiste, contáctanos por WhatsApp.');
+        return;
+    }
+
+    let waTexto = 'Hola, tuve un problema en mi panel de HOPE: ' + mensaje;
+    if (opts.pagoConfirmado) {
+        waTexto = 'Hola, mi pago SÍ se procesó en HOPE pero mi cita no quedó agendada. '
+            + (opts.referencia ? ('Referencia de pago: ' + opts.referencia + '. ') : '')
+            + 'Adjunto mi comprobante, por favor ayúdenme a agendar mi cita.';
+    }
+    const waLink = 'https://wa.me/' + window.WHATSAPP_SOPORTE + '?text=' + encodeURIComponent(waTexto);
+
+    let html = mensaje;
+    if (opts.pagoConfirmado) {
+        html = '<strong style="color:#c2410c;">Tu pago ya se procesó correctamente.</strong><br>'
+            + 'No te preocupes, tu dinero está bien — solo hubo un problema técnico al agendar la cita automáticamente. '
+            + '<strong>Por favor, NO vuelvas a pagar.</strong> Escríbenos por WhatsApp con tu comprobante y te la agendamos manualmente en minutos.';
+    }
+    cont.innerHTML = html;
+
+    // Insertamos (o reutilizamos) el botón de WhatsApp dentro del modal de error
+    let waBtn = document.getElementById('btn-whatsapp-error-cita');
+    if (!waBtn) {
+        waBtn = document.createElement('a');
+        waBtn.id = 'btn-whatsapp-error-cita';
+        waBtn.target = '_blank';
+        waBtn.rel = 'noopener';
+        waBtn.style.cssText = 'display:flex;align-items:center;justify-content:center;gap:8px;'
+            + 'background:#25D366;color:#fff;font-weight:700;padding:14px;border-radius:14px;'
+            + 'text-decoration:none;margin-bottom:14px;width:100%;';
+        waBtn.innerHTML = '<i class="fab fa-whatsapp" style="font-size:20px;"></i> Ponte en contacto por WhatsApp';
+        const boton = modal.querySelector('button[onclick="cerrarYRecargar()"]');
+        if (boton) {
+            boton.parentNode.insertBefore(waBtn, boton);
+        } else {
+            modal.querySelector('.chic-card, .alerta-animada')?.appendChild(waBtn);
+        }
+    }
+    waBtn.href = waLink;
+
+    modal.style.display = 'flex';
+}
+</script>
+
 <!-- Toast de notificaciones y overlay de carga (reemplazan los alert()) -->
 <div class="loading-overlay-hope" id="loadingOverlayHope">
     <div class="spinner-hope"></div>
@@ -1132,23 +1222,8 @@
 </div>
 
 <script>
-// 🔐 Lee siempre el csrftoken vigente desde la cookie (no del HTML ya renderizado).
-// Evita el error "CSRF token ... incorrect" cuando la página lleva un rato abierta
-// y el token horneado en {{ csrf_token }} queda desincronizado de la cookie real.
-function getCookie(name) {
-    let cookieValue = null;
-    if (document.cookie && document.cookie !== '') {
-        const cookies = document.cookie.split(';');
-        for (let i = 0; i < cookies.length; i++) {
-            const cookie = cookies[i].trim();
-            if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                break;
-            }
-        }
-    }
-    return cookieValue;
-}
+// 🔐 getCookie() ahora vive de forma global arriba del archivo (ver script
+// cerca del inicio), para que exista siempre, tenga o no psicólogo asignado.
 
 let chatPatAbierto = false;
 const docId = "{{ psicologo_asignado.usuario.id }}";
@@ -1423,53 +1498,78 @@ function refrescarDisponibilidadPorTipo(tipo) {
         .catch(() => { carousel.style.opacity = '1'; });
 }
 
-function guardarCitaSinPago() {
+function guardarCitaSinPago(pagoRef) {
+    // pagoRef: si viene de un pago de PayPal ya capturado, es el ID de la orden.
+    // Si algo falla de aquí en adelante, el pago YA se hizo, así que el error
+    // debe avisarle al usuario que NO pague otra vez y que escriba por WhatsApp.
+    const huboPago = !!pagoRef;
 
     // Mostrar loading
     document.getElementById('step-2-payment').style.display = 'none';
     document.getElementById('step-3-loading').style.display = 'block';
 
-    let formData = new FormData();
+    try {
+        let formData = new FormData();
 
-    formData.append('fecha', window.fechaSeleccionada);
-    formData.append('hora', window.horaSeleccionada);
-    formData.append('animo', window.animoSeleccionado);
-    formData.append('modalidad', window.modalidadSeleccionada);
-    formData.append('tipo_servicio', window.tipoServicioAgendado);
-    if (window.tipoServicioAgendado === 'familiar') {
-        formData.append('integrantes_familia', window.integrantesFamilia);
-    }
-
-    fetch("{% url 'guardar_cita' %}", {
-        method: 'POST',
-        headers: {
-            'X-CSRFToken': getCookie('csrftoken')
-        },
-        body: formData
-    })
-    .then(response => response.json())
-    .then(data => {
-
-        document.getElementById('step-3-loading').style.display = 'none';
-
-        if(data.status === 'success') {
-
-            document.getElementById('alerta-exito-cita').style.display = 'flex';
-
-        } else {
-
-            alert(data.message || 'Error al guardar cita');
-
+        formData.append('fecha', window.fechaSeleccionada);
+        formData.append('hora', window.horaSeleccionada);
+        formData.append('animo', window.animoSeleccionado);
+        formData.append('modalidad', window.modalidadSeleccionada);
+        formData.append('tipo_servicio', window.tipoServicioAgendado);
+        if (window.tipoServicioAgendado === 'familiar') {
+            formData.append('integrantes_familia', window.integrantesFamilia);
         }
-    })
-    .catch(error => {
+        if (pagoRef) {
+            formData.append('paypal_order_id', pagoRef);
+        }
 
+        fetch("{% url 'guardar_cita' %}", {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+
+            document.getElementById('step-3-loading').style.display = 'none';
+
+            if (data.status === 'success') {
+
+                document.getElementById('alerta-exito-cita').style.display = 'flex';
+
+            } else {
+
+                mostrarErrorCita(data.message || 'No se pudo guardar tu cita.', {
+                    pagoConfirmado: huboPago,
+                    referencia: pagoRef
+                });
+
+            }
+        })
+        .catch(error => {
+
+            document.getElementById('step-3-loading').style.display = 'none';
+            console.error(error);
+
+            mostrarErrorCita('Error de conexión con el servidor al guardar tu cita.', {
+                pagoConfirmado: huboPago,
+                referencia: pagoRef
+            });
+
+        });
+    } catch (error) {
+        // Cualquier error inesperado (por ejemplo un ReferenceError como el que
+        // causaba este bug) queda atrapado aquí para que NUNCA se pierda un
+        // pago ya cobrado sin que el usuario sepa qué pasó.
         document.getElementById('step-3-loading').style.display = 'none';
-
         console.error(error);
-        alert('Error de conexión');
-
-    });
+        mostrarErrorCita('Ocurrió un problema inesperado al guardar tu cita.', {
+            pagoConfirmado: huboPago,
+            referencia: pagoRef
+        });
+    }
 }
 
 // Variable global para guardar qué eligió el usuario
@@ -1572,14 +1672,13 @@ function guardarCitaSinPago() {
                 document.getElementById('texto-exito-dinamico').innerText = "Tu inscripción está confirmada. Ahora podrás ver el enlace de la sala en tu panel.";
                 document.getElementById('alerta-exito-cita').style.display = 'flex';
             } else { 
-                document.getElementById('texto-error-cita').innerText = data.message;
-                document.getElementById('alerta-error-cita').style.display = 'flex';
+                mostrarErrorCita(data.message || 'No se pudo completar tu inscripción al taller.');
             }
         }).catch(e => {
             btn.innerHTML = originalText;
             btn.disabled = false;
-            document.getElementById('texto-error-cita').innerText = "Error de conexión con el servidor.";
-            document.getElementById('alerta-error-cita').style.display = 'flex';
+            console.error(e);
+            mostrarErrorCita('Error de conexión con el servidor al inscribirte al taller.');
         });
     });
 
@@ -1780,8 +1879,8 @@ function guardarCitaSinPago() {
                 })
                 .catch(error => {
                     document.getElementById('step-3-loading').style.display = 'none';
-                    document.getElementById('texto-error-cita').innerText = 'Error de conexión con el servidor. Por favor, intenta de nuevo.';
-                    document.getElementById('alerta-error-cita').style.display = 'flex';
+                    console.error(error);
+                    mostrarErrorCita('Error de conexión con el servidor. Por favor, intenta de nuevo.');
                 });
             });
         }
@@ -1826,8 +1925,30 @@ document.addEventListener("DOMContentLoaded", function () {
             // 3. SI EL PAGO SE APRUEBA CON ÉXITO
             onApprove: function(data, actions) {
                 return actions.order.capture().then(function(details) {
-                    // ¡Dinero recibido! Disparamos tu función original para guardar la cita en Django
-                    guardarCitaSinPago();
+                    // ¡Dinero recibido! Disparamos la función para guardar la cita en Django.
+                    // Le pasamos el ID de la orden para poder avisar por WhatsApp con
+                    // referencia exacta si algo falla DESPUÉS de haber cobrado.
+                    try {
+                        guardarCitaSinPago(details.id || data.orderID);
+                    } catch (e) {
+                        // Red de seguridad final: si guardarCitaSinPago truena de forma
+                        // síncrona (p. ej. porque una función no está definida), el pago
+                        // YA se hizo y el usuario debe saberlo, no ver un mensaje genérico
+                        // de "error con tu banco".
+                        console.error(e);
+                        document.getElementById('step-3-loading').style.display = 'none';
+                        mostrarErrorCita('No se pudo completar el agendado de tu cita.', {
+                            pagoConfirmado: true,
+                            referencia: details.id || data.orderID
+                        });
+                    }
+                }).catch(function(err) {
+                    // Este catch es para errores en la CAPTURA del pago en sí
+                    // (aquí el dinero probablemente NO se movió todavía).
+                    console.error("Error al capturar el pago de PayPal:", err);
+                    mostrarErrorCita('Hubo un error al procesar tu pago con PayPal. Si viste un cargo en tu cuenta, contáctanos por WhatsApp antes de intentar pagar de nuevo.', {
+                        pagoConfirmado: false
+                    });
                 });
             },
 
@@ -1836,11 +1957,12 @@ document.addEventListener("DOMContentLoaded", function () {
                 console.log("El paciente cerró la ventana de PayPal.");
             },
 
-            // 5. SI ALGO EXPLOTA EN PAYPAL
+            // 5. SI ALGO EXPLOTA EN PAYPAL (antes de llegar a capturar el pago)
             onError: function (err) {
                 console.error("Error PayPal:", err);
-                document.getElementById('texto-error-cita').innerText = 'Hubo un error de conexión con tu banco o PayPal. Intenta de nuevo.';
-                document.getElementById('alerta-error-cita').style.display = 'flex';
+                mostrarErrorCita('Hubo un error de conexión con tu banco o PayPal. Si el cargo sí se realizó en tu cuenta, no vuelvas a pagar y contáctanos por WhatsApp.', {
+                    pagoConfirmado: false
+                });
             }
             
         }).render('#paypal-button-container');

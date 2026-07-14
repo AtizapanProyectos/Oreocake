@@ -765,7 +765,17 @@ def guardar_cita_ajax(request):
         animo = request.POST.get('animo', 'No especificó')
         modalidad_str = request.POST.get('modalidad', 'En línea')
         tipo_sesion_str = request.POST.get('tipo_servicio', 'individual')
-        
+        # 💳 Referencia de la orden de PayPal (si el guardado viene después de un
+        # pago ya capturado). La registramos en el log INMEDIATAMENTE, antes de
+        # cualquier posible excepción, para que un pago cobrado nunca quede sin
+        # rastro aunque falle el resto del guardado de la cita.
+        paypal_order_id = request.POST.get('paypal_order_id')
+        if paypal_order_id:
+            logging.getLogger(__name__).info(
+                'Pago de PayPal recibido (orden %s) para usuario %s - fecha %s %s',
+                paypal_order_id, request.user, fecha_str, hora_str
+            )
+
         if tipo_sesion_str not in TIPOS_SESION_VALIDOS:
             tipo_sesion_str = 'individual'
 
@@ -890,6 +900,11 @@ def guardar_cita_ajax(request):
 
             return JsonResponse({'status': 'success'})
         except Exception as e:
+            if paypal_order_id:
+                logging.getLogger(__name__).error(
+                    '⚠️ PAGO COBRADO SIN CITA GUARDADA - orden PayPal %s, usuario %s: %s',
+                    paypal_order_id, request.user, e
+                )
             return JsonResponse({'status': 'error', 'message': str(e)})
 
     return JsonResponse({'status': 'error'})
