@@ -1446,7 +1446,7 @@ function refrescarDisponibilidadPorTipo(tipo) {
             const contenedores = document.querySelectorAll('.slots-container');
             contenedores.forEach(c => c.remove());
 
-            const fechas = Object.keys(data.dias);
+            const fechas = Object.keys(data.dias).sort(); // <--- Agregamos .sort()
             if (fechas.length === 0) {
                 carousel.innerHTML = '<p style="color: var(--text-muted); font-style: italic;">No hay fechas disponibles para esta modalidad por el momento.</p>';
                 return;

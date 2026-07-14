@@ -199,7 +199,7 @@ def obtener_slots_globales(fecha_inicio, fecha_fin, preferencia=None, tipo_sesio
 
     slots_globales_ordenados = {
         fecha: sorted(list(horas), key=lambda x: datetime.strptime(x, '%I:%M %p'))
-        for fecha, horas in slots_globales.items() if horas
+        for fecha, horas in sorted(slots_globales.items()) if horas # <--- Agregamos sorted() aquí
     }
 
     return slots_globales_ordenados
