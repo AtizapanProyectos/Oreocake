@@ -575,10 +575,10 @@ body{font-family:var(--font-b);color:var(--c-dark);background:#fff;display:flex}
       
 
       <div class="slide-content" style="position:relative;z-index:2;">
-        <h1 style="color: white;">Todo lo que <span style="color:var(--c-teal)">donas</span> importa.</h1>
-        <p style="color: white;">Conviértete en el puente hacia la esperanza. Tu aportación directa ayuda a financiar tratamientos psicológicos para jóvenes que lo necesitan.</p>
-        <div class="hero-buttons">
-          <button class="btn-primary" style="background:var(--c-teal);box-shadow:0 15px 30px rgba(37,184,184,.2)" onclick="abrirDonacion()">Hacer un Donativo <i class="fas fa-heart"></i></button>
+       <div class="hero-buttons">
+          <button class="btn-primary" style="background:var(--c-teal);box-shadow:0 15px 30px rgba(37,184,184,.2)" onclick="window.location.href='{% url 'formulario_venezuela' %}'">
+            Unete a Nuestra Familia HOPE<i class="fas fa-heart"></i>
+          </button>
         </div>
       </div>
     </div>
