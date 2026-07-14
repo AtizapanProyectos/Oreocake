@@ -11,15 +11,7 @@
 {% csrf_token %}
 
 <script>
-// =============================================================================
-// 🔐 GLOBAL: getCookie() y helper de errores con WhatsApp
-// -----------------------------------------------------------------------------
-// IMPORTANTE: esta función NO debe vivir dentro de ningún {% if %} de Django.
-// Antes estaba definida solo dentro de {% if psicologo_asignado %}, así que
-// para un paciente nuevo (sin psicólogo asignado todavía) getCookie() no
-// existía -> ReferenceError -> el pago de PayPal se cobraba pero la cita
-// nunca se guardaba. Va aquí arriba, global, para que SIEMPRE esté disponible.
-// =============================================================================
+
 function getCookie(name) {
     let cookieValue = null;
     if (document.cookie && document.cookie !== '') {
