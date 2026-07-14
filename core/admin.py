@@ -82,6 +82,7 @@ class PerfilPsicologoAdmin(ImportExportModelAdmin):
 # Si tenías clases de configuración personalizadas para estos modelos, 
 # puedes pegarlas aquí abajo sin problema. Si no, con esto quedan registrados:
 admin.site.register(UsuarioPerfil)
+admin.site.register(ContactoVenezuela)
 @admin.register(Cita)
 class CitaAdmin(admin.ModelAdmin):
     # 1. Mostramos los campos directamente en vez de evaluar el pesado __str__
