@@ -81,8 +81,20 @@ class PerfilPsicologoAdmin(ImportExportModelAdmin):
 # =================================================================
 # Si tenías clases de configuración personalizadas para estos modelos, 
 # puedes pegarlas aquí abajo sin problema. Si no, con esto quedan registrados:
-admin.site.register(UsuarioPerfil)
-admin.site.register(ContactoVenezuela)
+@admin.register(UsuarioPerfil)
+class UsuarioPerfilAdmin(ImportExportModelAdmin):
+    # Opcional: Esto además te pone columnas bonitas en la tabla
+    list_display = ('nombre', 'telefono', 'es_psicologo', 'es_padre')
+    search_fields = ('nombre', 'telefono', 'usuario__email')
+    list_filter = ('es_psicologo', 'es_padre')
+
+@admin.register(ContactoVenezuela)
+class ContactoVenezuelaAdmin(ImportExportModelAdmin):
+    list_display = ('nombre', 'correo', 'celular', 'lugar_vivienda')
+    search_fields = ('nombre', 'correo', 'celular')
+    list_filter = ('horario_preferencia',)
+
+    
 @admin.register(Cita)
 class CitaAdmin(admin.ModelAdmin):
     # 1. Mostramos los campos directamente en vez de evaluar el pesado __str__
