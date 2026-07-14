@@ -174,8 +174,13 @@ def obtener_slots_globales(fecha_inicio, fecha_fin, preferencia=None, tipo_sesio
         'esta_activo': True,
     }
 
-    if preferencia and preferencia.strip() not in ["", "todos", "cualquiera", "Cualquiera"]:
-        filtros['genero'] = preferencia
+    if preferencia:
+        preferencia_norm = preferencia.strip().lower()
+        if 'mujer' in preferencia_norm:
+            filtros['genero'] = 'Mujer'
+        elif 'hombre' in preferencia_norm:
+            filtros['genero'] = 'Hombre'
+        # Cualquier otro valor (Indistinto, Cualquiera, "", etc.) => no se filtra por género.
 
     # 1. ACTUALIZACIÓN: Usamos el nuevo EsquemaHorarioPsicologo
     esquemas_en_rango = EsquemaHorarioPsicologo.objects.filter(
