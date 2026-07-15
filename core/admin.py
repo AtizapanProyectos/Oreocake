@@ -83,10 +83,18 @@ class PerfilPsicologoAdmin(ImportExportModelAdmin):
 # puedes pegarlas aquí abajo sin problema. Si no, con esto quedan registrados:
 @admin.register(UsuarioPerfil)
 class UsuarioPerfilAdmin(ImportExportModelAdmin):
-    # Opcional: Esto además te pone columnas bonitas en la tabla
-    list_display = ('nombre', 'telefono', 'es_psicologo', 'es_padre')
-    search_fields = ('nombre', 'telefono', 'usuario__email')
+    # 🔥 CAMBIO AQUÍ: Cambiamos 'nombre' por 'usuario'
+    list_display = ('usuario', 'telefono', 'es_psicologo', 'es_padre')
+    
+    # 🔥 CAMBIO AQUÍ: También optimizamos la búsqueda para incluir el username
+    search_fields = ('usuario__username', 'usuario__email', 'nombre', 'telefono')
+    
     list_filter = ('es_psicologo', 'es_padre')
+
+    # 🔥 IMPORTANTE: Añade esto para optimizar el rendimiento. 
+    # Sin esto, si tienes 100 usuarios, Django hará 100 consultas extras a la base de datos.
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related('usuario')
 
 @admin.register(ContactoVenezuela)
 class ContactoVenezuelaAdmin(ImportExportModelAdmin):
