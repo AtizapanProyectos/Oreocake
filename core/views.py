@@ -108,7 +108,7 @@ TIPOS_SESION_VALIDOS = tuple(CAPACIDAD_POR_TIPO_SESION.keys())
 # El monto que se cobra SIEMPRE se recalcula en el servidor a partir de
 # estas constantes; nunca se confía en el monto que mande el navegador.
 PRECIO_BASE_SESION = {
-    'individual': 1,
+    'individual': 100,
     'pareja': 200,
     'familiar': 200,
 }
