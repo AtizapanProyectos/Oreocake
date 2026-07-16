@@ -757,11 +757,39 @@ body {
   from { opacity: 0; transform: translateY(18px); }
   to   { opacity: 1; transform: translateY(0); }
 }
+
+
+
+/* =============================================================
+   BOTÓN AGENDAR CITA
+   ============================================================= */
+.btn-agendar {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--p); /* Usamos tu color lila base */
+  color: var(--wht);
+  padding: 9px 16px;
+  border-radius: 100px; /* Para que haga match con el live-pill */
+  font-family: var(--fh);
+  font-weight: 700;
+  font-size: 13px;
+  text-decoration: none;
+  box-shadow: 0 4px 12px rgba(90,63,163,0.3);
+  transition: all 0.2s ease;
+}
+
+.btn-agendar:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(90,63,163,0.4);
+  background: var(--p-mid);
+}
+
 </style>
 
 <div class="hw">
 
-  <!-- ====================== MASTHEAD ====================== -->
+<!-- ====================== MASTHEAD ====================== -->
   <header class="masthead fup">
     <div class="mast-left">
       <img src="{% static 'img/logo_hope_principal.png' %}" alt="HOPE" class="mast-logo">
@@ -770,9 +798,20 @@ body {
         <div class="mast-sub">Dirección · {{ hoy|date:"d M Y" }}</div>
       </div>
     </div>
-    <div class="live-pill">
-      <span class="live-dot"></span>
-      <span id="poll-indicator">En Vivo</span>
+    
+    <!-- Contenedor nuevo para agrupar el botón y el indicador -->
+    <div style="display: flex; gap: 14px; align-items: center;">
+      
+      <!-- Tu nuevo botón mágico jeje -->
+      <a href="{% url 'admin_guardar_cita_paciente' %}" class="btn-agendar">
+        <i class="fas fa-plus"></i> Agendar Cita
+      </a>
+
+      <div class="live-pill">
+        <span class="live-dot"></span>
+        <span id="poll-indicator">En Vivo</span>
+      </div>
+      
     </div>
   </header>
 
