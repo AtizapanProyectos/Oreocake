@@ -510,18 +510,9 @@ body{font-family:var(--font-b);color:var(--c-dark);background:#fff;display:flex}
   <a href="#" onclick="abrirRegistroDirecto('pareja', 'terapia_pareja'); return false;" class="nav-item">
     <i class="fas fa-heart"></i> Terapia de Pareja
   </a>
-<p class="nav-section-title">Talleres para Padres</p>
-  <a href="#" onclick="abrirRegistroDirecto('solo_talleres', 'Criar con Conciencia'); return false;" class="nav-item"><i class="fas fa-seedling"></i> Criar con Conciencia</a>
-  <a href="#" onclick="abrirRegistroDirecto('solo_talleres', 'Disciplina Inteligente'); return false;" class="nav-item"><i class="fas fa-star"></i> Disciplina Inteligente</a>
-  
-  <p class="nav-section-title">Talleres de Pareja</p>
-  <a href="#" onclick="abrirRegistroDirecto('solo_talleres', 'Reconectar en Pareja'); return false;" class="nav-item"><i class="fas fa-heart"></i> Reconectar en Pareja</a>
-  <a href="#" onclick="abrirRegistroDirecto('solo_talleres', 'Amar sin Herir'); return false;" class="nav-item"><i class="fas fa-people-arrows"></i> Amar sin Herir</a>
-  
-  <p class="nav-section-title">Talleres Grupales</p>
-  <a href="#" onclick="abrirRegistroDirecto('solo_talleres', 'Volver a Empezar'); return false;" class="nav-item"><i class="fas fa-users"></i> Volver a Empezar</a>
-  <a href="#" onclick="abrirRegistroDirecto('solo_talleres', 'Renacer Después del Adiós'); return false;" class="nav-item"><i class="fas fa-dove"></i> Renacer Después del Adiós</a>
-  <a href="#" onclick="abrirRegistroDirecto('solo_talleres', 'Reconstruyendo mi Valor'); return false;" class="nav-item"><i class="fas fa-gem"></i> Reconstruyendo mi Valor</a>
+<p class="nav-section-title">Talleres</p>
+  <a href="#" onclick="abrirRegistroDirecto('solo_talleres', 'Solucionando el Conflicto en la Pareja'); return false;" class="nav-item"><i class="fas fa-heart"></i> Solucionando el Conflicto en la Pareja</a>
+  <a href="#" onclick="abrirRegistroDirecto('solo_talleres', 'Mejorando la Relación con mi Hijo Adolescente'); return false;" class="nav-item"><i class="fas fa-people-roof"></i> Mejorando la Relación con mi Hijo Adolescente</a>
   
   <p class="nav-section-title">Profesionales</p>
   <a href="#" onclick="abrirRegistroDirecto('solo_talleres', 'Ecovisión'); return false;" class="nav-item"><i class="fas fa-leaf"></i> Co-visión</a>
@@ -616,27 +607,27 @@ body{font-family:var(--font-b);color:var(--c-dark);background:#fff;display:flex}
   </section>
 
 
-  <!-- TALLERES PADRES -->
-  <section id="talleres-padres" class="section">
-    <h2 class="section-title">Talleres para<br>Padres de Familia.</h2>
+  <!-- TALLERES -->
+  <section id="talleres" class="section">
+    <h2 class="section-title">Nuestros<br>Talleres.</h2>
     <div class="grid">
       <div class="card">
-        <div class="card-img"><img src="{% static 'img/criar.jpg' %}" alt="Criar con Conciencia" loading="lazy"></div>
+        <div class="card-img"><img src="https://images.unsplash.com/photo-1516589178581-6cd7833ae3b2?w=800&auto=format&fit=crop&q=60" alt="Solucionando el Conflicto en la Pareja" loading="lazy"></div>
         <div class="card-body">
-          <h3 style="color:var(--c-teal)">"Criar con Conciencia"</h3>
-          <p>Fortalece tu estilo de crianza con herramientas prácticas basadas en evidencia. Aprende a manejar conductas desafiantes, establecer límites efectivos y mejorar la comunicación familiar desde un enfoque claro, breve y orientado a resultados.</p>
-          <button class="btn-inscribete" style="background:var(--c-teal); border:none;" 
-           onclick="abrirRegistroDirecto('solo_talleres', 'Criar con Conciencia')">
+          <h3 style="color:var(--c-pink)">"Solucionando el Conflicto en la Pareja"</h3>
+          <p>Los conflictos son una parte natural de toda relación; sin embargo, la forma en que se enfrentan puede fortalecer o debilitar el vínculo. Este taller brinda a las parejas herramientas prácticas para comprender el origen de sus conflictos, mejorar la comunicación, manejar las diferencias de manera saludable y fortalecer la conexión emocional entre ambos.</p>
+          <button class="btn-inscribete" style="background:var(--c-pink); border:none;" 
+           onclick="abrirRegistroDirecto('solo_talleres', 'Solucionando el Conflicto en la Pareja')">
           Inscríbete <i class="fas fa-arrow-right"></i>
           </button>
         </div>
       </div>
       <div class="card">
-        <div class="card-img"><img src="https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=800&auto=format&fit=crop&q=60" alt="Disciplina Inteligente" loading="lazy"></div>
+        <div class="card-img"><img src="https://images.unsplash.com/photo-1609220136736-443140cffec6?w=800&auto=format&fit=crop&q=60" alt="Mejorando la Relación con mi Hijo Adolescente" loading="lazy"></div>
         <div class="card-body">
-          <h3 style="color:var(--c-purple)">"Disciplina Inteligente"</h3>
-          <p>Transforma la forma en que educas. Estrategias cognitivo-conductuales para fomentar conductas positivas, reducir conflictos y construir un ambiente familiar más equilibrado sin recurrir a gritos o castigos ineficaces.</p>
-          <a onclick="abrirRegistroDirecto('solo_talleres', 'Disciplina Inteligente')" class="btn-inscribete" style="background:var(--c-purple)">Inscríbete <i class="fas fa-arrow-right"></i></a>
+          <h3 style="color:var(--c-purple)">"Mejorando la Relación con mi Hijo Adolescente"</h3>
+          <p>La adolescencia es una etapa de profundos cambios biológicos, cognitivos, emocionales y sociales que impactan la dinámica familiar. A través de un enfoque psicoeducativo, los participantes desarrollarán herramientas para fortalecer la comunicación, la regulación emocional, el establecimiento de límites saludables y la construcción de vínculos basados en el respeto, la confianza y el apego seguro.</p>
+          <a onclick="abrirRegistroDirecto('solo_talleres', 'Mejorando la Relación con mi Hijo Adolescente')" class="btn-inscribete" style="background:var(--c-purple)">Inscríbete <i class="fas fa-arrow-right"></i></a>
         </div>
       </div>
     </div>
@@ -655,67 +646,6 @@ body{font-family:var(--font-b);color:var(--c-dark);background:#fff;display:flex}
 
             Una oportunidad para cumplir con la supervisión de casos y fortalecer tus competencias profesionales, ampliar tu perspectiva clínica y enriquecer tu práctica terapéutica.</p>
           <button class="btn-inscribete" style="background:var(--c-teal); border:none;" onclick="abrirRegistroDirecto('solo_talleres', 'Eco-visión')">Unirme a la lista <i class="fas fa-leaf"></i></button>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- TALLERES PAREJA -->
-  <section id="talleres-pareja" class="section" style="background:#f8fafc">
-    <h2 class="section-title">Talleres<br>de Pareja.</h2>
-    <div class="grid">
-      <div class="card">
-        <div class="card-img"><img src="{% static 'img/reconecta_pareja.jpg' %}" alt="Reconectar en Pareja" loading="lazy"></div>
-        <div class="card-body">
-          <h3 style="color:var(--c-pink)">"Reconectar en Pareja"</h3>
-          <p>Recupera la conexión emocional y mejora la comunicación con herramientas prácticas. Identifica patrones negativos, gestiona conflictos y fortalece el vínculo en un proceso breve y enfocado en soluciones reales.</p>
-          <a class="btn-inscribete" onclick="abrirRegistroDirecto('solo_talleres', 'Reconectar en Pareja')" style="background:var(--c-pink)">Inscríbete <i class="fas fa-arrow-right"></i></a>
-        </div>
-      </div>
-      <div class="card">
-        <div class="card-img"><img src="https://images.unsplash.com/photo-1474552226712-ac0f0961a954?w=800&auto=format&fit=crop&q=60" alt="Amar sin Herir" loading="lazy"></div>
-        <div class="card-body">
-          <h3 style="color:var(--c-orange)">"Amar sin Herir"</h3>
-          <p>Aprende a construir una relación sana y consciente. Reconoce pensamientos y conductas que dañan la relación, promoviendo nuevas formas de comunicación, empatía y resolución de problemas en pareja.</p>
-          <a onclick="abrirRegistroDirecto('solo_talleres', 'Amar sin Herir')" class="btn-inscribete" style="background:var(--c-orange)">Inscríbete <i class="fas fa-arrow-right"></i></a>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- TALLERES GRUPALES -->
-  <section id="talleres-grupales" class="section">
-    <h2 class="section-title">Talleres<br>Grupales.</h2>
-    <div class="grid">
-      <div class="card">
-        <div class="card-img"><img src="https://images.unsplash.com/photo-1499209974431-9dddcece7f88?w=800&auto=format&fit=crop&q=60" alt="Volver a Empezar" loading="lazy"></div>
-        <div class="card-body">
-          <h3 style="color:var(--c-purple)">"Volver a Empezar"</h3>
-          <p>Sana después de una ruptura y retoma el control de tu vida emocional. A través de técnicas cognitivas y conductuales, aprenderás a gestionar pensamientos dolorosos, fortalecer tu autoestima y cerrar ciclos con claridad.</p>
-          <a onclick="abrirRegistroDirecto('solo_talleres', 'Volver a Empezar')" class="btn-inscribete" style="background:var(--c-purple)">Inscríbete <i class="fas fa-arrow-right"></i></a>
-        </div>
-      </div>
-      <div class="card">
-        <div class="card-img"><img src="https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=800&auto=format&fit=crop&q=60" alt="Renacer Después del Adiós" loading="lazy"></div>
-        <div class="card-body">
-          <h3 style="color:var(--c-teal)">"Renacer Después del Adiós"</h3>
-          <p>Un espacio para reconstruirte desde adentro. Identifica creencias que te limitan, transforma el dolor en aprendizaje y desarrolla hábitos emocionales saludables para avanzar con seguridad hacia una nueva etapa.</p>
-          <a onclick="abrirRegistroDirecto('solo_talleres', 'Renacer Después del Adiós')" class="btn-inscribete" style="background:var(--c-teal)">Inscríbete <i class="fas fa-arrow-right"></i></a>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- TALLER AUTOESTIMA -->
-  <section id="talleres-autoestima" class="section" style="background:#f8fafc">
-    <h2 class="section-title">Taller de<br>Autoestima.</h2>
-    <div class="grid" style="max-width:600px">
-      <div class="card">
-        <div class="card-img"><img src="https://images.unsplash.com/photo-1519834785169-98be25ec3f84?w=800&auto=format&fit=crop&q=60" alt="Reconstruyendo mi Valor" loading="lazy"></div>
-        <div class="card-body">
-          <h3 style="color:var(--c-pink)">"Reconstruyendo mi Valor"</h3>
-          <p>Un taller breve y transformador para fortalecer tu autoestima desde la evidencia. Aprenderás a identificar pensamientos autocríticos, cuestionar creencias limitantes y desarrollar una autoimagen más realista y positiva. A través de herramientas cognitivo-conductuales, construirás habilidades para tomar decisiones con seguridad, poner límites y relacionarte contigo mismo desde el respeto y la confianza.</p>
-          <a onclick="abrirRegistroDirecto('solo_talleres', 'Autoestima')" class="btn-inscribete" style="background:var(--c-pink)">Inscríbete <i class="fas fa-arrow-right"></i></a>
         </div>
       </div>
     </div>
@@ -791,13 +721,8 @@ body{font-family:var(--font-b);color:var(--c-dark);background:#fff;display:flex}
       <div class="footer-col">
         <h4>Talleres</h4>
         <ul>
-          <li><a href="#" onclick="abrirRegistroDirecto('solo_talleres', 'Criar con Conciencia'); return false;">Criar con Conciencia</a></li>
-          <li><a href="#talleres-padres">Disciplina Inteligente</a></li>
-          <li><a href="#talleres-pareja">Reconectar en Pareja</a></li>
-          <li><a href="#talleres-pareja">Amar sin Herir</a></li>
-          <li><a href="#talleres-grupales">Volver a Empezar</a></li>
-          <li><a href="#talleres-grupales">Renacer Después del Adiós</a></li>
-          <li><a href="#talleres-autoestima">Reconstruyendo mi Valor</a></li>
+          <li><a href="#talleres" onclick="abrirRegistroDirecto('solo_talleres', 'Solucionando el Conflicto en la Pareja'); return false;">Solucionando el Conflicto en la Pareja</a></li>
+          <li><a href="#talleres" onclick="abrirRegistroDirecto('solo_talleres', 'Mejorando la Relación con mi Hijo Adolescente'); return false;">Mejorando la Relación con mi Hijo Adolescente</a></li>
         </ul>
       </div>
       <div class="footer-col">
