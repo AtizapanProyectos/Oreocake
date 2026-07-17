@@ -57,5 +57,6 @@ urlpatterns = [
     path('admin/guardar-cita-paciente/', views.admin_guardar_cita_ajax, name='admin_guardar_cita_paciente'),
 #Conatcto venezuela
     path('venezuela/', views.formulario_venezuela, name='formulario_venezuela'),
+    path('donaciones-venezuela/', views.donaciones_venezuela, name='donaciones_venezuela'),
 
 ]

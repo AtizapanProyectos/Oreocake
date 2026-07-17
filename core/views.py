@@ -2812,3 +2812,18 @@ def formulario_venezuela(request):
         return render(request, 'formulario_venezuela.html', {'exito': True})
 
     return render(request, 'formulario_venezuela.html')
+
+
+
+# =========================================================================
+# 🇻🇪 PÁGINA DE DONACIONES — COMUNIDAD VENEZOLANA
+# =========================================================================
+# Vista dedicada (antes vivía solo como modal en inicio.html). Reutiliza la
+# MISMA lógica de cobro que ya existe: PayPal Smart Buttons + Clip, ambos
+# apuntando al mismo endpoint iniciar_pago_clip con tipo_servicio='donativo',
+# así que no se toca nada del flujo de pago ya probado.
+def donaciones_venezuela(request):
+    context = {
+        'paypal_client_id': settings.PAYPAL_CLIENT_ID,
+    }
+    return render(request, 'donaciones_venezuela.html', context)

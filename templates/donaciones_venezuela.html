@@ -1,0 +1,295 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Dona - Movimiento por Venezuela - HOPE{% endblock %}
+
+{% block content %}
+<script src="https://www.paypal.com/sdk/js?client-id={{ paypal_client_id }}&currency=MXN&locale=es_MX" defer></script>
+{% csrf_token %}
+
+<style>
+    :root {
+        --vz-amarillo: #FCD116;
+        --vz-azul: #003893;
+        --vz-rojo: #CE1126;
+        --vz-morado: #7C3AED;
+    }
+
+    /* Fondo ultra suave y relajante */
+    .vz-bubbles-wrap {
+        position: relative;
+        padding: 120px 20px 100px;
+        min-height: 100vh;
+        background: #f8fafc;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        overflow: hidden;
+    }
+
+    /* Esferas de fondo flotantes */
+    @keyframes floatSoftly {
+        0% { transform: translateY(0px) scale(1); }
+        50% { transform: translateY(-20px) scale(1.05); }
+        100% { transform: translateY(0px) scale(1); }
+    }
+    .vz-bubbles-wrap::before {
+        content:''; position:absolute; top:-10%; right:-10%; width:600px; height:600px;
+        border-radius:50%; background:radial-gradient(circle, rgba(252, 209, 22, 0.08), transparent 70%);
+        z-index:0; pointer-events: none; animation: floatSoftly 10s ease-in-out infinite;
+    }
+    .vz-bubbles-wrap::after {
+        content:''; position:absolute; bottom:-10%; left:-10%; width:500px; height:500px;
+        border-radius:50%; background:radial-gradient(circle, rgba(0, 56, 147, 0.06), transparent 70%);
+        z-index:0; pointer-events: none; animation: floatSoftly 12s ease-in-out infinite reverse;
+    }
+    .vz-morado-bg {
+        position:absolute; top: 35%; left: 50%; width:420px; height:420px; transform: translateX(-50%);
+        border-radius:50%; background:radial-gradient(circle, rgba(124, 58, 237, 0.05), transparent 70%);
+        z-index:0; pointer-events: none; animation: floatSoftly 14s ease-in-out infinite;
+    }
+
+    /* Contenedor del formulario */
+    .vz-form-container {
+        position: relative;
+        z-index: 10;
+        width: 100%;
+        max-width: 550px;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    /* Estilo base de cada "Burbuja" */
+    .vz-bubble {
+        background: rgba(255, 255, 255, 0.9);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        padding: 30px 35px;
+        border-radius: 30px;
+        box-shadow: 0 15px 35px rgba(0, 56, 147, 0.04), 0 0 0 2px rgba(255, 255, 255, 0.8) inset;
+        border: 1px solid #f1f5f9;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .vz-bubble:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 20px 40px rgba(0, 56, 147, 0.08), 0 0 0 2px rgba(255, 255, 255, 0.9) inset;
+    }
+    @media(max-width: 600px) { .vz-bubble { padding: 25px 20px; border-radius: 24px; } }
+
+    /* Burbuja Header Especial */
+    .vz-bubble-header {
+        text-align: center;
+        padding: 0 0 34px;
+        position: relative;
+        overflow: hidden;
+    }
+    .vz-bubble-header::before {
+        content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 6px;
+        background: linear-gradient(to right, var(--vz-amarillo) 33.3%, var(--vz-azul) 33.3% 66.6%, var(--vz-rojo) 66.6%);
+        z-index: 3;
+    }
+
+    .vz-banner-wrap { position: relative; width: 100%; overflow: hidden; }
+    .vz-banner-wrap img {
+        width: 100%; display: block; aspect-ratio: 16 / 10; object-fit: cover;
+        object-position: center 30%;
+    }
+    .vz-banner-wrap::after {
+        content: ''; position: absolute; inset: 0;
+        background: linear-gradient(to top, rgba(255,255,255,0.98) 0%, rgba(255,255,255,0) 28%);
+    }
+    .vz-banner-flagbar { display:flex; width:100%; height:8px; }
+    .vz-banner-flagbar span { flex:1; }
+    .vz-banner-flagbar span:nth-child(1) { background: var(--vz-amarillo); }
+    .vz-banner-flagbar span:nth-child(2) { background: var(--vz-azul); }
+    .vz-banner-flagbar span:nth-child(3) { background: var(--vz-rojo); }
+
+    .vz-bubble-header .vz-header-text { padding: 22px 35px 0; }
+    .vz-bubble-header h2 { font-family: var(--font-h, 'Outfit', sans-serif); font-size: 1.8rem; font-weight: 900; color: #1e293b; margin-bottom: 12px; line-height: 1.2; }
+    .vz-bubble-header p { color: #64748b; font-size: 15px; margin: 0; }
+
+    .vz-soft-estrellas { display: flex; justify-content: center; gap: 8px; color: var(--vz-morado); font-size: 14px; margin-top: 15px; opacity: 0.35; }
+    @media(max-width: 600px) { .vz-bubble-header .vz-header-text { padding: 20px 20px 0; } }
+
+    .vz-bubble-label {
+        display: flex; align-items: center; gap: 8px;
+        font-family: var(--font-h, 'Outfit', sans-serif); font-size: 13px; text-transform: uppercase; letter-spacing: 1px;
+        color: var(--vz-azul); font-weight: 800; margin-bottom: 12px; opacity: 0.85;
+    }
+    .vz-bubble-label::before {
+        content: ''; display: inline-block; width: 4px; height: 16px; border-radius: 4px;
+        background: linear-gradient(to bottom, var(--vz-amarillo), var(--vz-azul), var(--vz-rojo));
+    }
+
+    /* Emoji + monto grande */
+    .vz-don-emoji { text-align: center; font-size: 46px; margin-bottom: 6px; }
+    .vz-don-impact { text-align: center; color: #64748b; font-style: italic; margin: 0 0 20px; font-size: 14px; }
+
+    /* Chips de monto (mismo patrón visual que los chips de horario) */
+    .vz-chips-container { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    @media(max-width: 480px) { .vz-chips-container { grid-template-columns: 1fr 1fr; } }
+
+    .vz-chip-btn {
+        padding: 16px; border: 2px solid #f1f5f9; border-radius: 20px; font-weight: 700;
+        cursor: pointer; transition: all .2s; color: #64748b; font-size: 15px; background: #fff; text-align: center;
+    }
+    .vz-chip-btn:hover { border-color: rgba(252,209,22,0.6); color: var(--vz-azul); transform: translateY(-2px); }
+    .vz-chip-btn.active {
+        background: linear-gradient(135deg, var(--vz-azul), var(--vz-morado));
+        color: #fff; border-color: var(--vz-azul);
+        box-shadow: 0 8px 20px rgba(124, 58, 237, 0.25);
+    }
+
+    .vz-input-clean {
+        width: 100%; padding: 16px 20px; border: none; border-radius: 16px;
+        font-size: 16px; font-family: inherit; background: #f8fafc; color: #334155;
+        transition: all 0.3s; box-shadow: 0 2px 5px rgba(0,0,0,0.02) inset; margin-top: 10px;
+        text-align: center; font-weight: 700;
+    }
+    .vz-input-clean:focus { outline: none; background: #fff; box-shadow: 0 0 0 2px #bfdbfe, 0 10px 20px rgba(0, 56, 147, 0.05); }
+    .vz-input-clean::placeholder { color: #94a3b8; }
+
+    #paypal-button-container-donacion-vz { min-height: 45px; }
+    .vz-pago-placeholder {
+        display: flex; align-items: center; justify-content: center; gap: 10px;
+        padding: 14px; color: #94a3b8; font-size: 14px;
+    }
+</style>
+
+<div class="vz-bubbles-wrap">
+    <div class="vz-morado-bg"></div>
+
+    <div class="vz-form-container">
+
+        <!-- Burbuja 1: Encabezado -->
+        <div class="vz-bubble vz-bubble-header">
+            <div class="vz-banner-wrap">
+                <img src="{% static 'img/slider_4.jpeg' %}" alt="Movimiento por Venezuela - HOPE">
+            </div>
+            <div class="vz-banner-flagbar"><span></span><span></span><span></span></div>
+            <div class="vz-header-text">
+                <h2>Sé un puente de esperanza</h2>
+                <p>Tu donativo financia sesiones de terapia psicológica para jóvenes venezolanos que más lo necesitan.</p>
+                <div class="vz-soft-estrellas">
+                    <i class="fas fa-heart"></i><i class="fas fa-heart"></i><i class="fas fa-heart"></i><i class="fas fa-heart"></i>
+                    <i class="fas fa-heart"></i><i class="fas fa-heart"></i><i class="fas fa-heart"></i><i class="fas fa-heart"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Burbuja 2: Monto del donativo -->
+        <div class="vz-bubble">
+            <span class="vz-bubble-label"><i class="fas fa-hand-holding-heart" style="margin-right: 6px;"></i> Elige tu monto</span>
+
+            <div id="donEmojiVz" class="vz-don-emoji">🤍</div>
+            <p id="donImpactVz" class="vz-don-impact">"Dona un mes de terapia."</p>
+
+            <div class="vz-chips-container" id="montos-chips-vz">
+                <div class="vz-chip-btn" data-monto="100">$100</div>
+                <div class="vz-chip-btn active" data-monto="400">$400</div>
+                <div class="vz-chip-btn" data-monto="1200">$1,200</div>
+                <div class="vz-chip-btn" data-monto="7200">$7,200</div>
+                <div class="vz-chip-btn" data-monto="14500">$14,500</div>
+                <div class="vz-chip-btn" data-monto="">Otro</div>
+            </div>
+
+            <input type="number" id="donAmountVz" class="vz-input-clean" value="400" min="50" placeholder="Ingresa un monto">
+        </div>
+
+        <!-- Burbuja 3: Métodos de pago -->
+        <div class="vz-bubble">
+            <span class="vz-bubble-label"><i class="fas fa-lock" style="margin-right: 6px;"></i> Método de pago</span>
+
+            <div id="paypal-button-container-donacion-vz">
+                <div class="vz-pago-placeholder" id="paypal-placeholder-vz">
+                    <i class="fas fa-circle-notch fa-spin"></i> Cargando opciones de pago...
+                </div>
+            </div>
+
+            <p style="font-size: 12px; color: #94a3b8; text-align: center; margin: 14px 0 0;">
+                100% de tu donativo llega a HOPE. Pago seguro y encriptado.
+            </p>
+        </div>
+
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+    // ── Chips de monto + impacto ──
+    const IMPACT_MAP_VZ = [
+        [100, '"Dona una terapia."', '🤍'],
+        [400, '"Dona un mes de terapia."', '😊'],
+        [1200, '"Terapia para 1 persona."', '💖'],
+        [7200, '"½ beca de terapia."', '🌟'],
+        [14500, '"1 beca completa."', '🪽'],
+    ];
+
+    const donAmountVz = document.getElementById('donAmountVz');
+    const donImpactVz = document.getElementById('donImpactVz');
+    const donEmojiVz = document.getElementById('donEmojiVz');
+    const chipsVz = document.querySelectorAll('#montos-chips-vz .vz-chip-btn');
+
+    function actualizarImpactoVz(val) {
+        val = parseInt(val) || 0;
+        donEmojiVz.style.animation = 'none';
+        void donEmojiVz.offsetWidth;
+        donEmojiVz.style.animation = 'bounceIn .5s';
+        const found = IMPACT_MAP_VZ.find(([v]) => v === val);
+        if (found) { donImpactVz.textContent = found[1]; donEmojiVz.textContent = found[2]; }
+        else { donImpactVz.textContent = '"¡Eres un Padrino de Honor!"'; donEmojiVz.textContent = '🚀'; }
+    }
+
+    chipsVz.forEach(function (chip) {
+        chip.addEventListener('click', function () {
+            chipsVz.forEach(function (c) { c.classList.remove('active'); });
+            chip.classList.add('active');
+            const monto = chip.dataset.monto;
+            if (monto !== '') { donAmountVz.value = monto; actualizarImpactoVz(monto); }
+            else { donAmountVz.value = ''; donAmountVz.focus(); actualizarImpactoVz(0); }
+        });
+    });
+
+    donAmountVz.addEventListener('input', function () {
+        chipsVz.forEach(function (c) { c.classList.remove('active'); });
+        actualizarImpactoVz(this.value);
+    });
+
+    // ── PayPal ──
+    const containerVz = document.getElementById('paypal-button-container-donacion-vz');
+
+    function renderPayPalVz() {
+        if (typeof paypal === 'undefined') { setTimeout(renderPayPalVz, 200); return; }
+
+        paypal.Buttons({
+            style: { layout: 'vertical', color: 'blue', shape: 'rect', label: 'donate' },
+            createOrder: function (data, actions) {
+                let monto = donAmountVz.value || '400';
+                return actions.order.create({
+                    purchase_units: [{
+                        description: 'Donación HOPE - Venezuela',
+                        amount: { currency_code: 'MXN', value: parseFloat(monto).toFixed(2) }
+                    }]
+                });
+            },
+            onApprove: function (data, actions) {
+                return actions.order.capture().then(function () {
+                    containerVz.innerHTML = '<div style="background:#10B981; color:white; padding:15px; border-radius:100px; text-align:center; font-weight:700;">¡Gracias por tu apoyo! 🤍</div>';
+                    setTimeout(function () { window.location.href = "{% url 'inicio' %}"; }, 2500);
+                });
+            },
+            onError: function (err) {
+                console.error('Error PayPal donación:', err);
+            }
+        }).render('#paypal-button-container-donacion-vz').then(function () {
+            const placeholder = document.getElementById('paypal-placeholder-vz');
+            if (placeholder) placeholder.remove();
+        });
+    }
+    renderPayPalVz();
+
+});
+</script>
+{% endblock %}
