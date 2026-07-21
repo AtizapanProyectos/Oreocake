@@ -43,7 +43,6 @@ class PerfilPsicologo(models.Model):
             models.Index(fields=['esta_activo', 'atiende_familiar']),
         ]
 
-# En models.py -> Class PerfilPsicologo
     def __str__(self):
         try:
             # Usamos hasattr para evitar el crash del OneToOneField
@@ -77,9 +76,6 @@ class PerfilPsicologo(models.Model):
         ).order_by('-fecha_inicio').first()
 
 
-
-
-
 class EsquemaHorarioPsicologo(models.Model):
     psicologo = models.ForeignKey(PerfilPsicologo, on_delete=models.CASCADE, related_name='esquemas_horarios')
     fecha_inicio = models.DateField(default=timezone.localdate, db_index=True)
@@ -110,6 +106,66 @@ class EsquemaHorarioPsicologo(models.Model):
                 raise ValidationError({"hora_comida_fin": "El fin de la comida debe ser posterior al inicio."})
             if self.hora_comida_inicio < self.hora_inicio or self.hora_comida_fin > self.hora_fin:
                 raise ValidationError("La hora de comida debe estar dentro del rango de la jornada laboral.")
+
+    def horario_para_dia(self, dia):
+        """
+        Devuelve un objeto con los mismos atributos que ya usa obtener_slots_psicologo
+        (hora_inicio, hora_fin, hora_comida_inicio, hora_comida_fin), resuelto para
+        el día de semana de 'dia'. Si no hay personalización, regresa 'self' —
+        o sea, el comportamiento de siempre.
+        """
+        cache = getattr(self, '_dias_personalizados_cache', None)
+        if cache is None:
+            cache = {d.dia_semana: d for d in self.dias_personalizados.all()}
+            self._dias_personalizados_cache = cache
+        return cache.get(dia.weekday(), self)
+
+
+class HorarioPersonalizadoDia(models.Model):
+    """
+    Ajuste opcional para UN día de la semana dentro de un EsquemaHorarioPsicologo.
+    Pensado para el psicólogo cuyo horario cambia día a día (ej. Lunes ≠ Martes)
+    pero que de igual forma es permanente mientras el esquema esté activo.
+    Si un día de semana NO tiene registro aquí, se usan los valores normales
+    del EsquemaHorarioPsicologo (hora_inicio, hora_fin, etc.) — así los
+    psicólogos con horario uniforme no necesitan tocar nada.
+    """
+    DIAS_SEMANA = [
+        (0, 'Lunes'), (1, 'Martes'), (2, 'Miércoles'),
+        (3, 'Jueves'), (4, 'Viernes'), (5, 'Sábado'), (6, 'Domingo'),
+    ]
+    esquema = models.ForeignKey(
+        EsquemaHorarioPsicologo, on_delete=models.CASCADE,
+        related_name='dias_personalizados'
+    )
+    dia_semana = models.PositiveSmallIntegerField(
+        choices=DIAS_SEMANA, verbose_name="Día de la semana"
+    )
+    hora_inicio = models.TimeField(verbose_name="Inicio jornada (este día)")
+    hora_fin = models.TimeField(verbose_name="Fin jornada (este día)")
+    hora_comida_inicio = models.TimeField(null=True, blank=True, verbose_name="Inicio comida")
+    hora_comida_fin = models.TimeField(null=True, blank=True, verbose_name="Fin comida")
+
+    class Meta:
+        unique_together = ['esquema', 'dia_semana']
+        verbose_name = "Horario personalizado por día"
+        verbose_name_plural = "Horarios personalizados por día"
+
+    def clean(self):
+        if self.hora_inicio and self.hora_fin and self.hora_inicio >= self.hora_fin:
+            raise ValidationError({'hora_fin': 'Debe ser posterior a la hora de inicio.'})
+        if bool(self.hora_comida_inicio) != bool(self.hora_comida_fin):
+            raise ValidationError('Si defines comida, llena inicio y fin.')
+        # Validación de rango de comida para este día específico
+        if self.hora_comida_inicio and self.hora_comida_fin:
+            if self.hora_comida_inicio >= self.hora_comida_fin:
+                raise ValidationError({"hora_comida_fin": "El fin de la comida debe ser posterior al inicio."})
+            if self.hora_comida_inicio < self.hora_inicio or self.hora_comida_fin > self.hora_fin:
+                raise ValidationError("La hora de comida debe estar dentro del rango de la jornada laboral de este día.")
+
+    def __str__(self):
+        return f"{self.esquema} - {self.get_dia_semana_display()}"
+
 
 # ==========================================
 # 2. PERFIL DEL PACIENTE
@@ -146,7 +202,6 @@ class Cita(models.Model):
     ], db_index=True) # 🔥 OPTIMIZADO
     fecha_creacion = models.DateTimeField(auto_now_add=True)
     enlace_meet = models.URLField(blank=True, null=True)
-    # En models.py -> class Cita
     id_evento_google = models.CharField(max_length=200, blank=True, null=True, db_index=True) # 200 * 4 = 800 bytes (¡Seguro!) 🔥 OPTIMIZADO: Búsquedas API Google Calendar
     modalidad = models.CharField(max_length=50, default='En línea', choices=[('En línea', 'En línea'), ('Presencial', 'Presencial')])
     tipo_sesion = models.CharField(max_length=50, default='individual', choices=[
@@ -277,7 +332,6 @@ class InscripcionTaller(models.Model):
 # ==========================================
 # 7. HORARIOS Y DÍAS LIBRES
 # ==========================================
-# Elimina el modelo viejo HorarioPsicologo y crea este:
 class DiaLibrePsicologo(models.Model):
     psicologo = models.ForeignKey(PerfilPsicologo, on_delete=models.CASCADE, related_name='dias_libres')
     fecha = models.DateField(verbose_name="Día libre")
@@ -317,7 +371,6 @@ class HorarioFijoPsicologo(models.Model):
         verbose_name="Psicólogo/a"
     )
 
-    # 👇 AQUÍ ESTÁ LA CORRECCIÓN: Agregamos null=True, blank=True 👇
     hora_inicio = models.TimeField(verbose_name="Hora de inicio de jornada", null=True, blank=True)
     hora_fin = models.TimeField(verbose_name="Hora de fin de jornada", null=True, blank=True)
     hora_comida_inicio = models.TimeField(verbose_name="Inicio de comida", null=True, blank=True)
@@ -481,22 +534,22 @@ class MensajeChat(models.Model):
         return f"De {rem} para {dest} ({estado})"
 
 class ArticuloPrensa(models.Model):
-    titulo = models.CharField(max_length=150, verbose_name="Título del Artículo", db_index=True) #
-    slug = models.SlugField(unique=True, max_length=150) #[cite: 1]
-    resumen = models.TextField() #[cite: 1]
-    contenido = models.TextField() #[cite: 1]
-    imagen = models.ImageField(upload_to='prensa/', blank=True, null=True) #[cite: 1]
-    imagen_url_externa = models.URLField(blank=True, null=True) #[cite: 1]
-    fecha_publicacion = models.DateField(auto_now_add=True, db_index=True) #[cite: 1]
-    publicado = models.BooleanField(default=True, db_index=True) #[cite: 1]
+    titulo = models.CharField(max_length=150, verbose_name="Título del Artículo", db_index=True)
+    slug = models.SlugField(unique=True, max_length=150)
+    resumen = models.TextField()
+    contenido = models.TextField()
+    imagen = models.ImageField(upload_to='prensa/', blank=True, null=True)
+    imagen_url_externa = models.URLField(blank=True, null=True)
+    fecha_publicacion = models.DateField(auto_now_add=True, db_index=True)
+    publicado = models.BooleanField(default=True, db_index=True)
 
     class Meta: 
-        ordering = ['-fecha_publicacion'] #[cite: 1]
+        ordering = ['-fecha_publicacion']
         indexes = [
-            models.Index(fields=['publicado', 'fecha_publicacion']), #[cite: 1]
+            models.Index(fields=['publicado', 'fecha_publicacion']),
         ]
         
-    def __str__(self): return self.titulo #[cite: 1]
+    def __str__(self): return self.titulo
 
     # 🔥 AGREGAR ESTO: Método para renderizar la ruta correcta
     def get_imagen(self):
@@ -525,8 +578,6 @@ class RegistroTallerPublico(models.Model):
         ]
         
     def __str__(self): return f"{self.nombre} - {self.taller_seleccionado}"
-
-
 
 
 class ContactoVenezuela(models.Model):

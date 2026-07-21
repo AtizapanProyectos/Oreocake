@@ -274,8 +274,9 @@ def obtener_slots_psicologo(psicologo, fecha_inicio, fecha_fin, tipo_sesion="ind
             dias_procesados += 1
             continue
 
-        h_inicio, h_fin = esquema.hora_inicio, esquema.hora_fin
-        h_comida_ini, h_comida_fin = esquema.hora_comida_inicio, esquema.hora_comida_fin
+        horario_dia = esquema.horario_para_dia(dia_actual)
+        h_inicio, h_fin = horario_dia.hora_inicio, horario_dia.hora_fin
+        h_comida_ini, h_comida_fin = horario_dia.hora_comida_inicio, horario_dia.hora_comida_fin
         
         # 5. NUEVO FILTRO DE SEGURIDAD: Checar si de verdad hay horario de comida
         tiene_comida = bool(h_comida_ini and h_comida_fin)
