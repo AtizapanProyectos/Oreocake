@@ -64,6 +64,12 @@ class DiaLibreInline(admin.TabularInline):
     model = DiaLibrePsicologo
     extra = 0
 
+# 🔥 NUEVO INLINE: Para los días personalizados
+class HorarioPersonalizadoDiaInline(admin.TabularInline):
+    model = HorarioPersonalizadoDia
+    extra = 0
+    fields = ('dia_semana', 'hora_inicio', 'hora_fin', 'hora_comida_inicio', 'hora_comida_fin')
+
 
 # =================================================================
 # 3. MODEL ADMINS (El registro final del panel)
@@ -75,6 +81,16 @@ class PerfilPsicologoAdmin(ImportExportModelAdmin):
     search_fields = ('usuario__first_name', 'usuario__last_name', 'cedula_profesional')
     list_filter = ('genero', 'esta_activo')
     list_per_page = 20
+
+# 🔥 NUEVO ADMIN: Para poder editar los esquemas y meterle las excepciones por día
+@admin.register(EsquemaHorarioPsicologo)
+class EsquemaHorarioPsicologoAdmin(admin.ModelAdmin):
+    form = EsquemaHorarioForm
+    inlines = [HorarioPersonalizadoDiaInline]
+    list_display = ('psicologo', 'fecha_inicio', 'fecha_fin', 'activo')
+    list_filter = ('psicologo', 'activo')
+    search_fields = ('psicologo__usuario__first_name', 'psicologo__usuario__last_name')
+
 
 # =================================================================
 # 4. REGISTRO DEL RESTO DE TUS MODELOS
@@ -117,6 +133,7 @@ class CitaAdmin(admin.ModelAdmin):
     # Extras útiles para que el panel quede funcional
     list_filter = ('estado', 'modalidad', 'tipo_sesion', 'fecha')
     search_fields = ('paciente__first_name', 'paciente__username', 'psicologo__usuario__first_name')
+
 admin.site.register(HistorialClinico)
 admin.site.register(CuestionarioRegistro)
 admin.site.register(DiaFestivo)
