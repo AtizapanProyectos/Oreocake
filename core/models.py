@@ -107,33 +107,42 @@ class EsquemaHorarioPsicologo(models.Model):
             if self.hora_comida_inicio < self.hora_inicio or self.hora_comida_fin > self.hora_fin:
                 raise ValidationError("La hora de comida debe estar dentro del rango de la jornada laboral.")
 
-    def horario_para_dia(self, dia):
+def bloques_para_dia(self, dia):
         """
-        Devuelve un objeto con los mismos atributos que ya usa obtener_slots_psicologo
-        (hora_inicio, hora_fin, hora_comida_inicio, hora_comida_fin), resuelto para
-        el día de semana de 'dia'. Si no hay personalización, regresa 'self' —
-        o sea, el comportamiento de siempre.
+        Devuelve una lista de HorarioPersonalizadoDia (bloques, ordenados por
+        hora_inicio) para el día de semana de 'dia'. Si el día no tiene
+        personalización, devuelve None — en ese caso usa la jornada normal
+        de este esquema (hora_inicio/hora_fin/hora_comida...) como antes.
         """
         cache = getattr(self, '_dias_personalizados_cache', None)
         if cache is None:
-            cache = {d.dia_semana: d for d in self.dias_personalizados.all()}
+            cache = {}
+            for bloque in self.dias_personalizados.all():
+                cache.setdefault(bloque.dia_semana, []).append(bloque)
             self._dias_personalizados_cache = cache
-        return cache.get(dia.weekday(), self)
+        return cache.get(dia.weekday())
 
 
 class HorarioPersonalizadoDia(models.Model):
     """
-    Ajuste opcional para UN día de la semana dentro de un EsquemaHorarioPsicologo.
-    Pensado para el psicólogo cuyo horario cambia día a día (ej. Lunes ≠ Martes)
-    pero que de igual forma es permanente mientras el esquema esté activo.
-    Si un día de semana NO tiene registro aquí, se usan los valores normales
-    del EsquemaHorarioPsicologo (hora_inicio, hora_fin, etc.) — así los
-    psicólogos con horario uniforme no necesitan tocar nada.
+    Bloque de horario para UN día de la semana dentro de un EsquemaHorarioPsicologo.
+    Un mismo día puede tener VARIOS bloques (no contiguos), cada uno con su
+    propio tipo de sesión — así se modela el patrón real del PDF (ej. miércoles
+    con tramos de Pareja y de Familiar intercalados).
+    Si un día de semana no tiene ningún bloque aquí, se usa la jornada completa
+    normal del EsquemaHorarioPsicologo (comportamiento de siempre).
     """
     DIAS_SEMANA = [
         (0, 'Lunes'), (1, 'Martes'), (2, 'Miércoles'),
         (3, 'Jueves'), (4, 'Viernes'), (5, 'Sábado'), (6, 'Domingo'),
     ]
+    # Mismos choices que Cita.tipo_sesion, para que casen 1 a 1
+    TIPO_SESION_CHOICES = [
+        ('individual', 'Individual'),
+        ('pareja', 'En Pareja'),
+        ('familiar', 'Terapia Familiar'),
+    ]
+
     esquema = models.ForeignKey(
         EsquemaHorarioPsicologo, on_delete=models.CASCADE,
         related_name='dias_personalizados'
@@ -141,32 +150,40 @@ class HorarioPersonalizadoDia(models.Model):
     dia_semana = models.PositiveSmallIntegerField(
         choices=DIAS_SEMANA, verbose_name="Día de la semana"
     )
-    hora_inicio = models.TimeField(verbose_name="Inicio jornada (este día)")
-    hora_fin = models.TimeField(verbose_name="Fin jornada (este día)")
-    hora_comida_inicio = models.TimeField(null=True, blank=True, verbose_name="Inicio comida")
-    hora_comida_fin = models.TimeField(null=True, blank=True, verbose_name="Fin comida")
+    hora_inicio = models.TimeField(verbose_name="Inicio del bloque")
+    hora_fin = models.TimeField(verbose_name="Fin del bloque")
+    tipo_sesion = models.CharField(
+        max_length=20, choices=TIPO_SESION_CHOICES, default='individual',
+        verbose_name="Tipo de sesión en este bloque"
+    )
 
     class Meta:
-        unique_together = ['esquema', 'dia_semana']
-        verbose_name = "Horario personalizado por día"
-        verbose_name_plural = "Horarios personalizados por día"
+        # 🔥 Ya NO es unique por (esquema, dia_semana) — ahora puede haber
+        # varios bloques el mismo día. Sólo evitamos duplicar el mismo
+        # bloque exacto dos veces.
+        unique_together = ['esquema', 'dia_semana', 'hora_inicio']
+        ordering = ['dia_semana', 'hora_inicio']
+        verbose_name = "Bloque de horario personalizado"
+        verbose_name_plural = "Bloques de horario personalizado"
 
     def clean(self):
         if self.hora_inicio and self.hora_fin and self.hora_inicio >= self.hora_fin:
             raise ValidationError({'hora_fin': 'Debe ser posterior a la hora de inicio.'})
-        if bool(self.hora_comida_inicio) != bool(self.hora_comida_fin):
-            raise ValidationError('Si defines comida, llena inicio y fin.')
-        # Validación de rango de comida para este día específico
-        if self.hora_comida_inicio and self.hora_comida_fin:
-            if self.hora_comida_inicio >= self.hora_comida_fin:
-                raise ValidationError({"hora_comida_fin": "El fin de la comida debe ser posterior al inicio."})
-            if self.hora_comida_inicio < self.hora_inicio or self.hora_comida_fin > self.hora_fin:
-                raise ValidationError("La hora de comida debe estar dentro del rango de la jornada laboral de este día.")
+
+        # Evita que dos bloques del mismo día se traslapen entre sí
+        if self.esquema_id and self.hora_inicio and self.hora_fin:
+            hermanos = HorarioPersonalizadoDia.objects.filter(
+                esquema_id=self.esquema_id, dia_semana=self.dia_semana
+            ).exclude(pk=self.pk)
+            for otro in hermanos:
+                if self.hora_inicio < otro.hora_fin and otro.hora_inicio < self.hora_fin:
+                    raise ValidationError(
+                        f"Este bloque se traslapa con otro ya existente "
+                        f"({otro.hora_inicio}-{otro.hora_fin}, {otro.get_tipo_sesion_display()})."
+                    )
 
     def __str__(self):
-        return f"{self.esquema} - {self.get_dia_semana_display()}"
-
-
+        return f"{self.esquema} - {self.get_dia_semana_display()} {self.hora_inicio}-{self.hora_fin} ({self.get_tipo_sesion_display()})"
 # ==========================================
 # 2. PERFIL DEL PACIENTE
 # ==========================================

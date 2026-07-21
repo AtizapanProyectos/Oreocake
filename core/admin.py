@@ -68,7 +68,7 @@ class DiaLibreInline(admin.TabularInline):
 class HorarioPersonalizadoDiaInline(admin.TabularInline):
     model = HorarioPersonalizadoDia
     extra = 0
-    fields = ('dia_semana', 'hora_inicio', 'hora_fin', 'hora_comida_inicio', 'hora_comida_fin')
+    fields = ('dia_semana', 'hora_inicio', 'hora_fin', 'tipo_sesion')
 
 
 # =================================================================
