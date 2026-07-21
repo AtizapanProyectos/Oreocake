@@ -121,20 +121,44 @@ class EsquemaHorarioPsicologo(models.Model):
             self._dias_personalizados_cache = cache
         return cache.get(dia.weekday(), self)
 
-def bloques_para_dia(self, dia):
-        """
-        Devuelve una lista de HorarioPersonalizadoDia (bloques, ordenados por
-        hora_inicio) para el día de semana de 'dia'. Si el día no tiene
-        personalización, devuelve None — en ese caso usa la jornada normal
-        de este esquema (hora_inicio/hora_fin/hora_comida...) como antes.
-        """
-        cache = getattr(self, '_dias_personalizados_cache', None)
-        if cache is None:
-            cache = {}
-            for bloque in self.dias_personalizados.all():
-                cache.setdefault(bloque.dia_semana, []).append(bloque)
-            self._dias_personalizados_cache = cache
-        return cache.get(dia.weekday())
+def horario_para_dia(self, dia, tipo_sesion="individual"):
+    """
+    Devuelve una LISTA de bloques (dicts con hora_inicio, hora_fin,
+    hora_comida_inicio, hora_comida_fin) válidos para el 'tipo_sesion'
+    pedido en el día de semana de 'dia'.
+
+    - Si el día tiene bloques personalizados (HorarioPersonalizadoDia),
+      SOLO se devuelven los que coinciden con tipo_sesion. Si ninguno
+      coincide, se devuelve lista vacía (ese día no atiende ese tipo).
+    - Si el día NO tiene ningún bloque personalizado, se usa la jornada
+      normal completa del esquema (comportamiento de siempre, con comida).
+    """
+    cache = getattr(self, '_dias_personalizados_cache', None)
+    if cache is None:
+        cache = {}
+        for bloque in self.dias_personalizados.all():
+            cache.setdefault(bloque.dia_semana, []).append(bloque)
+        self._dias_personalizados_cache = cache
+
+    bloques_dia = cache.get(dia.weekday())
+
+    if bloques_dia:
+        return [
+            {
+                'hora_inicio': b.hora_inicio,
+                'hora_fin': b.hora_fin,
+                'hora_comida_inicio': None,
+                'hora_comida_fin': None,
+            }
+            for b in bloques_dia if b.tipo_sesion == tipo_sesion
+        ]
+
+    return [{
+        'hora_inicio': self.hora_inicio,
+        'hora_fin': self.hora_fin,
+        'hora_comida_inicio': self.hora_comida_inicio,
+        'hora_comida_fin': self.hora_comida_fin,
+    }]
 
 
 class HorarioPersonalizadoDia(models.Model):

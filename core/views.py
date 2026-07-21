@@ -218,7 +218,6 @@ def obtener_slots_psicologo(psicologo, fecha_inicio, fecha_fin, tipo_sesion="ind
     if not psicologo.esta_activo or not getattr(psicologo, campo_capacidad, False):
         return {}
 
-    # 3. ACTUALIZACIÓN: Buscamos en _esquemas_rango precargado o hacemos la consulta al nuevo modelo
     esquemas_rango = getattr(psicologo, '_esquemas_rango', None)
     if esquemas_rango is None:
         esquemas_rango = list(
@@ -257,13 +256,11 @@ def obtener_slots_psicologo(psicologo, fecha_inicio, fecha_fin, tipo_sesion="ind
     slots_por_fecha = {}
     dia_actual = fecha_inicio
     dias_procesados = 0
-    max_iteraciones = 120  
+    max_iteraciones = 120
 
     while dia_actual <= fecha_fin and dias_procesados < max_iteraciones:
         esquema = _esquema_del_dia(dia_actual)
 
-        # 4. ACTUALIZACIÓN: La lógica de exclusión de días de descanso se mantiene intacta, 
-        # pero ahora lee de nuestro JSONField limpio
         if (
             esquema is None
             or dia_actual.weekday() in (esquema.dias_descanso or [])
@@ -274,30 +271,33 @@ def obtener_slots_psicologo(psicologo, fecha_inicio, fecha_fin, tipo_sesion="ind
             dias_procesados += 1
             continue
 
-        horario_dia = esquema.horario_para_dia(dia_actual)
-        h_inicio, h_fin = horario_dia.hora_inicio, horario_dia.hora_fin
-        h_comida_ini, h_comida_fin = horario_dia.hora_comida_inicio, horario_dia.hora_comida_fin
-        
-        # 5. NUEVO FILTRO DE SEGURIDAD: Checar si de verdad hay horario de comida
-        tiene_comida = bool(h_comida_ini and h_comida_fin)
+        bloques_dia = esquema.horario_para_dia(dia_actual, tipo_sesion=tipo_sesion)
+
+        if not bloques_dia:
+            dia_actual += timedelta(days=1)
+            dias_procesados += 1
+            continue
 
         slots_del_dia = []
-        slot_actual = datetime.combine(dia_actual, h_inicio)
-        fin_turno = datetime.combine(dia_actual, h_fin)
+        for bloque in bloques_dia:
+            h_inicio, h_fin = bloque['hora_inicio'], bloque['hora_fin']
+            h_comida_ini = bloque['hora_comida_inicio']
+            h_comida_fin = bloque['hora_comida_fin']
+            tiene_comida = bool(h_comida_ini and h_comida_fin)
 
-        while slot_actual < fin_turno:
-            hora_slot = slot_actual.time()
+            slot_actual = datetime.combine(dia_actual, h_inicio)
+            fin_turno = datetime.combine(dia_actual, h_fin)
 
-            # 6. ACTUALIZACIÓN: Validación segura para evitar crashear comparando contra None
-            es_hora_comida = False
-            if tiene_comida:
-                if h_comida_ini <= hora_slot < h_comida_fin:
+            while slot_actual < fin_turno:
+                hora_slot = slot_actual.time()
+                es_hora_comida = False
+                if tiene_comida and h_comida_ini <= hora_slot < h_comida_fin:
                     es_hora_comida = True
 
-            if not es_hora_comida and (dia_actual, hora_slot) not in citas_ocupadas:
-                slots_del_dia.append(hora_slot.strftime('%I:%M %p'))
+                if not es_hora_comida and (dia_actual, hora_slot) not in citas_ocupadas:
+                    slots_del_dia.append(hora_slot.strftime('%I:%M %p'))
 
-            slot_actual += timedelta(hours=1)
+                slot_actual += timedelta(hours=1)
 
         if slots_del_dia:
             fecha_str = dia_actual.strftime('%Y-%m-%d')
@@ -310,7 +310,6 @@ def obtener_slots_psicologo(psicologo, fecha_inicio, fecha_fin, tipo_sesion="ind
         dias_procesados += 1
 
     return slots_por_fecha
-
 
 def obtener_slots_psicologo_para_dia(psicologo, fecha, tipo_sesion="individual"):
     """
