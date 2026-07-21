@@ -107,6 +107,20 @@ class EsquemaHorarioPsicologo(models.Model):
             if self.hora_comida_inicio < self.hora_inicio or self.hora_comida_fin > self.hora_fin:
                 raise ValidationError("La hora de comida debe estar dentro del rango de la jornada laboral.")
 
+
+    def horario_para_dia(self, dia):
+        """
+        Devuelve un objeto con los mismos atributos que ya usa obtener_slots_psicologo
+        (hora_inicio, hora_fin, hora_comida_inicio, hora_comida_fin), resuelto para
+        el día de semana de 'dia'. Si no hay personalización, regresa 'self' —
+        o sea, el comportamiento de siempre.
+        """
+        cache = getattr(self, '_dias_personalizados_cache', None)
+        if cache is None:
+            cache = {d.dia_semana: d for d in self.dias_personalizados.all()}
+            self._dias_personalizados_cache = cache
+        return cache.get(dia.weekday(), self)
+
 def bloques_para_dia(self, dia):
         """
         Devuelve una lista de HorarioPersonalizadoDia (bloques, ordenados por
