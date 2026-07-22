@@ -25,6 +25,7 @@ class PerfilPsicologo(models.Model):
     cedula_profesional = models.CharField(max_length=50, unique=True, verbose_name="Cédula Profesional")
     genero = models.CharField(max_length=20, choices=[('Hombre', 'Hombre'), ('Mujer', 'Mujer')], verbose_name="Género", db_index=True)
     especialidad = models.CharField(max_length=150, blank=True, null=True, verbose_name="Especialidad")
+    telefono = models.CharField(max_length=20, blank=True, null=True, verbose_name="Número de Teléfono")
     esta_activo = models.BooleanField(default=True, verbose_name="Aceptando nuevos pacientes", db_index=True)
     foto = models.ImageField(upload_to='fotos_doctores/', blank=True, null=True, verbose_name="Foto de Perfil")
     cv_breve = models.TextField(blank=True, null=True, verbose_name="Breve CV o Enfoque Clínico")

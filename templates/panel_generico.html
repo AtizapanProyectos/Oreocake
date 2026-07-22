@@ -459,13 +459,12 @@ function mostrarErrorCita(mensaje, opts) {
                 </div>
 
                 <div style="margin-top:10px;">
-                  {# 🚀 OPTIMIZACIÓN: antes aquí se generaban los botones de TODOS los #}
-                  {# días (hasta 90) de una sola vez, aunque solo se ve uno a la vez. #}
-                  {# Ahora solo se crean los contenedores vacíos; el JS los llena bajo #}
-                  {# demanda leyendo el JSON que ya viaja en #dias-data (misma data, #}
-                  {# cero peticiones extra, cero HTML de sobra). #}
                   {% for dia, horas in dias_disponibles.items %}
-                  <div class="slots-container" id="slots-re-{{ dia|date:'Ymd' }}" data-fecha="{{ dia|date:'Y-m-d' }}" data-cargado="0" {% if not forloop.first %}style="display:none;"{% endif %}></div>
+                  <div class="slots-container" id="slots-re-{{ dia|date:'Ymd' }}" {% if not forloop.first %}style="display:none;"{% endif %}>
+                    {% for h in horas %}
+                    <button class="time-slot-btn" data-fecha="{{ dia|date:'Y-m-d' }}" data-hora="{{ h|time:'H:i' }}">{{ h|time:"h:i A" }}</button>
+                    {% endfor %}
+                  </div>
                   {% endfor %}
                 </div>
 
@@ -770,10 +769,12 @@ function mostrarErrorCita(mensaje, opts) {
                     </div>
 
                     <div style="margin-top: 30px;">
-                        {# 🚀 OPTIMIZACIÓN: mismo cambio que en "Reagendar" — contenedores #}
-                        {# vacíos, poblados por JS a partir del JSON de #dias-data. #}
                         {% for dia, horas in dias_disponibles.items %}
-                            <div class="slots-container" id="slots-{{ dia|date:'Ymd' }}" data-fecha="{{ dia|date:'Y-m-d' }}" data-cargado="0" {% if not forloop.first %}style="display: none;"{% endif %}></div>
+                            <div class="slots-container" id="slots-{{ dia|date:'Ymd' }}" {% if not forloop.first %}style="display: none;"{% endif %}>
+                                {% for h in horas %}
+                                <button class="time-slot-btn" data-fecha="{{ dia|date:'Y-m-d' }}" data-hora="{{ h|time:'H:i' }}">{{ h|time:"h:i A" }}</button>
+                                {% endfor %}
+                            </div>
                         {% endfor %}
                     </div>
                 </div>
@@ -1220,47 +1221,6 @@ function mostrarErrorCita(mensaje, opts) {
 // 🔐 getCookie() ahora vive de forma global arriba del archivo (ver script
 // cerca del inicio), para que exista siempre, tenga o no psicólogo asignado.
 
-// =========================================================================
-// 🚀 CARGA PEREZOSA DE HORARIOS (reemplaza el render server-side de 90 días)
-// =========================================================================
-// Los horarios de TODOS los días ya viajan en el JSON de #dias-data (Django
-// los necesita ahí de todas formas para "cargarHorariosRapidos"). Antes,
-// ADEMÁS de eso, el HTML volvía a renderizar cientos de botones por cada
-// día en 2 secciones distintas (reagendar + wizard), duplicando trabajo que
-// el usuario nunca ve de golpe. Ahora los contenedores nacen vacíos
-// (data-cargado="0") y esta función los llena la primera vez que se
-// necesitan, usando el mismo JSON que ya está en memoria — sin red, sin
-// nueva consulta al servidor.
-window.diasDisponiblesData = (function () {
-    const el = document.getElementById('dias-data');
-    if (!el) return {};
-    try { return JSON.parse(el.textContent); } catch (e) { return {}; }
-})();
-
-function horaAmPmA24(horaAmPm) {
-    let [time, modifier] = horaAmPm.split(' ');
-    let [hh, mm] = time.split(':').map(Number);
-    if (modifier === 'PM' && hh !== 12) hh += 12;
-    if (modifier === 'AM' && hh === 12) hh = 0;
-    return String(hh).padStart(2, '0') + ':' + String(mm).padStart(2, '0');
-}
-
-function poblarSlotsContainer(containerEl) {
-    if (!containerEl || containerEl.dataset.cargado === '1') return;
-
-    const fechaStr = containerEl.dataset.fecha;
-    const horas = window.diasDisponiblesData[fechaStr] || [];
-
-    if (horas.length === 0) {
-        containerEl.innerHTML = '<p style="color: var(--text-muted); font-style: italic; font-size: 13px;">No hay horarios disponibles ese día.</p>';
-    } else {
-        containerEl.innerHTML = horas.map(horaStr =>
-            `<button type="button" class="time-slot-btn" data-fecha="${fechaStr}" data-hora="${horaAmPmA24(horaStr)}">${horaStr}</button>`
-        ).join('');
-    }
-    containerEl.dataset.cargado = '1';
-}
-
 let chatPatAbierto = false;
 const docId = "{{ psicologo_asignado.usuario.id }}";
 
@@ -1496,11 +1456,6 @@ function refrescarDisponibilidadPorTipo(tipo) {
                 return;
             }
 
-            // 🚀 Actualizamos la fuente de datos global y construimos los
-            // slots de forma perezosa (igual que en la carga inicial), en
-            // vez de crear los botones de los 90 días de una sola vez.
-            window.diasDisponiblesData = data.dias;
-
             fechas.forEach((fechaStr, idx) => {
                 const fechaObj = new Date(fechaStr + 'T00:00:00');
                 const dia = fechaObj.toLocaleDateString('es-MX', { weekday: 'short' }).toUpperCase();
@@ -1519,11 +1474,21 @@ function refrescarDisponibilidadPorTipo(tipo) {
                 const slotsDiv = document.createElement('div');
                 slotsDiv.className = 'slots-container';
                 slotsDiv.id = idTarget;
-                slotsDiv.dataset.fecha = fechaStr;
-                slotsDiv.dataset.cargado = '0';
                 if (idx !== 0) slotsDiv.style.display = 'none';
+                data.dias[fechaStr].forEach(horaStr => {
+                    const btn = document.createElement('button');
+                    btn.className = 'time-slot-btn';
+                    btn.dataset.fecha = fechaStr;
+                    // convierte "09:00 AM" a "09:00" para data-hora
+                    const [hm, ampm] = horaStr.split(' ');
+                    let [hh, mm] = hm.split(':').map(Number);
+                    if (ampm === 'PM' && hh !== 12) hh += 12;
+                    if (ampm === 'AM' && hh === 12) hh = 0;
+                    btn.dataset.hora = String(hh).padStart(2, '0') + ':' + String(mm).padStart(2, '0');
+                    btn.innerText = horaStr;
+                    slotsDiv.appendChild(btn);
+                });
                 slotsWrapper.appendChild(slotsDiv);
-                if (idx === 0) poblarSlotsContainer(slotsDiv);
             });
         })
         .catch(() => { carousel.style.opacity = '1'; });
@@ -1734,7 +1699,7 @@ function guardarCitaSinPago(pagoRef) {
         document.getElementById('btn-confirmar-rapido').style.display = 'none';
         document.getElementById('horarios-rapidos-container').style.display = 'block';
         
-        const diasData = window.diasDisponiblesData;
+        const diasData = JSON.parse(document.getElementById('dias-data').textContent);
         const cajaHoras = document.getElementById('quick-slots');
         const fechaBusqueda = window.fechaIdealTarget;
 
@@ -1839,10 +1804,7 @@ function guardarCitaSinPago(pagoRef) {
                     chip.classList.add('active');
                     const targetId = chip.getAttribute('data-target');
                     const containerReal = document.getElementById(targetId);
-                    if (containerReal) {
-                        poblarSlotsContainer(containerReal);
-                        containerReal.style.display = 'grid';
-                    }
+                    if (containerReal) containerReal.style.display = 'grid';
                     return;
                 }
 
@@ -2075,40 +2037,25 @@ function toggleSeccionReagendar() {
 }
 
 document.addEventListener("DOMContentLoaded", function () {
-    // 🚀 El primer día de cada carrusel se ve sin necesidad de click, así
-    // que lo poblamos de una vez (el resto se pobla al vuelo al hacer clic).
-    document.querySelectorAll('#dateCarouselReagendar .slots-container').forEach(c => {
-        if (c.style.display !== 'none') poblarSlotsContainer(c);
-    });
-    document.querySelectorAll('#step-1-schedule .slots-container').forEach(c => {
-        if (c.style.display !== 'none') poblarSlotsContainer(c);
-    });
-
     document.querySelectorAll('#dateCarouselReagendar .date-chip').forEach(chip => {
         chip.addEventListener('click', function () {
             document.querySelectorAll('#dateCarouselReagendar .date-chip').forEach(c => c.classList.remove('active'));
             this.classList.add('active');
             document.querySelectorAll('#seccionReagendar .slots-container').forEach(s => s.style.display = 'none');
-            const containerReal = document.getElementById(this.dataset.target);
-            poblarSlotsContainer(containerReal);
-            containerReal.style.display = 'grid';
+            document.getElementById(this.dataset.target).style.display = 'grid';
         });
     });
 
-    // 🚀 Antes los listeners de .time-slot-btn se ataban uno por uno a
-    // botones que ya existían en el HTML. Ahora los botones se crean
-    // dinámicamente, así que usamos delegación de eventos sobre el
-    // contenedor padre (funciona sin importar cuándo se creó el botón).
-    document.getElementById('seccionReagendar').addEventListener('click', function (e) {
-        const btn = e.target.closest('.time-slot-btn');
-        if (!btn) return;
-        document.querySelectorAll('#seccionReagendar .time-slot-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        window.fechaReagendoSeleccionada = btn.dataset.fecha;
-        window.horaReagendoSeleccionada = btn.dataset.hora;
-        const btnConfirmar = document.getElementById('btn-confirmar-reagendo');
-        btnConfirmar.style.display = 'flex';
-        setTimeout(() => btnConfirmar.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 100);
+    document.querySelectorAll('#seccionReagendar .time-slot-btn').forEach(btn => {
+        btn.addEventListener('click', function () {
+            document.querySelectorAll('#seccionReagendar .time-slot-btn').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            window.fechaReagendoSeleccionada = this.dataset.fecha;
+            window.horaReagendoSeleccionada = this.dataset.hora;
+            const btnConfirmar = document.getElementById('btn-confirmar-reagendo');
+            btnConfirmar.style.display = 'flex';
+            setTimeout(() => btnConfirmar.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 100);
+        });
     });
 });
 

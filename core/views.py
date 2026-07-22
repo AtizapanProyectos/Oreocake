@@ -163,23 +163,10 @@ from .models import DiaFestivo, Cita, PerfilPsicologo
 from datetime import datetime, timedelta, time
 from collections import defaultdict
 
-TTL_CACHE_SLOTS = 60  # segundos. El booking ya revalida en BD al confirmar,
-                       # así que un caché corto es seguro y no genera doble-booking.
-
-
 def obtener_slots_globales(fecha_inicio, fecha_fin, preferencia=None, tipo_sesion="individual"):
     """
     🔥 BÚSQUEDA GLOBAL: usada cuando el paciente TODAVÍA NO tiene psicólogo asignado.
     """
-    # 🚀 CACHÉ: esta función antes recalculaba TODO (todos los psicólogos x
-    # 90 días x horas) en cada carga de página. Ahora se reutiliza el
-    # resultado por 60s, que es tiempo de sobra porque el horario real casi
-    # nunca cambia segundo a segundo.
-    cache_key = f"slots_globales:{fecha_inicio.isoformat()}:{fecha_fin.isoformat()}:{(preferencia or '').strip().lower()}:{tipo_sesion}"
-    cacheado = cache.get(cache_key)
-    if cacheado is not None:
-        return cacheado
-
     campo_capacidad = CAPACIDAD_POR_TIPO_SESION.get(tipo_sesion, 'atiende_individual')
 
     filtros = {
@@ -220,7 +207,6 @@ def obtener_slots_globales(fecha_inicio, fecha_fin, preferencia=None, tipo_sesio
         for fecha, horas in sorted(slots_globales.items()) if horas # <--- Agregamos sorted() aquí
     }
 
-    cache.set(cache_key, slots_globales_ordenados, TTL_CACHE_SLOTS)
     return slots_globales_ordenados
 
 
@@ -228,13 +214,6 @@ def obtener_slots_psicologo(psicologo, fecha_inicio, fecha_fin, tipo_sesion="ind
     """
     🔥 BÚSQUEDA POR PSICÓLOGO: usada una vez que el paciente YA tiene un psicólogo asignado.
     """
-    # 🚀 CACHÉ: este es el loop más caro de toda la vista (día por día, hora
-    # por hora, hasta 90 días). Se cachea 60s por psicólogo+rango+tipo.
-    cache_key = f"slots_psicologo:{psicologo.id}:{fecha_inicio.isoformat()}:{fecha_fin.isoformat()}:{tipo_sesion}"
-    cacheado = cache.get(cache_key)
-    if cacheado is not None:
-        return cacheado
-
     campo_capacidad = CAPACIDAD_POR_TIPO_SESION.get(tipo_sesion, 'atiende_individual')
     if not psicologo.esta_activo or not getattr(psicologo, campo_capacidad, False):
         return {}
@@ -330,7 +309,6 @@ def obtener_slots_psicologo(psicologo, fecha_inicio, fecha_fin, tipo_sesion="ind
         dia_actual += timedelta(days=1)
         dias_procesados += 1
 
-    cache.set(cache_key, slots_por_fecha, TTL_CACHE_SLOTS)
     return slots_por_fecha
 
 def obtener_slots_psicologo_para_dia(psicologo, fecha, tipo_sesion="individual"):
