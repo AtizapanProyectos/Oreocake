@@ -2827,3 +2827,21 @@ def donaciones_venezuela(request):
         'paypal_client_id': settings.PAYPAL_CLIENT_ID,
     }
     return render(request, 'donaciones_venezuela.html', context)
+
+
+def citas_hoy_view(request):
+    """Vista simple: todas las citas de hoy con el match paciente-psicólogo."""
+    hoy = timezone.localdate()
+
+    citas = Cita.objects.filter(
+        fecha=hoy
+    ).exclude(
+        estado='Cancelada'
+    ).select_related(
+        'psicologo__usuario', 'paciente'
+    ).order_by('hora')
+
+    return render(request, 'citas_hoy.html', {
+        'citas': citas,
+        'hoy': hoy,
+    })

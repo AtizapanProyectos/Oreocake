@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Citas de Hoy</title>
+</head>
+<body>
+    <h1>Citas de hoy - {{ hoy|date:"d/m/Y" }}</h1>
+
+    <table border="1" cellpadding="8" cellspacing="0">
+        <thead>
+            <tr>
+                <th>Hora</th>
+                <th>Día</th>
+                <th>Paciente</th>
+                <th>Doctor/Psicólogo</th>
+                <th>Consultorio</th>
+                <th>Link Meet</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for cita in citas %}
+            <tr>
+                <td>{{ cita.hora|time:"H:i" }}</td>
+                <td>{{ cita.fecha|date:"d/m/Y" }}</td>
+                <td>{{ cita.paciente.first_name|default:cita.paciente.username }}</td>
+                <td>
+                    {% if cita.psicologo %}
+                        {{ cita.psicologo.usuario.first_name|default:cita.psicologo.usuario.username }}
+                    {% else %}
+                        Sin asignar
+                    {% endif %}
+                </td>
+                <td>No asignado</td>
+                <td>
+                    {% if cita.enlace_meet %}
+                        <a href="{{ cita.enlace_meet }}" target="_blank">Unirse</a>
+                    {% else %}
+                        —
+                    {% endif %}
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="6">No hay citas para hoy.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>
