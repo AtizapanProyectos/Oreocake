@@ -14,7 +14,7 @@
                 <th>Día</th>
                 <th>Paciente</th>
                 <th>Doctor/Psicólogo</th>
-                <th>Consultorio</th>
+                <th>Teléfono Doctor</th>
                 <th>Link Meet</th>
             </tr>
         </thead>
@@ -31,7 +31,9 @@
                         Sin asignar
                     {% endif %}
                 </td>
-                <td>No asignado</td>
+                <td>
+                    {{ cita.psicologo.telefono|default:"No registrado" }}
+                </td>
                 <td>
                     {% if cita.enlace_meet %}
                         <a href="{{ cita.enlace_meet }}" target="_blank">Unirse</a>
