@@ -2864,16 +2864,14 @@ def citas_hoy_view(request):
         cita.nombre_paciente = nombre_paciente
         cita.nombre_doctor = nombre_doctor
 
-        telefono_paciente = None
-        if hasattr(cita.paciente, 'perfil') and cita.paciente.perfil:
-            telefono_paciente = cita.paciente.perfil.telefono
-
-        numero_limpio = _limpiar_numero_whatsapp(telefono_paciente)
+        # 🔥 Ahora el teléfono que usamos es el del DOCTOR, no el del paciente
+        telefono_doctor = cita.psicologo.telefono if cita.psicologo else None
+        numero_limpio = _limpiar_numero_whatsapp(telefono_doctor)
 
         if numero_limpio:
             mensaje = (
-                f"Hola {nombre_paciente} 👋, tu sesión con el Psic. {nombre_doctor} "
-                f"es hoy a las {cita.hora.strftime('%H:%M')} hrs. "
+                f"Hola Psic. {nombre_doctor} 👋, tienes sesión con {nombre_paciente} "
+                f"hoy a las {cita.hora.strftime('%H:%M')} hrs. "
                 f"En 10 minutos comienza tu sesión. "
                 f"Aquí está tu link de Google Meet: {cita.enlace_meet or 'Se te compartirá en breve.'}"
             )
@@ -2885,4 +2883,3 @@ def citas_hoy_view(request):
         'citas': citas,
         'hoy': hoy,
     })
-
