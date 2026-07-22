@@ -16,24 +16,21 @@
                 <th>Doctor/Psicólogo</th>
                 <th>Teléfono Doctor</th>
                 <th>Link Meet</th>
+                <th>Avisar</th>
             </tr>
         </thead>
         <tbody>
             {% for cita in citas %}
+            {% with nombre_paciente=cita.paciente.first_name|default:cita.paciente.username %}
+            {% with nombre_doctor=cita.psicologo.usuario.first_name|default:cita.psicologo.usuario.username %}
             <tr>
                 <td>{{ cita.hora|time:"H:i" }}</td>
                 <td>{{ cita.fecha|date:"d/m/Y" }}</td>
-                <td>{{ cita.paciente.first_name|default:cita.paciente.username }}</td>
+                <td>{{ nombre_paciente }}</td>
                 <td>
-                    {% if cita.psicologo %}
-                        {{ cita.psicologo.usuario.first_name|default:cita.psicologo.usuario.username }}
-                    {% else %}
-                        Sin asignar
-                    {% endif %}
+                    {% if cita.psicologo %}{{ nombre_doctor }}{% else %}Sin asignar{% endif %}
                 </td>
-                <td>
-                    {{ cita.psicologo.telefono|default:"No registrado" }}
-                </td>
+                <td>{{ cita.psicologo.telefono|default:"No registrado" }}</td>
                 <td>
                     {% if cita.enlace_meet %}
                         <a href="{{ cita.enlace_meet }}" target="_blank">Unirse</a>
@@ -41,10 +38,23 @@
                         —
                     {% endif %}
                 </td>
+                <td>
+                    {% if cita.paciente.perfil.telefono %}
+                        
+                            href="https://wa.me/{{ cita.paciente.perfil.telefono }}?text={% filter urlencode %}Hola {{ nombre_paciente }} 👋, tu sesión con el Psic. {{ nombre_doctor }} es hoy a las {{ cita.hora|time:'H:i' }} hrs. En 10 minutos comienza tu sesión. Aquí está tu link de Google Meet: {{ cita.enlace_meet|default:'Se te compartirá en breve.' }}{% endfilter %}"
+                            target="_blank">
+                            📲 Avisar
+                        </a>
+                    {% else %}
+                        Sin teléfono
+                    {% endif %}
+                </td>
             </tr>
+            {% endwith %}
+            {% endwith %}
             {% empty %}
             <tr>
-                <td colspan="6">No hay citas para hoy.</td>
+                <td colspan="7">No hay citas para hoy.</td>
             </tr>
             {% endfor %}
         </tbody>

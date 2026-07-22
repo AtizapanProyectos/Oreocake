@@ -2838,7 +2838,7 @@ def citas_hoy_view(request):
     ).exclude(
         estado='Cancelada'
     ).select_related(
-        'psicologo__usuario', 'paciente'
+        'psicologo__usuario', 'paciente__perfil'
     ).order_by('hora')
 
     return render(request, 'citas_hoy.html', {
