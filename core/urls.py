@@ -59,5 +59,6 @@ urlpatterns = [
     path('venezuela/', views.formulario_venezuela, name='formulario_venezuela'),
     path('donaciones-venezuela/', views.donaciones_venezuela, name='donaciones_venezuela'),
     path('citas-hoy/', views.citas_hoy_view, name='citas_hoy'),
+    path('api/citas-hoy/', views.api_citas_hoy, name='api_citas_hoy')
 
 ]

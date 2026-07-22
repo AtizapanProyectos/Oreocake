@@ -2883,3 +2883,25 @@ def citas_hoy_view(request):
         'citas': citas,
         'hoy': hoy,
     })
+
+
+def api_citas_hoy(request):
+    hoy = timezone.localdate()
+    citas = Cita.objects.filter(fecha=hoy).exclude(estado='Cancelada').order_by('hora')
+    
+    lista_json = []
+    for cita in citas:
+        telefono_doctor = cita.psicologo.telefono if cita.psicologo else None
+        numero_limpio = _limpiar_numero_whatsapp(telefono_doctor)
+        
+        if numero_limpio:
+            # Aquí armas tu texto
+            mensaje = f"Hola Psicólogo, sesión a las {cita.hora.strftime('%H:%M')}..."
+            
+            lista_json.append({
+                "hora": cita.hora.strftime('%H:%M'),
+                "telefono": numero_limpio,
+                "mensaje": mensaje
+            })
+            
+    return JsonResponse(lista_json, safe=False)
