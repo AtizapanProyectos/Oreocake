@@ -21,15 +21,11 @@
         </thead>
         <tbody>
             {% for cita in citas %}
-            {% with nombre_paciente=cita.paciente.first_name|default:cita.paciente.username %}
-            {% with nombre_doctor=cita.psicologo.usuario.first_name|default:cita.psicologo.usuario.username %}
             <tr>
                 <td>{{ cita.hora|time:"H:i" }}</td>
                 <td>{{ cita.fecha|date:"d/m/Y" }}</td>
-                <td>{{ nombre_paciente }}</td>
-                <td>
-                    {% if cita.psicologo %}{{ nombre_doctor }}{% else %}Sin asignar{% endif %}
-                </td>
+                <td>{{ cita.nombre_paciente }}</td>
+                <td>{{ cita.nombre_doctor }}</td>
                 <td>{{ cita.psicologo.telefono|default:"No registrado" }}</td>
                 <td>
                     {% if cita.enlace_meet %}
@@ -39,19 +35,13 @@
                     {% endif %}
                 </td>
                 <td>
-                    {% if cita.paciente.perfil.telefono %}
-                        
-                            href="https://wa.me/{{ cita.paciente.perfil.telefono }}?text={% filter urlencode %}Hola {{ nombre_paciente }} 👋, tu sesión con el Psic. {{ nombre_doctor }} es hoy a las {{ cita.hora|time:'H:i' }} hrs. En 10 minutos comienza tu sesión. Aquí está tu link de Google Meet: {{ cita.enlace_meet|default:'Se te compartirá en breve.' }}{% endfilter %}"
-                            target="_blank">
-                            📲 Avisar
-                        </a>
+                    {% if cita.wa_link %}
+                        <a href="{{ cita.wa_link }}" target="_blank">📲 Avisar</a>
                     {% else %}
-                        Sin teléfono
+                        Sin teléfono del paciente
                     {% endif %}
                 </td>
             </tr>
-            {% endwith %}
-            {% endwith %}
             {% empty %}
             <tr>
                 <td colspan="7">No hay citas para hoy.</td>

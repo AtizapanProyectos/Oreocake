@@ -3,7 +3,8 @@ from core import cuestionario_data
 from requests import request
 from django.shortcuts import render, redirect
 from django.contrib.auth.models import User
-
+import re
+from urllib.parse import quote
 from django.core.paginator import Paginator
 import logging
 from django.db.models import Avg, Case, When, Value, IntegerField, Q, Prefetch
@@ -2829,6 +2830,18 @@ def donaciones_venezuela(request):
     return render(request, 'donaciones_venezuela.html', context)
 
 
+
+def _limpiar_numero_whatsapp(numero, codigo_pais_default='52'):
+    """Deja solo dígitos y agrega código de país si hace falta (para wa.me)."""
+    if not numero:
+        return None
+    limpio = re.sub(r'\D', '', numero)  # se queda solo con los dígitos
+    if not limpio:
+        return None
+    if len(limpio) == 10:  # número local mexicano sin lada de país
+        limpio = codigo_pais_default + limpio
+    return limpio
+
 def citas_hoy_view(request):
     """Vista simple: todas las citas de hoy con el match paciente-psicólogo."""
     hoy = timezone.localdate()
@@ -2841,7 +2854,35 @@ def citas_hoy_view(request):
         'psicologo__usuario', 'paciente__perfil'
     ).order_by('hora')
 
+    for cita in citas:
+        nombre_paciente = cita.paciente.first_name or cita.paciente.username
+        if cita.psicologo:
+            nombre_doctor = cita.psicologo.usuario.first_name or cita.psicologo.usuario.username
+        else:
+            nombre_doctor = 'Sin asignar'
+
+        cita.nombre_paciente = nombre_paciente
+        cita.nombre_doctor = nombre_doctor
+
+        telefono_paciente = None
+        if hasattr(cita.paciente, 'perfil') and cita.paciente.perfil:
+            telefono_paciente = cita.paciente.perfil.telefono
+
+        numero_limpio = _limpiar_numero_whatsapp(telefono_paciente)
+
+        if numero_limpio:
+            mensaje = (
+                f"Hola {nombre_paciente} 👋, tu sesión con el Psic. {nombre_doctor} "
+                f"es hoy a las {cita.hora.strftime('%H:%M')} hrs. "
+                f"En 10 minutos comienza tu sesión. "
+                f"Aquí está tu link de Google Meet: {cita.enlace_meet or 'Se te compartirá en breve.'}"
+            )
+            cita.wa_link = f"https://wa.me/{numero_limpio}?text={quote(mensaje)}"
+        else:
+            cita.wa_link = None
+
     return render(request, 'citas_hoy.html', {
         'citas': citas,
         'hoy': hoy,
     })
+
