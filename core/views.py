@@ -2892,18 +2892,24 @@ def api_citas_hoy(request):
     
     lista_json = []
     for cita in citas:
+        # 1. Teléfono del DOCTOR
         telefono_doctor = cita.psicologo.telefono if cita.psicologo else None
-        numero_limpio = _limpiar_numero_whatsapp(telefono_doctor)
+        numero_doc_limpio = _limpiar_numero_whatsapp(telefono_doctor)
         
-        if numero_limpio:
-            # Sacamos el nombre del consultante
-            nombre_paciente = cita.paciente.first_name or cita.paciente.username
-            
-            lista_json.append({
-                "hora": cita.hora.strftime('%H:%M'),
-                "telefono": numero_limpio,
-                "nombre_paciente": nombre_paciente,           # <-- PASAMOS EL NOMBRE
-                "link_meet": cita.enlace_meet or "No asignado" # <-- PASAMOS EL LINK
-            })
+        # 2. Teléfono del PACIENTE (🔥 NUEVO)
+        # Verificamos si el paciente tiene perfil antes de sacar el teléfono
+        telefono_paciente = cita.paciente.perfil.telefono if hasattr(cita.paciente, 'perfil') else None
+        numero_pac_limpio = _limpiar_numero_whatsapp(telefono_paciente)
+        
+        # Sacamos el nombre del consultante
+        nombre_paciente = cita.paciente.first_name or cita.paciente.username
+        
+        lista_json.append({
+            "hora": cita.hora.strftime('%H:%M'),
+            "telefono_doctor": numero_doc_limpio,       # Cambié el nombre para distinguirlo
+            "telefono_paciente": numero_pac_limpio,     # Agregamos al paciente al JSON
+            "nombre_paciente": nombre_paciente,
+            "link_meet": cita.enlace_meet or "No asignado"
+        })
             
     return JsonResponse(lista_json, safe=False)
