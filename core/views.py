@@ -2887,6 +2887,7 @@ def citas_hoy_view(request):
 
 def api_citas_hoy(request):
     hoy = timezone.localdate()
+    # Traemos las citas de hoy que no estén canceladas
     citas = Cita.objects.filter(fecha=hoy).exclude(estado='Cancelada').order_by('hora')
     
     lista_json = []
@@ -2895,13 +2896,14 @@ def api_citas_hoy(request):
         numero_limpio = _limpiar_numero_whatsapp(telefono_doctor)
         
         if numero_limpio:
-            # Aquí armas tu texto
-            mensaje = f"Hola Psicólogo, sesión a las {cita.hora.strftime('%H:%M')}..."
+            # Sacamos el nombre del consultante
+            nombre_paciente = cita.paciente.first_name or cita.paciente.username
             
             lista_json.append({
                 "hora": cita.hora.strftime('%H:%M'),
                 "telefono": numero_limpio,
-                "mensaje": mensaje
+                "nombre_paciente": nombre_paciente,           # <-- PASAMOS EL NOMBRE
+                "link_meet": cita.enlace_meet or "No asignado" # <-- PASAMOS EL LINK
             })
             
     return JsonResponse(lista_json, safe=False)
