@@ -406,8 +406,38 @@ function mostrarErrorCita(mensaje, opts) {
             <div style="background: #f8fafc; padding: 30px; border-radius: 20px; margin: 25px auto; border: 1px solid #e2e8f0; max-width: 500px;">
                 <p style="color: var(--text-muted); font-size: 16px;">Tienes una sesión programada para el:</p>
                 <h3 style="color: var(--text-main); font-size: 22px; font-family: var(--font-headings);">{{ cita_proxima.fecha|date:"l, d \d\e F"|title }}</h3>
-                <h2 style="color: var(--c-purple); font-size: 36px; font-weight: 800; font-family: var(--font-headings);">{{ cita_proxima.hora|time:"h:i A" }}</h2>
+                <h2 id="horaCitaCDMX" data-fecha="{{ cita_proxima.fecha|date:'Y-m-d' }}" data-hora="{{ cita_proxima.hora|time:'H:i:s' }}" style="color: var(--c-purple); font-size: 36px; font-weight: 800; font-family: var(--font-headings); margin-bottom: 2px;">{{ cita_proxima.hora|time:"h:i A" }} <span style="font-size: 13px; font-weight: 700; color: var(--text-muted); vertical-align: middle;">CDMX</span></h2>
+                <p id="horaLocalConvertida" style="font-size: 12px; color: var(--text-muted); margin: 2px 0 0 0;"></p>
             </div>
+
+            <script>
+                // Muestra automáticamente la hora local del usuario junto a la hora CDMX.
+                // Puramente frontend (usa la zona horaria del navegador): no requiere
+                // cambios de backend/vistas de Django ni geolocalización por IP.
+                document.addEventListener("DOMContentLoaded", function () {
+                    const el = document.getElementById('horaCitaCDMX');
+                    const resultado = document.getElementById('horaLocalConvertida');
+                    if (!el || !resultado) return;
+
+                    const fechaStr = el.dataset.fecha;
+                    const horaStr = el.dataset.hora;
+                    if (!fechaStr || !horaStr) return;
+
+                    const zonaLocal = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
+                    // Si el usuario ya está en horario de CDMX, no repetimos la misma hora.
+                    if (zonaLocal === 'America/Mexico_City') return;
+
+                    const [anio, mes, dia] = fechaStr.split('-').map(Number);
+                    const [hh, mm, ss] = horaStr.split(':').map(Number);
+
+                    // CDMX mantiene offset fijo UTC-6 todo el año (sin horario de verano desde 2022)
+                    const utcMillis = Date.UTC(anio, mes - 1, dia, hh + 6, mm, ss || 0);
+                    const citaComoUTC = new Date(utcMillis);
+                    const textoHora = citaComoUTC.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+
+                    resultado.textContent = 'Tu hora: ' + textoHora;
+                });
+            </script>
 
 {% if cita_proxima.modalidad == 'Presencial' %}
             <div style="background: white; border: 2px dashed var(--c-purple); border-radius: 20px; padding: 40px 30px; max-width: 450px; margin: 0 auto; text-align: center; position: relative; box-shadow: 0 15px 40px rgba(90,63,163,0.1);">
@@ -473,23 +503,9 @@ function mostrarErrorCita(mensaje, opts) {
               </div>
             </div>
             {% if cita_proxima.enlace_meet %}
-                <div id="btn-locked" style="background: #f1f5f9; padding: 25px; border-radius: 20px; color: #64748b; max-width: 500px; margin: 0 auto; text-align: center; border: 2px dashed #cbd5e1;">
-                    <i class="fas fa-clock" style="font-size: 32px; margin-bottom: 12px; color: #94a3b8;"></i>
-                    <p style="font-weight: 800; margin: 0; font-size: 20px; color: var(--text-main); font-family: var(--font-headings);">Aún no es hora</p>
-                    <p style="font-size: 14px; margin: 5px 0 0 0;">Tu acceso se activará 1 hora antes de la sesión.</p>
-                    
-                    <div style="margin-top: 20px; padding-top: 15px; border-top: 1px dashed #cbd5e1;">
-                        <a href="https://wa.me/525521130230?text=Hola%2C%20tengo%20un%20problema%20con%20mi%20sesi%C3%B3n%20programada" 
-                        target="_blank" 
-                        style="display: inline-flex; align-items: center; gap: 10px; background: #25D366; color: white; padding: 12px 24px; border-radius: 50px; text-decoration: none; font-weight: 600; font-size: 14px; transition: 0.3s;">
-                            <i class="fab fa-whatsapp" style="font-size: 20px;"></i>
-                            ¿Tienes problemas? Escríbenos
-                        </a>
-                        <p style="font-size: 11px; color: #94a3b8; margin-top: 10px;">Soporte disponible de lunes a viernes, 9am - 6pm</p>
-                    </div>
-                </div>
-
-                <div id="btn-unlocked" style="display: none; max-width: 500px; margin: 0 auto;">
+                <!-- Candado por horario ELIMINADO a petición: el acceso a la sala ya no se
+                     restringe por tiempo; el botón de ingreso queda siempre visible/activo. -->
+                <div id="btn-unlocked" style="display: block; max-width: 500px; margin: 0 auto;">
                 <a href="{{ cita_proxima.enlace_meet }}" target="_blank" class="btn-brutal btn-primary" style="width: 100%; justify-content: center; font-size: 18px; text-decoration: none; border-radius: 20px; display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
                     Ingresar a mi Consulta Online <i class="fas fa-video"></i>
                 </a>
@@ -503,31 +519,6 @@ function mostrarErrorCita(mensaje, opts) {
                 </a>
                     <p style="font-size: 10px; color: #94a3b8; text-align: center; margin-top: 8px;">Soporte técnico vía WhatsApp</p>
                 </div>
-                
-                <script>
-                    document.addEventListener("DOMContentLoaded", function() {
-                        function revisarHoraCita() {
-                            const fechaStr = "{{ cita_proxima.fecha|date:'Y-m-d' }}";
-                            const horaStr = "{{ cita_proxima.hora|time:'H:i:s' }}"; 
-                            if (!fechaStr || !horaStr) return;
-                            const citaDate = new Date(`${fechaStr}T${horaStr}`);
-                            const now = new Date();
-                            const diff = citaDate - now;
-                            if (diff <= 3600000 && diff >= -3600000) {
-                                document.getElementById('btn-reagendar-container').style.display = 'none';
-                                document.getElementById('seccionReagendar').classList.remove('abierta');
-                                document.getElementById('btn-locked').style.display = 'none';
-                                document.getElementById('btn-unlocked').style.display = 'block';
-                            } else {
-                                document.getElementById('btn-locked').style.display = 'block';
-                                document.getElementById('btn-unlocked').style.display = 'none';
-                                document.getElementById('btn-reagendar-container').style.display = 'block';
-                            }
-                        }
-                        revisarHoraCita(); 
-                        setInterval(revisarHoraCita, 60000); 
-                    });
-                </script>
     {% else %}
     <div style="background: #fffaf0; border: 2px solid #ffedd5; padding: 25px; border-radius: 20px; color: var(--c-orange); max-width: 500px; margin: 0 auto; text-align: center;">
         <i class="fas fa-file-invoice-dollar" style="font-size: 30px; margin-bottom: 12px;"></i>
