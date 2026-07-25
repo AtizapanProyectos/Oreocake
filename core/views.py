@@ -2842,6 +2842,137 @@ def _limpiar_numero_whatsapp(numero, codigo_pais_default='52'):
         limpio = codigo_pais_default + limpio
     return limpio
 
+# =========================================================================
+# 📋 FORMULARIO ORGÁNICO PREVIO A LA SESIÓN (bloquea el acceso a Meet)
+# =========================================================================
+# Preguntas del formulario breve (≈2 min). Cada opción tiene un valor de
+# puntaje; el total se guarda en RespuestaFormularioOrganica.puntaje.
+# Si en el futuro se agregan/quitan preguntas, esta es la ÚNICA fuente de
+# verdad tanto para renderizar el form como para validar/calcular el puntaje
+# en el servidor (nunca confiamos en un puntaje mandado desde el navegador).
+FORMULARIO_ORGANICO_PREGUNTAS = [
+    {
+        'id': 'animo_hoy',
+        'texto': '¿Cómo te sientes hoy, antes de tu sesión?',
+        'opciones': [
+            {'valor': 'muy_mal', 'texto': 'Muy mal', 'puntos': 1},
+            {'valor': 'mal', 'texto': 'Mal', 'puntos': 2},
+            {'valor': 'normal', 'texto': 'Normal', 'puntos': 3},
+            {'valor': 'bien', 'texto': 'Bien', 'puntos': 4},
+            {'valor': 'muy_bien', 'texto': 'Muy bien', 'puntos': 5},
+        ],
+    },
+    {
+        'id': 'nivel_estres',
+        'texto': '¿Qué tan estresado(a) te has sentido esta semana?',
+        'opciones': [
+            {'valor': 'nada', 'texto': 'Nada', 'puntos': 5},
+            {'valor': 'poco', 'texto': 'Un poco', 'puntos': 4},
+            {'valor': 'moderado', 'texto': 'Moderado', 'puntos': 3},
+            {'valor': 'mucho', 'texto': 'Mucho', 'puntos': 2},
+            {'valor': 'extremo', 'texto': 'Extremo', 'puntos': 1},
+        ],
+    },
+    {
+        'id': 'calidad_sueno',
+        'texto': '¿Cómo ha sido tu descanso/sueño últimamente?',
+        'opciones': [
+            {'valor': 'muy_malo', 'texto': 'Muy malo', 'puntos': 1},
+            {'valor': 'malo', 'texto': 'Malo', 'puntos': 2},
+            {'valor': 'regular', 'texto': 'Regular', 'puntos': 3},
+            {'valor': 'bueno', 'texto': 'Bueno', 'puntos': 4},
+            {'valor': 'muy_bueno', 'texto': 'Muy bueno', 'puntos': 5},
+        ],
+    },
+    {
+        'id': 'motivacion_sesion',
+        'texto': '¿Qué tan motivado(a) llegas a esta sesión?',
+        'opciones': [
+            {'valor': 'nada', 'texto': 'Nada motivado(a)', 'puntos': 1},
+            {'valor': 'poco', 'texto': 'Poco', 'puntos': 2},
+            {'valor': 'normal', 'texto': 'Normal', 'puntos': 3},
+            {'valor': 'bastante', 'texto': 'Bastante', 'puntos': 4},
+            {'valor': 'mucho', 'texto': 'Muchísimo', 'puntos': 5},
+        ],
+    },
+]
+_OPCIONES_POR_PREGUNTA = {
+    p['id']: {o['valor']: o['puntos'] for o in p['opciones']}
+    for p in FORMULARIO_ORGANICO_PREGUNTAS
+}
+
+
+def _calcular_puntaje_formulario_organico(respuestas_dict):
+    """Recalcula el puntaje SIEMPRE en el servidor, ignorando cualquier
+    puntaje que pudiera venir del navegador."""
+    total = 0
+    for pregunta_id, opciones_validas in _OPCIONES_POR_PREGUNTA.items():
+        valor_elegido = respuestas_dict.get(pregunta_id)
+        total += opciones_validas.get(valor_elegido, 0)
+    return total
+
+
+@login_required
+def formulario_previo_meet(request, cita_id):
+    """
+    🔒 Paso obligatorio antes de entrar a la sala de Meet.
+
+    Seguridad/concurrencia:
+    - `cita = get_object_or_404(..., id=cita_id, paciente=request.user)` ata
+      la cita SIEMPRE al usuario autenticado de la petición en curso. Cada
+      request de Django corre de forma aislada (su propio `request.user`),
+      así que no existe manera de que la sesión de un paciente le muestre o
+      dispare el link de otro, sin importar cuántos usuarios entren al mismo
+      tiempo.
+    - `get_or_create` dentro de una transacción atómica evita que un doble
+      clic o doble pestaña genere dos registros para la misma (paciente,
+      cita); el `unique_together` del modelo es la última línea de defensa.
+    - Si el paciente ya había respondido el formulario para ESTA cita, no se
+      le vuelve a mostrar: se le manda directo a su Meet.
+    """
+    cita = get_object_or_404(
+        Cita.objects.select_related('psicologo__usuario'),
+        id=cita_id, paciente=request.user, estado='Confirmada'
+    )
+
+    if not cita.enlace_meet:
+        messages.error(request, 'Aún no se ha generado el enlace de tu sesión. Contáctanos por WhatsApp.')
+        return redirect('panel_generico')
+
+    # Si ya contestó el formulario para ESTA cita, saltamos directo a Meet.
+    ya_respondido = RespuestaFormularioOrganica.objects.filter(paciente=request.user, cita=cita).exists()
+    if ya_respondido:
+        return redirect(cita.enlace_meet)
+
+    if request.method == 'POST':
+        respuestas_dict = {}
+        for pregunta in FORMULARIO_ORGANICO_PREGUNTAS:
+            valor = request.POST.get(pregunta['id'], '')
+            respuestas_dict[pregunta['id']] = valor
+
+        puntaje = _calcular_puntaje_formulario_organico(respuestas_dict)
+
+        try:
+            with transaction.atomic():
+                # select_for_update() sobre la fila de la cita evita que dos
+                # envíos simultáneos (doble clic) creen registros duplicados.
+                Cita.objects.select_for_update().get(id=cita.id)
+                RespuestaFormularioOrganica.objects.get_or_create(
+                    paciente=request.user,
+                    cita=cita,
+                    defaults={'respuestas': respuestas_dict, 'puntaje': puntaje}
+                )
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+        return JsonResponse({'status': 'success', 'redirect_url': cita.enlace_meet})
+
+    return render(request, 'formulario_organico.html', {
+        'cita': cita,
+        'preguntas': FORMULARIO_ORGANICO_PREGUNTAS,
+    })
+
+
 def citas_hoy_view(request):
     """Vista simple: todas las citas de hoy con el match paciente-psicólogo."""
     hoy = timezone.localdate()

@@ -622,6 +622,49 @@ class RegistroTallerPublico(models.Model):
     def __str__(self): return f"{self.nombre} - {self.taller_seleccionado}"
 
 
+class RespuestaFormularioOrganica(models.Model):
+    """
+    🔥 NUEVO: Formulario breve ("orgánico") que el paciente debe responder
+    ANTES de poder entrar a su sesión de Google Meet.
+
+    Guarda quién respondió, en qué CITA lo respondió (nunca "en general" —
+    así nunca hay riesgo de mezclar el formulario de una sesión con el link
+    de Meet de otra) y el puntaje calculado a partir de las respuestas.
+
+    La combinación única (paciente, cita) es la pieza clave de seguridridad
+    ante concurrencia: aunque el paciente abra dos pestañas o dé doble clic,
+    la base de datos jamás permite dos registros para la misma cita, y la
+    vista siempre valida `paciente=request.user` + `cita_id`, así que un
+    usuario nunca puede ver ni disparar el formulario/enlace de otro.
+    """
+    paciente = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='respuestas_formulario_organico',
+        verbose_name="Paciente"
+    )
+    cita = models.ForeignKey(
+        Cita, on_delete=models.CASCADE, related_name='respuestas_formulario_organico',
+        verbose_name="Sesión (Cita)"
+    )
+    respuestas = models.JSONField(default=dict, verbose_name="Respuestas del formulario")
+    puntaje = models.PositiveSmallIntegerField(default=0, verbose_name="Puntaje calculado")
+    fecha_respuesta = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        unique_together = ['paciente', 'cita']
+        verbose_name = "Respuesta de Formulario Orgánico"
+        verbose_name_plural = "Respuestas de Formulario Orgánico"
+        indexes = [
+            models.Index(fields=['paciente', 'cita']),
+        ]
+
+    def __str__(self):
+        try:
+            nombre = self.paciente.first_name or self.paciente.username
+        except Exception:
+            nombre = "Paciente"
+        return f"Formulario de {nombre} - Cita #{self.cita_id} (puntaje {self.puntaje})"
+
+
 class ContactoVenezuela(models.Model):
     nombre = models.CharField(max_length=200, verbose_name="Nombre completo")
     correo = models.EmailField(verbose_name="Correo electrónico")

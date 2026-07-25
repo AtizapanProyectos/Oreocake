@@ -1,0 +1,174 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Antes de tu sesión - HOPE{% endblock %}
+
+{% block content %}
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700;900&family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap');
+
+    :root {
+        --c-purple: #5A3FA3;
+        --c-pink: #F85B8C;
+        --c-orange: #F27C21;
+        --c-yellow: #F8D33D;
+        --c-teal: #25B8B8;
+        --text-main: #0f0f0f;
+        --text-muted: #64748b;
+        --bg-panel: #f8fafc;
+        --font-headings: 'Outfit', sans-serif;
+        --font-body: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    body { background-color: var(--bg-panel); font-family: var(--font-body); color: var(--text-main); }
+
+    .fo-wrapper { max-width: 650px; margin: 0 auto; padding: 40px 20px 100px; }
+
+    .fo-header {
+        background: var(--c-purple);
+        color: white;
+        padding: 45px 35px;
+        border-radius: 30px;
+        text-align: center;
+        margin-bottom: 30px;
+    }
+    .fo-header i { font-size: 46px; margin-bottom: 15px; display: block; }
+    .fo-header h1 { font-family: var(--font-headings); font-size: 1.9rem; font-weight: 800; margin: 0 0 10px; }
+    .fo-header p { opacity: 0.9; font-size: 1rem; margin: 0; line-height: 1.5; }
+
+    .fo-card {
+        background: #ffffff; border-radius: 30px; padding: 35px;
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.04); border: 1px solid #f1f5f9;
+        margin-bottom: 25px;
+    }
+
+    .fo-pregunta { margin-bottom: 12px; font-weight: 800; font-family: var(--font-headings); font-size: 1.1rem; color: var(--text-main); }
+
+    .fo-opciones { display: flex; flex-direction: column; gap: 10px; }
+    .fo-opcion {
+        display: flex; align-items: center; gap: 12px;
+        border: 2px solid #f1f5f9; border-radius: 15px; padding: 14px 18px;
+        cursor: pointer; transition: 0.2s; font-weight: 600; font-size: 15px;
+    }
+    .fo-opcion:hover { border-color: #e2e8f0; }
+    .fo-opcion input { accent-color: var(--c-purple); width: 18px; height: 18px; }
+    .fo-opcion.seleccionada { border-color: var(--c-purple); background: #f3e8ff; color: var(--c-purple); }
+
+    .fo-progreso { text-align: center; font-size: 12px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; color: var(--c-purple); margin-bottom: 8px; }
+
+    .fo-btn-enviar {
+        width: 100%; padding: 20px; border-radius: 100px; border: none;
+        background: var(--c-purple); color: white; font-family: var(--font-headings);
+        font-weight: 800; font-size: 17px; letter-spacing: 0.5px; text-transform: uppercase;
+        cursor: pointer; transition: 0.3s; display: flex; align-items: center; justify-content: center; gap: 10px;
+    }
+    .fo-btn-enviar:hover { background: var(--c-orange); transform: translateY(-2px); box-shadow: 0 15px 30px rgba(242,124,33,0.3); }
+    .fo-btn-enviar:disabled { background: #cbd5e1; cursor: not-allowed; transform: none; box-shadow: none; }
+
+    .fo-error { display: none; background: #fff1f2; border: 1px solid #fecdd3; color: #c2410c; padding: 14px 18px; border-radius: 14px; font-size: 14px; font-weight: 600; margin-bottom: 20px; text-align: center; }
+
+    @media (max-width: 600px) {
+        .fo-header { padding: 30px 20px; border-radius: 22px; }
+        .fo-card { padding: 22px; border-radius: 22px; }
+    }
+</style>
+
+<div class="fo-wrapper">
+    <div class="fo-header">
+        <i class="fas fa-heart-circle-check"></i>
+        <h1>Antes de continuar...</h1>
+        <p>Te tomará aproximadamente <strong>2 minutos</strong>. Por favor responde este breve formulario para poder acceder a tu sesión.</p>
+    </div>
+
+    <div id="fo-error-general" class="fo-error"><i class="fas fa-circle-exclamation"></i> <span id="fo-error-texto">Ocurrió un problema.</span></div>
+
+    <form id="form-organico">
+        {% csrf_token %}
+        {% for pregunta in preguntas %}
+        <div class="fo-card">
+            <div class="fo-progreso">Pregunta {{ forloop.counter }} de {{ preguntas|length }}</div>
+            <div class="fo-pregunta">{{ pregunta.texto }}</div>
+            <div class="fo-opciones">
+                {% for opcion in pregunta.opciones %}
+                <label class="fo-opcion" data-grupo="{{ pregunta.id }}">
+                    <input type="radio" name="{{ pregunta.id }}" value="{{ opcion.valor }}" required>
+                    {{ opcion.texto }}
+                </label>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+
+        <button type="submit" class="fo-btn-enviar" id="fo-btn-submit">
+            Continuar a mi sesión <i class="fas fa-arrow-right"></i>
+        </button>
+    </form>
+</div>
+
+<script>
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// Resaltar visualmente la opción elegida en cada pregunta
+document.querySelectorAll('.fo-opcion input[type="radio"]').forEach(function (input) {
+    input.addEventListener('change', function () {
+        const grupo = this.name;
+        document.querySelectorAll(`.fo-opcion[data-grupo="${grupo}"]`).forEach(function (label) {
+            label.classList.remove('seleccionada');
+        });
+        this.closest('.fo-opcion').classList.add('seleccionada');
+    });
+});
+
+document.getElementById('form-organico').addEventListener('submit', function (e) {
+    e.preventDefault();
+
+    const errorBox = document.getElementById('fo-error-general');
+    errorBox.style.display = 'none';
+
+    const btn = document.getElementById('fo-btn-submit');
+    const textoOriginal = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Enviando...';
+
+    const formData = new FormData(this);
+
+    fetch(window.location.href, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': getCookie('csrftoken') },
+        body: formData
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.status === 'success' && data.redirect_url) {
+            btn.innerHTML = '<i class="fas fa-check"></i> ¡Listo! Redirigiendo...';
+            window.location.href = data.redirect_url;
+        } else {
+            btn.disabled = false;
+            btn.innerHTML = textoOriginal;
+            document.getElementById('fo-error-texto').textContent = data.message || 'No se pudo procesar tu formulario. Intenta de nuevo.';
+            errorBox.style.display = 'block';
+            errorBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    })
+    .catch(() => {
+        btn.disabled = false;
+        btn.innerHTML = textoOriginal;
+        document.getElementById('fo-error-texto').textContent = 'Error de conexión. Por favor, intenta de nuevo.';
+        errorBox.style.display = 'block';
+    });
+});
+</script>
+{% endblock %}

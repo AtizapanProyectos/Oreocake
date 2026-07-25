@@ -46,6 +46,7 @@ urlpatterns = [
     path('talleres/', views.talleres_view, name='talleres'),
     path('api/registrar-taller/', views.procesar_registro_taller, name='registrar_taller_ajax'),
     path('reagendar-cita/', views.reagendar_cita_ajax, name='reagendar_cita'),
+    path('sesion-previa/<int:cita_id>/', views.formulario_previo_meet, name='formulario_previo_meet'),
 
 #Pruebas y produccion
 # Agrega estas líneas dentro de tu `urlpatterns` en urls.py

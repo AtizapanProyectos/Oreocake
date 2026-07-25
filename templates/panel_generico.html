@@ -506,9 +506,10 @@ function mostrarErrorCita(mensaje, opts) {
                 <!-- Candado por horario ELIMINADO a petición: el acceso a la sala ya no se
                      restringe por tiempo; el botón de ingreso queda siempre visible/activo. -->
                 <div id="btn-unlocked" style="display: block; max-width: 500px; margin: 0 auto;">
-                <a href="{{ cita_proxima.enlace_meet }}" target="_blank" class="btn-brutal btn-primary" style="width: 100%; justify-content: center; font-size: 18px; text-decoration: none; border-radius: 20px; display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
+                <a href="{% url 'formulario_previo_meet' cita_proxima.id %}" class="btn-brutal btn-primary" style="width: 100%; justify-content: center; font-size: 18px; text-decoration: none; border-radius: 20px; display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
                     Ingresar a mi Consulta Online <i class="fas fa-video"></i>
                 </a>
+                <p style="font-size: 12px; color: #94a3b8; text-align: center; margin: -8px 0 15px;"><i class="fas fa-circle-info"></i> Antes de entrar te pediremos responder un breve formulario (2 min).</p>
 
                     <!-- Botón de soporte WhatsApp debajo del botón de Meet -->
                 <a href="https://wa.me/525521130230?text=Hola%2C%20tengo%20problemas%20para%20ingresar%20a%20mi%20sesi%C3%B3n%20online" 
