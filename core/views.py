@@ -2850,67 +2850,84 @@ def _limpiar_numero_whatsapp(numero, codigo_pais_default='52'):
 # Si en el futuro se agregan/quitan preguntas, esta es la ÚNICA fuente de
 # verdad tanto para renderizar el form como para validar/calcular el puntaje
 # en el servidor (nunca confiamos en un puntaje mandado desde el navegador).
-FORMULARIO_ORGANICO_PREGUNTAS = [
-    {
-        'id': 'animo_hoy',
-        'texto': '¿Cómo te sientes hoy, antes de tu sesión?',
-        'opciones': [
-            {'valor': 'muy_mal', 'texto': 'Muy mal', 'puntos': 1},
-            {'valor': 'mal', 'texto': 'Mal', 'puntos': 2},
-            {'valor': 'normal', 'texto': 'Normal', 'puntos': 3},
-            {'valor': 'bien', 'texto': 'Bien', 'puntos': 4},
-            {'valor': 'muy_bien', 'texto': 'Muy bien', 'puntos': 5},
-        ],
-    },
-    {
-        'id': 'nivel_estres',
-        'texto': '¿Qué tan estresado(a) te has sentido esta semana?',
-        'opciones': [
-            {'valor': 'nada', 'texto': 'Nada', 'puntos': 5},
-            {'valor': 'poco', 'texto': 'Un poco', 'puntos': 4},
-            {'valor': 'moderado', 'texto': 'Moderado', 'puntos': 3},
-            {'valor': 'mucho', 'texto': 'Mucho', 'puntos': 2},
-            {'valor': 'extremo', 'texto': 'Extremo', 'puntos': 1},
-        ],
-    },
-    {
-        'id': 'calidad_sueno',
-        'texto': '¿Cómo ha sido tu descanso/sueño últimamente?',
-        'opciones': [
-            {'valor': 'muy_malo', 'texto': 'Muy malo', 'puntos': 1},
-            {'valor': 'malo', 'texto': 'Malo', 'puntos': 2},
-            {'valor': 'regular', 'texto': 'Regular', 'puntos': 3},
-            {'valor': 'bueno', 'texto': 'Bueno', 'puntos': 4},
-            {'valor': 'muy_bueno', 'texto': 'Muy bueno', 'puntos': 5},
-        ],
-    },
-    {
-        'id': 'motivacion_sesion',
-        'texto': '¿Qué tan motivado(a) llegas a esta sesión?',
-        'opciones': [
-            {'valor': 'nada', 'texto': 'Nada motivado(a)', 'puntos': 1},
-            {'valor': 'poco', 'texto': 'Poco', 'puntos': 2},
-            {'valor': 'normal', 'texto': 'Normal', 'puntos': 3},
-            {'valor': 'bastante', 'texto': 'Bastante', 'puntos': 4},
-            {'valor': 'mucho', 'texto': 'Muchísimo', 'puntos': 5},
-        ],
-    },
+# =========================================================================
+# 📋 ÍNDICE DE PROGRESO PSICOLÓGICO (IPP) - cuestionario semanal previo a Meet
+# =========================================================================
+# Mismos 10 reactivos cada semana, escala Likert 1-5 (según el documento
+# oficial del IPP). Fuente única de verdad para render + cálculo del puntaje.
+ESCALA_IPP = [
+    {'valor': 'nunca', 'texto': 'Nunca', 'puntos': 1},
+    {'valor': 'casi_nunca', 'texto': 'Casi nunca', 'puntos': 2},
+    {'valor': 'algunas_veces', 'texto': 'Algunas veces', 'puntos': 3},
+    {'valor': 'casi_siempre', 'texto': 'Casi siempre', 'puntos': 4},
+    {'valor': 'siempre', 'texto': 'Siempre', 'puntos': 5},
 ]
+
+FORMULARIO_ORGANICO_PREGUNTAS = [
+    {'id': 'ipp_1', 'texto': 'A menudo pienso que no sirvo para algo'},
+    {'id': 'ipp_2', 'texto': 'Pienso que las demás personas son mejores que yo'},
+    {'id': 'ipp_3', 'texto': 'Evito realizar actividades que desconozco'},
+    {'id': 'ipp_4', 'texto': 'Evito hablar o acercarme a otras personas por miedo'},
+    {'id': 'ipp_5', 'texto': 'Siento que todo me sale mal'},
+    {'id': 'ipp_6', 'texto': 'Me molesta que me critiquen'},
+    {'id': 'ipp_7', 'texto': 'Me alegro cuando otros se equivocan'},
+    {'id': 'ipp_8', 'texto': 'Siento que soy poco interesante'},
+    {'id': 'ipp_9', 'texto': 'Estoy al tanto del cuidado de mi salud'},
+    {'id': 'ipp_10', 'texto': 'Tengo problemas para realizar mis metas'},
+]
+
+# Cada pregunta usa la MISMA escala (así lo indica el documento del IPP)
 _OPCIONES_POR_PREGUNTA = {
-    p['id']: {o['valor']: o['puntos'] for o in p['opciones']}
+    p['id']: {o['valor']: o['puntos'] for o in ESCALA_IPP}
     for p in FORMULARIO_ORGANICO_PREGUNTAS
 }
 
+IPP_PUNTAJE_MIN = 10   # 10 reactivos x mínimo 1 punto
+IPP_PUNTAJE_MAX = 50   # 10 reactivos x máximo 5 puntos
+
 
 def _calcular_puntaje_formulario_organico(respuestas_dict):
-    """Recalcula el puntaje SIEMPRE en el servidor, ignorando cualquier
-    puntaje que pudiera venir del navegador."""
+    """Suma bruta (10-50), recalculada SIEMPRE en el servidor (nunca se
+    confía en un puntaje que pudiera venir del navegador)."""
     total = 0
     for pregunta_id, opciones_validas in _OPCIONES_POR_PREGUNTA.items():
         valor_elegido = respuestas_dict.get(pregunta_id)
         total += opciones_validas.get(valor_elegido, 0)
     return total
 
+
+def calcular_ipt(puntaje_bruto):
+    """IPT = ((Puntaje - min)/(max - min)) * 100, tal como indica el IPP."""
+    return round(
+        ((puntaje_bruto - IPP_PUNTAJE_MIN) / (IPP_PUNTAJE_MAX - IPP_PUNTAJE_MIN)) * 100
+    )
+
+
+def _mensaje_tierno_progreso(ipt_actual, ipt_anterior):
+    """Mensaje siempre cálido y amoroso, nunca punitivo, ni cuando baja el índice."""
+    if ipt_anterior is None:
+        return (
+            "🌱 ¡Este es tu primer registro de progreso! A partir de hoy iremos "
+            "celebrando juntos cada pasito que des en tu proceso. 💜"
+        )
+
+    diferencia = ipt_actual - ipt_anterior
+
+    if diferencia > 0:
+        return (
+            f"🌟 ¡Qué bonito avance! Subiste {diferencia} puntos respecto a la semana "
+            "pasada. Sigue practicando lo que has aprendido, se nota tu esfuerzo. 💜"
+        )
+    elif diferencia == 0:
+        return (
+            "🌷 Te mantuviste estable esta semana, y eso también es un logro. "
+            "Sostenerse también es avanzar. Sigamos construyendo juntos."
+        )
+    else:
+        return (
+            "💜 Esta semana se sintió un poco más pesada, y está bien sentirlo así. "
+            "No hay retrocesos, solo procesos. Aquí seguimos contigo, paso a paso."
+        )
 
 @login_required
 def formulario_previo_meet(request, cita_id):
@@ -2957,6 +2974,13 @@ def formulario_previo_meet(request, cita_id):
                 # select_for_update() sobre la fila de la cita evita que dos
                 # envíos simultáneos (doble clic) creen registros duplicados.
                 Cita.objects.select_for_update().get(id=cita.id)
+
+                # 🔥 Buscamos el registro anterior de este paciente ANTES de
+                # crear el nuevo, para poder comparar su progreso semanal.
+                respuesta_anterior = RespuestaFormularioOrganica.objects.filter(
+                    paciente=request.user
+                ).exclude(cita=cita).order_by('-fecha_respuesta').first()
+
                 RespuestaFormularioOrganica.objects.get_or_create(
                     paciente=request.user,
                     cita=cita,
@@ -2965,11 +2989,21 @@ def formulario_previo_meet(request, cita_id):
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
 
-        return JsonResponse({'status': 'success', 'redirect_url': cita.enlace_meet})
+        ipt_actual = calcular_ipt(puntaje)
+        ipt_anterior = calcular_ipt(respuesta_anterior.puntaje) if respuesta_anterior else None
+        mensaje = _mensaje_tierno_progreso(ipt_actual, ipt_anterior)
+
+        return JsonResponse({
+            'status': 'success',
+            'redirect_url': cita.enlace_meet,
+            'ipt': ipt_actual,
+            'mensaje': mensaje,
+        })
 
     return render(request, 'formulario_organico.html', {
         'cita': cita,
         'preguntas': FORMULARIO_ORGANICO_PREGUNTAS,
+        'escala': ESCALA_IPP,
     })
 
 

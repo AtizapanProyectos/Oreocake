@@ -89,7 +89,7 @@
             <div class="fo-progreso">Pregunta {{ forloop.counter }} de {{ preguntas|length }}</div>
             <div class="fo-pregunta">{{ pregunta.texto }}</div>
             <div class="fo-opciones">
-                {% for opcion in pregunta.opciones %}
+                {% for opcion in escala %}
                 <label class="fo-opcion" data-grupo="{{ pregunta.id }}">
                     <input type="radio" name="{{ pregunta.id }}" value="{{ opcion.valor }}" required>
                     {{ opcion.texto }}
