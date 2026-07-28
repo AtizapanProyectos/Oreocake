@@ -322,34 +322,58 @@ def obtener_slots_psicologo_para_dia(psicologo, fecha, tipo_sesion="individual")
 # =========================================================================
 # 🧠 FUNCIÓN MAESTRA: CREAR ENLACE DE GOOGLE MEET
 # =========================================================================
+
+
+
+_EMAIL_REGEX = re.compile(r'^[^@\s]+@[^@\s]+\.[^@\s]+$')
+ 
+ 
+def _email_valido(email):
+    """True solo si el string parece un email real y bien formado."""
+    return bool(email) and bool(_EMAIL_REGEX.match(email.strip()))
+
+
 def generar_link_meet(fecha_obj, hora_obj, paciente_nombre, psicologo_nombre, paciente_email, psicologo_email):
     SCOPES = ['https://www.googleapis.com/auth/calendar.events']
-
-    # ✅ NUEVO: leer desde variable de entorno en lugar de archivo
+ 
+    # ✅ leer desde variable de entorno en lugar de archivo
     token_json_str = os.environ.get('GOOGLE_TOKEN_JSON')
     if not token_json_str:
         print("ERROR: No existe la variable de entorno GOOGLE_TOKEN_JSON.")
         return None
-
+ 
     try:
         token_data = json.loads(token_json_str)
         creds = Credentials.from_authorized_user_info(token_data, SCOPES)
-
+ 
         if creds and creds.expired and creds.refresh_token:
             creds.refresh(Request())
-            # ✅ NUEVO: actualizar la variable en memoria (no escribir archivo)
-            # Nota: en Railway no podemos persistir el refresh automáticamente,
+            # Nota: en Railway no se persiste el refresh automáticamente,
             # así que actualiza GOOGLE_TOKEN_JSON manualmente si expira.
-            print("⚠️ Token refrescado. Actualiza GOOGLE_TOKEN_JSON en Railway con:", creds.to_json())
-
+            print("⚠️ Token refrescado. Actualiza GOOGLE_TOKEN_JSON en Railway si hace falta.")
+ 
         service = build('calendar', 'v3', credentials=creds)
-
+ 
         inicio_datetime = datetime.combine(fecha_obj, hora_obj)
         fin_datetime = inicio_datetime + timedelta(minutes=50)
-
+ 
         start_format = inicio_datetime.isoformat() + '-06:00'
         end_format = fin_datetime.isoformat() + '-06:00'
-
+ 
+        # 🔧 FIX: armamos la lista de attendees SOLO con emails válidos.
+        # Si alguno viene vacío o mal formado, se omite (no truena el evento)
+        # pero el nombre de esa persona sigue apareciendo en el título.
+        attendees = []
+        if _email_valido(paciente_email):
+            attendees.append({'email': paciente_email.strip()})
+        else:
+            print(f"⚠️ Meet sin invitar por correo al paciente (email inválido/vacío): {paciente_email!r}")
+ 
+        if _email_valido(psicologo_email):
+            attendees.append({'email': psicologo_email.strip()})
+        else:
+            print(f"⚠️ Meet sin invitar por correo al psicólogo (email inválido/vacío): {psicologo_email!r}")
+ 
         event = {
             'summary': f'Sesión HOPE: {paciente_nombre} y Psic. {psicologo_nombre}',
             'description': 'Sesión psicológica online generada desde la plataforma HOPE.',
@@ -361,10 +385,6 @@ def generar_link_meet(fecha_obj, hora_obj, paciente_nombre, psicologo_nombre, pa
                 'dateTime': end_format,
                 'timeZone': 'America/Mexico_City',
             },
-            'attendees': [
-                {'email': paciente_email},
-                {'email': psicologo_email},
-            ],
             'conferenceData': {
                 'createRequest': {
                     'requestId': f"hope_meet_{uuid.uuid4().hex[:10]}",
@@ -372,19 +392,25 @@ def generar_link_meet(fecha_obj, hora_obj, paciente_nombre, psicologo_nombre, pa
                 }
             }
         }
-
+ 
+        # 🔧 Solo incluimos la clave 'attendees' si hay al menos uno válido.
+        # (No es obligatorio omitirla si la lista está vacía, pero así
+        # queda más limpio el payload).
+        if attendees:
+            event['attendees'] = attendees
+ 
         event_result = service.events().insert(
             calendarId='primary',
             body=event,
             conferenceDataVersion=1,
             sendUpdates='none'
         ).execute()
-
+ 
         return {
             'link': event_result.get('hangoutLink'),
             'id_evento': event_result.get('id')
         }
-
+ 
     except Exception as e:
         print(f"Error generando Meet: {e}")
         return None
