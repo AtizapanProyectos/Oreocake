@@ -1,6 +1,8 @@
 from core import cuestionario_data
 from core import cuestionario_data
 from requests import request
+# pyrefly: ignore [missing-import]
+import threading
 from django.shortcuts import render, redirect
 from django.contrib.auth.models import User
 import re
@@ -1213,8 +1215,6 @@ def guardar_historial_ajax(request):
 # =========================================================================
 
 
-
-
 def detalle_paciente(request, paciente_id):
     if not request.user.is_authenticated or not hasattr(request.user, 'perfil_psicologo'):
         return redirect('modulo_informativo')
@@ -1245,44 +1245,27 @@ def detalle_paciente(request, paciente_id):
  
     # =========================================================================
     # CONSTRUCCIÓN DE LA LISTA UNIFICADA DE SESIONES
-    #
-    # La lógica es simple:
-    #   1. Tomamos TODAS las citas pasadas del paciente con este psicólogo.
-    #   2. Para cada cita buscamos si ya existe un HistorialClinico vinculado
-    #      (usando la relación OneToOne cita.nota_clinica).
-    #   3. Si existe historial SIN cita (fue creado manualmente sin agendar),
-    #      también lo incluimos al final.
-    #   4. Le pasamos al template una lista de dicts con estructura clara.
     # =========================================================================
     now_local = timezone.localtime(timezone.now())
  
-    # Todas las citas pasadas, con o sin evento Google (para unificar todo)
     citas_pasadas = Cita.objects.filter(
-        paciente=paciente,
-        psicologo=psicologo,
-        fecha__lte=now_local.date(),
+        paciente=paciente, psicologo=psicologo, fecha__lte=now_local.date(),
     ).order_by('-fecha', '-hora').select_related('nota_clinica')
  
-    # IDs de historiales que YA están vinculados a una cita (para no duplicarlos)
     historiales_vinculados_ids = set()
- 
-    sesiones = []  # ← Lista final que le pasamos al template
+    sesiones = []
  
     for cita in citas_pasadas:
         historial = None
-        # El related_name del OneToOne en HistorialClinico.cita es 'nota_clinica'
         try:
-            historial = cita.nota_clinica  # puede lanzar RelatedObjectDoesNotExist
+            historial = cita.nota_clinica
             historiales_vinculados_ids.add(historial.id)
         except Exception:
-            historial = None
+            pass
  
-        # Solo incluir citas que tienen Meet O que tienen bitácora
-        # (omitir citas vacías sin ningún contenido)
         tiene_meet = bool(cita.id_evento_google)
         tiene_historial = historial is not None
  
-        #if tiene_meet or tiene_historial:
         sesiones.append({
             'tipo': 'completa',          
             'cita': cita,
@@ -1294,39 +1277,103 @@ def detalle_paciente(request, paciente_id):
             'slug': f"c-{cita.id}", 
         })
  
-    # Historiales huérfanos: creados manualmente sin asociar a ninguna cita
     historiales_huerfanos = HistorialClinico.objects.filter(
-        paciente=paciente,
-        psicologo=psicologo,
-        cita__isnull=True,   # sin cita vinculada
-    ).exclude(
-        id__in=historiales_vinculados_ids
-    ).order_by('-fecha_registro')
+        paciente=paciente, psicologo=psicologo, cita__isnull=True,
+    ).exclude(id__in=historiales_vinculados_ids).order_by('-fecha_registro')
  
     for h in historiales_huerfanos:
         sesiones.append({
-            'tipo': 'solo_historial',    # no tiene cita asociada
+            'tipo': 'solo_historial',
             'cita': None,
             'historial': h,
             'tiene_meet': False,
             'tiene_historial': True,
             'fecha_orden': h.fecha_registro.date(),
             'hora_orden': h.fecha_registro.time(),
-            'slug': f"h-{h.id}", # <--- 2. AGREGA ESTA LÍNEA AQUÍ TAMBIÉN
+            'slug': f"h-{h.id}",
         })
  
-    # Ordenamos todo junto por fecha descendente
     sesiones.sort(key=lambda s: (s['fecha_orden'], s['hora_orden']), reverse=True)
- 
     total_sesiones = Cita.objects.filter(paciente=paciente, psicologo=psicologo).count()
+ 
+    # =========================================================================
+    # 🔥 NUEVO: DATOS DEL IPP PARA LA GRÁFICA
+    # =========================================================================
+    # Obtenemos todos los formularios semanales en orden cronológico (del más viejo al más nuevo)
+    respuestas_ipp = RespuestaFormularioOrganica.objects.filter(paciente=paciente).order_by('fecha_respuesta')
+    
+    ipp_labels = []
+    ipp_data = []
+    
+    for r in respuestas_ipp:
+        # Usamos tu misma fórmula de IPT (Puntaje bruto - 10 / 40 * 100)
+        ipt = round(((r.puntaje - 10) / 40) * 100)
+        # Extraemos día y mes para los labels de la gráfica
+        ipp_labels.append(r.fecha_respuesta.strftime('%d/%m'))
+        ipp_data.append(ipt)
  
     return render(request, 'detalle_paciente.html', {
         'paciente': paciente,
-        'sesiones': sesiones,           # ← ÚNICA LISTA, reemplaza historiales + citas_pasadas
+        'sesiones': sesiones,
         'total_sesiones': total_sesiones,
         'cuestionario': cuestionario,
         'respuestas_formateadas': respuestas_formateadas,
+        'ipp_labels': json.dumps(ipp_labels), # Pasamos los datos como JSON al frontend
+        'ipp_data': json.dumps(ipp_data),
     })
+
+# =========================================================================
+# 🔥 NUEVA FUNCIÓN AJAX PARA ANALIZAR LA GRÁFICA CON GROQ
+# No olvides agregar esta URL en tu urls.py: path('analizar-grafica-ipp/<int:paciente_id>/', views.analizar_grafica_ipp_ajax, name='analizar_grafica_ipp'),
+# =========================================================================
+@csrf_exempt
+def analizar_grafica_ipp_ajax(request, paciente_id):
+    if not request.user.is_authenticated or not hasattr(request.user, 'perfil_psicologo'):
+        return JsonResponse({'status': 'error', 'message': 'No autorizado'})
+
+    try:
+        paciente = User.objects.get(id=paciente_id)
+        respuestas = RespuestaFormularioOrganica.objects.filter(paciente=paciente).order_by('fecha_respuesta')
+
+        if not respuestas.exists():
+            return JsonResponse({'status': 'error', 'message': 'Aún no hay suficientes datos para generar una tendencia.'})
+
+        # Armamos un historial de texto para que Groq lo lea
+        datos_historial = []
+        for i, r in enumerate(respuestas):
+            ipt = round(((r.puntaje - 10) / 40) * 100)
+            fecha = r.fecha_respuesta.strftime('%d/%m/%Y')
+            datos_historial.append(f"Registro {i+1} ({fecha}): {ipt}% de Bienestar")
+
+        historial_texto = "\n".join(datos_historial)
+
+        # Prompt hiper especializado
+        prompt = (
+            f"Eres un analista clínico experto. Estoy revisando la gráfica del Índice de Progreso Psicológico (IPP) semanal del paciente {paciente.first_name}.\n"
+            f"A continuación tienes su historial de puntuaciones (del 0% al 100%, donde más alto significa mayor bienestar):\n\n"
+            f"{historial_texto}\n\n"
+            "Analiza la curva de estos datos y redacta un reporte de 3 párrafos cortos y directos:\n"
+            "1. Tendencia general (¿Hay mejora progresiva, estancamiento o retroceso?).\n"
+            "2. Análisis de fluctuaciones (picos altos o caídas si las hay).\n"
+            "3. Conclusión/Recomendación para el psicólogo antes de su próxima sesión.\n\n"
+            "IMPORTANTE: Devuelve tu respuesta EXCLUSIVAMENTE en código HTML usando <p> y <b>. No uses títulos gigantes, no uses markdown (```html)."
+        )
+
+
+        client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
+        
+        response = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=800,
+            temperature=0.2 # Temperatura baja para que sea clínico y no invente
+        )
+        
+        analisis_html = response.choices[0].message.content.strip().replace('```html', '').replace('```', '')
+        return JsonResponse({'status': 'success', 'analisis': analisis_html})
+
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)})
 
 
 def guardar_historial(request):
@@ -2955,24 +3002,38 @@ def _mensaje_tierno_progreso(ipt_actual, ipt_anterior):
             "No hay retrocesos, solo procesos. Aquí seguimos contigo, paso a paso."
         )
 
+def _enviar_correo_ipp_async(psicologo_email, paciente_nombre, ipt_actual, ipt_anterior, respuestas_legibles):
+    """
+    Función que se ejecuta en segundo plano para enviar el resultado
+    del cuestionario al psicólogo sin bloquear la redirección del paciente.
+    """
+    asunto = f'Resultados del Formulario Semanal - {paciente_nombre}'
+    contexto = {
+        'paciente_nombre': paciente_nombre,
+        'ipt_actual': ipt_actual,
+        'ipt_anterior': ipt_anterior,
+        'respuestas': respuestas_legibles,
+    }
+    
+    try:
+        mensaje_html = render_to_string('correo_resultado_ipp.html', contexto)
+        mensaje_plano = strip_tags(mensaje_html)
+        
+        email = EmailMultiAlternatives(
+            subject=asunto,
+            body=mensaje_plano,
+            from_email='Espacio HOPE <no-reply@espaciohope.com>',
+            to=[psicologo_email]
+        )
+        email.attach_alternative(mensaje_html, "text/html")
+        email.send(fail_silently=True)
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).error(f"Error enviando correo IPP al doctor: {e}")
+
 @login_required
 def formulario_previo_meet(request, cita_id):
-    """
-    🔒 Paso obligatorio antes de entrar a la sala de Meet.
 
-    Seguridad/concurrencia:
-    - `cita = get_object_or_404(..., id=cita_id, paciente=request.user)` ata
-      la cita SIEMPRE al usuario autenticado de la petición en curso. Cada
-      request de Django corre de forma aislada (su propio `request.user`),
-      así que no existe manera de que la sesión de un paciente le muestre o
-      dispare el link de otro, sin importar cuántos usuarios entren al mismo
-      tiempo.
-    - `get_or_create` dentro de una transacción atómica evita que un doble
-      clic o doble pestaña genere dos registros para la misma (paciente,
-      cita); el `unique_together` del modelo es la última línea de defensa.
-    - Si el paciente ya había respondido el formulario para ESTA cita, no se
-      le vuelve a mostrar: se le manda directo a su Meet.
-    """
     cita = get_object_or_404(
         Cita.objects.select_related('psicologo__usuario'),
         id=cita_id, paciente=request.user, estado='Confirmada'
@@ -2997,12 +3058,8 @@ def formulario_previo_meet(request, cita_id):
 
         try:
             with transaction.atomic():
-                # select_for_update() sobre la fila de la cita evita que dos
-                # envíos simultáneos (doble clic) creen registros duplicados.
                 Cita.objects.select_for_update().get(id=cita.id)
 
-                # 🔥 Buscamos el registro anterior de este paciente ANTES de
-                # crear el nuevo, para poder comparar su progreso semanal.
                 respuesta_anterior = RespuestaFormularioOrganica.objects.filter(
                     paciente=request.user
                 ).exclude(cita=cita).order_by('-fecha_respuesta').first()
@@ -3019,6 +3076,31 @@ def formulario_previo_meet(request, cita_id):
         ipt_anterior = calcular_ipt(respuesta_anterior.puntaje) if respuesta_anterior else None
         mensaje = _mensaje_tierno_progreso(ipt_actual, ipt_anterior)
 
+        # =====================================================================
+        # 🔥 NUEVO: PREPARAR Y ENVIAR CORREO AL DOCTOR EN SEGUNDO PLANO
+        # =====================================================================
+        # 1. Cruzar las IDs de las respuestas con los textos legibles
+        respuestas_legibles = []
+        for p in FORMULARIO_ORGANICO_PREGUNTAS:
+            val_id = respuestas_dict.get(p['id'])
+            # Buscamos el texto exacto ('Nunca', 'Siempre', etc.)
+            texto_val = next((o['texto'] for o in ESCALA_IPP if o['valor'] == val_id), val_id)
+            respuestas_legibles.append({'pregunta': p['texto'], 'respuesta': texto_val})
+
+        # 2. Extraer datos del doctor y paciente
+        psicologo_email = cita.psicologo.usuario.email
+        paciente_nombre = request.user.first_name or request.user.username
+
+        # 3. Lanzar el envío de correo en un Hilo (Thread) separado. 
+        # Esto no bloquea la petición actual; el paciente recibe su JSON de inmediato.
+        if psicologo_email:
+            hilo_correo = threading.Thread(
+                target=_enviar_correo_ipp_async,
+                args=(psicologo_email, paciente_nombre, ipt_actual, ipt_anterior, respuestas_legibles)
+            )
+            hilo_correo.start()
+        # =====================================================================
+
         return JsonResponse({
             'status': 'success',
             'redirect_url': cita.enlace_meet,
@@ -3031,7 +3113,7 @@ def formulario_previo_meet(request, cita_id):
         'preguntas': FORMULARIO_ORGANICO_PREGUNTAS,
         'escala': ESCALA_IPP,
     })
-
+    
 
 def citas_hoy_view(request):
     """Vista simple: todas las citas de hoy con el match paciente-psicólogo."""

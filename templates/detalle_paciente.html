@@ -4,6 +4,9 @@
 {% block title %}Expediente - {{ paciente.first_name }} | HOPE{% endblock %}
 
 {% block content %}
+<!-- 🔥 Librería Chart.js para dibujar la gráfica de evolución IPP -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700;900&family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap');
 
@@ -32,6 +35,8 @@
     .btn-alert-top:hover { background: var(--c-pink); color: white; border-color: var(--c-pink); }
     .btn-teal-top { background: #f0fdfa; color: var(--c-teal); border: 1px solid #ccfbf1; padding: 10px 20px; border-radius: 12px; font-weight: 700; cursor: pointer; transition: 0.3s; display: flex; align-items: center; gap: 8px; font-size: 14px; }
     .btn-teal-top:hover { background: var(--c-teal); color: white; border-color: var(--c-teal); }
+    .btn-pink-top { background: #fdf2f8; color: var(--c-pink); border: 1px solid #fbcfe8; padding: 10px 20px; border-radius: 12px; font-weight: 700; cursor: pointer; transition: 0.3s; display: flex; align-items: center; gap: 8px; font-size: 14px; }
+    .btn-pink-top:hover { background: var(--c-pink); color: white; border-color: var(--c-pink); }
 
     /* BLOQUE MURO */
     .muro-box { background: white; border-radius: 24px; padding: 40px; box-shadow: 0 4px 20px rgba(0,0,0,0.02); border: 1px solid #f1f5f9; margin-bottom: 30px;}
@@ -288,6 +293,10 @@
                 <i class="fas fa-clipboard-list"></i> Ver cuestionario Inicial
             </button>
             {% endif %}
+            <!-- EL NUEVO BOTÓN PARA VER LA GRÁFICA IPP -->
+            <button class="btn-pink-top" onclick="abrirModalIPP()">
+                <i class="fas fa-chart-line"></i> Evolución IPP Semanal
+            </button>
             <button onclick="generarSintesisMaestra()" style="background: #f3e8ff; color: var(--c-purple); border: 1px solid #d8b4fe; padding: 10px 20px; border-radius: 12px; font-weight: 700; cursor: pointer; transition: 0.3s; display: flex; align-items: center; gap: 8px; font-size: 14px;" onmouseover="this.style.background='var(--c-purple)'; this.style.color='white'" onmouseout="this.style.background='#f3e8ff'; this.style.color='var(--c-purple)'">
                 <i class="fas fa-brain"></i> Síntesis Clínica IA
             </button>
@@ -660,6 +669,43 @@
     </div>
 </div>
 
+<!-- =========================================================================
+     🔥 MODAL DE EVOLUCIÓN IPP Y GRÁFICA
+     ========================================================================= -->
+<div id="modalGraficaIPP" class="custom-modal-overlay">
+    <div class="custom-modal-box" style="max-width: 850px; text-align: left; background: white; border-top: 8px solid var(--c-pink);">
+        <i class="fas fa-times" style="position: absolute; top: 20px; right: 20px; cursor: pointer; font-size: 20px; color: #94a3b8; transition: 0.2s;" onmouseover="this.style.color='#0f0f0f'" onmouseout="this.style.color='#94a3b8'" onclick="document.getElementById('modalGraficaIPP').style.display='none'"></i>
+
+        <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 25px;">
+            <div style="width: 60px; height: 60px; border-radius: 15px; background: #fdf2f8; color: var(--c-pink); display: flex; align-items: center; justify-content: center; font-size: 28px;">
+                <i class="fas fa-chart-area"></i>
+            </div>
+            <div>
+                <h2 style="font-family: var(--font-headings); font-size: 26px; color: var(--text-main); margin: 0 0 4px 0; font-weight: 800;">Evolución del Paciente (IPP)</h2>
+                <p style="color: var(--text-muted); margin: 0; font-size: 14px;">Análisis gráfico y deductivo de los formularios semanales.</p>
+            </div>
+        </div>
+
+        <!-- Contenedor de la gráfica -->
+        <div style="background: white; border: 1px solid #e2e8f0; border-radius: 16px; padding: 20px; margin-bottom: 20px; height: 250px; display: flex; align-items: center; justify-content: center;">
+            <canvas id="canvasIPP"></canvas>
+        </div>
+
+        <!-- Contenedor del Análisis IA -->
+        <div id="analisisIPPLoader" style="text-align: center; padding: 20px;">
+            <i class="fas fa-wand-magic-sparkles fa-beat" style="font-size: 30px; color: var(--c-pink); margin-bottom: 15px; display: block;"></i>
+            <h4 style="color: var(--text-main); margin: 0 0 5px 0;">La IA está leyendo la gráfica...</h4>
+            <p style="color: var(--text-muted); font-size: 13px; margin: 0;">Analizando fluctuaciones y tendencias del paciente.</p>
+        </div>
+
+        <div id="analisisIPPContent" style="display: none; background: #fef1f2; border-radius: 16px; padding: 25px; border: 1px solid #fecdd3; font-size: 14px; line-height: 1.6; color: var(--text-main);">
+            <!-- Aquí Groq inyectará el análisis -->
+        </div>
+
+        <button onclick="document.getElementById('modalGraficaIPP').style.display='none'" style="margin-top: 25px; background: #f1f5f9; color: var(--text-muted); border: none; padding: 15px; border-radius: 12px; font-weight: 700; font-size: 15px; cursor: pointer; transition: 0.3s; width: 100%; font-family: var(--font-headings);" onmouseover="this.style.background='#e2e8f0'; this.style.color='#0f0f0f'" onmouseout="this.style.background='#f1f5f9'; this.style.color='var(--text-muted)'">Cerrar Gráfica</button>
+    </div>
+</div>
+
 <script>
     // =========================================================================
     // ACORDEÓN DE SESIÓN
@@ -992,6 +1038,93 @@ function generarSintesisMaestra() {
                 document.getElementById('sintesisLoader').style.display = 'none';
                 document.getElementById('sintesisContent').innerHTML = `<div style="text-align: center; color: #ef4444;"><i class="fas fa-wifi" style="font-size: 30px; margin-bottom: 10px;"></i><p><b>Fallo de conexión.</b> No se pudo contactar al servidor de IA.</p></div>`;
                 document.getElementById('sintesisContent').style.display = 'block';
+            });
+    }
+
+    // =========================================================================
+    // 🔥 LÓGICA DE LA GRÁFICA DE LÍNEAS Y LA IA
+    // =========================================================================
+    let graficaIPP = null; // Variable global para destruir la gráfica y no se empalme
+
+    function abrirModalIPP() {
+        document.getElementById('modalGraficaIPP').style.display = 'flex';
+
+        // Datos enviados desde la vista Django
+        const labels = JSON.parse('{{ ipp_labels|escapejs }}');
+        const dataPuntos = JSON.parse('{{ ipp_data|escapejs }}');
+
+        const ctx = document.getElementById('canvasIPP').getContext('2d');
+
+        // Si ya existe una gráfica, la destruimos para redibujarla limpia
+        if (graficaIPP) { graficaIPP.destroy(); }
+
+        // Dibujamos la gráfica estilo HOPE
+        graficaIPP = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Bienestar IPP (%)',
+                    data: dataPuntos,
+                    borderColor: '#F85B8C', // Color rosa (var(--c-pink))
+                    backgroundColor: 'rgba(248, 91, 140, 0.15)', // Relleno rosita tenue
+                    borderWidth: 3,
+                    pointBackgroundColor: '#5A3FA3', // Puntos morados
+                    pointBorderColor: '#ffffff',
+                    pointBorderWidth: 2,
+                    pointRadius: 6,
+                    pointHoverRadius: 8,
+                    fill: true,
+                    tension: 0.4 // Hace la línea curva/suave (spline)
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        grid: { color: '#f1f5f9' },
+                        ticks: { callback: function(value){ return value + '%' } }
+                    },
+                    x: { grid: { display: false } }
+                },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: '#1a1035',
+                        padding: 12,
+                        titleFont: { family: "'Outfit', sans-serif", size: 14 },
+                        bodyFont: { family: "'Plus Jakarta Sans', sans-serif", size: 14 },
+                        callbacks: {
+                            label: function(context) { return ' Nivel: ' + context.raw + '%'; }
+                        }
+                    }
+                }
+            }
+        });
+
+        // 🤖 Mandamos a llamar el endpoint de Groq para interpretar la curva
+        document.getElementById('analisisIPPLoader').style.display = 'block';
+        document.getElementById('analisisIPPContent').style.display = 'none';
+
+        fetch(`/analizar-grafica-ipp/{{ paciente.id }}/`)
+            .then(r => r.json())
+            .then(data => {
+                document.getElementById('analisisIPPLoader').style.display = 'none';
+                if (data.status === 'success') {
+                    document.getElementById('analisisIPPContent').innerHTML = data.analisis;
+                    document.getElementById('analisisIPPContent').style.display = 'block';
+                } else {
+                    document.getElementById('analisisIPPContent').innerHTML = `<div style="text-align: center; color: #ef4444;"><i class="fas fa-exclamation-circle" style="font-size: 24px; margin-bottom: 5px;"></i><p><b>Error:</b> ${data.message}</p></div>`;
+                    document.getElementById('analisisIPPContent').style.display = 'block';
+                }
+            })
+            .catch(err => {
+                document.getElementById('analisisIPPLoader').style.display = 'none';
+                document.getElementById('analisisIPPContent').innerHTML = `<div style="text-align: center; color: #ef4444;"><i class="fas fa-wifi" style="font-size: 24px; margin-bottom: 5px;"></i><p>Fallo de conexión al interpretar la gráfica.</p></div>`;
+                document.getElementById('analisisIPPContent').style.display = 'block';
             });
     }
 

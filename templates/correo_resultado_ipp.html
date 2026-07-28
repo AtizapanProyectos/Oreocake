@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resultados Semanales IPP</title>
+    <style>
+        /* Importamos las fuentes nuevas para clientes de correo modernos */
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@700&family=Plus+Jakarta+Sans:wght@400;600;700&display=swap');
+    </style>
+</head>
+
+<body
+    style="font-family: 'Plus Jakarta Sans', Helvetica, Arial, sans-serif; background-color: #F9FAFB; margin: 0; padding: 0; -webkit-font-smoothing: antialiased;">
+
+    <table width="100%" cellpadding="0" cellspacing="0" border="0"
+        style="background-color: #F9FAFB; padding: 40px 20px;">
+        <tr>
+            <td align="center">
+                <table width="100%" max-width="600" cellpadding="0" cellspacing="0" border="0"
+                    style="background-color: #FFFFFF; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.05); max-width: 600px; width: 100%; border-top: 6px solid #5A3FA3;">
+
+                    <!-- LOGO -->
+                    <tr>
+                        <td align="center" style="background-color: #ffffff; padding: 40px 20px 10px 20px;">
+                            <img src="https://espaciohope.com/static/img/nlogo.png" alt="HOPE"
+                                style="height: 170px; width: auto; display: block; margin: 0 auto;">
+                        </td>
+                    </tr>
+
+                    <!-- CONTENIDO PRINCIPAL -->
+                    <tr>
+                        <td align="center" style="padding: 10px 40px 40px 40px;">
+
+                            <!-- Adorno amarillo -->
+                            <div
+                                style="height: 4px; width: 40px; background-color: #F8D33D; margin: 0 auto 20px auto; border-radius: 2px;">
+                            </div>
+
+                            <h2 style="color: #0f0f0f; margin-top: 0; font-size: 26px; font-weight: 700; font-family: 'Outfit', Helvetica, Arial, sans-serif;">
+                                Resultados de {{ paciente_nombre }}
+                            </h2>
+
+                            <p style="color: #64748b; font-size: 16px; line-height: 1.6; margin-bottom: 35px;">
+                                Tu paciente acaba de completar su formulario orgánico (IPP) y está por entrar a su sesión. 
+                                Aquí tienes sus resultados de esta semana.
+                            </p>
+
+                            <!-- BLOQUE DE PUNTAJES -->
+                            <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 35px;">
+                                <tr>
+                                    <!-- Índice Actual -->
+                                    <td align="center" width="50%" style="padding: 20px 10px; background-color: #F3F0FA; border-radius: 12px 0 0 12px; border-right: 2px solid #FFFFFF;">
+                                        <p style="margin: 0 0 5px 0; font-size: 12px; color: #5A3FA3; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Índice Actual</p>
+                                        <p style="margin: 0; font-size: 34px; font-weight: 700; color: #1a1035; font-family: 'Outfit', Helvetica, Arial, sans-serif;">{{ ipt_actual }}%</p>
+                                    </td>
+                                    <!-- Índice Anterior -->
+                                    <td align="center" width="50%" style="padding: 20px 10px; background-color: #F9FAFB; border-radius: 0 12px 12px 0;">
+                                        <p style="margin: 0 0 5px 0; font-size: 12px; color: #9CA3AF; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Índice Anterior</p>
+                                        <p style="margin: 0; font-size: 34px; font-weight: 700; color: #64748b; font-family: 'Outfit', Helvetica, Arial, sans-serif;">
+                                            {% if ipt_anterior %}{{ ipt_anterior }}%{% else %}N/A{% endif %}
+                                        </p>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <!-- DETALLE DE RESPUESTAS -->
+                            <h3 style="color: #0f0f0f; font-size: 18px; font-weight: 700; margin-bottom: 15px; text-align: left; font-family: 'Outfit', Helvetica, Arial, sans-serif;">
+                                Detalle del formulario:
+                            </h3>
+                            
+                            <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #FFFFFF; border: 1px solid #E5E7EB; border-radius: 12px; overflow: hidden; text-align: left;">
+                                {% for item in respuestas %}
+                                <tr>
+                                    <td style="padding: 16px 20px; {% if not forloop.last %}border-bottom: 1px solid #E5E7EB;{% endif %}">
+                                        <p style="margin: 0 0 6px 0; font-size: 13px; color: #64748b; font-weight: 600; line-height: 1.4;">{{ item.pregunta }}</p>
+                                        <p style="margin: 0; font-size: 15px; color: #5A3FA3; font-weight: 700;">{{ item.respuesta }}</p>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </table>
+
+                        </td>
+                    </tr>
+
+                    <!-- FOOTER -->
+                    <tr>
+                        <td align="center"
+                            style="background-color: #F3F4F6; padding: 25px 20px; border-top: 1px solid #E5E7EB;">
+                            <p style="color: #64748b; font-size: 12px; margin: 0; line-height: 1.5;">
+                                Este es un correo automático de apoyo clínico generado para tu consulta.<br>
+                                <strong style="color: #5A3FA3;">&copy; 2026 Espacio HOPE.</strong> Todos los derechos reservados.
+                            </p>
+                        </td>
+                    </tr>
+
+                </table>
+            </td>
+        </tr>
+    </table>
+
+</body>
+
+</html>
