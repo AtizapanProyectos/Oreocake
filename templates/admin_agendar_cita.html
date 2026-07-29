@@ -495,8 +495,18 @@ document.addEventListener('DOMContentLoaded', function () {
 
         const params = new URLSearchParams({ paciente_id: pacienteId, tipo_sesion: tipoSesion });
         fetch(URL_DISPONIBILIDAD + '?' + params.toString())
-            .then(function (r) { return r.json(); })
+            .then(function (r) {
+                // 🔎 DEBUG: si el server responde con error HTTP (500, 400, etc.)
+                // igual intentamos leer el body como JSON, pero dejamos rastro
+                // del status en consola para saber qué truena.
+                console.log('[DEBUG disponibilidad] HTTP status:', r.status);
+                return r.json().catch(function (parseErr) {
+                    console.error('[DEBUG disponibilidad] La respuesta no es JSON válido:', parseErr);
+                    throw new Error('Respuesta no-JSON del servidor (status ' + r.status + '). Revisa la consola.');
+                });
+            })
             .then(function (data) {
+                console.log('[DEBUG disponibilidad] Payload recibido:', data);
                 if (data.status === 'success') {
                     diasDisponibles = data.dias || {};
                     fechaSeleccionada = null;
@@ -505,13 +515,32 @@ document.addEventListener('DOMContentLoaded', function () {
                         avisoBox.textContent = data.aviso;
                         avisoBox.classList.add('activo');
                     }
+                    if (!Object.keys(diasDisponibles).length) {
+                        // 🔥 DEBUG: no truena, pero no hay ni un solo día con horarios.
+                        // Mandamos alert con el detalle para poder copiarlo/mandarlo.
+                        alert(
+                            'DEBUG - No hay horarios:\n' +
+                            'tipo_sesion: ' + tipoSesion + '\n' +
+                            'paciente_id: ' + pacienteId + '\n' +
+                            'aviso del server: ' + (data.aviso || '(sin aviso)') + '\n' +
+                            'payload completo en la consola (F12 > Console)'
+                        );
+                    }
                     renderDias();
                     actualizarResumen();
                 } else {
+                    // 🔥 DEBUG: el server respondió pero con status distinto a 'success'
+                    alert(
+                        'DEBUG - Error del servidor al pedir disponibilidad:\n' +
+                        (data.message || '(el servidor no mandó "message")') + '\n\n' +
+                        'Payload completo:\n' + JSON.stringify(data, null, 2)
+                    );
                     diasScroll.innerHTML = '<div class="hpa-vacio">' + (data.message || 'No pudimos cargar la disponibilidad.') + '</div>';
                 }
             })
-            .catch(function () {
+            .catch(function (err) {
+                console.error('[DEBUG disponibilidad] Excepción en fetch:', err);
+                alert('DEBUG - Error de conexión / excepción JS:\n' + (err && err.message ? err.message : err));
                 diasScroll.innerHTML = '<div class="hpa-vacio">Error de conexión. Intenta de nuevo.</div>';
             });
     }
