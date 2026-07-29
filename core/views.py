@@ -166,25 +166,11 @@ from .models import DiaFestivo, Cita, PerfilPsicologo
 from datetime import datetime, timedelta, time
 from collections import defaultdict
 
-def obtener_slots_globales(fecha_inicio, fecha_fin, preferencia=None, tipo_sesion="individual"):
+def _buscar_slots_globales_con_filtros(filtros, fecha_inicio, fecha_fin, tipo_sesion):
     """
-    🔥 BÚSQUEDA GLOBAL: usada cuando el paciente TODAVÍA NO tiene psicólogo asignado.
+    Helper interno: corre la búsqueda global de slots con el diccionario de
+    filtros que le pases (puede o no incluir 'genero').
     """
-    campo_capacidad = CAPACIDAD_POR_TIPO_SESION.get(tipo_sesion, 'atiende_individual')
-
-    filtros = {
-        campo_capacidad: True,
-        'esta_activo': True,
-    }
-
-    if preferencia:
-        preferencia_norm = preferencia.strip().lower()
-        if 'mujer' in preferencia_norm:
-            filtros['genero'] = 'Mujer'
-        elif 'hombre' in preferencia_norm:
-            filtros['genero'] = 'Hombre'
-        # Cualquier otro valor (Indistinto, Cualquiera, "", etc.) => no se filtra por género.
-
     # 1. ACTUALIZACIÓN: Usamos el nuevo EsquemaHorarioPsicologo
     esquemas_en_rango = EsquemaHorarioPsicologo.objects.filter(
         activo=True, fecha_inicio__lte=fecha_fin, fecha_fin__gte=fecha_inicio,
@@ -205,12 +191,46 @@ def obtener_slots_globales(fecha_inicio, fecha_fin, preferencia=None, tipo_sesio
                 slots_globales[fecha_str] = set()
             slots_globales[fecha_str].update(lista_horas)
 
-    slots_globales_ordenados = {
+    return {
         fecha: sorted(list(horas), key=lambda x: datetime.strptime(x, '%I:%M %p'))
         for fecha, horas in sorted(slots_globales.items()) if horas # <--- Agregamos sorted() aquí
     }
 
-    return slots_globales_ordenados
+
+def obtener_slots_globales(fecha_inicio, fecha_fin, preferencia=None, tipo_sesion="individual"):
+    """
+    🔥 BÚSQUEDA GLOBAL: usada cuando el paciente TODAVÍA NO tiene psicólogo asignado.
+
+    El género es una PREFERENCIA, no un requisito: primero intentamos respetarla,
+    pero si con ese género no hay ni un solo horario disponible, hacemos un
+    segundo intento sin el filtro de género en vez de devolver "no hay horarios"
+    cuando en realidad sí hay citas (solo que con el otro género).
+    """
+    campo_capacidad = CAPACIDAD_POR_TIPO_SESION.get(tipo_sesion, 'atiende_individual')
+
+    filtros_base = {
+        campo_capacidad: True,
+        'esta_activo': True,
+    }
+
+    genero_preferido = None
+    if preferencia:
+        preferencia_norm = preferencia.strip().lower()
+        if 'mujer' in preferencia_norm:
+            genero_preferido = 'Mujer'
+        elif 'hombre' in preferencia_norm:
+            genero_preferido = 'Hombre'
+        # Cualquier otro valor (Indistinto, Cualquiera, "", etc.) => no se filtra por género.
+
+    if genero_preferido:
+        filtros_con_genero = {**filtros_base, 'genero': genero_preferido}
+        resultado = _buscar_slots_globales_con_filtros(filtros_con_genero, fecha_inicio, fecha_fin, tipo_sesion)
+        if resultado:
+            return resultado
+        # 🔥 No hubo nada con el género preferido: mejor ofrecer el otro género
+        # que dejar al paciente sin ninguna opción. Caemos al filtro base (sin genero).
+
+    return _buscar_slots_globales_con_filtros(filtros_base, fecha_inicio, fecha_fin, tipo_sesion)
 
 
 def obtener_slots_psicologo(psicologo, fecha_inicio, fecha_fin, tipo_sesion="individual"):
