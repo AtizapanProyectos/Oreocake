@@ -2946,8 +2946,10 @@ def _limpiar_numero_whatsapp(numero, codigo_pais_default='52'):
 # =========================================================================
 # 📋 ÍNDICE DE PROGRESO PSICOLÓGICO (IPP) - cuestionario semanal previo a Meet
 # =========================================================================
-# Mismos 10 reactivos cada semana, escala Likert 1-5 (según el documento
-# oficial del IPP). Fuente única de verdad para render + cálculo del puntaje.
+# Mismos 12 reactivos cada semana (agrupados en 4 categorías: Bienestar
+# emocional, Afrontamiento, Aplicación de herramientas y Esperanza y
+# autoeficacia), escala Likert 1-5. Fuente única de verdad para render +
+# cálculo del puntaje.
 ESCALA_IPP = [
     {'valor': 'nunca', 'texto': 'Nunca', 'puntos': 1},
     {'valor': 'casi_nunca', 'texto': 'Casi nunca', 'puntos': 2},
@@ -2957,16 +2959,37 @@ ESCALA_IPP = [
 ]
 
 FORMULARIO_ORGANICO_PREGUNTAS = [
-    {'id': 'ipp_1', 'texto': 'A menudo pienso que no sirvo para algo'},
-    {'id': 'ipp_2', 'texto': 'Pienso que las demás personas son mejores que yo'},
-    {'id': 'ipp_3', 'texto': 'Evito realizar actividades que desconozco'},
-    {'id': 'ipp_4', 'texto': 'Evito hablar o acercarme a otras personas por miedo'},
-    {'id': 'ipp_5', 'texto': 'Siento que todo me sale mal'},
-    {'id': 'ipp_6', 'texto': 'Me molesta que me critiquen'},
-    {'id': 'ipp_7', 'texto': 'Me alegro cuando otros se equivocan'},
-    {'id': 'ipp_8', 'texto': 'Siento que soy poco interesante'},
-    {'id': 'ipp_9', 'texto': 'Estoy al tanto del cuidado de mi salud'},
-    {'id': 'ipp_10', 'texto': 'Tengo problemas para realizar mis metas'},
+    # --- Bienestar emocional ---
+    {'id': 'ipp_1', 'categoria': 'Bienestar emocional',
+     'texto': 'Durante las últimas dos semanas, he sentido que mi vida tiene un propósito o dirección'},
+    {'id': 'ipp_2', 'categoria': 'Bienestar emocional',
+     'texto': 'Durante las últimas dos semanas, me he sentido capaz de afrontar los desafíos que se presentan'},
+    {'id': 'ipp_3', 'categoria': 'Bienestar emocional',
+     'texto': 'Durante las últimas dos semanas, me he sentido de buen ánimo'},
+
+    # --- Afrontamiento ---
+    {'id': 'ipp_4', 'categoria': 'Afrontamiento',
+     'texto': 'Cuando enfrento una situación que me genera malestar, soy capaz de identificar estrategias que me ayudan a manejarla de manera saludable'},
+    {'id': 'ipp_5', 'categoria': 'Afrontamiento',
+     'texto': 'En comparación con semanas anteriores, me resulta más fácil regular mis emociones cuando atravieso una situación difícil'},
+    {'id': 'ipp_6', 'categoria': 'Afrontamiento',
+     'texto': 'Ante los desafíos que enfrenté, siento que cuento con más herramientas personales para responder de manera efectiva que antes'},
+
+    # --- Aplicación de herramientas ---
+    {'id': 'ipp_7', 'categoria': 'Aplicación de herramientas',
+     'texto': 'Desde mi última sesión, he puesto en práctica al menos una de las herramientas o estrategias trabajadas durante mi proceso psicológico'},
+    {'id': 'ipp_8', 'categoria': 'Aplicación de herramientas',
+     'texto': 'Las herramientas que he utilizado me han ayudado a manejar mejor las situaciones que me generan malestar'},
+    {'id': 'ipp_9', 'categoria': 'Aplicación de herramientas',
+     'texto': 'Cuando enfrento una situación difícil, recuerdo y aplico de manera intencional las estrategias aprendidas en terapia'},
+
+    # --- Esperanza y autoeficacia ---
+    {'id': 'ipp_10', 'categoria': 'Esperanza y autoeficacia',
+     'texto': 'Siento que existen diferentes maneras de avanzar hacia las metas que son importantes para mí, incluso cuando encuentro obstáculos'},
+    {'id': 'ipp_11', 'categoria': 'Esperanza y autoeficacia',
+     'texto': 'Confío en mi capacidad para afrontar los desafíos que puedan presentarse en mi vida'},
+    {'id': 'ipp_12', 'categoria': 'Esperanza y autoeficacia',
+     'texto': 'Me siento con la motivación y la confianza necesarias para seguir trabajando en mi bienestar emocional'},
 ]
 
 # Cada pregunta usa la MISMA escala (así lo indica el documento del IPP)
@@ -2975,8 +2998,8 @@ _OPCIONES_POR_PREGUNTA = {
     for p in FORMULARIO_ORGANICO_PREGUNTAS
 }
 
-IPP_PUNTAJE_MIN = 10   # 10 reactivos x mínimo 1 punto
-IPP_PUNTAJE_MAX = 50   # 10 reactivos x máximo 5 puntos
+IPP_PUNTAJE_MIN = 12   # 12 reactivos x mínimo 1 punto
+IPP_PUNTAJE_MAX = 60   # 12 reactivos x máximo 5 puntos
 
 
 def _calcular_puntaje_formulario_organico(respuestas_dict):
