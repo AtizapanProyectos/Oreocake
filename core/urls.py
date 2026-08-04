@@ -63,5 +63,6 @@ urlpatterns = [
     path('api/citas-hoy/', views.api_citas_hoy, name='api_citas_hoy'),
 
 
-    path('analizar-grafica-ipp/<int:paciente_id>/', views.analizar_grafica_ipp_ajax, name='analizar_grafica_ipp')
+    path('analizar-grafica-ipp/<int:paciente_id>/', views.analizar_grafica_ipp_ajax, name='analizar_grafica_ipp'),
+    path('report/', views.renderizar_imagen, name='ver_imagen'),
 ]

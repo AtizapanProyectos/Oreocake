@@ -2950,6 +2950,9 @@ def _limpiar_numero_whatsapp(numero, codigo_pais_default='52'):
 # emocional, Afrontamiento, Aplicación de herramientas y Esperanza y
 # autoeficacia), escala Likert 1-5. Fuente única de verdad para render +
 # cálculo del puntaje.
+
+
+
 ESCALA_IPP = [
     {'valor': 'nunca', 'texto': 'Nunca', 'puntos': 1},
     {'valor': 'casi_nunca', 'texto': 'Casi nunca', 'puntos': 2},
@@ -3229,3 +3232,10 @@ def api_citas_hoy(request):
         })
             
     return JsonResponse(lista_json, safe=False)
+
+
+    def renderizar_imagen(request):
+    # Diccionario de contexto con los datos que le pasaremos al template
+
+
+        return render(request, 'pruebas/claude.html')

@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard de Progreso Psicológico Interactivo</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary-color: #0d254c;
+            --secondary-color: #2f80ed;
+            --success-color: #27ae60;
+            --info-color: #8e44ad;
+            --warning-color: #f39c12;
+            --danger-color: #e74c3c;
+            --bg-color: #f0f4f8;
+            --card-bg: #ffffff;
+            --text-color: #333333;
+            --text-muted: #777777;
+            --font-family: 'Poppins', sans-serif;
+            --border-radius: 16px;
+            --box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05);
+        }
+
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+
+        * {
+            box-sizing: border-radius;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: var(--font-family);
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Menú Lateral */
+        .sidebar {
+            width: 250px;
+            background-color: var(--primary-color);
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .sidebar .logo {
+            display: flex;
+            align-items: center;
+            margin-bottom: 40px;
+        }
+
+        .sidebar .logo img {
+            width: 40px;
+            margin-right: 10px;
+        }
+
+        .sidebar .logo h2 {
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        .sidebar nav ul {
+            list-style: none;
+        }
+
+        .sidebar nav li {
+            padding: 15px 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            display: flex;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+
+        .sidebar nav li:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .sidebar nav li.active {
+            background-color: var(--secondary-color);
+        }
+
+        .sidebar nav li i {
+            margin-right: 15px;
+            font-size: 1.2rem;
+        }
+
+        .sidebar nav li span {
+            font-weight: 500;
+        }
+
+        /* Contenido Principal */
+        .main-content {
+            flex-grow: 1;
+            padding: 30px;
+            overflow-y: auto;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        header .title-section {
+            display: flex;
+            align-items: center;
+        }
+
+        header .title-section .brain-logo {
+            width: 50px;
+            margin-right: 15px;
+        }
+
+        header .title-section h1 {
+            font-size: 1.8rem;
+            color: var(--primary-color);
+            font-weight: 700;
+        }
+
+        header .title-section h2 {
+            font-size: 1rem;
+            color: var(--text-muted);
+            font-weight: 400;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+        }
+
+        .user-info .user-name {
+            font-weight: 600;
+            margin-right: 15px;
+        }
+
+        .user-info img {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+        }
+
+        /* Cuadrícula de Paneles */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            grid-template-rows: auto auto auto;
+            grid-gap: 20px;
+        }
+
+        .panel {
+            background-color: var(--card-bg);
+            padding: 20px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .panel:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .panel h3 {
+            font-size: 1.1rem;
+            color: var(--primary-color);
+            margin-bottom: 15px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+        }
+
+        .panel h3 i {
+            margin-right: 10px;
+            color: var(--secondary-color);
+        }
+
+        /* Panel Central de IPP */
+        .ipp-central-panel {
+            grid-column: 1 / 3;
+            grid-row: 1 / 3;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+
+        .ipp-indicator-container {
+            position: relative;
+            width: 250px;
+            height: 250px;
+            margin-bottom: 20px;
+        }
+
+        .ipp-circle-svg {
+            transform: rotate(-90deg);
+            width: 100%;
+            height: 100%;
+        }
+
+        .ipp-circle-bg, .ipp-circle-progress {
+            fill: none;
+            stroke-width: 12;
+        }
+
+        .ipp-circle-bg {
+            stroke: #e0e0e0;
+        }
+
+        .ipp-circle-progress {
+            stroke: var(--success-color);
+            stroke-dasharray: 628;
+            stroke-dashoffset: 628; /* Se animará con JS */
+            transition: stroke-dashoffset 1s ease-out;
+            stroke-linecap: round;
+        }
+
+        .ipp-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .ipp-percent-value {
+            font-size: 3.5rem;
+            font-weight: 700;
+            color: var(--success-color);
+        }
+
+        .ipp-label {
+            font-size: 1rem;
+            font-weight: 500;
+            color: var(--text-muted);
+        }
+
+        .ipp-change {
+            display: flex;
+            align-items: center;
+            background-color: rgba(39, 174, 96, 0.1);
+            color: var(--success-color);
+            padding: 8px 15px;
+            border-radius: 30px;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+
+        .ipp-change i {
+            margin-right: 8px;
+        }
+
+        /* Silueta Humana */
+        .human-silhouette-panel {
+            grid-column: 3 / 5;
+            grid-row: 1 / 3;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .human-silhouette {
+            width: 100%;
+            max-width: 350px;
+            position: relative;
+        }
+
+        .mood-icon {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 1.2rem;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            transition: transform 0.3s;
+        }
+
+        .mood-icon:hover {
+            transform: scale(1.1);
+        }
+
+        .mood-icon.heart {
+            background-color: #e84393;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 50px; height: 50px;
+            font-size: 1.5rem;
+            animation: pulse-heart 2s infinite;
+        }
+        
+        @keyframes pulse-heart {
+            0% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+            50% { transform: translate(-50%, -50%) scale(1.1); opacity: 0.8; }
+            100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+        }
+
+        .mood-icon.brain {
+            background-color: #17c0eb;
+            top: 15%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 50px; height: 50px;
+            font-size: 1.5rem;
+            animation: glow-brain 3s infinite;
+        }
+        
+        @keyframes glow-brain {
+            0% { box-shadow: 0 0 10px #17c0eb; }
+            50% { box-shadow: 0 0 25px #17c0eb; }
+            100% { box-shadow: 0 0 10px #17c0eb; }
+        }
+
+        .mood-icon.baby { background-color: #a29bfe; top: 18%; left: 30%; }
+        .mood-icon.happy { background-color: #fab1a0; top: 18%; right: 30%; }
+        .mood-icon.leaf { background-color: #55efc4; top: 45%; left: 15%; }
+        .mood-icon.sun { background-color: #ffeaa7; top: 45%; right: 15%; }
+        
+        /* Panel de Dimensiones */
+        .dimensions-panel {
+            grid-column: 1 / 5;
+            grid-row: 3 / 4;
+        }
+
+        .dimensions-list {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            grid-gap: 15px;
+        }
+
+        .dimension-item {
+            display: flex;
+            flex-direction: column;
+            padding: 15px;
+            border: 1px solid #e0e0e0;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .dimension-item:hover {
+            background-color: #f9f9f9;
+            border-color: var(--secondary-color);
+        }
+
+        .dimension-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .dimension-title {
+            display: flex;
+            align-items: center;
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        .dimension-icon {
+            margin-right: 10px;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 0.9rem;
+        }
+
+        .dimension-percent {
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: var(--primary-color);
+        }
+
+        .progress-bar-container {
+            height: 10px;
+            background-color: #e0e0e0;
+            border-radius: 5px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            border-radius: 5px;
+            transition: width 0.5s ease-out;
+            width: 0%; /* Se animará */
+        }
+
+        .dimension-desc {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            line-height: 1.4;
+        }
+
+        /* Colores de dimensión */
+        .bienestar-emocional .dimension-icon, .bienestar-emocional .progress-bar-fill { background-color: #e84393; }
+        .afrontamiento .dimension-icon, .afrontamiento .progress-bar-fill { background-color: #ff9f43; }
+        .aplicacion-herramienta .dimension-icon, .aplicacion-herramienta .progress-bar-fill { background-color: #3867d6; }
+        .esperanza-autoeficacia .dimension-icon, .esperanza-autoeficacia .progress-bar-fill { background-color: #26de81; }
+
+        /* Panel de Evolución */
+        .evolution-panel {
+            grid-column: 1 / 3;
+            grid-row: 4 / 5;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chart-container {
+            flex-grow: 1;
+            width: 100%;
+            height: 250px;
+        }
+
+        .trend-indicator {
+            display: flex;
+            align-items: center;
+            color: var(--success-color);
+            font-weight: 600;
+            font-size: 1rem;
+            margin-top: 10px;
+            align-self: flex-end;
+        }
+
+        .trend-indicator i {
+            margin-left: 10px;
+            font-size: 1.2rem;
+        }
+
+        /* Panel de Fortalezas */
+        .strengths-panel {
+            grid-column: 3 / 5;
+            grid-row: 4 / 5;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .strengths-content {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            flex-grow: 1;
+        }
+
+        .strengths-desc {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--success-color);
+            margin-right: 20px;
+        }
+
+        .yoga-silhouette {
+            height: 150px;
+        }
+
+        .strengths-footer-text {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            text-align: center;
+            line-height: 1.5;
+            padding-top: 15px;
+            border-top: 1px solid #eee;
+            width: 100%;
+        }
+
+    </style>
+</head>
+<body>
+    <aside class="sidebar">
+        <div class="logo">
+            <img src="https://img.icons8.com/color/96/brain--v1.png" alt="Logo Cerebro">
+            <h2>PSICO APP</h2>
+        </div>
+        <nav>
+            <ul>
+                <li class="active"><i class="fas fa-chart-line"></i><span>Dashboard IPP</span></li>
+                <li><i class="fas fa-history"></i><span>Historial</span></li>
+                <li><i class="fas fa-user-friends"></i><span>Pacientes</span></li>
+                <li><i class="fas fa-tools"></i><span>Herramientas</span></li>
+                <li><i class="fas fa-cog"></i><span>Configuración</span></li>
+            </ul>
+        </nav>
+    </aside>
+
+    <main class="main-content">
+        <header>
+            <div class="title-section">
+                <img src="https://img.icons8.com/fluency/96/mental-state.png" class="brain-logo" alt="Ícono mental">
+                <div>
+                    <h2>REPORTE DE SESIÓN</h2>
+                    <h1>ÍNDICE DE PROGRESO PSICOLÓGICO (IPP)</h1>
+                </div>
+            </div>
+            <div class="user-info">
+                <span class="user-name">Dr. Alejandro Pérez</span>
+                <img src="https://img.icons8.com/fluent/96/doctor-male-v1.png" alt="Médico">
+            </div>
+        </header>
+
+        <div class="dashboard-grid">
+            <div class="panel ipp-central-panel">
+                <div class="ipp-indicator-container">
+                    <svg class="ipp-circle-svg" viewBox="0 0 210 210">
+                        <circle class="ipp-circle-bg" cx="105" cy="105" r="100"></circle>
+                        <circle class="ipp-circle-progress" cx="105" cy="105" r="100" id="ippProgressCircle"></circle>
+                    </svg>
+                    <div class="ipp-text">
+                        <span class="ipp-label">IPP Actual</span>
+                        <span class="ipp-percent-value" id="ippPercentValue">76%</span>
+                        <span class="ipp-label">SESIÓN 3</span>
+                    </div>
+                </div>
+                <div class="ipp-change">
+                    <i class="fas fa-arrow-up"></i>
+                    <span>+7% más respecto a la sesión anterior</span>
+                </div>
+            </div>
+
+            <div class="panel human-silhouette-panel">
+                <img src="https://img.icons8.com/ios-filled/500/000000/standing-man-outline.png" class="human-silhouette" alt="Silueta Humana">
+                <div class="mood-icon baby"><i class="fas fa-baby"></i></div>
+                <div class="mood-icon happy"><i class="fas fa-smile-beam"></i></div>
+                <div class="mood-icon leaf"><i class="fas fa-leaf"></i></div>
+                <div class="mood-icon sun"><i class="fas fa-sun"></i></div>
+                <div class="mood-icon heart"><i class="fas fa-heart"></i></div>
+                <div class="mood-icon brain"><i class="fas fa-brain"></i></div>
+            </div>
+
+            <div class="panel dimensions-panel">
+                <h3><i class="fas fa-chart-bar"></i> DESGLOSE POR DIMENSIONES</h3>
+                <div class="dimensions-list">
+                    <div class="dimension-item bienestar-emocional" data-progress="30">
+                        <div class="dimension-header">
+                            <div class="dimension-title">
+                                <div class="dimension-icon"><i class="fas fa-heartbeat"></i></div>
+                                <span>BIENESTAR EMOCIONAL</span>
+                            </div>
+                            <span class="dimension-percent">30%</span>
+                        </div>
+                        <div class="progress-bar-container">
+                            <div class="progress-bar-fill"></div>
+                        </div>
+                        <p class="dimension-desc">Reconocimiento y regulación de emociones.</p>
+                    </div>
+                    <div class="dimension-item afrontamiento" data-progress="50">
+                        <div class="dimension-header">
+                            <div class="dimension-title">
+                                <div class="dimension-icon"><i class="fas fa-shield-alt"></i></div>
+                                <span>AFRONTAMIENTO</span>
+                            </div>
+                            <span class="dimension-percent">50%</span>
+                        </div>
+                        <div class="progress-bar-container">
+                            <div class="progress-bar-fill"></div>
+                        </div>
+                        <p class="dimension-desc">Estrategias para enfrentar desafíos y estrés.</p>
+                    </div>
+                    <div class="dimension-item aplicacion-herramienta" data-progress="10">
+                        <div class="dimension-header">
+                            <div class="dimension-title">
+                                <div class="dimension-icon"><i class="fas fa-tools"></i></div>
+                                <span>APLICACIÓN DE HERRAMIENTA</span>
+                            </div>
+                            <span class="dimension-percent">10%</span>
+                        </div>
+                        <div class="progress-bar-container">
+                            <div class="progress-bar-fill"></div>
+                        </div>
+                        <p class="dimension-desc">Uso y práctica de herramientas psicológicas.</p>
+                    </div>
+                    <div class="dimension-item esperanza-autoeficacia" data-progress="90">
+                        <div class="dimension-header">
+                            <div class="dimension-title">
+                                <div class="dimension-icon"><i class="fas fa-star"></i></div>
+                                <span>ESPERANZA Y AUTOEFICACIA</span>
+                            </div>
+                            <span class="dimension-percent">90%</span>
+                        </div>
+                        <div class="progress-bar-container">
+                            <div class="progress-bar-fill"></div>
+                        </div>
+                        <p class="dimension-desc">Confianza en el futuro y en la propia capacidad.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel evolution-panel">
+                <h3><i class="fas fa-chart-line"></i> EVOLUCIÓN DEL IPP</h3>
+                <div class="chart-container">
+                    <canvas id="ippEvolutionChart"></canvas>
+                </div>
+                <div class="trend-indicator">
+                    <i class="fas fa-chart-line"></i> Tendencia positiva
+                </div>
+            </div>
+
+            <div class="panel strengths-panel">
+                <h3><i class="fas fa-heart"></i> FORTALEZAS</h3>
+                <div class="strengths-content">
+                    <p class="strengths-desc">Mejor manejo del estrés.</p>
+                    <img src="https://img.icons8.com/ios-filled/500/000000/meditation.png" class="yoga-silhouette" alt="Silueta de yoga">
+                </div>
+                <p class="strengths-footer-text">Has desarrollado mayor capacidad para mantener la calma y recuperar el equilibrio frente a situaciones desafiantes.</p>
+            </div>
+        </div>
+    </main>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script>
+        // Animación del indicador de IPP central
+        function animateIppCircle() {
+            const circle = document.getElementById('ippProgressCircle');
+            const percentValue = document.getElementById('ippPercentValue');
+            const targetIpp = 76;
+            const circumference = 2 * Math.PI * circle.r.baseVal.value;
+
+            circle.style.strokeDasharray = circumference;
+            circle.style.strokeDashoffset = circumference;
+
+            let currentIpp = 0;
+            const animationStep = () => {
+                if (currentIpp < targetIpp) {
+                    currentIpp++;
+                    const offset = circumference - (currentIpp / 100) * circumference;
+                    circle.style.strokeDashoffset = offset;
+                    percentValue.innerText = `${currentIpp}%`;
+                    requestAnimationFrame(animationStep);
+                }
+            };
+            requestAnimationFrame(animationStep);
+        }
+
+        // Animación de las barras de progreso laterales
+        function animateProgressBars() {
+            const dimensionItems = document.querySelectorAll('.dimension-item');
+            dimensionItems.forEach(item => {
+                const targetPercent = item.dataset.progress;
+                const fill = item.querySelector('.progress-bar-fill');
+                setTimeout(() => {
+                    fill.style.width = `${targetPercent}%`;
+                }, 300);
+            });
+        }
+
+        // Gráfico de Evolución del IPP
+        function createEvolutionChart() {
+            const ctx = document.getElementById('ippEvolutionChart').getContext('2d');
+            const chartData = {
+                labels: ['SESIÓN 1', 'SESIÓN 2', 'SESIÓN 3'],
+                datasets: [{
+                    label: 'IPP (%)',
+                    data: [62, 69, 76],
+                    borderColor: '#27ae60',
+                    backgroundColor: 'rgba(39, 174, 96, 0.1)',
+                    pointBackgroundColor: '#27ae60',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2,
+                    pointRadius: 6,
+                    tension: 0.3,
+                    fill: true
+                }]
+            };
+
+            new Chart(ctx, {
+                type: 'line',
+                data: chartData,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            ticks: { font: { size: 10 } }
+                        },
+                        x: {
+                            ticks: { font: { size: 10 } }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Inicializar animaciones y gráficos
+        window.addEventListener('load', () => {
+            animateIppCircle();
+            animateProgressBars();
+            createEvolutionChart();
+        });
+
+    </script>
+</body>
+</html>
