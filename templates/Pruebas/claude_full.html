@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>HOPE · Reporte de Check-In (Paciente)</title>
+<title>HOPE · Reporte de Check-In</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -24,11 +24,6 @@
     --line:#E4E0F4;
     --good:#2FAE66;
     --bad:#E2554B;
-    --mood1:#E2554B;
-    --mood2:#F4813F;
-    --mood3:#FFCF3F;
-    --mood4:#9AD147;
-    --mood5:#43A047;
     --font-display:'Poppins', sans-serif;
     --font-body:'Inter', sans-serif;
     --radius:14px;
@@ -95,6 +90,16 @@
 
   .logo-slot{ position:relative; width:172px; height:58px; display:flex; align-items:center; }
   .logo-slot img{ max-width:172px; max-height:58px; object-fit:contain; object-position:left center; }
+  .logo-fallback{ display:flex; align-items:baseline; gap:2px; font-family:var(--font-display); font-weight:800; font-size:28px; }
+  .logo-fallback .h{color:var(--teal);}
+  .logo-fallback .p{color:var(--pink);}
+  .logo-fallback .e{color:var(--yellow);}
+  .logo-fallback .o{
+    display:inline-flex; align-items:center; justify-content:center;
+    width:28px; height:28px; border-radius:50% 50% 50% 4px; border:5px solid var(--orange);
+    transform:rotate(-45deg); margin:0 1px;
+  }
+  .logo-fallback .o svg{ transform:rotate(45deg); width:11px; height:11px; }
   .logo-tagline{ font-size:9px; letter-spacing:.18em; font-weight:600; color:#E4E0F9; margin-top:4px; text-transform:uppercase;}
 
   .doc-title{ text-align:right; }
@@ -164,181 +169,86 @@
   .editable:focus{ background:#fff; }
 
   /* ---------- PROGRESS SECTION ---------- */
-  .progress-grid{ display:grid; grid-template-columns:260px 1fr; gap:22px; }
-
+  .progress-grid{ display:grid; grid-template-columns:192px 1fr; gap:20px; }
   .gauge-card{
     background:linear-gradient(160deg, var(--purple-deep), var(--purple-mid));
-    border-radius:18px; padding:20px; color:#fff; position:relative; overflow:hidden;
-    box-shadow:0 14px 30px -12px rgba(78,63,145,0.55);
+    border-radius:var(--radius); padding:16px; color:#fff; position:relative; overflow:hidden;
   }
   .gauge-card::after{
-    content:""; position:absolute; width:180px; height:180px; border-radius:50%;
-    border:1px solid rgba(255,255,255,0.12); top:-60px; right:-60px;
-  }
-  .gauge-card::before{
     content:""; position:absolute; width:140px; height:140px; border-radius:50%;
-    border:1px solid rgba(255,255,255,0.08); bottom:-50px; left:-50px;
+    border:1px solid rgba(255,255,255,0.12); top:-50px; right:-50px;
   }
-  .gauge-top{ text-align:center; position:relative; z-index:1; }
-  .gauge-eyebrow{ font-size:9.5px; letter-spacing:.16em; text-transform:uppercase; opacity:.75;}
-  .session-big{
-    font-family:var(--font-display); font-size:42px; font-weight:800; text-align:center;
-    margin:0 0 8px; line-height:1; position:relative; z-index:1;
-    text-shadow:0 4px 14px rgba(0,0,0,0.15);
+  .gauge-top{ display:flex; justify-content:space-between; align-items:center; font-size:9.5px; position:relative; z-index:1; }
+  .gauge-top .badge{
+    background:rgba(255,255,255,0.15); border-radius:999px; padding:3px 9px; font-weight:700; letter-spacing:.04em;
+    display:flex; align-items:center; gap:5px;
   }
-  .session-big input{
-    width:56px; background:transparent; border:none; color:#fff; font-family:var(--font-display);
-    font-size:42px; font-weight:800; text-align:left; padding:0;
+  .gauge-top .badge input{
+    width:22px; background:transparent; border:none; color:#fff; font-weight:700; font-size:9.5px; text-align:center;
   }
-  .gauge-wrap{ position:relative; width:200px; height:200px; margin:6px auto 6px; z-index:1; }
+  .gauge-eyebrow{ font-size:8.5px; letter-spacing:.12em; text-transform:uppercase; opacity:.75;}
+  .gauge-wrap{ position:relative; width:140px; height:140px; margin:10px auto 4px; z-index:1; }
   .gauge-wrap svg{ width:100%; height:100%; transform:rotate(-90deg); }
   .gauge-center{ position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; }
-  .gauge-center .val{ font-family:var(--font-display); font-size:44px; font-weight:800; display:flex; align-items:baseline; }
+  .gauge-center .val{ font-family:var(--font-display); font-size:28px; font-weight:800; display:flex; align-items:baseline; }
   .gauge-center .val input{
-    width:78px; background:transparent; border:none; color:#fff; font-family:var(--font-display);
-    font-size:44px; font-weight:800; text-align:right; padding:0;
+    width:52px; background:transparent; border:none; color:#fff; font-family:var(--font-display);
+    font-size:28px; font-weight:800; text-align:right; padding:0;
   }
-  .gauge-center .lbl{ font-size:10px; letter-spacing:.14em; text-transform:uppercase; opacity:.8; margin-top:2px;}
+  .gauge-center .lbl{ font-size:8.5px; letter-spacing:.1em; text-transform:uppercase; opacity:.75; }
   .gauge-delta{
-    display:flex; align-items:center; justify-content:center; gap:6px; font-size:14px; font-weight:700; margin-top:6px;
+    display:flex; align-items:center; justify-content:center; gap:5px; font-size:11px; font-weight:700; margin-top:2px;
     position:relative; z-index:1;
   }
   .gauge-delta.up{ color:var(--yellow); }
   .gauge-delta.down{ color:#FF9E9E; }
-  .gauge-delta input{ width:40px; background:rgba(255,255,255,.14); border:none; border-radius:7px; color:inherit; font-weight:700; text-align:center; padding:3px; font-size:14px; }
-  .gauge-note{ font-size:10px; text-align:center; opacity:.75; margin-top:6px; position:relative; z-index:1; }
+  .gauge-delta input{ width:34px; background:rgba(255,255,255,.12); border:none; border-radius:6px; color:inherit; font-weight:700; text-align:center; padding:2px; font-size:11px; }
+  .gauge-note{ font-size:9px; text-align:center; opacity:.7; margin-top:4px; position:relative; z-index:1; }
 
-  .dims{ display:flex; flex-direction:column; gap:16px; justify-content:center; }
-  .dim-row{ display:grid; grid-template-columns:36px 150px 1fr 44px; align-items:center; gap:12px; }
-  .dim-chip{ width:36px; height:36px; border-radius:10px; display:flex; align-items:center; justify-content:center; color:#fff; flex-shrink:0; box-shadow:0 6px 14px -6px rgba(0,0,0,0.25);}
-  .dim-chip svg{ width:18px; height:18px; }
-  .dim-row .dim-name{ font-size:13px; font-weight:600; color:var(--ink); }
-  .dim-track{ height:14px; background:var(--purple-wash); border-radius:999px; overflow:hidden; border:1px solid var(--line); box-shadow:inset 0 1px 3px rgba(0,0,0,0.06);}
+  .dims{ display:flex; flex-direction:column; gap:11px; justify-content:center; }
+  .dim-row{ display:grid; grid-template-columns:26px 122px 1fr 38px; align-items:center; gap:10px; }
+  .dim-chip{ width:26px; height:26px; border-radius:8px; display:flex; align-items:center; justify-content:center; color:#fff; flex-shrink:0; }
+  .dim-chip svg{ width:14px; height:14px; }
+  .dim-row .dim-name{ font-size:11.5px; font-weight:600; color:var(--ink); }
+  .dim-track{ height:8px; background:var(--purple-wash); border-radius:999px; overflow:hidden; border:1px solid var(--line); }
   .dim-fill{ height:100%; border-radius:999px; transition:width .2s ease; }
-  .dim-row .dim-pct{ display:flex; align-items:center; font-size:13px; font-weight:700; color:var(--ink-soft); }
-  .dim-pct input{ width:34px; border:none; background:transparent; font-weight:700; font-size:13px; color:var(--ink-soft); text-align:right; padding:0; }
+  .dim-row .dim-pct{ display:flex; align-items:center; font-size:11px; font-weight:700; color:var(--ink-soft); }
+  .dim-pct input{ width:30px; border:none; background:transparent; font-weight:700; font-size:11px; color:var(--ink-soft); text-align:right; padding:0; }
 
-  /* ---------- EVOLUTION (big) ---------- */
-/* ---------- EVOLUTION (big) ---------- */
-  .evol-full{
-    margin-top:26px; padding-top:22px; border-top:1.5px dashed var(--line);
+  .sub-grid{
+    display:grid; grid-template-columns:1fr 1fr; gap:16px;
+    margin-top:24px;
+    padding-top:20px;
+    border-top: 1.5px dashed var(--line);
   }
-  .sub-head{ display:flex; align-items:center; gap:7px; margin:0 0 10px; }
-  .sub-head svg{ width:15px; height:15px; color:var(--purple-mid); }
+
+  .sub-head{ display:flex; align-items:center; gap:7px; margin:0 0 8px; }
+  .sub-head svg{ width:14px; height:14px; color:var(--purple-mid); }
   .sub-head h3{
-    font-family:var(--font-display); font-size:11.5px; font-weight:700; text-transform:uppercase;
+    font-family:var(--font-display); font-size:10.5px; font-weight:700; text-transform:uppercase;
     letter-spacing:.04em; color:var(--purple-deep); margin:0;
   }
+  .fortalezas .box{ min-height:64px; --accent: var(--good); }
+  .fortalezas .editable{ font-size:12.5px; }
+  .fortalezas .check-row{ display:flex; align-items:flex-start; gap:8px; }
+  .fortalezas .check-row svg{ width:15px; height:15px; color:var(--good); flex-shrink:0; margin-top:2px; }
 
-  /* 1. SECCIÓN MÁS PEQUEÑA: Reducimos padding interno */
-  .evol-full .box{ 
-    --accent: var(--purple-mid); 
-    padding:16px 20px 14px; /* Antes 26px, ahora más compacto */
-    background:linear-gradient(180deg,#F8F6FE 0%, var(--purple-wash) 100%); 
-    overflow:hidden; 
-  }
-  .evol-watermark{ position:absolute; right:10px; bottom:6px; width:120px; height:120px; opacity:.06; pointer-events:none; }
-  
-  /* 2. GRÁFICA MÁS CORTA: Reducimos la altura de 220px a 150px */
-  .evol-chart-big{ display:flex; align-items:flex-end; gap:22px; height:150px; padding:20px 10px 0; position:relative; }
-  .evol-chart-big::before{
-    content:""; position:absolute; left:0; right:0; top:20px; bottom:36px;
-    background-image: repeating-linear-gradient(0deg, rgba(102,86,181,0.10) 0, rgba(102,86,181,0.10) 1px, transparent 1px, transparent 25%);
-  }
-  .evol-bar-big{ flex:1; display:flex; flex-direction:column; align-items:center; gap:8px; height:100%; justify-content:flex-end; position:relative; z-index:1;}
-  .evol-bar-big .sprout{ font-size:15px; line-height:1; margin-bottom:-2px; }
+  .evol .box{ --accent: var(--purple-mid); }
+  .evol-chart{ display:flex; align-items:flex-end; gap:10px; height:74px; padding:0 4px; }
+  .evol-bar{ flex:1; display:flex; flex-direction:column; align-items:center; gap:6px; height:100%; justify-content:flex-end; }
+  .evol-bar .bar{ width:100%; max-width:32px; border-radius:6px 6px 3px 3px; background:linear-gradient(180deg, var(--teal), var(--teal-dark)); transition:height .2s ease; position:relative; }
+  .evol-bar .bar-input{ width:32px; border:none; background:transparent; font-size:10px; font-weight:700; color:var(--purple-deep); text-align:center; padding:0; }
+  .evol-bar .bar-lbl{ font-size:8.5px; color:var(--ink-soft); font-weight:600; }
 
-  /* 3. NÚMEROS MEJORADOS: Estilo de bloque sólido moderno */
-  .evol-bar-big .val-chip{
-    background: var(--purple-deep); /* Color sólido de fondo */
-    border: none; /* Quitamos el borde genérico */
-    border-radius: 8px; /* Curvatura más moderna */
-    padding: 4px 6px;
-    margin-bottom: 4px;
-    display:flex; align-items:center; 
-    box-shadow:0 6px 12px -4px rgba(78,63,145,0.4); /* Sombra más elegante */
+  .message-box{
+    margin-top:16px; border-radius:var(--radius); border:1.5px dashed var(--teal);
+    background:#F0FCFC; padding:14px 18px; text-align:center; display:flex; align-items:center; gap:10px; justify-content:center;
   }
-  .evol-bar-big .val-chip input{
-    width:34px; border:none; background:transparent; font-family:var(--font-display); font-weight:800;
-    font-size:14px; /* Un pelín más grandes */
-    color: #ffffff; /* Texto blanco */
-    text-align:center; padding:0;
-  }
+  .message-box svg{ width:18px; height:18px; color:var(--teal-dark); flex-shrink:0; }
+  .message-box .editable{ font-size:12.5px; font-weight:600; color:var(--purple-deep); text-align:center; min-height:auto; }
 
-  .evol-bar-big .bar{
-    width:100%; max-width:68px; border-radius:14px 14px 6px 6px;
-    background:linear-gradient(180deg, var(--teal) 0%, var(--purple-mid) 130%);
-    box-shadow:0 10px 20px -8px rgba(78,63,145,.5);
-    transition:height .3s ease;
-    position:relative;
-  }
-  .evol-bar-big.is-current .bar{ background:linear-gradient(180deg, var(--yellow) 0%, var(--orange) 140%); box-shadow:0 10px 22px -8px rgba(244,129,63,.55); }
-  
-  /* ESTILO ESPECIAL PARA EL NÚMERO ACTUAL */
-  .evol-bar-big.is-current .val-chip {
-    background: var(--orange); /* Destaca en naranja */
-    box-shadow: 0 6px 12px -4px rgba(244,129,63,0.4);
-  }
-
-  .evol-bar-big .now-pill{
-    position:absolute; top:-26px; left:50%; transform:translateX(-50%); white-space:nowrap;
-    background:var(--purple-deep); color:#fff; font-size:8.5px; font-weight:700; letter-spacing:.03em;
-    padding:3px 8px; border-radius:999px; box-shadow:0 4px 10px -3px rgba(0,0,0,.3);
-  }
-  .evol-bar-big .bar-lbl{ font-size:10.5px; color:var(--ink-soft); font-weight:700; letter-spacing:.02em; }
-  .evol-caption{
-    margin-top:14px; padding-top:12px; border-top:1px dashed var(--line);
-    text-align:center; font-size:12px; font-weight:600; color:var(--purple-deep);
-    display:flex; align-items:center; justify-content:center; gap:6px;
-  }
-  }
-  .evol-bar-big.is-current .bar{ background:linear-gradient(180deg, var(--yellow) 0%, var(--orange) 140%); box-shadow:0 10px 22px -8px rgba(244,129,63,.55); }
-  .evol-bar-big .now-pill{
-    position:absolute; top:-24px; left:50%; transform:translateX(-50%); white-space:nowrap;
-    background:var(--purple-deep); color:#fff; font-size:8.5px; font-weight:700; letter-spacing:.03em;
-    padding:3px 8px; border-radius:999px; box-shadow:0 4px 10px -3px rgba(0,0,0,.3);
-  }
-  .evol-bar-big .bar-lbl{ font-size:10.5px; color:var(--ink-soft); font-weight:700; letter-spacing:.02em; }
-  .evol-caption{
-    margin-top:16px; padding-top:14px; border-top:1px dashed var(--line);
-    text-align:center; font-size:12px; font-weight:600; color:var(--purple-deep);
-    display:flex; align-items:center; justify-content:center; gap:6px;
-  }
-
-  /* ---------- MOOD SCALE (replaces encouragement message) ---------- */
-  .mood-section{ margin-top:22px; }
-  .mood-box{
-    border:1.5px dashed var(--teal); background:#F0FCFC; border-radius:var(--radius);
-    padding:22px 26px 16px; text-align:center;
-  }
-  .mood-title{ font-family:var(--font-display); font-weight:700; font-size:12.5px; color:var(--purple-deep); margin:0 0 4px; letter-spacing:.02em;}
-  .mood-subtitle{ font-size:10.5px; color:var(--ink-soft); margin:0 0 20px; }
-  .mood-widget{ position:relative; padding-top:46px; max-width:520px; margin:0 auto; }
-  .mood-indicator{
-    position:absolute; top:0; transform:translateX(-50%); transition:left .3s ease;
-    display:flex; flex-direction:column; align-items:center; gap:2px;
-  }
-  .mood-indicator .bubble{
-    background:var(--purple-deep); color:#fff; font-size:16px; line-height:1; width:32px; height:32px;
-    border-radius:50% 50% 50% 6px; display:flex; align-items:center; justify-content:center;
-    box-shadow:0 6px 14px -4px rgba(78,63,145,0.5);
-    animation:mood-bounce 1.6s ease-in-out infinite;
-  }
-  @keyframes mood-bounce{ 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(-4px); } }
-  .mood-faces{ display:flex; justify-content:space-between; gap:8px; margin-bottom:12px; }
-  .mood-face{
-    appearance:none; border:3px solid transparent; background:none; padding:0; cursor:pointer;
-    width:58px; height:58px; border-radius:50%; display:flex; align-items:center; justify-content:center;
-    transition:transform .15s ease, border-color .15s ease;
-  }
-  .mood-face:hover{ transform:translateY(-2px); }
-  .mood-face.selected{ border-color:var(--ink); transform:translateY(-3px); }
-  .mood-face svg{ width:100%; height:100%; }
-  .mood-track{ display:flex; gap:4px; height:14px; }
-  .mood-track div{ flex:1; }
-  .mood-track div:first-child{ border-radius:999px 0 0 999px; }
-  .mood-track div:last-child{ border-radius:0 999px 999px 0; }
-  .mood-caption{ margin-top:10px; font-size:11px; font-weight:600; color:var(--purple-deep); min-height:14px; }
+  /* pequeño espacio invisible, ~2cm, entre el mensaje de aliento y la sección 4 */
+  .spacer-1cm{ height:2cm; width:100%; }
 
   .divider-dots{ display:flex; align-items:center; gap:6px; margin:14px 0 -6px; }
   .divider-dots .ln{ flex:1; height:1px; background:var(--line); }
@@ -353,12 +263,18 @@
     margin-top:22px; padding:20px 36px 26px; background:var(--purple-deep); position:relative; overflow:hidden;
     display:flex; align-items:center; justify-content:space-between; gap:16px; flex:0 0 auto;
   }
-
-   .spacer-1cm{ height:2cm; width:100%; }
-
   .footer-waves{ position:absolute; left:0; right:0; top:-1px; height:26px; z-index:1; }
   .footer-logo-slot{ position:relative; width:110px; height:34px; display:flex; align-items:center; z-index:2; }
   .footer-logo-slot img{ max-width:110px; max-height:34px; object-fit:contain; object-position:left center; }
+  .footer-logo-fallback{ display:flex; align-items:baseline; gap:1px; font-family:var(--font-display); font-weight:800; font-size:16px; }
+  .footer-logo-fallback .h{color:var(--teal);}
+  .footer-logo-fallback .p{color:var(--pink);}
+  .footer-logo-fallback .e{color:var(--yellow);}
+  .footer-logo-fallback .o{
+    display:inline-flex; align-items:center; justify-content:center;
+    width:16px; height:16px; border-radius:50% 50% 50% 3px; border:3px solid var(--orange);
+    transform:rotate(-45deg); margin:0 1px;
+  }
   .footer-right{ text-align:right; color:#D9D3F5; font-size:9.5px; line-height:1.6; position:relative; z-index:2; }
   .footer-right b{ color:#fff; font-family:var(--font-display); letter-spacing:.04em; }
 
@@ -369,24 +285,37 @@
         print-color-adjust: exact !important;
         color-adjust: exact !important;
     }
+
+    /* Tamaño Carta (21.59cm x 27.94cm) — coincide con el papel que la mayoría
+       de los navegadores/impresoras usan por defecto. Si se deja un tamaño más
+       alto que el papel de destino real, el sobrante se va a una segunda hoja
+       casi en blanco, que es justo lo que había que evitar. */
     @page {
         size: 21.59cm 27.94cm;
         margin: 0;
     }
+
     body { background:#fff; }
     .toolbar { display:none !important; }
+
     .page-wrap { padding:0; display:block; }
     .sheet {
       box-shadow:none; border-radius:0; width:100%; display:flex;
       min-height:27.94cm;
     }
+
+    /* el footer siempre se va hasta el fondo de la hoja, aunque el contenido sea poco */
     .sheet-main{ min-height:27.94cm; }
     .body{ flex:1 1 auto; }
+
     .editable:focus { background:transparent; }
     .field input { border-bottom:1px solid var(--line); }
+
     .header { padding: 20px 36px 45px; }
     .section { margin-top: 20px; }
-    .evol-full { margin-top: 18px; padding-top: 16px; }
+
+    .sub-grid { margin-top: 16px; padding-top: 16px; }
+
     .info-card[style*="margin:26px"] { margin-top: 18px !important; }
     .footer-note { margin-top: 18px; padding: 12px 16px; }
     .footer { margin-top: 15px; padding: 16px 36px 20px; }
@@ -396,7 +325,7 @@
 <body>
 
   <div class="toolbar no-print">
-    <span class="title">HOPE · Reporte de Check-In (Versión Paciente)</span>
+    <span class="title">HOPE · Generador de Reporte de Check-In</span>
     <label class="upload-label">
       Cargar logo PNG
       <input type="file" id="logoUpload" accept="image/png,image/*">
@@ -464,8 +393,32 @@
         <div class="section">
           <div class="section-head">
             <div class="section-num">1</div>
+            <div class="section-icon" style="background:var(--pink)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg></div>
+            <h2>¿Cómo llegaste a HOPE?</h2>
+            <div class="rule"></div>
+          </div>
+          <div class="box" style="--accent: var(--pink)">
+            <div class="editable" contenteditable="true" data-placeholder="Descripción o resumen del test inicial de 5 preguntas..."></div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-head">
+            <div class="section-num">2</div>
+            <div class="section-icon" style="background:var(--orange)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l1.9 4.5L18 8l-4.1 1.5L12 14l-1.9-4.5L6 8l4.1-1.5L12 2z"/><path d="M19 15l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8.8-2z"/></svg></div>
+            <h2>Apoyo por parte de HOPE en tu última sesión</h2>
+            <div class="rule"></div>
+          </div>
+          <div class="box" style="--accent: var(--orange)">
+            <div class="editable" contenteditable="true" data-placeholder="Resumen generado con IA de la última sesión..."></div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-head">
+            <div class="section-num">3</div>
             <div class="section-icon" style="background:var(--teal)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg></div>
-            <h2>Índice de Progreso Psicológico</h2>
+            <h2>Progreso Psicológico</h2>
             <div class="rule"></div>
           </div>
 
@@ -474,12 +427,12 @@
             <div class="gauge-card">
               <div class="gauge-top">
                 <div class="gauge-eyebrow">Sesión</div>
-                <div class="session-big">#<input type="text" value="3" id="sessionNum"></div>
+                <div class="badge">#<input type="text" value="3" id="sessionNum"></div>
               </div>
               <div class="gauge-wrap">
-                <svg viewBox="0 0 220 220">
-                  <circle cx="110" cy="110" r="92" stroke="rgba(255,255,255,0.18)" stroke-width="18" fill="none"/>
-                  <circle id="gaugeArc" cx="110" cy="110" r="92" stroke="#FFCF3F" stroke-width="18" fill="none" stroke-linecap="round" stroke-dasharray="578.05" stroke-dashoffset="138.7"/>
+                <svg viewBox="0 0 140 140">
+                  <circle cx="70" cy="70" r="58" stroke="rgba(255,255,255,0.18)" stroke-width="12" fill="none"/>
+                  <circle id="gaugeArc" cx="70" cy="70" r="58" stroke="#FFCF3F" stroke-width="12" fill="none" stroke-linecap="round" stroke-dasharray="364.4" stroke-dashoffset="87.4"/>
                 </svg>
                 <div class="gauge-center">
                   <div class="val"><input type="number" id="ippValue" value="76" min="0" max="100">%</div>
@@ -519,80 +472,41 @@
             </div>
           </div>
 
-          <!-- Evolución del IPP: grande y destacada -->
-          <div class="evol-full">
-            <div class="sub-head"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><rect x="7" y="12" width="3" height="6"/><rect x="12" y="8" width="3" height="10"/><rect x="17" y="4" width="3" height="14"/></svg><h3>Evolución del Índice de Progreso Psicológico</h3></div>
-            <div class="box">
-              <svg class="evol-watermark" viewBox="0 0 24 24" fill="var(--purple-deep)"><path d="M12 2C9 6 8 9 8 12a4 4 0 0 0 8 0c0-3-1-6-4-10zM4 14c3 0 5 1.5 6 3.5C9 20 6.5 21 4 21c-1 0-1-1-1-2 0-2 .5-4 1-5zm16 0c-3 0-5 1.5-6 3.5 1 2.5 3.5 3.5 6 3.5 1 0 1-1 1-2 0-2-.5-4-1-5z"/></svg>
-              <div class="evol-chart-big" id="evolChart">
-                <div class="evol-bar-big">
-                  <span class="sprout">🌱</span>
-                  <div class="val-chip"><input type="number" value="62" min="0" max="100" oninput="updateEvol()"></div>
-                  <div class="bar" style="height:0%"></div>
-                  <div class="bar-lbl">Sesión 1</div>
-                </div>
-                <div class="evol-bar-big">
-                  <span class="sprout">🌿</span>
-                  <div class="val-chip"><input type="number" value="69" min="0" max="100" oninput="updateEvol()"></div>
-                  <div class="bar" style="height:0%"></div>
-                  <div class="bar-lbl">Sesión 2</div>
-                </div>
-                <div class="evol-bar-big is-current">
-                  <div class="now-pill">¡Vas aquí! ✨</div>
-                  <span class="sprout">🌳</span>
-                  <div class="val-chip"><input type="number" value="76" min="0" max="100" oninput="updateEvol()"></div>
-                  <div class="bar" style="height:0%"></div>
-                  <div class="bar-lbl">Sesión 3</div>
+          <div class="sub-grid">
+            <div class="fortalezas">
+              <div class="sub-head"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.9-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg><h3>Fortalezas</h3></div>
+              <div class="box">
+                <div class="check-row">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.9-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>
+                  <div class="editable" contenteditable="true" data-placeholder="Ej. Mejor manejo del estrés, mayor capacidad para recuperar el equilibrio..."></div>
                 </div>
               </div>
-              <div class="evol-caption" id="evolCaption">🌟 <span>Cada sesión suma: tu progreso va construyéndose paso a paso.</span></div>
+            </div>
+            <div class="evol">
+              <div class="sub-head"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><rect x="7" y="12" width="3" height="6"/><rect x="12" y="8" width="3" height="10"/><rect x="17" y="4" width="3" height="14"/></svg><h3>Evolución del IPP</h3></div>
+              <div class="box">
+                <div class="evol-chart" id="evolChart">
+                  <div class="evol-bar"><div class="bar" style="height:0%"><input class="bar-input" type="number" value="62" min="0" max="100" oninput="updateEvol()"></div><div class="bar-lbl">Sesión 1</div></div>
+                  <div class="evol-bar"><div class="bar" style="height:0%"><input class="bar-input" type="number" value="69" min="0" max="100" oninput="updateEvol()"></div><div class="bar-lbl">Sesión 2</div></div>
+                  <div class="evol-bar"><div class="bar" style="height:0%"><input class="bar-input" type="number" value="76" min="0" max="100" oninput="updateEvol()"></div><div class="bar-lbl">Sesión 3</div></div>
+                </div>
+              </div>
             </div>
           </div>
-            <div class="spacer-1cm"></div>
-           
-          <!-- Escala de caritas: sustituye el mensaje de aliento -->
-          <div class="mood-section">
-            <div class="mood-box">
-              <p class="mood-title">Tu progreso también se refleja en cómo te sientes </p>
-              
-              <div class="mood-widget">
-                <div class="mood-indicator" id="moodStar"><div class="bubble">😊</div></div>
-                <div class="mood-faces" id="moodFaces">
-                  <button class="mood-face" data-value="1" onclick="selectMood(1)" title="Muy mal">
-                    <svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="30" fill="var(--mood1)"/><circle cx="22" cy="26" r="3.4" fill="#2B2545"/><circle cx="42" cy="26" r="3.4" fill="#2B2545"/><path d="M20 44c4-6 20-6 24 0" stroke="#2B2545" stroke-width="3" fill="none" stroke-linecap="round"/></svg>
-                  </button>
-                  <button class="mood-face" data-value="2" onclick="selectMood(2)" title="Mal">
-                    <svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="30" fill="var(--mood2)"/><circle cx="22" cy="26" r="3.4" fill="#2B2545"/><circle cx="42" cy="26" r="3.4" fill="#2B2545"/><path d="M21 42c5-4 17-4 22 0" stroke="#2B2545" stroke-width="3" fill="none" stroke-linecap="round"/></svg>
-                  </button>
-                  <button class="mood-face" data-value="3" onclick="selectMood(3)" title="Regular">
-                    <svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="30" fill="var(--mood3)"/><circle cx="22" cy="26" r="3.4" fill="#2B2545"/><circle cx="42" cy="26" r="3.4" fill="#2B2545"/><line x1="21" y1="40" x2="43" y2="40" stroke="#2B2545" stroke-width="3" stroke-linecap="round"/></svg>
-                  </button>
-                  <button class="mood-face" data-value="4" onclick="selectMood(4)" title="Bien">
-                    <svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="30" fill="var(--mood4)"/><circle cx="22" cy="26" r="3.4" fill="#2B2545"/><circle cx="42" cy="26" r="3.4" fill="#2B2545"/><path d="M21 38c5 5 17 5 22 0" stroke="#2B2545" stroke-width="3" fill="none" stroke-linecap="round"/></svg>
-                  </button>
-                  <button class="mood-face selected" data-value="5" onclick="selectMood(5)" title="Muy bien">
-                    <svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="30" fill="var(--mood5)"/><circle cx="22" cy="26" r="3.4" fill="#2B2545"/><circle cx="42" cy="26" r="3.4" fill="#2B2545"/><path d="M19 36c4 8 22 8 26 0" stroke="#2B2545" stroke-width="3" fill="none" stroke-linecap="round"/></svg>
-                  </button>
-                </div>
-                <div class="mood-track">
-                  <div style="background:var(--mood1)"></div>
-                  <div style="background:var(--mood2)"></div>
-                  <div style="background:var(--mood3)"></div>
-                  <div style="background:var(--mood4)"></div>
-                  <div style="background:var(--mood5)"></div>
-                </div>
-              </div>
-              <div class="mood-caption" id="moodCaption">Muy bien</div>
-              <input type="hidden" id="moodValue" value="5">
-            </div>
+       
+          <div class="message-box">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20l9-16H3l9 16z"/><path d="M12 4v10"/></svg>
+            <div class="editable" contenteditable="true" data-placeholder="Mensaje de aliento para el paciente...">Has mostrado avance respecto a la semana anterior. ¡Sigue practicando las estrategias que has aprendido!</div>
           </div>
         </div>
+
+ 
 
         <div class="divider-dots"><div class="ln"></div><span></span><span></span><span></span><div class="ln"></div></div>
 
         <div class="section">
           <div class="section-head">
-            <div class="section-num">2</div>
+            <div class="section-num">4</div>
             <div class="section-icon" style="background:var(--yellow); color:var(--ink)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg></div>
             <h2>Objetivo y Tarea</h2>
             <div class="rule"></div>
@@ -604,7 +518,7 @@
 
         <div class="section">
           <div class="section-head">
-            <div class="section-num">3</div>
+            <div class="section-num">5</div>
             <div class="section-icon" style="background:var(--purple-mid)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5c.6.5 1 1.3 1 2.1V16h6v-.4c0-.8.4-1.6 1-2.1A6 6 0 0 0 12 3z"/></svg></div>
             <h2>Recomendaciones</h2>
             <div class="rule"></div>
@@ -655,7 +569,7 @@
   </div>
 
 <script>
-  const CIRC = 2 * Math.PI * 92; // 578.05
+  const CIRC = 2 * Math.PI * 58; // 364.4
 
   function updateGauge(){
     const val = Math.max(0, Math.min(100, parseFloat(document.getElementById('ippValue').value) || 0));
@@ -682,48 +596,15 @@
     row.querySelector('.dim-fill').style.width = val + '%';
   }
 
-  const evolMessages = {
-    up:    [' Cada sesión suma: tu progreso va construyéndose paso a paso.',
-            ' ¡Se nota tu esfuerzo! La tendencia va hacia arriba.',
-            ' Vas sumando avances sesión tras sesión, ¡sigue así!'],
-    flat:  [' Estás sosteniendo tu progreso con constancia, eso también cuenta.',
-            ' Un ritmo estable también es avanzar, sigue a tu paso.'],
-    down:  [' Los procesos no siempre son una línea recta, y está bien.',
-            ' Hoy toca cuidar de ti; los altibajos son parte del camino.']
-  };
-
   function updateEvol(){
-    const bars = document.querySelectorAll('#evolChart .evol-bar-big');
-    const values = Array.from(bars).map(b => parseFloat(b.querySelector('.val-chip input').value) || 0);
-    let max = Math.max(...values, 10);
-    bars.forEach((b, i) => {
-      b.querySelector('.bar').style.height = Math.max((values[i]/max)*100, 6) + '%';
+    const bars = document.querySelectorAll('#evolChart .bar');
+    let max = 0;
+    bars.forEach(b => { const v = parseFloat(b.querySelector('input').value) || 0; if(v > max) max = v; });
+    max = Math.max(max, 10);
+    bars.forEach(b => {
+      const v = parseFloat(b.querySelector('input').value) || 0;
+      b.style.height = Math.max((v/max)*100, 6) + '%';
     });
-
-    const captionEl = document.getElementById('evolCaption');
-    if(captionEl && values.length > 1){
-      const diff = values[values.length - 1] - values[0];
-      let pool = evolMessages.flat;
-      if(diff > 2) pool = evolMessages.up;
-      else if(diff < -2) pool = evolMessages.down;
-      const msg = pool[Math.floor(Math.random() * pool.length)];
-      const parts = msg.split(' ');
-      captionEl.innerHTML = `${parts[0]} <span>${parts.slice(1).join(' ')}</span>`;
-    }
-  }
-
-  const moodLabels = {1:'Muy mal', 2:'Mal', 3:'Regular', 4:'Bien', 5:'Muy bien'};
-  const moodEmojis = {1:'😞', 2:'😕', 3:'😐', 4:'🙂', 5:'😊'};
-  function selectMood(value){
-    document.getElementById('moodValue').value = value;
-    document.getElementById('moodCaption').textContent = moodLabels[value] || '';
-    document.querySelectorAll('.mood-face').forEach(f => {
-      f.classList.toggle('selected', parseInt(f.dataset.value) === value);
-    });
-    const indicator = document.getElementById('moodStar');
-    const pct = ((value - 1) / 4) * 100;
-    indicator.style.left = pct + '%';
-    indicator.querySelector('.bubble').textContent = moodEmojis[value] || '😊';
   }
 
   document.getElementById('ippValue').addEventListener('input', updateGauge);
@@ -739,6 +620,8 @@
       const fImg = document.getElementById('logoImgFooter');
       hImg.src = dataUrl; hImg.style.display = 'block';
       fImg.src = dataUrl; fImg.style.display = 'block';
+      document.getElementById('logoFallbackHeader').style.display = 'none';
+      document.getElementById('logoFallbackFooter').style.display = 'none';
     };
     reader.readAsDataURL(file);
   });
@@ -750,8 +633,7 @@
     document.getElementById('ippValue').value = 0;
     document.getElementById('ippDeltaInput').value = 0;
     document.querySelectorAll('.dim-pct input').forEach(i => { i.value = 0; updateDim(i); });
-    document.querySelectorAll('.val-chip input').forEach(i => i.value = 0);
-    selectMood(5);
+    document.querySelectorAll('.bar-input').forEach(i => i.value = 0);
     updateGauge();
     updateEvol();
   }
@@ -759,7 +641,6 @@
   // Init
   updateGauge();
   updateEvol();
-  selectMood(5);
 </script>
 
 </body>

@@ -3236,4 +3236,4 @@ def api_citas_hoy(request):
 
 def renderizar_imagen(request):
     # Diccionario de contexto con los datos que le pasaremos al template
-    return render(request, 'pruebas/claude.html')
+    return render(request, 'Pruebas/claude.html')
