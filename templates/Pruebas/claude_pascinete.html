@@ -446,6 +446,7 @@
             <div id="estadoCargaPaciente" style="font-size:11.5px; color:var(--ink-soft); margin-top:4px;"></div>
           </div>
         </div>
+        <button type="button" id="btnCambiarPaciente" class="btn btn-ghost" style="display:none; margin:0 0 16px; background:var(--purple-wash); color:var(--purple-deep);" onclick="mostrarBuscadorPaciente()">🔄 Buscar otro paciente</button>
 
         <div class="info-card">
           <div class="field-row wide">
@@ -625,15 +626,19 @@
         </div>
 
         <div class="info-card" style="margin:26px 0 0;">
-          <div class="field-row wide">
+          <div class="field-row wide" id="proximaSesionFields">
             <div class="field">
               <label><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="M9 16l2 2 4-4"/></svg> Próxima sesión</label>
-              <input type="date">
+              <input type="date" id="inputProximaFecha">
             </div>
             <div class="field">
               <label><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> Hora sugerida</label>
-              <input type="time">
+              <input type="time" id="inputProximaHora">
             </div>
+          </div>
+          <div id="agendarCitaWrap" style="display:none; text-align:center; padding:6px 0;">
+            <p style="margin:0 0 12px; font-size:13px; color:var(--ink-soft);">Aún no tienes una próxima sesión programada.</p>
+            <a href="https://espaciohope.com/" target="_blank" rel="noopener" class="btn btn-primary" style="display:inline-block; text-decoration:none;">Agenda aquí tu siguiente cita</a>
           </div>
         </div>
 
@@ -876,12 +881,37 @@
       document.getElementById('editableObjetivo').textContent = d.objetivo_tarea || '';
       document.getElementById('editableRecomendaciones').textContent = d.recomendaciones || '';
 
+      // Próxima sesión: si ya hay una programada se muestra fecha/hora,
+      // si NO hay ninguna futura se muestra el botón para agendar
+      const camposProxima = document.getElementById('proximaSesionFields');
+      const wrapAgendar = document.getElementById('agendarCitaWrap');
+      if(d.tiene_proxima_cita){
+        document.getElementById('inputProximaFecha').value = d.proxima_fecha || '';
+        document.getElementById('inputProximaHora').value = d.proxima_hora || '';
+        camposProxima.style.display = '';
+        wrapAgendar.style.display = 'none';
+      } else {
+        camposProxima.style.display = 'none';
+        wrapAgendar.style.display = 'block';
+      }
+
+      // Ya se cargó el reporte: ocultamos la caja de búsqueda
+      document.getElementById('patientSearchCard').style.display = 'none';
+      document.getElementById('btnCambiarPaciente').style.display = 'inline-flex';
+
       estadoCarga.textContent = '✅ Reporte cargado automáticamente';
       setTimeout(() => { estadoCarga.textContent = ''; }, 3000);
 
     }catch(err){
       estadoCarga.textContent = '⚠️ Error de conexión al generar el reporte';
     }
+  }
+
+  function mostrarBuscadorPaciente(){
+    document.getElementById('patientSearchCard').style.display = '';
+    document.getElementById('btnCambiarPaciente').style.display = 'none';
+    inputBuscador.value = '';
+    inputBuscador.focus();
   }
 
   // Init

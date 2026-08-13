@@ -3237,6 +3237,14 @@ def api_citas_hoy(request):
 # 🔥 NUEVO: pegar esto ANTES de "def renderizar_imagen(request):" en tu views.py
 # (no toqué ninguna vista existente)
 # ==========================================
+# ============================================================
+# 🔥 NUEVO: pegar esto ANTES de "def renderizar_imagen(request):"
+# en tu views.py (no toqué ninguna vista existente)
+# ============================================================
+
+# ==========================================
+# 🔥 NUEVO: REPORTE DE CHECK-IN AUTOMÁTICO (IA)
+# ==========================================
 
 def _ajustar_texto_a_longitud_exacta(texto, longitud=728):
     """
@@ -3341,6 +3349,19 @@ def generar_reporte_checkin_ajax(request):
         ultima_cita = Cita.objects.filter(paciente=paciente).exclude(estado='Cancelada').order_by('-fecha', '-hora').first()
         fecha_ultima_sesion = ultima_cita.fecha.isoformat() if ultima_cita else ''
 
+        # ---------- 1b. ¿Ya tiene una próxima sesión programada? ----------
+        hoy = timezone.localdate()
+        ahora = timezone.localtime().time()
+        proxima_cita = Cita.objects.filter(
+            paciente=paciente
+        ).exclude(estado='Cancelada').filter(
+            Q(fecha__gt=hoy) | Q(fecha=hoy, hora__gte=ahora)
+        ).order_by('fecha', 'hora').first()
+
+        tiene_proxima_cita = proxima_cita is not None
+        proxima_fecha = proxima_cita.fecha.isoformat() if proxima_cita else ''
+        proxima_hora = proxima_cita.hora.strftime('%H:%M') if proxima_cita else ''
+
         # ---------- 2. Estado de ánimo (carita) ----------
         valores_mood = {'Muy mal': 1, 'Triste': 2, 'Normal': 3, 'Bien': 4, 'Excelente': 5}
         mood_valor = valores_mood.get(ultima_cita.estado_animo, 5) if ultima_cita else 5
@@ -3424,6 +3445,9 @@ def generar_reporte_checkin_ajax(request):
                 'cedula': cedula_psicologo,
                 'fecha_ultima_sesion': fecha_ultima_sesion,
                 'sesion_numero': sesion_numero,
+                'tiene_proxima_cita': tiene_proxima_cita,
+                'proxima_fecha': proxima_fecha,
+                'proxima_hora': proxima_hora,
                 'ipp_valor': ipp_valor,
                 'ipp_delta': ipp_delta,
                 'dims': dims,
