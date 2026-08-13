@@ -146,3 +146,21 @@ admin.site.register(PreferenciasUsuario)
 admin.site.register(MensajeChat)
 admin.site.register(ArticuloPrensa)
 admin.site.register(RegistroTallerPublico)
+
+
+
+@admin.register(RespuestaFormularioOrganica)
+class RespuestaFormularioOrganicaAdmin(admin.ModelAdmin):
+    list_display = ('paciente', 'cita', 'puntaje', 'fecha_respuesta')
+    list_filter = ('fecha_respuesta',)
+    search_fields = ('paciente__first_name', 'paciente__username', 'paciente__email')
+    # 🔥 OPTIMIZADO: Evita el N+1 al cargar la lista
+    list_select_related = ('paciente', 'cita') 
+    readonly_fields = ('fecha_respuesta',)
+
+@admin.register(ContactoPais)
+class ContactoPaisAdmin(ImportExportModelAdmin):
+    list_display = ('nombre', 'correo', 'celular', 'country', 'form_type', 'fecha_registro')
+    list_filter = ('country', 'form_type', 'fecha_registro')
+    search_fields = ('nombre', 'correo', 'celular')
+    readonly_fields = ('fecha_registro',)
