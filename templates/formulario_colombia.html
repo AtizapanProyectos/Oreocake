@@ -1,140 +1,371 @@
+{% extends 'base.html' %}
 {% load static %}
-<!DOCTYPE html>
-<html lang="es">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Únete a la familia HOPE Colombia</title>
-<link rel="icon" href="{% static 'img/favicon.ico' %}" type="image/x-icon">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700;900&family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+
+{% block title %}Únete a la familia HOPE Colombia{% endblock %}
+
+{% block content %}
 <style>
-:root {
-  --c-purple: #5A3FA3;
-  --c-pink: #F85B8C;
-  --c-teal: #25B8B8;
-  --c-dark: #0f0f0f;
-  --text-muted: #64748b;
-  --font-h: 'Outfit', sans-serif;
-  --font-b: 'Plus Jakarta Sans', sans-serif;
-}
-*{margin:0;padding:0;box-sizing:border-box}
-body{
-  font-family:var(--font-b);color:var(--c-dark);min-height:100vh;
-  display:flex;align-items:center;justify-content:center;padding:40px 20px;
-  background:radial-gradient(circle at top right,rgba(90,63,163,.08),#fff 55%),
-             radial-gradient(circle at bottom left,rgba(248,91,140,.06),#fff 55%);
-}
-.form-card{
-  width:100%;max-width:560px;background:#fff;border-radius:36px;padding:50px 45px;
-  box-shadow:0 30px 70px rgba(90,63,163,.08);border:1px solid #f1f5f9;position:relative
-}
-.form-card img.logo{height:48px;display:block;margin:0 auto 25px}
-.form-card h2{font-family:var(--font-h);font-size:2.1rem;font-weight:900;text-align:center;margin-bottom:8px}
-.form-card p.sub{color:var(--text-muted);text-align:center;margin-bottom:32px;font-size:1.02rem;line-height:1.5}
-.field{margin-bottom:18px}
-.field label{display:block;font-size:.8rem;font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px}
-.input-wrap{position:relative}
-.input-wrap i{position:absolute;left:20px;top:50%;transform:translateY(-50%);color:#c4b5fd;font-size:1.05rem}
-.field input,.field textarea,.field select{
-  width:100%;padding:16px 16px 16px 52px;border-radius:16px;border:2px solid #e2e8f0;
-  font-size:1rem;font-family:var(--font-b);background:#f8fafc;color:var(--c-dark);outline:none;transition:.25s
-}
-.field textarea{padding-left:16px;min-height:100px;resize:vertical}
-.field input:focus,.field textarea:focus,.field select:focus{border-color:var(--c-purple);background:#fff;box-shadow:0 10px 25px rgba(90,63,163,.08)}
-.btn-submit{
-  width:100%;padding:20px;border-radius:16px;border:none;background:var(--c-purple);color:#fff;
-  font-family:var(--font-h);font-weight:800;font-size:1.05rem;letter-spacing:.5px;cursor:pointer;
-  display:flex;align-items:center;justify-content:center;gap:10px;transition:.3s;margin-top:8px
-}
-.btn-submit:hover{background:var(--c-pink);transform:translateY(-3px)}
-.volver{display:block;text-align:center;margin-top:22px;color:var(--text-muted);text-decoration:none;font-weight:700;font-size:.92rem}
-.volver:hover{color:var(--c-purple)}
-.alert{padding:16px 20px;border-radius:16px;margin-bottom:22px;font-size:.95rem;font-weight:600}
-.alert-error{background:#fef2f2;color:#b91c1c;border:1px solid #fecaca}
+    :root {
+        --co-amarillo: #FCD116;
+        --co-azul: #003893;
+        --co-rojo: #CE1126;
+        --co-morado: #5A3FA3; /* Morado de HOPE Colombia */
+    }
 
-.exito-box{text-align:center}
-.exito-icon{font-size:4rem;color:var(--c-teal);margin-bottom:20px}
+    /* Fondo ultra suave y relajante */
+    .co-bubbles-wrap {
+        position: relative;
+        padding: 120px 20px 100px;
+        min-height: 100vh;
+        background: #f8fafc;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        overflow: hidden;
+    }
+
+    /* Esferas de fondo flotantes */
+    @keyframes floatSoftly {
+        0% { transform: translateY(0px) scale(1); }
+        50% { transform: translateY(-20px) scale(1.05); }
+        100% { transform: translateY(0px) scale(1); }
+    }
+    .co-bubbles-wrap::before { 
+        content:''; position:absolute; top:-10%; right:-10%; width:600px; height:600px; 
+        border-radius:50%; background:radial-gradient(circle, rgba(252, 209, 22, 0.08), transparent 70%); 
+        z-index:0; pointer-events: none; animation: floatSoftly 10s ease-in-out infinite; 
+    }
+    .co-bubbles-wrap::after { 
+        content:''; position:absolute; bottom:-10%; left:-10%; width:500px; height:500px; 
+        border-radius:50%; background:radial-gradient(circle, rgba(0, 56, 147, 0.06), transparent 70%); 
+        z-index:0; pointer-events: none; animation: floatSoftly 12s ease-in-out infinite reverse; 
+    }
+    .co-morado-bg {
+        position:absolute; top: 35%; left: 50%; width:420px; height:420px; transform: translateX(-50%);
+        border-radius:50%; background:radial-gradient(circle, rgba(90, 63, 163, 0.05), transparent 70%);
+        z-index:0; pointer-events: none; animation: floatSoftly 14s ease-in-out infinite;
+    }
+
+    /* Contenedor del formulario */
+    .co-form-container {
+        position: relative;
+        z-index: 10;
+        width: 100%;
+        max-width: 550px;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    /* Estilo base de cada "Burbuja" */
+    .co-bubble {
+        background: rgba(255, 255, 255, 0.9);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        padding: 30px 35px;
+        border-radius: 30px;
+        box-shadow: 0 15px 35px rgba(0, 56, 147, 0.04), 0 0 0 2px rgba(255, 255, 255, 0.8) inset;
+        border: 1px solid #f1f5f9;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .co-bubble:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 20px 40px rgba(0, 56, 147, 0.08), 0 0 0 2px rgba(255, 255, 255, 0.9) inset;
+    }
+    @media(max-width: 600px) { .co-bubble { padding: 25px 20px; border-radius: 24px; } }
+
+    /* Burbuja Header Especial */
+    .co-bubble-header {
+        text-align: center;
+        padding: 0 0 34px;
+        position: relative;
+        overflow: hidden;
+    }
+    .co-bubble-header::before {
+        content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 6px;
+        background: linear-gradient(to right, var(--co-amarillo) 33.3%, var(--co-azul) 33.3% 66.6%, var(--co-rojo) 66.6%);
+        z-index: 3;
+    }
+
+    /* Banner Movimiento por Colombia */
+    .co-banner-wrap { position: relative; width: 100%; overflow: hidden; }
+    .co-banner-wrap img {
+        width: 100%; display: block; aspect-ratio: 16 / 10; object-fit: cover;
+        object-position: center 30%;
+    }
+    .co-banner-wrap::after {
+        content: ''; position: absolute; inset: 0;
+        background: linear-gradient(to top, rgba(255,255,255,0.98) 0%, rgba(255,255,255,0) 28%);
+    }
+    .co-banner-flagbar { display:flex; width:100%; height:8px; }
+    .co-banner-flagbar span { flex:1; }
+    .co-banner-flagbar span:nth-child(1) { background: var(--co-amarillo); }
+    .co-banner-flagbar span:nth-child(2) { background: var(--co-azul); }
+    .co-banner-flagbar span:nth-child(3) { background: var(--co-rojo); }
+
+    .co-bubble-header .co-header-text { padding: 22px 35px 0; }
+    .co-bubble-header h2 { font-family: var(--font-h, 'Outfit', sans-serif); font-size: 1.8rem; font-weight: 900; color: #1e293b; margin-bottom: 12px; line-height: 1.2; }
+    .co-bubble-header p { color: #64748b; font-size: 15px; margin: 0; }
+
+    .co-soft-estrellas { display: flex; justify-content: center; gap: 8px; color: var(--co-morado); font-size: 14px; margin-top: 15px; opacity: 0.35; }
+    @media(max-width: 600px) { .co-bubble-header .co-header-text { padding: 20px 20px 0; } }
+
+    /* Inputs dentro de burbujas */
+    .co-bubble-label {
+        display: flex; align-items: center; gap: 8px;
+        font-family: var(--font-h, 'Outfit', sans-serif); font-size: 13px; text-transform: uppercase; letter-spacing: 1px;
+        color: var(--co-azul); font-weight: 800; margin-bottom: 12px; opacity: 0.85;
+    }
+    .co-bubble-label::before {
+        content: ''; display: inline-block; width: 4px; height: 16px; border-radius: 4px;
+        background: linear-gradient(to bottom, var(--co-amarillo), var(--co-azul), var(--co-rojo));
+    }
+    
+    .co-input-clean {
+        width: 100%; padding: 16px 20px; border: none; border-radius: 16px;
+        font-size: 16px; font-family: inherit; background: #f8fafc; color: #334155;
+        transition: all 0.3s; box-shadow: 0 2px 5px rgba(0,0,0,0.02) inset;
+    }
+    textarea.co-input-clean {
+        min-height: 100px;
+        resize: vertical;
+    }
+    .co-input-clean:focus { outline: none; background: #fff; box-shadow: 0 0 0 2px #bfdbfe, 0 10px 20px rgba(0, 56, 147, 0.05); }
+    .co-input-clean::placeholder { color: #94a3b8; }
+
+    /* Burbuja de Chips (Horarios) */
+    .co-chips-container { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    @media(max-width: 480px) { .co-chips-container { grid-template-columns: 1fr; } }
+    
+    .co-chip-btn {
+        padding: 16px; border: 2px solid #f1f5f9; border-radius: 20px; font-weight: 700;
+        cursor: pointer; transition: all .2s; color: #64748b; font-size: 14px; background: #fff; text-align: center;
+    }
+    .co-chip-btn:hover { border-color: rgba(252,209,22,0.6); color: var(--co-azul); transform: translateY(-2px); }
+    .co-chip-btn.active {
+        background: linear-gradient(135deg, var(--co-azul), var(--co-morado));
+        color: #fff; border-color: var(--co-azul);
+        box-shadow: 0 8px 20px rgba(90, 63, 163, 0.25);
+    }
+
+    .co-soft-error { display: none; color: #ef4444; font-size: 13px; font-weight: 600; margin-top: 12px; text-align: center; background: #fef2f2; padding: 12px; border-radius: 14px; }
+
+    /* Botón Submit Flotante */
+    .co-btn-submit {
+        position: relative;
+        width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+        background: linear-gradient(120deg, var(--co-azul) 0%, var(--co-morado) 100%);
+        color: #fff !important; font-size: 16px; font-weight: 800;
+        font-family: var(--font-h, 'Outfit', sans-serif); padding: 22px; border-radius: 24px; border: none;
+        cursor: pointer; text-transform: uppercase; letter-spacing: 1px; transition: all 0.3s;
+        box-shadow: 0 15px 30px rgba(0, 56, 147, 0.2);
+        overflow: hidden;
+    }
+    .co-btn-submit::before {
+        content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 4px;
+        background: linear-gradient(to right, var(--co-amarillo) 33.3%, var(--co-azul) 33.3% 66.6%, var(--co-rojo) 66.6%);
+    }
+    .co-btn-submit:hover { transform: translateY(-4px) scale(1.02); box-shadow: 0 20px 40px rgba(90, 63, 163, 0.3); }
+
+    /* Alertas de Django (Errores de validación) */
+    .co-alert-bubble {
+        background: #fef2f2; border: none; border-radius: 24px; padding: 18px 24px;
+        display: flex; align-items: center; gap: 14px; font-size: 14px; color: #b91c1c; font-weight: 600;
+        box-shadow: 0 10px 25px rgba(185, 28, 28, 0.08);
+    }
+
+    /* ---------------------------------------------------
+       DISEÑO DEL MODAL DE ÉXITO CHINGÓN (OVERLAY)
+       --------------------------------------------------- */
+    .co-success-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(248, 250, 252, 0.85); /* Blanco semi-transparente */
+        backdrop-filter: blur(15px);
+        -webkit-backdrop-filter: blur(15px);
+        z-index: 9999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        animation: fadeInOverlay 0.4s ease-out;
+    }
+    .co-success-modal {
+        background: #fff;
+        width: 100%;
+        max-width: 450px;
+        padding: 50px 40px;
+        border-radius: 40px;
+        text-align: center;
+        box-shadow: 0 30px 60px rgba(0, 56, 147, 0.1), 0 0 0 4px rgba(255, 255, 255, 0.5) inset;
+        border: 1px solid #f1f5f9;
+        position: relative;
+        overflow: hidden;
+        animation: popModal 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .co-success-modal h3 {
+        font-family: var(--font-h, 'Outfit', sans-serif);
+        font-size: 1.8rem;
+        font-weight: 900;
+        color: #1e293b;
+        margin-top: 25px;
+        margin-bottom: 15px;
+    }
+    .co-success-modal p { color: #64748b; font-size: 16px; line-height: 1.6; margin-bottom: 30px; }
+    
+    .co-check-circle {
+        width: 80px; height: 80px; background: #dcfce7; color: #16a34a;
+        border-radius: 50%; display: flex; align-items: center; justify-content: center;
+        font-size: 35px; margin: 0 auto;
+        box-shadow: 0 10px 25px rgba(22, 163, 74, 0.2), 0 0 0 10px rgba(22, 163, 74, 0.05);
+        animation: scaleCheck 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        transform: scale(0);
+    }
+
+    .co-loader-bar {
+        height: 6px; width: 100%; background: #f1f5f9; border-radius: 10px; overflow: hidden;
+    }
+    .co-loader-fill {
+        height: 100%; width: 0%; background: linear-gradient(to right, #003893, #60A5FA); border-radius: 10px;
+        animation: fillLoader 3.5s linear forwards; 
+    }
+
+    @keyframes fadeInOverlay { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes popModal { 0% { transform: scale(0.8) translateY(20px); opacity: 0; } 100% { transform: scale(1) translateY(0); opacity: 1; } }
+    @keyframes scaleCheck { 0% { transform: scale(0); } 70% { transform: scale(1.2); } 100% { transform: scale(1); } }
+    @keyframes fillLoader { to { width: 100%; } }
+
 </style>
-</head>
-<body>
 
-<div class="form-card">
-  <img src="{% static 'img/nlogo.png' %}" alt="HOPE Logo" class="logo">
-
-  {% if exito %}
-    <div class="exito-box">
-      <div class="exito-icon"><i class="fas fa-circle-check"></i></div>
-      <h2>¡Gracias por unirte!</h2>
-      <p class="sub">Recibimos tu información. Nuestro equipo en HOPE se pondrá en contacto contigo muy pronto. 💜</p>
-      <a href="{% url 'inicio' %}" class="volver"><i class="fas fa-arrow-left"></i> Volver al inicio</a>
+<!-- MODAL DE ÉXITO -->
+{% if exito %}
+<div class="co-success-overlay">
+    <div class="co-success-modal">
+        <div class="co-check-circle">
+            <i class="fas fa-check"></i>
+        </div>
+        <h3>¡Gracias por unirte!</h3>
+        <p>Recibimos tu información. Nuestro equipo en HOPE se pondrá en contacto contigo muy pronto. 💜</p>
+        
+        <div class="co-loader-bar">
+            <div class="co-loader-fill"></div>
+        </div>
+        <p style="font-size: 12px; color: #94a3b8; margin-top: 15px; margin-bottom: 0;">Redirigiendo al inicio...</p>
     </div>
-  {% else %}
-    <h2>Únete a nuestra familia</h2>
-    <p class="sub">🇨🇴 Cuéntanos un poco de ti y te acompañamos en tu proceso de bienestar emocional.</p>
-
-    {% if messages %}
-      {% for message in messages %}
-        <div class="alert alert-error">{{ message }}</div>
-      {% endfor %}
-    {% endif %}
-
-    <form method="POST" action="{% url 'formulario_colombia' %}">
-      {% csrf_token %}
-
-      <div class="field">
-        <label>Nombre completo</label>
-        <div class="input-wrap">
-          <i class="fas fa-user"></i>
-          <input type="text" name="nombre" placeholder="Tu nombre completo" required>
-        </div>
-      </div>
-
-      <div class="field">
-        <label>Correo electrónico</label>
-        <div class="input-wrap">
-          <i class="fas fa-envelope"></i>
-          <input type="email" name="correo" placeholder="tucorreo@ejemplo.com" required>
-        </div>
-      </div>
-
-      <div class="field">
-        <label>Número de celular</label>
-        <div class="input-wrap">
-          <i class="fas fa-phone"></i>
-          <input type="tel" name="celular" placeholder="Tu número de contacto" required>
-        </div>
-      </div>
-
-      <div class="field">
-        <label>Ciudad en Colombia</label>
-        <div class="input-wrap">
-          <i class="fas fa-location-dot"></i>
-          <input type="text" name="lugar_vivienda" placeholder="Ej. Bogotá, Medellín, Cali...">
-        </div>
-      </div>
-
-      <div class="field">
-        <label>Horario de preferencia</label>
-        <div class="input-wrap">
-          <i class="fas fa-clock"></i>
-          <input type="text" name="horario_preferencia" placeholder="Ej. Tardes, fines de semana...">
-        </div>
-      </div>
-
-      <div class="field">
-        <label>¿Algo más que quieras contarnos?</label>
-        <textarea name="mensaje" placeholder="Opcional"></textarea>
-      </div>
-
-      <button type="submit" class="btn-submit">Unirme a HOPE <i class="fas fa-heart"></i></button>
-    </form>
-
-    <a href="{% url 'landing_colombia' %}" class="volver"><i class="fas fa-arrow-left"></i> Volver</a>
-  {% endif %}
 </div>
 
-</body>
-</html>
+<script>
+    setTimeout(function() {
+        window.location.href = "{% url 'inicio' %}";
+    }, 3500);
+</script>
+{% endif %}
+
+
+<div class="co-bubbles-wrap">
+    <div class="co-morado-bg"></div>
+
+    <div class="co-form-container">
+        
+        <!-- Burbuja 1: Encabezado -->
+        <div class="co-bubble co-bubble-header">
+            <div class="co-banner-wrap">
+                <!-- Puedes cambiar 'slider_4.jpeg' por una imagen representativa de Colombia si tienes una -->
+                <img src="{% static 'img/slider_4.jpeg' %}" alt="Comunidad HOPE Colombia">
+            </div>
+            <div class="co-banner-flagbar"><span></span><span></span><span></span></div>
+            <div class="co-header-text">
+                <h2>Únete a nuestra familia</h2>
+                <p>🇨🇴 Cuéntanos un poco de ti y te acompañamos en tu proceso de bienestar emocional.</p>
+                <div class="co-soft-estrellas">
+                    <i class="fas fa-heart"></i><i class="fas fa-heart"></i><i class="fas fa-heart"></i><i class="fas fa-heart"></i>
+                    <i class="fas fa-heart"></i><i class="fas fa-heart"></i><i class="fas fa-heart"></i><i class="fas fa-heart"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Alertas de validación de Django -->
+        {% if messages %}
+            {% for message in messages %}
+                <div class="co-bubble co-alert-bubble error">
+                    <i class="fas fa-circle-exclamation"></i>
+                    <span>{{ message }}</span>
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <form action="{% url 'formulario_colombia' %}" method="POST" id="form-colombia" style="display: contents;">
+            {% csrf_token %}
+
+            <!-- Burbuja 2: Datos de Contacto -->
+            <div class="co-bubble">
+                <span class="co-bubble-label"><i class="fas fa-user" style="margin-right: 6px;"></i> Tus Datos</span>
+                <div style="display: flex; flex-direction: column; gap: 14px;">
+                    <input type="text" name="nombre" class="co-input-clean" placeholder="Tu nombre completo" required>
+                    <input type="email" name="correo" class="co-input-clean" placeholder="tucorreo@ejemplo.com" required>
+                    <input type="tel" name="celular" class="co-input-clean" placeholder="Tu número de contacto" required>
+                </div>
+            </div>
+
+            <!-- Burbuja 3: Ubicación -->
+            <div class="co-bubble">
+                <span class="co-bubble-label"><i class="fas fa-map-marker-alt" style="margin-right: 6px;"></i> Ciudad en Colombia</span>
+                <input type="text" name="lugar_vivienda" class="co-input-clean" placeholder="Ej. Bogotá, Medellín, Cali...">
+            </div>
+
+            <!-- Burbuja 4: Horario -->
+            <div class="co-bubble">
+                <span class="co-bubble-label"><i class="fas fa-clock" style="margin-right: 6px;"></i> Horario preferido</span>
+                <div class="co-chips-container" id="horario-chips">
+                    <div class="co-chip-btn" data-valor="Mañana (9:00 - 12:00)">Mañana <br><small style="font-weight:400; font-size:11px;">9:00 - 12:00</small></div>
+                    <div class="co-chip-btn" data-valor="Tarde (12:00 - 17:00)">Tarde <br><small style="font-weight:400; font-size:11px;">12:00 - 17:00</small></div>
+                    <div class="co-chip-btn" data-valor="Noche (17:00 - 21:00)">Noche <br><small style="font-weight:400; font-size:11px;">17:00 - 21:00</small></div>
+                    <div class="co-chip-btn" data-valor="Fin de semana">Fin de <br><small style="font-weight:400; font-size:11px;">Semana</small></div>
+                </div>
+                <p id="horario-error" class="co-soft-error"><i class="fas fa-exclamation-circle" style="margin-right:6px;"></i> Selecciona un horario de preferencia</p>
+                <input type="hidden" name="horario_preferencia" id="horario_preferencia_input">
+            </div>
+
+            <!-- Burbuja 5: Mensaje Opcional -->
+            <div class="co-bubble">
+                <span class="co-bubble-label"><i class="fas fa-comment-dots" style="margin-right: 6px;"></i> ¿Algo más que quieras contarnos?</span>
+                <textarea name="mensaje" class="co-input-clean" placeholder="Opcional"></textarea>
+            </div>
+
+            <!-- Burbuja 6: Botón -->
+            <button type="submit" class="co-btn-submit">
+                Unirme a HOPE <i class="fas fa-heart" style="margin-left: 6px;"></i>
+            </button>
+            
+            <a href="{% url 'landing_colombia' %}" style="display:block;text-align:center;color:#64748b;text-decoration:none;font-weight:700;font-size:14px;margin-top:10px;"><i class="fas fa-arrow-left"></i> Volver a la landing</a>
+        </form>
+
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const chips = document.querySelectorAll('#horario-chips .co-chip-btn');
+    const inputHorario = document.getElementById('horario_preferencia_input');
+    const errorMsg = document.getElementById('horario-error');
+    const form = document.getElementById('form-colombia');
+
+    chips.forEach(function (chip) {
+        chip.addEventListener('click', function () {
+            chips.forEach(function (c) { c.classList.remove('active'); });
+            chip.classList.add('active');
+            inputHorario.value = chip.dataset.valor;
+            errorMsg.style.display = 'none';
+        });
+    });
+
+    form.addEventListener('submit', function (e) {
+        if (!inputHorario.value) {
+            e.preventDefault();
+            errorMsg.style.display = 'block';
+            errorMsg.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    });
+});
+</script>
+{% endblock %}
