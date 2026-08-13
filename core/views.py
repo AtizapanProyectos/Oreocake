@@ -3443,8 +3443,8 @@ def generar_reporte_checkin_ajax(request):
         )
 
         contenido_ia = _extraer_json_groq(response.choices[0].message.content.strip())
-        objetivo_tarea = _ajustar_texto_a_longitud_exacta(contenido_ia.get('objetivo_tarea', ''), 728)
-        recomendaciones = _ajustar_texto_a_longitud_exacta(contenido_ia.get('recomendaciones', ''), 728)
+        objetivo_tarea = _ajustar_texto_a_longitud_exacta(contenido_ia.get('objetivo_tarea', ''), 748)
+        recomendaciones = _ajustar_texto_a_longitud_exacta(contenido_ia.get('recomendaciones', ''), 748)
 
         # ---------- 6. Respuesta ----------
         return JsonResponse({
@@ -3594,10 +3594,10 @@ def generar_reporte_checkin_psicologo_ajax(request):
         )
 
         contenido_ia = _extraer_json_groq(response.choices[0].message.content.strip())
-        como_llegaste_hope = _ajustar_texto_a_longitud_exacta(contenido_ia.get('como_llegaste_hope', ''), 719)
-        apoyo_ultima_sesion = _ajustar_texto_a_longitud_exacta(contenido_ia.get('apoyo_ultima_sesion', ''), 581)
-        objetivo_tarea = _ajustar_texto_a_longitud_exacta(contenido_ia.get('objetivo_tarea', ''), 750)
-        recomendaciones = _ajustar_texto_a_longitud_exacta(contenido_ia.get('recomendaciones', ''), 745)
+        como_llegaste_hope = _ajustar_texto_a_longitud_exacta(contenido_ia.get('como_llegaste_hope', ''), 750)
+        apoyo_ultima_sesion = _ajustar_texto_a_longitud_exacta(contenido_ia.get('apoyo_ultima_sesion', ''), 700)
+        objetivo_tarea = _ajustar_texto_a_longitud_exacta(contenido_ia.get('objetivo_tarea', ''), 748)
+        recomendaciones = _ajustar_texto_a_longitud_exacta(contenido_ia.get('recomendaciones', ''), 748)
 
         # ---------- 6. Respuesta ----------
         return JsonResponse({
