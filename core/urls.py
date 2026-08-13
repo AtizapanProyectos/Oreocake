@@ -65,4 +65,9 @@ urlpatterns = [
 
     path('analizar-grafica-ipp/<int:paciente_id>/', views.analizar_grafica_ipp_ajax, name='analizar_grafica_ipp'),
     path('report/', views.renderizar_imagen, name='ver_imagen'),
+    path('report2/', views.renderizar_pasciente, name='ver_imagen'),
+
+
+    path('buscar-mis-pacientes/', views.buscar_mis_pacientes_ajax, name='buscar_mis_pacientes'),
+    path('generar-reporte-checkin/', views.generar_reporte_checkin_ajax, name='generar_reporte_checkin'),
 ]

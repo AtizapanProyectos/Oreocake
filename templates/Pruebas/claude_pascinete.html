@@ -437,26 +437,36 @@
       <!-- BODY -->
       <div class="body">
 
+        <!-- 🔥 NUEVO: Selector automático de paciente -->
+        <div class="info-card" id="patientSearchCard" style="margin-bottom:16px; position:relative;">
+          <div class="field">
+            <label><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg> Buscar y cargar paciente automáticamente</label>
+            <input type="text" id="buscadorPaciente" placeholder="Escribe el nombre o correo del paciente..." autocomplete="off">
+            <div id="resultadosPaciente" style="display:none; position:absolute; left:22px; right:22px; top:66px; z-index:20; background:#fff; border:1.5px solid var(--line); border-radius:10px; box-shadow:var(--shadow); max-height:220px; overflow-y:auto;"></div>
+            <div id="estadoCargaPaciente" style="font-size:11.5px; color:var(--ink-soft); margin-top:4px;"></div>
+          </div>
+        </div>
+
         <div class="info-card">
           <div class="field-row wide">
             <div class="field">
               <label><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> Nombre del paciente</label>
-              <input type="text" placeholder="Escribe el nombre completo">
+              <input type="text" id="inputNombrePaciente" placeholder="Escribe el nombre completo">
             </div>
             <div class="field">
               <label><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V10M18 20V4M6 20v-4"/></svg> Edad</label>
-              <input type="number" placeholder="Ej. 16" min="0">
+              <input type="number" id="inputEdad" placeholder="Ej. 16" min="0">
             </div>
           </div>
 
           <div class="field-row wide">
             <div class="field">
               <label><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M8 2v4M16 2v4M3 10h18"/><path d="M9 15l2 2 4-4"/></svg> Psicólogo(a) y cédula profesional</label>
-              <input type="text" placeholder="Nombre completo — Cédula No.">
+              <input type="text" id="inputPsicologo" placeholder="Nombre completo — Cédula No.">
             </div>
             <div class="field">
               <label><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> Fecha de la última sesión</label>
-              <input type="date">
+              <input type="date" id="inputFechaUltimaSesion">
             </div>
           </div>
         </div>
@@ -496,25 +506,25 @@
                 <div class="dim-chip" style="background:var(--pink)"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-7-4.35-9.3-8.1C1 9.7 2.4 6.5 5.6 6c2-.3 3.7.8 4.4 2.3C10.7 6.8 12.4 5.7 14.4 6c3.2.5 4.6 3.7 2.9 6.9C15 16.65 12 21 12 21z"/></svg></div>
                 <div class="dim-name">Bienestar emocional</div>
                 <div class="dim-track"><div class="dim-fill" style="width:30%;background:var(--pink)"></div></div>
-                <div class="dim-pct"><input type="number" value="30" min="0" max="100" oninput="updateDim(this)">%</div>
+                <div class="dim-pct"><input type="number" id="dimBienestar" value="30" min="0" max="100" oninput="updateDim(this)">%</div>
               </div>
               <div class="dim-row">
                 <div class="dim-chip" style="background:var(--orange)"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l8 3v6c0 5-3.4 8.5-8 10-4.6-1.5-8-5-8-10V5l8-3z"/></svg></div>
                 <div class="dim-name">Afrontamiento</div>
                 <div class="dim-track"><div class="dim-fill" style="width:50%;background:var(--orange)"></div></div>
-                <div class="dim-pct"><input type="number" value="50" min="0" max="100" oninput="updateDim(this)">%</div>
+                <div class="dim-pct"><input type="number" id="dimAfrontamiento" value="50" min="0" max="100" oninput="updateDim(this)">%</div>
               </div>
               <div class="dim-row">
                 <div class="dim-chip" style="background:var(--teal)"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a4 4 0 0 0-5.6 5.6L2 19l3 3 7.1-7.1a4 4 0 0 0 5.6-5.6L14.4 12l-2.4-2.4 2.7-3.3z"/></svg></div>
                 <div class="dim-name">Aplicación de herramientas</div>
                 <div class="dim-track"><div class="dim-fill" style="width:10%;background:var(--teal)"></div></div>
-                <div class="dim-pct"><input type="number" value="10" min="0" max="100" oninput="updateDim(this)">%</div>
+                <div class="dim-pct"><input type="number" id="dimHerramientas" value="10" min="0" max="100" oninput="updateDim(this)">%</div>
               </div>
               <div class="dim-row">
                 <div class="dim-chip" style="background:var(--purple-mid)"><svg viewBox="0 0 24 24" fill="#fff"><path d="M12 2l2.9 6.3 6.9.7-5.2 4.7 1.6 6.8L12 17l-6.2 3.5 1.6-6.8L2.2 9l6.9-.7L12 2z"/></svg></div>
                 <div class="dim-name">Esperanza y autoeficacia</div>
                 <div class="dim-track"><div class="dim-fill" style="width:90%;background:var(--purple-mid)"></div></div>
-                <div class="dim-pct"><input type="number" value="90" min="0" max="100" oninput="updateDim(this)">%</div>
+                <div class="dim-pct"><input type="number" id="dimEsperanza" value="90" min="0" max="100" oninput="updateDim(this)">%</div>
               </div>
             </div>
           </div>
@@ -527,22 +537,22 @@
               <div class="evol-chart-big" id="evolChart">
                 <div class="evol-bar-big">
                   <span class="sprout">🌱</span>
-                  <div class="val-chip"><input type="number" value="62" min="0" max="100" oninput="updateEvol()"></div>
+                  <div class="val-chip"><input type="number" id="evolVal1" value="62" min="0" max="100" oninput="updateEvol()"></div>
                   <div class="bar" style="height:0%"></div>
-                  <div class="bar-lbl">Sesión 1</div>
+                  <div class="bar-lbl" id="evolLbl1">Sesión 1</div>
                 </div>
                 <div class="evol-bar-big">
                   <span class="sprout">🌿</span>
-                  <div class="val-chip"><input type="number" value="69" min="0" max="100" oninput="updateEvol()"></div>
+                  <div class="val-chip"><input type="number" id="evolVal2" value="69" min="0" max="100" oninput="updateEvol()"></div>
                   <div class="bar" style="height:0%"></div>
-                  <div class="bar-lbl">Sesión 2</div>
+                  <div class="bar-lbl" id="evolLbl2">Sesión 2</div>
                 </div>
                 <div class="evol-bar-big is-current">
                   <div class="now-pill">¡Vas aquí! ✨</div>
                   <span class="sprout">🌳</span>
-                  <div class="val-chip"><input type="number" value="76" min="0" max="100" oninput="updateEvol()"></div>
+                  <div class="val-chip"><input type="number" id="evolVal3" value="76" min="0" max="100" oninput="updateEvol()"></div>
                   <div class="bar" style="height:0%"></div>
-                  <div class="bar-lbl">Sesión 3</div>
+                  <div class="bar-lbl" id="evolLbl3">Sesión 3</div>
                 </div>
               </div>
               <div class="evol-caption" id="evolCaption">🌟 <span>Cada sesión suma: tu progreso va construyéndose paso a paso.</span></div>
@@ -598,7 +608,7 @@
             <div class="rule"></div>
           </div>
           <div class="box" style="--accent: var(--yellow)">
-            <div class="editable" contenteditable="true" data-placeholder="Resumen generado con IA de la tarea que dejó el psicólogo en la sesión..."></div>
+            <div class="editable" id="editableObjetivo" contenteditable="true" data-placeholder="Resumen generado con IA de la tarea que dejó el psicólogo en la sesión..."></div>
           </div>
         </div>
 
@@ -610,7 +620,7 @@
             <div class="rule"></div>
           </div>
           <div class="box" style="--accent: var(--purple-mid)">
-            <div class="editable" contenteditable="true" data-placeholder="Ej. Practicar respiración diafragmática 5 minutos al día..."></div>
+            <div class="editable" id="editableRecomendaciones" contenteditable="true" data-placeholder="Ej. Practicar respiración diafragmática 5 minutos al día..."></div>
           </div>
         </div>
 
@@ -754,6 +764,124 @@
     selectMood(5);
     updateGauge();
     updateEvol();
+  }
+
+  // ================================================================
+  // 🔥 NUEVO: Selector de paciente + autocompletado automático (IA)
+  // ================================================================
+  const URL_BUSCAR_PACIENTES = "{% url 'buscar_mis_pacientes' %}";
+  const URL_GENERAR_REPORTE = "{% url 'generar_reporte_checkin' %}";
+
+  const inputBuscador = document.getElementById('buscadorPaciente');
+  const cajaResultados = document.getElementById('resultadosPaciente');
+  const estadoCarga = document.getElementById('estadoCargaPaciente');
+  let temporizadorBusqueda = null;
+
+  inputBuscador.addEventListener('input', function(){
+    const q = this.value.trim();
+    clearTimeout(temporizadorBusqueda);
+    if(q.length < 2){ cajaResultados.style.display = 'none'; cajaResultados.innerHTML = ''; return; }
+    temporizadorBusqueda = setTimeout(() => buscarPacientes(q), 300);
+  });
+
+  document.addEventListener('click', function(e){
+    if(!cajaResultados.contains(e.target) && e.target !== inputBuscador){
+      cajaResultados.style.display = 'none';
+    }
+  });
+
+  async function buscarPacientes(q){
+    try{
+      const resp = await fetch(`${URL_BUSCAR_PACIENTES}?q=${encodeURIComponent(q)}`);
+      const data = await resp.json();
+      if(data.status !== 'success' || !data.resultados.length){
+        cajaResultados.innerHTML = '<div style="padding:10px 14px; font-size:13px; color:var(--ink-soft);">Sin resultados</div>';
+        cajaResultados.style.display = 'block';
+        return;
+      }
+      cajaResultados.innerHTML = data.resultados.map(p => `
+        <div class="resultado-paciente" data-id="${p.id}" data-nombre="${p.nombre}"
+             style="padding:10px 14px; cursor:pointer; font-size:13.5px; border-bottom:1px solid var(--line);">
+          <b>${p.nombre}</b>${p.email ? ' <span style="color:var(--ink-soft); font-size:11.5px;">— ' + p.email + '</span>' : ''}
+        </div>`).join('');
+      cajaResultados.style.display = 'block';
+      cajaResultados.querySelectorAll('.resultado-paciente').forEach(el => {
+        el.addEventListener('mouseenter', () => el.style.background = 'var(--purple-wash)');
+        el.addEventListener('mouseleave', () => el.style.background = '');
+        el.addEventListener('click', () => {
+          inputBuscador.value = el.dataset.nombre;
+          cajaResultados.style.display = 'none';
+          cargarReportePaciente(el.dataset.id);
+        });
+      });
+    }catch(err){
+      cajaResultados.innerHTML = '<div style="padding:10px 14px; font-size:13px; color:var(--bad);">Error al buscar</div>';
+      cajaResultados.style.display = 'block';
+    }
+  }
+
+  async function cargarReportePaciente(pacienteId){
+    estadoCarga.textContent = '⏳ Cargando expediente y generando el reporte con IA...';
+    try{
+      const resp = await fetch(`${URL_GENERAR_REPORTE}?paciente_id=${pacienteId}`);
+      const data = await resp.json();
+      if(data.status !== 'success'){
+        estadoCarga.textContent = '⚠️ ' + (data.message || 'No se pudo generar el reporte');
+        return;
+      }
+      const d = data.data;
+
+      // Datos generales
+      document.getElementById('inputNombrePaciente').value = d.nombre_paciente || '';
+      document.getElementById('inputPsicologo').value = d.psicologo ? `${d.psicologo} — Cédula ${d.cedula || 'N/D'}` : '';
+      document.getElementById('inputFechaUltimaSesion').value = d.fecha_ultima_sesion || '';
+      document.getElementById('sessionNum').value = d.sesion_numero || 1;
+
+      // Gauge IPP
+      document.getElementById('ippValue').value = d.ipp_valor || 0;
+      document.getElementById('ippDeltaInput').value = d.ipp_delta || 0;
+      updateGauge();
+
+      // Dimensiones
+      const mapaDims = {
+        dimBienestar: d.dims['Bienestar emocional'],
+        dimAfrontamiento: d.dims['Afrontamiento'],
+        dimHerramientas: d.dims['Aplicación de herramientas'],
+        dimEsperanza: d.dims['Esperanza y autoeficacia'],
+      };
+      Object.entries(mapaDims).forEach(([id, val]) => {
+        const input = document.getElementById(id);
+        input.value = val || 0;
+        updateDim(input);
+      });
+
+      // Evolución del IPP (hasta 3 sesiones más recientes)
+      const evol = d.evolucion || [];
+      for(let i = 0; i < 3; i++){
+        const valInput = document.getElementById('evolVal' + (i+1));
+        const lblEl = document.getElementById('evolLbl' + (i+1));
+        if(evol[i]){
+          valInput.value = evol[i].valor;
+          lblEl.textContent = 'Sesión ' + evol[i].sesion;
+        } else {
+          valInput.value = 0;
+        }
+      }
+      updateEvol();
+
+      // Estado de ánimo
+      selectMood(d.mood_valor || 5);
+
+      // Textos generados por IA (728 caracteres exactos)
+      document.getElementById('editableObjetivo').textContent = d.objetivo_tarea || '';
+      document.getElementById('editableRecomendaciones').textContent = d.recomendaciones || '';
+
+      estadoCarga.textContent = '✅ Reporte cargado automáticamente';
+      setTimeout(() => { estadoCarga.textContent = ''; }, 3000);
+
+    }catch(err){
+      estadoCarga.textContent = '⚠️ Error de conexión al generar el reporte';
+    }
   }
 
   // Init
