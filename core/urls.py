@@ -59,6 +59,10 @@ urlpatterns = [
 #Conatcto venezuela
     path('venezuela/', views.formulario_venezuela, name='formulario_venezuela'),
     path('donaciones-venezuela/', views.donaciones_venezuela, name='donaciones_venezuela'),
+
+#Contacto colombia
+    path('colombia/', views.landing_colombia, name='landing_colombia'),
+    path('colombia/formulario/', views.formulario_colombia, name='formulario_colombia'),
     path('citas-hoy/', views.citas_hoy_view, name='citas_hoy'),
     path('api/citas-hoy/', views.api_citas_hoy, name='api_citas_hoy'),
 

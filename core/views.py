@@ -2924,6 +2924,84 @@ def donaciones_venezuela(request):
 
 
 
+# =========================================================================
+# 🇨🇴 LANDING — COMUNIDAD COLOMBIANA
+# =========================================================================
+# Reutiliza la identidad visual del sitio principal. Ofrece dos caminos:
+#   1) "Donar aquí"            -> abre el mismo modal de donación (PayPal/Clip)
+#      que ya se usa en el resto del sitio, sin tocar esa lógica de cobro.
+#   2) "Únete a nuestra familia" -> redirige al formulario de contacto de
+#      Colombia (formulario_colombia), similar al de Venezuela.
+def landing_colombia(request):
+    context = {
+        'paypal_client_id': settings.PAYPAL_CLIENT_ID,
+    }
+    return render(request, 'landing_colombia.html', context)
+
+
+# =========================================================================
+# 🇨🇴 MINI FORMULARIO DE CONTACTO — COMUNIDAD COLOMBIANA
+# =========================================================================
+# Formulario público (no requiere cuenta). Igual que el de Venezuela, guarda
+# el registro y notifica por correo al equipo de HOPE, pero usa el modelo
+# centralizado ContactoPais para que sea fácil distinguir el país de origen
+# y reutilizar el mismo modelo con futuros países.
+def formulario_colombia(request):
+    if request.method == 'POST':
+        correo = request.POST.get('correo', '').strip()
+        nombre = request.POST.get('nombre', '').strip()
+        celular = request.POST.get('celular', '').strip()
+        lugar_vivienda = request.POST.get('lugar_vivienda', '').strip()
+        horario_preferencia = request.POST.get('horario_preferencia', '').strip()
+        mensaje = request.POST.get('mensaje', '').strip()
+
+        if not correo or not nombre or not celular:
+            messages.error(request, 'Por favor completa al menos tu nombre, correo y celular.')
+            return render(request, 'formulario_colombia.html')
+
+        # 1. Guardar en el modelo centralizado, identificando el país de origen
+        ContactoPais.objects.create(
+            country=ContactoPais.Pais.COLOMBIA,
+            form_type=ContactoPais.TipoFormulario.FAMILIA,
+            nombre=nombre,
+            correo=correo,
+            celular=celular,
+            lugar_vivienda=lugar_vivienda,
+            horario_preferencia=horario_preferencia,
+            mensaje=mensaje,
+        )
+
+        # 2. Enviar correo de notificación al equipo
+        fecha_str = localtime(now()).strftime('%d %b %Y, %H:%M')
+        texto_plano = (
+            "Nuevo contacto desde el formulario para la comunidad colombiana:\n\n"
+            f"Nombre: {nombre}\n"
+            f"Correo: {correo}\n"
+            f"Celular: {celular}\n"
+            f"Ciudad en Colombia: {lugar_vivienda or 'No especificado'}\n"
+            f"Horario de preferencia: {horario_preferencia or 'No especificado'}\n"
+            f"Mensaje: {mensaje or 'No especificado'}\n"
+            f"Fecha: {fecha_str}"
+        )
+
+        try:
+            send_mail(
+                subject=f'🇨🇴 Nuevo contacto: {nombre}',
+                message=texto_plano,
+                from_email='Espacio HOPE <no-reply@espaciohope.com>',
+                recipient_list=['contacto@espaciohope.com'],
+                fail_silently=True,
+            )
+        except Exception as exc:
+            logging.getLogger(__name__).error('Error enviando formulario Colombia: %s', exc)
+
+        # 3. Mismo patrón que Venezuela: re-renderizamos con exito=True
+        return render(request, 'formulario_colombia.html', {'exito': True})
+
+    return render(request, 'formulario_colombia.html')
+
+
+
 def _limpiar_numero_whatsapp(numero, codigo_pais_default='52'):
     """Deja solo dígitos y agrega código de país si hace falta (para wa.me)."""
     if not numero:

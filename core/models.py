@@ -680,3 +680,57 @@ class ContactoVenezuela(models.Model):
         verbose_name = "Contacto Venezuela"
         verbose_name_plural = "Contactos Venezuela"
         ordering = ['-fecha_registro']
+
+
+# ==========================================
+# 🌎 MODELO CENTRALIZADO — CONTACTOS POR PAÍS
+# ==========================================
+# Modelo genérico y reutilizable para las landings de "comunidad" por país
+# (Colombia, y cualquier país que se agregue después). ContactoVenezuela se
+# deja intacto para no romper nada de lo que ya está en producción, pero
+# todo formulario nuevo (Colombia en adelante) debe usar este modelo.
+class ContactoPais(models.Model):
+
+    class Pais(models.TextChoices):
+        COLOMBIA = 'colombia', 'Colombia'
+        VENEZUELA = 'venezuela', 'Venezuela'
+        OTRO = 'otro', 'Otro'
+
+    class TipoFormulario(models.TextChoices):
+        FAMILIA = 'familia', 'Únete a nuestra familia'
+        DONACION = 'donacion', 'Donación'
+        CONTACTO = 'contacto', 'Contacto general'
+
+    # Identificador del país de origen del registro.
+    country = models.CharField(
+        max_length=30,
+        choices=Pais.choices,
+        verbose_name="País de origen",
+        db_index=True,
+    )
+    # Permite reutilizar el mismo modelo para distintos formularios/flujos
+    # dentro de un mismo país (ej. "familia" vs "donación" vs "contacto").
+    form_type = models.CharField(
+        max_length=30,
+        choices=TipoFormulario.choices,
+        default=TipoFormulario.FAMILIA,
+        verbose_name="Tipo de formulario",
+        db_index=True,
+    )
+
+    nombre = models.CharField(max_length=200, verbose_name="Nombre completo")
+    correo = models.EmailField(verbose_name="Correo electrónico")
+    celular = models.CharField(max_length=50, verbose_name="Número de celular")
+    lugar_vivienda = models.CharField(max_length=200, verbose_name="Ciudad / lugar de vivienda", blank=True, null=True)
+    horario_preferencia = models.CharField(max_length=100, verbose_name="Horario de preferencia", blank=True, null=True)
+    mensaje = models.TextField(verbose_name="Mensaje adicional", blank=True, null=True)
+
+    fecha_registro = models.DateTimeField(default=timezone.now, verbose_name="Fecha de registro")
+
+    def __str__(self):
+        return f"[{self.get_country_display()}] {self.nombre} - {self.correo}"
+
+    class Meta:
+        verbose_name = "Contacto por país"
+        verbose_name_plural = "Contactos por país"
+        ordering = ['-fecha_registro']  

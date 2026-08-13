@@ -1,0 +1,140 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Únete a la familia HOPE Colombia</title>
+<link rel="icon" href="{% static 'img/favicon.ico' %}" type="image/x-icon">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700;900&family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+<style>
+:root {
+  --c-purple: #5A3FA3;
+  --c-pink: #F85B8C;
+  --c-teal: #25B8B8;
+  --c-dark: #0f0f0f;
+  --text-muted: #64748b;
+  --font-h: 'Outfit', sans-serif;
+  --font-b: 'Plus Jakarta Sans', sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  font-family:var(--font-b);color:var(--c-dark);min-height:100vh;
+  display:flex;align-items:center;justify-content:center;padding:40px 20px;
+  background:radial-gradient(circle at top right,rgba(90,63,163,.08),#fff 55%),
+             radial-gradient(circle at bottom left,rgba(248,91,140,.06),#fff 55%);
+}
+.form-card{
+  width:100%;max-width:560px;background:#fff;border-radius:36px;padding:50px 45px;
+  box-shadow:0 30px 70px rgba(90,63,163,.08);border:1px solid #f1f5f9;position:relative
+}
+.form-card img.logo{height:48px;display:block;margin:0 auto 25px}
+.form-card h2{font-family:var(--font-h);font-size:2.1rem;font-weight:900;text-align:center;margin-bottom:8px}
+.form-card p.sub{color:var(--text-muted);text-align:center;margin-bottom:32px;font-size:1.02rem;line-height:1.5}
+.field{margin-bottom:18px}
+.field label{display:block;font-size:.8rem;font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px}
+.input-wrap{position:relative}
+.input-wrap i{position:absolute;left:20px;top:50%;transform:translateY(-50%);color:#c4b5fd;font-size:1.05rem}
+.field input,.field textarea,.field select{
+  width:100%;padding:16px 16px 16px 52px;border-radius:16px;border:2px solid #e2e8f0;
+  font-size:1rem;font-family:var(--font-b);background:#f8fafc;color:var(--c-dark);outline:none;transition:.25s
+}
+.field textarea{padding-left:16px;min-height:100px;resize:vertical}
+.field input:focus,.field textarea:focus,.field select:focus{border-color:var(--c-purple);background:#fff;box-shadow:0 10px 25px rgba(90,63,163,.08)}
+.btn-submit{
+  width:100%;padding:20px;border-radius:16px;border:none;background:var(--c-purple);color:#fff;
+  font-family:var(--font-h);font-weight:800;font-size:1.05rem;letter-spacing:.5px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;gap:10px;transition:.3s;margin-top:8px
+}
+.btn-submit:hover{background:var(--c-pink);transform:translateY(-3px)}
+.volver{display:block;text-align:center;margin-top:22px;color:var(--text-muted);text-decoration:none;font-weight:700;font-size:.92rem}
+.volver:hover{color:var(--c-purple)}
+.alert{padding:16px 20px;border-radius:16px;margin-bottom:22px;font-size:.95rem;font-weight:600}
+.alert-error{background:#fef2f2;color:#b91c1c;border:1px solid #fecaca}
+
+.exito-box{text-align:center}
+.exito-icon{font-size:4rem;color:var(--c-teal);margin-bottom:20px}
+</style>
+</head>
+<body>
+
+<div class="form-card">
+  <img src="{% static 'img/nlogo.png' %}" alt="HOPE Logo" class="logo">
+
+  {% if exito %}
+    <div class="exito-box">
+      <div class="exito-icon"><i class="fas fa-circle-check"></i></div>
+      <h2>¡Gracias por unirte!</h2>
+      <p class="sub">Recibimos tu información. Nuestro equipo en HOPE se pondrá en contacto contigo muy pronto. 💜</p>
+      <a href="{% url 'inicio' %}" class="volver"><i class="fas fa-arrow-left"></i> Volver al inicio</a>
+    </div>
+  {% else %}
+    <h2>Únete a nuestra familia</h2>
+    <p class="sub">🇨🇴 Cuéntanos un poco de ti y te acompañamos en tu proceso de bienestar emocional.</p>
+
+    {% if messages %}
+      {% for message in messages %}
+        <div class="alert alert-error">{{ message }}</div>
+      {% endfor %}
+    {% endif %}
+
+    <form method="POST" action="{% url 'formulario_colombia' %}">
+      {% csrf_token %}
+
+      <div class="field">
+        <label>Nombre completo</label>
+        <div class="input-wrap">
+          <i class="fas fa-user"></i>
+          <input type="text" name="nombre" placeholder="Tu nombre completo" required>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Correo electrónico</label>
+        <div class="input-wrap">
+          <i class="fas fa-envelope"></i>
+          <input type="email" name="correo" placeholder="tucorreo@ejemplo.com" required>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Número de celular</label>
+        <div class="input-wrap">
+          <i class="fas fa-phone"></i>
+          <input type="tel" name="celular" placeholder="Tu número de contacto" required>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Ciudad en Colombia</label>
+        <div class="input-wrap">
+          <i class="fas fa-location-dot"></i>
+          <input type="text" name="lugar_vivienda" placeholder="Ej. Bogotá, Medellín, Cali...">
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Horario de preferencia</label>
+        <div class="input-wrap">
+          <i class="fas fa-clock"></i>
+          <input type="text" name="horario_preferencia" placeholder="Ej. Tardes, fines de semana...">
+        </div>
+      </div>
+
+      <div class="field">
+        <label>¿Algo más que quieras contarnos?</label>
+        <textarea name="mensaje" placeholder="Opcional"></textarea>
+      </div>
+
+      <button type="submit" class="btn-submit">Unirme a HOPE <i class="fas fa-heart"></i></button>
+    </form>
+
+    <a href="{% url 'landing_colombia' %}" class="volver"><i class="fas fa-arrow-left"></i> Volver</a>
+  {% endif %}
+</div>
+
+</body>
+</html>
