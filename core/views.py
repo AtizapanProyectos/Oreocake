@@ -3443,8 +3443,8 @@ def generar_reporte_checkin_ajax(request):
         )
 
         contenido_ia = _extraer_json_groq(response.choices[0].message.content.strip())
-        objetivo_tarea = _ajustar_texto_a_longitud_exacta(contenido_ia.get('objetivo_tarea', ''), 748)
-        recomendaciones = _ajustar_texto_a_longitud_exacta(contenido_ia.get('recomendaciones', ''), 748)
+        objetivo_tarea = _ajustar_texto_a_longitud_exacta(contenido_ia.get('objetivo_tarea', ''), 765)
+        recomendaciones = _ajustar_texto_a_longitud_exacta(contenido_ia.get('recomendaciones', ''), 765)
 
         # ---------- 6. Respuesta ----------
         return JsonResponse({
@@ -3573,13 +3573,13 @@ def generar_reporte_checkin_psicologo_ajax(request):
             "Redacta EXACTAMENTE estos 4 textos, cada uno en párrafos completos, con tono clínico y profesional, "
             "sin inventar información que no esté en los datos anteriores:\n\n"
             "1. \"como_llegaste_hope\": resumen del motivo y contexto con el que el paciente llegó a HOPE, "
-            "basado en el cuestionario inicial. Debe tener exactamente 750 caracteres.\n"
+            "basado en el cuestionario inicial. Debe tener exactamente 800 caracteres.\n"
             "2. \"apoyo_ultima_sesion\": resumen del apoyo brindado por HOPE en la ÚLTIMA sesión. "
             "Debe tener exactamente 700 caracteres.\n"
             "3. \"objetivo_tarea\": la tarea u objetivo terapéutico que se dejó al paciente. "
-            "Debe tener exactamente 748 caracteres.\n"
+            "Debe tener exactamente 780 caracteres.\n"
             "4. \"recomendaciones\": recomendaciones concretas y accionables para el paciente antes de la próxima sesión. "
-            "Debe tener exactamente 748 caracteres.\n\n"
+            "Debe tener exactamente 780 caracteres.\n\n"
             "Devuelve ÚNICAMENTE un JSON válido con esta forma exacta, sin backticks ni texto extra:\n"
             "{\"como_llegaste_hope\": \"...\", \"apoyo_ultima_sesion\": \"...\", \"objetivo_tarea\": \"...\", \"recomendaciones\": \"...\"}"
         )
@@ -3594,10 +3594,10 @@ def generar_reporte_checkin_psicologo_ajax(request):
         )
 
         contenido_ia = _extraer_json_groq(response.choices[0].message.content.strip())
-        como_llegaste_hope = _ajustar_texto_a_longitud_exacta(contenido_ia.get('como_llegaste_hope', ''), 750)
+        como_llegaste_hope = _ajustar_texto_a_longitud_exacta(contenido_ia.get('como_llegaste_hope', ''), 800)
         apoyo_ultima_sesion = _ajustar_texto_a_longitud_exacta(contenido_ia.get('apoyo_ultima_sesion', ''), 700)
-        objetivo_tarea = _ajustar_texto_a_longitud_exacta(contenido_ia.get('objetivo_tarea', ''), 748)
-        recomendaciones = _ajustar_texto_a_longitud_exacta(contenido_ia.get('recomendaciones', ''), 748)
+        objetivo_tarea = _ajustar_texto_a_longitud_exacta(contenido_ia.get('objetivo_tarea', ''), 780)
+        recomendaciones = _ajustar_texto_a_longitud_exacta(contenido_ia.get('recomendaciones', ''), 780)
 
         # ---------- 6. Respuesta ----------
         return JsonResponse({
