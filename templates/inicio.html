@@ -579,17 +579,17 @@ body{font-family:var(--font-b);color:var(--c-dark);background:#fff;display:flex}
       </div>
     </div>
 
-    <div class="slide slide-3" style="background:none;">
+    <div class="slide slide-4" style="background:none;">
       
       <div style="position:absolute;inset:0;background-image:url('{% static 'img/slider5.jpeg' %}');background-size:cover;background-position:center;z-index:0;"></div>
-      
+      <div style="position:absolute;inset:0;background:linear-gradient(135deg,rgba(10,5,20,.55) 0%,rgba(242,124,33,.35) 100%);z-index:1;"></div>
 
       <div class="slide-content" style="position:relative;z-index:2;">
-        <h1 style="color: white;"><span style="color:var(--c-teal)"></span></h1>
-        <p style="color: white;"></p>
+        <h1 style="color: white;text-shadow:0 4px 20px rgba(0,0,0,.4)">Todo lo que <span style="color:var(--c-orange)">vives</span> importa.</h1>
+        <p style="color: rgba(255,255,255,.9)">Sabemos lo que significa empezar de nuevo. HOPE también te acompaña desde Colombia, con el mismo cuidado y la misma calidez de siempre.</p>
         <div class="hero-buttons">
-          <button class="btn-primary" style="background:var(--c-teal);box-shadow:0 15px 30px rgba(37,184,184,.2)" onclick="window.location.href='{% url 'formulario_venezuela' %}'">
-            Unete a Nuestra Familia HOPE<i class="fas fa-heart"></i>
+          <button class="btn-primary" style="background:var(--c-orange);box-shadow:0 15px 30px rgba(242,124,33,.3)" onclick="window.location.href='https://espaciohope.com/colombia'">
+            Descubre HOPE Colombia<i class="fas fa-heart"></i>
           </button>       
         </div>
       </div>
@@ -598,6 +598,7 @@ body{font-family:var(--font-b);color:var(--c-dark);background:#fff;display:flex}
       <div class="dot active" onclick="goToSlide(0)"></div>
       <div class="dot" onclick="goToSlide(1)"></div>
       <div class="dot" onclick="goToSlide(2)"></div>
+      <div class="dot" onclick="goToSlide(3)"></div>
 
     </div>
   </section>
