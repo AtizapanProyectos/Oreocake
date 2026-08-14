@@ -578,6 +578,22 @@ body{font-family:var(--font-b);color:var(--c-dark);background:#fff;display:flex}
         </div>
       </div>
     </div>
+
+    <div class="slide slide-3" style="background:none;">
+      
+      <div style="position:absolute;inset:0;background-image:url('{% static 'img/slider5.jpeg' %}');background-size:cover;background-position:center;z-index:0;"></div>
+      
+
+      <div class="slide-content" style="position:relative;z-index:2;">
+        <h1 style="color: white;"><span style="color:var(--c-teal)"></span></h1>
+        <p style="color: white;"></p>
+        <div class="hero-buttons">
+          <button class="btn-primary" style="background:var(--c-teal);box-shadow:0 15px 30px rgba(37,184,184,.2)" onclick="window.location.href='{% url 'formulario_venezuela' %}'">
+            Unete a Nuestra Familia HOPE<i class="fas fa-heart"></i>
+          </button>       
+        </div>
+      </div>
+    </div>
     <div class="slider-controls">
       <div class="dot active" onclick="goToSlide(0)"></div>
       <div class="dot" onclick="goToSlide(1)"></div>
