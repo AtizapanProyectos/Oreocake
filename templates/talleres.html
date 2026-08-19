@@ -6,7 +6,7 @@
 {% block extra_css %}
 <style>
   /* ==========================================================================
-     Este bloque reutiliza los tokens de marca definidos en base.html[cite: 3]
+     Tokens de marca HOPE (mismos que base.html) [cite: 3]
      ========================================================================== */
   :root {
     --c-purple: #5A3FA3;
@@ -20,17 +20,24 @@
     --font-h: 'Outfit', sans-serif;
     --font-b: 'Plus Jakarta Sans', sans-serif;
     --shadow-sm: 0 10px 25px rgba(0, 0, 0, .05);
-    --shadow-md: 0 20px 45px rgba(90, 63, 163, .12);
+    --shadow-md: 0 20px 45px rgba(90, 63, 163, .14);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * {
+      animation: none !important;
+      transition: none !important;
+    }
   }
 
   /* ==========================================================================
-     HERO[cite: 3]
+     HERO
      ========================================================================== */
   .talleres-hero {
     position: relative;
-    padding: 100px 80px 60px;
+    padding: 110px 80px 70px;
     text-align: left;
-    background: radial-gradient(circle at top right, rgba(242, 124, 33, .06), #fff 55%);
+    background: radial-gradient(circle at top right, rgba(242, 124, 33, .07), #fff 55%);
     overflow: hidden;
   }
 
@@ -42,7 +49,7 @@
     width: 380px;
     height: 380px;
     border-radius: 50%;
-    background: radial-gradient(circle, rgba(90, 63, 163, .10), transparent 70%);
+    background: radial-gradient(circle, rgba(90, 63, 163, .12), transparent 70%);
     pointer-events: none;
   }
 
@@ -50,11 +57,11 @@
     content: '';
     position: absolute;
     bottom: -160px;
-    left: 10%;
+    left: 8%;
     width: 320px;
     height: 320px;
     border-radius: 50%;
-    background: radial-gradient(circle, rgba(248, 91, 140, .07), transparent 70%);
+    background: radial-gradient(circle, rgba(248, 91, 140, .08), transparent 70%);
     pointer-events: none;
   }
 
@@ -62,6 +69,7 @@
     position: relative;
     z-index: 2;
     max-width: 760px;
+    animation: hopeFadeUp .7s cubic-bezier(.16, 1, .3, 1) both;
   }
 
   .talleres-hero p.tag {
@@ -69,7 +77,7 @@
     align-items: center;
     gap: 8px;
     font-family: var(--font-h);
-    font-size: .8rem;
+    font-size: .78rem;
     font-weight: 800;
     letter-spacing: 2px;
     text-transform: uppercase;
@@ -78,13 +86,13 @@
     border: 1px solid #ffedd5;
     padding: 8px 18px;
     border-radius: 100px;
-    margin-bottom: 22px;
+    margin-bottom: 24px;
   }
 
   .talleres-hero h1 {
     font-family: var(--font-h);
     font-weight: 900;
-    font-size: clamp(2.6rem, 5vw, 4.3rem);
+    font-size: clamp(2.4rem, 5vw, 4.3rem);
     line-height: 1.02;
     letter-spacing: -1.5px;
     margin-bottom: 20px;
@@ -93,12 +101,26 @@
 
   .talleres-hero h1 span {
     color: var(--c-pink);
+    position: relative;
+    white-space: nowrap;
+  }
+
+  .talleres-hero h1 span::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 6px;
+    height: 12px;
+    background: rgba(248, 91, 140, .16);
+    z-index: -1;
+    border-radius: 6px;
   }
 
   .talleres-hero p.sub {
-    font-size: 1.15rem;
+    font-size: 1.12rem;
     color: var(--text-muted);
-    max-width: 640px;
+    max-width: 620px;
     line-height: 1.65;
     margin-bottom: 30px;
   }
@@ -129,13 +151,13 @@
   }
 
   /* ==========================================================================
-     GRID + TARJETAS[cite: 3]
+     GRID + TARJETAS
      ========================================================================== */
   .talleres-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(330px, 1fr));
     gap: 36px;
-    padding: 10px 80px 110px;
+    padding: 10px 80px 100px;
   }
 
   .taller-card {
@@ -149,7 +171,10 @@
     flex-direction: column;
     position: relative;
     max-width: 450px;
+    width: 100%;
     margin: 0 auto;
+    animation: hopeFadeUp .7s cubic-bezier(.16, 1, .3, 1) both;
+    animation-delay: .1s;
   }
 
   .taller-card::before {
@@ -160,9 +185,11 @@
     right: 0;
     height: 6px;
     background: var(--taller-color, var(--c-purple));
+    z-index: 3;
   }
 
-  .taller-card:hover {
+  .taller-card:hover,
+  .taller-card:focus-within {
     transform: translateY(-10px);
     box-shadow: var(--shadow-md);
     border-color: var(--taller-color, var(--c-purple));
@@ -173,7 +200,7 @@
     top: 22px;
     left: 22px;
     z-index: 2;
-    background: var(--taller-color, var(--c-teal));
+    background: var(--c-purple);
     color: #fff;
     padding: 7px 16px;
     border-radius: 100px;
@@ -190,16 +217,17 @@
 
   .taller-card-img {
     width: 100%;
-    height: 250px;
+    height: 240px;
     overflow: hidden;
     position: relative;
+    background: var(--bg-panel);
   }
 
   .taller-card-img::after {
     content: '';
     position: absolute;
     inset: 0;
-    background: linear-gradient(180deg, rgba(0, 0, 0, 0) 55%, rgba(0, 0, 0, .28) 100%);
+    background: linear-gradient(180deg, rgba(0, 0, 0, 0) 55%, rgba(0, 0, 0, .3) 100%);
   }
 
   .taller-card-img img {
@@ -207,6 +235,7 @@
     height: 100%;
     object-fit: cover;
     transition: transform .8s cubic-bezier(.16, 1, .3, 1);
+    display: block;
   }
 
   .taller-card:hover .taller-card-img img {
@@ -232,7 +261,7 @@
   }
 
   .taller-card-body {
-    padding: 40px 32px 32px;
+    padding: 40px 30px 30px;
     flex-grow: 1;
     display: flex;
     flex-direction: column;
@@ -254,7 +283,7 @@
 
   .taller-card-body h3 {
     font-family: var(--font-h);
-    font-size: 1.45rem;
+    font-size: 1.4rem;
     font-weight: 800;
     margin-bottom: 12px;
     line-height: 1.25;
@@ -272,7 +301,7 @@
   .taller-card-meta {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 12px;
     margin-bottom: 24px;
     padding: 16px 18px;
     background: #f8fafc;
@@ -287,6 +316,7 @@
     font-size: .86rem;
     color: var(--c-dark);
     font-weight: 700;
+    line-height: 1.4;
   }
 
   .taller-card-meta span i {
@@ -308,7 +338,7 @@
     justify-content: center;
     gap: 10px;
     color: #fff;
-    padding: 16px 28px;
+    padding: 17px 28px;
     border-radius: 100px;
     font-weight: 800;
     font-size: .88rem;
@@ -322,22 +352,52 @@
     background: var(--taller-color, var(--c-purple));
   }
 
-  .taller-card-btn:hover {
+  .taller-card-btn i {
+    transition: transform .3s;
+  }
+
+  .taller-card-btn:hover,
+  .taller-card-btn:focus-visible {
     transform: translateY(-3px);
     filter: brightness(1.08);
     box-shadow: 0 14px 28px color-mix(in srgb, var(--taller-color, var(--c-purple)) 35%, transparent);
   }
 
+  .taller-card-btn:hover i {
+    transform: translateX(4px);
+  }
+
+  .taller-card-btn:focus-visible {
+    outline: 3px solid var(--c-yellow);
+    outline-offset: 3px;
+  }
+
   /* ==========================================================================
-     AVISOS DE PRÓXIMOS TALLERES (BANNER INFORMATIVO)
+     AVISO DE PRÓXIMOS TALLERES
      ========================================================================== */
   .proximos-talleres-banner {
-    margin: 0 80px 80px;
+    margin: 0 80px 90px;
     background: linear-gradient(135deg, #f8f5ff 0%, #fff0f5 100%);
     border: 2px dashed #e9d5ff;
     border-radius: 28px;
-    padding: 40px;
+    padding: 44px 40px;
     text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .proximos-talleres-banner .banner-icon {
+    width: 60px;
+    height: 60px;
+    margin: 0 auto 18px;
+    border-radius: 18px;
+    background: #fff;
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    color: var(--c-orange);
   }
 
   .proximos-talleres-banner h3 {
@@ -356,9 +416,27 @@
     line-height: 1.6;
   }
 
-  @media(max-width:1100px) {
+  /* ==========================================================================
+     ANIMACIÓN DE ENTRADA
+     ========================================================================== */
+  @keyframes hopeFadeUp {
+    from {
+      opacity: 0;
+      transform: translateY(18px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* ==========================================================================
+     RESPONSIVE — TABLET
+     ========================================================================== */
+  @media (max-width: 1100px) {
     .talleres-hero {
-      padding: 70px 24px 30px;
+      padding: 130px 24px 40px;
       text-align: center;
     }
 
@@ -375,13 +453,135 @@
     }
 
     .talleres-grid {
-      padding: 30px 24px 40px;
+      padding: 30px 24px 50px;
       grid-template-columns: 1fr;
+      gap: 30px;
     }
 
     .proximos-talleres-banner {
-      margin: 0 24px 60px;
-      padding: 30px 20px;
+      margin: 0 24px 70px;
+      padding: 34px 24px;
+    }
+  }
+
+  /* ==========================================================================
+     RESPONSIVE — MÓVIL (Android / iOS)
+     ========================================================================== */
+  @media (max-width: 768px) {
+    .talleres-hero {
+      padding: 120px 18px 32px;
+    }
+
+    .talleres-hero p.tag {
+      font-size: .7rem;
+      padding: 7px 14px;
+      letter-spacing: 1.5px;
+    }
+
+    .talleres-hero h1 {
+      font-size: clamp(2rem, 8vw, 2.8rem);
+      letter-spacing: -1px;
+    }
+
+    .talleres-hero p.sub {
+      font-size: 1rem;
+    }
+
+    .trust-chip {
+      font-size: .78rem;
+      padding: 9px 14px;
+    }
+
+    .talleres-grid {
+      padding: 26px 16px 40px;
+      gap: 26px;
+    }
+
+    .taller-card {
+      max-width: 100%;
+      border-radius: 24px;
+    }
+
+    .taller-card-img {
+      height: 190px;
+    }
+
+    .taller-card .ribbon {
+      top: 16px;
+      left: 16px;
+      font-size: .62rem;
+      padding: 6px 13px;
+    }
+
+    .taller-icon-badge {
+      width: 48px;
+      height: 48px;
+      bottom: -22px;
+      right: 18px;
+      font-size: 1.2rem;
+      border-radius: 15px;
+    }
+
+    .taller-card-body {
+      padding: 32px 22px 24px;
+    }
+
+    .taller-card-body h3 {
+      font-size: 1.25rem;
+    }
+
+    .taller-card-body p.resumen {
+      font-size: .92rem;
+    }
+
+    .taller-card-meta {
+      padding: 14px 16px;
+      gap: 10px;
+    }
+
+    .taller-card-meta span {
+      font-size: .82rem;
+    }
+
+    .taller-card-btn {
+      width: 100%;
+      padding: 16px 22px;
+      font-size: .82rem;
+    }
+
+    .proximos-talleres-banner {
+      margin: 0 16px 60px;
+      padding: 30px 18px;
+      border-radius: 22px;
+    }
+
+    .proximos-talleres-banner h3 {
+      font-size: 1.2rem;
+    }
+
+    .proximos-talleres-banner p {
+      font-size: .92rem;
+    }
+  }
+
+  /* ==========================================================================
+     RESPONSIVE — MÓVIL PEQUEÑO
+     ========================================================================== */
+  @media (max-width: 400px) {
+    .talleres-hero h1 {
+      font-size: 1.9rem;
+    }
+
+    .taller-card-img {
+      height: 160px;
+    }
+
+    .taller-card-meta span {
+      align-items: flex-start;
+    }
+
+    .taller-card-meta span i {
+      margin-top: 1px;
     }
   }
 </style>
@@ -393,8 +593,8 @@
   <div class="talleres-hero-inner">
     <p class="tag"><i class="fas fa-sparkles"></i> Comunidad HOPE</p>
     <h1>Nuestros <span>Talleres</span></h1>
-    <p class="sub">Un espacio de aprendizaje, contención y crecimiento diseñado con amor para acompañarte en cada etapa.
-    </p>
+    <p class="sub">Un espacio de aprendizaje, contención y crecimiento diseñado con amor para acompañarte en cada
+      etapa.</p>
     <div class="talleres-trust">
       <span class="trust-chip"><i class="fas fa-video"></i> Modalidad en línea</span>
       <span class="trust-chip"><i class="fas fa-heart"></i> Cupo abierto</span>
@@ -402,12 +602,12 @@
   </div>
 </section>
 
-<!-- Cuadrícula de talleres (Aquí puedes duplicar el bloque de la tarjeta cuando agregues más adelante) -->
+<!-- Cuadrícula de talleres (duplica el bloque .taller-card cuando agregues más adelante) -->
 <section class="talleres-grid" id="talleresGrid">
 
-  <!-- TALLER ACTUAL (EL DE LA IMAGEN) -->
+  <!-- TALLER ACTUAL -->
   <div class="taller-card" data-categoria="Especial" style="--taller-color: var(--c-teal);">
-    <span class="ribbon" style="background: var(--c-purple);"><i class="fas fa-star"></i> Próximo Taller</span>
+    <span class="ribbon"><i class="fas fa-star"></i> Próximo Taller</span>
 
     <div class="taller-card-img">
       <img src="https://images.unsplash.com/photo-1609220136736-443140cffec6?auto=format&fit=crop&q=80&w=800"
@@ -418,8 +618,8 @@
     <div class="taller-card-body">
       <span class="step-tag-mini">Taller para padres</span>
       <h3>Mejorando la relación con mi hijo adolescente</h3>
-      <p class="resumen">Generando nuevas herramientas. Una nueva forma de acompañarte y conectar con las emociones de
-        tu adolescente.</p>
+      <p class="resumen">Generando nuevas herramientas. Una nueva forma de acompañarte y conectar con las emociones
+        de tu adolescente.</p>
 
       <div class="taller-card-meta">
         <span><i class="fas fa-calendar-days"></i>1, 3, 8 y 10 de septiembre, 8:00 pm</span>
@@ -427,7 +627,6 @@
         <span><i class="fas fa-money-bill-wave"></i>Costo: $100 pesos mx. por persona</span>
       </div>
 
-      <!-- Redirige perfectamente a tu URL de Django -->
       <a href="{% url 'taller_detalle_adolescente' %}" class="taller-card-btn">
         Ver detalles e inscribirme <i class="fas fa-arrow-right"></i>
       </a>
@@ -438,9 +637,10 @@
 
 <!-- Ventana / Aviso de más talleres próximamente -->
 <div class="proximos-talleres-banner">
-  <h3><i class="fas fa-bullhorn"></i> ¡Más talleres próximamente!</h3>
-  <p>Estamos preparando nuevos espacios y herramientas para ti y tu familia. Mantente al pendiente de nuestras redes y
-    actualizaciones para conocer las próximas fechas.</p>
+  <div class="banner-icon"><i class="fas fa-bullhorn"></i></div>
+  <h3>¡Más talleres próximamente!</h3>
+  <p>Estamos preparando nuevos espacios y herramientas para ti y tu familia. Mantente al pendiente de nuestras redes
+    y actualizaciones para conocer las próximas fechas.</p>
 </div>
 
 {% endblock %}
