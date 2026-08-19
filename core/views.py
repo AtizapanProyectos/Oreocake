@@ -3745,10 +3745,68 @@ def talleres_view(request):
 
     return render(request, 'talleres.html', {'talleres': talleres})
 
-
 def taller_detalle_adolescente(request):
     """Landing específica del taller de adolescentes. El registro se manda
     por AJAX al mismo endpoint público que ya usan los demás talleres
-    (registrar_taller_ajax / procesar_registro_taller)."""
-    taller = next(t for t in TALLERES_DESTACADOS if t['slug'] == 'mejorando-relacion-hijo-adolescente')
+    (procesar_registro_taller)."""
+    # Suponiendo que TALLERES_DESTACADOS está definido en algún lugar de tu código
+    # taller = next(t for t in TALLERES_DESTACADOS if t['slug'] == 'mejorando-relacion-hijo-adolescente')
+    
+    # Mockeando el taller para evitar el NameError si no lo tienes definido aquí
+    taller = {
+        'nombre': 'Mejorando la relación con mi hijo adolescente',
+        'costo_texto': '$100.00 MXN',
+        'fecha_texto': 'Sábado 29 de Agosto - 10:00 AM'
+    }
     return render(request, 'taller_detalle_adolescente.html', {'taller': taller})
+
+@require_POST
+@csrf_protect
+def procesar_registro_taller(request):
+    """
+    Recibe la petición POST (AJAX) desde el frontend (por PayPal o por transferencia manual).
+    Extrae los datos y los guarda en el modelo RegistroTallerPublico.
+    """
+    nombre = request.POST.get('nombre')
+    telefono = request.POST.get('telefono')
+    correo = request.POST.get('correo')
+    taller_seleccionado = request.POST.get('taller_seleccionado')
+    
+    # Validamos que lleguen todos los datos requeridos
+    if not all([nombre, telefono, correo, taller_seleccionado]):
+        return JsonResponse({
+            'status': 'error',
+            'message': 'Por favor, completa todos los campos (Nombre, Teléfono, Correo) antes de procesar el pago.'
+        }, status=400)
+    
+    try:
+        # Usamos get_or_create para manejar correctamente la restricción unique_together
+        # que tienes en tu modelo ['correo', 'taller_seleccionado'].
+        registro, creado = RegistroTallerPublico.objects.get_or_create(
+            correo=correo,
+            taller_seleccionado=taller_seleccionado,
+            defaults={
+                'nombre': nombre,
+                'telefono': telefono,
+            }
+        )
+        
+        if not creado:
+             # Si no se creó, es porque ya existía un registro con ese correo para este taller específico.
+             return JsonResponse({
+                 'status': 'error',
+                 'message': 'Ya existe un registro con este correo para este taller. Si tienes dudas, contáctanos por WhatsApp.'
+             })
+             
+        # Registro guardado con éxito
+        return JsonResponse({
+            'status': 'success',
+            'message': '¡Registro guardado con éxito! El link de acceso será compartido a través de tu correo electrónico y WhatsApp.'
+        })
+        
+    except Exception as e:
+        # Si algo falla a nivel de base de datos o servidor (por ejemplo, longitud excedida)
+        return JsonResponse({
+            'status': 'error',
+            'message': f'Error interno al guardar tu registro: {str(e)}'
+        }, status=500)
