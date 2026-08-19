@@ -1355,11 +1355,10 @@
       <i class="fas fa-people-group"></i> Terapia Familiar
     </a>
     <p class="nav-section-title">Talleres</p>
-    <a href="#" onclick="abrirRegistroDirecto('solo_talleres', 'Solucionando el Conflicto en la Pareja'); return false;"
-      class="nav-item"><i class="fas fa-heart"></i> Solucionando el Conflicto en la Pareja</a>
-    <a href="#"
-      onclick="abrirRegistroDirecto('solo_talleres', 'Mejorando la Relación con mi Hijo Adolescente'); return false;"
-      class="nav-item"><i class="fas fa-people-roof"></i> Mejorando la Relación con mi Hijo Adolescente</a>
+    <a href="{% url 'taller_detalle_pareja' %}" class="nav-item"><i class="fas fa-heart"></i> Solucionando el Conflicto
+      en la Pareja</a>
+    <a href="{% url 'taller_detalle_adolescente' %}" class="nav-item"><i class="fas fa-people-roof"></i> Mejorando la
+      Relación con mi Hijo Adolescente</a>
 
     <p class="nav-section-title">Profesionales</p>
     <a href="#" onclick="abrirRegistroDirecto('solo_talleres', 'Ecovisión'); return false;" class="nav-item"><i
@@ -1530,7 +1529,7 @@
               el origen de sus conflictos, mejorar la comunicación, manejar las diferencias de manera saludable y
               fortalecer la conexión emocional entre ambos.</p>
             <button class="btn-inscribete" style="background:var(--c-pink); border:none;"
-              onclick="abrirRegistroDirecto('solo_talleres', 'Solucionando el Conflicto en la Pareja')">
+              onclick="window.location.href='{% url 'taller_detalle_pareja' %}'">
               Inscríbete <i class="fas fa-arrow-right"></i>
             </button>
           </div>
@@ -1545,9 +1544,9 @@
               impactan la dinámica familiar. A través de un enfoque psicoeducativo, los participantes desarrollarán
               herramientas para fortalecer la comunicación, la regulación emocional, el establecimiento de límites
               saludables y la construcción de vínculos basados en el respeto, la confianza y el apego seguro.</p>
-            <a onclick="abrirRegistroDirecto('solo_talleres', 'Mejorando la Relación con mi Hijo Adolescente')"
-              class="btn-inscribete" style="background:var(--c-purple)">Inscríbete <i
-                class="fas fa-arrow-right"></i></a>
+            <a href="{% url 'taller_detalle_adolescente' %}" class="btn-inscribete" style="background:var(--c-purple)">
+              Inscríbete <i class="fas fa-arrow-right"></i>
+            </a>
           </div>
         </div>
       </div>
@@ -1669,12 +1668,17 @@
         <div class="footer-col">
           <h4>Talleres</h4>
           <ul>
-            <li><a href="#talleres"
-                onclick="abrirRegistroDirecto('solo_talleres', 'Solucionando el Conflicto en la Pareja'); return false;">Solucionando
-                el Conflicto en la Pareja</a></li>
-            <li><a href="#talleres"
-                onclick="abrirRegistroDirecto('solo_talleres', 'Mejorando la Relación con mi Hijo Adolescente'); return false;">Mejorando
-                la Relación con mi Hijo Adolescente</a></li>
+            <li>
+              <a href="{% url 'taller_detalle_pareja' %}">
+                Solucionando el Conflicto en la Pareja
+              </a>
+            </li>
+
+            <li>
+              <a href="{% url 'taller_detalle_adolescente' %}">
+                Mejorando la Relación con mi Hijo Adolescente
+              </a>
+            </li>
           </ul>
         </div>
         <div class="footer-col">
