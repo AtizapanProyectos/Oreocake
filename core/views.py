@@ -234,7 +234,6 @@ def obtener_slots_globales(fecha_inicio, fecha_fin, preferencia=None, tipo_sesio
 
     return _buscar_slots_globales_con_filtros(filtros_base, fecha_inicio, fecha_fin, tipo_sesion)
 
-
 def obtener_slots_psicologo(psicologo, fecha_inicio, fecha_fin, tipo_sesion="individual"):
     """
     🔥 BÚSQUEDA POR PSICÓLOGO: usada una vez que el paciente YA tiene un psicólogo asignado.
@@ -283,6 +282,19 @@ def obtener_slots_psicologo(psicologo, fecha_inicio, fecha_fin, tipo_sesion="ind
     dias_procesados = 0
     max_iteraciones = 120
 
+    # 🔥 NUEVO: Definimos los bloqueos globales aquí arriba
+    # Nota: Bloqueamos 13:00 y 14:00 porque cada cita dura 1 hora.
+    # Al bloquear ambos, bloqueamos de 13:00 a 15:00.
+    from datetime import date, time  # Lo importo aquí por si acaso, aunque es mejor al inicio
+    bloqueos_globales = [
+        (date(2026, 8, 20), time(13, 0)),
+        (date(2026, 8, 20), time(14, 0)),
+        (date(2026, 8, 27), time(13, 0)),
+        (date(2026, 8, 27), time(14, 0)),
+        (date(2026, 9, 10), time(13, 0)),
+        (date(2026, 9, 10), time(14, 0)),
+    ]
+
     while dia_actual <= fecha_fin and dias_procesados < max_iteraciones:
         esquema = _esquema_del_dia(dia_actual)
 
@@ -319,7 +331,11 @@ def obtener_slots_psicologo(psicologo, fecha_inicio, fecha_fin, tipo_sesion="ind
                 if tiene_comida and h_comida_ini <= hora_slot < h_comida_fin:
                     es_hora_comida = True
 
-                if not es_hora_comida and (dia_actual, hora_slot) not in citas_ocupadas:
+                # 🔥 NUEVO: Verificamos si la fecha y hora actuales están en la lista de bloqueos
+                es_bloqueado_global = (dia_actual, hora_slot) in bloqueos_globales
+
+                # 🔥 MODIFICADO: Agregamos "not es_bloqueado_global" a la condición
+                if not es_hora_comida and not es_bloqueado_global and (dia_actual, hora_slot) not in citas_ocupadas:
                     slots_del_dia.append(hora_slot.strftime('%I:%M %p'))
 
                 slot_actual += timedelta(hours=1)
