@@ -3721,6 +3721,7 @@ def renderizar_pasciente(request):
     # Diccionario de contexto con los datos que le pasaremos al template
     return render(request, 'Pruebas/claude_pascinete.html')
 
+
 TALLERES_DESTACADOS = [
     {
         'slug': 'conflicto-pareja',
@@ -3833,3 +3834,19 @@ def procesar_registro_taller(request):
             'status': 'error',
             'message': f'Error interno al guardar tu registro: {str(e)}'
         }, status=500)
+
+def taller_detalle_pareja(request):
+    """Landing específica del taller de parejas. El registro se manda
+    por AJAX al mismo endpoint público (procesar_registro_taller)."""
+    
+    taller = {
+        'nombre': 'Solucionando el conflicto en la pareja',
+        'costo_texto': '$100.00 MXN',
+        'fecha_texto': '21, 23 y 25 de septiembre - 12 hrs.'
+    }
+    context = {
+        'taller': taller,
+        'paypal_client_id': settings.PAYPAL_CLIENT_ID 
+    }
+
+    return render(request, 'taller_detalle_pareja.html', context)

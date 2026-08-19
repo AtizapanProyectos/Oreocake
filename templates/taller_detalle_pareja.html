@@ -1,0 +1,921 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Taller: Solucionando el conflicto en la pareja | Espacio HOPE{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* ==========================================================================
+     VARIABLES BASE 
+     ========================================================================== */
+    :root {
+        --c-purple: #5A3FA3;
+        --c-pink: #F85B8C;
+        --c-orange: #F27C21;
+        --c-yellow: #F8D33D;
+        --c-teal: #25B8B8;
+        --c-dark: #0f0f0f;
+        --text-muted: #64748b;
+        --font-h: 'Outfit', sans-serif;
+        --font-b: 'Plus Jakarta Sans', sans-serif;
+        --shadow-sm: 0 10px 25px rgba(0, 0, 0, .05);
+        --shadow-md: 0 20px 45px rgba(90, 63, 163, .14);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        * {
+            animation: none !important;
+            transition: none !important;
+        }
+    }
+
+    img {
+        max-width: 100%;
+    }
+
+    /* ==========================================================================
+     HERO & BREADCRUMB 
+     ========================================================================== */
+    .taller-breadcrumb {
+        position: relative;
+        z-index: 3;
+        padding: 26px 80px 0;
+    }
+
+    .taller-breadcrumb a {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        color: rgba(255, 255, 255, .85);
+        text-decoration: none;
+        font-family: var(--font-h);
+        font-weight: 700;
+        font-size: .85rem;
+        letter-spacing: .5px;
+        transition: .25s;
+    }
+
+    .taller-breadcrumb a:hover {
+        color: #fff;
+        gap: 12px;
+    }
+
+    .taller-hero {
+        position: relative;
+        min-height: 82vh;
+        display: flex;
+        align-items: center;
+        overflow: hidden;
+        padding: 40px 80px 90px;
+        margin-top: -66px;
+    }
+
+    @keyframes hopeFadeUp {
+        from {
+            opacity: 0;
+            transform: translateY(18px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .taller-hero-bg {
+        position: absolute;
+        inset: 0;
+        /* Imagen alusiva a parejas */
+        background-image: url('https://images.unsplash.com/photo-1516585427167-9f4af9627e6c?w=1400&auto=format&fit=crop&q=80');
+        background-size: cover;
+        background-position: center;
+        z-index: 0;
+        transform: scale(1.05);
+    }
+
+    .taller-hero-overlay {
+        position: absolute;
+        inset: 0;
+        z-index: 1;
+        /* Degradado ligeramente modificado para el tema de pareja */
+        background: linear-gradient(120deg, rgba(10, 5, 20, .86) 0%, rgba(90, 63, 163, .7) 52%, rgba(248, 91, 140, .25) 100%);
+    }
+
+    .taller-hero-content {
+        position: relative;
+        z-index: 2;
+        max-width: 660px;
+        color: #fff;
+        margin-top: 66px;
+        animation: hopeFadeUp .7s cubic-bezier(.16, 1, .3, 1) both;
+    }
+
+    .taller-tagbox {
+        display: inline-flex;
+        align-items: center;
+        gap: 18px;
+        border: 2px solid var(--c-pink);
+        /* Cambiado a rosa */
+        border-radius: 24px;
+        padding: 22px 28px;
+        margin-bottom: 30px;
+        background: rgba(15, 23, 42, .32);
+        backdrop-filter: blur(8px);
+        box-shadow: 0 20px 45px rgba(0, 0, 0, .25);
+    }
+
+    .taller-tagbox .brain-icon {
+        font-size: 1.8rem;
+        color: var(--c-pink);
+        /* Cambiado a rosa */
+        width: 54px;
+        height: 54px;
+        border-radius: 16px;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(248, 91, 140, .15);
+        border: 1px solid rgba(248, 91, 140, .4);
+    }
+
+    .taller-tagbox h2 {
+        font-family: var(--font-h);
+        font-weight: 900;
+        font-size: 1.35rem;
+        color: var(--c-pink);
+        /* Cambiado a rosa */
+        line-height: 1;
+        margin-bottom: 6px;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+    }
+
+    .taller-tagbox p {
+        font-family: var(--font-h);
+        font-weight: 800;
+        font-size: 1.05rem;
+        line-height: 1.3;
+        color: #fff;
+        text-transform: uppercase;
+        letter-spacing: .5px;
+    }
+
+    .taller-tagbox span.sub {
+        display: block;
+        color: var(--c-yellow);
+        font-weight: 600;
+        font-size: .85rem;
+        margin-top: 6px;
+        text-transform: none;
+    }
+
+    .taller-hero-desc {
+        font-size: 1.18rem;
+        line-height: 1.65;
+        color: rgba(255, 255, 255, .92);
+        margin-bottom: 34px;
+        max-width: 560px;
+        font-weight: 300;
+    }
+
+    .taller-info-cards {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 16px;
+        margin-bottom: 30px;
+    }
+
+    .taller-info-card {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        background: rgba(255, 255, 255, .96);
+        border-radius: 18px;
+        padding: 16px 22px;
+        box-shadow: 0 15px 35px rgba(0, 0, 0, .18);
+        transition: transform .3s;
+    }
+
+    .taller-info-card:hover {
+        transform: translateY(-4px);
+    }
+
+    .taller-info-card .icon-wrap {
+        width: 42px;
+        height: 42px;
+        border-radius: 12px;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #f3e8ff;
+        color: var(--c-purple);
+        font-size: 1.1rem;
+    }
+
+    .taller-info-card .label {
+        font-size: .7rem;
+        font-weight: 800;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 2px;
+    }
+
+    .taller-info-card .value {
+        font-size: 1rem;
+        font-weight: 800;
+        color: var(--c-dark);
+        font-family: var(--font-h);
+    }
+
+    .taller-badge-online {
+        display: inline-flex;
+        align-items: center;
+        gap: 12px;
+        background: var(--c-pink);
+        /* Cambiado a rosa */
+        color: #fff;
+        padding: 14px 26px;
+        border-radius: 16px;
+        font-weight: 800;
+        font-family: var(--font-h);
+        font-size: .9rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 34px;
+        box-shadow: 0 15px 30px rgba(248, 91, 140, .3);
+    }
+
+    .taller-badge-online i {
+        font-size: 1.1rem;
+    }
+
+    .taller-badge-online small {
+        display: block;
+        font-weight: 600;
+        text-transform: none;
+        font-size: .82rem;
+        letter-spacing: 0;
+        margin-top: 2px;
+        opacity: .9;
+    }
+
+    .taller-hero-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 16px;
+        align-items: center;
+    }
+
+    .taller-cta-btn {
+        padding: 22px 48px;
+        border-radius: 100px;
+        font-weight: 800;
+        font-size: .98rem;
+        font-family: var(--font-h);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        display: inline-flex;
+        align-items: center;
+        gap: 12px;
+        border: none;
+        cursor: pointer;
+        background: var(--c-purple);
+        /* Cambiado a morado para contraste */
+        color: #fff;
+        box-shadow: 0 15px 30px rgba(90, 63, 163, .35);
+        transition: .35s cubic-bezier(.16, 1, .3, 1);
+    }
+
+    .taller-cta-btn:hover {
+        transform: translateY(-5px);
+        filter: brightness(1.08);
+    }
+
+    /* ==========================================================================
+     MODALES DE PAGO Y ÉXITO
+     ========================================================================== */
+    .modal-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(15, 23, 42, .85);
+        backdrop-filter: blur(10px);
+        z-index: 5000;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+    }
+
+    .modal-box {
+        background: #fff;
+        width: 100%;
+        max-width: 500px;
+        padding: 40px 35px;
+        border-radius: 32px;
+        position: relative;
+        box-shadow: 0 50px 100px rgba(0, 0, 0, .22);
+        max-height: 95vh;
+        overflow-y: auto;
+        animation: tallerPopIn .45s cubic-bezier(.16, 1, .3, 1) both;
+        text-align: center;
+    }
+
+    .modal-box::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .modal-box::-webkit-scrollbar-thumb {
+        background-color: #cbd5e1;
+        border-radius: 10px;
+    }
+
+    .modal-box::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 6px;
+        background: linear-gradient(90deg, var(--c-purple) 0%, var(--c-pink) 50%, var(--c-yellow) 100%);
+        border-radius: 32px 32px 0 0;
+    }
+
+    @keyframes tallerPopIn {
+        from {
+            opacity: 0;
+            transform: translateY(24px) scale(.97);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+    }
+
+    .modal-close {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        font-size: 18px;
+        color: #ef4444;
+        background: #fef2f2;
+        border: 2px solid #fecaca;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        cursor: pointer;
+        transition: .3s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 50;
+    }
+
+    .modal-close:hover {
+        background: #ef4444;
+        color: #fff;
+        transform: scale(1.12) rotate(90deg);
+    }
+
+    .modal-box h3 {
+        font-family: var(--font-h);
+        font-size: 1.5rem;
+        color: var(--c-dark);
+        margin-bottom: 5px;
+        font-weight: 800;
+    }
+
+    .modal-box .resumen {
+        color: var(--text-muted);
+        font-size: 0.95rem;
+        margin-bottom: 20px;
+    }
+
+    /* Estilos del Formulario de Captura */
+    .form-group {
+        text-align: left;
+        margin-bottom: 15px;
+    }
+
+    .form-group label {
+        display: block;
+        font-weight: 700;
+        font-size: 13px;
+        color: var(--c-dark);
+        margin-bottom: 6px;
+    }
+
+    .form-group input {
+        width: 100%;
+        padding: 14px;
+        border-radius: 14px;
+        border: 1px solid #e2e8f0;
+        font-family: var(--font-b);
+        font-size: 14px;
+        box-sizing: border-box;
+        transition: 0.3s;
+    }
+
+    .form-group input:focus {
+        border-color: var(--c-purple);
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(90, 63, 163, 0.1);
+    }
+
+    .price-total {
+        font-size: 2.5rem;
+        color: var(--c-purple);
+        font-weight: 800;
+        margin: 15px 0 20px 0;
+        font-family: var(--font-h);
+    }
+
+    .transfer-box {
+        background: linear-gradient(135deg, #f8fafc 0%, #f3e8ff 100%);
+        border: 2px dashed #d8b4fe;
+        border-radius: 16px;
+        padding: 20px;
+        margin-top: 20px;
+        text-align: left;
+    }
+
+    .transfer-box h4 {
+        margin-top: 0;
+        margin-bottom: 12px;
+        color: var(--c-purple);
+        font-size: 1.05rem;
+        text-align: center;
+        font-family: var(--font-h);
+    }
+
+    .transfer-box p {
+        font-size: 0.9rem;
+        color: var(--text-muted);
+        margin: 5px 0;
+    }
+
+    .btn-whatsapp {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        width: 100%;
+        background: #25D366;
+        color: white;
+        padding: 14px;
+        border-radius: 14px;
+        text-decoration: none;
+        font-weight: 700;
+        font-size: 1rem;
+        transition: 0.3s;
+        box-sizing: border-box;
+        margin-top: 15px;
+        border: none;
+        cursor: pointer;
+    }
+
+    .btn-whatsapp:hover {
+        filter: brightness(1.05);
+        transform: translateY(-2px);
+    }
+
+    /* Overlay de Carga */
+    .loading-overlay {
+        position: absolute;
+        inset: 0;
+        background: rgba(255, 255, 255, 0.9);
+        z-index: 100;
+        display: none;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        border-radius: 32px;
+    }
+
+    /* ==========================================================================
+     RESPONSIVE — TABLET
+     ========================================================================== */
+    @media(max-width:1100px) {
+        .taller-breadcrumb {
+            padding: 22px 24px 0;
+        }
+
+        .taller-hero {
+            padding: 40px 24px 70px;
+            text-align: left;
+            margin-top: 0;
+            min-height: auto;
+        }
+
+        .taller-hero-content {
+            margin-top: 110px;
+        }
+    }
+
+    /* ==========================================================================
+     RESPONSIVE — MÓVIL (Android / iOS)
+     ========================================================================== */
+    @media(max-width:768px) {
+        .taller-breadcrumb {
+            padding: 18px 18px 0;
+            margin-top: 60px;
+        }
+
+        .taller-breadcrumb a {
+            font-size: .8rem;
+        }
+
+        .taller-hero {
+            padding: 24px 18px 50px;
+        }
+
+        .taller-hero-content {
+            margin-top: 22px;
+        }
+
+        .taller-tagbox {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 18px 20px;
+            border-radius: 20px;
+        }
+
+        .taller-tagbox h2 {
+            font-size: 1.1rem;
+        }
+
+        .taller-tagbox p {
+            font-size: .92rem;
+        }
+
+        .taller-hero-desc {
+            font-size: 1rem;
+            margin-bottom: 26px;
+        }
+
+        .taller-info-cards {
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .taller-info-card {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 14px 18px;
+        }
+
+        .taller-badge-online {
+            width: 100%;
+            box-sizing: border-box;
+            justify-content: center;
+            text-align: center;
+            padding: 14px 18px;
+        }
+
+        .taller-cta-btn {
+            width: 100%;
+            justify-content: center;
+            padding: 19px 30px;
+            font-size: .9rem;
+        }
+
+        .modal-box {
+            padding: 32px 22px;
+            border-radius: 26px;
+        }
+
+        .modal-box h3 {
+            font-size: 1.3rem;
+        }
+
+        .price-total {
+            font-size: 2.1rem;
+        }
+
+        .form-group input {
+            font-size: 16px;
+        }
+    }
+
+    /* ==========================================================================
+     RESPONSIVE — MÓVIL PEQUEÑO
+     ========================================================================== */
+    @media(max-width:400px) {
+        .taller-tagbox .brain-icon {
+            width: 44px;
+            height: 44px;
+            font-size: 1.4rem;
+        }
+
+        .taller-hero-desc {
+            font-size: .95rem;
+        }
+
+        .taller-cta-btn {
+            padding: 17px 24px;
+            font-size: .82rem;
+        }
+
+        .modal-box {
+            padding: 26px 18px;
+        }
+    }
+
+    .taller-cta-btn:focus-visible,
+    .btn-whatsapp:focus-visible,
+    .modal-close:focus-visible,
+    .taller-breadcrumb a:focus-visible {
+        outline: 3px solid var(--c-yellow);
+        outline-offset: 3px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="taller-breadcrumb">
+    <a href="{% url 'talleres' %}"><i class="fas fa-arrow-left"></i> Volver a todos los talleres</a>
+</div>
+
+<section class="taller-hero">
+    <div class="taller-hero-bg"></div>
+    <div class="taller-hero-overlay"></div>
+
+    <div class="taller-hero-content">
+        <div class="taller-tagbox">
+            <div class="brain-icon"><i class="fas fa-user-friends"></i></div> <!-- Icono modificado -->
+            <div>
+                <h2>Taller</h2>
+                <p>Solucionando el conflicto<br>en la pareja
+                    <span class="sub">Herramientas prácticas para mejorar la comunicación</span>
+                </p>
+            </div>
+        </div>
+
+        <p class="taller-hero-desc">Mejora la comunicación, fomenta la empatía y resuelve las diferencias en tu relación
+            amorosa con este espacio guiado por profesionales en un ambiente seguro y de respeto mutuo.</p>
+
+        <div class="taller-info-cards">
+            <div class="taller-info-card">
+                <div class="icon-wrap"><i class="fas fa-calendar-days"></i></div>
+                <div>
+                    <div class="label">Fechas y hora</div>
+                    <div class="value">{{ taller.fecha_texto|default:"21, 23 y 25 de septiembre - 12 hrs." }}</div>
+                </div>
+            </div>
+            <div class="taller-info-card">
+                <div class="icon-wrap"><i class="fas fa-tag"></i></div>
+                <div>
+                    <div class="label">Costo</div>
+                    <div class="value">{{ taller.costo_texto|default:"$100.00 MXN" }}</div>
+                </div>
+            </div>
+        </div>
+
+        <div>
+            <span class="taller-badge-online">
+                <i class="fas fa-video"></i>
+                <span>{{ taller.modalidad|default:"Online (Meet)" }}<small>Acceso desde donde estés</small></span>
+            </span>
+        </div>
+
+        <div class="taller-hero-actions">
+            <button type="button" class="taller-cta-btn" onclick="abrirRegistroTaller()">
+                Quiero inscribirme <i class="fas fa-arrow-right"></i>
+            </button>
+        </div>
+    </div>
+</section>
+
+<!-- ==========================================
+     MODAL DE PAGO Y REGISTRO
+     ========================================== -->
+<div id="modalRegistroTaller" class="modal-overlay">
+    <div class="modal-box">
+        <span class="modal-close" onclick="cerrarModalTaller()"><i class="fas fa-times"></i></span>
+
+        <div class="loading-overlay" id="loading-registro">
+            <i class="fas fa-circle-notch fa-spin"
+                style="font-size: 40px; color: var(--c-purple); margin-bottom: 15px;"></i>
+            <h4 style="margin: 0; font-family: var(--font-h); color: var(--c-dark);">Procesando registro...</h4>
+        </div>
+
+        <h3>Finaliza tu inscripción</h3>
+        <p class="resumen">Taller: Solucionando el conflicto en la pareja</p>
+
+        <!-- Formulario de Captura de Datos -->
+        <div
+            style="background: #f8fafc; padding: 20px; border-radius: 18px; margin-bottom: 25px; border: 1px solid #f1f5f9;">
+            <p style="font-size: 13px; color: var(--text-muted); margin: 0 0 15px 0; text-align: left;">
+                <i class="fas fa-info-circle"></i> Por favor, ingresa tus datos antes de realizar el pago.
+            </p>
+
+            <div class="form-group">
+                <label for="reg_nombre">Nombre completo</label>
+                <input type="text" id="reg_nombre" placeholder="Ej. Juan Pérez" required>
+            </div>
+            <div class="form-group">
+                <label for="reg_telefono">Teléfono (WhatsApp)</label>
+                <input type="tel" id="reg_telefono" placeholder="Ej. 55 1234 5678" required>
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+                <label for="reg_correo">Correo Electrónico</label>
+                <input type="email" id="reg_correo" placeholder="ejemplo@correo.com" required>
+            </div>
+        </div>
+
+        <div style="margin: 15px 0 25px 0;">
+            <p
+                style="text-transform: uppercase; letter-spacing: 2px; font-size: 12px; color: #9ca3af; margin-bottom: 5px; font-weight: 700;">
+                Total a pagar</p>
+            <h1 class="price-total" style="margin: 0; font-size: 3rem; color: var(--c-purple);">
+                $110.00 <span style="font-size: 16px;">MXN</span>
+            </h1>
+            <p style="font-size: 13px; color: var(--text-muted); margin-top: 5px; font-weight: 500;">
+                (Taller $100.00 + <span style="color: var(--c-orange); font-weight: 700;">$10.00 de comisión</span> por
+                pago con tarjeta/PayPal)
+            </p>
+        </div>
+        <!-- Botones de PayPal -->
+        <div id="paypal-button-container" style="min-height: 55px;"></div>
+
+        <!-- Opción de Transferencia -->
+        <div class="transfer-box">
+            <h4>¿Prefieres transferencia?</h4>
+            <p><strong>Titular:</strong> Servicios de Atención Emocional Juvenil SAPI de CV</p>
+            <p><strong>Banco:</strong> BBVA</p>
+
+            <div
+                style="background: white; border-radius: 12px; padding: 12px; margin-top: 10px; border: 1px solid #e2e8f0;">
+                <p style="margin:0;"><strong>Cuenta:</strong> 0127845901</p>
+                <p style="margin:0;"><strong>CLABE:</strong> 012180001278459015</p>
+            </div>
+
+            <button type="button" class="btn-whatsapp" onclick="enviarWhatsAppTransferencia()">
+                Enviar comprobante <i class="fab fa-whatsapp" style="font-size: 1.2rem;"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ==========================================
+     MODAL DE ÉXITO
+     ========================================== -->
+<div id="modalExitoTaller" class="modal-overlay">
+    <div class="modal-box" style="border-top: 6px solid var(--c-pink);">
+        <i class="fas fa-check-circle" style="font-size: 70px; color: var(--c-pink); margin-bottom: 20px;"></i>
+        <h2 style="font-family: var(--font-h); font-size: 2rem; color: var(--c-dark); margin-bottom: 10px;">¡Inscripción
+            Exitosa!</h2>
+        <p style="font-size: 16px; color: var(--text-muted); margin-bottom: 30px; line-height: 1.6;">
+            El link de acceso será compartido a través de su correo electrónico y WhatsApp.
+        </p>
+        <button onclick="cerrarExitoYRecargar()"
+            style="width: 100%; background: var(--c-pink); color: white; padding: 16px; border-radius: 14px; font-weight: bold; font-size: 1rem; border: none; cursor: pointer; transition: 0.3s;">
+            Entendido
+        </button>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- SDK de PayPal -->
+<script src="https://www.paypal.com/sdk/js?client-id={{ paypal_client_id }}&currency=MXN"></script>
+
+<script>
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    function abrirRegistroTaller() {
+        document.getElementById('modalRegistroTaller').style.display = 'flex';
+    }
+
+    function cerrarModalTaller() {
+        document.getElementById('modalRegistroTaller').style.display = 'none';
+    }
+
+    function cerrarExitoYRecargar() {
+        document.getElementById('modalExitoTaller').style.display = 'none';
+        location.reload();
+    }
+
+    document.querySelectorAll('.modal-overlay').forEach(overlay => {
+        overlay.addEventListener('click', function (e) {
+            if (e.target === this && this.id === 'modalRegistroTaller') cerrarModalTaller();
+        });
+    });
+
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') cerrarModalTaller();
+    });
+
+    function enviarWhatsAppTransferencia() {
+        const nombre = document.getElementById('reg_nombre').value.trim();
+        const telefono = document.getElementById('reg_telefono').value.trim();
+        const correo = document.getElementById('reg_correo').value.trim();
+
+        if (!nombre || !telefono || !correo) {
+            alert("Por favor, llena tus datos (Nombre, Teléfono y Correo) antes de enviar tu comprobante.");
+            return;
+        }
+
+        // Se actualizó el texto del mensaje para el taller correcto
+        const mensaje = encodeURIComponent(`Hola, adjunto mi comprobante de pago por transferencia para el Taller de Parejas.\n\nMis datos de registro son:\n👤 Nombre: ${nombre}\n📱 Teléfono: ${telefono}\n✉️ Correo: ${correo}`);
+        window.open(`https://wa.me/525521130230?text=${mensaje}`, '_blank');
+    }
+
+    function procesarRegistroBackend(orderID) {
+        document.getElementById('loading-registro').style.display = 'flex';
+
+        const nombre = document.getElementById('reg_nombre').value.trim();
+        const telefono = document.getElementById('reg_telefono').value.trim();
+        const correo = document.getElementById('reg_correo').value.trim();
+
+        let formData = new FormData();
+        formData.append('nombre', nombre);
+        formData.append('telefono', telefono);
+        formData.append('correo', correo);
+        // IMPORTANTE: Cambio en el valor enviado al backend para distinguirlo en BD
+        formData.append('taller_seleccionado', 'Solucionando el conflicto en la pareja');
+
+        if (orderID) {
+            formData.append('paypal_order_id', orderID);
+        }
+
+        fetch("{% url 'procesar_registro_taller' %}", {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: formData
+        })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('loading-registro').style.display = 'none';
+                if (data.status === 'success') {
+                    cerrarModalTaller();
+                    document.getElementById('modalExitoTaller').style.display = 'flex';
+                } else {
+                    alert(data.message || 'Hubo un problema al registrar tus datos. Por favor contáctanos.');
+                }
+            })
+            .catch(error => {
+                console.error(error);
+                document.getElementById('loading-registro').style.display = 'none';
+                alert('Error de red al guardar tu registro. Contáctanos por WhatsApp para validarlo manualmente.');
+            });
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+        if (window.paypal) {
+            paypal.Buttons({
+                onClick: function (data, actions) {
+                    const nombre = document.getElementById('reg_nombre').value.trim();
+                    const telefono = document.getElementById('reg_telefono').value.trim();
+                    const correo = document.getElementById('reg_correo').value.trim();
+
+                    if (!nombre || !telefono || !correo) {
+                        alert("Por favor, ingresa tu Nombre, Teléfono y Correo Electrónico para apartar tu lugar.");
+                        return actions.reject();
+                    }
+                    return actions.resolve();
+                },
+                createOrder: function (data, actions) {
+                    return actions.order.create({
+                        purchase_units: [{
+                            amount: {
+                                value: '110.00'
+                            },
+                            // Descripción actualizada para el nuevo taller
+                            description: 'Taller: Solucionando el conflicto en la pareja'
+                        }]
+                    });
+                },
+                onApprove: function (data, actions) {
+                    return actions.order.capture().then(function (details) {
+                        procesarRegistroBackend(details.id);
+                    });
+                },
+                onError: function (err) {
+                    console.error("Error PayPal:", err);
+                    alert("Ocurrió un error con el procesador de pagos. Si se realizó el cargo, contáctanos por WhatsApp.");
+                }
+            }).render('#paypal-button-container');
+        }
+    });
+</script>
+{% endblock %}
