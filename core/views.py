@@ -1,6 +1,7 @@
 from core import cuestionario_data
 from core import cuestionario_data
 from requests import request
+from django.views.decorators.http import require_POST
 # pyrefly: ignore [missing-import]
 import threading
 from django.shortcuts import render, redirect
