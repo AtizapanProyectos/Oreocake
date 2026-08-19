@@ -3760,7 +3760,12 @@ def taller_detalle_adolescente(request):
         'costo_texto': '$100.00 MXN',
         'fecha_texto': 'Sábado 29 de Agosto - 10:00 AM'
     }
-    return render(request, 'taller_detalle_adolescente.html', {'taller': taller})
+    context = {
+        'taller': taller,
+        'paypal_client_id': settings.PAYPAL_CLIENT_ID  # 👈 ¡AQUÍ ESTÁ LA MAGIA!
+    }
+
+    return render(request, 'taller_detalle_adolescente.html', context)
 
 @require_POST
 @csrf_protect
