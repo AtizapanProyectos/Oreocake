@@ -75,4 +75,7 @@ urlpatterns = [
     path('buscar-mis-pacientes/', views.buscar_mis_pacientes_ajax, name='buscar_mis_pacientes'),
     path('generar-reporte-checkin/', views.generar_reporte_checkin_ajax, name='generar_reporte_checkin'),
     path('generar-reporte-checkin-psicologo/', views.generar_reporte_checkin_psicologo_ajax, name='generar_reporte_checkin_psicologo'),
+    path('talleres/mejorando-relacion-hijo-adolescente/', views.taller_detalle_adolescente, name='taller_detalle_adolescente'),
+
+
 ]

@@ -2564,10 +2564,6 @@ def pago_cancelado_clip(request, cita_id):
 
 
 
-def talleres_view(request):
-    # Aquí podrías pasar variables desde la base de datos si después los haces dinámicos
-     return render(request, 'talleres.html')
-
 def procesar_registro_taller(request):
     if request.method == 'POST':
         nombre = request.POST.get('nombre')
@@ -3706,3 +3702,53 @@ def renderizar_imagen(request):
 def renderizar_pasciente(request):
     # Diccionario de contexto con los datos que le pasaremos al template
     return render(request, 'Pruebas/claude_pascinete.html')
+
+TALLERES_DESTACADOS = [
+    {
+        'slug': 'conflicto-pareja',
+        'nombre': 'Solucionando el Conflicto en la Pareja',
+        'resumen': 'Herramientas prácticas para comprender el origen de sus conflictos, mejorar la comunicación y fortalecer la conexión emocional.',
+        'color': 'var(--c-pink)',
+        'imagen': 'https://images.unsplash.com/photo-1516589178581-6cd7833ae3b2?w=800&auto=format&fit=crop&q=60',
+        'detalle_url_name': None,
+    },
+    {
+        'slug': 'mejorando-relacion-hijo-adolescente',
+        'nombre': 'Mejorando la Relación con mi Hijo Adolescente',
+        'resumen': 'Herramientas para fortalecer la comunicación, la regulación emocional y el apego seguro con tu hijo o hija adolescente.',
+        'color': 'var(--c-purple)',
+        'imagen': 'https://images.unsplash.com/photo-1609220136736-443140cffec6?w=800&auto=format&fit=crop&q=60',
+        'detalle_url_name': 'taller_detalle_adolescente',
+        'fecha_texto': '1, 3, 8 y 10 de septiembre, 8:00 pm',
+        'modalidad': 'Taller en línea',
+        'costo_texto': '$100 MXN por persona',
+        'destacado': True,
+    },
+    {
+        'slug': 'covision',
+        'nombre': 'Co-visión — Formación para Profesionales',
+        'resumen': 'Espacio de supervisión clínica grupal para profesionales de la salud mental que buscan enriquecer su práctica terapéutica.',
+        'color': 'var(--c-teal)',
+        'imagen': 'https://images.unsplash.com/photo-1638443436690-db587cc66f12?w=800&auto=format&fit=crop&q=60',
+        'detalle_url_name': None,
+    },
+]
+
+
+def talleres_view(request):
+    """Landing general: muestra todos nuestros talleres en tarjetas."""
+    talleres = []
+    for t in TALLERES_DESTACADOS:
+        item = dict(t)
+        item['detalle_url'] = reverse(t['detalle_url_name']) if t.get('detalle_url_name') else None
+        talleres.append(item)
+
+    return render(request, 'talleres.html', {'talleres': talleres})
+
+
+def taller_detalle_adolescente(request):
+    """Landing específica del taller de adolescentes. El registro se manda
+    por AJAX al mismo endpoint público que ya usan los demás talleres
+    (registrar_taller_ajax / procesar_registro_taller)."""
+    taller = next(t for t in TALLERES_DESTACADOS if t['slug'] == 'mejorando-relacion-hijo-adolescente')
+    return render(request, 'taller_detalle_adolescente.html', {'taller': taller})
