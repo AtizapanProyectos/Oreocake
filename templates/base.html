@@ -168,9 +168,7 @@
         }
     </style>
 
-    <!-- 🔥 AQUÍ ESTABA EL PROBLEMA: sin este bloque, cualquier {% block extra_css %}
-         que definas en una plantilla hija (talleres.html, detalle de taller, etc.)
-         se ignora en silencio y su CSS nunca llega al navegador. -->
+
     {% block extra_css %}{% endblock %}
 </head>
 
