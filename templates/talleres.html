@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Taller: Mejorando la relación con mi hijo adolescente | Espacio HOPE{% endblock %}
+{% block title %}Nuestros Talleres | Espacio HOPE{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -328,6 +328,34 @@
     box-shadow: 0 14px 28px color-mix(in srgb, var(--taller-color, var(--c-purple)) 35%, transparent);
   }
 
+  /* ==========================================================================
+     AVISOS DE PRÓXIMOS TALLERES (BANNER INFORMATIVO)
+     ========================================================================== */
+  .proximos-talleres-banner {
+    margin: 0 80px 80px;
+    background: linear-gradient(135deg, #f8f5ff 0%, #fff0f5 100%);
+    border: 2px dashed #e9d5ff;
+    border-radius: 28px;
+    padding: 40px;
+    text-align: center;
+  }
+
+  .proximos-talleres-banner h3 {
+    font-family: var(--font-h);
+    font-size: 1.4rem;
+    color: var(--c-purple);
+    font-weight: 800;
+    margin-bottom: 10px;
+  }
+
+  .proximos-talleres-banner p {
+    color: var(--text-muted);
+    font-size: 1rem;
+    max-width: 600px;
+    margin: 0 auto;
+    line-height: 1.6;
+  }
+
   @media(max-width:1100px) {
     .talleres-hero {
       padding: 70px 24px 30px;
@@ -347,18 +375,13 @@
     }
 
     .talleres-grid {
-      padding: 30px 24px 80px;
+      padding: 30px 24px 40px;
       grid-template-columns: 1fr;
     }
-  }
 
-  @media(max-width:600px) {
-    .talleres-hero h1 {
-      letter-spacing: -1px;
-    }
-
-    .taller-card-body {
-      padding: 36px 24px 26px;
+    .proximos-talleres-banner {
+      margin: 0 24px 60px;
+      padding: 30px 20px;
     }
   }
 </style>
@@ -369,23 +392,24 @@
 <section class="talleres-hero">
   <div class="talleres-hero-inner">
     <p class="tag"><i class="fas fa-sparkles"></i> Comunidad HOPE</p>
-    <h1>Taller: <span>Mejorando la relación con mi hijo adolescente</span></h1>
-    <p class="sub">Una nueva forma de acompañarte. Generando nuevas herramientas de comunicación y comprensión para
-      fortalecer el vínculo familiar.</p>
+    <h1>Nuestros <span>Talleres</span></h1>
+    <p class="sub">Un espacio de aprendizaje, contención y crecimiento diseñado con amor para acompañarte en cada etapa.
+    </p>
     <div class="talleres-trust">
-      <span class="trust-chip"><i class="fas fa-video"></i> Taller en Línea</span>
-      <span class="trust-chip"><i class="fas fa-tags"></i> $100 pesos mx por persona</span>
+      <span class="trust-chip"><i class="fas fa-video"></i> Modalidad en línea</span>
+      <span class="trust-chip"><i class="fas fa-heart"></i> Cupo abierto</span>
     </div>
   </div>
 </section>
 
+<!-- Cuadrícula de talleres (Aquí puedes duplicar el bloque de la tarjeta cuando agregues más adelante) -->
 <section class="talleres-grid" id="talleresGrid">
-  <!-- TARJETA DEL TALLER -->
+
+  <!-- TALLER ACTUAL (EL DE LA IMAGEN) -->
   <div class="taller-card" data-categoria="Especial" style="--taller-color: var(--c-teal);">
-    <span class="ribbon" style="background: var(--c-purple);"><i class="fas fa-star"></i> Próximo Evento</span>
+    <span class="ribbon" style="background: var(--c-purple);"><i class="fas fa-star"></i> Próximo Taller</span>
 
     <div class="taller-card-img">
-      <!-- Cambié la imagen por una más ad hoc al tema de padres/adolescentes, pero puedes usar la que prefieras -->
       <img src="https://images.unsplash.com/photo-1609220136736-443140cffec6?auto=format&fit=crop&q=80&w=800"
         alt="Mejorando la relación con mi hijo adolescente" loading="lazy">
       <div class="taller-icon-badge"><i class="fas fa-brain"></i></div>
@@ -403,16 +427,20 @@
         <span><i class="fas fa-money-bill-wave"></i>Costo: $100 pesos mx. por persona</span>
       </div>
 
-      <!-- Aquí está la redirección exacta que solicitaste usando la URL de Django[cite: 3] -->
+      <!-- Redirige perfectamente a tu URL de Django -->
       <a href="{% url 'taller_detalle_adolescente' %}" class="taller-card-btn">
         Ver detalles e inscribirme <i class="fas fa-arrow-right"></i>
       </a>
     </div>
   </div>
+
 </section>
 
-{% endblock %}
+<!-- Ventana / Aviso de más talleres próximamente -->
+<div class="proximos-talleres-banner">
+  <h3><i class="fas fa-bullhorn"></i> ¡Más talleres próximamente!</h3>
+  <p>Estamos preparando nuevos espacios y herramientas para ti y tu familia. Mantente al pendiente de nuestras redes y
+    actualizaciones para conocer las próximas fechas.</p>
+</div>
 
-{% block extra_js %}
-<!-- Bloque JS vacío ya que la redirección ahora es un enlace directo y eliminamos el modal -->
 {% endblock %}
