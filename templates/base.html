@@ -175,17 +175,23 @@
 <body>
 
     <nav class="navbar-cool">
+        <!-- BOTÓN CASITA (Inicio) -->
+        <a href="{% url 'inicio' %}" class="nav-btn" title="Ir al Inicio">
+            <i class="fa-solid fa-house"></i>
+        </a>
 
-
+        <!-- LOGO CENTRAL -->
         <a href="{% url 'inicio' %}" class="logo-center">
             <img src="{% static 'img/logo_hope_extendido.png' %}" alt="HOPE Logo">
         </a>
 
+        <!-- BOTÓN LOGOUT (Mantiene tu lógica condicional) -->
         {% if user.is_authenticated %}
         <a href="#" onclick="mostrarDespedida(); return false;" class="nav-btn logout" title="Cerrar Sesión">
             <i class="fa-solid fa-arrow-right-from-bracket"></i>
         </a>
         {% else %}
+        <!-- Espaciador para equilibrar si no hay usuario -->
         <div style="width: 60px;"></div>
         {% endif %}
     </nav>
