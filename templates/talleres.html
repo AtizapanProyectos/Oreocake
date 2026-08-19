@@ -6,7 +6,7 @@
 {% block extra_css %}
 <style>
   /* ==========================================================================
-     Tokens de marca HOPE (mismos que base.html) [cite: 3]
+     Tokens de marca HOPE (mismos que base.html)
      ========================================================================== */
   :root {
     --c-purple: #5A3FA3;
@@ -602,10 +602,10 @@
   </div>
 </section>
 
-<!-- Cuadrícula de talleres (duplica el bloque .taller-card cuando agregues más adelante) -->
+<!-- Cuadrícula de talleres -->
 <section class="talleres-grid" id="talleresGrid">
 
-  <!-- TALLER ACTUAL -->
+  <!-- TALLER 1: ADOLESCENTES -->
   <div class="taller-card" data-categoria="Especial" style="--taller-color: var(--c-teal);">
     <span class="ribbon"><i class="fas fa-star"></i> Próximo Taller</span>
 
@@ -622,12 +622,43 @@
         de tu adolescente.</p>
 
       <div class="taller-card-meta">
-        <span><i class="fas fa-calendar-days"></i>1, 3, 8 y 10 de septiembre, 8:00 pm</span>
+        <span><i class="fas fa-calendar-days"></i>1, 3, 8 y 10 de septiembre a las 8:00 pm</span>
         <span><i class="fas fa-video"></i>Taller en línea</span>
         <span><i class="fas fa-money-bill-wave"></i>Costo: $100 pesos mx. por persona</span>
       </div>
 
       <a href="{% url 'taller_detalle_adolescente' %}" class="taller-card-btn">
+        Ver detalles e inscribirme <i class="fas fa-arrow-right"></i>
+      </a>
+    </div>
+  </div>
+
+  <!-- TALLER 2: PAREJAS -->
+  <div class="taller-card" data-categoria="Pareja" style="--taller-color: var(--c-pink);">
+    <span class="ribbon"><i class="fas fa-heart"></i> Nuevo Taller</span>
+
+    <div class="taller-card-img">
+      <!-- Se usa una imagen genérica representativa, puedes cambiar la URL según tus assets -->
+      <img src="https://images.unsplash.com/photo-1516585427167-9f4af9627e6c?auto=format&fit=crop&q=80&w=800"
+        alt="Solucionando el conflicto en la pareja" loading="lazy">
+      <div class="taller-icon-badge"><i class="fas fa-user-friends"></i></div>
+    </div>
+
+    <div class="taller-card-body">
+      <span class="step-tag-mini">Taller para parejas</span>
+      <h3>Solucionando el conflicto en la pareja</h3>
+      <p class="resumen">Herramientas prácticas para mejorar la comunicación, fomentar la empatía y resolver diferencias
+        en tu relación.</p>
+
+      <div class="taller-card-meta">
+        <span><i class="fas fa-calendar-days"></i>21, 23 y 25 de septiembre - 12 hrs.</span>
+        <span><i class="fas fa-video"></i>Taller en línea</span>
+        <span><i class="fas fa-money-bill-wave"></i>Costo: $100 pesos mx. por persona</span>
+        <!-- Asumido igual al anterior, modificable -->
+      </div>
+
+      <!-- Asegúrate de actualizar el enlace a la URL de detalles correcta en Django -->
+      <a href="#" class="taller-card-btn">
         Ver detalles e inscribirme <i class="fas fa-arrow-right"></i>
       </a>
     </div>
