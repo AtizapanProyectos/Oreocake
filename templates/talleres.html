@@ -1,16 +1,12 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Nuestros Talleres | Espacio HOPE{% endblock %}
+{% block title %}Taller de Aldnlete | Espacio HOPE{% endblock %}
 
 {% block extra_css %}
 <style>
   /* ==========================================================================
      Este bloque reutiliza los tokens de marca definidos en base.html
-     (--c-purple, --c-pink, --c-orange, --c-teal, --c-yellow, --c-dark,
-     --font-h, --font-b, --shadow-sm, --shadow-md). Si algún token no existe
-     todavía en base.html, aquí se redefine con :root como respaldo para que
-     la página nunca se vea "rota" aunque se cargue de forma aislada.
      ========================================================================== */
   :root {
     --c-purple: #5A3FA3;
@@ -28,8 +24,7 @@
   }
 
   /* ==========================================================================
-     HERO — mismo lenguaje que inicio.html (tag uppercase + heading Outfit 900)
-     con un toque extra de "panel": chips de confianza y textura decorativa.
+     HERO 
      ========================================================================== */
   .talleres-hero {
     position: relative;
@@ -134,56 +129,14 @@
   }
 
   /* ==========================================================================
-     FILTROS — mismo componente "tabs-nav" del panel, aplicado a categorías
-     de taller. Se generan dinámicamente en JS a partir de data-categoria,
-     así funciona aunque el backend no mande un campo de categoría fijo.
-     ========================================================================== */
-  .talleres-filtros-wrap {
-    padding: 0 80px;
-    margin-top: -10px;
-  }
-
-  .talleres-filtros {
-    display: flex;
-    gap: 12px;
-    flex-wrap: wrap;
-    padding: 22px 0 6px;
-  }
-
-  .filtro-btn {
-    padding: 12px 26px;
-    border-radius: 100px;
-    font-weight: 700;
-    font-size: .9rem;
-    font-family: var(--font-h);
-    cursor: pointer;
-    transition: .3s;
-    background: #fff;
-    border: 2px solid #e2e8f0;
-    color: var(--text-muted);
-  }
-
-  .filtro-btn:hover {
-    border-color: var(--c-purple);
-    color: var(--c-purple);
-  }
-
-  .filtro-btn.active {
-    background: var(--c-purple);
-    color: #fff;
-    border-color: var(--c-purple);
-    box-shadow: 0 10px 20px rgba(90, 63, 163, .22);
-  }
-
-  /* ==========================================================================
-     GRID + TARJETAS — mismas proporciones/redondeos que .chic-card /
-     .programa-box del panel, con acento de color por taller (t.color).
+     GRID + TARJETAS 
      ========================================================================== */
   .talleres-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(330px, 1fr));
     gap: 36px;
-    padding: 30px 80px 110px;
+    padding: 10px 80px 110px;
+    /* Reduje el padding top al quitar filtros */
   }
 
   .taller-card {
@@ -197,6 +150,10 @@
     display: flex;
     flex-direction: column;
     position: relative;
+    max-width: 450px;
+    /* Para que no se estire demasiado al ser solo 1 */
+    margin: 0 auto;
+    /* Centrar la única tarjeta */
   }
 
   .taller-card::before {
@@ -237,7 +194,7 @@
 
   .taller-card-img {
     width: 100%;
-    height: 220px;
+    height: 250px;
     overflow: hidden;
     position: relative;
   }
@@ -375,29 +332,6 @@
     box-shadow: 0 14px 28px color-mix(in srgb, var(--taller-color, var(--c-purple)) 35%, transparent);
   }
 
-  /* ── Estado vacío, mismo tono cálido que el panel ── */
-  .talleres-empty {
-    grid-column: 1 / -1;
-    text-align: center;
-    padding: 70px 30px;
-    background: #f8fafc;
-    border: 1.5px dashed #e2e8f0;
-    border-radius: 30px;
-    color: var(--text-muted);
-  }
-
-  .talleres-empty i {
-    font-size: 46px;
-    color: var(--c-purple);
-    margin-bottom: 16px;
-    display: block;
-  }
-
-  .talleres-empty p {
-    font-size: 1.05rem;
-    font-weight: 600;
-  }
-
   @media(max-width:1100px) {
     .talleres-hero {
       padding: 70px 24px 30px;
@@ -416,16 +350,10 @@
       justify-content: center;
     }
 
-    .talleres-filtros-wrap {
-      padding: 0 24px;
-    }
-
-    .talleres-filtros {
-      justify-content: center;
-    }
-
     .talleres-grid {
       padding: 30px 24px 80px;
+      grid-template-columns: 1fr;
+      /* Una sola columna para móvil */
     }
   }
 
@@ -440,9 +368,7 @@
   }
 
   /* ==========================================================================
-     MODAL DE INSCRIPCIÓN — mismo lenguaje "premium" que .modal-box del panel
-     y de inicio.html: barra superior degradada, icono redondeado, inputs
-     con ícono embebido.
+     MODAL DE INSCRIPCIÓN 
      ========================================================================== */
   .modal-overlay {
     position: fixed;
@@ -647,8 +573,7 @@
   }
 
   /* ==========================================================================
-     TOAST + OVERLAY DE CARGA — idénticos en espíritu a los del panel, para
-     no depender de alert() y mantener consistencia de marca en todo el sitio.
+     TOAST + OVERLAY DE CARGA 
      ========================================================================== */
   .toast-hope {
     position: fixed;
@@ -706,66 +631,51 @@
 <section class="talleres-hero">
   <div class="talleres-hero-inner">
     <p class="tag"><i class="fas fa-sparkles"></i> Comunidad HOPE</p>
-    <h1>Espacios para <span>crecer</span><br>acompañados.</h1>
-    <p class="sub">Talleres grupales guiados por profesionales para trabajar la relación de pareja, la comunicación
-      familiar y el crecimiento personal, en grupos reducidos y un ambiente seguro. Elige el que resuene contigo.</p>
+    <h1>Taller Especial: <span>Aldnlete</span></h1>
+    <p class="sub">Te invitamos a participar en el taller de mi hijo Aldnlete. Un espacio de aprendizaje, crecimiento y
+      diversión preparado con mucho cariño.</p>
     <div class="talleres-trust">
-      <span class="trust-chip"><i class="fas fa-user-shield"></i> Grupos reducidos</span>
-      <span class="trust-chip"><i class="fas fa-graduation-cap"></i> Facilitadores certificados</span>
-      <span class="trust-chip"><i class="fas fa-video"></i> En línea y presencial</span>
+      <span class="trust-chip"><i class="fas fa-user-shield"></i> Cupo limitado</span>
+      <span class="trust-chip"><i class="fas fa-heart"></i> Ambiente seguro</span>
     </div>
   </div>
 </section>
 
-<div class="talleres-filtros-wrap">
-  <div class="talleres-filtros" id="talleresFiltros"></div>
-</div>
+<!-- Aquí eliminamos la barra de filtros porque solo hay un taller -->
 
 <section class="talleres-grid" id="talleresGrid">
-  {% for t in talleres %}
-  <div class="taller-card" data-categoria="{{ t.categoria|default:'General' }}"
-    style="--taller-color: {{ t.color|default:'#5A3FA3' }};" {% if t.detalle_url %}
-    onclick="window.location.href='{{ t.detalle_url }}'" {% else %}
-    onclick="abrirRegistroTaller('{{ t.nombre|escapejs }}')" {% endif %}>
-    {% if t.destacado %}<span class="ribbon"><i class="fas fa-star"></i> Próximo taller</span>{% endif %}
+  <!-- ÚNICA TARJETA FIJA PARA ALDNLETE -->
+  <div class="taller-card" data-categoria="Especial" style="--taller-color: var(--c-teal);"
+    onclick="abrirRegistroTaller('Taller de Aldnlete')">
+    <span class="ribbon" style="background: var(--c-pink);"><i class="fas fa-star"></i> Evento Principal</span>
+
     <div class="taller-card-img">
-      <img src="{{ t.imagen }}" alt="{{ t.nombre }}" loading="lazy">
-      <div class="taller-icon-badge"><i class="fas fa-heart-pulse"></i></div>
+      <!-- NOTA: Cambia la URL de abajo por la foto real que quieras usar para el taller de tu hijo -->
+      <img src="https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&q=80&w=800"
+        alt="Taller de Aldnlete" loading="lazy">
+      <div class="taller-icon-badge"><i class="fas fa-child"></i></div>
     </div>
+
     <div class="taller-card-body">
-      {% if t.categoria %}<span class="step-tag-mini">{{ t.categoria }}</span>{% endif %}
-      <h3>{{ t.nombre }}</h3>
-      <p class="resumen">{{ t.resumen }}</p>
+      <span class="step-tag-mini">Taller Infantil</span>
+      <h3>Taller de Aldnlete</h3>
+      <p class="resumen">Ven a compartir, aprender y jugar en el taller especialmente diseñado por y para Aldnlete. ¡No
+        te lo puedes perder!</p>
 
-      {% if t.fecha_texto or t.costo_texto or t.modalidad %}
       <div class="taller-card-meta">
-        {% if t.fecha_texto %}<span><i class="fas fa-calendar-days"></i>{{ t.fecha_texto }}</span>{% endif %}
-        {% if t.modalidad %}<span><i class="fas fa-video"></i>{{ t.modalidad }}</span>{% endif %}
-        {% if t.costo_texto %}<span><i class="fas fa-tag"></i>{{ t.costo_texto }}</span>{% endif %}
+        <span><i class="fas fa-calendar-days"></i>Fecha por confirmar</span>
+        <span><i class="fas fa-map-marker-alt"></i>Presencial</span>
       </div>
-      {% endif %}
 
-      {% if t.detalle_url %}
-      <a href="{{ t.detalle_url }}" class="taller-card-btn" onclick="event.stopPropagation()">
-        Ver detalles <i class="fas fa-arrow-right"></i>
-      </a>
-      {% else %}
       <button type="button" class="taller-card-btn"
-        onclick="event.stopPropagation(); abrirRegistroTaller('{{ t.nombre|escapejs }}')">
+        onclick="event.stopPropagation(); abrirRegistroTaller('Taller de Aldnlete')">
         Inscríbete <i class="fas fa-arrow-right"></i>
       </button>
-      {% endif %}
     </div>
   </div>
-  {% empty %}
-  <div class="talleres-empty">
-    <i class="fas fa-seedling"></i>
-    <p>Por el momento no hay talleres programados. Muy pronto anunciaremos nuevas fechas 💜</p>
-  </div>
-  {% endfor %}
 </section>
 
-<!-- ══ MODAL: REGISTRO RÁPIDO A TALLER (reutiliza registrar_taller_ajax) ══ -->
+<!-- ══ MODAL: REGISTRO RÁPIDO A TALLER ══ -->
 <div id="modalRegistroTaller" class="modal-overlay">
   <div class="modal-box">
     <button class="modal-close" onclick="cerrarModalTaller()"><i class="fas fa-times"></i></button>
@@ -799,7 +709,7 @@
   </div>
 </div>
 
-<!-- Toast de confirmación / error, mismo componente que el panel -->
+<!-- Toast de confirmación / error -->
 <div class="toast-hope" id="toastHopeTaller">
   <i class="fas fa-check-circle"></i>
   <span id="toastHopeTallerTexto">Listo</span>
@@ -809,7 +719,7 @@
 
 {% block extra_js %}
 <script>
-  // ── Toast (reemplaza alert() para mantener consistencia visual con el panel) ──
+  // ── Toast (mensajes bonitos) ──
   let toastTimeoutTaller = null;
   function mostrarToastTaller(mensaje, tipo) {
     const toast = document.getElementById('toastHopeTaller');
@@ -831,17 +741,21 @@
     const overlay = document.getElementById('modalRegistroTaller');
     if (overlay) overlay.style.display = 'flex';
   }
+
   function cerrarModalTaller() {
     const overlay = document.getElementById('modalRegistroTaller');
     if (overlay) overlay.style.display = 'none';
   }
+
   document.getElementById('modalRegistroTaller').addEventListener('click', function (e) {
     if (e.target === this) cerrarModalTaller();
   });
+
   document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape') cerrarModalTaller();
   });
 
+  // ── Envío del formulario con Ajax ──
   const formRegistroTaller = document.getElementById('formRegistroTaller');
   if (formRegistroTaller) {
     formRegistroTaller.addEventListener('submit', function (e) {
@@ -878,36 +792,5 @@
         });
     });
   }
-
-  // ── Filtros dinámicos por categoría (se construyen a partir de las
-  //    tarjetas ya renderizadas, así no dependen de un campo fijo en la BD) ──
-  (function initFiltrosTalleres() {
-    const grid = document.getElementById('talleresGrid');
-    const filtrosBar = document.getElementById('talleresFiltros');
-    if (!grid || !filtrosBar) return;
-
-    const cards = Array.from(grid.querySelectorAll('.taller-card'));
-    if (cards.length === 0) { filtrosBar.style.display = 'none'; return; }
-
-    const categorias = ['Todos', ...new Set(cards.map(c => c.dataset.categoria || 'General'))];
-    if (categorias.length <= 2) { filtrosBar.style.display = 'none'; return; } // no vale la pena filtrar
-
-    filtrosBar.innerHTML = categorias.map((cat, i) =>
-      `<button type="button" class="filtro-btn ${i === 0 ? 'active' : ''}" data-filtro="${cat}">${cat}</button>`
-    ).join('');
-
-    filtrosBar.addEventListener('click', function (e) {
-      const btn = e.target.closest('.filtro-btn');
-      if (!btn) return;
-      filtrosBar.querySelectorAll('.filtro-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-
-      const filtro = btn.dataset.filtro;
-      cards.forEach(card => {
-        const coincide = filtro === 'Todos' || card.dataset.categoria === filtro;
-        card.style.display = coincide ? '' : 'none';
-      });
-    });
-  })();
 </script>
 {% endblock %}

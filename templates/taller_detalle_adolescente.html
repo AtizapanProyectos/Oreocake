@@ -5,8 +5,9 @@
 
 {% block extra_css %}
 <style>
-    /* Reutiliza los tokens de marca de base.html; se redefinen como respaldo
-     para que la página nunca se vea "rota" si se carga de forma aislada. */
+    /* ==========================================================================
+     VARIABLES BASE (Respaldo)
+     ========================================================================== */
     :root {
         --c-purple: #5A3FA3;
         --c-pink: #F85B8C;
@@ -22,7 +23,7 @@
     }
 
     /* ==========================================================================
-     BREADCRUMB — para no dejar al usuario en un callejón sin salida
+     HERO & BREADCRUMB (Tu diseño original intacto)
      ========================================================================== */
     .taller-breadcrumb {
         position: relative;
@@ -48,9 +49,6 @@
         gap: 12px;
     }
 
-    /* ==========================================================================
-     HERO
-     ========================================================================== */
     .taller-hero {
         position: relative;
         min-height: 82vh;
@@ -59,7 +57,6 @@
         overflow: hidden;
         padding: 40px 80px 90px;
         margin-top: -66px;
-        /* compensa el padding-top del breadcrumb */
     }
 
     .taller-hero-bg {
@@ -286,363 +283,12 @@
     }
 
     /* ==========================================================================
-     TIRA DE CONFIANZA (debajo del hero, como colchón visual)
-     ========================================================================== */
-    .taller-confianza {
-        background: #fff;
-        border-bottom: 1px solid #f1f5f9;
-        padding: 26px 80px;
-        display: flex;
-        flex-wrap: wrap;
-        gap: 28px;
-        justify-content: center;
-    }
-
-    .taller-confianza span {
-        display: inline-flex;
-        align-items: center;
-        gap: 10px;
-        font-size: .88rem;
-        font-weight: 700;
-        color: var(--text-muted);
-    }
-
-    .taller-confianza span i {
-        color: var(--c-purple);
-        font-size: 1rem;
-    }
-
-    /* ==========================================================================
-     SECCIÓN "UNA NUEVA FORMA DE ACOMPAÑARTE"
-     ========================================================================== */
-    .taller-detalle-section {
-        padding: 100px 80px;
-        background: #f8fafc;
-        position: relative;
-        overflow: hidden;
-    }
-
-    .taller-detalle-section::before {
-        content: '';
-        position: absolute;
-        top: -180px;
-        right: -140px;
-        width: 420px;
-        height: 420px;
-        border-radius: 50%;
-        background: radial-gradient(circle, rgba(90, 63, 163, .06), transparent 70%);
-    }
-
-    .taller-detalle-inner {
-        max-width: 780px;
-        margin: 0 auto 60px;
-        text-align: center;
-        position: relative;
-        z-index: 1;
-    }
-
-    .taller-detalle-inner p.eyebrow {
-        font-family: var(--font-h);
-        font-size: .8rem;
-        font-weight: 800;
-        letter-spacing: 2px;
-        text-transform: uppercase;
-        color: var(--c-teal);
-        margin-bottom: 16px;
-    }
-
-    .taller-detalle-inner h2 {
-        font-family: var(--font-h);
-        font-weight: 900;
-        font-size: clamp(2.2rem, 4vw, 3.2rem);
-        color: var(--c-purple);
-        margin-bottom: 24px;
-        line-height: 1.08;
-        letter-spacing: -1px;
-    }
-
-    .taller-detalle-inner p.lead {
-        font-size: 1.15rem;
-        color: var(--text-muted);
-        line-height: 1.75;
-    }
-
-    .taller-features-grid {
-        max-width: 980px;
-        margin: 0 auto 70px;
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 22px;
-        position: relative;
-        z-index: 1;
-    }
-
-    .taller-feature-card {
-        display: flex;
-        align-items: flex-start;
-        gap: 18px;
-        background: #fff;
-        border: 1px solid #f1f5f9;
-        border-radius: 22px;
-        padding: 26px 24px;
-        box-shadow: var(--shadow-sm);
-        transition: .3s;
-    }
-
-    .taller-feature-card:hover {
-        transform: translateY(-4px);
-        box-shadow: var(--shadow-md);
-        border-color: #ede4ff;
-    }
-
-    .taller-feature-card .icon-wrap {
-        width: 48px;
-        height: 48px;
-        border-radius: 14px;
-        flex-shrink: 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: #f3e8ff;
-        color: var(--c-purple);
-        font-size: 1.2rem;
-    }
-
-    .taller-feature-card h4 {
-        font-family: var(--font-h);
-        font-size: 1.05rem;
-        font-weight: 800;
-        color: var(--c-dark);
-        margin-bottom: 6px;
-    }
-
-    .taller-feature-card p {
-        font-size: .92rem;
-        color: var(--text-muted);
-        line-height: 1.55;
-        margin: 0;
-    }
-
-    /* "Para quién es" / facilitadores */
-    .taller-split {
-        max-width: 980px;
-        margin: 0 auto 70px;
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 30px;
-        position: relative;
-        z-index: 1;
-    }
-
-    .taller-split-card {
-        background: #fff;
-        border-radius: 26px;
-        padding: 36px 32px;
-        border: 1px solid #f1f5f9;
-        box-shadow: var(--shadow-sm);
-        text-align: left;
-    }
-
-    .taller-split-card .step-tag {
-        font-size: 11px;
-        text-transform: uppercase;
-        letter-spacing: 2px;
-        font-weight: 800;
-        font-family: var(--font-h);
-        padding: 7px 16px;
-        border-radius: 100px;
-        display: inline-block;
-        margin-bottom: 16px;
-    }
-
-    .taller-split-card:first-child .step-tag {
-        background: #f3e8ff;
-        color: var(--c-purple);
-    }
-
-    .taller-split-card:last-child .step-tag {
-        background: #fdf2f8;
-        color: var(--c-pink);
-    }
-
-    .taller-split-card h3 {
-        font-family: var(--font-h);
-        font-size: 1.35rem;
-        font-weight: 800;
-        color: var(--c-dark);
-        margin-bottom: 14px;
-    }
-
-    .taller-split-card ul {
-        list-style: none;
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-    }
-
-    .taller-split-card ul li {
-        display: flex;
-        align-items: flex-start;
-        gap: 10px;
-        font-size: .96rem;
-        color: var(--text-muted);
-        line-height: 1.5;
-    }
-
-    .taller-split-card ul li i {
-        color: var(--c-teal);
-        margin-top: 4px;
-        font-size: .85rem;
-        flex-shrink: 0;
-    }
-
-    /* Cita de cierre */
-    .taller-cita {
-        max-width: 720px;
-        margin: 0 auto 50px;
-        text-align: center;
-        position: relative;
-        z-index: 1;
-    }
-
-    .taller-cita i.quote-icon {
-        font-size: 2rem;
-        color: var(--c-yellow);
-        margin-bottom: 18px;
-        display: block;
-    }
-
-    .taller-cita p {
-        font-family: var(--font-h);
-        font-size: 1.4rem;
-        font-weight: 700;
-        color: var(--c-dark);
-        line-height: 1.5;
-        font-style: italic;
-    }
-
-    .taller-detalle-cta-wrap {
-        text-align: center;
-        position: relative;
-        z-index: 1;
-    }
-
-    @media(max-width:1100px) {
-        .taller-breadcrumb {
-            padding: 22px 24px 0;
-        }
-
-        .taller-hero {
-            padding: 40px 24px 70px;
-            text-align: left;
-        }
-
-        .taller-confianza {
-            padding: 22px 24px;
-            justify-content: center;
-            text-align: center;
-        }
-
-        .taller-detalle-section {
-            padding: 70px 24px;
-        }
-
-        .taller-features-grid {
-            grid-template-columns: 1fr;
-        }
-
-        .taller-split {
-            grid-template-columns: 1fr;
-        }
-    }
-
-    @media(max-width:600px) {
-        .taller-tagbox {
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 12px;
-        }
-
-        .taller-info-cards {
-            flex-direction: column;
-        }
-
-        .taller-cta-btn {
-            width: 100%;
-            justify-content: center;
-        }
-
-        .taller-cita p {
-            font-size: 1.15rem;
-        }
-    }
-
-    /* ==========================================================================
-     BARRA STICKY DE CTA EN MÓVIL — típico de landing pages de conversión
-     ========================================================================== */
-    .taller-sticky-cta {
-        display: none;
-        position: fixed;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        z-index: 4500;
-        background: #fff;
-        padding: 14px 18px;
-        box-shadow: 0 -10px 30px rgba(0, 0, 0, .12);
-        align-items: center;
-        justify-content: space-between;
-        gap: 12px;
-    }
-
-    .taller-sticky-cta .info {
-        display: flex;
-        flex-direction: column;
-    }
-
-    .taller-sticky-cta .info strong {
-        font-family: var(--font-h);
-        font-size: .95rem;
-        color: var(--c-dark);
-    }
-
-    .taller-sticky-cta .info span {
-        font-size: .78rem;
-        color: var(--text-muted);
-    }
-
-    .taller-sticky-cta button {
-        background: var(--c-pink);
-        color: #fff;
-        border: none;
-        padding: 13px 24px;
-        border-radius: 100px;
-        font-family: var(--font-h);
-        font-weight: 800;
-        font-size: .85rem;
-        text-transform: uppercase;
-        letter-spacing: .5px;
-        white-space: nowrap;
-        cursor: pointer;
-    }
-
-    @media(max-width:1100px) {
-        .taller-sticky-cta {
-            display: flex;
-        }
-
-        body {
-            padding-bottom: 78px;
-        }
-    }
-
-    /* ==========================================================================
-     MODAL DE INSCRIPCIÓN — mismo lenguaje que talleres.html
+     NUEVO MODAL DE PAGO (Fusionado con tu diseño de modal)
      ========================================================================== */
     .modal-overlay {
         position: fixed;
         inset: 0;
-        background: rgba(15, 23, 42, .75);
+        background: rgba(15, 23, 42, .85);
         backdrop-filter: blur(10px);
         z-index: 5000;
         display: none;
@@ -654,14 +300,15 @@
     .modal-box {
         background: #fff;
         width: 100%;
-        max-width: 480px;
-        padding: 46px 42px 40px;
+        max-width: 450px;
+        padding: 40px 35px;
         border-radius: 32px;
         position: relative;
         box-shadow: 0 50px 100px rgba(0, 0, 0, .22);
         max-height: 95vh;
         overflow-y: auto;
         animation: tallerPopIn .45s cubic-bezier(.16, 1, .3, 1) both;
+        text-align: center;
     }
 
     .modal-box::before {
@@ -695,8 +342,8 @@
         color: #ef4444;
         background: #fef2f2;
         border: 2px solid #fecaca;
-        width: 42px;
-        height: 42px;
+        width: 40px;
+        height: 40px;
         border-radius: 50%;
         cursor: pointer;
         transition: .3s;
@@ -712,201 +359,112 @@
         transform: scale(1.12) rotate(90deg);
     }
 
-    .taller-modal-icon {
-        width: 62px;
-        height: 62px;
-        border-radius: 20px;
-        background: linear-gradient(135deg, #e6fffa, #f3e8ff);
-        color: var(--c-teal);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 26px;
-        margin-bottom: 20px;
-        box-shadow: 0 10px 22px rgba(37, 184, 184, .15);
-    }
-
-    #tallerModalNombreTitulo {
+    /* Estilos del Ticket / Pasarela */
+    .modal-box h3 {
         font-family: var(--font-h);
-        font-size: 1.6rem;
+        font-size: 1.5rem;
         color: var(--c-dark);
-        margin-bottom: 8px;
+        margin-bottom: 5px;
         font-weight: 800;
-        letter-spacing: -.5px;
     }
 
-    .taller-modal-resumen {
+    .modal-box .resumen {
         color: var(--text-muted);
-        margin-bottom: 26px;
-        font-size: .92rem;
-        line-height: 1.6;
-        background: #f8fafc;
-        border: 1px dashed #e2e8f0;
-        border-radius: 14px;
-        padding: 14px 16px;
+        font-size: 0.95rem;
+        margin-bottom: 25px;
     }
 
-    .taller-modal-input-wrap {
-        position: relative;
-        margin-bottom: 16px;
-    }
-
-    .taller-modal-input-wrap i {
-        position: absolute;
-        left: 20px;
-        top: 50%;
-        transform: translateY(-50%);
-        color: #a7e8e8;
-        font-size: .95rem;
-        transition: color .25s;
-    }
-
-    .taller-modal-input-wrap:focus-within i {
-        color: var(--c-teal);
-    }
-
-    .taller-modal-input {
-        width: 100%;
-        padding: 16px 16px 16px 50px;
-        border-radius: 14px;
-        border: 2px solid #e9e5f0;
-        font-size: .97rem;
-        font-family: var(--font-b);
-        background: #fafafa;
-        color: var(--c-dark);
-        outline: none;
-        transition: .25s;
-        box-sizing: border-box;
-    }
-
-    .taller-modal-input::placeholder {
-        color: #c4b5c8;
-    }
-
-    .taller-modal-input:focus {
-        border-color: var(--c-teal);
-        background: #fff;
-        box-shadow: 0 0 0 4px rgba(37, 184, 184, .1);
-    }
-
-    .btn-taller-submit {
-        width: 100%;
-        padding: 18px;
-        border-radius: 100px;
-        background: var(--c-purple);
-        color: #fff;
-        font-family: var(--font-h);
+    .price-total {
+        font-size: 3rem;
+        color: var(--c-purple);
         font-weight: 800;
-        font-size: .92rem;
-        border: none;
-        cursor: pointer;
-        transition: .3s;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 10px;
-        margin-top: 6px;
+        margin: 5px 0 25px 0;
+        font-family: var(--font-h);
     }
 
-    .btn-taller-submit:hover:not(:disabled) {
-        background: var(--c-pink);
-        transform: translateY(-2px);
-        box-shadow: 0 14px 28px rgba(248, 91, 140, .28);
-    }
-
-    .btn-taller-submit:disabled {
-        opacity: .7;
-        cursor: not-allowed;
-    }
-
-    .taller-modal-nota {
-        display: flex;
-        align-items: flex-start;
-        gap: 10px;
+    .transfer-box {
+        background: linear-gradient(135deg, #f8fafc 0%, #f3e8ff 100%);
+        border: 2px dashed #d8b4fe;
+        border-radius: 16px;
+        padding: 20px;
         margin-top: 20px;
-        background: #f0fdfa;
-        border-radius: 12px;
-        padding: 13px 16px;
         text-align: left;
     }
 
-    .taller-modal-nota i {
-        color: var(--c-teal);
-        font-size: 14px;
-        margin-top: 2px;
-        flex-shrink: 0;
+    .transfer-box h4 {
+        margin-top: 0;
+        margin-bottom: 12px;
+        color: var(--c-purple);
+        font-size: 1.05rem;
+        text-align: center;
+        font-family: var(--font-h);
     }
 
-    .taller-modal-nota span {
-        font-size: .78rem;
+    .transfer-box p {
+        font-size: 0.9rem;
         color: var(--text-muted);
-        line-height: 1.5;
+        margin: 5px 0;
     }
 
-    /* ==========================================================================
-     TOAST — mismo componente que en talleres.html y el panel
-     ========================================================================== */
-    .toast-hope {
-        position: fixed;
-        bottom: 30px;
-        left: 50%;
-        transform: translateX(-50%) translateY(20px);
-        background: #fff;
-        color: var(--c-dark);
-        padding: 16px 24px;
-        border-radius: 16px;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, .15);
+    .btn-whatsapp {
         display: flex;
         align-items: center;
-        gap: 12px;
+        justify-content: center;
+        gap: 10px;
+        width: 100%;
+        background: #25D366;
+        color: white;
+        padding: 14px;
+        border-radius: 14px;
+        text-decoration: none;
         font-weight: 700;
-        font-size: 14px;
-        z-index: 9000;
-        opacity: 0;
-        pointer-events: none;
-        transition: .35s ease;
-        max-width: 90vw;
-        border-left: 5px solid var(--c-purple);
+        font-size: 1rem;
+        transition: 0.3s;
+        box-sizing: border-box;
+        margin-top: 15px;
     }
 
-    .toast-hope.mostrar {
-        opacity: 1;
-        transform: translateX(-50%) translateY(0);
-        pointer-events: auto;
+    .btn-whatsapp:hover {
+        filter: brightness(1.05);
+        transform: translateY(-2px);
     }
 
-    .toast-hope.exito {
-        border-left-color: #22c55e;
-    }
-
-    .toast-hope.error {
-        border-left-color: #ef4444;
-    }
-
-    .toast-hope i {
-        font-size: 20px;
-    }
-
-    .toast-hope.exito i {
-        color: #22c55e;
-    }
-
-    .toast-hope.error i {
-        color: #ef4444;
-    }
-
+    /* Responsive básico */
     @media(max-width:1100px) {
-        .toast-hope {
-            bottom: 92px;
+        .taller-breadcrumb {
+            padding: 22px 24px 0;
+        }
+
+        .taller-hero {
+            padding: 40px 24px 70px;
+            text-align: left;
+        }
+    }
+
+    @media(max-width:600px) {
+        .taller-tagbox {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .taller-info-cards {
+            flex-direction: column;
+        }
+
+        .taller-cta-btn {
+            width: 100%;
+            justify-content: center;
+        }
+
+        .modal-box {
+            padding: 35px 25px;
         }
     }
 </style>
 {% endblock %}
 
 {% block content %}
-
 <div class="taller-breadcrumb">
     <a href="{% url 'talleres' %}"><i class="fas fa-arrow-left"></i> Volver a todos los talleres</a>
 </div>
@@ -935,14 +493,15 @@
                 <div class="icon-wrap"><i class="fas fa-calendar-days"></i></div>
                 <div>
                     <div class="label">Fecha y hora</div>
-                    <div class="value">{{ taller.fecha_texto }}</div>
+                    <div class="value">{{ taller.fecha_texto|default:"Próximamente" }}</div>
                 </div>
             </div>
             <div class="taller-info-card">
                 <div class="icon-wrap"><i class="fas fa-tag"></i></div>
                 <div>
                     <div class="label">Costo</div>
-                    <div class="value">{{ taller.costo_texto }}</div>
+                    <!-- Se asume que renderizas el precio o pones un estático -->
+                    <div class="value">{{ taller.costo_texto|default:"$350.00 MXN" }}</div>
                 </div>
             </div>
         </div>
@@ -950,177 +509,63 @@
         <div>
             <span class="taller-badge-online">
                 <i class="fas fa-video"></i>
-                <span>{{ taller.modalidad }}<small>Acceso desde donde estés</small></span>
+                <span>{{ taller.modalidad|default:"Online (Zoom)" }}<small>Acceso desde donde estés</small></span>
             </span>
         </div>
 
         <div class="taller-hero-actions">
+            <!-- Este botón abre nuestra nueva pasarela modal -->
             <button type="button" class="taller-cta-btn" onclick="abrirRegistroTaller()">
                 Quiero inscribirme <i class="fas fa-arrow-right"></i>
             </button>
-            <a href="#detalle" class="taller-cta-secundario">
-                <i class="fas fa-circle-info"></i> Ver de qué trata
+        </div>
+    </div>
+</section>
+
+<!-- ==========================================
+     EL MODAL DE PAGO (Sustituye al formulario)
+     ========================================== -->
+<div id="modalRegistroTaller" class="modal-overlay">
+    <div class="modal-box">
+        <span class="modal-close" onclick="cerrarModalTaller()"><i class="fas fa-times"></i></span>
+
+        <h3>Finaliza tu inscripción</h3>
+        <p class="resumen">Taller: Mejorando la relación con mi hijo adolescente</p>
+
+        <!-- Precio (Puedes ajustar la variable o dejarlo estático) -->
+        <h1 class="price-total">{{ taller.costo_texto|default:"$350.00" }}</h1>
+
+        <!-- Botones de PayPal -->
+        <div id="paypal-button-container" style="min-height: 55px;"></div>
+
+        <!-- Opción de Transferencia -->
+        <div class="transfer-box">
+            <h4>¿Prefieres transferencia?</h4>
+            <p><strong>Titular:</strong> Servicios de Atención Emocional Juvenil SAPI de CV</p>
+            <p><strong>Banco:</strong> BBVA</p>
+
+            <div
+                style="background: white; border-radius: 12px; padding: 12px; margin-top: 10px; border: 1px solid #e2e8f0;">
+                <p style="margin:0;"><strong>Cuenta:</strong> 0127845901</p>
+                <p style="margin:0;"><strong>CLABE:</strong> 012180001278459015</p>
+            </div>
+
+            <!-- Botón directo a WhatsApp para mandar el ticket -->
+            <a href="https://wa.me/525521130230?text=Hola%2C%20adjunto%20mi%20comprobante%20de%20pago%20por%20transferencia%20para%20el%20Taller%20de%20Adolescentes"
+                target="_blank" class="btn-whatsapp">
+                Enviar comprobante <i class="fab fa-whatsapp" style="font-size: 1.2rem;"></i>
             </a>
         </div>
     </div>
-</section>
-
-<div class="taller-confianza">
-    <span><i class="fas fa-user-shield"></i> Grupo reducido y confidencial</span>
-    <span><i class="fas fa-graduation-cap"></i> Guiado por especialistas en familia</span>
-    <span><i class="fas fa-heart-circle-check"></i> Enfoque cálido, sin juicios</span>
 </div>
-
-<section class="taller-detalle-section" id="detalle">
-    <div class="taller-detalle-inner">
-        <p class="eyebrow">✦ De qué se trata</p>
-        <h2>Una nueva forma<br>de acompañarte</h2>
-        <p class="lead">A través de un enfoque psicoeducativo, en este taller vas a desarrollar herramientas concretas
-            para transformar la relación con tu hijo o hija adolescente.</p>
-    </div>
-
-    <div class="taller-features-grid">
-        <div class="taller-feature-card">
-            <div class="icon-wrap"><i class="fas fa-comments"></i></div>
-            <div>
-                <h4>Comunicación y escucha activa</h4>
-                <p>Aprende a abrir conversaciones sin que se conviertan en confrontación.</p>
-            </div>
-        </div>
-        <div class="taller-feature-card">
-            <div class="icon-wrap"><i class="fas fa-heart-pulse"></i></div>
-            <div>
-                <h4>Regulación emocional</h4>
-                <p>Herramientas para manejar emociones intensas — las tuyas y las suyas.</p>
-            </div>
-        </div>
-        <div class="taller-feature-card">
-            <div class="icon-wrap"><i class="fas fa-hand"></i></div>
-            <div>
-                <h4>Límites sanos</h4>
-                <p>Cómo poner límites claros sin romper el vínculo de confianza.</p>
-            </div>
-        </div>
-        <div class="taller-feature-card">
-            <div class="icon-wrap"><i class="fas fa-people-arrows"></i></div>
-            <div>
-                <h4>Apego seguro</h4>
-                <p>Construye una relación basada en respeto y confianza mutua.</p>
-            </div>
-        </div>
-    </div>
-
-    <div class="taller-split">
-        <div class="taller-split-card">
-            <span class="step-tag">Para quién es</span>
-            <h3>Este taller es para ti si...</h3>
-            <ul>
-                <li><i class="fas fa-check-circle"></i> Sientes que la comunicación con tu hijo/a se ha vuelto difícil.
-                </li>
-                <li><i class="fas fa-check-circle"></i> Quieres poner límites sin generar más distancia.</li>
-                <li><i class="fas fa-check-circle"></i> Buscas herramientas prácticas, no solo teoría.</li>
-                <li><i class="fas fa-check-circle"></i> Prefieres un espacio grupal, guiado y confidencial.</li>
-            </ul>
-        </div>
-        <div class="taller-split-card">
-            <span class="step-tag">Cómo se lleva a cabo</span>
-            <h3>Lo que puedes esperar</h3>
-            <ul>
-                <li><i class="fas fa-check-circle"></i> Sesión guiada por psicólogos especializados en familia y
-                    adolescencia.</li>
-                <li><i class="fas fa-check-circle"></i> Grupo reducido para que haya espacio de participar.</li>
-                <li><i class="fas fa-check-circle"></i> Ambiente cálido, sin juicios y totalmente confidencial.</li>
-                <li><i class="fas fa-check-circle"></i> Herramientas que puedes aplicar desde el mismo día.</li>
-            </ul>
-        </div>
-    </div>
-
-    <div class="taller-cita">
-        <i class="fas fa-quote-left quote-icon"></i>
-        <p>"No se trata de tener todas las respuestas, sino de construir un vínculo que resista las preguntas."</p>
-    </div>
-
-    <div class="taller-detalle-cta-wrap">
-        <button type="button" class="taller-cta-btn"
-            style="background:var(--c-purple);box-shadow:0 15px 30px rgba(90,63,163,.3)"
-            onclick="abrirRegistroTaller()">Reservar mi lugar <i class="fas fa-heart"></i></button>
-    </div>
-</section>
-
-<!-- ══ MODAL: INSCRIPCIÓN AL TALLER (reutiliza registrar_taller_ajax) ══ -->
-<div id="modalRegistroTaller" class="modal-overlay">
-    <div class="modal-box">
-        <button class="modal-close" onclick="cerrarModalTaller()"><i class="fas fa-times"></i></button>
-        <div class="taller-modal-icon"><i class="fas fa-hand-holding-heart"></i></div>
-        <h2 id="tallerModalNombreTitulo">Reserva tu lugar</h2>
-        <p class="taller-modal-resumen">
-            <strong>{{ taller.nombre }}</strong><br>
-            <i class="fas fa-calendar-days"></i> {{ taller.fecha_texto }} &nbsp;·&nbsp;
-            <i class="fas fa-tag"></i> {{ taller.costo_texto }}
-        </p>
-
-        <form id="formRegistroTaller">
-            <input type="hidden" name="taller_seleccionado" value="{{ taller.nombre }}">
-            <div class="taller-modal-input-wrap">
-                <i class="fas fa-user"></i>
-                <input type="text" name="nombre" class="taller-modal-input" placeholder="Tu nombre completo" required>
-            </div>
-            <div class="taller-modal-input-wrap">
-                <i class="fas fa-envelope"></i>
-                <input type="email" name="correo" class="taller-modal-input" placeholder="tucorreo@ejemplo.com"
-                    required>
-            </div>
-            <div class="taller-modal-input-wrap">
-                <i class="fas fa-phone"></i>
-                <input type="tel" name="telefono" class="taller-modal-input" placeholder="Tu número de contacto"
-                    required>
-            </div>
-            <button type="submit" class="btn-taller-submit" id="btnTallerSubmit">
-                Confirmar mi lugar <i class="fas fa-heart"></i>
-            </button>
-        </form>
-
-        <div class="taller-modal-nota">
-            <i class="fas fa-shield-alt"></i>
-            <span>Tus datos se usan únicamente para confirmar tu lugar y contactarte sobre el taller.</span>
-        </div>
-    </div>
-</div>
-
-<!-- Barra sticky de CTA en móvil -->
-<div class="taller-sticky-cta">
-    <div class="info">
-        <strong>{{ taller.costo_texto }}</strong>
-        <span>{{ taller.fecha_texto }}</span>
-    </div>
-    <button type="button" onclick="abrirRegistroTaller()">Inscribirme</button>
-</div>
-
-<!-- Toast de confirmación / error -->
-<div class="toast-hope" id="toastHopeTaller">
-    <i class="fas fa-check-circle"></i>
-    <span id="toastHopeTallerTexto">Listo</span>
-</div>
-
 {% endblock %}
 
 {% block extra_js %}
-<script>
-    // ── Toast (reemplaza alert() para mantener consistencia visual) ──
-    let toastTimeoutTaller = null;
-    function mostrarToastTaller(mensaje, tipo) {
-        const toast = document.getElementById('toastHopeTaller');
-        const texto = document.getElementById('toastHopeTallerTexto');
-        const icono = toast.querySelector('i');
-        toast.classList.remove('exito', 'error');
-        toast.classList.add(tipo === 'error' ? 'error' : 'exito');
-        icono.className = tipo === 'error' ? 'fas fa-circle-exclamation' : 'fas fa-check-circle';
-        texto.textContent = mensaje;
-        toast.classList.add('mostrar');
-        clearTimeout(toastTimeoutTaller);
-        toastTimeoutTaller = setTimeout(() => toast.classList.remove('mostrar'), 4500);
-    }
+<!-- SDK de PayPal (Asegúrate de poner tu Client ID real) -->
+<script src="https://www.paypal.com/sdk/js?client-id=TU_CLIENT_ID&currency=MXN"></script>
 
+<script>
+    // Control del Modal
     function abrirRegistroTaller() {
         const overlay = document.getElementById('modalRegistroTaller');
         if (overlay) overlay.style.display = 'flex';
@@ -1136,41 +581,31 @@
         if (e.key === 'Escape') cerrarModalTaller();
     });
 
-    const formRegistroTaller = document.getElementById('formRegistroTaller');
-    if (formRegistroTaller) {
-        formRegistroTaller.addEventListener('submit', function (e) {
-            e.preventDefault();
-            const btn = document.getElementById('btnTallerSubmit');
-            const originalText = btn.innerHTML;
-            btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Enviando...';
-            btn.disabled = true;
-
-            fetch("{% url 'registrar_taller_ajax' %}", {
-                method: 'POST',
-                body: new FormData(formRegistroTaller),
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'X-CSRFToken': '{{ csrf_token }}'
-                }
-            })
-                .then(r => r.json())
-                .then(data => {
-                    btn.innerHTML = originalText;
-                    btn.disabled = false;
-                    if (data.status === 'success') {
-                        mostrarToastTaller('¡Listo! Te inscribimos correctamente 💜', 'exito');
+    // Renderizar PayPal cuando cargue el documento
+    document.addEventListener("DOMContentLoaded", function () {
+        if (window.paypal) {
+            paypal.Buttons({
+                createOrder: function (data, actions) {
+                    return actions.order.create({
+                        purchase_units: [{
+                            amount: {
+                                // Aquí puedes meter el valor dinámico de Django si lo necesitas
+                                // o dejarlo estático, por ejemplo '350.00'
+                                value: '350.00'
+                            },
+                            description: 'Taller: Mejorando la relación con mi hijo adolescente'
+                        }]
+                    });
+                },
+                onApprove: function (data, actions) {
+                    return actions.order.capture().then(function (details) {
                         cerrarModalTaller();
-                        formRegistroTaller.reset();
-                    } else {
-                        mostrarToastTaller(data.message || 'Ocurrió un error, intenta de nuevo.', 'error');
-                    }
-                })
-                .catch(() => {
-                    btn.innerHTML = originalText;
-                    btn.disabled = false;
-                    mostrarToastTaller('Problema de conexión. Intenta de nuevo.', 'error');
-                });
-        });
-    }
+                        alert('¡Pago exitoso, ' + details.payer.name.given_name + '! Tu lugar está apartado.');
+                        // window.location.href = "{% url 'pago_exitoso' %}"; 
+                    });
+                }
+            }).render('#paypal-button-container');
+        }
+    });
 </script>
 {% endblock %}
