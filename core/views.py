@@ -1401,7 +1401,7 @@ def analizar_grafica_ipp_ajax(request, paciente_id):
         client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
         
         response = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
+            model="openai/gpt-oss-120b",  # ✅ nuevo,
             messages=[{"role": "user", "content": prompt}],
             max_tokens=800,
             temperature=0.2 # Temperatura baja para que sea clínico y no invente
@@ -1814,7 +1814,7 @@ def procesar_archivo_ia(request):
             mime = 'image/jpeg' if extension in ('jpg', 'jpeg') else f'image/{extension}'
 
             response = client.chat.completions.create(
-                model="llama-3.2-90b-vision-preview", # 🔥 Modelo de visión super potente
+                model="meta-llama/llama-4-scout-17b-16e-instruct",  # ✅ nuevo, # 🔥 Modelo de visión super potente
                 messages=[
                     {
                         "role": "user",
@@ -1847,7 +1847,7 @@ def procesar_archivo_ia(request):
                 return JsonResponse({'error': 'El documento no contiene texto extraíble.'}, status=422)
 
             response = client.chat.completions.create(
-                model="llama-3.3-70b-versatile", # 🔥 Modelo de texto líder en razonamiento
+                model="openai/gpt-oss-120b",  # ✅ nuevo, # 🔥 Modelo de texto líder en razonamiento
                 messages=[
                     {"role": "system", "content": prompt_instrucciones},
                     {"role": "user", "content": texto_raw[:8000]}
@@ -1874,7 +1874,7 @@ def _limpiar_texto_con_groq(client: Groq, texto_raw: str) -> str:
     texto_truncado = texto_raw[:8000]
  
     response = client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
+        model="openai/gpt-oss-120b",  # ✅ nuevo,
         messages=[
             {
                 "role": "system",
@@ -2012,13 +2012,10 @@ def generar_sintesis_ajax(request, paciente_id):
         from groq import Groq
         client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
 
-        modelos = client.models.list()
-
-        for modelo in modelos.data:
-            print("MODELO DISPONIBLE:", modelo.id)
-
+        
+        
         response = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
+            model="openai/gpt-oss-120b",  # ✅ nuevo,
             messages=[{"role": "user", "content": prompt}],
             max_tokens=3000,
             temperature=0.2 # Temperatura baja para que sea muy analítico y no invente nada
@@ -3533,7 +3530,7 @@ def generar_reporte_checkin_ajax(request):
         from groq import Groq
         client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
         response = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
+            model="openai/gpt-oss-120b",  # ✅ nuevo,
             messages=[{"role": "user", "content": prompt}],
             max_tokens=1200,
             temperature=0.3,
@@ -3684,7 +3681,7 @@ def generar_reporte_checkin_psicologo_ajax(request):
         from groq import Groq
         client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
         response = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
+            model="openai/gpt-oss-120b",  # ✅ nuevo,
             messages=[{"role": "user", "content": prompt}],
             max_tokens=1800,
             temperature=0.3,
