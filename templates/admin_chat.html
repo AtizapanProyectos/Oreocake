@@ -1,215 +1,1868 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Asistente IA · HOPE{% endblock %}
+{% block title %}HOPE AI · Asistente Administrativo{% endblock %}
 
 {% block content %}
-<!-- Importamos Chart.js para que Groq pueda usarlo en sus respuestas -->
-<script src="[https://cdn.jsdelivr.net/npm/chart.js](https://cdn.jsdelivr.net/npm/chart.js)"></script>
+
+<!-- =========================================================
+     CHART.JS
+========================================================= -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
-    /* Aprovechamos tus variables CSS existentes[cite: 1] */
-    .chat-container {
-        background: var(--wht);
-        border: 1px solid var(--bd);
-        border-radius: var(--rxl);
-        box-shadow: var(--shh);
+    /* =========================================================
+       VARIABLES LOCALES DEL CHAT
+    ========================================================= */
+
+    .hope-ai-page {
+        --chat-bg: #f7f7fb;
+        --chat-card: #ffffff;
+        --chat-border: rgba(90, 63, 163, 0.10);
+        --chat-shadow: 0 25px 70px rgba(31, 20, 55, 0.10);
+        --chat-shadow-soft: 0 10px 35px rgba(31, 20, 55, 0.07);
+
+        min-height: calc(100vh - 80px);
+        background:
+            radial-gradient(circle at 10% 10%,
+                rgba(90, 63, 163, 0.07),
+                transparent 28%),
+            radial-gradient(circle at 90% 20%,
+                rgba(37, 184, 184, 0.07),
+                transparent 28%),
+            radial-gradient(circle at 80% 90%,
+                rgba(248, 91, 140, 0.06),
+                transparent 25%),
+            var(--bg-light);
+
+        padding: 40px 20px 50px;
+    }
+
+    .hope-ai-wrapper {
+        width: 100%;
+        max-width: 1450px;
+        margin: 0 auto;
+    }
+
+    /* =========================================================
+       ENCABEZADO SUPERIOR
+    ========================================================= */
+
+    .hope-ai-topbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 25px;
+        margin-bottom: 24px;
+    }
+
+    .hope-ai-brand-area {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+    }
+
+    .hope-ai-logo-box {
+        width: 58px;
+        height: 58px;
+        border-radius: 18px;
+
+        background: var(--color-brand-purple);
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        color: white;
+        font-size: 25px;
+
+        box-shadow:
+            0 12px 30px rgba(90, 63, 163, 0.25);
+
+        position: relative;
+        overflow: hidden;
+    }
+
+    .hope-ai-logo-box::after {
+        content: "";
+        position: absolute;
+
+        width: 70px;
+        height: 70px;
+
+        border-radius: 50%;
+
+        background: rgba(255, 255, 255, 0.10);
+
+        right: -35px;
+        top: -35px;
+    }
+
+    .hope-ai-title-wrap h1 {
+        font-family: var(--font-headings);
+        color: var(--text-main);
+        font-size: 30px;
+        line-height: 1.1;
+        margin-bottom: 4px;
+    }
+
+    .hope-ai-title-wrap p {
+        color: var(--text-muted);
+        font-size: 13px;
+        margin: 0;
+    }
+
+    .hope-ai-status {
+        display: inline-flex;
+        align-items: center;
+        gap: 9px;
+
+        padding: 10px 16px;
+
+        background: rgba(37, 184, 184, 0.08);
+
+        border: 1px solid rgba(37, 184, 184, 0.20);
+
+        border-radius: 999px;
+
+        color: var(--color-brand-teal);
+
+        font-size: 13px;
+        font-weight: 700;
+    }
+
+    .hope-ai-status-dot {
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        background: var(--color-brand-teal);
+
+        box-shadow: 0 0 0 5px rgba(37, 184, 184, 0.10);
+
+        animation: hopePulse 2s infinite;
+    }
+
+    /* =========================================================
+       LAYOUT PRINCIPAL
+    ========================================================= */
+
+    .hope-ai-layout {
+        display: grid;
+        grid-template-columns: 280px minmax(0, 1fr);
+        gap: 24px;
+        align-items: stretch;
+    }
+
+    /* =========================================================
+       SIDEBAR
+    ========================================================= */
+
+    .hope-ai-sidebar {
+        background: rgba(255, 255, 255, 0.78);
+        backdrop-filter: blur(18px);
+        -webkit-backdrop-filter: blur(18px);
+
+        border: 1px solid var(--chat-border);
+        border-radius: 26px;
+
+        box-shadow: var(--chat-shadow-soft);
+
+        padding: 22px;
+
+        height: calc(78vh + 70px);
+
         display: flex;
         flex-direction: column;
-        height: 75vh;
-        overflow: hidden;
-        margin-bottom: 30px;
+        gap: 20px;
     }
 
-    .chat-header {
-        padding: 20px 24px;
-        background: linear-gradient(90deg, var(--p), var(--teal));
-        color: var(--wht);
+    .sidebar-section-title {
+        color: var(--text-muted);
+        font-size: 11px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 1.2px;
+
+        margin-bottom: 12px;
     }
 
-    .chat-header h2 {
-        font-family: var(--fd);
+    .quick-question {
+        width: 100%;
+
+        border: 1px solid rgba(90, 63, 163, 0.10);
+
+        background: white;
+
+        color: var(--text-main);
+
+        border-radius: 15px;
+
+        padding: 13px 14px;
+
+        display: flex;
+        align-items: center;
+        gap: 11px;
+
+        text-align: left;
+
+        font-family: var(--font-body);
+
+        font-size: 13px;
+        font-weight: 600;
+
+        cursor: pointer;
+
+        transition:
+            transform 0.25s ease,
+            border-color 0.25s ease,
+            box-shadow 0.25s ease,
+            background 0.25s ease;
+    }
+
+    .quick-question:hover {
+        transform: translateY(-2px);
+
+        border-color: rgba(90, 63, 163, 0.20);
+
+        background: rgba(90, 63, 163, 0.03);
+
+        box-shadow: 0 8px 22px rgba(90, 63, 163, 0.08);
+    }
+
+    .quick-question i {
+        width: 32px;
+        height: 32px;
+
+        border-radius: 10px;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        background: rgba(90, 63, 163, 0.08);
+
+        color: var(--color-brand-purple);
+
+        flex-shrink: 0;
+    }
+
+    .quick-question.teal i {
+        background: rgba(37, 184, 184, 0.10);
+        color: var(--color-brand-teal);
+    }
+
+    .quick-question.orange i {
+        background: rgba(242, 124, 33, 0.10);
+        color: var(--color-brand-orange);
+    }
+
+    .quick-question.pink i {
+        background: rgba(248, 91, 140, 0.10);
+        color: var(--color-brand-pink);
+    }
+
+    .sidebar-info {
+        margin-top: auto;
+
+        padding: 18px;
+
+        border-radius: 18px;
+
+        background:
+            linear-gradient(135deg,
+                rgba(90, 63, 163, 0.07),
+                rgba(37, 184, 184, 0.06));
+
+        border: 1px solid rgba(90, 63, 163, 0.08);
+    }
+
+    .sidebar-info-title {
+        font-family: var(--font-headings);
+        font-weight: 700;
+        font-size: 14px;
+
+        color: var(--color-brand-purple);
+
+        margin-bottom: 7px;
+    }
+
+    .sidebar-info p {
         margin: 0;
-        font-size: 24px;
+
+        color: var(--text-muted);
+
+        font-size: 12px;
+
+        line-height: 1.6;
     }
+
+    /* =========================================================
+       CHAT PRINCIPAL
+    ========================================================= */
+
+    .hope-ai-chat {
+        background: rgba(255, 255, 255, 0.80);
+
+        backdrop-filter: blur(18px);
+        -webkit-backdrop-filter: blur(18px);
+
+        border: 1px solid var(--chat-border);
+
+        border-radius: 28px;
+
+        box-shadow: var(--chat-shadow);
+
+        height: calc(78vh + 70px);
+
+        overflow: hidden;
+
+        display: flex;
+        flex-direction: column;
+
+        min-width: 0;
+    }
+
+    /* =========================================================
+       HEADER CHAT
+    ========================================================= */
+
+    .hope-ai-chat-header {
+        padding: 20px 24px;
+
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+
+        gap: 20px;
+
+        border-bottom: 1px solid rgba(90, 63, 163, 0.08);
+
+        background: rgba(255, 255, 255, 0.80);
+    }
+
+    .hope-ai-chat-header-left {
+        display: flex;
+        align-items: center;
+        gap: 13px;
+    }
+
+    .hope-ai-avatar {
+        width: 44px;
+        height: 44px;
+
+        border-radius: 14px;
+
+        background: var(--color-brand-purple);
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        color: white;
+
+        font-size: 18px;
+
+        box-shadow: 0 8px 22px rgba(90, 63, 163, 0.22);
+    }
+
+    .hope-ai-chat-header h2 {
+        font-family: var(--font-headings);
+        margin: 0;
+
+        font-size: 17px;
+
+        color: var(--text-main);
+    }
+
+    .hope-ai-chat-header p {
+        margin: 2px 0 0;
+
+        color: var(--text-muted);
+
+        font-size: 12px;
+    }
+
+    .chat-clear-button {
+        width: 40px;
+        height: 40px;
+
+        border-radius: 12px;
+
+        border: 1px solid #e5e7eb;
+
+        background: white;
+
+        color: var(--text-muted);
+
+        cursor: pointer;
+
+        transition: 0.2s ease;
+    }
+
+    .chat-clear-button:hover {
+        color: var(--color-brand-purple);
+
+        border-color: rgba(90, 63, 163, 0.20);
+
+        background: rgba(90, 63, 163, 0.04);
+    }
+
+    /* =========================================================
+       MENSAJES
+    ========================================================= */
 
     .chat-messages {
         flex: 1;
-        padding: 24px;
+
         overflow-y: auto;
+
+        padding: 30px;
+
         display: flex;
         flex-direction: column;
-        gap: 16px;
-        background: var(--surf);
+
+        gap: 18px;
+
+        background:
+            linear-gradient(180deg,
+                #fbfbfd 0%,
+                #f7f7fb 100%);
     }
 
-    .msg-bubble {
-        max-width: 85%;
-        padding: 14px 18px;
+    .chat-messages::-webkit-scrollbar {
+        width: 7px;
+    }
+
+    .chat-messages::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    .chat-messages::-webkit-scrollbar-thumb {
+        background: rgba(90, 63, 163, 0.16);
+
+        border-radius: 20px;
+    }
+
+    /* =========================================================
+       MENSAJE
+    ========================================================= */
+
+    .message-row {
+        display: flex;
+
+        gap: 12px;
+
+        max-width: 88%;
+
+        animation: messageIn 0.35s ease;
+    }
+
+    .message-row.user {
+        align-self: flex-end;
+
+        flex-direction: row-reverse;
+    }
+
+    .message-avatar {
+        width: 36px;
+        height: 36px;
+
+        flex-shrink: 0;
+
+        border-radius: 12px;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        font-size: 14px;
+
+        margin-top: 2px;
+    }
+
+    .message-row.ai .message-avatar {
+        background: rgba(90, 63, 163, 0.10);
+
+        color: var(--color-brand-purple);
+    }
+
+    .message-row.user .message-avatar {
+        background: var(--color-brand-purple);
+
+        color: white;
+    }
+
+    .message-bubble {
+        padding: 16px 18px;
+
+        border-radius: 20px;
+
+        font-size: 14px;
+
+        line-height: 1.65;
+
+        word-break: break-word;
+    }
+
+    .message-row.ai .message-bubble {
+        background: white;
+
+        border: 1px solid rgba(90, 63, 163, 0.08);
+
+        color: var(--text-main);
+
+        border-top-left-radius: 7px;
+
+        box-shadow:
+            0 8px 25px rgba(31, 20, 55, 0.04);
+
+        width: min(100%, 950px);
+    }
+
+    .message-row.user .message-bubble {
+        background: var(--color-brand-purple);
+
+        color: white;
+
+        border-top-right-radius: 7px;
+
+        box-shadow:
+            0 8px 25px rgba(90, 63, 163, 0.18);
+    }
+
+    .message-bubble strong {
+        font-family: var(--font-headings);
+    }
+
+    .message-bubble canvas {
+        margin-top: 16px;
+
+        max-width: 100%;
+
+        background: white;
+
         border-radius: 16px;
+
+        padding: 10px;
+    }
+
+    /* =========================================================
+       DASHBOARD / REPORTES IA
+    ========================================================= */
+
+    .ai-dashboard-card {
+        margin-top: 16px;
+
+        padding: 20px;
+
+        background:
+            linear-gradient(145deg,
+                rgba(90, 63, 163, 0.04),
+                rgba(37, 184, 184, 0.04));
+
+        border: 1px solid rgba(90, 63, 163, 0.10);
+
+        border-radius: 18px;
+    }
+
+    .ai-dashboard-card canvas {
+        width: 100% !important;
+        max-height: 380px;
+    }
+
+    /* =========================================================
+       LOADING
+    ========================================================= */
+
+    .typing-wrapper {
+        display: flex;
+
+        align-items: center;
+
+        gap: 10px;
+    }
+
+    .typing-dots {
+        display: flex;
+
+        gap: 5px;
+    }
+
+    .typing-dots span {
+        width: 7px;
+        height: 7px;
+
+        background: var(--color-brand-purple);
+
+        border-radius: 50%;
+
+        animation: typingBounce 1.2s infinite;
+    }
+
+    .typing-dots span:nth-child(2) {
+        animation-delay: 0.15s;
+    }
+
+    .typing-dots span:nth-child(3) {
+        animation-delay: 0.30s;
+    }
+
+    .typing-text {
+        color: var(--text-muted);
+
+        font-size: 13px;
+    }
+
+    /* =========================================================
+       INPUT
+    ========================================================= */
+
+    .hope-ai-input-area {
+        padding: 18px 22px 20px;
+
+        background: white;
+
+        border-top: 1px solid rgba(90, 63, 163, 0.08);
+    }
+
+    .hope-ai-input-wrapper {
+        display: flex;
+
+        align-items: center;
+
+        gap: 10px;
+
+        padding: 8px;
+
+        border: 1.5px solid #e5e7eb;
+
+        border-radius: 18px;
+
+        background: #fafafa;
+
+        transition: 0.25s ease;
+    }
+
+    .hope-ai-input-wrapper:focus-within {
+        background: white;
+
+        border-color: rgba(90, 63, 163, 0.45);
+
+        box-shadow:
+            0 0 0 5px rgba(90, 63, 163, 0.06);
+    }
+
+    .hope-ai-input-icon {
+        width: 42px;
+        height: 42px;
+
+        border-radius: 13px;
+
+        background: rgba(90, 63, 163, 0.08);
+
+        color: var(--color-brand-purple);
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        flex-shrink: 0;
+    }
+
+    .hope-ai-input {
+        flex: 1;
+
+        border: none;
+
+        outline: none;
+
+        background: transparent;
+
+        color: var(--text-main);
+
+        font-family: var(--font-body);
+
+        font-size: 14px;
+
+        padding: 10px 4px;
+    }
+
+    .hope-ai-input::placeholder {
+        color: #94a3b8;
+    }
+
+    .hope-ai-send {
+        width: 48px;
+        height: 48px;
+
+        border: none;
+
+        border-radius: 14px;
+
+        background: var(--color-brand-purple);
+
+        color: white;
+
+        cursor: pointer;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        font-size: 16px;
+
+        box-shadow:
+            0 8px 20px rgba(90, 63, 163, 0.22);
+
+        transition:
+            transform 0.2s ease,
+            background 0.2s ease;
+    }
+
+    .hope-ai-send:hover {
+        transform: translateY(-2px);
+
+        background: #442f7c;
+    }
+
+    .hope-ai-send:disabled {
+        opacity: 0.6;
+
+        cursor: not-allowed;
+
+        transform: none;
+    }
+
+    .hope-ai-footer-text {
+        text-align: center;
+
+        margin-top: 9px;
+
+        color: #94a3b8;
+
+        font-size: 10px;
+    }
+
+    /* =========================================================
+       PANTALLA VACÍA / BIENVENIDA
+    ========================================================= */
+
+    .hope-welcome {
+        width: min(760px, 100%);
+
+        margin: auto;
+
+        text-align: center;
+
+        padding: 30px;
+    }
+
+    .hope-welcome-icon {
+        width: 74px;
+        height: 74px;
+
+        margin: 0 auto 20px;
+
+        border-radius: 24px;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        background: rgba(90, 63, 163, 0.09);
+
+        color: var(--color-brand-purple);
+
+        font-size: 30px;
+    }
+
+    .hope-welcome h3 {
+        font-family: var(--font-headings);
+
+        font-size: 25px;
+
+        color: var(--text-main);
+
+        margin-bottom: 8px;
+    }
+
+    .hope-welcome p {
+        color: var(--text-muted);
+
+        font-size: 14px;
+
+        max-width: 580px;
+
+        margin: 0 auto;
+
+        line-height: 1.7;
+    }
+
+    .welcome-suggestions {
+        display: grid;
+
+        grid-template-columns: repeat(3, 1fr);
+
+        gap: 12px;
+
+        margin-top: 25px;
+    }
+
+    .welcome-suggestion {
+        padding: 15px;
+
+        text-align: left;
+
+        background: white;
+
+        border: 1px solid rgba(90, 63, 163, 0.08);
+
+        border-radius: 16px;
+
+        cursor: pointer;
+
+        transition: 0.2s ease;
+    }
+
+    .welcome-suggestion:hover {
+        transform: translateY(-3px);
+
+        box-shadow:
+            0 10px 25px rgba(90, 63, 163, 0.08);
+    }
+
+    .welcome-suggestion i {
+        color: var(--color-brand-purple);
+
+        margin-bottom: 9px;
+
         font-size: 15px;
+    }
+
+    .welcome-suggestion strong {
+        display: block;
+
+        color: var(--text-main);
+
+        font-size: 12px;
+
+        margin-bottom: 4px;
+    }
+
+    .welcome-suggestion span {
+        display: block;
+
+        color: var(--text-muted);
+
+        font-size: 11px;
+
         line-height: 1.5;
     }
 
-    .msg-user {
-        background: var(--p-lgt);
-        color: var(--p);
-        align-self: flex-end;
-        border-bottom-right-radius: 4px;
+    /* =========================================================
+       ANIMACIONES
+    ========================================================= */
+
+    @keyframes messageIn {
+
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
     }
 
-    .msg-ai {
-        background: var(--wht);
-        border: 1px solid var(--bd);
-        color: var(--ink);
-        align-self: flex-start;
-        border-bottom-left-radius: 4px;
-        box-shadow: var(--shc);
-        width: 100%;
-        /* Para que las gráficas tengan espacio */
+    @keyframes typingBounce {
+
+        0%,
+        60%,
+        100% {
+            transform: translateY(0);
+            opacity: 0.45;
+        }
+
+        30% {
+            transform: translateY(-4px);
+            opacity: 1;
+        }
     }
 
-    /* Contenedor para gráficas generadas por Groq */
-    .ai-dashboard-card {
-        background: var(--surf);
-        border-radius: var(--rmd);
-        padding: 16px;
-        margin-top: 10px;
-        border: 1px dashed var(--p-mid);
+    @keyframes hopePulse {
+
+        0% {
+            box-shadow:
+                0 0 0 0 rgba(37, 184, 184, 0.25);
+        }
+
+        70% {
+            box-shadow:
+                0 0 0 8px rgba(37, 184, 184, 0);
+        }
+
+        100% {
+            box-shadow:
+                0 0 0 0 rgba(37, 184, 184, 0);
+        }
     }
 
-    .chat-input-area {
-        padding: 16px 24px;
-        background: var(--wht);
-        border-top: 1px solid var(--bd);
-        display: flex;
-        gap: 12px;
+    /* =========================================================
+       RESPONSIVE
+    ========================================================= */
+
+    @media screen and (max-width: 1100px) {
+
+        .hope-ai-layout {
+            grid-template-columns: 1fr;
+        }
+
+        .hope-ai-sidebar {
+            height: auto;
+
+            display: grid;
+
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .sidebar-section {
+            min-width: 0;
+        }
+
+        .sidebar-info {
+            margin-top: 0;
+            grid-column: 1 / -1;
+        }
+
+        .hope-ai-chat {
+            height: 70vh;
+        }
+
     }
 
-    .chat-input-area input {
-        flex: 1;
-        padding: 14px 20px;
-        border: 1.5px solid rgba(90, 63, 163, 0.15);
-        border-radius: 100px;
-        font-family: var(--fb);
-        outline: none;
+    @media screen and (max-width: 768px) {
+
+        .hope-ai-page {
+            padding:
+                25px 12px 30px;
+        }
+
+        .hope-ai-topbar {
+            align-items: flex-start;
+        }
+
+        .hope-ai-title-wrap h1 {
+            font-size: 24px;
+        }
+
+        .hope-ai-status {
+            display: none;
+        }
+
+        .hope-ai-sidebar {
+            grid-template-columns: 1fr;
+        }
+
+        .hope-ai-chat {
+            height: calc(100vh - 180px);
+
+            min-height: 560px;
+
+            border-radius: 22px;
+        }
+
+        .hope-ai-chat-header {
+            padding: 16px;
+        }
+
+        .chat-messages {
+            padding: 18px 14px;
+        }
+
+        .message-row {
+            max-width: 96%;
+        }
+
+        .message-avatar {
+            width: 32px;
+            height: 32px;
+
+            border-radius: 10px;
+        }
+
+        .message-bubble {
+            font-size: 13px;
+
+            padding: 13px 14px;
+        }
+
+        .welcome-suggestions {
+            grid-template-columns: 1fr;
+        }
+
+        .hope-ai-input-area {
+            padding: 12px;
+        }
+
     }
 
-    .chat-input-area input:focus {
-        border-color: var(--p);
-    }
+    @media screen and (max-width: 500px) {
 
-    .btn-send {
-        background: var(--p);
-        color: white;
-        border: none;
-        padding: 0 24px;
-        border-radius: 100px;
-        font-weight: 700;
-        cursor: pointer;
-        transition: all 0.2s;
-    }
+        .hope-ai-brand-area {
+            gap: 10px;
+        }
 
-    .btn-send:hover {
-        background: var(--p-mid);
-        transform: translateY(-2px);
+        .hope-ai-logo-box {
+            width: 48px;
+            height: 48px;
+
+            border-radius: 15px;
+
+            font-size: 20px;
+        }
+
+        .hope-ai-title-wrap h1 {
+            font-size: 21px;
+        }
+
+        .hope-ai-title-wrap p {
+            font-size: 11px;
+        }
+
+        .hope-ai-input-wrapper {
+            padding: 6px;
+        }
+
+        .hope-ai-input-icon {
+            display: none;
+        }
+
+        .hope-ai-send {
+            width: 44px;
+            height: 44px;
+        }
+
     }
 </style>
 
-<div class="hw fup">
-    <div class="chat-container">
-        <div class="chat-header">
-            <h2>HOPE AI <em>Assistant</em></h2>
-            <p style="margin:0; font-size:12px; opacity:0.8;">Potenciado por Groq</p>
-        </div>
 
-        <div class="chat-messages" id="chatMessages">
-            <div class="msg-bubble msg-ai">
-                ¡Hola! Soy tu asistente de administración. Pregúntame sobre el rendimiento de la clínica o pídeme
-                generar un reporte gráfico de nuestras citas.
+<div class="hope-ai-page">
+
+    <div class="hope-ai-wrapper">
+
+        <!-- =====================================================
+             TOPBAR
+        ====================================================== -->
+
+        <div class="hope-ai-topbar">
+
+            <div class="hope-ai-brand-area">
+
+                <div class="hope-ai-logo-box">
+                    <i class="fas fa-brain"></i>
+                </div>
+
+                <div class="hope-ai-title-wrap">
+
+                    <h1>
+                        HOPE AI
+                    </h1>
+
+                    <p>
+                        Asistente inteligente para administración y analítica
+                    </p>
+
+                </div>
+
             </div>
+
+            <div class="hope-ai-status">
+
+                <span class="hope-ai-status-dot"></span>
+
+                Sistema conectado
+
+            </div>
+
         </div>
 
-        <div class="chat-input-area">
-            <input type="text" id="chatInput" placeholder="Ej: Crea un reporte con gráficas de las citas de hoy..."
-                autocomplete="off" onkeypress="handleEnter(event)">
-            <button class="btn-send" onclick="sendMessage()"><i class="fas fa-paper-plane"></i></button>
+
+        <!-- =====================================================
+             LAYOUT
+        ====================================================== -->
+
+        <div class="hope-ai-layout">
+
+
+            <!-- =================================================
+                 SIDEBAR
+            ================================================== -->
+
+            <aside class="hope-ai-sidebar">
+
+                <div class="sidebar-section">
+
+                    <div class="sidebar-section-title">
+                        Consultas rápidas
+                    </div>
+
+                    <button class="quick-question" onclick="useSuggestion('¿Cuántas citas hay hoy?')">
+
+                        <i class="fas fa-calendar-day"></i>
+
+                        <span>
+                            Citas de hoy
+                        </span>
+
+                    </button>
+
+                    <button class="quick-question teal" onclick="useSuggestion('¿Cuántas citas están pendientes?')">
+
+                        <i class="fas fa-clock"></i>
+
+                        <span>
+                            Citas pendientes
+                        </span>
+
+                    </button>
+
+                    <button class="quick-question orange" onclick="useSuggestion('¿Cuántas citas fueron canceladas?')">
+
+                        <i class="fas fa-calendar-xmark"></i>
+
+                        <span>
+                            Citas canceladas
+                        </span>
+
+                    </button>
+
+                    <button class="quick-question pink"
+                        onclick="useSuggestion('Haz un reporte gráfico de las citas de hoy')">
+
+                        <i class="fas fa-chart-column"></i>
+
+                        <span>
+                            Reporte gráfico
+                        </span>
+
+                    </button>
+
+                </div>
+
+
+                <div class="sidebar-section">
+
+                    <div class="sidebar-section-title">
+                        Análisis
+                    </div>
+
+                    <button class="quick-question"
+                        onclick="useSuggestion('Analiza la productividad de los psicólogos')">
+
+                        <i class="fas fa-user-doctor"></i>
+
+                        <span>
+                            Psicólogos
+                        </span>
+
+                    </button>
+
+                    <button class="quick-question teal"
+                        onclick="useSuggestion('Muéstrame las estadísticas de las citas')">
+
+                        <i class="fas fa-chart-pie"></i>
+
+                        <span>
+                            Estadísticas
+                        </span>
+
+                    </button>
+
+                </div>
+
+
+                <div class="sidebar-info">
+
+                    <div class="sidebar-info-title">
+
+                        <i class="fas fa-sparkles"></i>
+
+                        HOPE Intelligence
+
+                    </div>
+
+                    <p>
+                        Pregunta por citas, psicólogos,
+                        productividad, estadísticas o solicita
+                        reportes visuales.
+                    </p>
+
+                </div>
+
+            </aside>
+
+
+            <!-- =================================================
+                 CHAT
+            ================================================== -->
+
+            <main class="hope-ai-chat">
+
+
+                <!-- HEADER -->
+
+                <div class="hope-ai-chat-header">
+
+                    <div class="hope-ai-chat-header-left">
+
+                        <div class="hope-ai-avatar">
+                            <i class="fas fa-robot"></i>
+                        </div>
+
+                        <div>
+
+                            <h2>
+                                Asistente HOPE
+                            </h2>
+
+                            <p>
+                                Analítica y administración inteligente
+                            </p>
+
+                        </div>
+
+                    </div>
+
+
+                    <button class="chat-clear-button" onclick="clearChat()" title="Limpiar conversación">
+
+                        <i class="fas fa-trash-alt"></i>
+
+                    </button>
+
+                </div>
+
+
+                <!-- MENSAJES -->
+
+                <div class="chat-messages" id="chatMessages">
+
+                    <div class="hope-welcome" id="welcomeMessage">
+
+                        <div class="hope-welcome-icon">
+
+                            <i class="fas fa-brain"></i>
+
+                        </div>
+
+                        <h3>
+                            Hola, soy HOPE AI
+                        </h3>
+
+                        <p>
+                            Estoy listo para ayudarte a consultar
+                            información de tu plataforma, analizar
+                            tus datos y generar reportes visuales
+                            para administración.
+                        </p>
+
+
+                        <div class="welcome-suggestions">
+
+                            <button class="welcome-suggestion" onclick="useSuggestion('¿Cuántas citas hay hoy?')">
+
+                                <i class="fas fa-calendar-day"></i>
+
+                                <strong>
+                                    Citas de hoy
+                                </strong>
+
+                                <span>
+                                    Consulta las citas programadas
+                                    para hoy.
+                                </span>
+
+                            </button>
+
+
+                            <button class="welcome-suggestion"
+                                onclick="useSuggestion('¿Cuáles son las citas pendientes?')">
+
+                                <i class="fas fa-clock"></i>
+
+                                <strong>
+                                    Pendientes
+                                </strong>
+
+                                <span>
+                                    Consulta las citas que aún están
+                                    pendientes.
+                                </span>
+
+                            </button>
+
+
+                            <button class="welcome-suggestion"
+                                onclick="useSuggestion('Hazme un reporte gráfico de las citas')">
+
+                                <i class="fas fa-chart-line"></i>
+
+                                <strong>
+                                    Generar reporte
+                                </strong>
+
+                                <span>
+                                    Crea una gráfica con información
+                                    real de tu plataforma.
+                                </span>
+
+                            </button>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <!-- INPUT -->
+
+                <div class="hope-ai-input-area">
+
+                    <div class="hope-ai-input-wrapper">
+
+                        <div class="hope-ai-input-icon">
+
+                            <i class="fas fa-wand-magic-sparkles"></i>
+
+                        </div>
+
+                        <input type="text" id="chatInput" class="hope-ai-input"
+                            placeholder="Pregunta algo sobre tus citas, psicólogos o estadísticas..."
+                            autocomplete="off">
+
+                        <button id="sendButton" class="hope-ai-send" onclick="sendMessage()">
+
+                            <i class="fas fa-paper-plane"></i>
+
+                        </button>
+
+                    </div>
+
+                    <div class="hope-ai-footer-text">
+
+                        HOPE AI · Análisis basado en los datos disponibles en tu plataforma
+
+                    </div>
+
+                </div>
+
+            </main>
+
         </div>
+
     </div>
+
 </div>
 
+
 <script>
+
+    /* =========================================================
+       ELEMENTOS
+    ========================================================= */
+
     const chatMessages = document.getElementById('chatMessages');
+
     const chatInput = document.getElementById('chatInput');
 
-    function handleEnter(e) {
-        if (e.key === 'Enter') sendMessage();
+    const sendButton = document.getElementById('sendButton');
+
+
+    /* =========================================================
+       ENTER
+    ========================================================= */
+
+    chatInput.addEventListener('keydown', function (event) {
+
+        if (event.key === 'Enter' && !event.shiftKey) {
+
+            event.preventDefault();
+
+            sendMessage();
+
+        }
+
+    });
+
+
+    /* =========================================================
+       SUGERENCIA
+    ========================================================= */
+
+    function useSuggestion(text) {
+
+        chatInput.value = text;
+
+        chatInput.focus();
+
     }
+
+
+    /* =========================================================
+       BORRAR CHAT
+    ========================================================= */
+
+    function clearChat() {
+
+        chatMessages.innerHTML = `
+            <div class="hope-welcome" id="welcomeMessage">
+
+                <div class="hope-welcome-icon">
+                    <i class="fas fa-brain"></i>
+                </div>
+
+                <h3>
+                    Hola, soy HOPE AI
+                </h3>
+
+                <p>
+                    Estoy listo para ayudarte a consultar
+                    información de tu plataforma, analizar
+                    tus datos y generar reportes visuales.
+                </p>
+
+                <div class="welcome-suggestions">
+
+                    <button
+                        class="welcome-suggestion"
+                        onclick="useSuggestion('¿Cuántas citas hay hoy?')">
+
+                        <i class="fas fa-calendar-day"></i>
+
+                        <strong>
+                            Citas de hoy
+                        </strong>
+
+                        <span>
+                            Consulta las citas programadas.
+                        </span>
+
+                    </button>
+
+                    <button
+                        class="welcome-suggestion"
+                        onclick="useSuggestion('¿Cuáles son las citas pendientes?')">
+
+                        <i class="fas fa-clock"></i>
+
+                        <strong>
+                            Pendientes
+                        </strong>
+
+                        <span>
+                            Consulta las citas pendientes.
+                        </span>
+
+                    </button>
+
+                    <button
+                        class="welcome-suggestion"
+                        onclick="useSuggestion('Hazme un reporte gráfico de las citas')">
+
+                        <i class="fas fa-chart-line"></i>
+
+                        <strong>
+                            Generar reporte
+                        </strong>
+
+                        <span>
+                            Genera una gráfica con los datos.
+                        </span>
+
+                    </button>
+
+                </div>
+
+            </div>
+        `;
+
+    }
+
+
+    /* =========================================================
+       MENSAJE
+    ========================================================= */
 
     function appendMessage(sender, content) {
-        const div = document.createElement('div');
-        div.className = `msg-bubble ${sender === 'user' ? 'msg-user' : 'msg-ai'}`;
 
-        // Si es IA, inyectamos como HTML para que renderice las gráficas
+        const row = document.createElement('div');
+
+        row.className = `message-row ${sender}`;
+
+
+        const avatar = document.createElement('div');
+
+        avatar.className = 'message-avatar';
+
+        avatar.innerHTML =
+            sender === 'ai'
+                ? '<i class="fas fa-robot"></i>'
+                : '<i class="fas fa-user"></i>';
+
+
+        const bubble = document.createElement('div');
+
+        bubble.className = 'message-bubble';
+
+
         if (sender === 'ai') {
-            div.innerHTML = content;
+
+            /*
+             * La IA puede devolver HTML con Chart.js.
+             */
+
+            bubble.innerHTML = content;
+
         } else {
-            div.textContent = content;
+
+            /*
+             * Nunca utilizar innerHTML para contenido del usuario.
+             */
+
+            bubble.textContent = content;
+
         }
 
-        chatMessages.appendChild(div);
+
+        row.appendChild(avatar);
+
+        row.appendChild(bubble);
+
+        chatMessages.appendChild(row);
+
+
         chatMessages.scrollTop = chatMessages.scrollHeight;
 
-        // MAGIA: Si Groq devolvió un <script> (ej. de Chart.js), debemos re-ejecutarlo 
-        // porque el innerHTML normal no ejecuta scripts dinámicos por seguridad del navegador.
+
+        /*
+         * Ejecutar scripts generados por la IA.
+         */
+
         if (sender === 'ai') {
-            const scripts = div.getElementsByTagName('script');
-            for (let i = 0; i < scripts.length; i++) {
-                const newScript = document.createElement('script');
-                newScript.text = scripts[i].text;
-                document.body.appendChild(newScript).parentNode.removeChild(newScript);
-            }
+
+            const scripts =
+                bubble.querySelectorAll('script');
+
+            scripts.forEach(script => {
+
+                const newScript =
+                    document.createElement('script');
+
+                if (script.src) {
+
+                    newScript.src = script.src;
+
+                } else {
+
+                    newScript.textContent =
+                        script.textContent;
+
+                }
+
+                document.body.appendChild(newScript);
+
+            });
+
         }
+
     }
 
-    function sendMessage() {
-        const text = chatInput.value.trim();
-        if (!text) return;
 
-        appendMessage('user', text);
+    /* =========================================================
+       LOADING
+    ========================================================= */
+
+    function createTypingMessage() {
+
+        const row = document.createElement('div');
+
+        row.className = 'message-row ai';
+
+        row.id = 'hopeTypingMessage';
+
+
+        row.innerHTML = `
+
+            <div class="message-avatar">
+
+                <i class="fas fa-robot"></i>
+
+            </div>
+
+            <div class="message-bubble">
+
+                <div class="typing-wrapper">
+
+                    <div class="typing-dots">
+
+                        <span></span>
+                        <span></span>
+                        <span></span>
+
+                    </div>
+
+                    <span class="typing-text">
+                        HOPE está analizando la información...
+                    </span>
+
+                </div>
+
+            </div>
+
+        `;
+
+
+        chatMessages.appendChild(row);
+
+        chatMessages.scrollTop =
+            chatMessages.scrollHeight;
+
+    }
+
+
+    /* =========================================================
+       ENVIAR
+    ========================================================= */
+
+    async function sendMessage() {
+
+        const text =
+            chatInput.value.trim();
+
+
+        if (!text) {
+
+            return;
+
+        }
+
+
+        /*
+         * Ocultamos welcome.
+         */
+
+        const welcome =
+            document.getElementById('welcomeMessage');
+
+        if (welcome) {
+
+            welcome.remove();
+
+        }
+
+
+        /*
+         * Mostrar usuario.
+         */
+
+        appendMessage(
+            'user',
+            text
+        );
+
+
         chatInput.value = '';
 
-        // Indicador de carga
-        const typingId = 'typing-' + Date.now();
-        const typingDiv = document.createElement('div');
-        typingDiv.id = typingId;
-        typingDiv.className = 'msg-bubble msg-ai';
-        typingDiv.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Generando reporte...';
-        chatMessages.appendChild(typingDiv);
-        chatMessages.scrollTop = chatMessages.scrollHeight;
+        sendButton.disabled = true;
 
-        // Petición al backend
-        fetch("{% url 'api_chat_ia_ask' %}", {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-                'X-CSRFToken': '{{ csrf_token }}'
-            },
-            body: new URLSearchParams({ 'prompt': text })
-        })
-            .then(response => response.json())
-            .then(data => {
-                document.getElementById(typingId).remove();
-                if (data.status === 'success') {
-                    appendMessage('ai', data.respuesta);
-                } else {
-                    appendMessage('ai', `<span style="color:var(--pink)">Error: ${data.message}</span>`);
-                }
-            })
-            .catch(error => {
-                document.getElementById(typingId).remove();
-                appendMessage('ai', `<span style="color:var(--pink)">Error de conexión.</span>`);
-            });
+
+        /*
+         * Loading.
+         */
+
+        createTypingMessage();
+
+
+        try {
+
+            const response =
+                await fetch(
+                    "{% url 'api_chat_ia_ask' %}",
+                    {
+                        method: 'POST',
+
+                        headers: {
+                            'Content-Type':
+                                'application/json',
+
+                            'X-CSRFToken':
+                                '{{ csrf_token }}'
+                        },
+
+                        body: JSON.stringify({
+                            prompt: text
+                        })
+                    }
+                );
+
+
+            let data;
+
+
+            try {
+
+                data =
+                    await response.json();
+
+            } catch (jsonError) {
+
+                throw new Error(
+                    'El servidor devolvió una respuesta inválida.'
+                );
+
+            }
+
+
+            /*
+             * Eliminar loading.
+             */
+
+            const typing =
+                document.getElementById(
+                    'hopeTypingMessage'
+                );
+
+            if (typing) {
+
+                typing.remove();
+
+            }
+
+
+            if (
+                response.ok &&
+                data.status === 'success'
+            ) {
+
+                appendMessage(
+                    'ai',
+                    data.respuesta
+                );
+
+            } else {
+
+                appendMessage(
+                    'ai',
+                    `
+                        <div
+                            style="
+                                color:#b42318;
+                                display:flex;
+                                gap:10px;
+                                align-items:flex-start;
+                            "
+                        >
+
+                            <i class="fas fa-circle-exclamation"></i>
+
+                            <div>
+                                <strong>
+                                    No pude completar la consulta
+                                </strong>
+
+                                <div style="margin-top:5px;">
+                                    ${escapeHtml(
+                        data.message ||
+                        'Ocurrió un error inesperado.'
+                    )}
+                                </div>
+                            </div>
+
+                        </div>
+                    `
+                );
+
+            }
+
+        } catch (error) {
+
+            const typing =
+                document.getElementById(
+                    'hopeTypingMessage'
+                );
+
+            if (typing) {
+
+                typing.remove();
+
+            }
+
+
+            appendMessage(
+                'ai',
+                `
+                    <div
+                        style="
+                            color:#b42318;
+                            display:flex;
+                            gap:10px;
+                            align-items:flex-start;
+                        "
+                    >
+
+                        <i class="fas fa-wifi"></i>
+
+                        <div>
+
+                            <strong>
+                                Error de conexión
+                            </strong>
+
+                            <div style="margin-top:5px;">
+                                No fue posible comunicarse
+                                con HOPE AI.
+                            </div>
+
+                        </div>
+
+                    </div>
+                `
+            );
+
+            console.error(
+                'HOPE AI:',
+                error
+            );
+
+        } finally {
+
+            sendButton.disabled = false;
+
+            chatInput.focus();
+
+        }
+
     }
+
+
+    /* =========================================================
+       ESCAPAR HTML PARA MENSAJES DE ERROR
+    ========================================================= */
+
+    function escapeHtml(value) {
+
+        return String(value)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+
+    }
+
 </script>
+
 {% endblock %}

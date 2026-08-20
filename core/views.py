@@ -3855,89 +3855,581 @@ def taller_detalle_pareja(request):
     return render(request, 'taller_detalle_pareja.html', context)
 
 
+
+# ============================================================
+# PANEL PRINCIPAL
+# ============================================================
+
 @user_passes_test(es_admin, login_url='/')
 def panel_admin_chat(request):
     return render(request, 'admin_chat.html')
 
+
+# ============================================================
+# API CHAT HOPE AI
+# ============================================================
+
 @csrf_exempt
 @user_passes_test(es_admin, login_url='/')
 def api_chat_ia_ask(request):
-    if request.method == 'POST':
-        prompt_usuario = request.POST.get('prompt', '').strip()
-        client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
 
-        # --- PASO 1: Pedirle a Groq que escriba el código ORM ---
-        # Le damos el esquema básico para que sepa qué consultar
-        prompt_codigo = f"""
-        Eres un traductor estricto de lenguaje natural a Django ORM.
-        Devuelve ÚNICAMENTE la línea de código Python. Sin comillas invertidas, sin markdown, sin explicaciones.
-        
-        Modelos disponibles:
-        - Cita: fecha, hora, estado, paciente, psicologo, tipo_sesion
-        - UsuarioPerfil: nombre, es_psicologo
-        - PerfilPsicologo: genero, esta_activo
-        
-        Variables disponibles en el entorno: timezone, datetime.hoy()
-        
-        Pregunta del usuario: "{prompt_usuario}"
-        """
-        
+    # --------------------------------------------------------
+    # VALIDAR MÉTODO
+    # --------------------------------------------------------
+
+    if request.method != 'POST':
+        return JsonResponse(
+            {
+                'status': 'error',
+                'message': 'Método no permitido. Utiliza POST.'
+            },
+            status=405
+        )
+
+    # --------------------------------------------------------
+    # OBTENER PROMPT
+    # Soporta:
+    # 1. application/x-www-form-urlencoded
+    # 2. application/json
+    # --------------------------------------------------------
+
+    prompt_usuario = ''
+
+    try:
+        content_type = request.content_type or ''
+
+        if 'application/json' in content_type:
+            body = json.loads(request.body.decode('utf-8') or '{}')
+            prompt_usuario = str(body.get('prompt', '')).strip()
+        else:
+            prompt_usuario = request.POST.get('prompt', '').strip()
+
+    except json.JSONDecodeError:
+        return JsonResponse(
+            {
+                'status': 'error',
+                'message': 'El JSON enviado no es válido.'
+            },
+            status=400
+        )
+
+    # --------------------------------------------------------
+    # VALIDAR PROMPT
+    # --------------------------------------------------------
+
+    if not prompt_usuario:
+        return JsonResponse(
+            {
+                'status': 'error',
+                'message': 'Debes enviar un prompt.'
+            },
+            status=400
+        )
+
+    # --------------------------------------------------------
+    # VALIDAR API KEY
+    # --------------------------------------------------------
+
+    groq_api_key = os.environ.get('GROQ_API_KEY')
+
+    if not groq_api_key:
+        return JsonResponse(
+            {
+                'status': 'error',
+                'message': 'No está configurada la variable GROQ_API_KEY.'
+            },
+            status=500
+        )
+
+    # --------------------------------------------------------
+    # CLIENTE GROQ
+    # --------------------------------------------------------
+
+    try:
+        client = Groq(api_key=groq_api_key)
+    except Exception as e:
+        return JsonResponse(
+            {
+                'status': 'error',
+                'message': f'No se pudo inicializar Groq: {str(e)}'
+            },
+            status=500
+        )
+
+    # ========================================================
+    # PASO 1
+    # NATURAL LANGUAGE -> DJANGO ORM
+    # ========================================================
+
+    prompt_codigo = f"""
+Eres HOPE AI, un traductor estricto de lenguaje natural
+a consultas Django ORM.
+
+Tu tarea es convertir la pregunta del administrador
+en UNA SOLA expresión válida de Django ORM.
+
+IMPORTANTE:
+- Devuelve ÚNICAMENTE la expresión Python.
+- NO uses markdown.
+- NO uses ```python.
+- NO expliques nada.
+- NO pongas texto antes ni después.
+- NO inventes modelos.
+- NO inventes campos.
+- Utiliza solamente los modelos y campos indicados.
+- Siempre intenta devolver un QuerySet o un resultado ORM.
+- Evita código innecesario.
+- No uses imports.
+- No uses os.
+- No uses archivos.
+- No uses funciones externas.
+- No uses comandos de sistema.
+
+MODELOS DISPONIBLES:
+
+Cita:
+- fecha
+- hora
+- estado
+- paciente
+- psicologo
+- tipo_sesion
+
+UsuarioPerfil:
+- nombre
+- es_psicologo
+
+PerfilPsicologo:
+- genero
+- esta_activo
+
+User:
+- username
+- first_name
+- last_name
+- email
+- is_active
+
+VARIABLE DISPONIBLE:
+
+hoy = fecha actual del sistema.
+
+Fecha actual:
+{timezone.now().date()}
+
+EJEMPLOS:
+
+Pregunta:
+¿Cuántas citas existen?
+
+Respuesta:
+Cita.objects.all()
+
+Pregunta:
+¿Cuáles son las citas de hoy?
+
+Respuesta:
+Cita.objects.filter(fecha=hoy)
+
+Pregunta:
+¿Cuáles son las citas canceladas?
+
+Respuesta:
+Cita.objects.filter(estado='cancelada')
+
+Pregunta:
+¿Cuáles son las citas pendientes?
+
+Respuesta:
+Cita.objects.filter(estado='pendiente')
+
+Pregunta:
+Muéstrame las primeras 30 citas.
+
+Respuesta:
+Cita.objects.all()[:30]
+
+PREGUNTA DEL ADMINISTRADOR:
+"{prompt_usuario}"
+"""
+
+    # --------------------------------------------------------
+    # LLAMADA A GROQ PARA ORM
+    # --------------------------------------------------------
+
+    try:
+
         res_codigo = client.chat.completions.create(
-            model="llama3-70b-8192", # Llama3 es muy bueno para código corto y lógico
-            messages=[{"role": "user", "content": prompt_codigo}],
-            temperature=0.1
+            model="openai/gpt-oss-120b",
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "Generas exclusivamente expresiones Django ORM "
+                        "válidas y concisas."
+                    )
+                },
+                {
+                    "role": "user",
+                    "content": prompt_codigo
+                }
+            ],
+            temperature=0.0,
+            max_tokens=800
         )
-        
-        # Limpiamos cualquier basura que la IA pueda meter
-        codigo_orm = res_codigo.choices[0].message.content.strip().replace('```python', '').replace('```', '').strip()
 
-        # --- PASO 2: EJECUTAR EL CÓDIGO (eval) ---
-        try:
-            # Diccionario con el contexto que eval() puede entender
-            contexto_eval = {
-                'Cita': Cita,
-                'UsuarioPerfil': UsuarioPerfil,
-                'PerfilPsicologo': PerfilPsicologo,
-                'User': User,
-                'timezone': timezone,
-                'datetime': datetime,
-                'hoy': timezone.now().date() # Variable rápida por si Groq usa 'hoy'
+    except Exception as e:
+
+        return JsonResponse(
+            {
+                'status': 'error',
+                'message': f'Error consultando Groq para generar ORM: {str(e)}'
+            },
+            status=502
+        )
+
+    # --------------------------------------------------------
+    # OBTENER RESPUESTA
+    # --------------------------------------------------------
+
+    codigo_orm = (
+        res_codigo.choices[0].message.content
+        if res_codigo.choices
+        else ''
+    )
+
+    codigo_orm = str(codigo_orm).strip()
+
+    # --------------------------------------------------------
+    # LIMPIAR MARKDOWN
+    # --------------------------------------------------------
+
+    codigo_orm = (
+        codigo_orm
+        .replace('```python', '')
+        .replace('```', '')
+        .strip()
+    )
+
+    # El modelo podría devolver saltos de línea.
+    codigo_orm = ' '.join(codigo_orm.split())
+
+    # --------------------------------------------------------
+    # PROTECCIONES BÁSICAS CONTRA RESPUESTAS INVALIDAS
+    # --------------------------------------------------------
+
+    patrones_prohibidos = [
+        'import ',
+        '__import__',
+        'eval(',
+        'exec(',
+        'open(',
+        'os.',
+        'subprocess',
+        'system(',
+        'popen(',
+        'shutil',
+        'socket',
+        '__class__',
+        '__globals__',
+        '__builtins__',
+    ]
+
+    codigo_lower = codigo_orm.lower()
+
+    for patron in patrones_prohibidos:
+
+        if patron.lower() in codigo_lower:
+
+            return JsonResponse(
+                {
+                    'status': 'error',
+                    'message': 'La IA generó una consulta no permitida.',
+                    'debug_codigo': codigo_orm
+                },
+                status=400
+            )
+
+    # ========================================================
+    # PASO 2
+    # EJECUTAR ORM
+    # ========================================================
+
+    resultado_crudo = None
+
+    try:
+
+        contexto_eval = {
+            'Cita': Cita,
+            'UsuarioPerfil': UsuarioPerfil,
+            'PerfilPsicologo': PerfilPsicologo,
+            'User': User,
+            'timezone': timezone,
+            'datetime': datetime,
+            'hoy': timezone.now().date(),
+        }
+
+        # ----------------------------------------------------
+        # EJECUTAR EXPRESIÓN ORM GENERADA
+        # ----------------------------------------------------
+
+        resultado_crudo = eval(
+            codigo_orm,
+            {
+                '__builtins__': {}
+            },
+            contexto_eval
+        )
+
+        # ----------------------------------------------------
+        # QUERYSET
+        # ----------------------------------------------------
+
+        if hasattr(resultado_crudo, 'values'):
+
+            try:
+
+                # Intentamos obtener registros como diccionarios
+                resultado_crudo = list(
+                    resultado_crudo.values()[:30]
+                )
+
+            except Exception:
+
+                # Si no permite slicing de esa forma
+                resultado_crudo = list(
+                    resultado_crudo.values()
+                )[:30]
+
+        # ----------------------------------------------------
+        # LISTA / TUPLA
+        # ----------------------------------------------------
+
+        elif isinstance(resultado_crudo, (list, tuple)):
+
+            resultado_crudo = list(resultado_crudo)[:30]
+
+        # ----------------------------------------------------
+        # OBJETO SIMPLE
+        # ----------------------------------------------------
+
+        else:
+
+            resultado_crudo = resultado_crudo
+
+    except Exception as e:
+
+        resultado_crudo = {
+            'error': True,
+            'mensaje': str(e),
+            'codigo_generado': codigo_orm
+        }
+
+    # ========================================================
+    # CONVERTIR RESULTADO A JSON SEGURO
+    # ========================================================
+
+    def convertir_json(obj):
+
+        if isinstance(obj, dict):
+
+            return {
+                str(k): convertir_json(v)
+                for k, v in obj.items()
             }
-            
-            # ¡Ejecutamos el código que nos dio Groq!
-            resultado_crudo = eval(codigo_orm, {"__builtins__": {}}, contexto_eval)
-            
-            # Si el resultado es un QuerySet (muchos registros), lo pasamos a lista 
-            # de diccionarios para que Groq lo pueda leer como texto.
-            if hasattr(resultado_crudo, 'exists'): 
-                resultado_crudo = list(resultado_crudo.values())[:30] # Limitamos a 30 para no saturar tokens
-                
-        except Exception as e:
-            # Si Groq se equivoca en la sintaxis, capturamos el error
-            resultado_crudo = f"Error en BD al ejecutar '{codigo_orm}': {str(e)}"
 
-        # --- PASO 3: Armar el reporte final con gráficas ---
-        prompt_final = f"""
-        Eres 'HOPE AI', un asistente de administración. 
-        El usuario pidió: "{prompt_usuario}"
-        El sistema ejecutó la consulta en BD y obtuvo esto: {resultado_crudo}
-        
-        Instrucciones:
-        1. Responde amigablemente al usuario con el dato real.
-        2. Si el usuario pidió un reporte, dashboard o gráfica, DEVUELVE CÓDIGO HTML DIRECTO con <canvas> y un <script> de Chart.js.
-        3. Usa colores hexadecimales #5A3FA3 (Morado), #25B8B8 (Teal) y #F85B8C (Rosa) para las gráficas.
-        """
-        
-        res_final = client.chat.completions.create(
-            model="openai/gpt-oss-120b", 
-            messages=[{"role": "user", "content": prompt_final}],
-            temperature=0.3
+        if isinstance(obj, (list, tuple)):
+
+            return [
+                convertir_json(v)
+                for v in obj
+            ]
+
+        if isinstance(obj, (datetime,)):
+
+            return obj.isoformat()
+
+        if hasattr(obj, 'isoformat'):
+
+            try:
+                return obj.isoformat()
+            except Exception:
+                pass
+
+        if isinstance(obj, Decimal):
+
+            return float(obj)
+
+        if hasattr(obj, '__dict__'):
+
+            try:
+                return str(obj)
+            except Exception:
+                return None
+
+        return obj
+
+    resultado_json = convertir_json(resultado_crudo)
+
+    # --------------------------------------------------------
+    # LIMITAR TAMAÑO DEL RESULTADO
+    # --------------------------------------------------------
+
+    try:
+
+        resultado_texto = json.dumps(
+            resultado_json,
+            ensure_ascii=False,
+            default=str
         )
-        
-        return JsonResponse({
-            'status': 'success', 
-            'respuesta': res_final.choices[0].message.content.strip(),
-            'debug_codigo': codigo_orm # Opcional: te lo mando al frontend para que veas qué código generó en la consola
-        })
 
-    return JsonResponse({'status': 'error', 'message': 'Método no permitido.'})
+    except Exception:
+
+        resultado_texto = str(resultado_json)
+
+    # Evitar mandar cantidades gigantes de información a Groq
+    if len(resultado_texto) > 15000:
+
+        resultado_texto = resultado_texto[:15000] + "\n...[RESULTADO RECORTADO]"
+
+    # ========================================================
+    # PASO 3
+    # ANALIZAR RESULTADO Y GENERAR RESPUESTA
+    # ========================================================
+
+    prompt_final = f"""
+Eres HOPE AI, un asistente administrativo inteligente.
+
+PREGUNTA DEL ADMINISTRADOR:
+{prompt_usuario}
+
+CONSULTA ORM GENERADA:
+{codigo_orm}
+
+RESULTADO REAL DE LA BASE DE DATOS:
+{resultado_texto}
+
+INSTRUCCIONES:
+
+1. Responde siempre en español.
+
+2. Usa exclusivamente los datos obtenidos de la base de datos.
+
+3. NO inventes cifras.
+
+4. Si hubo un error en la consulta ORM,
+   explícalo claramente al administrador.
+
+5. Si la pregunta pide información normal,
+   responde con texto claro y directo.
+
+6. Si solicita:
+   - gráfica
+   - reporte
+   - dashboard
+   - estadísticas
+   - comparativa
+   - análisis visual
+
+   entonces devuelve HTML directamente.
+
+7. Para las gráficas utiliza Chart.js mediante:
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+8. NUNCA pongas esta URL entre corchetes.
+
+CORRECTO:
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+INCORRECTO:
+
+<script src="[https://cdn.jsdelivr.net/npm/chart.js](https://cdn.jsdelivr.net/npm/chart.js)"></script>
+
+9. Las gráficas deben utilizar solamente estos colores:
+
+#5A3FA3
+#25B8B8
+#F85B8C
+
+10. Si generas una gráfica:
+- usa <canvas>
+- incluye el script de Chart.js
+- genera un gráfico funcional
+- agrega títulos y etiquetas claras
+- utiliza datos reales obtenidos de la consulta
+
+11. Si no se necesita una gráfica,
+responde únicamente con texto normal.
+
+12. No inventes HTML si no se solicitó un reporte visual.
+
+13. No muestres código Python al usuario final.
+"""
+
+    # --------------------------------------------------------
+    # LLAMADA FINAL A GROQ
+    # --------------------------------------------------------
+
+    try:
+
+        res_final = client.chat.completions.create(
+            model="openai/gpt-oss-120b",
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "Eres HOPE AI, un asistente administrativo "
+                        "preciso, claro y orientado a datos."
+                    )
+                },
+                {
+                    "role": "user",
+                    "content": prompt_final
+                }
+            ],
+            temperature=0.2,
+            max_tokens=5000
+        )
+
+    except Exception as e:
+
+        return JsonResponse(
+            {
+                'status': 'error',
+                'message': f'Error generando respuesta final con Groq: {str(e)}',
+                'debug_codigo': codigo_orm,
+                'resultado': resultado_json
+            },
+            status=502
+        )
+
+    # ========================================================
+    # RESPUESTA FINAL
+    # ========================================================
+
+    respuesta = (
+        res_final.choices[0].message.content
+        if res_final.choices
+        else ''
+    )
+
+    respuesta = str(respuesta).strip()
+
+    # --------------------------------------------------------
+    # JSON FINAL
+    # --------------------------------------------------------
+
+    return JsonResponse(
+        {
+            'status': 'success',
+            'respuesta': respuesta,
+            'debug_codigo': codigo_orm,
+            'resultado': resultado_json
+        },
+        status=200,
+        json_dumps_params={
+            'ensure_ascii': False
+        }
+    )
