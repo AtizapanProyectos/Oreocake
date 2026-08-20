@@ -2011,7 +2011,12 @@ def generar_sintesis_ajax(request, paciente_id):
         # 4. Llamada a la IA
         from groq import Groq
         client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
-        
+
+        modelos = client.models.list()
+
+        for modelo in modelos.data:
+            print("MODELO DISPONIBLE:", modelo.id)
+
         response = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=[{"role": "user", "content": prompt}],
