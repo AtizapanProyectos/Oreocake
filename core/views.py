@@ -4,6 +4,8 @@ from requests import request
 from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_protect
 # pyrefly: ignore [missing-import]
+
+from decimal import Decimal
 import threading
 from django.shortcuts import render, redirect
 from django.contrib.auth.models import User
