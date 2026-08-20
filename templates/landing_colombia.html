@@ -110,26 +110,33 @@
       color: var(--c-purple)
     }
 
-    /* ── HERO ── */
+    /* ── HERO MODIFICADO ── */
     .hero-co {
       position: relative;
       min-height: 78vh;
       display: flex;
       align-items: center;
-      justify-content: center;
-      text-align: center;
-      padding: 90px 20px 0;
+      justify-content: flex-end;
+      /* Manda el texto a la derecha */
+      padding: 90px 8% 50px;
       overflow: hidden;
-      background:
-        radial-gradient(ellipse 900px 500px at 50% -10%, rgba(252, 209, 22, .30), transparent 60%),
-        radial-gradient(ellipse 700px 400px at 85% 20%, rgba(206, 17, 38, .08), transparent 60%),
-        linear-gradient(180deg, #fffdf5 0%, #ffffff 55%);
+      background: var(--c-dark);
     }
 
+    /* La caja que va a un costado */
     .hero-co-inner {
       position: relative;
       z-index: 5;
-      max-width: 820px
+      max-width: 500px;
+      background: rgba(253, 251, 245, 0.92);
+      /* Fondo suave */
+      padding: 50px 45px;
+      border-radius: 24px;
+      box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+      text-align: left;
+      /* Alineamos el texto a la izquierda dentro de la caja */
+      backdrop-filter: blur(10px);
+      /* Leve difuminado al fondo */
     }
 
     .flag-dots {
@@ -168,15 +175,17 @@
       margin-bottom: 22px;
       display: flex;
       align-items: center;
-      justify-content: center;
+      justify-content: flex-start;
+      /* Alineado a la izquierda */
       gap: 10px
     }
 
     .hero-co h1 {
       font-family: var(--font-h);
       font-weight: 900;
-      font-size: clamp(2.8rem, 6.2vw, 5.2rem);
-      line-height: 1.02;
+      font-size: clamp(2.4rem, 5vw, 4rem);
+      /* Ajustado para que quepa bien en la caja */
+      line-height: 1.05;
       letter-spacing: -1.5px;
       margin-bottom: 24px
     }
@@ -191,15 +200,14 @@
     }
 
     .hero-co p {
-      font-size: 1.25rem;
+      font-size: 1.15rem;
       color: var(--text-muted);
-      max-width: 640px;
-      margin: 0 auto 44px;
+      max-width: 100%;
+      margin: 0 0 10px 0;
       line-height: 1.65
     }
 
-    /* Cordillera decorativa (montañas + horizonte tricolor) */
-    /* Cordillera decorativa (montañas + horizonte tricolor) */
+    /* Cordillera decorativa FIX: object-fit: cover */
     .cordillera {
       position: absolute;
       top: 0;
@@ -214,7 +222,9 @@
       display: block;
       width: 100%;
       height: 100%;
-      object-fit: fill;
+      object-fit: cover;
+      /* ¡AQUÍ ESTÁ LA MAGIA PARA QUE NO SE DEFORME! */
+      object-position: center center;
     }
 
     /* ── STATS BAND ── */
@@ -338,7 +348,6 @@
       box-shadow: var(--shadow-md)
     }
 
-    /* Imagen de portada de cada tarjeta */
     .opt-card-img {
       width: 100%;
       height: 190px;
@@ -465,7 +474,31 @@
       background: var(--co-red)
     }
 
+    /* Responsivo para móviles */
     @media(max-width:800px) {
+      .hero-co {
+        justify-content: center;
+        /* En móvil centramos la tarjeta */
+        padding: 90px 5% 50px;
+      }
+
+      .hero-co-inner {
+        text-align: center;
+        padding: 40px 25px;
+      }
+
+      .hero-co .tag {
+        justify-content: center;
+      }
+
+      .hero-co h1 {
+        text-align: center;
+      }
+
+      .hero-co p {
+        text-align: center;
+      }
+
       .options {
         grid-template-columns: 1fr
       }
