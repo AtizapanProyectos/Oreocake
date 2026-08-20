@@ -8,6 +8,7 @@ import threading
 from django.shortcuts import render, redirect
 from django.contrib.auth.models import User
 import re
+import datetime
 from urllib.parse import quote
 from django.core.paginator import Paginator
 import logging
@@ -3852,3 +3853,91 @@ def taller_detalle_pareja(request):
     }
 
     return render(request, 'taller_detalle_pareja.html', context)
+
+
+@user_passes_test(es_admin, login_url='/')
+def panel_admin_chat(request):
+    return render(request, 'admin_chat.html')
+
+@csrf_exempt
+@user_passes_test(es_admin, login_url='/')
+def api_chat_ia_ask(request):
+    if request.method == 'POST':
+        prompt_usuario = request.POST.get('prompt', '').strip()
+        client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
+
+        # --- PASO 1: Pedirle a Groq que escriba el código ORM ---
+        # Le damos el esquema básico para que sepa qué consultar
+        prompt_codigo = f"""
+        Eres un traductor estricto de lenguaje natural a Django ORM.
+        Devuelve ÚNICAMENTE la línea de código Python. Sin comillas invertidas, sin markdown, sin explicaciones.
+        
+        Modelos disponibles:
+        - Cita: fecha, hora, estado, paciente, psicologo, tipo_sesion
+        - UsuarioPerfil: nombre, es_psicologo
+        - PerfilPsicologo: genero, esta_activo
+        
+        Variables disponibles en el entorno: timezone, datetime.hoy()
+        
+        Pregunta del usuario: "{prompt_usuario}"
+        """
+        
+        res_codigo = client.chat.completions.create(
+            model="llama3-70b-8192", # Llama3 es muy bueno para código corto y lógico
+            messages=[{"role": "user", "content": prompt_codigo}],
+            temperature=0.1
+        )
+        
+        # Limpiamos cualquier basura que la IA pueda meter
+        codigo_orm = res_codigo.choices[0].message.content.strip().replace('```python', '').replace('```', '').strip()
+
+        # --- PASO 2: EJECUTAR EL CÓDIGO (eval) ---
+        try:
+            # Diccionario con el contexto que eval() puede entender
+            contexto_eval = {
+                'Cita': Cita,
+                'UsuarioPerfil': UsuarioPerfil,
+                'PerfilPsicologo': PerfilPsicologo,
+                'User': User,
+                'timezone': timezone,
+                'datetime': datetime,
+                'hoy': timezone.now().date() # Variable rápida por si Groq usa 'hoy'
+            }
+            
+            # ¡Ejecutamos el código que nos dio Groq!
+            resultado_crudo = eval(codigo_orm, {"__builtins__": {}}, contexto_eval)
+            
+            # Si el resultado es un QuerySet (muchos registros), lo pasamos a lista 
+            # de diccionarios para que Groq lo pueda leer como texto.
+            if hasattr(resultado_crudo, 'exists'): 
+                resultado_crudo = list(resultado_crudo.values())[:30] # Limitamos a 30 para no saturar tokens
+                
+        except Exception as e:
+            # Si Groq se equivoca en la sintaxis, capturamos el error
+            resultado_crudo = f"Error en BD al ejecutar '{codigo_orm}': {str(e)}"
+
+        # --- PASO 3: Armar el reporte final con gráficas ---
+        prompt_final = f"""
+        Eres 'HOPE AI', un asistente de administración. 
+        El usuario pidió: "{prompt_usuario}"
+        El sistema ejecutó la consulta en BD y obtuvo esto: {resultado_crudo}
+        
+        Instrucciones:
+        1. Responde amigablemente al usuario con el dato real.
+        2. Si el usuario pidió un reporte, dashboard o gráfica, DEVUELVE CÓDIGO HTML DIRECTO con <canvas> y un <script> de Chart.js.
+        3. Usa colores hexadecimales #5A3FA3 (Morado), #25B8B8 (Teal) y #F85B8C (Rosa) para las gráficas.
+        """
+        
+        res_final = client.chat.completions.create(
+            model="openai/gpt-oss-120b", 
+            messages=[{"role": "user", "content": prompt_final}],
+            temperature=0.3
+        )
+        
+        return JsonResponse({
+            'status': 'success', 
+            'respuesta': res_final.choices[0].message.content.strip(),
+            'debug_codigo': codigo_orm # Opcional: te lo mando al frontend para que veas qué código generó en la consola
+        })
+
+    return JsonResponse({'status': 'error', 'message': 'Método no permitido.'})

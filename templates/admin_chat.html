@@ -1,0 +1,215 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Asistente IA · HOPE{% endblock %}
+
+{% block content %}
+<!-- Importamos Chart.js para que Groq pueda usarlo en sus respuestas -->
+<script src="[https://cdn.jsdelivr.net/npm/chart.js](https://cdn.jsdelivr.net/npm/chart.js)"></script>
+
+<style>
+    /* Aprovechamos tus variables CSS existentes[cite: 1] */
+    .chat-container {
+        background: var(--wht);
+        border: 1px solid var(--bd);
+        border-radius: var(--rxl);
+        box-shadow: var(--shh);
+        display: flex;
+        flex-direction: column;
+        height: 75vh;
+        overflow: hidden;
+        margin-bottom: 30px;
+    }
+
+    .chat-header {
+        padding: 20px 24px;
+        background: linear-gradient(90deg, var(--p), var(--teal));
+        color: var(--wht);
+    }
+
+    .chat-header h2 {
+        font-family: var(--fd);
+        margin: 0;
+        font-size: 24px;
+    }
+
+    .chat-messages {
+        flex: 1;
+        padding: 24px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        background: var(--surf);
+    }
+
+    .msg-bubble {
+        max-width: 85%;
+        padding: 14px 18px;
+        border-radius: 16px;
+        font-size: 15px;
+        line-height: 1.5;
+    }
+
+    .msg-user {
+        background: var(--p-lgt);
+        color: var(--p);
+        align-self: flex-end;
+        border-bottom-right-radius: 4px;
+    }
+
+    .msg-ai {
+        background: var(--wht);
+        border: 1px solid var(--bd);
+        color: var(--ink);
+        align-self: flex-start;
+        border-bottom-left-radius: 4px;
+        box-shadow: var(--shc);
+        width: 100%;
+        /* Para que las gráficas tengan espacio */
+    }
+
+    /* Contenedor para gráficas generadas por Groq */
+    .ai-dashboard-card {
+        background: var(--surf);
+        border-radius: var(--rmd);
+        padding: 16px;
+        margin-top: 10px;
+        border: 1px dashed var(--p-mid);
+    }
+
+    .chat-input-area {
+        padding: 16px 24px;
+        background: var(--wht);
+        border-top: 1px solid var(--bd);
+        display: flex;
+        gap: 12px;
+    }
+
+    .chat-input-area input {
+        flex: 1;
+        padding: 14px 20px;
+        border: 1.5px solid rgba(90, 63, 163, 0.15);
+        border-radius: 100px;
+        font-family: var(--fb);
+        outline: none;
+    }
+
+    .chat-input-area input:focus {
+        border-color: var(--p);
+    }
+
+    .btn-send {
+        background: var(--p);
+        color: white;
+        border: none;
+        padding: 0 24px;
+        border-radius: 100px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .btn-send:hover {
+        background: var(--p-mid);
+        transform: translateY(-2px);
+    }
+</style>
+
+<div class="hw fup">
+    <div class="chat-container">
+        <div class="chat-header">
+            <h2>HOPE AI <em>Assistant</em></h2>
+            <p style="margin:0; font-size:12px; opacity:0.8;">Potenciado por Groq</p>
+        </div>
+
+        <div class="chat-messages" id="chatMessages">
+            <div class="msg-bubble msg-ai">
+                ¡Hola! Soy tu asistente de administración. Pregúntame sobre el rendimiento de la clínica o pídeme
+                generar un reporte gráfico de nuestras citas.
+            </div>
+        </div>
+
+        <div class="chat-input-area">
+            <input type="text" id="chatInput" placeholder="Ej: Crea un reporte con gráficas de las citas de hoy..."
+                autocomplete="off" onkeypress="handleEnter(event)">
+            <button class="btn-send" onclick="sendMessage()"><i class="fas fa-paper-plane"></i></button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const chatMessages = document.getElementById('chatMessages');
+    const chatInput = document.getElementById('chatInput');
+
+    function handleEnter(e) {
+        if (e.key === 'Enter') sendMessage();
+    }
+
+    function appendMessage(sender, content) {
+        const div = document.createElement('div');
+        div.className = `msg-bubble ${sender === 'user' ? 'msg-user' : 'msg-ai'}`;
+
+        // Si es IA, inyectamos como HTML para que renderice las gráficas
+        if (sender === 'ai') {
+            div.innerHTML = content;
+        } else {
+            div.textContent = content;
+        }
+
+        chatMessages.appendChild(div);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+
+        // MAGIA: Si Groq devolvió un <script> (ej. de Chart.js), debemos re-ejecutarlo 
+        // porque el innerHTML normal no ejecuta scripts dinámicos por seguridad del navegador.
+        if (sender === 'ai') {
+            const scripts = div.getElementsByTagName('script');
+            for (let i = 0; i < scripts.length; i++) {
+                const newScript = document.createElement('script');
+                newScript.text = scripts[i].text;
+                document.body.appendChild(newScript).parentNode.removeChild(newScript);
+            }
+        }
+    }
+
+    function sendMessage() {
+        const text = chatInput.value.trim();
+        if (!text) return;
+
+        appendMessage('user', text);
+        chatInput.value = '';
+
+        // Indicador de carga
+        const typingId = 'typing-' + Date.now();
+        const typingDiv = document.createElement('div');
+        typingDiv.id = typingId;
+        typingDiv.className = 'msg-bubble msg-ai';
+        typingDiv.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Generando reporte...';
+        chatMessages.appendChild(typingDiv);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+
+        // Petición al backend
+        fetch("{% url 'api_chat_ia_ask' %}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: new URLSearchParams({ 'prompt': text })
+        })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById(typingId).remove();
+                if (data.status === 'success') {
+                    appendMessage('ai', data.respuesta);
+                } else {
+                    appendMessage('ai', `<span style="color:var(--pink)">Error: ${data.message}</span>`);
+                }
+            })
+            .catch(error => {
+                document.getElementById(typingId).remove();
+                appendMessage('ai', `<span style="color:var(--pink)">Error de conexión.</span>`);
+            });
+    }
+</script>
+{% endblock %}

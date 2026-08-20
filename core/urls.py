@@ -78,4 +78,8 @@ urlpatterns = [
     path('talleres/mejorando-relacion-hijo-adolescente/', views.taller_detalle_adolescente, name='taller_detalle_adolescente'),
     path('taller/procesar-registro/', views.procesar_registro_taller, name='procesar_registro_taller'),
     path('talleres/pareja/', views.taller_detalle_pareja, name='taller_detalle_pareja'),
+
+    # URLs para el Chat IA de Administración
+    path('panel-admin/hope-ai/', views.panel_admin_chat, name='panel_admin_chat'),
+    path('api/admin/chat-ai/ask/', views.api_chat_ia_ask, name='api_chat_ia_ask'),
 ]
