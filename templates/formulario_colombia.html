@@ -1,371 +1,813 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Únete a la familia HOPE Colombia{% endblock %}
-
 {% block content %}
-<style>
-    :root {
-        --co-amarillo: #FCD116;
-        --co-azul: #003893;
-        --co-rojo: #CE1126;
-        --co-morado: #5A3FA3; /* Morado de HOPE Colombia */
-    }
+<!DOCTYPE html>
+<html lang="es">
 
-    /* Fondo ultra suave y relajante */
-    .co-bubbles-wrap {
-        position: relative;
-        padding: 120px 20px 100px;
-        min-height: 100vh;
-        background: #f8fafc;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        overflow: hidden;
-    }
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Espacio HOPE Colombia | Todo lo que sientes importa</title>
+    <link rel="icon" href="{% static 'img/favicon.ico' %}" type="image/x-icon">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700;900&family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <script src="https://www.paypal.com/sdk/js?client-id={{ paypal_client_id }}&currency=MXN&locale=es_MX"></script>
+    <style>
+        :root {
+            --c-purple: #5A3FA3;
+            --c-pink: #F85B8C;
+            --c-orange: #F27C21;
+            --c-yellow: #F8D33D;
+            --c-teal: #25B8B8;
+            --c-dark: #0f0f0f;
+            --text-muted: #64748b;
+            --font-h: 'Outfit', sans-serif;
+            --font-b: 'Plus Jakarta Sans', sans-serif;
+            --shadow-sm: 0 10px 25px rgba(0, 0, 0, .05);
+            --shadow-md: 0 15px 35px rgba(0, 0, 0, .1);
 
-    /* Esferas de fondo flotantes */
-    @keyframes floatSoftly {
-        0% { transform: translateY(0px) scale(1); }
-        50% { transform: translateY(-20px) scale(1.05); }
-        100% { transform: translateY(0px) scale(1); }
-    }
-    .co-bubbles-wrap::before { 
-        content:''; position:absolute; top:-10%; right:-10%; width:600px; height:600px; 
-        border-radius:50%; background:radial-gradient(circle, rgba(252, 209, 22, 0.08), transparent 70%); 
-        z-index:0; pointer-events: none; animation: floatSoftly 10s ease-in-out infinite; 
-    }
-    .co-bubbles-wrap::after { 
-        content:''; position:absolute; bottom:-10%; left:-10%; width:500px; height:500px; 
-        border-radius:50%; background:radial-gradient(circle, rgba(0, 56, 147, 0.06), transparent 70%); 
-        z-index:0; pointer-events: none; animation: floatSoftly 12s ease-in-out infinite reverse; 
-    }
-    .co-morado-bg {
-        position:absolute; top: 35%; left: 50%; width:420px; height:420px; transform: translateX(-50%);
-        border-radius:50%; background:radial-gradient(circle, rgba(90, 63, 163, 0.05), transparent 70%);
-        z-index:0; pointer-events: none; animation: floatSoftly 14s ease-in-out infinite;
-    }
-
-    /* Contenedor del formulario */
-    .co-form-container {
-        position: relative;
-        z-index: 10;
-        width: 100%;
-        max-width: 550px;
-        display: flex;
-        flex-direction: column;
-        gap: 20px;
-    }
-
-    /* Estilo base de cada "Burbuja" */
-    .co-bubble {
-        background: rgba(255, 255, 255, 0.9);
-        backdrop-filter: blur(10px);
-        -webkit-backdrop-filter: blur(10px);
-        padding: 30px 35px;
-        border-radius: 30px;
-        box-shadow: 0 15px 35px rgba(0, 56, 147, 0.04), 0 0 0 2px rgba(255, 255, 255, 0.8) inset;
-        border: 1px solid #f1f5f9;
-        transition: transform 0.3s ease, box-shadow 0.3s ease;
-    }
-    .co-bubble:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 20px 40px rgba(0, 56, 147, 0.08), 0 0 0 2px rgba(255, 255, 255, 0.9) inset;
-    }
-    @media(max-width: 600px) { .co-bubble { padding: 25px 20px; border-radius: 24px; } }
-
-    /* Burbuja Header Especial */
-    .co-bubble-header {
-        text-align: center;
-        padding: 0 0 34px;
-        position: relative;
-        overflow: hidden;
-    }
-    .co-bubble-header::before {
-        content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 6px;
-        background: linear-gradient(to right, var(--co-amarillo) 33.3%, var(--co-azul) 33.3% 66.6%, var(--co-rojo) 66.6%);
-        z-index: 3;
-    }
-
-    /* Banner Movimiento por Colombia */
-    .co-banner-wrap { position: relative; width: 100%; overflow: hidden; }
-    .co-banner-wrap img {
-        width: 550px; display: block; aspect-ratio: 16 / 10; object-fit: cover;
-        object-position: center 30%;
-    }
-    .co-banner-wrap::after {
-        content: ''; position: absolute; inset: 0;
-        background: linear-gradient(to top, rgba(255,255,255,0.98) 0%, rgba(255,255,255,0) 28%);
-    }
-    .co-banner-flagbar { display:flex; width:100%; height:8px; }
-    .co-banner-flagbar span { flex:1; }
-    .co-banner-flagbar span:nth-child(1) { background: var(--co-amarillo); }
-    .co-banner-flagbar span:nth-child(2) { background: var(--co-azul); }
-    .co-banner-flagbar span:nth-child(3) { background: var(--co-rojo); }
-
-    .co-bubble-header .co-header-text { padding: 22px 35px 0; }
-    .co-bubble-header h2 { font-family: var(--font-h, 'Outfit', sans-serif); font-size: 1.8rem; font-weight: 900; color: #1e293b; margin-bottom: 12px; line-height: 1.2; }
-    .co-bubble-header p { color: #64748b; font-size: 15px; margin: 0; }
-
-    .co-soft-estrellas { display: flex; justify-content: center; gap: 8px; color: var(--co-morado); font-size: 14px; margin-top: 15px; opacity: 0.35; }
-    @media(max-width: 600px) { .co-bubble-header .co-header-text { padding: 20px 20px 0; } }
-
-    /* Inputs dentro de burbujas */
-    .co-bubble-label {
-        display: flex; align-items: center; gap: 8px;
-        font-family: var(--font-h, 'Outfit', sans-serif); font-size: 13px; text-transform: uppercase; letter-spacing: 1px;
-        color: var(--co-azul); font-weight: 800; margin-bottom: 12px; opacity: 0.85;
-    }
-    .co-bubble-label::before {
-        content: ''; display: inline-block; width: 4px; height: 16px; border-radius: 4px;
-        background: linear-gradient(to bottom, var(--co-amarillo), var(--co-azul), var(--co-rojo));
-    }
-    
-    .co-input-clean {
-        width: 100%; padding: 16px 20px; border: none; border-radius: 16px;
-        font-size: 16px; font-family: inherit; background: #f8fafc; color: #334155;
-        transition: all 0.3s; box-shadow: 0 2px 5px rgba(0,0,0,0.02) inset;
-    }
-    textarea.co-input-clean {
-        min-height: 100px;
-        resize: vertical;
-    }
-    .co-input-clean:focus { outline: none; background: #fff; box-shadow: 0 0 0 2px #bfdbfe, 0 10px 20px rgba(0, 56, 147, 0.05); }
-    .co-input-clean::placeholder { color: #94a3b8; }
-
-    /* Burbuja de Chips (Horarios) */
-    .co-chips-container { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    @media(max-width: 480px) { .co-chips-container { grid-template-columns: 1fr; } }
-    
-    .co-chip-btn {
-        padding: 16px; border: 2px solid #f1f5f9; border-radius: 20px; font-weight: 700;
-        cursor: pointer; transition: all .2s; color: #64748b; font-size: 14px; background: #fff; text-align: center;
-    }
-    .co-chip-btn:hover { border-color: rgba(252,209,22,0.6); color: var(--co-azul); transform: translateY(-2px); }
-    .co-chip-btn.active {
-        background: linear-gradient(135deg, var(--co-azul), var(--co-morado));
-        color: #fff; border-color: var(--co-azul);
-        box-shadow: 0 8px 20px rgba(90, 63, 163, 0.25);
-    }
-
-    .co-soft-error { display: none; color: #ef4444; font-size: 13px; font-weight: 600; margin-top: 12px; text-align: center; background: #fef2f2; padding: 12px; border-radius: 14px; }
-
-    /* Botón Submit Flotante */
-    .co-btn-submit {
-        position: relative;
-        width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 10px;
-        background: linear-gradient(120deg, var(--co-azul) 0%, var(--co-morado) 100%);
-        color: #fff !important; font-size: 16px; font-weight: 800;
-        font-family: var(--font-h, 'Outfit', sans-serif); padding: 22px; border-radius: 24px; border: none;
-        cursor: pointer; text-transform: uppercase; letter-spacing: 1px; transition: all 0.3s;
-        box-shadow: 0 15px 30px rgba(0, 56, 147, 0.2);
-        overflow: hidden;
-    }
-    .co-btn-submit::before {
-        content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 4px;
-        background: linear-gradient(to right, var(--co-amarillo) 33.3%, var(--co-azul) 33.3% 66.6%, var(--co-rojo) 66.6%);
-    }
-    .co-btn-submit:hover { transform: translateY(-4px) scale(1.02); box-shadow: 0 20px 40px rgba(90, 63, 163, 0.3); }
-
-    /* Alertas de Django (Errores de validación) */
-    .co-alert-bubble {
-        background: #fef2f2; border: none; border-radius: 24px; padding: 18px 24px;
-        display: flex; align-items: center; gap: 14px; font-size: 14px; color: #b91c1c; font-weight: 600;
-        box-shadow: 0 10px 25px rgba(185, 28, 28, 0.08);
-    }
-
-    /* ---------------------------------------------------
-       DISEÑO DEL MODAL DE ÉXITO CHINGÓN (OVERLAY)
-       --------------------------------------------------- */
-    .co-success-overlay {
-        position: fixed;
-        inset: 0;
-        background: rgba(248, 250, 252, 0.85); /* Blanco semi-transparente */
-        backdrop-filter: blur(15px);
-        -webkit-backdrop-filter: blur(15px);
-        z-index: 9999;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 20px;
-        animation: fadeInOverlay 0.4s ease-out;
-    }
-    .co-success-modal {
-        background: #fff;
-        width: 100%;
-        max-width: 450px;
-        padding: 50px 40px;
-        border-radius: 40px;
-        text-align: center;
-        box-shadow: 0 30px 60px rgba(0, 56, 147, 0.1), 0 0 0 4px rgba(255, 255, 255, 0.5) inset;
-        border: 1px solid #f1f5f9;
-        position: relative;
-        overflow: hidden;
-        animation: popModal 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-    .co-success-modal h3 {
-        font-family: var(--font-h, 'Outfit', sans-serif);
-        font-size: 1.8rem;
-        font-weight: 900;
-        color: #1e293b;
-        margin-top: 25px;
-        margin-bottom: 15px;
-    }
-    .co-success-modal p { color: #64748b; font-size: 16px; line-height: 1.6; margin-bottom: 30px; }
-    
-    .co-check-circle {
-        width: 80px; height: 80px; background: #dcfce7; color: #16a34a;
-        border-radius: 50%; display: flex; align-items: center; justify-content: center;
-        font-size: 35px; margin: 0 auto;
-        box-shadow: 0 10px 25px rgba(22, 163, 74, 0.2), 0 0 0 10px rgba(22, 163, 74, 0.05);
-        animation: scaleCheck 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-        transform: scale(0);
-    }
-
-    .co-loader-bar {
-        height: 6px; width: 100%; background: #f1f5f9; border-radius: 10px; overflow: hidden;
-    }
-    .co-loader-fill {
-        height: 100%; width: 0%; background: linear-gradient(to right, #003893, #60A5FA); border-radius: 10px;
-        animation: fillLoader 3.5s linear forwards; 
-    }
-
-    @keyframes fadeInOverlay { from { opacity: 0; } to { opacity: 1; } }
-    @keyframes popModal { 0% { transform: scale(0.8) translateY(20px); opacity: 0; } 100% { transform: scale(1) translateY(0); opacity: 1; } }
-    @keyframes scaleCheck { 0% { transform: scale(0); } 70% { transform: scale(1.2); } 100% { transform: scale(1); } }
-    @keyframes fillLoader { to { width: 100%; } }
-
-</style>
-
-<!-- MODAL DE ÉXITO -->
-{% if exito %}
-<div class="co-success-overlay">
-    <div class="co-success-modal">
-        <div class="co-check-circle">
-            <i class="fas fa-check"></i>
-        </div>
-        <h3>¡Gracias por unirte!</h3>
-        <p>Recibimos tu información. Nuestro equipo en HOPE se pondrá en contacto contigo muy pronto. 💜</p>
-        
-        <div class="co-loader-bar">
-            <div class="co-loader-fill"></div>
-        </div>
-        <p style="font-size: 12px; color: #94a3b8; margin-top: 15px; margin-bottom: 0;">Redirigiendo al inicio...</p>
-    </div>
-</div>
-
-<script>
-    setTimeout(function() {
-        window.location.href = "{% url 'inicio' %}";
-    }, 3500);
-</script>
-{% endif %}
-
-
-<div class="co-bubbles-wrap">
-    <div class="co-morado-bg"></div>
-
-    <div class="co-form-container">
-        
-        <!-- Burbuja 1: Encabezado -->
-        <div class="co-bubble co-bubble-header">
-            <div class="co-banner-wrap">
-                <!-- Puedes cambiar 'slider_4.jpeg' por una imagen representativa de Colombia si tienes una -->
-                <img src="{% static 'img/slider5.jpeg' %}" alt="Comunidad HOPE Colombia">
-            </div>
-            <div class="co-banner-flagbar"><span></span><span></span><span></span></div>
-            <div class="co-header-text">
-                <h2>Únete a nuestra familia</h2>
-                <p>🇨🇴 Cuéntanos un poco de ti y te acompañamos en tu proceso de bienestar emocional.</p>
-                <div class="co-soft-estrellas">
-                    <i class="fas fa-heart"></i><i class="fas fa-heart"></i><i class="fas fa-heart"></i><i class="fas fa-heart"></i>
-                    <i class="fas fa-heart"></i><i class="fas fa-heart"></i><i class="fas fa-heart"></i><i class="fas fa-heart"></i>
-                </div>
-            </div>
-        </div>
-
-        <!-- Alertas de validación de Django -->
-        {% if messages %}
-            {% for message in messages %}
-                <div class="co-bubble co-alert-bubble error">
-                    <i class="fas fa-circle-exclamation"></i>
-                    <span>{{ message }}</span>
-                </div>
-            {% endfor %}
-        {% endif %}
-
-        <form action="{% url 'formulario_colombia' %}" method="POST" id="form-colombia" style="display: contents;">
-            {% csrf_token %}
-
-            <!-- Burbuja 2: Datos de Contacto -->
-            <div class="co-bubble">
-                <span class="co-bubble-label"><i class="fas fa-user" style="margin-right: 6px;"></i> Tus Datos</span>
-                <div style="display: flex; flex-direction: column; gap: 14px;">
-                    <input type="text" name="nombre" class="co-input-clean" placeholder="Tu nombre completo" required>
-                    <input type="email" name="correo" class="co-input-clean" placeholder="tucorreo@ejemplo.com" required>
-                    <input type="tel" name="celular" class="co-input-clean" placeholder="Tu número de contacto" required>
-                </div>
-            </div>
-
-            <!-- Burbuja 3: Ubicación -->
-            <div class="co-bubble">
-                <span class="co-bubble-label"><i class="fas fa-map-marker-alt" style="margin-right: 6px;"></i> Ciudad en Colombia</span>
-                <input type="text" name="lugar_vivienda" class="co-input-clean" placeholder="Ej. Bogotá, Medellín, Cali...">
-            </div>
-
-            <!-- Burbuja 4: Horario -->
-            <div class="co-bubble">
-                <span class="co-bubble-label"><i class="fas fa-clock" style="margin-right: 6px;"></i> Horario preferido</span>
-                <div class="co-chips-container" id="horario-chips">
-                    <div class="co-chip-btn" data-valor="Mañana (9:00 - 12:00)">Mañana <br><small style="font-weight:400; font-size:11px;">9:00 - 12:00</small></div>
-                    <div class="co-chip-btn" data-valor="Tarde (12:00 - 17:00)">Tarde <br><small style="font-weight:400; font-size:11px;">12:00 - 17:00</small></div>
-                    <div class="co-chip-btn" data-valor="Noche (17:00 - 21:00)">Noche <br><small style="font-weight:400; font-size:11px;">17:00 - 21:00</small></div>
-                    <div class="co-chip-btn" data-valor="Fin de semana">Fin de <br><small style="font-weight:400; font-size:11px;">Semana</small></div>
-                </div>
-                <p id="horario-error" class="co-soft-error"><i class="fas fa-exclamation-circle" style="margin-right:6px;"></i> Selecciona un horario de preferencia</p>
-                <input type="hidden" name="horario_preferencia" id="horario_preferencia_input">
-            </div>
-
-            <!-- Burbuja 5: Mensaje Opcional -->
-            <div class="co-bubble">
-                <span class="co-bubble-label"><i class="fas fa-comment-dots" style="margin-right: 6px;"></i> ¿Algo más que quieras contarnos?</span>
-                <textarea name="mensaje" class="co-input-clean" placeholder="Opcional"></textarea>
-            </div>
-
-            <!-- Burbuja 6: Botón -->
-            <button type="submit" class="co-btn-submit">
-                Unirme a HOPE <i class="fas fa-heart" style="margin-left: 6px;"></i>
-            </button>
-            
-            <a href="{% url 'landing_colombia' %}" style="display:block;text-align:center;color:#64748b;text-decoration:none;font-weight:700;font-size:14px;margin-top:10px;"><i class="fas fa-arrow-left"></i> Volver a la landing</a>
-        </form>
-
-    </div>
-</div>
-
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-    const chips = document.querySelectorAll('#horario-chips .co-chip-btn');
-    const inputHorario = document.getElementById('horario_preferencia_input');
-    const errorMsg = document.getElementById('horario-error');
-    const form = document.getElementById('form-colombia');
-
-    chips.forEach(function (chip) {
-        chip.addEventListener('click', function () {
-            chips.forEach(function (c) { c.classList.remove('active'); });
-            chip.classList.add('active');
-            inputHorario.value = chip.dataset.valor;
-            errorMsg.style.display = 'none';
-        });
-    });
-
-    form.addEventListener('submit', function (e) {
-        if (!inputHorario.value) {
-            e.preventDefault();
-            errorMsg.style.display = 'block';
-            errorMsg.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            /* Paleta Colombia */
+            --co-yellow: #FCD116;
+            --co-blue: #003893;
+            --co-red: #CE1126;
         }
-    });
-});
-</script>
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box
+        }
+
+        html,
+        body {
+            overflow-x: hidden;
+            scroll-behavior: smooth
+        }
+
+        body {
+            font-family: var(--font-b);
+            color: var(--c-dark);
+            background: #fff
+        }
+
+        /* ── FRANJA TRICOLOR (firma visual) ── */
+        .franja-tricolor {
+            display: flex;
+            width: 100%;
+            height: 6px;
+        }
+
+        .franja-tricolor span {
+            flex: 2
+        }
+
+        .franja-tricolor span:nth-child(1) {
+            background: var(--co-yellow)
+        }
+
+        .franja-tricolor span:nth-child(2) {
+            background: var(--co-blue);
+            flex: 1
+        }
+
+        .franja-tricolor span:nth-child(3) {
+            background: var(--co-red);
+            flex: 1
+        }
+
+        /* ── HEADER ── */
+        .topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 25px 60px;
+            position: relative;
+            z-index: 20;
+            background: #fff
+        }
+
+        .topbar img {
+            height: 48px
+        }
+
+        .topbar a.volver {
+            color: var(--text-muted);
+            font-weight: 700;
+            text-decoration: none;
+            font-size: .95rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: .3s
+        }
+
+        .topbar a.volver:hover {
+            color: var(--c-purple)
+        }
+
+        /* ── HERO ── */
+        .hero-co {
+            position: relative;
+            min-height: 78vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 90px 20px 0;
+            overflow: hidden;
+            background:
+                radial-gradient(ellipse 900px 500px at 50% -10%, rgba(252, 209, 22, .30), transparent 60%),
+                radial-gradient(ellipse 700px 400px at 85% 20%, rgba(206, 17, 38, .08), transparent 60%),
+                linear-gradient(180deg, #fffdf5 0%, #ffffff 55%);
+        }
+
+        .hero-co-inner {
+            position: relative;
+            z-index: 5;
+            max-width: 820px
+        }
+
+        .flag-dots {
+            display: inline-flex;
+            gap: 6px;
+            margin-bottom: 20px;
+            vertical-align: middle
+        }
+
+        .flag-dots span {
+            width: 9px;
+            height: 9px;
+            border-radius: 3px;
+            display: inline-block
+        }
+
+        .flag-dots span:nth-child(1) {
+            background: var(--co-yellow)
+        }
+
+        .flag-dots span:nth-child(2) {
+            background: var(--co-blue)
+        }
+
+        .flag-dots span:nth-child(3) {
+            background: var(--co-red)
+        }
+
+        .hero-co .tag {
+            font-family: var(--font-h);
+            font-size: .85rem;
+            font-weight: 800;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            color: var(--co-blue);
+            margin-bottom: 22px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px
+        }
+
+        .hero-co h1 {
+            font-family: var(--font-h);
+            font-weight: 900;
+            font-size: clamp(2.8rem, 6.2vw, 5.2rem);
+            line-height: 1.02;
+            letter-spacing: -1.5px;
+            margin-bottom: 24px
+        }
+
+        .hero-co h1 span {
+            color: var(--c-pink)
+        }
+
+        .hero-co h1 .brush {
+            position: relative;
+            color: var(--co-blue)
+        }
+
+        .hero-co p {
+            font-size: 1.25rem;
+            color: var(--text-muted);
+            max-width: 640px;
+            margin: 0 auto 44px;
+            line-height: 1.65
+        }
+
+        /* Cordillera decorativa (montañas + horizonte tricolor) */
+        .cordillera {
+            position: relative;
+            width: 100%;
+            line-height: 0;
+            margin-top: 40px
+        }
+
+        .cordillera img {
+            display: block;
+            width: 100%;
+            height: 220px;
+            object-fit: cover
+        }
+
+        /* ── STATS BAND ── */
+        .stats-band {
+            display: flex;
+            justify-content: center;
+            gap: 60px;
+            flex-wrap: wrap;
+            padding: 46px 20px 60px;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .stat-item {
+            text-align: center
+        }
+
+        .stat-item .num {
+            font-family: var(--font-h);
+            font-weight: 900;
+            font-size: 2.6rem;
+            line-height: 1
+        }
+
+        .stat-item:nth-child(1) .num {
+            color: var(--co-yellow);
+            -webkit-text-stroke: 1.5px var(--c-dark)
+        }
+
+        .stat-item:nth-child(2) .num {
+            color: var(--co-blue)
+        }
+
+        .stat-item:nth-child(3) .num {
+            color: var(--co-red)
+        }
+
+        .stat-item .lbl {
+            font-size: .82rem;
+            color: var(--text-muted);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 8px
+        }
+
+        /* ── OPCIONES ── */
+        .options-wrap {
+            background: #fafaf9;
+            padding: 20px 20px 110px;
+            position: relative
+        }
+
+        .options-wrap::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, var(--co-yellow), var(--co-blue), var(--co-red));
+            opacity: .35
+        }
+
+        .options {
+            max-width: 1020px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            padding-top: 70px
+        }
+
+        .section-eyebrow {
+            text-align: center;
+            font-family: var(--font-h);
+            font-weight: 800;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            font-size: .85rem;
+            color: var(--co-red);
+            padding-top: 70px
+        }
+
+        .section-heading {
+            text-align: center;
+            font-family: var(--font-h);
+            font-weight: 900;
+            font-size: clamp(2.2rem, 4vw, 3rem);
+            margin: 10px auto 0;
+            max-width: 600px
+        }
+
+        .opt-card {
+            background: #fff;
+            border-radius: 30px;
+            padding: 0;
+            box-shadow: var(--shadow-sm);
+            text-align: center;
+            transition: .4s;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow: hidden;
+            border: 1px solid #f1f5f9;
+        }
+
+        .opt-card .top-stripe {
+            width: 100%;
+            height: 6px;
+            display: flex
+        }
+
+        .opt-card .top-stripe span {
+            flex: 1
+        }
+
+        .opt-card:hover {
+            transform: translateY(-10px);
+            box-shadow: var(--shadow-md)
+        }
+
+        /* Imagen de portada de cada tarjeta */
+        .opt-card-img {
+            width: 100%;
+            height: 190px;
+            overflow: hidden
+        }
+
+        .opt-card-img img {
+            width: 470px;
+            height: 250px;
+            object-fit: cover;
+            display: block;
+            transition: .6s
+        }
+
+        .opt-card:hover .opt-card-img img {
+            transform: scale(1.08)
+        }
+
+        .opt-card-body {
+            padding: 40px 40px 46px;
+            display: flex;
+            flex-direction: column;
+            align-items: center
+        }
+
+        .opt-icon {
+            width: 90px;
+            height: 90px;
+            border-radius: 26px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.4rem;
+            color: #fff;
+            margin-bottom: 26px;
+            margin-top: -72px;
+            border: 5px solid #fff;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, .12)
+        }
+
+        .opt-card h3 {
+            font-family: var(--font-h);
+            font-size: 1.7rem;
+            font-weight: 800;
+            margin-bottom: 14px
+        }
+
+        .opt-card p {
+            color: var(--text-muted);
+            font-size: 1.05rem;
+            line-height: 1.6;
+            margin-bottom: 28px
+        }
+
+        .opt-btn {
+            padding: 18px 40px;
+            border-radius: 100px;
+            font-weight: 800;
+            font-size: .95rem;
+            font-family: var(--font-h);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            border: none;
+            cursor: pointer;
+            color: #fff;
+            transition: .4s
+        }
+
+        .opt-btn:hover {
+            transform: translateY(-3px);
+            filter: brightness(1.08)
+        }
+
+        /* ── FRASE / SIGNATURE SECTION ── */
+        .frase-section {
+            position: relative;
+            padding: 110px 20px;
+            text-align: center;
+            overflow: hidden;
+            background: linear-gradient(135deg, rgba(252, 209, 22, .06), rgba(0, 56, 147, .05) 55%, rgba(206, 17, 38, .05));
+        }
+
+        .frase-section blockquote {
+            font-family: var(--font-h);
+            font-weight: 800;
+            font-size: clamp(1.8rem, 3.6vw, 3rem);
+            max-width: 800px;
+            margin: 0 auto;
+            line-height: 1.3;
+            color: var(--c-dark);
+            position: relative;
+            z-index: 2
+        }
+
+        .frase-section blockquote span {
+            color: var(--co-blue)
+        }
+
+        .frase-line {
+            width: 70px;
+            height: 5px;
+            margin: 30px auto 0;
+            display: flex;
+            border-radius: 10px;
+            overflow: hidden
+        }
+
+        .frase-line span {
+            flex: 1
+        }
+
+        .frase-line span:nth-child(1) {
+            background: var(--co-yellow)
+        }
+
+        .frase-line span:nth-child(2) {
+            background: var(--co-blue)
+        }
+
+        .frase-line span:nth-child(3) {
+            background: var(--co-red)
+        }
+
+        @media(max-width:800px) {
+            .options {
+                grid-template-columns: 1fr
+            }
+
+            .topbar {
+                padding: 20px
+            }
+
+            .stats-band {
+                gap: 34px
+            }
+        }
+
+        /* ── MODAL DONACIÓN ── */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, .8);
+            backdrop-filter: blur(10px);
+            z-index: 5000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px
+        }
+
+        .modal-box {
+            background: #fff;
+            width: 100%;
+            max-width: 550px;
+            padding: 50px;
+            border-radius: 40px;
+            text-align: center;
+            position: relative;
+            box-shadow: 0 50px 100px rgba(0, 0, 0, .2);
+            max-height: 95vh;
+            overflow-y: auto
+        }
+
+        .modal-box::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 6px;
+            background: linear-gradient(90deg, var(--co-yellow), var(--co-blue), var(--co-red))
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 22px;
+            color: #ef4444;
+            background: #fef2f2;
+            border: 2px solid #fecaca;
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: .3s cubic-bezier(.16, 1, .3, 1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 50
+        }
+
+        .modal-close:hover {
+            background: #ef4444;
+            color: #fff;
+            transform: scale(1.15) rotate(90deg)
+        }
+
+        .donation-chips {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 30px
+        }
+
+        .chip {
+            padding: 12px 25px;
+            border: 2px solid #e2e8f0;
+            border-radius: 100px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: .3s;
+            color: var(--c-dark);
+            font-size: 16px
+        }
+
+        .chip.active {
+            background: var(--c-pink);
+            color: #fff;
+            border-color: var(--c-pink)
+        }
+
+        .donation-input {
+            width: 100%;
+            padding: 20px;
+            border-radius: 20px;
+            border: 2px solid #e2e8f0;
+            font-size: 24px;
+            text-align: center;
+            font-weight: 800;
+            color: var(--c-pink);
+            margin-bottom: 20px;
+            font-family: var(--font-h)
+        }
+
+        .donation-input:focus {
+            outline: none;
+            border-color: var(--c-pink)
+        }
+
+        .donation-icon {
+            width: 72px;
+            height: 72px;
+            border-radius: 50%;
+            margin: 0 auto 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            color: #fff;
+            background: linear-gradient(135deg, var(--co-yellow), var(--co-red));
+            animation: bounceIn .5s;
+            box-shadow: 0 12px 25px rgba(206, 17, 38, .25)
+        }
+
+        @keyframes bounceIn {
+            0% {
+                transform: scale(.3);
+                opacity: 0
+            }
+
+            50% {
+                transform: scale(1.1)
+            }
+
+            100% {
+                transform: scale(1);
+                opacity: 1
+            }
+        }
+
+        /* ── FOOTER ── */
+        .footer-mini {
+            padding: 40px 20px 30px;
+            text-align: center;
+            color: #94a3b8;
+            font-size: .85rem
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="franja-tricolor"><span></span><span></span><span></span></div>
+
+    <section class="hero-co">
+        <div class="hero-co-inner">
+            <p class="tag"><span class="flag-dots"><span></span><span></span><span></span></span> Comunidad HOPE
+                Colombia</p>
+            <h1>Todo lo que <span class="brush">sientes</span> <span>importa</span>.</h1>
+            <p>Estamos construyendo un espacio de acompañamiento emocional para la comunidad colombiana. Dona una
+                terapia para alguien que la necesita, o únete a nuestra familia HOPE.</p>
+        </div>
+
+        <div class="cordillera">
+            <img src="{% static 'img/slider5.jpeg' %}" alt="Montañas de Colombia">
+        </div>
+    </section>
+
+    <div class="options-wrap">
+        <p class="section-eyebrow">Elige tu camino</p>
+        <h2 class="section-heading">¿Cómo quieres acompañarnos hoy?</h2>
+
+        <section class="options">
+            <div class="opt-card" onclick="abrirDonacion()">
+                <div class="top-stripe"><span style="background:var(--co-yellow)"></span><span
+                        style="background:var(--co-blue)"></span><span style="background:var(--co-red)"></span></div>
+                <div class="opt-card-img">
+                    <img src="{% static 'img/colombia_donar.jpeg' %}" alt="Donar una terapia en Colombia">
+                </div>
+                <div class="opt-card-body">
+                    <div class="opt-icon" style="background:var(--c-pink)"><i class="fas fa-hand-holding-heart"></i>
+                    </div>
+                    <h3>Donar aquí</h3>
+                    <p>Apoya el tratamiento psicológico de un joven en Colombia. Cada donativo se convierte en sesiones
+                        de terapia real.</p>
+                    <button class="opt-btn" style="background:var(--c-pink)"
+                        onclick="event.stopPropagation(); abrirDonacion()">Quiero donar <i
+                            class="fas fa-heart"></i></button>
+                </div>
+            </div>
+
+            <div class="opt-card" onclick="window.location.href='{% url 'formulario_colombia' %}'">
+                <div class="top-stripe"><span style="background:var(--co-yellow)"></span><span
+                        style="background:var(--co-blue)"></span><span style="background:var(--co-red)"></span></div>
+                <div class="opt-card-img">
+                    <img src="{% static 'img/colombia_unete.jpeg' %}" alt="Únete a la familia HOPE Colombia">
+                </div>
+                <div class="opt-card-body">
+                    <div class="opt-icon" style="background:var(--c-purple)"><i class="fas fa-people-group"></i></div>
+                    <h3>Únete a nuestra familia</h3>
+                    <p>Cuéntanos quién eres y cómo podemos acompañarte. Nuestro equipo se pondrá en contacto contigo.
+                    </p>
+                    <button class="opt-btn" style="background:var(--c-purple)"
+                        onclick="event.stopPropagation(); window.location.href='{% url 'formulario_colombia' %}'">Quiero
+                        unirme <i class="fas fa-arrow-right"></i></button>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <section class="frase-section">
+        <blockquote>No importa en qué ciudad de Colombia estés: <span>tu bienestar emocional también es nuestra
+                prioridad.</span></blockquote>
+        <div class="frase-line"><span></span><span></span><span></span></div>
+    </section>
+
+    <div class="franja-tricolor"><span></span><span></span><span></span></div>
+    <div class="footer-mini">© 2026 HOPE — Todo lo que sientes importa. Comunidad Colombia.</div>
+
+    <!-- ══ MODAL: DONACIÓN ══ -->
+    <div id="modalDonacion" class="modal-overlay">
+        <div class="modal-box">
+            <button class="modal-close" onclick="cerrarModal('modalDonacion')"><i class="fas fa-times"></i></button>
+            <h2 style="font-family:var(--font-h);font-size:2.8rem;color:var(--c-dark);margin-bottom:10px">Legado de
+                Esperanza</h2>
+            <p style="color:var(--text-muted);margin-bottom:25px">Apoya el tratamiento psicológico de un joven.</p>
+            <div id="donEmoji" class="donation-icon"><i class="fas fa-heart"></i></div>
+            <div class="donation-chips">
+                <div class="chip" onclick="selectAmount(100,this)">$100</div>
+                <div class="chip active" onclick="selectAmount(400,this)">$400</div>
+                <div class="chip" onclick="selectAmount(1200,this)">$1,200</div>
+                <div class="chip" onclick="selectAmount(7200,this)">$7,200</div>
+                <div class="chip" onclick="selectAmount(14500,this)">$14,500</div>
+                <div class="chip" onclick="selectAmount('',this)">Otro</div>
+            </div>
+            <input type="number" id="donAmount" class="donation-input" value="400" placeholder="Ingresa un monto">
+            <p id="donImpact" style="color:var(--text-muted);font-style:italic;margin-bottom:30px">"Dona un mes de
+                terapia."</p>
+            <div id="paypal-button-container-donacion" style="margin-bottom:15px;"></div>
+            <div style="text-align:center;">
+            </div>
+        </div>
+    </div>
+
+    {% csrf_token %}
+
+    <script>
+        function abrirModal(id) { const el = document.getElementById(id); if (el) el.style.display = 'flex'; }
+        function cerrarModal(id) { const el = document.getElementById(id); if (el) el.style.display = 'none'; }
+        function abrirDonacion() { abrirModal('modalDonacion'); renderizarPayPalDonacion(); }
+
+        document.querySelectorAll('.modal-overlay').forEach(o => {
+            o.addEventListener('click', e => { if (e.target === o) cerrarModal(o.id); });
+        });
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape') { document.querySelectorAll('.modal-overlay').forEach(o => o.style.display = 'none'); }
+        });
+
+        const donAmount = document.getElementById('donAmount');
+        const donImpact = document.getElementById('donImpact');
+        const donEmoji = document.getElementById('donEmoji');
+        const IMPACT_MAP = [
+            [100, '"Dona una terapia."'],
+            [400, '"Dona un mes de terapia."'],
+            [1200, '"Terapia para 1 persona."'],
+            [7200, '"½ beca de terapia."'],
+            [14500, '"1 beca completa."'],
+        ];
+        function updateDonation(val) {
+            val = parseInt(val) || 0;
+            donEmoji.style.animation = 'none'; void donEmoji.offsetWidth; donEmoji.style.animation = 'bounceIn .5s';
+            const found = IMPACT_MAP.find(([v]) => v === val);
+            if (found) { donImpact.textContent = found[1] }
+            else { donImpact.textContent = '"¡Eres un Padrino de Honor!"' }
+        }
+        function selectAmount(amount, el) {
+            document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+            el.classList.add('active');
+            if (amount !== '') { donAmount.value = amount; updateDonation(amount) }
+            else { donAmount.value = ''; donAmount.focus(); updateDonation(0) }
+        }
+        donAmount.addEventListener('input', function () {
+            document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+            updateDonation(this.value);
+        });
+        updateDonation(400);
+
+        function renderizarPayPalDonacion() {
+            const container = document.getElementById('paypal-button-container-donacion');
+            if (!container) return;
+            if (typeof paypal !== 'undefined') { renderButtons(); }
+            else {
+                const script = document.createElement('script');
+                script.src = "https://www.paypal.com/sdk/js?client-id={{ paypal_client_id }}&currency=MXN&locale=es_MX";
+                script.onload = renderButtons;
+                document.body.appendChild(script);
+            }
+        }
+        function renderButtons() {
+            const container = document.getElementById('paypal-button-container-donacion');
+            if (container.children.length > 0) return;
+            paypal.Buttons({
+                style: { layout: 'vertical', color: 'blue', shape: 'rect', label: 'donate' },
+                createOrder: function (data, actions) {
+                    let monto = document.getElementById('donAmount').value || '400';
+                    return actions.order.create({ purchase_units: [{ description: 'Donación HOPE Colombia', amount: { currency_code: 'MXN', value: parseFloat(monto).toFixed(2) } }] });
+                },
+                onApprove: function (data, actions) {
+                    return actions.order.capture().then(function () {
+                        container.innerHTML = '<div style="background:#10B981;color:white;padding:15px;border-radius:100px;text-align:center;">Gracias por tu apoyo.</div>';
+                        setTimeout(() => { cerrarModal('modalDonacion'); location.reload(); }, 2000);
+                    });
+                }
+            }).render('#paypal-button-container-donacion');
+        }
+
+        document.getElementById('btn-donar-clip')?.addEventListener('click', function () {
+            let monto = document.getElementById('donAmount').value;
+            if (!monto || monto < 50) { alert('El donativo mínimo es de $50 MXN. ¡Gracias por tu apoyo!'); return; }
+            let formData = new URLSearchParams();
+            formData.append('monto', monto);
+            formData.append('tipo_servicio', 'donativo');
+            formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+            const originalClipBtn = this.innerHTML;
+            this.innerHTML = 'Redirigiendo...'; this.disabled = true;
+            fetch("{% url 'iniciar_pago_clip' %}", {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-Requested-With': 'XMLHttpRequest' },
+                body: formData.toString()
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success' && data.payment_url) { window.location.href = data.payment_url; }
+                    else { alert('Error al procesar el donativo. Intenta de nuevo.'); this.innerHTML = originalClipBtn; this.disabled = false; }
+                });
+        });
+    </script>
+</body>
+
+</html>
 {% endblock %}
