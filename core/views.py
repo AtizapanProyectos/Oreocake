@@ -3777,7 +3777,7 @@ def taller_detalle_adolescente(request):
     taller = {
         'nombre': 'Mejorando la relación con mi hijo adolescente',
         'costo_texto': '$100.00 MXN',
-        'fecha_texto': '1, 3, 8 y 10 de septiembre - 10:00 AM'
+        'fecha_texto': '1, 3, 8 y 10 de septiembre -  20:00 hrs'
     }
     context = {
         'taller': taller,
