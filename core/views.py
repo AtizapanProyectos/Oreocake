@@ -4,7 +4,7 @@ from requests import request
 from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_protect
 # pyrefly: ignore [missing-import]
-
+from django.db.models import Count
 from decimal import Decimal
 import threading
 from django.shortcuts import render, redirect
@@ -59,6 +59,7 @@ from .models import *
 from .cuestionario_data import CUESTIONARIO_CLINICO
 from django.utils import timezone
 from django.utils import timezone as tz
+from django.db.models import Count, Avg, Sum, Min, Max
 
 
 
@@ -3963,31 +3964,16 @@ def api_chat_ia_ask(request):
     # NATURAL LANGUAGE -> DJANGO ORM
     # ========================================================
 
-    prompt_codigo = f"""
-Eres HOPE AI, un traductor estricto de lenguaje natural
-a consultas Django ORM.
+prompt_codigo = f"""
+Eres HOPE AI, un traductor estricto de lenguaje natural a Django ORM.
 
-Tu tarea es convertir la pregunta del administrador
-en UNA SOLA expresión válida de Django ORM.
+Devuelve ÚNICAMENTE una expresión Python válida.
+No uses markdown.
+No uses ```python.
+No expliques nada.
+No inventes modelos ni campos.
 
-IMPORTANTE:
-- Devuelve ÚNICAMENTE la expresión Python.
-- NO uses markdown.
-- NO uses ```python.
-- NO expliques nada.
-- NO pongas texto antes ni después.
-- NO inventes modelos.
-- NO inventes campos.
-- Utiliza solamente los modelos y campos indicados.
-- Siempre intenta devolver un QuerySet o un resultado ORM.
-- Evita código innecesario.
-- No uses imports.
-- No uses os.
-- No uses archivos.
-- No uses funciones externas.
-- No uses comandos de sistema.
-
-MODELOS DISPONIBLES:
+MODELOS:
 
 Cita:
 - fecha
@@ -4012,46 +3998,48 @@ User:
 - email
 - is_active
 
-VARIABLE DISPONIBLE:
+FUNCIONES DE AGREGACIÓN DISPONIBLES:
 
-hoy = fecha actual del sistema.
+Count
+Avg
+Sum
+Min
+Max
 
-Fecha actual:
-{timezone.now().date()}
+VARIABLES DISPONIBLES:
+
+hoy
+timezone
+datetime
 
 EJEMPLOS:
 
-Pregunta:
-¿Cuántas citas existen?
+¿Cuántas citas hay?
 
-Respuesta:
-Cita.objects.all()
+Cita.objects.count()
 
-Pregunta:
-¿Cuáles son las citas de hoy?
+¿Cuántas citas hay por psicólogo?
 
-Respuesta:
-Cita.objects.filter(fecha=hoy)
+Cita.objects.values('psicologo').annotate(
+    total=Count('id')
+).order_by('-total')
 
-Pregunta:
-¿Cuáles son las citas canceladas?
+¿Qué psicólogo tiene más pacientes?
 
-Respuesta:
-Cita.objects.filter(estado='cancelada')
+Cita.objects.values(
+    'psicologo__usuarioperfil__nombre'
+).annotate(
+    num_patients=Count('paciente', distinct=True)
+).order_by('-num_patients').first()
 
-Pregunta:
-¿Cuáles son las citas pendientes?
+¿Cuál es el promedio de citas?
 
-Respuesta:
-Cita.objects.filter(estado='pendiente')
-
-Pregunta:
-Muéstrame las primeras 30 citas.
-
-Respuesta:
-Cita.objects.all()[:30]
+Cita.objects.aggregate(
+    promedio=Avg('id')
+)
 
 PREGUNTA DEL ADMINISTRADOR:
+
 "{prompt_usuario}"
 """
 
@@ -4166,6 +4154,15 @@ PREGUNTA DEL ADMINISTRADOR:
             'UsuarioPerfil': UsuarioPerfil,
             'PerfilPsicologo': PerfilPsicologo,
             'User': User,
+
+            # Agregaciones Django
+            'Count': Count,
+            'Avg': Avg,
+            'Sum': Sum,
+            'Min': Min,
+            'Max': Max,
+
+            # Utilidades
             'timezone': timezone,
             'datetime': datetime,
             'hoy': timezone.now().date(),
