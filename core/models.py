@@ -237,6 +237,7 @@ class Cita(models.Model):
     psicologo = models.ForeignKey(PerfilPsicologo, on_delete=models.CASCADE, related_name='citas_agendadas', null=True)
     fecha = models.DateField(verbose_name='Fecha de la sesión', db_index=True) # 🔥 OPTIMIZADO
     hora = models.TimeField(verbose_name='Hora de la sesión')
+    reporte_enviado = models.BooleanField(default=False)
     motivo = models.CharField(max_length=150, verbose_name='Motivo de consulta', default='Primera sesión')
     estado_animo = models.CharField(max_length=50, blank=True, null=True, verbose_name='Estado de ánimo')
     estado = models.CharField(max_length=50, default='Confirmada', choices=[

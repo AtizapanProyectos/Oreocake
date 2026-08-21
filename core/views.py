@@ -3410,314 +3410,6 @@ def buscar_mis_pacientes_ajax(request):
 
     return JsonResponse({'status': 'success', 'resultados': resultados})
 
-
-@user_passes_test(lambda u: hasattr(u, 'perfil_psicologo') or u.is_superuser, login_url='/')
-def generar_reporte_checkin_ajax(request):
-    """
-    🔥 Autocompleta TODO el Reporte de Check-In de un paciente:
-    - Datos del encabezado (nombre, psicólogo, cédula, fecha, # de sesión)
-    - Gauge de IPP + delta vs. la sesión anterior
-    - Las 4 dimensiones (Bienestar emocional, Afrontamiento,
-      Aplicación de herramientas, Esperanza y autoeficacia)
-    - Evolución del IPP (últimas 3 sesiones)
-    - Estado de ánimo (carita)
-    - "Objetivo y Tarea" y "Recomendaciones" redactados por IA (Groq),
-      cada uno forzado a EXACTAMENTE 728 caracteres.
-    """
-    paciente_id = request.GET.get('paciente_id')
-    if not paciente_id:
-        return JsonResponse({'status': 'error', 'message': 'Falta paciente_id'})
-
-    try:
-        paciente = User.objects.select_related('perfil', 'perfil__psicologo_asignado__usuario').get(id=paciente_id)
-    except User.DoesNotExist:
-        return JsonResponse({'status': 'error', 'message': 'Paciente no encontrado'})
-
-    perfil_paciente = getattr(paciente, 'perfil', None)
-    psicologo_asignado = getattr(perfil_paciente, 'psicologo_asignado', None)
-
-    # Un psicólogo (no admin) solo puede generar el reporte de SUS pacientes
-    if not request.user.is_superuser:
-        if not hasattr(request.user, 'perfil_psicologo') or psicologo_asignado != request.user.perfil_psicologo:
-            return JsonResponse({'status': 'error', 'message': 'No autorizado para este paciente'})
-
-    try:
-        # ---------- 1. Datos generales ----------
-        nombre_paciente = (perfil_paciente.nombre if perfil_paciente and perfil_paciente.nombre else paciente.first_name) or paciente.username
-
-        nombre_psicologo = ''
-        cedula_psicologo = ''
-        if psicologo_asignado:
-            nombre_psicologo = psicologo_asignado.usuario.first_name if psicologo_asignado.usuario else ''
-            cedula_psicologo = psicologo_asignado.cedula_profesional or ''
-
-        historiales = HistorialClinico.objects.filter(paciente=paciente).order_by('fecha_registro')
-        sesion_numero = historiales.count() or 1
-
-        ultima_cita = Cita.objects.filter(paciente=paciente).exclude(estado='Cancelada').order_by('-fecha', '-hora').first()
-        fecha_ultima_sesion = ultima_cita.fecha.isoformat() if ultima_cita else ''
-
-        # ---------- 1b. ¿Ya tiene una próxima sesión programada? ----------
-        hoy = timezone.localdate()
-        ahora = timezone.localtime().time()
-        proxima_cita = Cita.objects.filter(
-            paciente=paciente
-        ).exclude(estado='Cancelada').filter(
-            Q(fecha__gt=hoy) | Q(fecha=hoy, hora__gte=ahora)
-        ).order_by('fecha', 'hora').first()
-
-        tiene_proxima_cita = proxima_cita is not None
-        proxima_fecha = proxima_cita.fecha.isoformat() if proxima_cita else ''
-        proxima_hora = proxima_cita.hora.strftime('%H:%M') if proxima_cita else ''
-
-        # ---------- 2. Estado de ánimo (carita) ----------
-        valores_mood = {'Muy mal': 1, 'Triste': 2, 'Normal': 3, 'Bien': 4, 'Excelente': 5}
-        mood_valor = valores_mood.get(ultima_cita.estado_animo, 5) if ultima_cita else 5
-
-        # ---------- 3. IPP: evolución (últimas 3) + dimensiones ----------
-        respuestas_ipp = RespuestaFormularioOrganica.objects.filter(paciente=paciente).order_by('-fecha_respuesta')[:3]
-        respuestas_ipp = list(reversed(respuestas_ipp))  # orden cronológico ascendente
-
-        evolucion = []
-        for i, r in enumerate(respuestas_ipp):
-            evolucion.append({
-                'sesion': i + 1,
-                'valor': calcular_ipt(r.puntaje) if hasattr(r, 'puntaje') else 0,
-            })
-
-        ipp_valor = evolucion[-1]['valor'] if evolucion else 0
-        ipp_delta = (evolucion[-1]['valor'] - evolucion[-2]['valor']) if len(evolucion) >= 2 else 0
-
-        # Dimensiones: promedio por categoría de la ÚLTIMA respuesta del cuestionario
-        dims = {'Bienestar emocional': 0, 'Afrontamiento': 0, 'Aplicación de herramientas': 0, 'Esperanza y autoeficacia': 0}
-        if respuestas_ipp:
-            ultima_respuesta = respuestas_ipp[-1].respuestas or {}
-            acumulado = {k: [] for k in dims}
-            for pregunta in FORMULARIO_ORGANICO_PREGUNTAS:
-                valor_txt = ultima_respuesta.get(pregunta['id'])
-                puntos = _OPCIONES_POR_PREGUNTA.get(pregunta['id'], {}).get(valor_txt)
-                if puntos:
-                    acumulado[pregunta['categoria']].append(puntos)
-            for categoria, puntos_lista in acumulado.items():
-                if puntos_lista:
-                    dims[categoria] = round((sum(puntos_lista) / len(puntos_lista)) / 5 * 100)
-
-        # ---------- 4. Contexto para la IA (bitácoras cronológicas) ----------
-        bitacoras_texto = ""
-        for i, h in enumerate(historiales):
-            bitacoras_texto += f"\n--- SESIÓN {i+1} ({h.fecha_registro.strftime('%d/%m/%Y')}) ---\n"
-            bitacoras_texto += f"Estado inicial: {h.como_llega or 'N/A'}\n"
-            bitacoras_texto += f"Desarrollo: {h.notas_sesion or 'N/A'}\n"
-            bitacoras_texto += f"Aprendizaje del paciente: {h.aprendizaje_paciente or 'N/A'}\n"
-            bitacoras_texto += f"Cierre: {h.como_se_va or 'N/A'}\n"
-            bitacoras_texto += f"Recomendaciones dadas: {h.recomendaciones or 'N/A'}\n"
-
-        if not bitacoras_texto:
-            bitacoras_texto = "Aún no hay bitácoras registradas para este paciente."
-
-        # ---------- 5. Llamada a Groq ----------
-        prompt = (
-            f"Eres un psicólogo clínico experto redactando el Reporte de Check-In de {nombre_paciente}, "
-            f"sesión #{sesion_numero}.\n\n"
-            f"BITÁCORAS DE SESIONES:\n{bitacoras_texto}\n\n"
-            "Con base en esa información, redacta EXACTAMENTE dos textos:\n\n"
-            "1. \"objetivo_tarea\": un resumen claro de la tarea/objetivo que el psicólogo dejó al paciente "
-            "en la última sesión (o el objetivo terapéutico vigente si no hay tarea explícita).\n"
-            "2. \"recomendaciones\": recomendaciones concretas y accionables para el paciente antes de la próxima sesión.\n\n"
-            "REGLA CRÍTICA DE FORMATO: cada uno de los dos textos debe tener exactamente 750 caracteres "
-            "(contando letras, números, espacios y signos de puntuación), redactado en párrafos completos, "
-            "cálido pero profesional, sin inventar información que no esté en las bitácoras.\n\n"
-            "Devuelve ÚNICAMENTE un JSON válido con esta forma exacta, sin backticks ni texto extra:\n"
-            "{\"objetivo_tarea\": \"...\", \"recomendaciones\": \"...\"}"
-        )
-
-        from groq import Groq
-        client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
-        response = client.chat.completions.create(
-            model="openai/gpt-oss-120b",  # ✅ nuevo,
-            messages=[{"role": "user", "content": prompt}],
-            max_tokens=1200,
-            temperature=0.3,
-        )
-
-        contenido_ia = _extraer_json_groq(response.choices[0].message.content.strip())
-        objetivo_tarea = _ajustar_texto_a_longitud_exacta(contenido_ia.get('objetivo_tarea', ''), 765)
-        recomendaciones = _ajustar_texto_a_longitud_exacta(contenido_ia.get('recomendaciones', ''), 765)
-
-        # ---------- 6. Respuesta ----------
-        return JsonResponse({
-            'status': 'success',
-            'data': {
-                'nombre_paciente': nombre_paciente,
-                'psicologo': nombre_psicologo,
-                'cedula': cedula_psicologo,
-                'fecha_ultima_sesion': fecha_ultima_sesion,
-                'sesion_numero': sesion_numero,
-                'tiene_proxima_cita': tiene_proxima_cita,
-                'proxima_fecha': proxima_fecha,
-                'proxima_hora': proxima_hora,
-                'ipp_valor': ipp_valor,
-                'ipp_delta': ipp_delta,
-                'dims': dims,
-                'evolucion': evolucion,
-                'mood_valor': mood_valor,
-                'objetivo_tarea': objetivo_tarea,
-                'recomendaciones': recomendaciones,
-            }
-        })
-
-    except Exception as e:
-        return JsonResponse({'status': 'error', 'message': str(e)})
-
-
-@user_passes_test(lambda u: hasattr(u, 'perfil_psicologo') or u.is_superuser, login_url='/')
-def generar_reporte_checkin_psicologo_ajax(request):
-    """
-    🔥 Autocompleta el Reporte de Check-In VERSIÓN PSICÓLOGO:
-    - Datos del encabezado (nombre, edad si existe, fecha última sesión, # sesión)
-    - Gauge de IPP + delta, las 4 dimensiones, evolución (últimas 3 sesiones)
-    - 4 textos redactados por IA (Groq), cada uno forzado a una longitud EXACTA:
-        · "¿Cómo llegaste a HOPE?"                    -> 719 caracteres
-        · "Apoyo por parte de HOPE en tu última sesión" -> 581 caracteres
-        · "Objetivo y Tarea"                           -> 750 caracteres
-        · "Recomendaciones"                            -> 745 caracteres
-    """
-    paciente_id = request.GET.get('paciente_id')
-    if not paciente_id:
-        return JsonResponse({'status': 'error', 'message': 'Falta paciente_id'})
-
-    try:
-        paciente = User.objects.select_related('perfil', 'perfil__psicologo_asignado__usuario').get(id=paciente_id)
-    except User.DoesNotExist:
-        return JsonResponse({'status': 'error', 'message': 'Paciente no encontrado'})
-
-    perfil_paciente = getattr(paciente, 'perfil', None)
-    psicologo_asignado = getattr(perfil_paciente, 'psicologo_asignado', None)
-
-    if not request.user.is_superuser:
-        if not hasattr(request.user, 'perfil_psicologo') or psicologo_asignado != request.user.perfil_psicologo:
-            return JsonResponse({'status': 'error', 'message': 'No autorizado para este paciente'})
-
-    try:
-        # ---------- 1. Datos generales ----------
-        nombre_paciente = (perfil_paciente.nombre if perfil_paciente and perfil_paciente.nombre else paciente.first_name) or paciente.username
-
-        historiales = HistorialClinico.objects.filter(paciente=paciente).order_by('fecha_registro')
-        sesion_numero = historiales.count() or 1
-        ultimo_historial = historiales.last()
-
-        ultima_cita = Cita.objects.filter(paciente=paciente).exclude(estado='Cancelada').order_by('-fecha', '-hora').first()
-        fecha_ultima_sesion = ultima_cita.fecha.isoformat() if ultima_cita else ''
-
-        # ---------- 2. Cuestionario inicial ("¿Cómo llegaste a HOPE?") ----------
-        cuestionario_texto = "El paciente no tiene cuestionario inicial registrado."
-        if hasattr(paciente, 'cuestionario_inicial'):
-            respuestas_cuest = paciente.cuestionario_inicial.respuestas or {}
-            cuestionario_texto = "\n".join([f"- {k.replace('_', ' ').capitalize()}: {v}" for k, v in respuestas_cuest.items()]) or cuestionario_texto
-
-        # ---------- 3. IPP: evolución (últimas 3) + dimensiones ----------
-        respuestas_ipp = RespuestaFormularioOrganica.objects.filter(paciente=paciente).order_by('-fecha_respuesta')[:3]
-        respuestas_ipp = list(reversed(respuestas_ipp))
-
-        evolucion = []
-        for i, r in enumerate(respuestas_ipp):
-            evolucion.append({'sesion': i + 1, 'valor': calcular_ipt(r.puntaje) if hasattr(r, 'puntaje') else 0})
-
-        ipp_valor = evolucion[-1]['valor'] if evolucion else 0
-        ipp_delta = (evolucion[-1]['valor'] - evolucion[-2]['valor']) if len(evolucion) >= 2 else 0
-
-        dims = {'Bienestar emocional': 0, 'Afrontamiento': 0, 'Aplicación de herramientas': 0, 'Esperanza y autoeficacia': 0}
-        if respuestas_ipp:
-            ultima_respuesta = respuestas_ipp[-1].respuestas or {}
-            acumulado = {k: [] for k in dims}
-            for pregunta in FORMULARIO_ORGANICO_PREGUNTAS:
-                valor_txt = ultima_respuesta.get(pregunta['id'])
-                puntos = _OPCIONES_POR_PREGUNTA.get(pregunta['id'], {}).get(valor_txt)
-                if puntos:
-                    acumulado[pregunta['categoria']].append(puntos)
-            for categoria, puntos_lista in acumulado.items():
-                if puntos_lista:
-                    dims[categoria] = round((sum(puntos_lista) / len(puntos_lista)) / 5 * 100)
-
-        # ---------- 4. Bitácoras (contexto completo + última sesión aparte) ----------
-        bitacoras_texto = ""
-        for i, h in enumerate(historiales):
-            bitacoras_texto += f"\n--- SESIÓN {i+1} ({h.fecha_registro.strftime('%d/%m/%Y')}) ---\n"
-            bitacoras_texto += f"Estado inicial: {h.como_llega or 'N/A'}\n"
-            bitacoras_texto += f"Desarrollo: {h.notas_sesion or 'N/A'}\n"
-            bitacoras_texto += f"Aprendizaje del paciente: {h.aprendizaje_paciente or 'N/A'}\n"
-            bitacoras_texto += f"Cierre: {h.como_se_va or 'N/A'}\n"
-            bitacoras_texto += f"Recomendaciones dadas: {h.recomendaciones or 'N/A'}\n"
-        if not bitacoras_texto:
-            bitacoras_texto = "Aún no hay bitácoras registradas para este paciente."
-
-        ultima_sesion_texto = "No hay una última sesión registrada."
-        if ultimo_historial:
-            ultima_sesion_texto = (
-                f"Estado inicial: {ultimo_historial.como_llega or 'N/A'}\n"
-                f"Desarrollo: {ultimo_historial.notas_sesion or 'N/A'}\n"
-                f"Aprendizaje del paciente: {ultimo_historial.aprendizaje_paciente or 'N/A'}\n"
-                f"Cierre: {ultimo_historial.como_se_va or 'N/A'}\n"
-                f"Recomendaciones dadas: {ultimo_historial.recomendaciones or 'N/A'}"
-            )
-
-        # ---------- 5. Llamada a Groq (4 textos, cada uno con su longitud objetivo) ----------
-        prompt = (
-            f"Eres un psicólogo clínico experto redactando el Reporte de Check-In (versión para el psicólogo) "
-            f"de {nombre_paciente}, sesión #{sesion_numero}.\n\n"
-            f"CUESTIONARIO INICIAL (test de 5 preguntas al llegar a HOPE):\n{cuestionario_texto}\n\n"
-            f"ÚLTIMA SESIÓN REGISTRADA:\n{ultima_sesion_texto}\n\n"
-            f"HISTORIAL COMPLETO DE BITÁCORAS:\n{bitacoras_texto}\n\n"
-            "Redacta EXACTAMENTE estos 4 textos, cada uno en párrafos completos, con tono clínico y profesional, "
-            "sin inventar información que no esté en los datos anteriores:\n\n"
-            "1. \"como_llegaste_hope\": resumen del motivo y contexto con el que el paciente llegó a HOPE, "
-            "basado en el cuestionario inicial. Debe tener exactamente 800 caracteres.\n"
-            "2. \"apoyo_ultima_sesion\": resumen del apoyo brindado por HOPE en la ÚLTIMA sesión. "
-            "Debe tener exactamente 700 caracteres.\n"
-            "3. \"objetivo_tarea\": la tarea u objetivo terapéutico que se dejó al paciente. "
-            "Debe tener exactamente 780 caracteres.\n"
-            "4. \"recomendaciones\": recomendaciones concretas y accionables para el paciente antes de la próxima sesión. "
-            "Debe tener exactamente 780 caracteres.\n\n"
-            "Devuelve ÚNICAMENTE un JSON válido con esta forma exacta, sin backticks ni texto extra:\n"
-            "{\"como_llegaste_hope\": \"...\", \"apoyo_ultima_sesion\": \"...\", \"objetivo_tarea\": \"...\", \"recomendaciones\": \"...\"}"
-        )
-
-        from groq import Groq
-        client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
-        response = client.chat.completions.create(
-            model="openai/gpt-oss-120b",  # ✅ nuevo,
-            messages=[{"role": "user", "content": prompt}],
-            max_tokens=1800,
-            temperature=0.3,
-        )
-
-        contenido_ia = _extraer_json_groq(response.choices[0].message.content.strip())
-        como_llegaste_hope = _ajustar_texto_a_longitud_exacta(contenido_ia.get('como_llegaste_hope', ''), 800)
-        apoyo_ultima_sesion = _ajustar_texto_a_longitud_exacta(contenido_ia.get('apoyo_ultima_sesion', ''), 700)
-        objetivo_tarea = _ajustar_texto_a_longitud_exacta(contenido_ia.get('objetivo_tarea', ''), 780)
-        recomendaciones = _ajustar_texto_a_longitud_exacta(contenido_ia.get('recomendaciones', ''), 780)
-
-        # ---------- 6. Respuesta ----------
-        return JsonResponse({
-            'status': 'success',
-            'data': {
-                'nombre_paciente': nombre_paciente,
-                'fecha_ultima_sesion': fecha_ultima_sesion,
-                'sesion_numero': sesion_numero,
-                'ipp_valor': ipp_valor,
-                'ipp_delta': ipp_delta,
-                'dims': dims,
-                'evolucion': evolucion,
-                'como_llegaste_hope': como_llegaste_hope,
-                'apoyo_ultima_sesion': apoyo_ultima_sesion,
-                'objetivo_tarea': objetivo_tarea,
-                'recomendaciones': recomendaciones,
-            }
-        })
-
-    except Exception as e:
-        return JsonResponse({'status': 'error', 'message': str(e)})
-
 def renderizar_imagen(request):
     # Diccionario de contexto con los datos que le pasaremos al template
     return render(request, 'Pruebas/claude_psioclog.html')
@@ -3964,7 +3656,7 @@ def api_chat_ia_ask(request):
     # NATURAL LANGUAGE -> DJANGO ORM
     # ========================================================
 
-prompt_codigo = f"""
+    prompt_codigo = f"""
 Eres HOPE AI, un traductor estricto de lenguaje natural a Django ORM.
 
 Devuelve ÚNICAMENTE una expresión Python válida.
@@ -4041,7 +3733,7 @@ Cita.objects.aggregate(
 PREGUNTA DEL ADMINISTRADOR:
 
 "{prompt_usuario}"
-"""
+    """
 
     # --------------------------------------------------------
     # LLAMADA A GROQ PARA ORM
@@ -4365,7 +4057,7 @@ responde únicamente con texto normal.
 12. No inventes HTML si no se solicitó un reporte visual.
 
 13. No muestres código Python al usuario final.
-"""
+    """
 
     # --------------------------------------------------------
     # LLAMADA FINAL A GROQ
@@ -4432,3 +4124,462 @@ responde únicamente con texto normal.
             'ensure_ascii': False
         }
     )
+
+
+
+def _construir_datos_checkin_paciente(paciente):
+    """
+    Construye el diccionario de datos del Reporte de Check-In (versión
+    paciente). Si algo falla (Groq, datos faltantes, etc.) lanza la
+    excepción hacia arriba; quien la llame decide qué hacer con eso.
+    """
+    perfil_paciente = getattr(paciente, 'perfil', None)
+    psicologo_asignado = getattr(perfil_paciente, 'psicologo_asignado', None)
+ 
+    nombre_paciente = (perfil_paciente.nombre if perfil_paciente and perfil_paciente.nombre else paciente.first_name) or paciente.username
+ 
+    nombre_psicologo = ''
+    cedula_psicologo = ''
+    if psicologo_asignado:
+        nombre_psicologo = psicologo_asignado.usuario.first_name if psicologo_asignado.usuario else ''
+        cedula_psicologo = psicologo_asignado.cedula_profesional or ''
+ 
+    historiales = HistorialClinico.objects.filter(paciente=paciente).order_by('fecha_registro')
+    sesion_numero = historiales.count() or 1
+ 
+    ultima_cita = Cita.objects.filter(paciente=paciente).exclude(estado='Cancelada').order_by('-fecha', '-hora').first()
+    fecha_ultima_sesion = ultima_cita.fecha.isoformat() if ultima_cita else ''
+ 
+    hoy = timezone.localdate()
+    ahora_time = timezone.localtime().time()
+    proxima_cita = Cita.objects.filter(
+        paciente=paciente
+    ).exclude(estado='Cancelada').filter(
+        Q(fecha__gt=hoy) | Q(fecha=hoy, hora__gte=ahora_time)
+    ).order_by('fecha', 'hora').first()
+ 
+    tiene_proxima_cita = proxima_cita is not None
+    proxima_fecha = proxima_cita.fecha.isoformat() if proxima_cita else ''
+    proxima_hora = proxima_cita.hora.strftime('%H:%M') if proxima_cita else ''
+ 
+    valores_mood = {'Muy mal': 1, 'Triste': 2, 'Normal': 3, 'Bien': 4, 'Excelente': 5}
+    mood_valor = valores_mood.get(ultima_cita.estado_animo, 5) if ultima_cita else 5
+ 
+    respuestas_ipp = RespuestaFormularioOrganica.objects.filter(paciente=paciente).order_by('-fecha_respuesta')[:3]
+    respuestas_ipp = list(reversed(respuestas_ipp))
+ 
+    evolucion = []
+    for i, r in enumerate(respuestas_ipp):
+        evolucion.append({'sesion': i + 1, 'valor': calcular_ipt(r.puntaje) if hasattr(r, 'puntaje') else 0})
+ 
+    ipp_valor = evolucion[-1]['valor'] if evolucion else 0
+    ipp_delta = (evolucion[-1]['valor'] - evolucion[-2]['valor']) if len(evolucion) >= 2 else 0
+ 
+    dims = {'Bienestar emocional': 0, 'Afrontamiento': 0, 'Aplicación de herramientas': 0, 'Esperanza y autoeficacia': 0}
+    if respuestas_ipp:
+        ultima_respuesta = respuestas_ipp[-1].respuestas or {}
+        acumulado = {k: [] for k in dims}
+        for pregunta in FORMULARIO_ORGANICO_PREGUNTAS:
+            valor_txt = ultima_respuesta.get(pregunta['id'])
+            puntos = _OPCIONES_POR_PREGUNTA.get(pregunta['id'], {}).get(valor_txt)
+            if puntos:
+                acumulado[pregunta['categoria']].append(puntos)
+        for categoria, puntos_lista in acumulado.items():
+            if puntos_lista:
+                dims[categoria] = round((sum(puntos_lista) / len(puntos_lista)) / 5 * 100)
+ 
+    bitacoras_texto = ""
+    for i, h in enumerate(historiales):
+        bitacoras_texto += f"\n--- SESIÓN {i+1} ({h.fecha_registro.strftime('%d/%m/%Y')}) ---\n"
+        bitacoras_texto += f"Estado inicial: {h.como_llega or 'N/A'}\n"
+        bitacoras_texto += f"Desarrollo: {h.notas_sesion or 'N/A'}\n"
+        bitacoras_texto += f"Aprendizaje del paciente: {h.aprendizaje_paciente or 'N/A'}\n"
+        bitacoras_texto += f"Cierre: {h.como_se_va or 'N/A'}\n"
+        bitacoras_texto += f"Recomendaciones dadas: {h.recomendaciones or 'N/A'}\n"
+ 
+    if not bitacoras_texto:
+        bitacoras_texto = "Aún no hay bitácoras registradas para este paciente."
+ 
+    prompt = (
+        f"Eres un psicólogo clínico experto redactando el Reporte de Check-In de {nombre_paciente}, "
+        f"sesión #{sesion_numero}.\n\n"
+        f"BITÁCORAS DE SESIONES:\n{bitacoras_texto}\n\n"
+        "Con base en esa información, redacta EXACTAMENTE dos textos:\n\n"
+        "1. \"objetivo_tarea\": un resumen claro de la tarea/objetivo que el psicólogo dejó al paciente "
+        "en la última sesión (o el objetivo terapéutico vigente si no hay tarea explícita).\n"
+        "2. \"recomendaciones\": recomendaciones concretas y accionables para el paciente antes de la próxima sesión.\n\n"
+        "REGLA CRÍTICA DE FORMATO: cada uno de los dos textos debe tener exactamente 750 caracteres "
+        "(contando letras, números, espacios y signos de puntuación), redactado en párrafos completos, "
+        "cálido pero profesional, sin inventar información que no esté en las bitácoras.\n\n"
+        "Devuelve ÚNICAMENTE un JSON válido con esta forma exacta, sin backticks ni texto extra:\n"
+        "{\"objetivo_tarea\": \"...\", \"recomendaciones\": \"...\"}"
+    )
+ 
+    client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
+    response = client.chat.completions.create(
+        model="openai/gpt-oss-120b",
+        messages=[{"role": "user", "content": prompt}],
+        max_tokens=1200,
+        temperature=0.3,
+    )
+ 
+    contenido_ia = _extraer_json_groq(response.choices[0].message.content.strip())
+    objetivo_tarea = _ajustar_texto_a_longitud_exacta(contenido_ia.get('objetivo_tarea', ''), 765)
+    recomendaciones = _ajustar_texto_a_longitud_exacta(contenido_ia.get('recomendaciones', ''), 765)
+ 
+    return {
+        'nombre_paciente': nombre_paciente,
+        'psicologo': nombre_psicologo,
+        'cedula': cedula_psicologo,
+        'fecha_ultima_sesion': fecha_ultima_sesion,
+        'sesion_numero': sesion_numero,
+        'tiene_proxima_cita': tiene_proxima_cita,
+        'proxima_fecha': proxima_fecha,
+        'proxima_hora': proxima_hora,
+        'ipp_valor': ipp_valor,
+        'ipp_delta': ipp_delta,
+        'dims': dims,
+        'evolucion': evolucion,
+        'mood_valor': mood_valor,
+        'objetivo_tarea': objetivo_tarea,
+        'recomendaciones': recomendaciones,
+    }
+ 
+ 
+# ------------------------------------------------------------------------
+# PASO 2.2 — Helper: arma los datos del reporte del PSICÓLOGO
+# (misma idea, tomado de tu generar_reporte_checkin_psicologo_ajax)
+# ------------------------------------------------------------------------
+ 
+def _construir_datos_checkin_psicologo(paciente):
+    perfil_paciente = getattr(paciente, 'perfil', None)
+ 
+    nombre_paciente = (perfil_paciente.nombre if perfil_paciente and perfil_paciente.nombre else paciente.first_name) or paciente.username
+ 
+    historiales = HistorialClinico.objects.filter(paciente=paciente).order_by('fecha_registro')
+    sesion_numero = historiales.count() or 1
+    ultimo_historial = historiales.last()
+ 
+    ultima_cita = Cita.objects.filter(paciente=paciente).exclude(estado='Cancelada').order_by('-fecha', '-hora').first()
+    fecha_ultima_sesion = ultima_cita.fecha.isoformat() if ultima_cita else ''
+ 
+    cuestionario_texto = "El paciente no tiene cuestionario inicial registrado."
+    if hasattr(paciente, 'cuestionario_inicial'):
+        respuestas_cuest = paciente.cuestionario_inicial.respuestas or {}
+        cuestionario_texto = "\n".join([f"- {k.replace('_', ' ').capitalize()}: {v}" for k, v in respuestas_cuest.items()]) or cuestionario_texto
+ 
+    respuestas_ipp = RespuestaFormularioOrganica.objects.filter(paciente=paciente).order_by('-fecha_respuesta')[:3]
+    respuestas_ipp = list(reversed(respuestas_ipp))
+ 
+    evolucion = []
+    for i, r in enumerate(respuestas_ipp):
+        evolucion.append({'sesion': i + 1, 'valor': calcular_ipt(r.puntaje) if hasattr(r, 'puntaje') else 0})
+ 
+    ipp_valor = evolucion[-1]['valor'] if evolucion else 0
+    ipp_delta = (evolucion[-1]['valor'] - evolucion[-2]['valor']) if len(evolucion) >= 2 else 0
+ 
+    dims = {'Bienestar emocional': 0, 'Afrontamiento': 0, 'Aplicación de herramientas': 0, 'Esperanza y autoeficacia': 0}
+    if respuestas_ipp:
+        ultima_respuesta = respuestas_ipp[-1].respuestas or {}
+        acumulado = {k: [] for k in dims}
+        for pregunta in FORMULARIO_ORGANICO_PREGUNTAS:
+            valor_txt = ultima_respuesta.get(pregunta['id'])
+            puntos = _OPCIONES_POR_PREGUNTA.get(pregunta['id'], {}).get(valor_txt)
+            if puntos:
+                acumulado[pregunta['categoria']].append(puntos)
+        for categoria, puntos_lista in acumulado.items():
+            if puntos_lista:
+                dims[categoria] = round((sum(puntos_lista) / len(puntos_lista)) / 5 * 100)
+ 
+    bitacoras_texto = ""
+    for i, h in enumerate(historiales):
+        bitacoras_texto += f"\n--- SESIÓN {i+1} ({h.fecha_registro.strftime('%d/%m/%Y')}) ---\n"
+        bitacoras_texto += f"Estado inicial: {h.como_llega or 'N/A'}\n"
+        bitacoras_texto += f"Desarrollo: {h.notas_sesion or 'N/A'}\n"
+        bitacoras_texto += f"Aprendizaje del paciente: {h.aprendizaje_paciente or 'N/A'}\n"
+        bitacoras_texto += f"Cierre: {h.como_se_va or 'N/A'}\n"
+        bitacoras_texto += f"Recomendaciones dadas: {h.recomendaciones or 'N/A'}\n"
+    if not bitacoras_texto:
+        bitacoras_texto = "Aún no hay bitácoras registradas para este paciente."
+ 
+    ultima_sesion_texto = "No hay una última sesión registrada."
+    if ultimo_historial:
+        ultima_sesion_texto = (
+            f"Estado inicial: {ultimo_historial.como_llega or 'N/A'}\n"
+            f"Desarrollo: {ultimo_historial.notas_sesion or 'N/A'}\n"
+            f"Aprendizaje del paciente: {ultimo_historial.aprendizaje_paciente or 'N/A'}\n"
+            f"Cierre: {ultimo_historial.como_se_va or 'N/A'}\n"
+            f"Recomendaciones dadas: {ultimo_historial.recomendaciones or 'N/A'}"
+        )
+ 
+    prompt = (
+        f"Eres un psicólogo clínico experto redactando el Reporte de Check-In (versión para el psicólogo) "
+        f"de {nombre_paciente}, sesión #{sesion_numero}.\n\n"
+        f"CUESTIONARIO INICIAL (test de 5 preguntas al llegar a HOPE):\n{cuestionario_texto}\n\n"
+        f"ÚLTIMA SESIÓN REGISTRADA:\n{ultima_sesion_texto}\n\n"
+        f"HISTORIAL COMPLETO DE BITÁCORAS:\n{bitacoras_texto}\n\n"
+        "Redacta EXACTAMENTE estos 4 textos, cada uno en párrafos completos, con tono clínico y profesional, "
+        "sin inventar información que no esté en los datos anteriores:\n\n"
+        "1. \"como_llegaste_hope\": resumen del motivo y contexto con el que el paciente llegó a HOPE, "
+        "basado en el cuestionario inicial. Debe tener exactamente 800 caracteres.\n"
+        "2. \"apoyo_ultima_sesion\": resumen del apoyo brindado por HOPE en la ÚLTIMA sesión. "
+        "Debe tener exactamente 700 caracteres.\n"
+        "3. \"objetivo_tarea\": la tarea u objetivo terapéutico que se dejó al paciente. "
+        "Debe tener exactamente 780 caracteres.\n"
+        "4. \"recomendaciones\": recomendaciones concretas y accionables para el paciente antes de la próxima sesión. "
+        "Debe tener exactamente 780 caracteres.\n\n"
+        "Devuelve ÚNICAMENTE un JSON válido con esta forma exacta, sin backticks ni texto extra:\n"
+        "{\"como_llegaste_hope\": \"...\", \"apoyo_ultima_sesion\": \"...\", \"objetivo_tarea\": \"...\", \"recomendaciones\": \"...\"}"
+    )
+ 
+    client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
+    response = client.chat.completions.create(
+        model="openai/gpt-oss-120b",
+        messages=[{"role": "user", "content": prompt}],
+        max_tokens=1800,
+        temperature=0.3,
+    )
+ 
+    contenido_ia = _extraer_json_groq(response.choices[0].message.content.strip())
+    como_llegaste_hope = _ajustar_texto_a_longitud_exacta(contenido_ia.get('como_llegaste_hope', ''), 800)
+    apoyo_ultima_sesion = _ajustar_texto_a_longitud_exacta(contenido_ia.get('apoyo_ultima_sesion', ''), 700)
+    objetivo_tarea = _ajustar_texto_a_longitud_exacta(contenido_ia.get('objetivo_tarea', ''), 780)
+    recomendaciones = _ajustar_texto_a_longitud_exacta(contenido_ia.get('recomendaciones', ''), 780)
+ 
+    return {
+        'nombre_paciente': nombre_paciente,
+        'fecha_ultima_sesion': fecha_ultima_sesion,
+        'sesion_numero': sesion_numero,
+        'ipp_valor': ipp_valor,
+        'ipp_delta': ipp_delta,
+        'dims': dims,
+        'evolucion': evolucion,
+        'como_llegaste_hope': como_llegaste_hope,
+        'apoyo_ultima_sesion': apoyo_ultima_sesion,
+        'objetivo_tarea': objetivo_tarea,
+        'recomendaciones': recomendaciones,
+    }
+ 
+ 
+# ------------------------------------------------------------------------
+# PASO 2.3 — Reemplaza el CONTENIDO de tus dos vistas AJAX existentes
+# por esto (mismo nombre de función, misma URL, mismo decorador, mismo
+# JSON de respuesta — solo que ahora usan los helpers de arriba):
+# ------------------------------------------------------------------------
+ 
+@user_passes_test(lambda u: hasattr(u, 'perfil_psicologo') or u.is_superuser, login_url='/')
+def generar_reporte_checkin_ajax(request):
+    paciente_id = request.GET.get('paciente_id')
+    if not paciente_id:
+        return JsonResponse({'status': 'error', 'message': 'Falta paciente_id'})
+ 
+    try:
+        paciente = User.objects.select_related('perfil', 'perfil__psicologo_asignado__usuario').get(id=paciente_id)
+    except User.DoesNotExist:
+        return JsonResponse({'status': 'error', 'message': 'Paciente no encontrado'})
+ 
+    perfil_paciente = getattr(paciente, 'perfil', None)
+    psicologo_asignado = getattr(perfil_paciente, 'psicologo_asignado', None)
+ 
+    if not request.user.is_superuser:
+        if not hasattr(request.user, 'perfil_psicologo') or psicologo_asignado != request.user.perfil_psicologo:
+            return JsonResponse({'status': 'error', 'message': 'No autorizado para este paciente'})
+ 
+    try:
+        datos = _construir_datos_checkin_paciente(paciente)
+        return JsonResponse({'status': 'success', 'data': datos})
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)})
+ 
+ 
+@user_passes_test(lambda u: hasattr(u, 'perfil_psicologo') or u.is_superuser, login_url='/')
+def generar_reporte_checkin_psicologo_ajax(request):
+    paciente_id = request.GET.get('paciente_id')
+    if not paciente_id:
+        return JsonResponse({'status': 'error', 'message': 'Falta paciente_id'})
+ 
+    try:
+        paciente = User.objects.select_related('perfil', 'perfil__psicologo_asignado__usuario').get(id=paciente_id)
+    except User.DoesNotExist:
+        return JsonResponse({'status': 'error', 'message': 'Paciente no encontrado'})
+ 
+    perfil_paciente = getattr(paciente, 'perfil', None)
+    psicologo_asignado = getattr(perfil_paciente, 'psicologo_asignado', None)
+ 
+    if not request.user.is_superuser:
+        if not hasattr(request.user, 'perfil_psicologo') or psicologo_asignado != request.user.perfil_psicologo:
+            return JsonResponse({'status': 'error', 'message': 'No autorizado para este paciente'})
+ 
+    try:
+        datos = _construir_datos_checkin_psicologo(paciente)
+        return JsonResponse({'status': 'success', 'data': datos})
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)})
+ 
+ 
+# ------------------------------------------------------------------------
+# PASO 2.4 — NUEVO: envío de los correos con header/footer bonito
+# ------------------------------------------------------------------------
+ 
+_MOOD_INFO_REPORTE = {
+    1: {'texto': 'Muy mal', 'emoji': '😔'},
+    2: {'texto': 'Triste', 'emoji': '😕'},
+    3: {'texto': 'Normal', 'emoji': '😐'},
+    4: {'texto': 'Bien', 'emoji': '🙂'},
+    5: {'texto': 'Excelente', 'emoji': '🤩'},
+}
+ 
+ 
+def _enviar_email_reporte_paciente(paciente, datos):
+    if not paciente.email:
+        return
+ 
+    contexto = {
+        **datos,
+        'mood_info': _MOOD_INFO_REPORTE.get(datos.get('mood_valor', 3), _MOOD_INFO_REPORTE[3]),
+    }
+ 
+    asunto = f"💜 Tu Reporte de Check-In · Sesión #{datos.get('sesion_numero', '')}"
+    mensaje_html = render_to_string('correo_reporte_paciente.html', contexto)
+    mensaje_plano = strip_tags(mensaje_html)
+ 
+    email = EmailMultiAlternatives(
+        subject=asunto,
+        body=mensaje_plano,
+        from_email='Espacio HOPE <no-reply@espaciohope.com>',
+        to=[paciente.email],
+    )
+    email.attach_alternative(mensaje_html, 'text/html')
+    email.send(fail_silently=True)
+ 
+ 
+def _enviar_email_reporte_psicologo(psicologo, paciente, datos):
+    email_doc = psicologo.usuario.email if psicologo and psicologo.usuario else None
+    if not email_doc:
+        return
+ 
+    contexto = {
+        **datos,
+        'nombre_psicologo': psicologo.usuario.first_name if psicologo.usuario else '',
+    }
+ 
+    asunto = f"📋 Reporte de Check-In · Paciente: {datos.get('nombre_paciente', '')}"
+    mensaje_html = render_to_string('correo_reporte_psicologo.html', contexto)
+    mensaje_plano = strip_tags(mensaje_html)
+ 
+    email = EmailMultiAlternatives(
+        subject=asunto,
+        body=mensaje_plano,
+        from_email='Espacio HOPE <no-reply@espaciohope.com>',
+        to=[email_doc],
+    )
+    email.attach_alternative(mensaje_html, 'text/html')
+    email.send(fail_silently=True)
+ 
+ 
+# ------------------------------------------------------------------------
+# PASO 2.5 — NUEVO: el "cerebro" que decide qué citas ya están listas
+# ------------------------------------------------------------------------
+# Regla de negocio (tal como la pediste):
+#   - La sesión dura ~1 hora.
+#   - Se espera 1 hora extra después de que termina, para dar tiempo a que
+#     el psicólogo capture su bitácora (lo que tú llamas "notas de Gemini").
+#   - Si a las 24 horas el psicólogo AÚN no ha capturado nada, se manda el
+#     reporte de todos modos (con lo que haya), para que nunca se quede
+#     "atorada" una cita para siempre.
+# ------------------------------------------------------------------------
+ 
+DURACION_SESION_MINUTOS = 60
+ESPERA_MINIMA_MINUTOS = 60      # tiempo extra después de que termina la sesión
+ESPERA_MAXIMA_MINUTOS = 24 * 60  # tope: después de esto se manda aunque falte bitácora
+ 
+ 
+def procesar_citas_pendientes_de_reporte():
+    """
+    Revisa todas las citas confirmadas/completadas que aún no tienen su
+    reporte enviado, y para cada una que ya cumplió su tiempo de espera
+    (y de preferencia ya tiene bitácora capturada), genera y envía los
+    dos correos (paciente + psicólogo).
+ 
+    Se puede llamar tantas veces como se quiera (cada 10 min, por cron,
+    manualmente, etc.) — es idempotente gracias al campo reporte_enviado
+    y al select_for_update en _procesar_reporte_de_una_cita.
+    """
+    ahora = timezone.localtime(timezone.now())
+ 
+    citas_candidatas = Cita.objects.filter(
+        reporte_enviado=False,
+        estado__in=['Confirmada', 'Completada'],
+        psicologo__isnull=False,
+    ).select_related('paciente__perfil', 'psicologo__usuario', 'nota_clinica')
+ 
+    procesadas = 0
+    for cita in citas_candidatas:
+        inicio_cita = timezone.make_aware(datetime.combine(cita.fecha, cita.hora))
+        minutos_transcurridos = (ahora - inicio_cita).total_seconds() / 60
+        tiempo_minimo_cumplido = minutos_transcurridos >= (DURACION_SESION_MINUTOS + ESPERA_MINIMA_MINUTOS)
+ 
+        if not tiempo_minimo_cumplido:
+            continue  # todavía no le toca ni siquiera empezar a intentar
+ 
+        tiene_bitacora = hasattr(cita, 'nota_clinica') and cita.nota_clinica is not None
+        tiempo_maximo_cumplido = minutos_transcurridos >= ESPERA_MAXIMA_MINUTOS
+ 
+        if not tiene_bitacora and not tiempo_maximo_cumplido:
+            continue  # esperamos un poco más a que el doctor capture su bitácora
+ 
+        _procesar_reporte_de_una_cita(cita.id)
+        procesadas += 1
+ 
+    return procesadas
+ 
+ 
+def _procesar_reporte_de_una_cita(cita_id):
+    with transaction.atomic():
+        try:
+            cita = Cita.objects.select_for_update().select_related(
+                'paciente__perfil', 'psicologo__usuario'
+            ).get(id=cita_id)
+        except Cita.DoesNotExist:
+            return
+ 
+        if cita.reporte_enviado:
+            return  # otra corrida ya lo procesó (protección anti-duplicado)
+ 
+        paciente = cita.paciente
+        psicologo = cita.psicologo
+ 
+        try:
+            datos_paciente = _construir_datos_checkin_paciente(paciente)
+            _enviar_email_reporte_paciente(paciente, datos_paciente)
+        except Exception as e:
+            logging.getLogger(__name__).error(
+                'Error generando/enviando reporte de PACIENTE (cita %s): %s', cita_id, e
+            )
+ 
+        try:
+            datos_psicologo = _construir_datos_checkin_psicologo(paciente)
+            if psicologo:
+                _enviar_email_reporte_psicologo(psicologo, paciente, datos_psicologo)
+        except Exception as e:
+            logging.getLogger(__name__).error(
+                'Error generando/enviando reporte de PSICÓLOGO (cita %s): %s', cita_id, e
+            )
+ 
+        # Se marca como procesada aunque algo haya fallado arriba, para no
+        # reintentar infinitamente contra un dato roto (el error ya quedó
+        # en el log para revisión manual).
+        cita.reporte_enviado = True
+        cita.save(update_fields=['reporte_enviado'])
+ 
+ 
+# ------------------------------------------------------------------------
+# PASO 2.6 (OPCIONAL) — Vista para poder probarlo manualmente desde el
+# navegador mientras configuras todo, sin tener que esperar al cron/hilo.
+# Agrega también la URL correspondiente (ver 5_urls_snippet.py)
+# ------------------------------------------------------------------------
+ 
+@user_passes_test(es_admin, login_url='/')
+def procesar_reportes_citas_manual(request):
+    total = procesar_citas_pendientes_de_reporte()
+    return JsonResponse({'status': 'success', 'procesadas': total})

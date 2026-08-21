@@ -1,0 +1,148 @@
+<!--
+========================================================================
+PASO 3.1 — Guarda esto como: templates/correo_reporte_psicologo.html
+========================================================================
+-->
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+</head>
+
+<body style="margin:0;padding:0;background:#f3f0fa;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="background:#f3f0fa;padding:40px 20px;">
+        <tr>
+            <td align="center">
+                <table width="100%"
+                    style="max-width:560px;background:#ffffff;border-radius:24px;overflow:hidden;box-shadow:0 8px 40px rgba(90,63,163,0.12);">
+
+                    <tr>
+                        <td style="background:linear-gradient(90deg,#5a3fa3 0%,#e879a0 50%,#f27c21 100%);height:6px;">
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td style="padding:40px 40px 0;text-align:center;">
+                            <div
+                                style="width:68px;height:68px;border-radius:18px;background:linear-gradient(135deg,#f3e8ff,#fce7f3);display:inline-block;line-height:68px;margin-bottom:20px;">
+                                <span style="font-size:30px;">📋</span>
+                            </div>
+                            <h1
+                                style="margin:0 0 8px;font-size:24px;font-weight:800;color:#1a1035;letter-spacing:-0.5px;">
+                                Reporte de Check-In</h1>
+                            <p style="margin:0;font-size:14px;color:#7c6fa0;line-height:1.6;">
+                                Hola <strong style="color:#5a3fa3;">{{ nombre_psicologo }}</strong>, este es el resumen
+                                automático de tu
+                                paciente <strong style="color:#5a3fa3;">{{ nombre_paciente }}</strong> — sesión #{{
+                                sesion_numero }}.
+                            </p>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td style="padding:28px 40px 0;">
+                            <table width="100%" cellpadding="0" cellspacing="0"
+                                style="background:#f8f5ff;border-radius:16px;">
+                                <tr>
+                                    <td style="padding:22px 24px;text-align:center;">
+                                        <p
+                                            style="margin:0 0 6px;font-size:11px;font-weight:700;color:#5a3fa3;text-transform:uppercase;letter-spacing:1px;">
+                                            Índice de Progreso Psicológico</p>
+                                        <p style="margin:0;font-size:40px;font-weight:800;color:#1a1035;line-height:1;">
+                                            {{ ipp_valor }}%</p>
+                                        <p
+                                            style="margin:6px 0 0;font-size:13px;font-weight:600;
+                {% if ipp_delta > 0 %}color:#10b981;{% elif ipp_delta < 0 %}color:#ef4444;{% else %}color:#9ca3af;{% endif %}">
+                                            {% if ipp_delta > 0 %}▲ +{{ ipp_delta }} pts vs. sesión anterior
+                                            {% elif ipp_delta < 0 %}▼ {{ ipp_delta }} pts vs. sesión anterior {% else
+                                                %}▬ Sin cambio vs. sesión anterior{% endif %} </p>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td style="padding:24px 40px 0;">
+                            <p
+                                style="margin:0 0 12px;font-size:12px;font-weight:700;color:#5a3fa3;text-transform:uppercase;letter-spacing:1px;">
+                                4 dimensiones del paciente</p>
+                            {% for categoria, valor in dims.items %}
+                            <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:10px;">
+                                <tr>
+                                    <td style="font-size:13px;color:#374151;padding-bottom:4px;" colspan="2">{{
+                                        categoria }} — <strong>{{ valor }}%</strong></td>
+                                </tr>
+                                <tr>
+                                    <td style="background:#ede9f8;border-radius:8px;height:10px;">
+                                        <table cellpadding="0" cellspacing="0"
+                                            style="width:{{ valor }}%;height:10px;background:linear-gradient(90deg,#5a3fa3,#e879a0);border-radius:8px;">
+                                            <tr>
+                                                <td style="height:10px;">&nbsp;</td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
+                            {% endfor %}
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td style="padding:24px 40px 0;">
+                            <p
+                                style="margin:0 0 6px;font-size:12px;font-weight:700;color:#5a3fa3;text-transform:uppercase;letter-spacing:1px;">
+                                🌱 ¿Cómo llegó a HOPE?</p>
+                            <p style="margin:0;font-size:14px;color:#374151;line-height:1.7;">{{ como_llegaste_hope }}
+                            </p>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td style="padding:20px 40px 0;">
+                            <p
+                                style="margin:0 0 6px;font-size:12px;font-weight:700;color:#5a3fa3;text-transform:uppercase;letter-spacing:1px;">
+                                💬 Apoyo en la última sesión</p>
+                            <p style="margin:0;font-size:14px;color:#374151;line-height:1.7;">{{ apoyo_ultima_sesion }}
+                            </p>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td style="padding:20px 40px 0;">
+                            <p
+                                style="margin:0 0 6px;font-size:12px;font-weight:700;color:#5a3fa3;text-transform:uppercase;letter-spacing:1px;">
+                                🎯 Objetivo y tarea</p>
+                            <p style="margin:0;font-size:14px;color:#374151;line-height:1.7;">{{ objetivo_tarea }}</p>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td style="padding:20px 40px 0;">
+                            <p
+                                style="margin:0 0 6px;font-size:12px;font-weight:700;color:#5a3fa3;text-transform:uppercase;letter-spacing:1px;">
+                                ✅ Recomendaciones</p>
+                            <p style="margin:0;font-size:14px;color:#374151;line-height:1.7;">{{ recomendaciones }}</p>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td
+                            style="background:#f8f5ff;padding:28px 40px;text-align:center;border-top:1px solid #ede9f8;margin-top:24px;">
+                            <p style="margin:0 0 4px;font-size:12px;color:#9ca3af;">Este reporte se generó
+                                automáticamente con base en la bitácora capturada y las respuestas del paciente en HOPE.
+                            </p>
+                            <p style="margin:8px 0 0;font-size:12px;color:#b0bec5;">Equipo <strong
+                                    style="color:#5a3fa3;">Espacio HOPE</strong> 💜</p>
+                        </td>
+                    </tr>
+
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+
+</html>

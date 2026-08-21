@@ -82,4 +82,7 @@ urlpatterns = [
     # URLs para el Chat IA de Administración
     path('panel-admin/hope-ai/', views.panel_admin_chat, name='panel_admin_chat'),
     path('api/admin/chat-ai/ask/', views.api_chat_ia_ask, name='api_chat_ia_ask'),
+
+
+    path('admin/procesar-reportes-citas/', views.procesar_reportes_citas_manual, name='procesar_reportes_citas_manual'),
 ]
