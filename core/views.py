@@ -1528,10 +1528,44 @@ def api_pacientes_paginados(request):
     })
 
 
+def obtener_citas_calendario_admin():
+    """
+    Obtiene todas las citas (pasadas y futuras) de forma ultra rápida usando .values()
+    en una única consulta SQL optimizada, evitando sobrecarga de memoria u objetos ORM.
+    """
+    citas_vals = Cita.objects.values(
+        'fecha', 'hora', 'estado', 'modalidad', 'enlace_meet',
+        'paciente__first_name', 'paciente__last_name', 'paciente__username', 'paciente__email',
+        'paciente__perfil__telefono',
+        'psicologo__usuario__first_name'
+    )
+
+    citas_json = []
+    for c in citas_vals:
+        first_name = c['paciente__first_name']
+        last_name = c['paciente__last_name']
+        nombre_pac = f"{first_name} {last_name}".strip() if first_name else (c['paciente__username'] or 'Desconocido')
+        h = c['hora']
+        f = c['fecha']
+        hora_fin = (h.hour + 1) % 24
+
+        citas_json.append({
+            'title': nombre_pac,
+            'start': f"{f.isoformat()}T{h.strftime('%H:%M:%S')}",
+            'end': f"{f.isoformat()}T{hora_fin:02d}:{h.minute:02d}:00",
+            'extendedProps': {
+                'psicologo': c['psicologo__usuario__first_name'] or 'Sin asignar',
+                'estado': c['estado'] or 'Confirmada',
+                'modalidad': c['modalidad'] or 'En línea',
+                'enlace_meet': c['enlace_meet'] or '',
+                'email': c['paciente__email'] or 'Sin registrar',
+                'telefono': c['paciente__perfil__telefono'] or 'Sin registrar'
+            }
+        })
+    return citas_json
+
+
 # ================== API PARA POLLING (estadísticas + citas) ==================
-# 🚀 Ya NO se calculan focos_rojos/nuevos_semana/completadas_mes/canceladas_mes/talleres_activos:
-# el HTML nunca los leía (ningún elemento ni línea de JS los usaba), solo consumían consultas
-# caras cada 10 segundos por el polling. Además el calendario ahora solo trae la semana en curso.
 def api_stats(request):
     hoy = timezone.now().date()
 
@@ -1540,27 +1574,7 @@ def api_stats(request):
     citas_hoy = Cita.objects.filter(fecha=hoy).exclude(estado='Cancelada').count()
     citas_totales = Cita.objects.exclude(estado='Cancelada').count()
 
-    # 🚀 Solo la semana en curso (lunes a domingo) en vez de -30/+60 días
-    inicio_semana = hoy - timezone.timedelta(days=hoy.weekday())
-    fin_semana = inicio_semana + timezone.timedelta(days=6)
-
-    citas_calendario = Cita.objects.filter(
-        fecha__gte=inicio_semana, fecha__lte=fin_semana
-    ).select_related('psicologo__usuario', 'paciente')
-
-    citas_json = []
-    for c in citas_calendario:
-        nombre_pac = f"{c.paciente.first_name} {c.paciente.last_name}" if c.paciente.first_name else c.paciente.username
-        citas_json.append({
-            'title': nombre_pac,
-            'start': f"{c.fecha.isoformat()}T{c.hora.strftime('%H:%M:%S')}",
-            'end': f"{c.fecha.isoformat()}T{(c.hora.hour+1):02d}:{c.hora.minute:02d}:00",
-            'extendedProps': {
-                'psicologo': c.psicologo.usuario.first_name if c.psicologo else 'Sin asignar',
-                'estado': c.estado,
-                'modalidad': c.modalidad
-            }
-        })
+    citas_json = obtener_citas_calendario_admin()
 
     return JsonResponse({
         'total_pacientes': total_pacientes,
@@ -1614,37 +1628,8 @@ def panel_admin(request):
     citas_hoy = Cita.objects.filter(fecha=hoy).exclude(estado='Cancelada').count()
     citas_totales = Cita.objects.exclude(estado='Cancelada').count()
 
-    # 🚀 Se eliminaron por completo "Especialistas Activos" y "Frecuencia de Ingresos":
-    # esos dos bloques armaban listas de TODOS los doctores y hasta 20 pacientes con sus
-    # citas precargadas en cada carga del panel. Ya no se calculan ni se envían al template.
-
-    # 🚀 El calendario ahora solo trae la semana en curso (lunes a domingo) en vez del
-    # rango de -30/+60 días, así se recorta drásticamente el volumen de citas por request.
-    inicio_semana = hoy - timezone.timedelta(days=hoy.weekday())
-    fin_semana = inicio_semana + timezone.timedelta(days=6)
-
-    citas_calendario = Cita.objects.filter(
-        fecha__gte=inicio_semana, fecha__lte=fin_semana
-    ).select_related('psicologo__usuario', 'paciente__perfil')
-
-    citas_json = []
-    for c in citas_calendario:
-        nombre_pac = f"{c.paciente.first_name} {c.paciente.last_name}" if c.paciente.first_name else c.paciente.username
-        telefono_pac = c.paciente.perfil.telefono if hasattr(c.paciente, 'perfil') and c.paciente.perfil.telefono else 'Sin registrar'
-
-        citas_json.append({
-            'title': nombre_pac,
-            'start': f"{c.fecha.isoformat()}T{c.hora.strftime('%H:%M:%S')}",
-            'end': f"{c.fecha.isoformat()}T{(c.hora.hour+1):02d}:{c.hora.minute:02d}:00",
-            'extendedProps': {
-                'psicologo': c.psicologo.usuario.first_name if c.psicologo else 'Sin asignar',
-                'estado': c.estado,
-                'modalidad': c.modalidad,
-                'enlace_meet': c.enlace_meet or '',
-                'email': c.paciente.email or 'Sin registrar',
-                'telefono': telefono_pac
-            }
-        })
+    # 🚀 Trae todas las citas (pasadas y futuras) de forma ultra rápida en una sola consulta
+    citas_json = obtener_citas_calendario_admin()
 
     context = {
         'total_pacientes': total_pacientes,
