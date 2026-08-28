@@ -1,2010 +1,1298 @@
+{% extends 'base.html' %}
 {% load static %}
-<!DOCTYPE html>
-<html lang="es">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Terapia Individual | Espacio HOPE</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700;900&family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-<script src="https://www.paypal.com/sdk/js?client-id={{ paypal_client_id }}&currency=MXN&locale=es_MX"></script>
+
+{% block title %}Terapia Psicológica Individual | Espacio HOPE{% endblock %}
+
+{% block extra_css %}
 <style>
-/* ── VARIABLES ── */
-:root {
-  --c-purple: #5A3FA3;
-  --c-pink: #F85B8C;
-  --c-orange: #F27C21;
-  --c-yellow: #F8D33D;
-  --c-teal: #25B8B8;
-  --c-dark: #0f0f0f;
-  --text-muted: #64748b;
-  --sidebar-width: 320px;
-  --font-h: 'Outfit', sans-serif;
-  --font-b: 'Plus Jakarta Sans', sans-serif;
-  --shadow-sm: 0 10px 25px rgba(0,0,0,.05);
-  --shadow-md: 0 15px 35px rgba(0,0,0,.1);
-}
+    /* ==========================================================================
+       VARIABLES BASE & ESTILOS HOPE
+       ========================================================================== */
+    :root {
+        --c-purple: #5A3FA3;
+        --c-pink: #F85B8C;
+        --c-orange: #F27C21;
+        --c-yellow: #F8D33D;
+        --c-teal: #25B8B8;
+        --c-dark: #0f0f0f;
+        --text-muted: #64748b;
+        --font-h: 'Outfit', sans-serif;
+        --font-b: 'Plus Jakarta Sans', sans-serif;
+        --shadow-sm: 0 10px 25px rgba(0, 0, 0, .05);
+        --shadow-md: 0 20px 45px rgba(90, 63, 163, .14);
+    }
 
-*{margin:0;padding:0;box-sizing:border-box}
-html,body{overflow-x:hidden;scroll-behavior:smooth}
-body{font-family:var(--font-b);color:var(--c-dark);background:#fff;display:flex}
+    @media (prefers-reduced-motion: reduce) {
+        * {
+            animation: none !important;
+            transition: none !important;
+        }
+    }
 
-/* ── SIDEBAR ── */
-.sidebar{width:var(--sidebar-width);height:100vh;background:#fff;position:fixed;top:0;left:0;border-right:1px solid #f1f5f9;z-index:1000;display:flex;flex-direction:column;padding:50px 35px;overflow-y:auto}
-.brand-container{margin-bottom:40px;text-align:center}
-.brand-logo-text{font-family:var(--font-h);font-size:2.2rem;font-weight:900;color:var(--c-purple);letter-spacing:2px}
-.brand-tagline{font-size:.78rem;color:var(--text-muted);font-style:italic;margin-top:4px}
-.nav-section-title{font-size:.75rem;text-transform:uppercase;letter-spacing:1px;color:#aaa;font-weight:800;margin:15px 0 5px}
-.nav-item{display:flex;align-items:center;padding:12px 15px;color:var(--text-muted);font-weight:700;font-size:.95rem;text-decoration:none;transition:.3s;border-radius:12px;margin-bottom:5px}
-.nav-item:hover,.nav-item.active{background:#f8f8f8;color:var(--c-purple);transform:translateX(8px)}
-.nav-item i{font-size:1.1rem;width:30px;text-align:center;color:var(--text-muted);transition:.3s}
-.nav-item:hover i,.nav-item.active i{color:var(--c-pink);transform:scale(1.1)}
-.btn-login-sidebar{background:var(--c-purple);color:white !important;box-shadow:0 4px 15px rgba(90,63,163,.2);justify-content:center;margin-top:10px;margin-bottom:20px}
-.btn-login-sidebar i{color:white !important}
-.btn-login-sidebar:hover{background:var(--c-pink);transform:translateY(-3px) translateX(0) !important;box-shadow:0 8px 20px rgba(248,91,140,.3)}
-.main-stage{margin-left:var(--sidebar-width);width:calc(100% - var(--sidebar-width));min-height:100vh}
+    img {
+        max-width: 100%;
+    }
 
-/* ── BOTONES ── */
-.btn-primary,.btn-outline{padding:20px 50px;border-radius:100px;font-weight:800;font-size:16px;font-family:var(--font-h);text-transform:uppercase;letter-spacing:1px;display:inline-flex;align-items:center;gap:12px;transition:.4s;cursor:pointer;border:none}
-.btn-primary{background:var(--c-purple);color:#fff;box-shadow:0 15px 30px rgba(90,63,163,.2)}
-.btn-primary:hover{transform:translateY(-5px);filter:brightness(1.1)}
-.btn-outline{background:#fff;border:2px solid var(--c-pink);color:var(--c-pink)}
-.btn-outline:hover{background:var(--c-pink);color:#fff;transform:translateY(-5px)}
+    /* ==========================================================================
+       HERO & BREADCRUMB
+       ========================================================================== */
+    .taller-breadcrumb {
+        position: relative;
+        z-index: 3;
+        padding: 26px 80px 0;
+    }
 
-/* ── MODALES COMUNES ── */
-.modal-overlay{position:fixed;inset:0;background:rgba(15,23,42,.8);backdrop-filter:blur(10px);z-index:5000;display:none;align-items:center;justify-content:center;padding:20px}
-.modal-box{background:#fff;width:100%;max-width:550px;padding:50px;border-radius:40px;text-align:center;position:relative;box-shadow:0 50px 100px rgba(0,0,0,.2)}
-.modal-close{position:absolute;top:20px;right:20px;font-size:22px;color:#ef4444;background:#fef2f2;border:2px solid #fecaca;width:45px;height:45px;border-radius:50%;cursor:pointer;transition:0.3s cubic-bezier(0.16,1,0.3,1);display:flex;align-items:center;justify-content:center;z-index:50}
-.modal-close:hover{background:#ef4444;color:white;transform:scale(1.15) rotate(90deg);box-shadow:0 10px 20px rgba(239,68,68,.3)}
-.donation-chips{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:30px}
-.chip{padding:12px 25px;border:2px solid #e2e8f0;border-radius:100px;font-weight:700;cursor:pointer;transition:.3s;color:var(--c-dark);font-size:16px}
-.chip.active{background:var(--c-pink);color:#fff;border-color:var(--c-pink)}
-.donation-input{width:100%;padding:20px;border-radius:20px;border:2px solid #e2e8f0;font-size:24px;text-align:center;font-weight:800;color:var(--c-pink);margin-bottom:20px;font-family:var(--font-h)}
-.donation-input:focus{outline:none;border-color:var(--c-pink)}
-.emoji-reaction{font-size:80px;margin:20px 0;animation:bounceIn .5s}
+    .taller-breadcrumb a {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        color: rgba(255, 255, 255, .85);
+        text-decoration: none;
+        font-family: var(--font-h);
+        font-weight: 700;
+        font-size: .85rem;
+        letter-spacing: .5px;
+        transition: .25s;
+    }
 
-/* ── MODAL MOOD ── */
-.mood-modal-box{background:#fff;width:100%;max-width:560px;padding:45px;border-radius:40px;position:relative;box-shadow:0 50px 100px rgba(0,0,0,.2);text-align:left}
-.mood-modal-step{display:none}
-.mood-modal-step.active{display:block}
-.mood-modal-title{font-family:var(--font-h);font-size:1.4rem;font-weight:800;color:var(--c-dark);margin-bottom:6px}
-.mood-modal-sub{font-size:.95rem;color:var(--text-muted);margin-bottom:28px;line-height:1.5}
-.mood-emojis{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-bottom:8px}
-.mood-emoji-btn{display:flex;flex-direction:column;align-items:center;gap:8px;padding:18px 22px;border:2px solid #e2e8f0;border-radius:20px;background:#fff;cursor:pointer;transition:.25s;font-size:2rem;line-height:1;min-width:100px;flex:1}
-.mood-emoji-btn span{font-size:.72rem;font-weight:800;color:var(--text-muted);font-family:var(--font-h);text-transform:uppercase;letter-spacing:1px}
-.mood-emoji-btn:hover,.mood-emoji-btn.selected{border-color:var(--c-pink);background:rgba(248,91,140,.05);transform:translateY(-4px);box-shadow:0 8px 20px rgba(248,91,140,.12)}
-.mood-emoji-btn.selected span{color:var(--c-pink)}
-.mood-msg-box{padding:18px 20px;border-radius:16px;background:linear-gradient(135deg,rgba(90,63,163,.06),rgba(248,91,140,.06));border:1px solid rgba(90,63,163,.12);margin-bottom:20px;font-size:1rem;font-style:italic;color:var(--c-dark);line-height:1.6;font-weight:500}
-.mood-textarea{width:100%;min-height:90px;padding:14px 16px;border:2px solid #e2e8f0;border-radius:16px;font-size:.9rem;font-family:var(--font-b);color:var(--c-dark);background:#f8fafc;resize:none;outline:none;transition:.25s;line-height:1.5;margin-bottom:12px;display:block}
-.mood-textarea:focus{border-color:var(--c-purple);background:#fff}
-.mood-textarea::placeholder{color:#b0bec5}
-.btn-mood-send{width:100%;padding:14px;border-radius:100px;background:var(--c-pink);color:#fff;font-family:var(--font-h);font-weight:800;font-size:.9rem;border:none;cursor:pointer;transition:.3s;letter-spacing:.5px}
-.btn-mood-send:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(248,91,140,.3)}
-.mood-confirm-center{text-align:center;padding:20px 0}
-.mood-confirm-emoji{font-size:3rem;margin-bottom:12px}
-.mood-confirm-text{font-size:.95rem;color:var(--c-dark);line-height:1.6;font-weight:600}
+    .taller-breadcrumb a:hover {
+        color: #fff;
+        gap: 12px;
+    }
 
-/* ── FOOTER ── */
-.footer{background:#f8fafc;border-top:1px solid #e2e8f0;padding:70px 80px 0;font-family:var(--font-b);position:relative;overflow:hidden}
-.footer::before{content:'HOPE';position:absolute;bottom:-20px;right:-10px;font-family:var(--font-h);font-size:14rem;font-weight:900;color:rgba(90,63,163,.04);pointer-events:none;letter-spacing:-5px;user-select:none}
-.footer-top{display:grid;grid-template-columns:1.8fr 1fr 1fr 1fr;gap:60px;padding-bottom:50px;border-bottom:1px solid #e2e8f0}
-.footer-brand p{font-size:.95rem;color:var(--text-muted);line-height:1.7;max-width:280px;margin-bottom:18px}
-.footer-addr{display:flex;align-items:flex-start;gap:10px;margin-bottom:10px;font-size:.88rem;color:var(--text-muted);line-height:1.5}
-.footer-addr i{color:var(--c-purple);margin-top:2px;flex-shrink:0;width:14px}
-.footer-addr a{color:var(--c-purple);text-decoration:none;font-weight:600;transition:.2s}
-.footer-addr a:hover{color:var(--c-pink)}
-.footer-cta{display:inline-flex;align-items:center;gap:10px;background:var(--c-pink);color:#fff;padding:14px 28px;border-radius:100px;font-weight:800;font-size:.85rem;text-transform:uppercase;letter-spacing:1px;border:none;cursor:pointer;text-decoration:none;transition:.3s;font-family:var(--font-h);margin-top:24px}
-.footer-cta:hover{transform:translateY(-3px);box-shadow:0 12px 30px rgba(248,91,140,.3)}
-.footer-tags{display:flex;flex-wrap:wrap;gap:8px;margin-top:20px}
-.footer-tag{padding:5px 14px;border-radius:100px;font-size:.75rem;font-weight:700;border:1.5px solid;background:#fff}
-.footer-col h4{font-family:var(--font-h);font-size:.75rem;text-transform:uppercase;letter-spacing:2px;color:var(--c-dark);font-weight:800;margin-bottom:20px}
-.footer-col ul{list-style:none;display:flex;flex-direction:column;gap:11px}
-.footer-col ul li a{color:var(--text-muted);text-decoration:none;font-size:.92rem;transition:.25s;display:flex;align-items:center;gap:8px}
-.footer-col ul li a::before{content:'';display:inline-block;width:5px;height:5px;border-radius:50%;background:transparent;border:1.5px solid #cbd5e1;transition:.25s;flex-shrink:0}
-.footer-col ul li a:hover{color:var(--c-purple);padding-left:4px}
-.footer-col ul li a:hover::before{background:var(--c-pink);border-color:var(--c-pink)}
-.footer-alert{background:rgba(248,91,140,.06);border:1px solid rgba(248,91,140,.25);border-radius:16px;padding:16px 24px;margin:40px 0 50px;display:flex;align-items:center;gap:14px;font-size:.88rem;color:#475569;line-height:1.5}
-.footer-alert i{color:var(--c-pink);font-size:1.1rem;flex-shrink:0}
-.footer-alert a{color:var(--c-pink);font-weight:700;text-decoration:none}
-.footer-alert a:hover{text-decoration:underline}
-.footer-bottom{display:flex;align-items:center;justify-content:space-between;padding:24px 0;flex-wrap:wrap;gap:16px;border-top:1px solid #e2e8f0}
-.footer-bottom-left{font-size:.82rem;color:#94a3b8}
-.footer-bottom-left strong{color:var(--text-muted)}
-.footer-socials{display:flex;gap:10px}
-.social-btn{width:38px;height:38px;border-radius:10px;border:1px solid #e2e8f0;display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:.9rem;text-decoration:none;transition:.3s;background:#fff}
-.social-btn:hover{border-color:var(--c-pink);color:var(--c-pink);background:rgba(248,91,140,.06);transform:translateY(-3px)}
+    .taller-hero {
+        position: relative;
+        min-height: 85vh;
+        display: flex;
+        align-items: center;
+        overflow: hidden;
+        padding: 40px 80px 90px;
+        margin-top: -66px;
+    }
 
-@keyframes bounceIn{0%{transform:scale(.3);opacity:0}50%{transform:scale(1.1)}100%{transform:scale(1);opacity:1}}
-@keyframes fadeInUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+    @keyframes hopeFadeUp {
+        from {
+            opacity: 0;
+            transform: translateY(18px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
 
-/* ── FORMULARIO TRIAGE ── */
-.triage-option-label{display:flex;align-items:center;gap:15px;padding:20px;background:#fff;border:2px solid #e2e8f0;border-radius:16px;cursor:pointer;transition:all 0.3s cubic-bezier(0.16,1,0.3,1);font-weight:600;color:var(--text-muted);font-family:var(--font-b);font-size:1.1rem;box-shadow:0 4px 6px rgba(0,0,0,0.02)}
-.triage-option-label:hover{border-color:var(--c-purple);transform:translateY(-3px);box-shadow:0 10px 20px rgba(90,63,163,0.08);color:var(--c-dark)}
-.triage-option-label:has(input:checked){border-color:var(--c-purple);background:rgba(90,63,163,.04);color:var(--c-purple);box-shadow:0 10px 20px rgba(90,63,163,0.1)}
-.triage-option-label input{width:24px;height:24px;accent-color:var(--c-purple);cursor:pointer}
-.progress-container{background:#f1f5f9;border-radius:100px;height:8px;width:100%;margin-bottom:15px;overflow:hidden}
-.custom-input-triage{width:100%;padding:22px;border:2px solid #e2e8f0;border-radius:16px;font-family:var(--font-b);font-size:1.15rem;background:#f8fafc;transition:.3s;color:var(--c-dark)}
-.custom-input-triage:focus{outline:none;border-color:var(--c-purple);background:#fff;box-shadow:0 10px 25px rgba(90,63,163,0.1)}
-.custom-input-triage::placeholder{color:#cbd5e1}
-#progressBar{background:var(--c-pink);width:0%;height:100%;transition:width 0.5s cubic-bezier(0.4,0,0.2,1);border-radius:100px}
-#questionOptionsContainer{max-height:50vh;overflow-y:auto;padding-right:10px}
-#questionOptionsContainer::-webkit-scrollbar{width:6px}
-#questionOptionsContainer::-webkit-scrollbar-track{background:#f1f5f9;border-radius:10px}
-#questionOptionsContainer::-webkit-scrollbar-thumb{background:var(--c-purple);border-radius:10px}
-.modal-box{max-height:95vh;overflow-y:auto}
+    .taller-hero-bg {
+        position: absolute;
+        inset: 0;
+        /* Imagen alusiva a terapia y bienestar individual */
+        background-image: url('https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?q=80&w=1400&auto=format&fit=crop');
+        background-size: cover;
+        background-position: center 30%;
+        z-index: 0;
+        transform: scale(1.04);
+    }
 
-/* ── RECUPERAR CONTRASEÑA ── */
-#modalRecuperar{display:none;position:fixed;inset:0;background:rgba(15,10,30,.65);backdrop-filter:blur(10px);z-index:999999;justify-content:center;align-items:center;padding:20px}
-.recuperar-card{background:#ffffff;border-radius:32px;padding:52px 46px 46px;max-width:460px;width:100%;text-align:center;position:relative;box-shadow:0 4px 6px rgba(90,63,163,.04),0 24px 48px rgba(90,63,163,.12),0 0 0 1px rgba(90,63,163,.07);animation:riseInRecuperar 0.45s cubic-bezier(0.16,1,0.3,1) both;overflow:hidden}
-.recuperar-card::before{content:'';position:absolute;top:0;left:0;right:0;height:5px;background:linear-gradient(90deg,var(--c-purple) 0%,#e879a0 50%,var(--c-orange) 100%)}
-@keyframes riseInRecuperar{from{opacity:0;transform:translateY(24px) scale(0.97)}to{opacity:1;transform:translateY(0) scale(1)}}
-.recuperar-close{position:absolute;top:18px;right:18px;width:36px;height:36px;border-radius:50%;background:#f1f5f9;border:none;cursor:pointer;color:#94a3b8;font-size:14px;display:flex;align-items:center;justify-content:center;transition:all 0.2s;z-index:2}
-.recuperar-close:hover{background:#e2e8f0;color:var(--c-purple);transform:rotate(90deg)}
-.recuperar-icon{width:70px;height:70px;border-radius:22px;background:linear-gradient(135deg,#f3e8ff,#fce7f3);color:var(--c-purple);display:flex;align-items:center;justify-content:center;font-size:28px;margin:0 auto 26px;box-shadow:0 8px 20px rgba(90,63,163,.13)}
-.recuperar-title{font-family:var(--font-h);font-size:1.9rem;font-weight:800;color:var(--c-dark);margin:0 0 10px;letter-spacing:-.4px}
-.recuperar-sub{color:var(--text-muted);font-size:.9rem;line-height:1.6;margin-bottom:30px}
-.recuperar-label{display:block;font-size:11px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;color:var(--c-dark);font-family:var(--font-h);text-align:left;margin-bottom:9px}
-.recuperar-input-wrap{position:relative;margin-bottom:8px}
-.recuperar-input-wrap i{position:absolute;left:18px;top:50%;transform:translateY(-50%);color:#c4b5fd;font-size:15px;pointer-events:none;transition:color .25s}
-.recuperar-input-wrap:focus-within i{color:var(--c-purple)}
-.recuperar-input{width:100%;padding:15px 20px 15px 46px;border-radius:14px;border:2px solid #e9e5f0;background:#fafafa;font-family:var(--font-b);font-size:.97rem;outline:none;transition:all .25s;color:var(--c-dark);box-sizing:border-box}
-.recuperar-input::placeholder{color:#c4b5c8}
-.recuperar-input:focus{border-color:var(--c-purple);background:#fff;box-shadow:0 0 0 4px rgba(90,63,163,.08)}
-.recuperar-error{display:none;font-size:12px;color:#e05a6a;font-weight:600;text-align:left;margin-bottom:16px;padding-left:4px}
-.recuperar-error.visible{display:block}
-.btn-recuperar{width:100%;padding:17px;border-radius:14px;font-weight:800;font-family:var(--font-h);border:none;cursor:pointer;background:var(--c-purple);color:white;font-size:.95rem;text-transform:uppercase;letter-spacing:1px;display:inline-flex;align-items:center;justify-content:center;gap:10px;transition:all .25s;position:relative;overflow:hidden;margin-top:6px}
-.btn-recuperar::after{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.12),transparent 60%)}
-.btn-recuperar:hover:not(:disabled){background:var(--c-orange);box-shadow:0 12px 28px rgba(242,124,33,.28);transform:translateY(-2px)}
-.btn-recuperar:disabled{opacity:.7;cursor:not-allowed;transform:none}
-.recuperar-nota{display:flex;align-items:center;gap:9px;margin-top:22px;background:#f8f5ff;border-radius:12px;padding:12px 16px;text-align:left}
-.recuperar-nota i{color:var(--c-purple);font-size:15px;flex-shrink:0}
-.recuperar-nota span{font-size:12px;color:var(--text-muted);line-height:1.4}
-.recuperar-exito{display:none;animation:riseInRecuperar .4s ease both}
+    .taller-hero-overlay {
+        position: absolute;
+        inset: 0;
+        z-index: 1;
+        background: linear-gradient(125deg, rgba(10, 5, 25, 0.88) 0%, rgba(90, 63, 163, 0.75) 55%, rgba(248, 91, 140, 0.35) 100%);
+    }
 
-/* ── HERO NUEVO (del archivo hope_terapia) ── */
-.hero-new {
-  padding: 80px 80px 60px;
-  background: linear-gradient(135deg, rgba(90,63,163,.04) 0%, rgba(248,91,140,.04) 100%);
-  position: relative;
-  overflow: hidden;
-}
-.hero-new::before {
-  content: '';
-  position: absolute;
-  top: -100px; right: -100px;
-  width: 500px; height: 500px;
-  background: radial-gradient(circle, rgba(90,63,163,.06) 0%, transparent 70%);
-  pointer-events: none;
-}
-.hero-new-wrapper {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 60px;
-  max-width: 1100px;
-  margin: 0 auto;
-}
-.hero-new-left {
-  flex: 1.1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-.hero-new-img {
-  width: 100%;
-  max-width: 430px;
-  height: auto;
-  border-radius: 30px;
-  box-shadow: 0 20px 50px rgba(90,63,163,.18);
-  margin-bottom: 28px;
-  transition: .5s;
-}
-.hero-new-img:hover { transform: scale(1.02) rotate(-1deg); }
+    .taller-hero-content {
+        position: relative;
+        z-index: 2;
+        max-width: 680px;
+        color: #fff;
+        margin-top: 66px;
+        animation: hopeFadeUp .7s cubic-bezier(.16, 1, .3, 1) both;
+    }
 
-/* CTA BOX */
-.cta-box-new {
-  background: #fff;
-  border-radius: 24px;
-  padding: 32px 30px;
-  box-shadow: 0 15px 40px rgba(90,63,163,.12);
-  width: 100%;
-  max-width: 410px;
-  text-align: center;
-  border: 1px solid rgba(90,63,163,.08);
-  position: relative;
-  overflow: hidden;
-}
-.cta-box-new::before {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 4px;
-  background: linear-gradient(90deg, var(--c-purple), var(--c-pink));
-}
-.price-tag-new {
-  font-size: .78rem;
-  color: var(--text-muted);
-  margin-bottom: 6px;
-  text-transform: uppercase;
-  letter-spacing: 1.5px;
-  font-weight: 700;
-  font-family: var(--font-h);
-}
-.price-amount-new {
-  font-size: 3.4rem;
-  color: var(--c-purple);
-  font-weight: 900;
-  margin-bottom: 5px;
-  display: block;
-  font-family: var(--font-h);
-  line-height: 1;
-}
-.price-amount-new span { font-size: 1.3rem; font-weight: 500; color: var(--text-muted); }
-.price-sub {
-  font-size: .82rem;
-  color: var(--text-muted);
-  margin-bottom: 22px;
-  display: block;
-}
-.btn-cta-new {
-  display: block;
-  background: linear-gradient(135deg, var(--c-pink), #e8446e);
-  color: #fff;
-  text-decoration: none;
-  padding: 18px;
-  font-size: 1.05rem;
-  font-weight: 800;
-  border-radius: 14px;
-  transition: all .3s ease;
-  box-shadow: 0 8px 20px rgba(248,91,140,.3);
-  font-family: var(--font-h);
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  cursor: pointer;
-  border: none;
-  width: 100%;
-}
-.btn-cta-new:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 14px 30px rgba(248,91,140,.4);
-}
-.cta-badges {
-  display: flex;
-  gap: 10px;
-  justify-content: center;
-  flex-wrap: wrap;
-  margin-top: 16px;
-}
-.cta-badge {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  font-size: .75rem;
-  color: var(--text-muted);
-  font-weight: 600;
-}
-.cta-badge i { color: var(--c-purple); font-size: .8rem; }
+    .taller-tagbox {
+        display: inline-flex;
+        align-items: center;
+        gap: 18px;
+        border: 2px solid var(--c-pink);
+        border-radius: 24px;
+        padding: 20px 26px;
+        margin-bottom: 28px;
+        background: rgba(15, 23, 42, .35);
+        backdrop-filter: blur(10px);
+        box-shadow: 0 20px 45px rgba(0, 0, 0, .25);
+    }
 
-/* LADO DERECHO */
-.hero-new-right {
-  flex: 1;
-  padding-top: 15px;
-}
-.hero-badge {
-  background: var(--c-pink);
-  color: white;
-  padding: 8px 20px;
-  border-radius: 100px;
-  font-weight: 800;
-  font-family: var(--font-h);
-  font-size: 13px;
-  text-transform: uppercase;
-  letter-spacing: 1.5px;
-  margin-bottom: 25px;
-  display: inline-block;
-  box-shadow: 0 4px 15px rgba(248,91,140,.3);
-}
-.hero-new-heading {
-  font-family: var(--font-h);
-  font-size: clamp(2.4rem, 4vw, 3.6rem);
-  font-weight: 900;
-  line-height: 1.05;
-  color: var(--c-dark);
-  margin-bottom: 20px;
-  letter-spacing: -1px;
-}
-.hero-new-heading span { color: var(--c-purple); }
-.hero-new-subtitle {
-  font-size: 1.15rem;
-  color: var(--text-muted);
-  line-height: 1.7;
-  margin-bottom: 35px;
-  max-width: 500px;
-}
+    .taller-tagbox .brain-icon {
+        font-size: 1.8rem;
+        color: var(--c-pink);
+        width: 54px;
+        height: 54px;
+        border-radius: 16px;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(248, 91, 140, .18);
+        border: 1px solid rgba(248, 91, 140, .45);
+    }
 
-/* LISTA DE BENEFICIOS */
-.benefits-list {
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  margin-bottom: 40px;
-}
-.benefits-list li {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  font-size: 1rem;
-  color: var(--c-dark);
-  font-weight: 600;
-}
-.benefit-icon {
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  font-size: .9rem;
-}
+    .taller-tagbox h2 {
+        font-family: var(--font-h);
+        font-weight: 900;
+        font-size: 1.35rem;
+        color: var(--c-pink);
+        line-height: 1;
+        margin-bottom: 6px;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+    }
 
-/* ── SECCIÓN CÓMO FUNCIONA ── */
-.how-it-works-new {
-  padding: 90px 80px;
-  background: #fff;
-  position: relative;
-}
-.how-it-works-new::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(180deg, #fafafa 0%, #fff 100%);
-  z-index: 0;
-}
-.how-it-works-new > * { position: relative; z-index: 1; }
-.section-label {
-  text-align: center;
-  font-family: var(--font-h);
-  font-size: .78rem;
-  text-transform: uppercase;
-  letter-spacing: 2px;
-  color: var(--c-pink);
-  font-weight: 800;
-  margin-bottom: 12px;
-}
-.section-title-new {
-  text-align: center;
-  font-family: var(--font-h);
-  font-size: 2.6rem;
-  font-weight: 900;
-  color: var(--c-dark);
-  margin-bottom: 12px;
-  letter-spacing: -1px;
-}
-.section-sub {
-  text-align: center;
-  color: var(--text-muted);
-  font-size: 1.05rem;
-  max-width: 560px;
-  margin: 0 auto 60px;
-  line-height: 1.6;
-}
-.steps-grid-new {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 20px;
-  position: relative;
-  max-width: 1100px;
-  margin: 0 auto;
-}
-.steps-grid-new::before {
-  content: '';
-  position: absolute;
-  top: 35px;
-  left: calc(10% + 20px);
-  right: calc(10% + 20px);
-  height: 2px;
-  background: linear-gradient(90deg, var(--c-purple), var(--c-pink));
-  z-index: 0;
-  opacity: .2;
-}
-.step-card-new {
-  background: #fff;
-  padding: 32px 20px 28px;
-  border-radius: 20px;
-  text-align: center;
-  border: 1.5px solid #f1f5f9;
-  box-shadow: 0 5px 20px rgba(0,0,0,.04);
-  transition: .35s;
-  position: relative;
-  z-index: 1;
-}
-.step-card-new:hover {
-  transform: translateY(-8px);
-  box-shadow: 0 15px 35px rgba(90,63,163,.1);
-  border-color: rgba(90,63,163,.2);
-}
-.step-number-new {
-  width: 42px;
-  height: 42px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto 16px;
-  font-weight: 900;
-  font-family: var(--font-h);
-  font-size: 1.1rem;
-  color: #fff;
-  position: relative;
-  z-index: 2;
-}
-.step-card-new p {
-  font-size: .85rem;
-  font-weight: 800;
-  color: var(--c-dark);
-  text-transform: uppercase;
-  letter-spacing: .8px;
-  font-family: var(--font-h);
-  line-height: 1.3;
-  margin-bottom: 8px;
-}
-.step-card-new small {
-  font-size: .78rem;
-  color: var(--text-muted);
-  line-height: 1.4;
-  display: block;
-}
+    .taller-tagbox p {
+        font-family: var(--font-h);
+        font-weight: 800;
+        font-size: 1.1rem;
+        line-height: 1.3;
+        color: #fff;
+        text-transform: uppercase;
+        letter-spacing: .5px;
+    }
 
-/* ── SECCIÓN DETALLE (por qué terapia) ── */
-.detail-section-new { padding: 90px 80px; background: linear-gradient(135deg, rgba(90,63,163,.03) 0%, rgba(248,91,140,.03) 100%); }
-.feature-grid-new { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 30px; margin-top: 55px; }
-.feature-box-new { padding: 44px 36px; background: #fff; border-radius: 24px; border: 1.5px solid #f1f5f9; transition: .35s; }
-.feature-box-new:hover { transform: translateY(-8px); box-shadow: 0 20px 40px rgba(0,0,0,.06); border-color: rgba(90,63,163,.2); }
-.feature-icon-wrap { width: 60px; height: 60px; border-radius: 16px; display: flex; align-items: center; justify-content: center; margin-bottom: 22px; font-size: 1.5rem; }
-.feature-box-new h4 { font-family: var(--font-h); font-size: 1.5rem; margin-bottom: 12px; color: var(--c-dark); font-weight: 800; }
-.feature-box-new p { color: var(--text-muted); line-height: 1.7; font-size: 1rem; }
+    .taller-tagbox span.sub {
+        display: block;
+        color: var(--c-yellow);
+        font-weight: 600;
+        font-size: .85rem;
+        margin-top: 6px;
+        text-transform: none;
+    }
 
-/* ── MOBILE NAV ── */
-.mobile-nav{display:none}
-@media(max-width:1100px){
-  .sidebar{display:none}
-  .main-stage{margin-left:0;width:100%}
-  .footer{padding:50px 20px 0}
-  .footer-top{grid-template-columns:1fr 1fr;gap:40px}
-  .footer-brand{grid-column:1/-1}
-  .footer-bottom{flex-direction:column;text-align:center}
-  .hero-new{padding:100px 20px 60px}
-  .hero-new-wrapper{flex-direction:column;align-items:center}
-  .hero-new-right{text-align:center}
-  .hero-new-heading{font-size:2.4rem}
-  .hero-new-subtitle{margin:0 auto 30px}
-  .benefits-list{align-items:flex-start;display:inline-flex;text-align:left}
-  .how-it-works-new{padding:70px 20px}
-  .steps-grid-new{grid-template-columns:repeat(2,1fr)}
-  .steps-grid-new::before{display:none}
-  .detail-section-new{padding:70px 20px}
-  .mobile-nav{display:flex;position:fixed;top:15px;left:50%;transform:translateX(-50%);width:92%;background:rgba(255,255,255,.95);backdrop-filter:blur(12px);border-radius:50px;box-shadow:0 10px 30px rgba(90,63,163,.15);padding:12px 20px;justify-content:space-between;align-items:center;z-index:4000;border:1px solid rgba(255,255,255,.5)}
-  .mobile-logo-text{font-family:var(--font-h);font-size:1.4rem;font-weight:900;color:var(--c-purple);letter-spacing:1px}
-  .btn-login-mobile{background:var(--c-purple);color:white !important;text-decoration:none;padding:10px 20px;border-radius:100px;font-weight:800;font-family:var(--font-h);font-size:.85rem;display:flex;align-items:center;gap:8px;box-shadow:0 4px 15px rgba(90,63,163,.2)}
-}
-@media(max-width:600px){
-  .footer-top{grid-template-columns:1fr}
-  .mood-emojis{gap:8px}
-  .mood-modal-box{padding:30px 24px}
-  .steps-grid-new{grid-template-columns:1fr}
-}
+    .taller-hero-desc {
+        font-size: 1.18rem;
+        line-height: 1.65;
+        color: rgba(255, 255, 255, .95);
+        margin-bottom: 30px;
+        max-width: 600px;
+        font-weight: 300;
+    }
 
-.brand-container{margin-bottom:40px;text-align:center}
-.brand-container img{width:170px;height:auto;display:inline-block}
-.footer-logo{height:55px;width:auto;object-fit:contain;margin-bottom:18px;display:block}
+    .taller-info-cards {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 16px;
+        margin-bottom: 28px;
+    }
 
+    .taller-info-card {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        background: rgba(255, 255, 255, .96);
+        border-radius: 18px;
+        padding: 14px 20px;
+        box-shadow: 0 15px 35px rgba(0, 0, 0, .18);
+        transition: transform .3s;
+    }
 
-/* ── ESTILOS DEL CALENDARIO MÁGICO ── */
-.date-carousel { display: flex; gap: 20px; overflow-x: auto; padding-top: 10px; padding-bottom: 20px; -ms-overflow-style: none; scrollbar-width: none; }
-.date-carousel::-webkit-scrollbar { display: none; }
-.date-chip { padding: 22px 18px; border-radius: 20px; border: 2px solid #f3f4f6; background: #ffffff; box-shadow: 0 4px 15px rgba(0,0,0,0.02); flex-shrink: 0; cursor: pointer; transition: 0.3s; font-family: var(--font-h); }
-.date-chip:hover { border-color: var(--c-purple); }
-.date-chip.active { box-shadow: 0 10px 25px rgba(90, 63, 163, 0.2); transform: translateY(-3px); border-color: var(--c-purple); background: var(--c-purple); color: white; }
+    .taller-info-card:hover {
+        transform: translateY(-4px);
+    }
 
-.slots-container { gap: 15px; margin-top: 15px; display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
-.time-slot-btn { padding: 15px; border-radius: 12px; border: 2px solid #f3f4f6; background: white; color: var(--c-dark); font-weight: 700; cursor: pointer; transition: all 0.2s; font-family: var(--font-b); }
-.time-slot-btn:hover, .time-slot-btn.active { background: var(--c-purple); color: white; border-color: var(--c-purple); transform: translateY(-2px); }
+    .taller-info-card .icon-wrap {
+        width: 42px;
+        height: 42px;
+        border-radius: 12px;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #f3e8ff;
+        color: var(--c-purple);
+        font-size: 1.1rem;
+    }
 
-.payment-box { background: #FFFFFF; max-width: 450px; margin: 0 auto; padding: 40px; border-radius: 20px; border: 2px solid #F3F4F6; }
+    .taller-info-card .label {
+        font-size: .7rem;
+        font-weight: 800;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 2px;
+    }
 
-.comision-extra {
-    display: inline-block;
-    font-size: 0.75rem;
-    color: #666;
-    background-color: #f9f9f9;
-    padding: 0.2rem 0.5rem;
-    border-radius: 20px;
-    margin-top: 0.25rem;
-    margin-bottom: 0.5rem;
-    text-align: center;
-    width: auto;
-    align-self: center;
-  }
+    .taller-info-card .value {
+        font-size: .98rem;
+        font-weight: 800;
+        color: var(--c-dark);
+        font-family: var(--font-h);
+    }
 
+    .taller-badge-online {
+        display: inline-flex;
+        align-items: center;
+        gap: 12px;
+        background: var(--c-pink);
+        color: #fff;
+        padding: 12px 24px;
+        border-radius: 16px;
+        font-weight: 800;
+        font-family: var(--font-h);
+        font-size: .88rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 32px;
+        box-shadow: 0 15px 30px rgba(248, 91, 140, .3);
+    }
 
+    .taller-badge-online i {
+        font-size: 1.1rem;
+    }
 
-/* ── BOTÓN WHATSAPP FLOTANTE ── */
-.whatsapp-float {
-  position: fixed;
-  bottom: 30px;
-  right: 30px;
-  background-color: #25D366;
-  color: #FFF;
-  border-radius: 50px;
-  padding: 12px 20px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  text-decoration: none;
-  font-family: var(--font-h);
-  font-weight: 800;
-  font-size: 1rem;
-  box-shadow: 0 10px 25px rgba(37, 211, 102, 0.4);
-  z-index: 4000;
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-}
-.whatsapp-float i {
-  font-size: 1.5rem;
-}
-.whatsapp-float:hover {
-  transform: translateY(-5px) scale(1.05);
-  box-shadow: 0 15px 35px rgba(37, 211, 102, 0.5);
-  background-color: #128C7E;
-  color: white;
-}
-@media (max-width: 768px) {
-  .whatsapp-float {
-    bottom: 20px;
-    right: 20px;
-    padding: 12px;
-    border-radius: 50%;
-  }
-  .whatsapp-float span {
-    display: none; /* Oculta el texto en móviles para que quede solo el círculo */
-  }
-}
+    .taller-badge-online small {
+        display: block;
+        font-weight: 600;
+        text-transform: none;
+        font-size: .8rem;
+        letter-spacing: 0;
+        margin-top: 2px;
+        opacity: .95;
+    }
+
+    .taller-hero-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 16px;
+        align-items: center;
+    }
+
+    .taller-cta-btn {
+        padding: 20px 45px;
+        border-radius: 100px;
+        font-weight: 800;
+        font-size: 1rem;
+        font-family: var(--font-h);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        display: inline-flex;
+        align-items: center;
+        gap: 12px;
+        border: none;
+        cursor: pointer;
+        background: var(--c-purple);
+        color: #fff;
+        box-shadow: 0 15px 30px rgba(90, 63, 163, .35);
+        transition: .35s cubic-bezier(.16, 1, .3, 1);
+    }
+
+    .taller-cta-btn:hover {
+        transform: translateY(-5px);
+        filter: brightness(1.1);
+        background: var(--c-pink);
+        box-shadow: 0 20px 40px rgba(248, 91, 140, .4);
+    }
+
+    /* ==========================================================================
+       SECCIÓN DE BENEFICIOS Y ENFOQUE
+       ========================================================================== */
+    .section-features {
+        padding: 80px 80px 40px;
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+
+    .section-header-center {
+        text-align: center;
+        max-width: 700px;
+        margin: 0 auto 50px;
+    }
+
+    .section-header-center h3 {
+        font-family: var(--font-h);
+        font-size: 2.2rem;
+        font-weight: 800;
+        color: var(--c-dark);
+        margin-bottom: 12px;
+    }
+
+    .section-header-center p {
+        color: var(--text-muted);
+        font-size: 1.05rem;
+        line-height: 1.6;
+    }
+
+    .features-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        gap: 24px;
+        margin-bottom: 60px;
+    }
+
+    .feature-card {
+        background: #fff;
+        border-radius: 24px;
+        padding: 35px 28px;
+        border: 1px solid #f1f5f9;
+        box-shadow: 0 15px 35px rgba(0, 0, 0, .04);
+        transition: .3s cubic-bezier(.16, 1, .3, 1);
+    }
+
+    .feature-card:hover {
+        transform: translateY(-6px);
+        border-color: rgba(90, 63, 163, .2);
+        box-shadow: 0 20px 40px rgba(90, 63, 163, .1);
+    }
+
+    .feature-icon {
+        width: 56px;
+        height: 56px;
+        border-radius: 16px;
+        background: linear-gradient(135deg, rgba(90, 63, 163, .1), rgba(248, 91, 140, .15));
+        color: var(--c-purple);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        margin-bottom: 20px;
+    }
+
+    .feature-card h4 {
+        font-family: var(--font-h);
+        font-size: 1.25rem;
+        font-weight: 800;
+        color: var(--c-dark);
+        margin-bottom: 10px;
+    }
+
+    .feature-card p {
+        font-size: .95rem;
+        color: var(--text-muted);
+        line-height: 1.6;
+    }
+
+    /* ==========================================================================
+       PASOS CLAROS
+       ========================================================================== */
+    .steps-container {
+        background: #f8fafc;
+        border-radius: 32px;
+        padding: 50px 40px;
+        border: 1px solid #e2e8f0;
+        margin-bottom: 70px;
+    }
+
+    .steps-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 30px;
+        margin-top: 35px;
+    }
+
+    .step-item {
+        position: relative;
+        text-align: center;
+        padding: 20px;
+    }
+
+    .step-number {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        background: var(--c-purple);
+        color: #fff;
+        font-family: var(--font-h);
+        font-weight: 900;
+        font-size: 1.2rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 16px;
+        box-shadow: 0 8px 20px rgba(90, 63, 163, .25);
+    }
+
+    .step-item h5 {
+        font-family: var(--font-h);
+        font-size: 1.15rem;
+        font-weight: 800;
+        color: var(--c-dark);
+        margin-bottom: 8px;
+    }
+
+    .step-item p {
+        font-size: .9rem;
+        color: var(--text-muted);
+        line-height: 1.5;
+    }
+
+    /* Banner CTA Inferior */
+    .banner-cta-bottom {
+        background: linear-gradient(135deg, var(--c-purple) 0%, #40277d 100%);
+        border-radius: 32px;
+        padding: 50px 40px;
+        color: #fff;
+        text-align: center;
+        margin-bottom: 80px;
+        box-shadow: 0 25px 50px rgba(90, 63, 163, .25);
+    }
+
+    .banner-cta-bottom h3 {
+        font-family: var(--font-h);
+        font-size: 2.2rem;
+        font-weight: 900;
+        margin-bottom: 12px;
+    }
+
+    .banner-cta-bottom p {
+        font-size: 1.1rem;
+        color: rgba(255, 255, 255, .9);
+        max-width: 600px;
+        margin: 0 auto 30px;
+        line-height: 1.6;
+    }
+
+    /* ==========================================================================
+       MODAL DE CUESTIONARIO Y REGISTRO (WIZARD)
+       ========================================================================== */
+    .modal-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(15, 23, 42, .85);
+        backdrop-filter: blur(10px);
+        z-index: 5000;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+    }
+
+    .modal-box {
+        background: #fff;
+        width: 100%;
+        max-width: 560px;
+        padding: 45px 35px;
+        border-radius: 35px;
+        position: relative;
+        box-shadow: 0 50px 100px rgba(0, 0, 0, .25);
+        max-height: 92vh;
+        overflow-y: auto;
+        animation: modalFadeIn .4s cubic-bezier(.16, 1, .3, 1) both;
+        text-align: left;
+        border-top: 8px solid var(--c-purple);
+    }
+
+    @keyframes modalFadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(24px) scale(.97);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+    }
+
+    .modal-box::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .modal-box::-webkit-scrollbar-thumb {
+        background-color: #cbd5e1;
+        border-radius: 10px;
+    }
+
+    .modal-close {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        font-size: 18px;
+        color: #ef4444;
+        background: #fef2f2;
+        border: 2px solid #fecaca;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        cursor: pointer;
+        transition: .3s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 50;
+    }
+
+    .modal-close:hover {
+        background: #ef4444;
+        color: #fff;
+        transform: scale(1.12) rotate(90deg);
+    }
+
+    .progress-container {
+        width: 100%;
+        height: 8px;
+        background: #e2e8f0;
+        border-radius: 10px;
+        margin-bottom: 8px;
+        overflow: hidden;
+    }
+
+    #progressBar {
+        height: 100%;
+        width: 0%;
+        background: linear-gradient(90deg, var(--c-purple), var(--c-pink));
+        transition: width 0.3s ease;
+        border-radius: 10px;
+    }
+
+    .triage-option-label {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        padding: 16px 20px;
+        background: #f8fafc;
+        border: 2px solid #e2e8f0;
+        border-radius: 16px;
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--c-dark);
+        cursor: pointer;
+        transition: 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .triage-option-label:hover {
+        background: #fdf2f8;
+        border-color: var(--c-pink);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(248, 91, 140, 0.08);
+    }
+
+    .triage-option-label input[type="radio"],
+    .triage-option-label input[type="checkbox"] {
+        accent-color: var(--c-pink);
+        width: 20px;
+        height: 20px;
+        cursor: pointer;
+    }
+
+    .custom-input-triage {
+        width: 100%;
+        padding: 16px 20px;
+        border-radius: 14px;
+        border: 2px solid #cbd5e1;
+        font-size: 1.05rem;
+        font-family: var(--font-b);
+        outline: none;
+        transition: 0.3s;
+        color: var(--c-dark);
+    }
+
+    .custom-input-triage:focus {
+        border-color: var(--c-purple);
+        box-shadow: 0 0 0 4px rgba(90, 63, 163, 0.1);
+    }
+
+    .btn-primary {
+        background: var(--c-purple);
+        color: #fff;
+        box-shadow: 0 12px 25px rgba(90, 63, 163, .25);
+        padding: 18px 30px;
+        border-radius: 100px;
+        font-weight: 800;
+        font-size: 15px;
+        font-family: var(--font-h);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        transition: .35s;
+        cursor: pointer;
+        border: none;
+    }
+
+    .btn-primary:hover {
+        background: var(--c-pink);
+        transform: translateY(-3px);
+        box-shadow: 0 15px 30px rgba(248, 91, 140, .35);
+    }
+
+    .btn-outline {
+        background: #fff;
+        border: 2px solid #e2e8f0;
+        color: var(--text-muted);
+        padding: 15px 25px;
+        border-radius: 100px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: .3s;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .btn-outline:hover {
+        border-color: var(--c-purple);
+        color: var(--c-purple);
+    }
+
+    /* ==========================================================================
+       RESPONSIVE
+       ========================================================================== */
+    @media(max-width:1100px) {
+        .taller-breadcrumb {
+            padding: 22px 24px 0;
+        }
+
+        .taller-hero {
+            padding: 40px 24px 70px;
+            margin-top: 0;
+            min-height: auto;
+        }
+
+        .taller-hero-content {
+            margin-top: 100px;
+        }
+
+        .section-features {
+            padding: 60px 24px 30px;
+        }
+    }
+
+    @media(max-width:768px) {
+        .taller-breadcrumb {
+            padding: 18px 18px 0;
+            margin-top: 60px;
+        }
+
+        .taller-hero {
+            padding: 24px 18px 50px;
+        }
+
+        .taller-hero-content {
+            margin-top: 20px;
+        }
+
+        .taller-tagbox {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 18px 20px;
+            border-radius: 20px;
+        }
+
+        .taller-info-cards {
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .taller-info-card {
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .taller-badge-online {
+            width: 100%;
+            box-sizing: border-box;
+            justify-content: center;
+            text-align: center;
+        }
+
+        .taller-cta-btn {
+            width: 100%;
+            justify-content: center;
+            padding: 18px 24px;
+        }
+
+        .modal-box {
+            padding: 30px 20px;
+            border-radius: 28px;
+        }
+    }
 </style>
+{% endblock %}
 
-
-
-</head>
-<body>
-
-<nav class="sidebar">
-  <div class="brand-container">
-    <img src="{% static 'img/nlogo.png' %}" alt="HOPE Logo">
-  </div>
-  <a href="{% url 'inicio' %}#inicio" class="nav-item"><i class="fas fa-home"></i> Inicio</a>
-  
-  {% if request.user.is_authenticated %}
-    <a href="{% url 'logout_usuario' %}" class="nav-item btn-login-sidebar" style="background: #ef4444; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.2);">
-      <i class="fas fa-sign-out-alt"></i> Cerrar sesión
-    </a>
-  {% else %}
-    <a href="#" onclick="abrirModal('modalLogin'); return false;" class="nav-item btn-login-sidebar">
-      <i class="fas fa-sign-in-alt"></i> Iniciar sesión
-    </a>
-  {% endif %}
-
-  <p class="nav-section-title">Terapias</p>
-  <a href="{% url 'inicio' %}#terapias" class="nav-item active">
-    <i class="fas fa-user"></i> Terapia Individual
-  </a>
-  <a href="{% url 'inicio' %}#terapias" class="nav-item">
-    <i class="fas fa-heart"></i> Terapia de Pareja
-  </a>
-  
-  <p class="nav-section-title">Talleres para Padres</p>
-  <a href="{% url 'inicio' %}#talleres-padres" class="nav-item"><i class="fas fa-seedling"></i> Criar con Conciencia</a>
-  <a href="{% url 'inicio' %}#talleres-padres" class="nav-item"><i class="fas fa-star"></i> Disciplina Inteligente</a>
-  
-  <p class="nav-section-title">Talleres de Pareja</p>
-  <a href="{% url 'inicio' %}#talleres-pareja" class="nav-item"><i class="fas fa-heart"></i> Reconectar en Pareja</a>
-  <a href="{% url 'inicio' %}#talleres-pareja" class="nav-item"><i class="fas fa-people-arrows"></i> Amar sin Herir</a>
-  
-  <p class="nav-section-title">Talleres Grupales</p>
-  <a href="{% url 'inicio' %}#talleres-grupales" class="nav-item"><i class="fas fa-users"></i> Volver a Empezar</a>
-  <a href="{% url 'inicio' %}#talleres-grupales" class="nav-item"><i class="fas fa-dove"></i> Renacer Después del Adiós</a>
-  <a href="{% url 'inicio' %}#talleres-autoestima" class="nav-item"><i class="fas fa-gem"></i> Reconstruyendo mi Valor</a>
-  
-  <p class="nav-section-title">Profesionales</p>
-  <a href="{% url 'inicio' %}#ecovision" class="nav-item"><i class="fas fa-leaf"></i> Ecovisión</a>
-  <p class="nav-section-title">Comunidad</p>
-  <a href="{% url 'inicio' %}#blog" class="nav-item"><i class="fas fa-book-open"></i> Blog</a>
-</nav>
-
-<main class="main-stage">
-
-  <!-- MOBILE NAV -->
-  <nav class="mobile-nav">
-    <span class="mobile-logo-text">HOPE</span>
-    <a href="#" onclick="abrirModal('modalLogin'); return false;" class="btn-login-mobile">
-      Entrar <i class="fas fa-sign-in-alt"></i>
-    </a>
-  </nav>
-
-  <!-- ══ HERO NUEVO ══ -->
-  <section class="hero-new">
-    <div class="hero-new-wrapper">
-
-      <!-- IZQUIERDA: Foto + CTA Box -->
-      <div class="hero-new-left">
-        <img src="{% static 'img/19.png' %}" alt="Espacio HOPE — Terapeuta" class="hero-new-img">
-<div class="cta-box-new">
-  <p class="price-tag-new">Sesión Individual · 50 min</p>
-  <span class="price-amount-new">$100 <span>MXN</span></span>
-  <span class="price-sub">Por sesión · Pago único y seguro</span>
-  
-  <!-- Pequeña leyenda de comisión -->
-  <span class="comision-extra">+ $10 MXN de comisión</span>
-  
-  <button class="btn-cta-new" onclick="abrirModal('modalRegistro')">
-    <i class="fas fa-calendar-check"></i> &nbsp;Agendar por Primera vez
-  </button>
-  <br>
-  <button class="btn-cta-new" style="background: linear-gradient(135deg, var(--c-purple), #7c5cbf); box-shadow: 0 8px 20px rgba(90,63,163,.3);" onclick="abrirModal('modalRegistro'); return false;">
-        <i class="fas fa-sign-in-alt"></i> &nbsp;Ya soy paciente
-  </button>
-  <div class="cta-badges">
-    <span class="cta-badge"><i class="fas fa-lock"></i> Confidencial</span>
-    <span class="cta-badge"><i class="fas fa-shield-alt"></i> Seguro</span>
-  </div>
+{% block content %}
+<!-- BREADCRUMB -->
+<div class="taller-breadcrumb">
+    <a href="{% url 'inicio' %}"><i class="fas fa-arrow-left"></i> Volver al inicio</a>
 </div>
-      </div>
 
-      <!-- DERECHA: Texto -->
-      <div class="hero-new-right">
-        <span class="hero-badge">Proceso Clínico Individualizado</span>
-        <h1 class="hero-new-heading">
-          Tu espacio seguro para sanar,<br>
-          <span>100% en línea.</span>
-        </h1>
-        <p class="hero-new-subtitle">
-          Habla con un psicólogo profesional desde la comodidad y privacidad de tu hogar. Sin salas de espera, sin traslados, enfocado completamente en ti.
+<!-- HERO PRINCIPAL -->
+<section class="taller-hero">
+    <div class="taller-hero-bg"></div>
+    <div class="taller-hero-overlay"></div>
+
+    <div class="taller-hero-content">
+        <div class="taller-tagbox">
+            <div class="brain-icon"><i class="fas fa-user-shield"></i></div>
+            <div>
+                <h2>Servicio Clínico</h2>
+                <p>Terapia Psicológica<br>Individual
+                    <span class="sub">Un espacio seguro, profesional y a tu propio ritmo</span>
+                </p>
+            </div>
+        </div>
+
+        <p class="taller-hero-desc">
+            Encuentra claridad emocional, supera la ansiedad, procesa tus vivencias y fortalece tu amor propio con el acompañamiento cálido y ético de psicólogos certificados.
         </p>
-        <ul class="benefits-list">
-          <li>
-            <span class="benefit-icon" style="background:rgba(90,63,163,.1);color:var(--c-purple)"><i class="fas fa-video"></i></span>
-            Sesiones por videollamada desde cualquier lugar
-          </li>
-          <li>
-            <span class="benefit-icon" style="background:rgba(248,91,140,.1);color:var(--c-pink)"><i class="fas fa-user-shield"></i></span>
-            100% privado y confidencial
-          </li>
-          <li>
-            <span class="benefit-icon" style="background:rgba(37,184,184,.1);color:var(--c-teal)"><i class="fas fa-brain"></i></span>
-            Psicólogos certificados y especializados
-          </li>
-          <li>
-            <span class="benefit-icon" style="background:rgba(242,124,33,.1);color:var(--c-orange)"><i class="fas fa-clock"></i></span>
-            Horarios flexibles, tú eliges cuándo
-          </li>
-        </ul>
 
-      </div>
-
-    </div>
-  </section>
-
-  <!-- ══ CÓMO FUNCIONA ══ -->
-  <section class="how-it-works-new">
-    <p class="section-label">Proceso Simple</p>
-    <h2 class="section-title-new">Cómo Funciona</h2>
-    <p class="section-sub">En 5 pasos sencillos estarás conectado con tu psicólogo. Sin complicaciones, sin burocracia.</p>
-    <div class="steps-grid-new">
-      <div class="step-card-new">
-        <div class="step-number-new" style="background:linear-gradient(135deg,var(--c-purple),#7c5cbf)">1</div>
-        <p>Elige tu día y hora</p>
-        <small>Selecciona el horario que mejor se adapte a tu rutina</small>
-      </div>
-      <div class="step-card-new">
-        <div class="step-number-new" style="background:linear-gradient(135deg,var(--c-pink),#d94a7a)">2</div>
-        <p>Paga tu sesión</p>
-        <small>Proceso seguro, rápido y confidencial</small>
-      </div>
-      <div class="step-card-new">
-        <div class="step-number-new" style="background:linear-gradient(135deg,var(--c-orange),#d4651a)">3</div>
-        <p>Contesta un formulario</p>
-        <small>Cuéntanos un poco sobre ti para preparar tu sesión</small>
-      </div>
-      <div class="step-card-new">
-        <div class="step-number-new" style="background:linear-gradient(135deg,var(--c-teal),#1a9a9a)">4</div>
-        <p>Recibe tu acceso</p>
-        <small>Te enviamos el enlace de tu sesión por correo</small>
-      </div>
-      <div class="step-card-new">
-        <div class="step-number-new" style="background:linear-gradient(135deg,#5A3FA3,var(--c-pink))">5</div>
-        <p>Conecta y sana</p>
-        <small>Inicia tu proceso de bienestar con tu psicólogo</small>
-      </div>
-    </div>
-  </section>
-
-  <!-- ══ POR QUÉ TERAPIA ══ -->
-  <section class="detail-section-new">
-    <div style="text-align:center;max-width:700px;margin:0 auto">
-      <p class="section-label">Tu Bienestar Primero</p>
-      <h2 class="section-title-new">¿Por qué iniciar terapia?</h2>
-      <p class="section-sub" style="margin-bottom:0">La terapia individual es un proceso profundo de autoconocimiento. No necesitas "estar mal" para acudir, solo la disposición de querer sentirte mejor y crecer.</p>
-    </div>
-    <div class="feature-grid-new">
-      <div class="feature-box-new">
-        <div class="feature-icon-wrap" style="background:rgba(90,63,163,.1);color:var(--c-purple)">
-          <i class="fas fa-brain"></i>
-        </div>
-        <h4>Claridad Mental</h4>
-        <p>Aprende a identificar y frenar los pensamientos intrusivos, reducir la ansiedad y gestionar el estrés del día a día con herramientas prácticas.</p>
-      </div>
-      <div class="feature-box-new">
-        <div class="feature-icon-wrap" style="background:rgba(248,91,140,.1);color:var(--c-pink)">
-          <i class="fas fa-heart-pulse"></i>
-        </div>
-        <h4>Gestión Emocional</h4>
-        <p>Valida tus emociones sin ser controlado por ellas. Supera episodios de tristeza, duelo o frustración en un entorno libre de juicios.</p>
-      </div>
-      <div class="feature-box-new">
-        <div class="feature-icon-wrap" style="background:rgba(37,184,184,.1);color:var(--c-teal)">
-          <i class="fas fa-compass"></i>
-        </div>
-        <h4>Proyecto de Vida</h4>
-        <p>Recupera la motivación, establece límites sanos en tus relaciones personales y traza objetivos claros para tu futuro con seguridad.</p>
-      </div>
-    </div>
-  </section>
-
-  <!-- ══ FOOTER ══ -->
-  <footer class="footer">
-    <div class="footer-top">
-      <div class="footer-brand">
-        <img src="{% static 'img/nlogo.png' %}" alt="HOPE Logo" class="footer-logo">
-        <p>Una plataforma de bienestar mental con enfoque humano. Acompañamos cada proceso con presencia, rigor clínico y genuino cuidado.</p>
-        <div class="footer-addr"><i class="fas fa-location-dot"></i><span>Lago Margarita 47, Col. Granada, 11520, CDMX</span></div>
-        <div class="footer-addr"><i class="fas fa-globe"></i><a href="https://espaciohope.com" target="_blank" rel="noopener">espaciohope.com</a></div>
-        <a href="#" class="footer-cta" onclick="abrirModal('modalRegistro'); return false;">Iniciar mi proceso <i class="fas fa-arrow-right"></i></a>
-        <div class="footer-tags">
-          <span class="footer-tag" style="color:var(--c-teal);border-color:var(--c-teal)">Individual</span>
-          <span class="footer-tag" style="color:var(--c-pink);border-color:var(--c-pink)">Parejas</span>
-          <span class="footer-tag" style="color:var(--c-purple);border-color:var(--c-purple)">Grupal</span>
-          <span class="footer-tag" style="color:var(--c-orange);border-color:var(--c-orange)">Padres</span>
-          <span class="footer-tag" style="color:#b5950a;border-color:#b5950a">Autoestima</span>
-        </div>
-      </div>
-      <div class="footer-col">
-        <h4>Talleres</h4>
-        <ul>
-          <li><a href="#">Criar con Conciencia</a></li>
-          <li><a href="#">Disciplina Inteligente</a></li>
-          <li><a href="#">Reconectar en Pareja</a></li>
-          <li><a href="#">Amar sin Herir</a></li>
-          <li><a href="#">Volver a Empezar</a></li>
-          <li><a href="#">Renacer Después del Adiós</a></li>
-          <li><a href="#">Reconstruyendo mi Valor</a></li>
-        </ul>
-      </div>
-      <div class="footer-col">
-        <h4>Comunidad</h4>
-        <ul>
-          <li><a href="#">Blog HOPE</a></li>
-          <li><a href="#">Estudios HOPE</a></li>
-          <li><a href="#" onclick="abrirDonacion();return false">Puentes de Esperanza</a></li>
-          <li><a href="#">Nuestro Equipo</a></li>
-        </ul>
-      </div>
-      <div class="footer-col">
-        <h4>Ayuda</h4>
-        <ul>
-          <li><a href="#">¿Cómo funciona?</a></li>
-          <li><a href="#">Preguntas frecuentes</a></li>
-          <li><a href="#">Aviso de Privacidad</a></li>
-          <li><a href="#">Términos de uso</a></li>
-          <li><a href="#">Contacto</a></li>
-        </ul>
-      </div>
-    </div>
-    <div class="footer-alert">
-      <i class="fas fa-shield-heart"></i>
-      <span>Si tú o alguien que conoces está en peligro, comunícate con los <a href="#">servicios de emergencia</a> para recibir atención inmediata. Tu vida importa.</span>
-    </div>
-    <div class="footer-bottom">
-      <div class="footer-bottom-left">© 2026 <strong>HOPE — Todo lo que sientes importa.</strong> Todos los derechos reservados.</div>
-      <div class="footer-socials">
-        <a href="https://www.facebook.com/profile.php?id=61589251014702" class="social-btn" title="Facebook"><i class="fab fa-facebook-f"></i></a>
-        <a href="https://www.instagram.com/hope_espacio" class="social-btn" title="Instagram"><i class="fab fa-instagram"></i></a>
-        <a href="https://www.tiktok.com/@hope.espacio" class="social-btn" title="TikTok"><i class="fab fa-tiktok"></i></a>
-        <a href="https://www.youtube.com/@espaciohope" class="social-btn" title="YouTube"><i class="fab fa-youtube"></i></a>
-        <a href="https://x.com/maferolverac" class="social-btn" title="X (Twitter)"><i class="fa-brands fa-x-twitter"></i></a>
-        <a href="https://www.linkedin.com/in/maferolvera/" class="social-btn" title="LinkedIn"><i class="fab fa-linkedin-in"></i></a>
-      </div>
-    </div>
-
-
-{{ dias_disponibles_json|json_script:"dias-data" }}
-
-<div class="modal-overlay" id="modalCalendario">
-    <div class="modal-box" id="booking-wizard" style="max-width: 850px; width: 95%; padding: 40px; text-align: left; overflow-y: auto;">                              
-        <button class="modal-close" onclick="cerrarModal('modalCalendario')"><i class="fas fa-times"></i></button>
-        
-        <span class="step-tag" style="background: white; color: var(--c-purple); padding: 8px 18px; border-radius: 100px; font-weight: 800; font-family: var(--font-h); font-size: 13px; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 4px 15px rgba(90,63,163,0.1); margin-bottom: 20px; display: inline-block;">Paso 2: Agendar Sesión</span>
-        
-        <h2 style="font-family: var(--font-h); font-size: 2rem; margin-bottom: 30px; color: var(--c-dark);">Selecciona el día y la hora</h2>
-
-        <div id="step-1-schedule">
-            <div class="date-carousel" id="dateCarousel">
-                {% for dia, horas in dias_disponibles.items %}
-                    <button type="button" class="date-chip {% if forloop.first %}active{% endif %}" data-target="slots-{{ dia|date:'Ymd' }}" data-fecha="{{ dia|date:'Y-m-d' }}">
-                        <span style="font-size: 11px; display: block; text-transform: uppercase; font-weight: 600; letter-spacing: 1px;">{{ dia|date:"D" }}</span>
-                        <span style="font-size: 28px; font-weight: 800; line-height: 1.1;">{{ dia|date:"d" }}</span>
-                        <span style="font-size: 11px; display: block; text-transform: uppercase; font-weight: 700; opacity: 0.8; margin-top: 2px;">{{ dia|date:"M" }}</span>
-                    </button>
-                {% empty %}
-                <p style="color: var(--text-muted); font-style: italic;">No hay fechas disponibles por el momento.</p>
-                {% endfor %}
+        <div class="taller-info-cards">
+            <div class="taller-info-card">
+                <div class="icon-wrap"><i class="fas fa-clock"></i></div>
+                <div>
+                    <div class="label">Duración</div>
+                    <div class="value">50 minutos por sesión</div>
+                </div>
             </div>
-
-            <div style="margin-top: 30px;">
-                {% for dia, horas in dias_disponibles.items %}
-                    <div class="slots-container" id="slots-{{ dia|date:'Ymd' }}" {% if not forloop.first %}style="display: none;"{% endif %}>
-                        {% for h in horas %}
-                        <button class="time-slot-btn" data-fecha="{{ dia|date:'Y-m-d' }}" data-hora="{{ h|time:'H:i' }}">{{ h|time:"h:i A" }}</button>
-                        {% endfor %}
-                    </div>
-                {% endfor %}
+            <div class="taller-info-card">
+                <div class="icon-wrap"><i class="fas fa-hand-holding-heart"></i></div>
+                <div>
+                    <div class="label">Atención</div>
+                    <div class="value">1 a 1 Personalizada</div>
+                </div>
+            </div>
+            <div class="taller-info-card">
+                <div class="icon-wrap"><i class="fas fa-tag"></i></div>
+                <div>
+                    <div class="label">Costo accesible</div>
+                    <div class="value">$100.00 MXN</div>
+                </div>
             </div>
         </div>
 
-<div id="step-2-payment" style="display: none; text-align: center; padding-top: 40px; border-top: 1px solid #f1f5f9; margin-top: 40px;">
-    <button id="btn-back-schedule" style="background:none; border:none; color: var(--c-purple); font-weight: 700; cursor:pointer; font-size: 16px; margin-bottom: 20px; display:block;">
-        <i class="fas fa-arrow-left"></i> Volver al calendario
-    </button>
+        <div>
+            <span class="taller-badge-online">
+                <i class="fas fa-video"></i>
+                <span>En línea vía Google Meet<small>Acceso privado desde la comodidad de tu hogar</small></span>
+            </span>
+        </div>
 
-    <h2 style="color: var(--c-dark); font-family: var(--font-h); font-size: 2rem; margin-bottom: 10px;">Confirmar y Pagar</h2>
-    <p id="selected-time-text" style="font-size: 18px; color: var(--c-purple); margin-bottom: 30px; font-weight: 600;"></p>
-    
-<div class="payment-box">
-  <h3 style="font-size: 42px; margin-bottom: 2px; color: var(--c-purple); font-weight: 800; font-family: var(--font-h);">
-    $100.00 <span style="font-size: 16px;">MXN</span>
-  </h3>
-  <p style="color: var(--text-muted); font-weight: 500; margin-bottom: 25px;">Consulta Psicológica Online Individual</p>
-
-  <!-- 🔥 LEYENDA DE COMISIÓN (añadida) -->
-  <span class="comision-extra" style="display: inline-block; font-size: 0.75rem; color: #666; background-color: #f9f9f9; padding: 0.2rem 0.7rem; border-radius: 20px; margin-bottom: 12px;">
-    + $10 MXN de comisión
-  </span>
-
-<div id="paypal-button-container" style="margin-top: 15px;"></div>
-
-  <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 15px;">
-    <i class="fas fa-lock"></i> Pago 100% seguro procesado por CLIP
-  </p>
-</div>
-</div>
-
-        <div id="step-3-loading" style="display: none; text-align: center; padding: 60px 0;">
-            <i class="fas fa-circle-notch fa-spin" style="font-size: 50px; color: var(--c-purple);"></i>
-            <h3 style="margin-top: 20px; font-family: var(--font-h);">Preparando tu espacio...</h3>
+        <div class="taller-hero-actions">
+            <button type="button" class="taller-cta-btn" onclick="abrirRegistroIndividual()">
+                Comenzar mi Proceso <i class="fas fa-arrow-right"></i>
+            </button>
         </div>
     </div>
-</div>
-  </footer>
-</main>
+</section>
 
-<!-- ══ MODALES ══ -->
-<div id="modalProceso" class="modal-overlay">
-  <div class="modal-box" style="max-width:450px">
-    <button class="modal-close" onclick="cerrarModal('modalProceso')"><i class="fas fa-times"></i></button>
-    <div style="font-size:70px;color:var(--c-purple);margin-bottom:20px"><i class="fas fa-hands-holding"></i></div>
-    <h2 style="font-family:var(--font-h);font-size:2.5rem;color:var(--c-purple);margin-bottom:15px">Caminemos juntos</h2>
-    <p style="color:var(--text-muted);font-size:1.1rem;margin-bottom:30px">Dar el primer paso es el acto de mayor valentía. Estamos aquí para acompañarte.</p>
-    <button class="btn-primary" style="width:100%;justify-content:center" onclick="cerrarModal('modalProceso')">Continuar <i class="fas fa-check"></i></button>
-  </div>
-</div>
-
-<div id="modalDonacion" class="modal-overlay">
-  <div class="modal-box">
-    <button class="modal-close" onclick="cerrarModal('modalDonacion')"><i class="fas fa-times"></i></button>
-    <h2 style="font-family:var(--font-h);font-size:2.8rem;color:var(--c-dark);margin-bottom:10px">Legado de Esperanza</h2>
-    <p style="color:var(--text-muted);margin-bottom:25px">Apoya el tratamiento psicológico de un joven.</p>
-    <div id="donEmoji" class="emoji-reaction">🤍</div>
-    <div class="donation-chips">
-      <div class="chip" onclick="selectAmount(100,this)">$100</div>
-      <div class="chip active" onclick="selectAmount(400,this)">$400</div>
-      <div class="chip" onclick="selectAmount(1200,this)">$1,200</div>
-      <div class="chip" onclick="selectAmount(7200,this)">$7,200</div>
-      <div class="chip" onclick="selectAmount(14500,this)">$14,500</div>
-      <div class="chip" onclick="selectAmount('',this)">Otro</div>
+<!-- SECCIÓN DE BENEFICIOS Y ÁREAS DE ATENCIÓN -->
+<section class="section-features">
+    <div class="section-header-center">
+        <h3>¿En qué te podemos ayudar?</h3>
+        <p>No tienes que cargar con todo tú solo. Nuestro equipo clínico está listo para brindarte herramientas prácticas desde la primera sesión.</p>
     </div>
-    <input type="number" id="donAmount" class="donation-input" value="400" placeholder="Ingresa un monto">
-    <p id="donImpact" style="color:var(--text-muted);font-style:italic;margin-bottom:30px">"Dona un mes de terapia."</p>
-    <button id="btnPagar" class="btn-primary" style="width:100%;justify-content:center;background:var(--c-pink)" onclick="simularPago()">
-      Aportar <span id="btnMonto">$400</span> MXN <i class="fas fa-heart"></i>
-    </button>
-  </div>
-</div>
 
+    <div class="features-grid">
+        <div class="feature-card">
+            <div class="feature-icon"><i class="fas fa-wind"></i></div>
+            <h4>Ansiedad y Estrés</h4>
+            <p>Aprende técnicas basadas en evidencia para regular tus emociones, frenar la sobrepensadera y recuperar tu tranquilidad mental.</p>
+        </div>
 
+        <div class="feature-card">
+            <div class="feature-icon"><i class="fas fa-heart-pulse"></i></div>
+            <h4>Autoestima y Confianza</h4>
+            <p>Reconcíliate con tu historia, pon límites sanos sin culpa y construye una relación sólida y compasiva contigo mismo.</p>
+        </div>
+
+        <div class="feature-card">
+            <div class="feature-icon"><i class="fas fa-sun"></i></div>
+            <h4>Duelo y Transiciones</h4>
+            <p>Procesa rupturas amorosas, pérdidas significativas y momentos de incertidumbre con el sostén cálido de un terapeuta.</p>
+        </div>
+
+        <div class="feature-card">
+            <div class="feature-icon"><i class="fas fa-compass"></i></div>
+            <h4>Crecimiento y Metas</h4>
+            <p>Encuentra dirección, supera el autosabotaje y diseña un plan de vida alineado con lo que verdaderamente te importa.</p>
+        </div>
+    </div>
+
+    <!-- PASOS DE INICIO -->
+    <div class="steps-container">
+        <div class="section-header-center" style="margin-bottom: 20px;">
+            <h3>Tu camino en 3 sencillos pasos</h3>
+            <p>Diseñamos una experiencia ágil y confidencial para que inicies hoy mismo.</p>
+        </div>
+
+        <div class="steps-grid">
+            <div class="step-item">
+                <div class="step-number">1</div>
+                <h5>Cuestionario Inicial</h5>
+                <p>Respondemos juntos unas breves preguntas para comprender tu motivo de consulta y necesidades.</p>
+            </div>
+            <div class="step-item">
+                <div class="step-number">2</div>
+                <h5>Crea tu Cuenta</h5>
+                <p>Genera tu expediente clínico 100% privado y seguro con tus datos básicos de contacto.</p>
+            </div>
+            <div class="step-item">
+                <div class="step-number">3</div>
+                <h5>Entra a tu Panel</h5>
+                <p>Accede directamente a tu panel de consultante para elegir terapeuta y agendar tu primera sesión.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- BANNER CTA FINAL -->
+    <div class="banner-cta-bottom">
+        <h3>Tu bienestar mental es tu mejor inversión</h3>
+        <p>Da el primer paso en un entorno de calidez, respeto y total confidencialidad.</p>
+        <button type="button" class="btn-primary" style="background: #fff; color: var(--c-purple); padding: 20px 45px; font-size: 1rem;" onclick="abrirRegistroIndividual()">
+            Quiero iniciar mi terapia <i class="fas fa-arrow-right"></i>
+        </button>
+    </div>
+</section>
+
+<!-- ==========================================
+     MODAL CUESTIONARIO + REGISTRO (WIZARD)
+     ========================================== -->
 <div class="modal-overlay" id="modalRegistro">
-   <div class="modal-box" style="max-width:450px;padding:45px 40px;border-radius:30px">
-    <button class="modal-close" onclick="cerrarModal('modalRegistro')"><i class="fas fa-times"></i></button>
-    <img src="{% static 'img/nlogo.png' %}" alt="HOPE Logo" style="height: 50px; margin: 0 auto 25px; display: block;">
-    <div style="text-align:center;margin-bottom:35px">
-      <h2 style="font-family:var(--font-h);font-size:2.2rem;color:var(--c-dark);margin-bottom:8px;font-weight:800">Tu espacio seguro te espera.</h2>
-      <p style="color:var(--text-muted);font-size:1.05rem">Crea tu Cuenta HOPE</p>
-    </div>
-    
-    <form id="formRegistroRapido">
-      {% csrf_token %}
-      <div style="position:relative;margin-bottom:20px">
-        <i class="fas fa-envelope" style="position:absolute;left:22px;top:50%;transform:translateY(-50%);color:#94a3b8;font-size:1.2rem"></i>
-        <input type="email" id="reg_email" style="width:100%;padding:20px 20px 20px 60px;border-radius:16px;border:2px solid #e2e8f0;font-size:1.05rem;font-family:var(--font-b);background:#f8fafc;color:var(--c-dark);outline:none;transition:.3s" placeholder="Correo electrónico" required onfocus="this.style.borderColor='var(--c-purple)';this.style.backgroundColor='#fff'" onblur="this.style.borderColor='#e2e8f0';this.style.backgroundColor='#f8fafc'">
-      </div>
-      <div style="position:relative;margin-bottom:10px">
-        <i class="fas fa-lock" style="position:absolute;left:22px;top:50%;transform:translateY(-50%);color:#94a3b8;font-size:1.2rem"></i>
-        <input type="password" id="reg_pass" style="width:100%;padding:20px 20px 20px 60px;border-radius:16px;border:2px solid #e2e8f0;font-size:1.05rem;font-family:var(--font-b);background:#f8fafc;color:var(--c-dark);outline:none;transition:.3s" placeholder="Contraseña" required onfocus="this.style.borderColor='var(--c-purple)';this.style.backgroundColor='#fff'" onblur="this.style.borderColor='#e2e8f0';this.style.backgroundColor='#f8fafc'">
-      </div>
-      <br>
-      <button type="submit" id="btnSumbitReg" class="btn-primary" style="width:100%;justify-content:center;padding:20px;font-size:1.15rem;border-radius:16px">
-        Agendar Mi Cita <i class="fas fa-arrow-right"></i>
-      </button>
-    </form>
-  </div>
-</div>
+    <div class="modal-box" id="triageBox">
+        <button class="modal-close" onclick="cerrarModal('modalRegistro')"><i class="fas fa-times"></i></button>
 
+        <img src="{% static 'img/nlogo.png' %}" alt="HOPE Logo"
+            style="height: 42px; margin: 0 auto 18px; display: block;">
 
-
-<div id="modalMood" class="modal-overlay">
-  <div class="mood-modal-box">
-    <button class="modal-close" onclick="cerrarModal('modalMood')"><i class="fas fa-times"></i></button>
-    <div id="moodStep1" class="mood-modal-step active">
-      <p class="mood-modal-title">✦ ¿Cómo estás hoy?</p>
-      <p class="mood-modal-sub">Lo que sientes importa. Cuéntanos cómo llegas hoy.</p>
-      <div class="mood-emojis">
-        <button class="mood-emoji-btn" onclick="elegirMood('triste',this)">😔<span>Triste</span></button>
-        <button class="mood-emoji-btn" onclick="elegirMood('tranquilo',this)">😌<span>Tranquilo</span></button>
-        <button class="mood-emoji-btn" onclick="elegirMood('bien',this)">🙂<span>Bien</span></button>
-        <button class="mood-emoji-btn" onclick="elegirMood('genial',this)">🤩<span>¡Genial!</span></button>
-      </div>
-    </div>
-    <div id="moodStep2" class="mood-modal-step">
-      <p class="mood-modal-title" id="moodModalTitle"></p>
-      <div class="mood-msg-box" id="moodModalMsg"></div>
-      <textarea class="mood-textarea" id="moodModalText" placeholder=""></textarea>
-      <button class="btn-mood-send" onclick="enviarMood()">Compartir con HOPE &nbsp;<i class="fas fa-paper-plane"></i></button>
-    </div>
-    <div id="moodStep3" class="mood-modal-step">
-      <div class="mood-confirm-center">
-        <div class="mood-confirm-emoji" id="moodConfirmEmoji"></div>
-        <p class="mood-confirm-text" id="moodConfirmText"></p>
-      </div>
-    </div>
-  </div>
-</div>
-
-<div class="modal-overlay" id="modalFeedback">
-  <div class="modal-box" style="padding:40px;border-radius:24px">
-    <div id="feedbackIcon" style="font-size:50px;margin-bottom:15px"><i class="fas fa-info-circle"></i></div>
-    <h2 id="feedbackTitle" style="font-family:var(--font-h);font-size:1.8rem;color:var(--c-dark);margin-bottom:10px">Atención</h2>
-    <p id="feedbackMessage" style="color:var(--text-muted);font-size:1.1rem;line-height:1.5;margin-bottom:25px">Mensaje.</p>
-    <button type="button" class="btn-primary" onclick="cerrarModal('modalFeedback')" style="width:100%;justify-content:center">Entendido</button>
-  </div>
-</div>
-
-<div id="modalRecuperar">
-  <div class="recuperar-card">
-    <button class="recuperar-close" onclick="cerrarModalRecuperar()"><i class="fas fa-times"></i></button>
-    <div id="recuperar-form-content">
-      <div class="recuperar-icon"><i class="fas fa-key"></i></div>
-      <h2 class="recuperar-title">Recuperar Acceso</h2>
-      <p class="recuperar-sub">Ingresa tu correo registrado y te enviaremos un enlace seguro para crear una nueva contraseña.</p>
-      <label class="recuperar-label" for="email-recuperar">Correo Electrónico</label>
-      <div class="recuperar-input-wrap">
-        <input type="email" id="email-recuperar" class="recuperar-input" placeholder="ejemplo@correo.com">
-        <i class="fas fa-envelope"></i>
-      </div>
-      <p class="recuperar-error" id="recuperar-error-msg">Ingresa un correo electrónico válido.</p>
-      <button class="btn-recuperar" id="btn-enviar-recuperar" onclick="enviarEnlaceRecuperacion()">
-        <i class="fas fa-paper-plane"></i> Enviar Enlace Seguro
-      </button>
-    </div>
-    <div class="recuperar-exito" id="recuperar-exito">
-      <div class="recuperar-icon" style="background:linear-gradient(135deg,#d1fae5,#a7f3d0);color:#059669"><i class="fas fa-check"></i></div>
-      <h2 class="recuperar-title">¡Correo enviado!</h2>
-      <p class="recuperar-sub" id="recuperar-exito-desc">Revisa tu bandeja de entrada y sigue las instrucciones del correo.</p>
-      <button class="btn-recuperar" onclick="cerrarModalRecuperar()" style="margin-top:22px">Entendido <i class="fas fa-check-circle"></i></button>
-    </div>
-  </div>
-</div>
-
-
-
-<!-- MODAL PARA COMPLETAR PERFIL (sin registro de correo/contraseña) -->
-<div class="modal-overlay" id="modalCompletarPerfil">
-    <div class="modal-box" style="max-width: 600px; text-align: left; padding: 45px; border-radius: 35px; border-top: 8px solid var(--c-purple);">
-        <button class="modal-close" onclick="cerrarModal('modalCompletarPerfil')"><i class="fas fa-times"></i></button>
-        
-        <img src="{% static 'img/nlogo.png' %}" alt="HOPE Logo" style="height: 45px; margin: 0 auto 20px; display: block;">
-        
-        <div style="text-align: center; margin-bottom: 25px;">
-            <h2 style="font-family: var(--font-h); font-size: 2rem; color: var(--c-dark); font-weight: 800;">Completa tu perfil</h2>
-            <p style="color: var(--text-muted);">Unos datos más para tu expediente clínico 💜</p>
+        <div style="text-align: center; margin-bottom: 22px;" id="triageHeader">
+            <h2 style="font-family: var(--font-h); font-size: 1.9rem; color: var(--c-dark); font-weight: 800;">Terapia Individual</h2>
+            <p style="color: var(--text-muted); font-size: 0.98rem;" id="triageSubtitle">Paso a paso, a tu propio ritmo. 💜</p>
         </div>
 
-        <!-- Contenedor del cuestionario (igual al de inicio.html pero sin email/password) -->
-        <div id="triageCompletoContainer">
-            <!-- Paso preguntas -->
-            <div id="stepPreguntasCompleto" style="display: none;">
-                <div class="progress-container"><div id="progressBarCompleto"></div></div>
-                <p id="progressTextCompleto" style="text-align: right; color: var(--c-pink); font-weight: 800; margin-bottom: 20px;"></p>
-                <h3 id="questionTextCompleto" style="margin-bottom: 25px; font-size: 1.4rem; font-weight: 800;"></h3>
-                <div id="questionOptionsCompleto" style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 30px;"></div>
-                <div style="display: flex; gap: 15px;">
-                    <button id="btnAtrasCompleto" class="btn-outline" style="display: none; padding: 15px 25px;"><i class="fas fa-arrow-left"></i></button>
-                    <button id="btnSiguienteCompleto" class="btn-primary" style="flex: 1; justify-content: center;">Continuar <i class="fas fa-arrow-right"></i></button>
+        <div id="triageContainer">
+            <!-- STEP PREGUNTAS CLÍNICAS -->
+            <div id="stepPreguntas" style="display: none;">
+                <div class="progress-container">
+                    <div id="progressBar"></div>
+                </div>
+                <p id="progressText"
+                    style="text-align: right; color: var(--c-pink); font-weight: 800; margin-bottom: 18px; font-size: 0.82rem; text-transform: uppercase;">
+                </p>
+                <h3 id="questionText"
+                    style="margin-bottom: 22px; font-size: 1.3rem; color: var(--c-dark); font-weight: 800; line-height: 1.4;">
+                </h3>
+                <div id="questionOptionsContainer"
+                    style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 28px;"></div>
+                <div style="display: flex; gap: 12px;">
+                    <button type="button" id="btnAtras" class="btn-outline" style="display: none; padding: 14px 22px;">
+                        <i class="fas fa-arrow-left"></i>
+                    </button>
+                    <button type="button" id="btnSiguiente" class="btn-primary"
+                        style="flex: 1; justify-content: center; padding: 15px 25px;">
+                        Continuar <i class="fas fa-arrow-right"></i>
+                    </button>
                 </div>
             </div>
 
-            <!-- Formulario de datos personales (sin correo/contraseña) -->
-            <form id="formCompletarPerfil" style="display: none;">
+            <!-- STEP CREACIÓN DE CUENTA FINAL -->
+            <form action="{% url 'registro_usuario' %}" method="POST" id="formRegistro" style="display: none;">
                 {% csrf_token %}
-                <input type="hidden" name="respuestas_json" id="respuestasJsonCompleto">
-                
-                <div style="background: #f8fafc; padding: 25px; border-radius: 20px; margin-bottom: 25px;">
-                    <h4 style="font-family: var(--font-h); font-size: 1.3rem; color: var(--c-purple); margin-bottom: 20px;">Tus datos</h4>
-                    
-                    <div style="margin-bottom: 18px;">
-                        <label>¿Cómo te llamamos? *</label>
-                        <input type="text" id="pseudonimoCompleto" class="custom-input-triage" placeholder="Ej. Alex, Majo...">
-                    </div>
-                    <div style="margin-bottom: 18px;">
-                        <label>Nombre completo (privado) *</label>
-                        <input type="text" name="nombre" id="nombreCompleto" class="custom-input-triage" placeholder="Para tu expediente">
-                    </div>
-                    <div style="display: flex; gap: 15px; flex-wrap: wrap;">
-                        <div style="flex:1;">
-                            <label>Teléfono *</label>
-                            <input type="tel" name="telefono" id="telefonoCompleto" class="custom-input-triage" placeholder="10 dígitos">
+                <input type="hidden" name="flujo_elegido" id="inputFlujoFinal" value="individual">
+                <input type="hidden" name="respuestas_json" id="inputRespuestasFinal">
+                <input type="hidden" name="servicio_origen" id="inputServicioOrigen" value="Terapia Individual">
+
+                <div style="background: #f8fafc; padding: 22px; border-radius: 20px; border: 1px solid #e2e8f0; margin-bottom: 20px;">
+                    <h4 style="font-family: var(--font-h); font-size: 1.3rem; color: var(--c-purple); margin-bottom: 18px; font-weight: 800;">
+                        Tus Datos Generales
+                    </h4>
+
+                    <div style="margin-bottom: 16px;">
+                        <label style="font-size: 0.82rem; font-weight: 700; color: var(--text-muted); margin-bottom: 6px; display: block; text-transform: uppercase; letter-spacing: 1px;">
+                            ¿Cómo te llamamos? (Seudónimo) <span style="color: var(--c-pink);">*</span>
+                        </label>
+                        <div style="position: relative;">
+                            <i class="fas fa-smile" style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: #cbd5e1; font-size: 1.1rem;"></i>
+                            <input type="text" id="pseudonimoFinal"
+                                style="width: 100%; padding: 14px 16px 14px 46px; border-radius: 14px; border: 2px solid #cbd5e1; font-size: .95rem; font-family: var(--font-b); outline: none; transition: 0.3s; color: var(--c-dark);"
+                                placeholder="Ej. Alex, Sofi..." required>
                         </div>
-                        <div style="flex:1;">
-                            <label>Teléfono emergencia *</label>
-                            <input type="tel" name="telefono_emergencia" id="emergenciaCompleto" class="custom-input-triage" placeholder="Familiar o amigo">
+                    </div>
+
+                    <div style="margin-bottom: 16px;">
+                        <label style="font-size: 0.82rem; font-weight: 700; color: var(--text-muted); margin-bottom: 6px; display: block; text-transform: uppercase; letter-spacing: 1px;">
+                            Nombre Completo (Privado) <span style="color: var(--c-pink);">*</span>
+                        </label>
+                        <div style="position: relative;">
+                            <i class="fas fa-id-card" style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: #cbd5e1; font-size: 1.1rem;"></i>
+                            <input type="text" name="nombre"
+                                style="width: 100%; padding: 14px 16px 14px 46px; border-radius: 14px; border: 2px solid #cbd5e1; font-size: .95rem; font-family: var(--font-b); outline: none; transition: 0.3s; color: var(--c-dark);"
+                                placeholder="Para tu expediente clínico oficial" required>
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom: 16px;">
+                        <label style="font-size: 0.82rem; font-weight: 700; color: var(--text-muted); margin-bottom: 6px; display: block; text-transform: uppercase; letter-spacing: 1px;">
+                            Correo Electrónico <span style="color: var(--c-pink);">*</span>
+                        </label>
+                        <div style="position: relative;">
+                            <i class="fas fa-envelope" style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: #cbd5e1; font-size: 1.1rem;"></i>
+                            <input type="email" name="email"
+                                style="width: 100%; padding: 14px 16px 14px 46px; border-radius: 14px; border: 2px solid #cbd5e1; font-size: .95rem; font-family: var(--font-b); outline: none; transition: 0.3s; color: var(--c-dark);"
+                                placeholder="tucorreo@ejemplo.com" required>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 16px;">
+                        <div style="flex: 1; min-width: 180px;">
+                            <label style="font-size: 0.82rem; font-weight: 700; color: var(--text-muted); margin-bottom: 6px; display: block; text-transform: uppercase; letter-spacing: 1px;">
+                                Tu Teléfono (WhatsApp) <span style="color: var(--c-pink);">*</span>
+                            </label>
+                            <div style="position: relative;">
+                                <i class="fas fa-phone" style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: #cbd5e1; font-size: 1.1rem;"></i>
+                                <input type="tel" name="telefono"
+                                    style="width: 100%; padding: 14px 16px 14px 46px; border-radius: 14px; border: 2px solid #cbd5e1; font-size: .95rem; font-family: var(--font-b); outline: none; transition: 0.3s; color: var(--c-dark);"
+                                    placeholder="A 10 dígitos" required>
+                            </div>
+                        </div>
+                        <div style="flex: 1; min-width: 180px;">
+                            <label style="font-size: 0.82rem; font-weight: 700; color: var(--c-pink); margin-bottom: 6px; display: block; text-transform: uppercase; letter-spacing: 1px;">
+                                Tel. Emergencia <span style="color: var(--c-pink);">*</span>
+                            </label>
+                            <div style="position: relative;">
+                                <i class="fas fa-notes-medical" style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: var(--c-pink); font-size: 1.1rem;"></i>
+                                <input type="tel" name="telefono_emergencia"
+                                    style="width: 100%; padding: 14px 16px 14px 46px; border-radius: 14px; border: 2px solid #fbcfe8; font-size: .95rem; font-family: var(--font-b); outline: none; transition: 0.3s; background: #fdf2f8; color: var(--c-dark);"
+                                    placeholder="Familiar o amigo" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label style="font-size: 0.82rem; font-weight: 700; color: var(--text-muted); margin-bottom: 6px; display: block; text-transform: uppercase; letter-spacing: 1px;">
+                            Crea una Contraseña <span style="color: var(--c-pink);">*</span>
+                        </label>
+                        <div style="position: relative;">
+                            <i class="fas fa-lock" style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: #cbd5e1; font-size: 1.1rem;"></i>
+                            <input type="password" name="password"
+                                style="width: 100%; padding: 14px 16px 14px 46px; border-radius: 14px; border: 2px solid #cbd5e1; font-size: .95rem; font-family: var(--font-b); outline: none; transition: 0.3s; color: var(--c-dark);"
+                                placeholder="Mínimo 8 caracteres" required>
                         </div>
                     </div>
                 </div>
 
-                <button type="submit" class="btn-primary" style="width:100%; justify-content: center; padding: 18px;">Guardar y continuar <i class="fas fa-arrow-right"></i></button>
+                <label style="display: flex; align-items: flex-start; gap: 12px; margin-bottom: 22px; cursor: pointer; background: #fff1f2; padding: 16px; border-radius: 16px; border: 1px solid #fecdd3;">
+                    <input type="checkbox" name="acepta_privacidad" required
+                        style="min-width: 20px; height: 20px; accent-color: var(--c-pink); margin-top: 2px; cursor: pointer;">
+                    <span style="font-size: 0.88rem; color: var(--c-dark); line-height: 1.45; font-weight: 500;">
+                        He leído y acepto el <a href="#" onclick="abrirModal('modalPrivacidad'); return false;"
+                            style="color: var(--c-pink); font-weight: 800; text-decoration: none; border-bottom: 2px dashed var(--c-pink);">Aviso de Privacidad</a> para la protección y custodia de mi expediente clínico.
+                    </span>
+                </label>
+
+                <button type="submit" class="btn-primary" id="btnSubmitFinal"
+                    style="width: 100%; justify-content: center; padding: 18px; font-size: 1.1rem; border-radius: 16px; font-weight: 900;">
+                    Completar Registro y Entrar <i class="fas fa-arrow-right" style="margin-left: 8px;"></i>
+                </button>
             </form>
         </div>
     </div>
 </div>
 
+<!-- MODAL DE FEEDBACK / ALERTAS -->
+<div class="modal-overlay" id="modalFeedback">
+    <div class="modal-box" style="text-align: center; max-width: 440px;">
+        <button class="modal-close" onclick="cerrarModal('modalFeedback')"><i class="fas fa-times"></i></button>
+        <div id="feedbackIcon" style="font-size: 3rem; margin-bottom: 15px; color: var(--c-purple);">
+            <i class="fas fa-info-circle"></i>
+        </div>
+        <h3 id="feedbackTitle" style="font-family: var(--font-h); font-size: 1.4rem; color: var(--c-dark); margin-bottom: 10px;">Atención</h3>
+        <p id="feedbackMessage" style="color: var(--text-muted); font-size: 0.98rem; line-height: 1.5; margin-bottom: 25px;"></p>
+        <button class="btn-primary" style="width: 100%; justify-content: center;" onclick="cerrarModal('modalFeedback')">
+            Aceptar
+        </button>
+    </div>
+</div>
+
+<!-- MODAL DE PRIVACIDAD -->
+<div class="modal-overlay" id="modalPrivacidad">
+    <div class="modal-box" style="text-align: left; max-width: 650px;">
+        <button class="modal-close" onclick="cerrarModal('modalPrivacidad')"><i class="fas fa-times"></i></button>
+        <h3 style="font-family: var(--font-h); font-size: 1.5rem; color: var(--c-purple); margin-bottom: 15px;">Aviso de Privacidad</h3>
+        <div style="max-height: 55vh; overflow-y: auto; color: var(--text-muted); font-size: 0.92rem; line-height: 1.6; padding-right: 10px;">
+            <p>En <strong>Espacio HOPE</strong> la confidencialidad de tu información personal y clínica es nuestra máxima prioridad. Los datos que nos proporcionas se utilizan exclusivamente para tu expediente de atención psicológica, asignación de profesional y contacto seguro.</p>
+            <p style="margin-top: 10px;">Tus respuestas e historial quedan estrictamente resguardados bajo normas éticas y de protección de datos personales.</p>
+        </div>
+        <button class="btn-primary" style="width: 100%; justify-content: center; margin-top: 20px;" onclick="cerrarModal('modalPrivacidad')">
+            Entendido <i class="fas fa-check"></i>
+        </button>
+    </div>
+</div>
+
+<!-- ==========================================
+     SCRIPTS DE CONTROL Y CUESTIONARIO
+     ========================================== -->
 <script>
-// ── DATA MOOD ──
-    // Variables globales para la cita
-    window.fechaSeleccionada = "";
-    window.horaSeleccionada = "";
-    window.tipoServicioAgendado = "individual";
-    window.modalidadSeleccionada = "En línea";
-    window.animoSeleccionado = "No especificó";
-
-    // 1. REGISTRO AJAX
-    document.getElementById('formRegistroRapido').addEventListener('submit', function(e) {
-        e.preventDefault();
-        const btn = document.getElementById('btnSumbitReg');
-        const originalText = btn.innerHTML;
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Preparando tu espacio...';
-        btn.disabled = true;
-
-        let formData = new URLSearchParams();
-        formData.append('email', document.getElementById('reg_email').value);
-        formData.append('password', document.getElementById('reg_pass').value);
-
-        fetch('/registro-rapido/', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: formData.toString()
-        })
-        .then(r => r.json())
-        .then(data => {
-            btn.innerHTML = originalText;
-            btn.disabled = false;
-            
-            if (data.status === 'success') {
-                cerrarModal('modalRegistro');
-                abrirModal('modalCalendario');
-            } 
-            // 🔥 AGREGA ESTO: Si ya existía, lo manda directo a su panel
-            else if (data.status === 'login_existente') {
-                window.location.href = data.redirect_url;
-            } 
-            else {
-                alert(data.message);
-            }
-        }).catch(err => {
-            btn.innerHTML = originalText;
-            btn.disabled = false;
-            alert("Error de conexión");
-        });
-    });
-
-
-
-// --- PAYPAL SMART BUTTONS INTEGRADO ---
-document.addEventListener("DOMContentLoaded", function () {
-    // Verificamos que el contenedor exista antes de intentar renderizar
-    if (document.getElementById('paypal-button-container')) {
-        paypal.Buttons({
-            // 1. Validaciones antes de abrir el pop-up de PayPal
-            onClick: function(data, actions) {
-                const checkConsentimiento = document.getElementById('check-consentimiento');
-                if (checkConsentimiento && !checkConsentimiento.checked) {
-                    document.getElementById('alerta-consentimiento').style.display = 'flex';
-                    return actions.reject();
-                }
-                if (!window.fechaSeleccionada || !window.horaSeleccionada) {
-                    alert("Por favor, selecciona una fecha y una hora válida.");
-                    return actions.reject();
-                }
-                return actions.resolve();
-            },
-
-            // 2. Crear la orden con el monto correcto
-            createOrder: function(data, actions) {
-                let montoCobro = (window.tipoServicioAgendado === 'pareja') ? '215.00' : '110.00';
-                return actions.order.create({
-                    purchase_units: [{
-                        amount: { currency_code: 'MXN', value: montoCobro },
-                        description: "Sesión HOPE - " + window.tipoServicioAgendado
-                    }]
-                });
-            },
-
-            // 3. PAGO EXITOSO
-            onApprove: function(data, actions) {
-                return actions.order.capture().then(function(details) {
-                    // ¡Ya pagó! Ahora disparas tu lógica original
-                    guardarCitaSinPago();
-                });
-            },
-
-            onError: function(err) {
-                console.error("Error PayPal:", err);
-                alert('Ocurrió un error con el pago. Intenta de nuevo.');
-            }
-        }).render('#paypal-button-container');
+    // Carga de preguntas desde Django
+    let dataCuestionario = {};
+    try {
+        dataCuestionario = JSON.parse('{{ cuestionario_json|escapejs|default:"{}" }}');
+    } catch (e) {
+        console.error("Error al parsear el cuestionario_json:", e);
     }
-});
-    
-// Reemplaza tu función getCookie actual por esta versión más robusta
-function getCookie(name) {
-    let cookieValue = null;
-    if (document.cookie && document.cookie !== '') {
-        const cookies = document.cookie.split(';');
-        for (let i = 0; i < cookies.length; i++) {
-            const cookie = cookies[i].trim();
-            // Esto busca el nombre exacto de la cookie
-            if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                break;
-            }
+
+    let flujoActual = "individual";
+    let indicePregunta = 0;
+    let respuestasGuardadas = {};
+    let preguntasFlujo = [];
+    let historialNavegacion = [];
+
+    function abrirModal(id) {
+        const m = document.getElementById(id);
+        if (m) {
+            m.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
         }
     }
-    return cookieValue;
-}
 
-    // 2. LÓGICA DEL CALENDARIO (Dias y Horas)
-    const dateChips = document.querySelectorAll('.date-chip');
-    const slotContainers = document.querySelectorAll('.slots-container');
-    
-    dateChips.forEach(chip => {
-        chip.addEventListener('click', function() {
-            dateChips.forEach(c => c.classList.remove('active'));
-            slotContainers.forEach(c => c.style.display = 'none');
-            
-            this.classList.add('active');
-            const targetId = this.getAttribute('data-target');
-            document.getElementById(targetId).style.display = 'grid';
+    function cerrarModal(id) {
+        const m = document.getElementById(id);
+        if (m) {
+            m.style.display = 'none';
+            document.body.style.overflow = 'auto';
+        }
+    }
+
+    // Cerrar modales al dar clic afuera
+    document.querySelectorAll('.modal-overlay').forEach(modal => {
+        modal.addEventListener('click', function (e) {
+            if (e.target === this) {
+                cerrarModal(this.id);
+            }
         });
     });
 
-    const timeSlotBtns = document.querySelectorAll('#step-1-schedule .time-slot-btn');
-    timeSlotBtns.forEach(btn => {
-        btn.addEventListener('click', function() {
-            timeSlotBtns.forEach(b => b.classList.remove('active'));
-            this.classList.add('active');
+    function abrirRegistroIndividual() {
+        document.getElementById('inputServicioOrigen').value = "Terapia Individual";
 
-            window.horaSeleccionada = this.getAttribute('data-hora'); 
-            window.fechaSeleccionada = this.getAttribute('data-fecha'); 
+        if (Object.keys(dataCuestionario).length === 0) {
+            mostrarAlertaPersonalizada("No se pudieron cargar las preguntas del cuestionario. Por favor recarga la página.", "error");
+            return;
+        }
 
-            let partes = window.fechaSeleccionada.split('-');
-            let fechaObj = new Date(partes[0], partes[1]-1, partes[2]);
-            const opciones = { weekday: 'long', month: 'long', day: 'numeric' };
+        abrirModal('modalRegistro');
 
-            document.getElementById('selected-time-text').innerHTML = `Has seleccionado el <strong>${fechaObj.toLocaleDateString('es-ES', opciones)}</strong> a las <strong>${this.innerText}</strong>`;
+        document.getElementById('stepPreguntas').style.display = 'block';
+        document.getElementById('formRegistro').style.display = 'none';
 
-            document.getElementById('step-1-schedule').style.display = 'none';
-            document.getElementById('step-2-payment').style.display = 'block';
-            renderizarBotonPayPalIndividual();
-        });
-    });
+        iniciarCuestionario('individual');
+    }
 
-    document.getElementById('btn-back-schedule').addEventListener('click', () => {
-        document.getElementById('step-2-payment').style.display = 'none';
-        document.getElementById('step-1-schedule').style.display = 'block';
-    });
+    function iniciarCuestionario(flujo) {
+        flujoActual = dataCuestionario[flujo] ? flujo : Object.keys(dataCuestionario)[0] || 'individual';
+        
+        if (!dataCuestionario[flujoActual]) {
+            mostrarAlertaPersonalizada("El flujo solicitado no está disponible.", "error");
+            return;
+        }
 
+        preguntasFlujo = dataCuestionario[flujoActual].preguntas || [];
+        document.querySelector("#triageHeader h2").innerText = dataCuestionario[flujoActual].titulo || "Terapia Individual";
 
-function guardarCitaSinPago() {
+        historialNavegacion = [];
+        respuestasGuardadas = {};
+        indicePregunta = obtenerSiguienteIndiceValido(0);
+        mostrarPregunta();
+    }
 
-    // Mostrar loading
-    document.getElementById('step-2-payment').style.display = 'none';
-    document.getElementById('step-3-loading').style.display = 'block';
+    function debeMostrarPregunta(pregunta) {
+        if (!pregunta.mostrar_si) return true;
+        const depId = pregunta.mostrar_si.id;
+        const valoresPermitidos = pregunta.mostrar_si.valores;
+        const respuestaPrevia = respuestasGuardadas[depId];
+        if (!respuestaPrevia) return false;
+        if (Array.isArray(respuestaPrevia)) return respuestaPrevia.some(r => valoresPermitidos.includes(r));
+        return valoresPermitidos.includes(respuestaPrevia);
+    }
 
-    // 1. Obtenemos el token limpio desde la cookie
-    const csrfToken = getCookie('csrftoken');
-    
-    let formData = new FormData();
-    formData.append('fecha', window.fechaSeleccionada);
-    formData.append('hora', window.horaSeleccionada);
-    formData.append('animo', window.animoSeleccionado);
-    formData.append('modalidad', window.modalidadSeleccionada);
-    formData.append('tipo_servicio', window.tipoServicioAgendado);
-    
-    // Lo agregamos también al cuerpo de la petición por si Django lo requiere ahí
-    formData.append('csrfmiddlewaretoken', csrfToken); 
+    function obtenerSiguienteIndiceValido(inicio) {
+        let nextIndex = inicio;
+        while (nextIndex < preguntasFlujo.length) {
+            if (debeMostrarPregunta(preguntasFlujo[nextIndex])) return nextIndex;
+            nextIndex++;
+        }
+        return nextIndex;
+    }
 
-    // 2. Apuntamos a la URL correcta de tu views.py
-    fetch("/guardar_cita_ajax/", { 
-        method: 'POST',
-        headers: {
-            'X-Requested-With': 'XMLHttpRequest', // Le decimos a Django que es AJAX
-            'X-CSRFToken': csrfToken              // Mandamos el token limpio
-        },
-        body: formData
-    })
-    .then(response => response.json())
-    .then(data => {
-        document.getElementById('step-3-loading').style.display = 'none';
+    function mostrarPregunta() {
+        const optionsContainer = document.getElementById("questionOptionsContainer");
+        optionsContainer.innerHTML = "";
 
-        if(data.status === 'success') {
-            // Mandamos al usuario al paso de completar perfil
-            window.location.href = '/sesion-individual/?completar_perfil=1';
+        if (indicePregunta >= preguntasFlujo.length) {
+            finalizarCuestionario();
+            return;
+        }
+
+        document.getElementById("progressBar").style.width = (((indicePregunta) / preguntasFlujo.length) * 100) + "%";
+        document.getElementById("progressText").innerText = `Pregunta ${historialNavegacion.length + 1} de ${preguntasFlujo.length}`;
+
+        const q = preguntasFlujo[indicePregunta];
+        document.getElementById("questionText").innerText = q.pregunta;
+        document.getElementById("btnAtras").style.display = historialNavegacion.length > 0 ? "inline-flex" : "none";
+
+        const esPreguntaEdad = q.id === 'edad' || q.pregunta.toLowerCase().includes('edad');
+
+        if (q.tipo === "single" || q.tipo === "multiple") {
+            const inputType = q.tipo === "single" ? "radio" : "checkbox";
+            q.opciones.forEach((opcion) => {
+                const checked = respuestasGuardadas[q.id] && (Array.isArray(respuestasGuardadas[q.id]) ? respuestasGuardadas[q.id].includes(opcion) : respuestasGuardadas[q.id] === opcion) ? "checked" : "";
+                const html = `<label class="triage-option-label"><input type="${inputType}" name="${q.id}" value="${opcion}" ${checked}> ${opcion}</label>`;
+                optionsContainer.insertAdjacentHTML('beforeend', html);
+            });
+        }
+        else if (esPreguntaEdad) {
+            const minEdad = 13;
+            const maxEdad = 75;
+            const val = respuestasGuardadas[q.id] || 24;
+
+            optionsContainer.innerHTML = `
+                <div style="text-align: center; margin-bottom: 18px;">
+                    <span id="${q.id}_valDisplay" style="font-size: 4.5rem; font-weight: 800; color: var(--c-purple); font-family: var(--font-h); line-height: 1;">${val}</span>
+                    <span style="font-size: 1.1rem; color: #64748b; font-weight: 600; display: block; margin-top: 4px;">años de edad</span>
+                </div>
+                <div style="padding: 0 10px;">
+                    <input type="range" id="${q.id}" min="${minEdad}" max="${maxEdad}" value="${val}" style="width: 100%; height: 8px; background: #e2e8f0; border-radius: 4px; appearance: none; accent-color: var(--c-purple); cursor: pointer;" oninput="document.getElementById('${q.id}_valDisplay').innerText = this.value">
+                    <div style="display: flex; justify-content: space-between; font-size: 0.85rem; color: #94a3b8; font-weight: 600; margin-top: 8px;">
+                        <span>13 años</span>
+                        <span>75+ años</span>
+                    </div>
+                </div>
+            `;
+        }
+        else if (q.tipo === "numero" && q.min !== undefined && q.max !== undefined) {
+            const val = respuestasGuardadas[q.id] || Math.ceil((q.min + q.max) / 2);
+            optionsContainer.innerHTML = `
+                <div style="text-align: center; margin-bottom: 18px;">
+                    <span id="${q.id}_valDisplay" style="font-size: 4.5rem; font-weight: 800; color: var(--c-pink); font-family: var(--font-h); line-height: 1;">${val}</span>
+                </div>
+                <div style="padding: 0 10px;">
+                    <input type="range" id="${q.id}" min="${q.min}" max="${q.max}" value="${val}" style="width: 100%; height: 8px; background: #e2e8f0; border-radius: 4px; appearance: none; accent-color: var(--c-pink); cursor: pointer;" oninput="document.getElementById('${q.id}_valDisplay').innerText = this.value">
+                    <div style="display: flex; justify-content: space-between; font-size: 0.85rem; color: #94a3b8; font-weight: 600; margin-top: 8px;">
+                        <span>${q.min}</span>
+                        <span>${q.max}</span>
+                    </div>
+                </div>
+            `;
         } else {
-            // Volvemos a mostrar el botón si hay error
-            document.getElementById('step-2-payment').style.display = 'block';
-            alert(data.message || 'Error al guardar cita');
+            const val = respuestasGuardadas[q.id] || "";
+            const inputType = q.tipo === "numero" ? "number" : "text";
+            optionsContainer.innerHTML = `<input type="${inputType}" id="${q.id}" class="custom-input-triage" placeholder="Escribe aquí tu respuesta..." value="${val}">`;
         }
-    })
-    .catch(error => {
-        document.getElementById('step-3-loading').style.display = 'none';
-        document.getElementById('step-2-payment').style.display = 'block';
-        console.error(error);
-        alert('Error de conexión con el servidor.');
+    }
+
+    document.getElementById("btnSiguiente").addEventListener("click", function () {
+        const q = preguntasFlujo[indicePregunta];
+        let hayRespuesta = false;
+
+        if (q.tipo === "single") {
+            const sel = document.querySelector(`input[name="${q.id}"]:checked`);
+            if (sel) { respuestasGuardadas[q.id] = sel.value; hayRespuesta = true; }
+        } else if (q.tipo === "multiple") {
+            const sels = Array.from(document.querySelectorAll(`input[name="${q.id}"]:checked`)).map(el => el.value);
+            if (sels.length > 0) { respuestasGuardadas[q.id] = sels; hayRespuesta = true; }
+        } else {
+            const el = document.getElementById(q.id);
+            const val = el ? el.value.trim() : "";
+            if (val !== "") {
+                if (q.tipo === "numero") {
+                    const num = parseInt(val);
+                    if (q.min !== undefined && num < q.min) {
+                        mostrarAlertaPersonalizada(`El valor mínimo requerido es ${q.min}.`, "info");
+                        return;
+                    }
+                    if (q.max !== undefined && num > q.max) {
+                        mostrarAlertaPersonalizada(`El valor máximo permitido es ${q.max}.`, "info");
+                        return;
+                    }
+                }
+                respuestasGuardadas[q.id] = val;
+                hayRespuesta = true;
+            }
+        }
+
+        if (!hayRespuesta) {
+            mostrarAlertaPersonalizada("Por favor responde o selecciona una opción para continuar.", "info");
+            return;
+        }
+
+        historialNavegacion.push(indicePregunta);
+        indicePregunta = obtenerSiguienteIndiceValido(indicePregunta + 1);
+        mostrarPregunta();
     });
-}
 
-function iniciarCuestionarioFinal() {
-    // Abrimos el mismo modal de Triage que usaste en el registro
-    abrirModal('modalRegistro');
-    // Adaptamos el título para que no parezca registro
-    document.querySelector("#triageHeader h2").innerText = "Expediente Clínico";
-    document.querySelector("#triageSubtitle").innerText = "Completa tu información para tu sesión 💜";
-    
-    // Al finalizar el proceso (cuando el form está listo para enviar),
-    // interceptamos el submit para llamar a 'guardar-cuestionario-final'
-    // en lugar de 'registro_usuario'
-}
+    document.getElementById("btnAtras").addEventListener("click", function () {
+        if (historialNavegacion.length > 0) {
+            indicePregunta = historialNavegacion.pop();
+            mostrarPregunta();
+        }
+    });
 
-    // 3. GUARDAR LA CITA Y REDIRIGIR AL PANEL
-// 3. GUARDAR LA CITA Y REDIRIGIR AL PANEL
-// 3. GUARDAR LA CITA Y REDIRIGIR AL PANEL
-// ── PAYPAL PARA SESIÓN INDIVIDUAL ──
-function renderizarBotonPayPalIndividual() {
-    const btnClip = document.getElementById('btn-pagar-clip');
-    
-    // Verificamos que exista el botón y que no le hayamos puesto el evento antes
-    if (btnClip && !btnClip.dataset.eventoAgregado) {
-        btnClip.dataset.eventoAgregado = "true";
-        btnClip.addEventListener('click', function() {
-            
-            // 1. Validaciones
-            const checkConsentimiento = document.getElementById('check-consentimiento');
-            if (checkConsentimiento && !checkConsentimiento.checked) {
-                document.getElementById('alerta-consentimiento').style.display = 'flex';
-                return;
+    function finalizarCuestionario() {
+        document.getElementById("stepPreguntas").style.display = "none";
+        document.getElementById("formRegistro").style.display = "block";
+        document.querySelector("#triageHeader h2").innerText = "Crea tu cuenta segura";
+        document.getElementById("inputFlujoFinal").value = flujoActual;
+        document.getElementById("progressBar").style.width = "100%";
+    }
+
+    // ENVÍO AJAX DEL FORMULARIO FINAL
+    const formReg = document.getElementById("formRegistro");
+    if (formReg) {
+        formReg.addEventListener("submit", function (e) {
+            e.preventDefault();
+            if (formReg.dataset.enviando === "true") return;
+            formReg.dataset.enviando = "true";
+
+            respuestasGuardadas["pseudonimo"] = document.getElementById("pseudonimoFinal").value;
+            const servicioElegido = document.getElementById("inputServicioOrigen").value;
+            if (servicioElegido) {
+                respuestasGuardadas["servicio_solicitado"] = servicioElegido;
             }
-            if (!window.fechaSeleccionada || !window.horaSeleccionada) {
-                alert("Por favor, selecciona una fecha y una hora válida.");
-                return;
-            }
-            
-            // Capturar datos del formulario rápido si existen
-            const nombre = document.getElementById('nombre_paciente') ? document.getElementById('nombre_paciente').value : '';
-            const email = document.getElementById('email_paciente') ? document.getElementById('email_paciente').value : '';
 
-            // 2. Loading
-            document.getElementById('step-2-payment').style.display = 'none';
-            document.getElementById('step-3-loading').style.display = 'block';
+            document.getElementById("inputRespuestasFinal").value = JSON.stringify(respuestasGuardadas);
 
-            // 3. Preparar datos
-            let formData = new URLSearchParams();
-            formData.append('fecha', window.fechaSeleccionada);
-            formData.append('hora', window.horaSeleccionada);
-            formData.append('monto', '110.00'); 
-            formData.append('nombre', nombre);
-            formData.append('email', email);
-            formData.append('tipo_servicio', 'individual');
-            formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+            const btnSubmitFinal = document.getElementById("btnSubmitFinal");
+            const originalText = btnSubmitFinal.innerHTML;
+            btnSubmitFinal.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Creando expediente...';
+            btnSubmitFinal.disabled = true;
 
-            // 4. Llamada al backend
-            fetch("{% url 'iniciar_pago_clip' %}", {  
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-Requested-With': 'XMLHttpRequest' },
-                body: formData.toString()
-            })
-            .then(response => response.json())
-            .then(data => {
-                if(data.status === 'success' && data.payment_url) {
-                    window.location.href = data.payment_url;
-                } else {
-                    document.getElementById('step-3-loading').style.display = 'none';
-                    alert(data.message || 'Error al conectar con Clip. Intenta de nuevo.');
+            fetch(formReg.getAttribute("action"), {
+                method: "POST",
+                body: new FormData(formReg),
+                headers: {
+                    "X-Requested-With": "XMLHttpRequest",
+                    "X-CSRFToken": formReg.querySelector('[name=csrfmiddlewaretoken]').value
                 }
             })
-            .catch(error => {
-                console.error("Error Clip:", error);
-                document.getElementById('step-3-loading').style.display = 'none';
-                alert('Hubo un error de conexión. Intenta de nuevo.');
+            .then(r => r.json())
+            .then(data => {
+                btnSubmitFinal.innerHTML = originalText;
+                btnSubmitFinal.disabled = false;
+                formReg.dataset.enviando = "false";
+
+                if (data.status === "success") {
+                    window.location.href = data.redirect_url;
+                } else {
+                    mostrarAlertaPersonalizada(data.message || "Ocurrió un error al procesar el registro.", "error");
+                }
+            })
+            .catch(err => {
+                btnSubmitFinal.innerHTML = originalText;
+                btnSubmitFinal.disabled = false;
+                formReg.dataset.enviando = "false";
+                mostrarAlertaPersonalizada("Error de conexión. Intenta nuevamente.", "error");
             });
         });
     }
-}
-    // Funciones Auxiliares
-    function abrirModal(id){ const el=document.getElementById(id); if(el) el.style.display='flex'; }
-    function cerrarModal(id){ const el=document.getElementById(id); if(el) el.style.display='none'; }
 
+    function mostrarAlertaPersonalizada(mensaje, tipo = "info") {
+        const msg = document.getElementById("feedbackMessage");
+        const iconDiv = document.getElementById("feedbackIcon");
+        msg.innerHTML = mensaje;
 
-
-
-const MOODS = {
-  triste:{ title:'Gracias por contárnoslo 💜', msg:'Sentirte así tiene sentido, y no tienes que cargarlo solo/a. Estamos aquí.', placeholder:'¿Qué está pesando hoy? Puedes escribirlo sin filtros...', confirmEmoji:'🫂', confirmMsg:'¡Recibimos tu mensaje! Alguien del equipo HOPE lo leerá con mucho cariño. No estás solo/a. 💜' },
-  tranquilo:{ title:'Qué bueno que estás en calma 😌', msg:'Eso también es salud mental. ¿Qué te está ayudando hoy?', placeholder:'¿Qué te está trayendo esa tranquilidad?', confirmEmoji:'🌿', confirmMsg:'Gracias por compartirlo. Esos momentos de calma son poderosos. 🌿' },
-  bien:{ title:'¡Nos alegra! 🙂', msg:'Estar bien también es el momento ideal para seguir construyendo tu bienestar.', placeholder:'¿Qué está haciendo que hoy sea un buen día?', confirmEmoji:'⭐', confirmMsg:'Gracias por contárnoslo. Seguir cultivando el bienestar es todo un superpoder. ⭐' },
-  genial:{ title:'¡Eso es todo! 🤩', msg:'Días así hay que celebrarlos. ¿Qué está pasando de bueno?', placeholder:'¡Cuéntanos qué te tiene así de bien!', confirmEmoji:'🎉', confirmMsg:'¡Nos llenaste el corazón! Gracias por compartir tu alegría con HOPE. 🎉' }
-};
-let currentMood = null;
-
-function abrirModal(id){ const el=document.getElementById(id); if(el) el.style.display='flex'; }
-function cerrarModal(id){ const el=document.getElementById(id); if(el) el.style.display='none'; }
-
-document.addEventListener('keydown',function(e){
-  if(e.key==="Escape") document.querySelectorAll('.modal-overlay').forEach(o=>o.style.display='none');
-});
-
-function abrirDonacion(e){ if(e) e.preventDefault(); abrirModal('modalDonacion'); }
-
-// ── DONACIONES ──
-const donAmountEl=document.getElementById('donAmount');
-const donImpactEl=document.getElementById('donImpact');
-const btnMontoEl=document.getElementById('btnMonto');
-const donEmojiEl=document.getElementById('donEmoji');
-const IMPACT_MAP=[[100,'"Dona una terapia."','🤍'],[400,'"Dona un mes de terapia."','😊'],[1200,'"Terapia para 1 persona."','💖'],[7200,'"½ beca de terapia."','🌟'],[14500,'"1 beca completa."','🪽']];
-
-function updateDonation(val){
-  if(!btnMontoEl) return;
-  val=parseInt(val)||0;
-  btnMontoEl.textContent='$'+val.toLocaleString('es-MX');
-  donEmojiEl.style.animation='none';
-  void donEmojiEl.offsetWidth;
-  donEmojiEl.style.animation='bounceIn .5s';
-  const found=IMPACT_MAP.find(([v])=>v===val);
-  if(found){donImpactEl.textContent=found[1];donEmojiEl.textContent=found[2]}
-  else{donImpactEl.textContent='"¡Eres un Padrino de Honor!"';donEmojiEl.textContent='🚀'}
-}
-function selectAmount(amount,el){
-  document.querySelectorAll('.chip').forEach(c=>c.classList.remove('active'));
-  el.classList.add('active');
-  if(amount!==''){donAmountEl.value=amount;updateDonation(amount)}
-  else{donAmountEl.value='';donAmountEl.focus();updateDonation(0)}
-}
-if(donAmountEl){
-  donAmountEl.addEventListener('input',function(){
-    document.querySelectorAll('.chip').forEach(c=>c.classList.remove('active'));
-    updateDonation(this.value);
-  });
-  updateDonation(400);
-}
-function simularPago(){
-  const btn=document.getElementById('btnPagar');
-  if(!btn) return;
-  btn.innerHTML='<i class="fas fa-circle-notch fa-spin"></i> Procesando...';
-  btn.disabled=true;
-  setTimeout(()=>{
-    btn.style.background='#10B981';
-    btn.innerHTML='<i class="fas fa-check-circle"></i> ¡Gracias por tu donación!';
-    setTimeout(()=>{cerrarModal('modalDonacion');btn.style.background='var(--c-pink)';btn.innerHTML='Aportar <span id="btnMonto">$400</span> MXN <i class="fas fa-heart"></i>';btn.disabled=false;},2500);
-  },2000);
-}
-
-// ── MOOD ──
-function goMoodStep(n){
-  document.querySelectorAll('.mood-modal-step').forEach(s=>s.classList.remove('active'));
-  document.getElementById('moodStep'+n).classList.add('active');
-}
-function elegirMood(mood,btn){
-  currentMood=mood;
-  const d=MOODS[mood];
-  document.getElementById('moodModalTitle').textContent=d.title;
-  document.getElementById('moodModalMsg').textContent=d.msg;
-  document.getElementById('moodModalText').placeholder=d.placeholder;
-  document.querySelectorAll('.mood-emoji-btn').forEach(b=>b.classList.remove('selected'));
-  btn.classList.add('selected');
-  setTimeout(()=>goMoodStep(2),200);
-}
-function enviarMood(){
-  const msg=document.getElementById('moodModalText').value;
-  const d=MOODS[currentMood];
-  document.getElementById('moodConfirmEmoji').textContent=d.confirmEmoji;
-  document.getElementById('moodConfirmText').textContent=d.confirmMsg;
-  goMoodStep(3);
-  setTimeout(()=>cerrarModal('modalMood'),4000);
-}
-
-// ── RECUPERAR CONTRASEÑA ──
-function abrirModalRecuperar(){
-  document.getElementById('email-recuperar').value='';
-  document.getElementById('recuperar-error-msg').classList.remove('visible');
-  document.getElementById('recuperar-form-content').style.display='block';
-  document.getElementById('recuperar-exito').style.display='none';
-  document.getElementById('modalRecuperar').style.display='flex';
-}
-function cerrarModalRecuperar(){
-  document.getElementById('modalRecuperar').style.display='none';
-}
-function enviarEnlaceRecuperacion(){
-  const emailInput=document.getElementById('email-recuperar');
-  const email=emailInput.value.trim();
-  const btn=document.getElementById('btn-enviar-recuperar');
-  const errorMsg=document.getElementById('recuperar-error-msg');
-  if(!email||!email.includes('@')||!email.includes('.')){
-    errorMsg.classList.add('visible');
-    emailInput.style.borderColor='#e05a6a';
-    return;
-  }
-  errorMsg.classList.remove('visible');
-  emailInput.style.borderColor='';
-  const original=btn.innerHTML;
-  btn.innerHTML='<i class="fas fa-circle-notch fa-spin"></i> Enviando...';
-  btn.disabled=true;
-  setTimeout(()=>{
-    btn.innerHTML=original;
-    btn.disabled=false;
-    document.getElementById('recuperar-form-content').style.display='none';
-    document.getElementById('recuperar-exito').style.display='block';
-    document.getElementById('recuperar-exito-desc').textContent='Te enviamos el enlace a '+email+'. Revisa tu bandeja de entrada.';
-  },1800);
-}
-
-function testSinPago() {
-    document.getElementById('step-2-payment').style.display = 'none';
-    document.getElementById('step-3-loading').style.display = 'block';
-
-    const csrfToken = getCookie('csrftoken');
-    let formData = new FormData();
-    formData.append('fecha', window.fechaSeleccionada);
-    formData.append('hora', window.horaSeleccionada);
-    formData.append('animo', window.animoSeleccionado);
-    formData.append('modalidad', window.modalidadSeleccionada);
-    formData.append('tipo_servicio', window.tipoServicioAgendado);
-    formData.append('csrfmiddlewaretoken', csrfToken);
-
-    fetch("/guardar_cita_ajax/", {
-        method: 'POST',
-        headers: {
-            'X-Requested-With': 'XMLHttpRequest',
-            'X-CSRFToken': csrfToken
-        },
-        body: formData
-    })
-    .then(r => r.json())
-    .then(data => {
-        if (data.status === 'success') {
-            // Cita creada gratis, mandamos al paso final del formulario
-            window.location.href = '/sesion-individual/?completar_perfil=1';
+        if (tipo === "error") {
+            document.getElementById("feedbackTitle").innerText = "Hubo un problema";
+            iconDiv.innerHTML = '<i class="fas fa-exclamation-triangle" style="color: #ef4444;"></i>';
         } else {
-            document.getElementById('step-3-loading').style.display = 'none';
-            document.getElementById('step-2-payment').style.display = 'block';
-            alert('Error: ' + data.message);
+            document.getElementById("feedbackTitle").innerText = "Atención";
+            iconDiv.innerHTML = '<i class="fas fa-info-circle" style="color: var(--c-purple);"></i>';
         }
-    });
-}
-
-// Variables para el cuestionario de completar perfil
-let dataCuestionario = {{ cuestionario_json|safe|default:'{}' }};
-let flujoActualCompleto = "individual"; // o el flujo que uses
-let indicePreguntaCompleto = 0;
-let respuestasCompleto = {};
-let historialCompleto = [];
-let preguntasFlujoCompleto = [];
-
-function iniciarCuestionarioCompleto(flujo) {
-    if(!dataCuestionario[flujo]) {
-        mostrarAlertaPersonalizada("Error: No hay preguntas para este servicio.", "error");
-        return;
+        abrirModal("modalFeedback");
     }
-    preguntasFlujoCompleto = dataCuestionario[flujo].preguntas;
-    document.getElementById("stepPreguntasCompleto").style.display = "block";
-    document.getElementById("formCompletarPerfil").style.display = "none";
-    indicePreguntaCompleto = obtenerSiguienteIndiceValidoCompleto(0);
-    mostrarPreguntaCompleto();
-}
-
-function mostrarPreguntaCompleto() {
-    if (indicePreguntaCompleto >= preguntasFlujoCompleto.length) {
-        finalizarCuestionarioCompleto();
-        return;
-    }
-    let q = preguntasFlujoCompleto[indicePreguntaCompleto];
-    document.getElementById("questionTextCompleto").innerText = q.pregunta;
-    let container = document.getElementById("questionOptionsCompleto");
-    container.innerHTML = "";
-    document.getElementById("progressBarCompleto").style.width = ((indicePreguntaCompleto / preguntasFlujoCompleto.length) * 100) + "%";
-    document.getElementById("progressTextCompleto").innerText = `Pregunta ${historialCompleto.length + 1}`;
-    document.getElementById("btnAtrasCompleto").style.display = historialCompleto.length > 0 ? "block" : "none";
-
-    if (q.tipo === "single" || q.tipo === "multiple") {
-        let inputType = q.tipo === "single" ? "radio" : "checkbox";
-        q.opciones.forEach(op => {
-            let checked = respuestasCompleto[q.id] && respuestasCompleto[q.id].includes(op) ? "checked" : "";
-            container.innerHTML += `<label class="triage-option-label"><input type="${inputType}" name="${q.id}" value="${op}" ${checked}> ${op}</label>`;
-        });
-    } else if (q.id === "edad" || q.pregunta.toLowerCase().includes("edad")) {
-        let val = respuestasCompleto[q.id] || 24;
-        container.innerHTML = `
-            <div style="text-align:center"><span id="${q.id}_val" style="font-size:5rem;font-weight:800;color:var(--c-purple)">${val}</span><span> años</span></div>
-            <input type="range" id="${q.id}" min="13" max="35" value="${val}" oninput="document.getElementById('${q.id}_val').innerText=this.value">
-        `;
-    } else if (q.tipo === "numero" && q.min && q.max) {
-        let val = respuestasCompleto[q.id] || Math.ceil((q.min+q.max)/2);
-        container.innerHTML = `
-            <div style="text-align:center"><span id="${q.id}_val" style="font-size:5rem;font-weight:800;color:var(--c-pink)">${val}</span></div>
-            <input type="range" id="${q.id}" min="${q.min}" max="${q.max}" value="${val}" oninput="document.getElementById('${q.id}_val').innerText=this.value">
-        `;
-    } else {
-        let val = respuestasCompleto[q.id] || "";
-        container.innerHTML = `<input type="text" id="${q.id}" class="custom-input-triage" value="${val}" placeholder="Escribe aquí...">`;
-    }
-}
-
-function obtenerSiguienteIndiceValidoCompleto(inicio) {
-    for (let i = inicio; i < preguntasFlujoCompleto.length; i++) {
-        let q = preguntasFlujoCompleto[i];
-        if (!q.mostrar_si) return i;
-        let dep = respuestasCompleto[q.mostrar_si.id];
-        if (!dep) continue;
-        if (Array.isArray(dep) && dep.some(v => q.mostrar_si.valores.includes(v))) return i;
-        if (!Array.isArray(dep) && q.mostrar_si.valores.includes(dep)) return i;
-    }
-    return preguntasFlujoCompleto.length;
-}
-
-document.getElementById("btnSiguienteCompleto").addEventListener("click", () => {
-    let q = preguntasFlujoCompleto[indicePreguntaCompleto];
-    let valor = null;
-    if (q.tipo === "single") {
-        let sel = document.querySelector(`input[name="${q.id}"]:checked`);
-        if (sel) valor = sel.value;
-    } else if (q.tipo === "multiple") {
-        let sels = Array.from(document.querySelectorAll(`input[name="${q.id}"]:checked`)).map(el => el.value);
-        if (sels.length) valor = sels;
-    } else {
-        let input = document.getElementById(q.id);
-        if (input) valor = input.value.trim();
-    }
-    if (!valor) {
-        mostrarAlertaPersonalizada("Responde para continuar.", "info");
-        return;
-    }
-    respuestasCompleto[q.id] = valor;
-    historialCompleto.push(indicePreguntaCompleto);
-    indicePreguntaCompleto = obtenerSiguienteIndiceValidoCompleto(indicePreguntaCompleto + 1);
-    mostrarPreguntaCompleto();
-});
-
-document.getElementById("btnAtrasCompleto").addEventListener("click", () => {
-    if (historialCompleto.length) {
-        indicePreguntaCompleto = historialCompleto.pop();
-        mostrarPreguntaCompleto();
-    }
-});
-
-function finalizarCuestionarioCompleto() {
-    document.getElementById("stepPreguntasCompleto").style.display = "none";
-    document.getElementById("formCompletarPerfil").style.display = "block";
-}
-
-// Envío del formulario de completar perfil
-document.getElementById("formCompletarPerfil").addEventListener("submit", function(e) {
-    e.preventDefault();
-    // Agregar datos personales a las respuestas
-    respuestasCompleto["pseudonimo"] = document.getElementById("pseudonimoCompleto").value;
-    respuestasCompleto["nombre"] = document.getElementById("nombreCompleto").value;
-    respuestasCompleto["telefono"] = document.getElementById("telefonoCompleto").value;
-    respuestasCompleto["telefono_emergencia"] = document.getElementById("emergenciaCompleto").value;
-    
-    document.getElementById("respuestasJsonCompleto").value = JSON.stringify(respuestasCompleto);
-    
-    let btn = this.querySelector('button[type="submit"]');
-    let original = btn.innerHTML;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
-    btn.disabled = true;
-    
-    fetch("/guardar-expediente-completo/", {
-        method: "POST",
-        body: new FormData(this),
-        headers: { "X-CSRFToken": document.querySelector('[name=csrfmiddlewaretoken]').value }
-    })
-    .then(r => r.json())
-    .then(data => {
-        if (data.status === "success") {
-            window.location.href = data.redirect_url || "/panel/";
-        } else {
-            mostrarAlertaPersonalizada(data.message || "Error al guardar", "error");
-            btn.innerHTML = original;
-            btn.disabled = false;
-        }
-    })
-    .catch(() => {
-        mostrarAlertaPersonalizada("Error de conexión", "error");
-        btn.innerHTML = original;
-        btn.disabled = false;
-    });
-});
-
-
-
-function abrirRegistroDirecto(flujo, servicioExacto) {
-    document.getElementById('inputServicioOrigen').value = servicioExacto;
-    
-    // Validar si el backend mandó la info antes de abrir nada
-    if(Object.keys(dataCuestionario).length === 0) {
-        mostrarAlertaPersonalizada("Error de sistema: Django no envió las preguntas a esta vista. Revisa tu views.py.", "error");
-        return;
-    }
-
-    abrirModal('modalRegistro');
-    
-    // 🔥 Ya no forzamos la búsqueda de los divs fantasmas, solo los ocultamos si existen
-    const stepPrimario = document.getElementById('stepTriagePrimario');
-    if (stepPrimario) stepPrimario.style.display = 'none';
-    
-    const stepFlujo = document.getElementById('stepSeleccionFlujo');
-    if (stepFlujo) stepFlujo.style.display = 'none';
-    
-    // Mostramos las preguntas y ocultamos el formulario final
-    document.getElementById('stepPreguntas').style.display = 'block';
-    document.getElementById('formRegistro').style.display = 'none';
-    
-    iniciarCuestionario(flujo);
-}
-
-function iniciarCuestionario(flujo) {
-    if(!dataCuestionario[flujo]) {
-        mostrarAlertaPersonalizada("El flujo solicitado no existe en la base de datos.", "error");
-        return;
-    }
-    flujoActual = flujo;
-    preguntasFlujo = dataCuestionario[flujoActual].preguntas;
-    
-    document.querySelector("#triageHeader h2").innerText = dataCuestionario[flujoActual].titulo;
-    
-    historialNavegacion = []; 
-    respuestasGuardadas = {}; 
-    indicePregunta = obtenerSiguienteIndiceValido(0); 
-    mostrarPregunta();
-}
-
-function debeMostrarPregunta(pregunta) {
-    if (!pregunta.mostrar_si) return true;
-    const depId = pregunta.mostrar_si.id;
-    const valoresPermitidos = pregunta.mostrar_si.valores;
-    const respuestaPrevia = respuestasGuardadas[depId];
-    if (!respuestaPrevia) return false;
-    if (Array.isArray(respuestaPrevia)) return respuestaPrevia.some(r => valoresPermitidos.includes(r));
-    return valoresPermitidos.includes(respuestaPrevia);
-}
-
-function obtenerSiguienteIndiceValido(inicio) {
-    let nextIndex = inicio;
-    while (nextIndex < preguntasFlujo.length) {
-        if (debeMostrarPregunta(preguntasFlujo[nextIndex])) return nextIndex; 
-        nextIndex++; 
-    }
-    return nextIndex;
-}
-
-function mostrarPregunta() {
-    const optionsContainer = document.getElementById("questionOptionsContainer");
-    optionsContainer.innerHTML = "";
-    
-    if (indicePregunta >= preguntasFlujo.length) {
-        finalizarCuestionario();
-        return;
-    }
-    
-    document.getElementById("progressBar").style.width = (((indicePregunta) / preguntasFlujo.length) * 100) + "%";
-    document.getElementById("progressText").innerText = `Pregunta ${historialNavegacion.length + 1}`;
-    
-    const q = preguntasFlujo[indicePregunta];
-    document.getElementById("questionText").innerText = q.pregunta;
-    document.getElementById("btnAtras").style.display = historialNavegacion.length > 0 ? "block" : "none";
-    
-    const esPreguntaEdad = q.id === 'edad' || q.pregunta.toLowerCase().includes('edad');
-
-    if (q.tipo === "single" || q.tipo === "multiple") {
-        const inputType = q.tipo === "single" ? "radio" : "checkbox";
-        q.opciones.forEach((opcion) => {
-            const checked = respuestasGuardadas[q.id] && respuestasGuardadas[q.id].includes(opcion) ? "checked" : "";
-            const html = `<label class="triage-option-label"><input type="${inputType}" name="${q.id}" value="${opcion}" ${checked}> ${opcion}</label>`;
-            optionsContainer.insertAdjacentHTML('beforeend', html);
-        });
-    } 
-    // --- DISEÑO INTERACTIVO PARA EDAD (13-35) ---
-    else if (esPreguntaEdad) {
-        const minEdad = 13;
-        const maxEdad = 60;
-        const val = respuestasGuardadas[q.id] || 24; 
-        
-        optionsContainer.innerHTML = `
-            <div style="text-align: center; margin-bottom: 20px;">
-                <span id="${q.id}_valDisplay" style="font-size: 6rem; font-weight: 800; color: var(--c-purple); font-family: 'Outfit', sans-serif; line-height: 1;">${val}</span>
-                <span style="font-size: 1.2rem; color: #64748b; font-weight: 500; display: block;">años de edad</span>
-            </div>
-            <div style="padding: 0 10px;">
-                <input type="range" id="${q.id}" min="${minEdad}" max="${maxEdad}" value="${val}" style="width: 100%; height: 8px; background: #e2e8f0; border-radius: 4px; appearance: none; accent-color: var(--c-purple); cursor: pointer;" oninput="document.getElementById('${q.id}_valDisplay').innerText = this.value">
-                <div style="display: flex; justify-content: space-between; font-size: 0.85rem; color: #94a3b8; font-weight: 600; margin-top: 10px;">
-                    <span>13 años</span>
-                    <span>60+ años</span>
-                </div>
-            </div>
-        `;
-    }
-    // --- DISEÑO INTERACTIVO PARA INTENSIDAD (Rango normal) ---
-    else if (q.tipo === "numero" && q.min !== undefined && q.max !== undefined) {
-        const val = respuestasGuardadas[q.id] || Math.ceil((q.min + q.max) / 2);
-        optionsContainer.innerHTML = `
-            <div style="text-align: center; margin-bottom: 20px;">
-                <span id="${q.id}_valDisplay" style="font-size: 5rem; font-weight: 800; color: var(--c-pink); font-family: 'Outfit', sans-serif; line-height: 1;">${val}</span>
-            </div>
-            <div style="padding: 0 10px;">
-                <input type="range" id="${q.id}" min="${q.min}" max="${q.max}" value="${val}" style="width: 100%; height: 8px; background: #e2e8f0; border-radius: 4px; appearance: none; accent-color: var(--c-pink); cursor: pointer;" oninput="document.getElementById('${q.id}_valDisplay').innerText = this.value">
-                <div style="display: flex; justify-content: space-between; font-size: 0.85rem; color: #94a3b8; font-weight: 600; margin-top: 10px;">
-                    <span>${q.min}</span>
-                    <span>${q.max}</span>
-                </div>
-            </div>
-        `;
-    } else {
-        const val = respuestasGuardadas[q.id] || "";
-        const inputType = q.tipo === "numero" ? "number" : "text";
-        optionsContainer.innerHTML = `<input type="${inputType}" id="${q.id}" class="custom-input-triage" placeholder="Escribe aquí..." value="${val}">`;
-    }
-}
-
-document.getElementById("btnSiguiente").addEventListener("click", function () {
-    const q = preguntasFlujo[indicePregunta];
-    let hayRespuesta = false;
-    if (q.tipo === "single") {
-        const sel = document.querySelector(`input[name="${q.id}"]:checked`);
-        if (sel) { respuestasGuardadas[q.id] = sel.value; hayRespuesta = true; }
-    } else if (q.tipo === "multiple") {
-        const sels = Array.from(document.querySelectorAll(`input[name="${q.id}"]:checked`)).map(el => el.value);
-        if (sels.length > 0) { respuestasGuardadas[q.id] = sels; hayRespuesta = true; }
-    } else {
-        const val = document.getElementById(q.id).value.trim();
-        if (val !== "") { 
-            // Validar límites si es un número
-            if (q.tipo === "numero") {
-                const num = parseInt(val);
-                if (q.min !== undefined && num < q.min) {
-                    mostrarAlertaPersonalizada(`Por favor ingresa un número que sea mínimo ${q.min}.`, "info");
-                    return; // Detenemos el avance
-                }
-                if (q.max !== undefined && num > q.max) {
-                    mostrarAlertaPersonalizada(`Por favor ingresa un número que sea máximo ${q.max}.`, "info");
-                    return; // Detenemos el avance
-                }
-            }
-            respuestasGuardadas[q.id] = val; 
-            hayRespuesta = true; 
-        }
-    }
-    
-    if (!hayRespuesta) {
-        mostrarAlertaPersonalizada("Por favor, selecciona una respuesta para continuar.", "info");
-        return;
-    }
-    historialNavegacion.push(indicePregunta);
-    indicePregunta = obtenerSiguienteIndiceValido(indicePregunta + 1);
-    mostrarPregunta();
-});
-
-document.getElementById("btnAtras").addEventListener("click", function () {
-    if (historialNavegacion.length > 0) {
-        indicePregunta = historialNavegacion.pop();
-        mostrarPregunta();
-    }
-});
-
-function finalizarCuestionario() {
-    document.getElementById("stepPreguntas").style.display = "none";
-    document.getElementById("formRegistro").style.display = "block";
-    document.querySelector("#triageHeader h2").innerText = "Crea tu cuenta segura";
-    document.getElementById("inputFlujoFinal").value = flujoActual;
-    document.getElementById("progressBar").style.width = "100%";
-}
-
-// ── ENVÍO AJAX DEL REGISTRO FINAL ──
-
-// ── ENVÍO AJAX DEL REGISTRO FINAL ──
-const formReg = document.getElementById("formRegistro");
-if(formReg) {
-    formReg.addEventListener("submit", function (e) {
-        e.preventDefault(); 
-        if (formReg.dataset.enviando === "true") return;
-        formReg.dataset.enviando = "true";
-
-        // 1. Guardamos el seudónimo
-        respuestasGuardadas["pseudonimo"] = document.getElementById("pseudonimoFinal").value;
-        
-        // 🔥 NUEVO: CAPTURAMOS EL TALLER/SERVICIO Y LO METEMOS AL JSON 🔥
-        const servicioElegido = document.getElementById("inputServicioOrigen").value;
-        if (servicioElegido) {
-            respuestasGuardadas["servicio_solicitado"] = servicioElegido;
-        }
-
-        // 2. Ahora sí, convertimos todo a texto JSON y lo ponemos en el input oculto
-        document.getElementById("inputRespuestasFinal").value = JSON.stringify(respuestasGuardadas);
-
-        const btnSubmitFinal = document.getElementById("btnSubmitFinal");
-        const originalText = btnSubmitFinal.innerHTML;
-        btnSubmitFinal.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Creando expediente...';
-        btnSubmitFinal.disabled = true;
-
-        fetch(formReg.getAttribute("action"), {
-            method: "POST",
-            body: new FormData(formReg),
-            headers: { 
-                "X-Requested-With": "XMLHttpRequest",
-                "X-CSRFToken": formReg.querySelector('[name=csrfmiddlewaretoken]').value
-            }
-        })
-        .then(r => r.json())
-        .then(data => {
-            btnSubmitFinal.innerHTML = originalText;
-            btnSubmitFinal.disabled = false;
-            formReg.dataset.enviando = "false";
-
-            if (data.status === "success") {
-                // 🔥 Redirigimos directamente en lugar de abrir el modal
-                window.location.href = data.redirect_url;
-            } else {
-                mostrarAlertaPersonalizada(data.message || "Error desconocido.", "error");
-            }
-        })
-        .catch(err => {
-            btnSubmitFinal.innerHTML = originalText;
-            btnSubmitFinal.disabled = false;
-            formReg.dataset.enviando = "false";
-            mostrarAlertaPersonalizada("Error de conexión.", "error");
-        });
-    });
-}
-
-// ── FUNCIÓN DE ALERTAS BONITAS ──
-function mostrarAlertaPersonalizada(mensaje, tipo = "info") {
-    const msg = document.getElementById("feedbackMessage");
-    const iconDiv = document.getElementById("feedbackIcon");
-    msg.innerHTML = mensaje;
-    
-    if (tipo === "error") {
-        document.getElementById("feedbackTitle").innerText = "Hubo un problema";
-        iconDiv.innerHTML = '<i class="fas fa-exclamation-triangle" style="color: #ef4444;"></i>';
-    } else {
-        document.getElementById("feedbackTitle").innerText = "Atención";
-        iconDiv.innerHTML = '<i class="fas fa-info-circle" style="color: var(--c-purple);"></i>';
-    }
-    abrirModal("modalFeedback");
-}
-
-// ── NAV ACTIVO ──
-document.querySelectorAll('.nav-item').forEach(item=>{
-  item.addEventListener('click',function(){
-    // Condición mágica: Ignoramos los botones de Iniciar Sesión para que no se pongan blancos
-    if (!this.classList.contains('btn-login-sidebar') && !this.classList.contains('btn-login-mobile')) {
-        document.querySelectorAll('.nav-item').forEach(i=>i.classList.remove('active'));
-        this.classList.add('active');
-    }
-  });
-});
-
-// ── LÓGICA MOOD MODAL (FOOTER) ──
-function abrirMoodModal(mood){
-  if(mood){ goMoodStep(2, mood); } else { goMoodStep(1, null); }
-  abrirModal('modalMood');
-}
-function goMoodStep(step, mood){
-  ['moodStep1','moodStep2','moodStep3'].forEach(id=>{
-    const el = document.getElementById(id);
-    if(el) el.classList.remove('active');
-  });
-  const currentStep = document.getElementById('moodStep'+step);
-  if(currentStep) currentStep.classList.add('active');
-
-  if(mood){
-    currentMood = mood;
-    const d = MOODS[mood];
-    document.getElementById('moodModalTitle').textContent = d.title;
-    document.getElementById('moodModalMsg').textContent = d.msg;
-    document.getElementById('moodModalText').placeholder = d.placeholder;
-    document.getElementById('moodModalText').value = '';
-    const igInput = document.getElementById('moodIgInput');
-    if(igInput) igInput.value = '';
-  }
-}
-function elegirMood(mood, btn){
-  document.querySelectorAll('.mood-emoji-btn').forEach(b=>b.classList.remove('selected'));
-  btn.classList.add('selected');
-  setTimeout(()=>goMoodStep(2, mood), 200);
-}
-function enviarMood(){
-  const msg = document.getElementById('moodModalText').value;
-  const igInput = document.getElementById('moodIgInput');
-  const ig = igInput ? igInput.value.trim().replace(/^@/,'') : '';
-  const csrfMatch = document.cookie.match(/csrftoken=([^;]+)/);
-  if(csrfMatch){
-    fetch('/enviar-mood/',{
-      method:'POST',
-      headers:{'X-CSRFToken':csrfMatch[1],'Content-Type':'application/x-www-form-urlencoded'},
-      body:'mood='+currentMood+'&mensaje='+encodeURIComponent(msg)+'&instagram='+encodeURIComponent(ig)
-    }).catch(e => console.error("Error al enviar mood:", e));
-  }
-  const d = MOODS[currentMood];
-  document.getElementById('moodConfirmEmoji').textContent = d.confirmEmoji;
-  document.getElementById('moodConfirmText').textContent = d.confirmMsg;
-  goMoodStep(3, null);
-  setTimeout(()=>cerrarModal('modalMood'), 4000);
-}
-
-
-
-
 </script>
-
-{% if mostrar_completar_perfil %}
-<script>
-setTimeout(() => { 
-    iniciarCuestionarioCompleto("individual"); 
-    abrirModal('modalCompletarPerfil'); 
-}, 600);
-
-
-</script>
-{% endif %}
-
-
-<!-- ── BURBUJA WHATSAPP ── -->
-<a href="https://wa.me/525521130230?text=Hola,%20me%20gustar%C3%ADa%20recibir%20informaci%C3%B3n%20sobre%20las%20terapias." class="whatsapp-float" target="_blank" rel="noopener">
-  <i class="fab fa-whatsapp"></i>
-  <span>¿Necesitas ayuda?</span>
-</a>
-
-</body>
-</html>
+{% endblock %}
