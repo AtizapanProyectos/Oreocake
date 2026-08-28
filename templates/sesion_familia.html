@@ -1,0 +1,1301 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Terapia Psicológica Familiar | Espacio HOPE{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* ==========================================================================
+       VARIABLES BASE & ESTILOS HOPE
+       ========================================================================== */
+    :root {
+        --c-purple: #5A3FA3;
+        --c-pink: #F85B8C;
+        --c-orange: #F27C21;
+        --c-yellow: #F8D33D;
+        --c-teal: #25B8B8;
+        --c-dark: #0f0f0f;
+        --text-muted: #64748b;
+        --font-h: 'Outfit', sans-serif;
+        --font-b: 'Plus Jakarta Sans', sans-serif;
+        --shadow-sm: 0 10px 25px rgba(0, 0, 0, .05);
+        --shadow-md: 0 20px 45px rgba(90, 63, 163, .14);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        * {
+            animation: none !important;
+            transition: none !important;
+        }
+    }
+
+    img {
+        max-width: 100%;
+    }
+
+    /* ==========================================================================
+       HERO & BREADCRUMB
+       ========================================================================== */
+    .taller-breadcrumb {
+        position: relative;
+        z-index: 3;
+        padding: 26px 80px 0;
+    }
+
+    .taller-breadcrumb a {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        color: rgba(255, 255, 255, .85);
+        text-decoration: none;
+        font-family: var(--font-h);
+        font-weight: 700;
+        font-size: .85rem;
+        letter-spacing: .5px;
+        transition: .25s;
+    }
+
+    .taller-breadcrumb a:hover {
+        color: #fff;
+        gap: 12px;
+    }
+
+    .taller-hero {
+        position: relative;
+        min-height: 85vh;
+        display: flex;
+        align-items: center;
+        overflow: hidden;
+        padding: 40px 80px 90px;
+        margin-top: -66px;
+    }
+
+    @keyframes hopeFadeUp {
+        from {
+            opacity: 0;
+            transform: translateY(18px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .taller-hero-bg {
+        position: absolute;
+        inset: 0;
+        /* Imagen alusiva a familia, unión y bienestar */
+        background-image: url('https://images.unsplash.com/photo-1511895426328-dc8714191300?q=80&w=1400&auto=format&fit=crop');
+        background-size: cover;
+        background-position: center;
+        z-index: 0;
+        transform: scale(1.04);
+    }
+
+    .taller-hero-overlay {
+        position: absolute;
+        inset: 0;
+        z-index: 1;
+        background: linear-gradient(125deg, rgba(10, 5, 25, 0.88) 0%, rgba(37, 184, 184, 0.72) 55%, rgba(248, 91, 140, 0.35) 100%);
+    }
+
+    .taller-hero-content {
+        position: relative;
+        z-index: 2;
+        max-width: 680px;
+        color: #fff;
+        margin-top: 66px;
+        animation: hopeFadeUp .7s cubic-bezier(.16, 1, .3, 1) both;
+    }
+
+    .taller-tagbox {
+        display: inline-flex;
+        align-items: center;
+        gap: 18px;
+        border: 2px solid var(--c-teal);
+        border-radius: 24px;
+        padding: 20px 26px;
+        margin-bottom: 28px;
+        background: rgba(15, 23, 42, .35);
+        backdrop-filter: blur(10px);
+        box-shadow: 0 20px 45px rgba(0, 0, 0, .25);
+    }
+
+    .taller-tagbox .brain-icon {
+        font-size: 1.8rem;
+        color: var(--c-teal);
+        width: 54px;
+        height: 54px;
+        border-radius: 16px;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(37, 184, 184, .18);
+        border: 1px solid rgba(37, 184, 184, .45);
+    }
+
+    .taller-tagbox h2 {
+        font-family: var(--font-h);
+        font-weight: 900;
+        font-size: 1.35rem;
+        color: var(--c-teal);
+        line-height: 1;
+        margin-bottom: 6px;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+    }
+
+    .taller-tagbox p {
+        font-family: var(--font-h);
+        font-weight: 800;
+        font-size: 1.1rem;
+        line-height: 1.3;
+        color: #fff;
+        text-transform: uppercase;
+        letter-spacing: .5px;
+    }
+
+    .taller-tagbox span.sub {
+        display: block;
+        color: var(--c-yellow);
+        font-weight: 600;
+        font-size: .85rem;
+        margin-top: 6px;
+        text-transform: none;
+    }
+
+    .taller-hero-desc {
+        font-size: 1.18rem;
+        line-height: 1.65;
+        color: rgba(255, 255, 255, .95);
+        margin-bottom: 30px;
+        max-width: 600px;
+        font-weight: 300;
+    }
+
+    .taller-info-cards {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 16px;
+        margin-bottom: 28px;
+    }
+
+    .taller-info-card {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        background: rgba(255, 255, 255, .96);
+        border-radius: 18px;
+        padding: 14px 20px;
+        box-shadow: 0 15px 35px rgba(0, 0, 0, .18);
+        transition: transform .3s;
+    }
+
+    .taller-info-card:hover {
+        transform: translateY(-4px);
+    }
+
+    .taller-info-card .icon-wrap {
+        width: 42px;
+        height: 42px;
+        border-radius: 12px;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #e6fffa;
+        color: var(--c-teal);
+        font-size: 1.1rem;
+    }
+
+    .taller-info-card .label {
+        font-size: .7rem;
+        font-weight: 800;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 2px;
+    }
+
+    .taller-info-card .value {
+        font-size: .98rem;
+        font-weight: 800;
+        color: var(--c-dark);
+        font-family: var(--font-h);
+    }
+
+    .taller-badge-online {
+        display: inline-flex;
+        align-items: center;
+        gap: 12px;
+        background: var(--c-teal);
+        color: #fff;
+        padding: 12px 24px;
+        border-radius: 16px;
+        font-weight: 800;
+        font-family: var(--font-h);
+        font-size: .88rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 32px;
+        box-shadow: 0 15px 30px rgba(37, 184, 184, .3);
+    }
+
+    .taller-badge-online i {
+        font-size: 1.1rem;
+    }
+
+    .taller-badge-online small {
+        display: block;
+        font-weight: 600;
+        text-transform: none;
+        font-size: .8rem;
+        letter-spacing: 0;
+        margin-top: 2px;
+        opacity: .95;
+    }
+
+    .taller-hero-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 16px;
+        align-items: center;
+    }
+
+    .taller-cta-btn {
+        padding: 20px 45px;
+        border-radius: 100px;
+        font-weight: 800;
+        font-size: 1rem;
+        font-family: var(--font-h);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        display: inline-flex;
+        align-items: center;
+        gap: 12px;
+        border: none;
+        cursor: pointer;
+        background: var(--c-teal);
+        color: #fff;
+        box-shadow: 0 15px 30px rgba(37, 184, 184, .35);
+        transition: .35s cubic-bezier(.16, 1, .3, 1);
+    }
+
+    .taller-cta-btn:hover {
+        transform: translateY(-5px);
+        filter: brightness(1.1);
+        background: var(--c-purple);
+        box-shadow: 0 20px 40px rgba(90, 63, 163, .4);
+    }
+
+    /* ==========================================================================
+       SECCIÓN DE BENEFICIOS Y ÁREAS FAMILIARES
+       ========================================================================== */
+    .section-features {
+        padding: 80px 80px 40px;
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+
+    .section-header-center {
+        text-align: center;
+        max-width: 700px;
+        margin: 0 auto 50px;
+    }
+
+    .section-header-center h3 {
+        font-family: var(--font-h);
+        font-size: 2.2rem;
+        font-weight: 800;
+        color: var(--c-dark);
+        margin-bottom: 12px;
+    }
+
+    .section-header-center p {
+        color: var(--text-muted);
+        font-size: 1.05rem;
+        line-height: 1.6;
+    }
+
+    .features-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        gap: 24px;
+        margin-bottom: 60px;
+    }
+
+    .feature-card {
+        background: #fff;
+        border-radius: 24px;
+        padding: 35px 28px;
+        border: 1px solid #f1f5f9;
+        box-shadow: 0 15px 35px rgba(0, 0, 0, .04);
+        transition: .3s cubic-bezier(.16, 1, .3, 1);
+    }
+
+    .feature-card:hover {
+        transform: translateY(-6px);
+        border-color: rgba(37, 184, 184, .3);
+        box-shadow: 0 20px 40px rgba(37, 184, 184, .12);
+    }
+
+    .feature-icon {
+        width: 56px;
+        height: 56px;
+        border-radius: 16px;
+        background: linear-gradient(135deg, rgba(37, 184, 184, .12), rgba(90, 63, 163, .12));
+        color: var(--c-teal);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        margin-bottom: 20px;
+    }
+
+    .feature-card h4 {
+        font-family: var(--font-h);
+        font-size: 1.25rem;
+        font-weight: 800;
+        color: var(--c-dark);
+        margin-bottom: 10px;
+    }
+
+    .feature-card p {
+        font-size: .95rem;
+        color: var(--text-muted);
+        line-height: 1.6;
+    }
+
+    /* ==========================================================================
+       PASOS CLAROS
+       ========================================================================== */
+    .steps-container {
+        background: #f8fafc;
+        border-radius: 32px;
+        padding: 50px 40px;
+        border: 1px solid #e2e8f0;
+        margin-bottom: 70px;
+    }
+
+    .steps-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 30px;
+        margin-top: 35px;
+    }
+
+    .step-item {
+        position: relative;
+        text-align: center;
+        padding: 20px;
+    }
+
+    .step-number {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        background: var(--c-teal);
+        color: #fff;
+        font-family: var(--font-h);
+        font-weight: 900;
+        font-size: 1.2rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 16px;
+        box-shadow: 0 8px 20px rgba(37, 184, 184, .25);
+    }
+
+    .step-item h5 {
+        font-family: var(--font-h);
+        font-size: 1.15rem;
+        font-weight: 800;
+        color: var(--c-dark);
+        margin-bottom: 8px;
+    }
+
+    .step-item p {
+        font-size: .9rem;
+        color: var(--text-muted);
+        line-height: 1.5;
+    }
+
+    /* Banner CTA Inferior */
+    .banner-cta-bottom {
+        background: linear-gradient(135deg, var(--c-teal) 0%, #157979 100%);
+        border-radius: 32px;
+        padding: 50px 40px;
+        color: #fff;
+        text-align: center;
+        margin-bottom: 80px;
+        box-shadow: 0 25px 50px rgba(37, 184, 184, .25);
+    }
+
+    .banner-cta-bottom h3 {
+        font-family: var(--font-h);
+        font-size: 2.2rem;
+        font-weight: 900;
+        margin-bottom: 12px;
+    }
+
+    .banner-cta-bottom p {
+        font-size: 1.1rem;
+        color: rgba(255, 255, 255, .9);
+        max-width: 600px;
+        margin: 0 auto 30px;
+        line-height: 1.6;
+    }
+
+    /* ==========================================================================
+       MODAL DE CUESTIONARIO Y REGISTRO (WIZARD)
+       ========================================================================== */
+    .modal-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(15, 23, 42, .85);
+        backdrop-filter: blur(10px);
+        z-index: 5000;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+    }
+
+    .modal-box {
+        background: #fff;
+        width: 100%;
+        max-width: 560px;
+        padding: 45px 35px;
+        border-radius: 35px;
+        position: relative;
+        box-shadow: 0 50px 100px rgba(0, 0, 0, .25);
+        max-height: 92vh;
+        overflow-y: auto;
+        animation: modalFadeIn .4s cubic-bezier(.16, 1, .3, 1) both;
+        text-align: left;
+        border-top: 8px solid var(--c-teal);
+    }
+
+    @keyframes modalFadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(24px) scale(.97);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+    }
+
+    .modal-box::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .modal-box::-webkit-scrollbar-thumb {
+        background-color: #cbd5e1;
+        border-radius: 10px;
+    }
+
+    .modal-close {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        font-size: 18px;
+        color: #ef4444;
+        background: #fef2f2;
+        border: 2px solid #fecaca;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        cursor: pointer;
+        transition: .3s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 50;
+    }
+
+    .modal-close:hover {
+        background: #ef4444;
+        color: #fff;
+        transform: scale(1.12) rotate(90deg);
+    }
+
+    .progress-container {
+        width: 100%;
+        height: 8px;
+        background: #e2e8f0;
+        border-radius: 10px;
+        margin-bottom: 8px;
+        overflow: hidden;
+    }
+
+    #progressBar {
+        height: 100%;
+        width: 0%;
+        background: linear-gradient(90deg, var(--c-teal), var(--c-purple));
+        transition: width 0.3s ease;
+        border-radius: 10px;
+    }
+
+    .triage-option-label {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        padding: 16px 20px;
+        background: #f8fafc;
+        border: 2px solid #e2e8f0;
+        border-radius: 16px;
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--c-dark);
+        cursor: pointer;
+        transition: 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .triage-option-label:hover {
+        background: #f0fdfa;
+        border-color: var(--c-teal);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(37, 184, 184, 0.1);
+    }
+
+    .triage-option-label input[type="radio"],
+    .triage-option-label input[type="checkbox"] {
+        accent-color: var(--c-teal);
+        width: 20px;
+        height: 20px;
+        cursor: pointer;
+    }
+
+    .custom-input-triage {
+        width: 100%;
+        padding: 16px 20px;
+        border-radius: 14px;
+        border: 2px solid #cbd5e1;
+        font-size: 1.05rem;
+        font-family: var(--font-b);
+        outline: none;
+        transition: 0.3s;
+        color: var(--c-dark);
+    }
+
+    .custom-input-triage:focus {
+        border-color: var(--c-teal);
+        box-shadow: 0 0 0 4px rgba(37, 184, 184, 0.15);
+    }
+
+    .btn-primary {
+        background: var(--c-teal);
+        color: #fff;
+        box-shadow: 0 12px 25px rgba(37, 184, 184, .25);
+        padding: 18px 30px;
+        border-radius: 100px;
+        font-weight: 800;
+        font-size: 15px;
+        font-family: var(--font-h);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        transition: .35s;
+        cursor: pointer;
+        border: none;
+    }
+
+    .btn-primary:hover {
+        background: var(--c-purple);
+        transform: translateY(-3px);
+        box-shadow: 0 15px 30px rgba(90, 63, 163, .35);
+    }
+
+    .btn-outline {
+        background: #fff;
+        border: 2px solid #e2e8f0;
+        color: var(--text-muted);
+        padding: 15px 25px;
+        border-radius: 100px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: .3s;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .btn-outline:hover {
+        border-color: var(--c-teal);
+        color: var(--c-teal);
+    }
+
+    /* ==========================================================================
+       RESPONSIVE
+       ========================================================================== */
+    @media(max-width:1100px) {
+        .taller-breadcrumb {
+            padding: 22px 24px 0;
+        }
+
+        .taller-hero {
+            padding: 40px 24px 70px;
+            margin-top: 0;
+            min-height: auto;
+        }
+
+        .taller-hero-content {
+            margin-top: 100px;
+        }
+
+        .section-features {
+            padding: 60px 24px 30px;
+        }
+    }
+
+    @media(max-width:768px) {
+        .taller-breadcrumb {
+            padding: 18px 18px 0;
+            margin-top: 60px;
+        }
+
+        .taller-hero {
+            padding: 24px 18px 50px;
+        }
+
+        .taller-hero-content {
+            margin-top: 20px;
+        }
+
+        .taller-tagbox {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 18px 20px;
+            border-radius: 20px;
+        }
+
+        .taller-info-cards {
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .taller-info-card {
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .taller-badge-online {
+            width: 100%;
+            box-sizing: border-box;
+            justify-content: center;
+            text-align: center;
+        }
+
+        .taller-cta-btn {
+            width: 100%;
+            justify-content: center;
+            padding: 18px 24px;
+        }
+
+        .modal-box {
+            padding: 30px 20px;
+            border-radius: 28px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- BREADCRUMB -->
+<div class="taller-breadcrumb">
+    <a href="{% url 'inicio' %}"><i class="fas fa-arrow-left"></i> Volver al inicio</a>
+</div>
+
+<!-- HERO PRINCIPAL -->
+<section class="taller-hero">
+    <div class="taller-hero-bg"></div>
+    <div class="taller-hero-overlay"></div>
+
+    <div class="taller-hero-content">
+        <div class="taller-tagbox">
+            <div class="brain-icon"><i class="fas fa-people-roof"></i></div>
+            <div>
+                <h2>Servicio Clínico</h2>
+                <p>Terapia Psicológica<br>Familiar
+                    <span class="sub">Un espacio seguro para dialogar, sanar vínculos y crecer en armonía</span>
+                </p>
+            </div>
+        </div>
+
+        <p class="taller-hero-desc">
+            Fortalezcan la comunicación en el hogar, resuelvan conflictos entre generaciones, establezcan acuerdos sanos y recuperen el bienestar colectivo con el acompañamiento cálido y ético de terapeutas familiares especializados.
+        </p>
+
+        <div class="taller-info-cards">
+            <div class="taller-info-card">
+                <div class="icon-wrap"><i class="fas fa-clock"></i></div>
+                <div>
+                    <div class="label">Duración</div>
+                    <div class="value">50 minutos por sesión</div>
+                </div>
+            </div>
+            <div class="taller-info-card">
+                <div class="icon-wrap"><i class="fas fa-people-group"></i></div>
+                <div>
+                    <div class="label">Atención</div>
+                    <div class="value">Sesión Familiar</div>
+                </div>
+            </div>
+            <div class="taller-info-card">
+                <div class="icon-wrap"><i class="fas fa-tag"></i></div>
+                <div>
+                    <div class="label">Costo accesible</div>
+                    <div class="value">$200.00 MXN</div>
+                </div>
+            </div>
+        </div>
+
+        <div>
+            <span class="taller-badge-online">
+                <i class="fas fa-video"></i>
+                <span>En línea vía Google Meet<small>Acceso cómodo y privado para todos los integrantes</small></span>
+            </span>
+        </div>
+
+        <div class="taller-hero-actions">
+            <button type="button" class="taller-cta-btn" onclick="abrirRegistroFamilia()">
+                Comenzar Terapia Familiar <i class="fas fa-arrow-right"></i>
+            </button>
+        </div>
+    </div>
+</section>
+
+<!-- SECCIÓN DE BENEFICIOS Y ÁREAS FAMILIARES -->
+<section class="section-features">
+    <div class="section-header-center">
+        <h3>¿En qué aspectos podemos ayudar a tu familia?</h3>
+        <p>Cada familia es un sistema único. Nuestro enfoque integrador permite que cada voz sea escuchada con respeto para construir soluciones duraderas.</p>
+    </div>
+
+    <div class="features-grid">
+        <div class="feature-card">
+            <div class="feature-icon"><i class="fas fa-comments"></i></div>
+            <h4>Comunicación sin Gritos</h4>
+            <p>Transformen las discusiones desgastantes en conversaciones constructivas, mejorando el entendimiento entre padres, hijos y adolescentes.</p>
+        </div>
+
+        <div class="feature-card">
+            <div class="feature-icon"><i class="fas fa-scale-balanced"></i></div>
+            <h4>Límites y Acuerdos Claros</h4>
+            <p>Establezcan reglas de convivencia saludables, manejo de pantallas y responsabilidades compartidas sin autoritarismo ni permisividad.</p>
+        </div>
+
+        <div class="feature-card">
+            <div class="feature-icon"><i class="fas fa-hand-holding-heart"></i></div>
+            <h4>Transiciones y Crisis</h4>
+            <p>Acompañamiento especializado ante separaciones, duelos familiares, cambios de residencia o etapas de adaptación complejas.</p>
+        </div>
+
+        <div class="feature-card">
+            <div class="feature-icon"><i class="fas fa-puzzle-piece"></i></div>
+            <h4>Unión y Trabajo en Equipo</h4>
+            <p>Fortalezcan el sentido de pertenencia, la empatía mutua y la colaboración afectiva en el día a día de su hogar.</p>
+        </div>
+    </div>
+
+    <!-- PASOS DE INICIO -->
+    <div class="steps-container">
+        <div class="section-header-center" style="margin-bottom: 20px;">
+            <h3>Su proceso en 3 sencillos pasos</h3>
+            <p>Un inicio ágil y confidencial para comenzar a transformar su dinámica familiar.</p>
+        </div>
+
+        <div class="steps-grid">
+            <div class="step-item">
+                <div class="step-number">1</div>
+                <h5>Cuestionario Familiar</h5>
+                <p>Respondemos juntos unas breves preguntas para identificar las prioridades y objetivos de su familia.</p>
+            </div>
+            <div class="step-item">
+                <div class="step-number">2</div>
+                <h5>Creación de Cuenta</h5>
+                <p>Generan su expediente seguro y privado con los datos de contacto principales.</p>
+            </div>
+            <div class="step-item">
+                <div class="step-number">3</div>
+                <h5>Acceso al Panel</h5>
+                <p>Entran directamente a su panel para seleccionar horario y agendar su primera sesión con el especialista.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- BANNER CTA FINAL -->
+    <div class="banner-cta-bottom">
+        <h3>Un hogar en paz y armonía sí es posible</h3>
+        <p>Den el primer paso hacia una convivencia más sana y llena de comprensión mutua.</p>
+        <button type="button" class="btn-primary" style="background: #fff; color: var(--c-teal); padding: 20px 45px; font-size: 1rem;" onclick="abrirRegistroFamilia()">
+            Iniciar terapia familiar <i class="fas fa-arrow-right"></i>
+        </button>
+    </div>
+</section>
+
+<!-- ==========================================
+     MODAL CUESTIONARIO + REGISTRO (WIZARD)
+     ========================================== -->
+<div class="modal-overlay" id="modalRegistro">
+    <div class="modal-box" id="triageBox">
+        <button class="modal-close" onclick="cerrarModal('modalRegistro')"><i class="fas fa-times"></i></button>
+
+        <img src="{% static 'img/nlogo.png' %}" alt="HOPE Logo"
+            style="height: 42px; margin: 0 auto 18px; display: block;">
+
+        <div style="text-align: center; margin-bottom: 22px;" id="triageHeader">
+            <h2 style="font-family: var(--font-h); font-size: 1.9rem; color: var(--c-dark); font-weight: 800;">Terapia Familiar</h2>
+            <p style="color: var(--text-muted); font-size: 0.98rem;" id="triageSubtitle">Paso a paso, al ritmo de su familia. 🌿</p>
+        </div>
+
+        <div id="triageContainer">
+            <!-- STEP PREGUNTAS CLÍNICAS -->
+            <div id="stepPreguntas" style="display: none;">
+                <div class="progress-container">
+                    <div id="progressBar"></div>
+                </div>
+                <p id="progressText"
+                    style="text-align: right; color: var(--c-teal); font-weight: 800; margin-bottom: 18px; font-size: 0.82rem; text-transform: uppercase;">
+                </p>
+                <h3 id="questionText"
+                    style="margin-bottom: 22px; font-size: 1.3rem; color: var(--c-dark); font-weight: 800; line-height: 1.4;">
+                </h3>
+                <div id="questionOptionsContainer"
+                    style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 28px;"></div>
+                <div style="display: flex; gap: 12px;">
+                    <button type="button" id="btnAtras" class="btn-outline" style="display: none; padding: 14px 22px;">
+                        <i class="fas fa-arrow-left"></i>
+                    </button>
+                    <button type="button" id="btnSiguiente" class="btn-primary"
+                        style="flex: 1; justify-content: center; padding: 15px 25px;">
+                        Continuar <i class="fas fa-arrow-right"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- STEP CREACIÓN DE CUENTA FINAL -->
+            <form action="{% url 'registro_usuario' %}" method="POST" id="formRegistro" style="display: none;">
+                {% csrf_token %}
+                <input type="hidden" name="flujo_elegido" id="inputFlujoFinal" value="familiar">
+                <input type="hidden" name="respuestas_json" id="inputRespuestasFinal">
+                <input type="hidden" name="servicio_origen" id="inputServicioOrigen" value="Terapia Familiar">
+
+                <div style="background: #f8fafc; padding: 22px; border-radius: 20px; border: 1px solid #e2e8f0; margin-bottom: 20px;">
+                    <h4 style="font-family: var(--font-h); font-size: 1.3rem; color: var(--c-teal); margin-bottom: 18px; font-weight: 800;">
+                        Datos de Contacto del Titular
+                    </h4>
+
+                    <div style="margin-bottom: 16px;">
+                        <label style="font-size: 0.82rem; font-weight: 700; color: var(--text-muted); margin-bottom: 6px; display: block; text-transform: uppercase; letter-spacing: 1px;">
+                            ¿Cómo les llamamos? (Familia o Seudónimo) <span style="color: var(--c-pink);">*</span>
+                        </label>
+                        <div style="position: relative;">
+                            <i class="fas fa-smile" style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: #cbd5e1; font-size: 1.1rem;"></i>
+                            <input type="text" id="pseudonimoFinal"
+                                style="width: 100%; padding: 14px 16px 14px 46px; border-radius: 14px; border: 2px solid #cbd5e1; font-size: .95rem; font-family: var(--font-b); outline: none; transition: 0.3s; color: var(--c-dark);"
+                                placeholder="Ej. Familia González" required>
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom: 16px;">
+                        <label style="font-size: 0.82rem; font-weight: 700; color: var(--text-muted); margin-bottom: 6px; display: block; text-transform: uppercase; letter-spacing: 1px;">
+                            Nombre Completo (Titular de la cuenta) <span style="color: var(--c-pink);">*</span>
+                        </label>
+                        <div style="position: relative;">
+                            <i class="fas fa-id-card" style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: #cbd5e1; font-size: 1.1rem;"></i>
+                            <input type="text" name="nombre"
+                                style="width: 100%; padding: 14px 16px 14px 46px; border-radius: 14px; border: 2px solid #cbd5e1; font-size: .95rem; font-family: var(--font-b); outline: none; transition: 0.3s; color: var(--c-dark);"
+                                placeholder="Para el expediente clínico oficial" required>
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom: 16px;">
+                        <label style="font-size: 0.82rem; font-weight: 700; color: var(--text-muted); margin-bottom: 6px; display: block; text-transform: uppercase; letter-spacing: 1px;">
+                            Correo Electrónico Principal <span style="color: var(--c-pink);">*</span>
+                        </label>
+                        <div style="position: relative;">
+                            <i class="fas fa-envelope" style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: #cbd5e1; font-size: 1.1rem;"></i>
+                            <input type="email" name="email"
+                                style="width: 100%; padding: 14px 16px 14px 46px; border-radius: 14px; border: 2px solid #cbd5e1; font-size: .95rem; font-family: var(--font-b); outline: none; transition: 0.3s; color: var(--c-dark);"
+                                placeholder="tucorreo@ejemplo.com" required>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 16px;">
+                        <div style="flex: 1; min-width: 180px;">
+                            <label style="font-size: 0.82rem; font-weight: 700; color: var(--text-muted); margin-bottom: 6px; display: block; text-transform: uppercase; letter-spacing: 1px;">
+                                Teléfono (WhatsApp) <span style="color: var(--c-pink);">*</span>
+                            </label>
+                            <div style="position: relative;">
+                                <i class="fas fa-phone" style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: #cbd5e1; font-size: 1.1rem;"></i>
+                                <input type="tel" name="telefono"
+                                    style="width: 100%; padding: 14px 16px 14px 46px; border-radius: 14px; border: 2px solid #cbd5e1; font-size: .95rem; font-family: var(--font-b); outline: none; transition: 0.3s; color: var(--c-dark);"
+                                    placeholder="A 10 dígitos" required>
+                            </div>
+                        </div>
+                        <div style="flex: 1; min-width: 180px;">
+                            <label style="font-size: 0.82rem; font-weight: 700; color: var(--c-pink); margin-bottom: 6px; display: block; text-transform: uppercase; letter-spacing: 1px;">
+                                Tel. Emergencia <span style="color: var(--c-pink);">*</span>
+                            </label>
+                            <div style="position: relative;">
+                                <i class="fas fa-notes-medical" style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: var(--c-pink); font-size: 1.1rem;"></i>
+                                <input type="tel" name="telefono_emergencia"
+                                    style="width: 100%; padding: 14px 16px 14px 46px; border-radius: 14px; border: 2px solid #fbcfe8; font-size: .95rem; font-family: var(--font-b); outline: none; transition: 0.3s; background: #fdf2f8; color: var(--c-dark);"
+                                    placeholder="Familiar o amigo" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label style="font-size: 0.82rem; font-weight: 700; color: var(--text-muted); margin-bottom: 6px; display: block; text-transform: uppercase; letter-spacing: 1px;">
+                            Crea una Contraseña <span style="color: var(--c-pink);">*</span>
+                        </label>
+                        <div style="position: relative;">
+                            <i class="fas fa-lock" style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: #cbd5e1; font-size: 1.1rem;"></i>
+                            <input type="password" name="password"
+                                style="width: 100%; padding: 14px 16px 14px 46px; border-radius: 14px; border: 2px solid #cbd5e1; font-size: .95rem; font-family: var(--font-b); outline: none; transition: 0.3s; color: var(--c-dark);"
+                                placeholder="Mínimo 8 caracteres" required>
+                        </div>
+                    </div>
+                </div>
+
+                <label style="display: flex; align-items: flex-start; gap: 12px; margin-bottom: 22px; cursor: pointer; background: #fff1f2; padding: 16px; border-radius: 16px; border: 1px solid #fecdd3;">
+                    <input type="checkbox" name="acepta_privacidad" required
+                        style="min-width: 20px; height: 20px; accent-color: var(--c-pink); margin-top: 2px; cursor: pointer;">
+                    <span style="font-size: 0.88rem; color: var(--c-dark); line-height: 1.45; font-weight: 500;">
+                        He leído y acepto el <a href="#" onclick="abrirModal('modalPrivacidad'); return false;"
+                            style="color: var(--c-pink); font-weight: 800; text-decoration: none; border-bottom: 2px dashed var(--c-pink);">Aviso de Privacidad</a> para la protección y custodia de nuestro expediente clínico.
+                    </span>
+                </label>
+
+                <button type="submit" class="btn-primary" id="btnSubmitFinal"
+                    style="width: 100%; justify-content: center; padding: 18px; font-size: 1.1rem; border-radius: 16px; font-weight: 900;">
+                    Completar Registro y Entrar <i class="fas fa-arrow-right" style="margin-left: 8px;"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL DE FEEDBACK / ALERTAS -->
+<div class="modal-overlay" id="modalFeedback">
+    <div class="modal-box" style="text-align: center; max-width: 440px;">
+        <button class="modal-close" onclick="cerrarModal('modalFeedback')"><i class="fas fa-times"></i></button>
+        <div id="feedbackIcon" style="font-size: 3rem; margin-bottom: 15px; color: var(--c-teal);">
+            <i class="fas fa-info-circle"></i>
+        </div>
+        <h3 id="feedbackTitle" style="font-family: var(--font-h); font-size: 1.4rem; color: var(--c-dark); margin-bottom: 10px;">Atención</h3>
+        <p id="feedbackMessage" style="color: var(--text-muted); font-size: 0.98rem; line-height: 1.5; margin-bottom: 25px;"></p>
+        <button class="btn-primary" style="width: 100%; justify-content: center;" onclick="cerrarModal('modalFeedback')">
+            Aceptar
+        </button>
+    </div>
+</div>
+
+<!-- MODAL DE PRIVACIDAD -->
+<div class="modal-overlay" id="modalPrivacidad">
+    <div class="modal-box" style="text-align: left; max-width: 650px;">
+        <button class="modal-close" onclick="cerrarModal('modalPrivacidad')"><i class="fas fa-times"></i></button>
+        <h3 style="font-family: var(--font-h); font-size: 1.5rem; color: var(--c-teal); margin-bottom: 15px;">Aviso de Privacidad</h3>
+        <div style="max-height: 55vh; overflow-y: auto; color: var(--text-muted); font-size: 0.92rem; line-height: 1.6; padding-right: 10px;">
+            <p>En <strong>Espacio HOPE</strong> la confidencialidad de su información personal y clínica es nuestra máxima prioridad. Los datos que nos proporcionan se utilizan exclusivamente para su expediente de atención psicológica familiar, asignación de profesional y contacto seguro.</p>
+            <p style="margin-top: 10px;">Sus respuestas e historial quedan estrictamente resguardados bajo normas éticas y de protección de datos personales.</p>
+        </div>
+        <button class="btn-primary" style="width: 100%; justify-content: center; margin-top: 20px;" onclick="cerrarModal('modalPrivacidad')">
+            Entendido <i class="fas fa-check"></i>
+        </button>
+    </div>
+</div>
+
+<!-- ==========================================
+     SCRIPTS DE CONTROL Y CUESTIONARIO
+     ========================================== -->
+<script>
+    // Carga de preguntas desde Django
+    let dataCuestionario = {};
+    try {
+        dataCuestionario = JSON.parse('{{ cuestionario_json|escapejs|default:"{}" }}');
+    } catch (e) {
+        console.error("Error al parsear el cuestionario_json:", e);
+    }
+
+    let flujoActual = "familiar";
+    let indicePregunta = 0;
+    let respuestasGuardadas = {};
+    let preguntasFlujo = [];
+    let historialNavegacion = [];
+
+    function abrirModal(id) {
+        const m = document.getElementById(id);
+        if (m) {
+            m.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+        }
+    }
+
+    function cerrarModal(id) {
+        const m = document.getElementById(id);
+        if (m) {
+            m.style.display = 'none';
+            document.body.style.overflow = 'auto';
+        }
+    }
+
+    // Cerrar modales al dar clic afuera
+    document.querySelectorAll('.modal-overlay').forEach(modal => {
+        modal.addEventListener('click', function (e) {
+            if (e.target === this) {
+                cerrarModal(this.id);
+            }
+        });
+    });
+
+    function abrirRegistroFamilia() {
+        document.getElementById('inputServicioOrigen').value = "Terapia Familiar";
+
+        if (Object.keys(dataCuestionario).length === 0) {
+            mostrarAlertaPersonalizada("No se pudieron cargar las preguntas del cuestionario. Por favor recarga la página.", "error");
+            return;
+        }
+
+        abrirModal('modalRegistro');
+
+        document.getElementById('stepPreguntas').style.display = 'block';
+        document.getElementById('formRegistro').style.display = 'none';
+
+        iniciarCuestionario('familiar');
+    }
+
+    function iniciarCuestionario(flujo) {
+        flujoActual = dataCuestionario[flujo] ? flujo : (dataCuestionario['familiar'] ? 'familiar' : Object.keys(dataCuestionario)[0]);
+        
+        if (!dataCuestionario[flujoActual]) {
+            mostrarAlertaPersonalizada("El flujo solicitado no está disponible.", "error");
+            return;
+        }
+
+        preguntasFlujo = dataCuestionario[flujoActual].preguntas || [];
+        document.querySelector("#triageHeader h2").innerText = dataCuestionario[flujoActual].titulo || "Terapia Familiar";
+
+        historialNavegacion = [];
+        respuestasGuardadas = {};
+        indicePregunta = obtenerSiguienteIndiceValido(0);
+        mostrarPregunta();
+    }
+
+    function debeMostrarPregunta(pregunta) {
+        if (!pregunta.mostrar_si) return true;
+        const depId = pregunta.mostrar_si.id;
+        const valoresPermitidos = pregunta.mostrar_si.valores;
+        const respuestaPrevia = respuestasGuardadas[depId];
+        if (!respuestaPrevia) return false;
+        if (Array.isArray(respuestaPrevia)) return respuestaPrevia.some(r => valoresPermitidos.includes(r));
+        return valoresPermitidos.includes(respuestaPrevia);
+    }
+
+    function obtenerSiguienteIndiceValido(inicio) {
+        let nextIndex = inicio;
+        while (nextIndex < preguntasFlujo.length) {
+            if (debeMostrarPregunta(preguntasFlujo[nextIndex])) return nextIndex;
+            nextIndex++;
+        }
+        return nextIndex;
+    }
+
+    function mostrarPregunta() {
+        const optionsContainer = document.getElementById("questionOptionsContainer");
+        optionsContainer.innerHTML = "";
+
+        if (indicePregunta >= preguntasFlujo.length) {
+            finalizarCuestionario();
+            return;
+        }
+
+        document.getElementById("progressBar").style.width = (((indicePregunta) / preguntasFlujo.length) * 100) + "%";
+        document.getElementById("progressText").innerText = `Pregunta ${historialNavegacion.length + 1} de ${preguntasFlujo.length}`;
+
+        const q = preguntasFlujo[indicePregunta];
+        document.getElementById("questionText").innerText = q.pregunta;
+        document.getElementById("btnAtras").style.display = historialNavegacion.length > 0 ? "inline-flex" : "none";
+
+        const esPreguntaEdad = q.id === 'edad' || q.pregunta.toLowerCase().includes('edad');
+
+        if (q.tipo === "single" || q.tipo === "multiple") {
+            const inputType = q.tipo === "single" ? "radio" : "checkbox";
+            q.opciones.forEach((opcion) => {
+                const checked = respuestasGuardadas[q.id] && (Array.isArray(respuestasGuardadas[q.id]) ? respuestasGuardadas[q.id].includes(opcion) : respuestasGuardadas[q.id] === opcion) ? "checked" : "";
+                const html = `<label class="triage-option-label"><input type="${inputType}" name="${q.id}" value="${opcion}" ${checked}> ${opcion}</label>`;
+                optionsContainer.insertAdjacentHTML('beforeend', html);
+            });
+        }
+        else if (esPreguntaEdad) {
+            const minEdad = 18;
+            const maxEdad = 85;
+            const val = respuestasGuardadas[q.id] || 35;
+
+            optionsContainer.innerHTML = `
+                <div style="text-align: center; margin-bottom: 18px;">
+                    <span id="${q.id}_valDisplay" style="font-size: 4.5rem; font-weight: 800; color: var(--c-teal); font-family: var(--font-h); line-height: 1;">${val}</span>
+                    <span style="font-size: 1.1rem; color: #64748b; font-weight: 600; display: block; margin-top: 4px;">años de edad</span>
+                </div>
+                <div style="padding: 0 10px;">
+                    <input type="range" id="${q.id}" min="${minEdad}" max="${maxEdad}" value="${val}" style="width: 100%; height: 8px; background: #e2e8f0; border-radius: 4px; appearance: none; accent-color: var(--c-teal); cursor: pointer;" oninput="document.getElementById('${q.id}_valDisplay').innerText = this.value">
+                    <div style="display: flex; justify-content: space-between; font-size: 0.85rem; color: #94a3b8; font-weight: 600; margin-top: 8px;">
+                        <span>18 años</span>
+                        <span>85+ años</span>
+                    </div>
+                </div>
+            `;
+        }
+        else if (q.id === 'integrantes_familia' || (q.tipo === "numero" && q.min !== undefined && q.max !== undefined)) {
+            const minVal = q.min !== undefined ? q.min : 2;
+            const maxVal = q.max !== undefined ? q.max : 10;
+            const val = respuestasGuardadas[q.id] || minVal;
+            optionsContainer.innerHTML = `
+                <div style="text-align: center; margin-bottom: 18px;">
+                    <span id="${q.id}_valDisplay" style="font-size: 4.5rem; font-weight: 800; color: var(--c-teal); font-family: var(--font-h); line-height: 1;">${val}</span>
+                    <span style="font-size: 1.1rem; color: #64748b; font-weight: 600; display: block; margin-top: 4px;">integrantes</span>
+                </div>
+                <div style="padding: 0 10px;">
+                    <input type="range" id="${q.id}" min="${minVal}" max="${maxVal}" value="${val}" style="width: 100%; height: 8px; background: #e2e8f0; border-radius: 4px; appearance: none; accent-color: var(--c-teal); cursor: pointer;" oninput="document.getElementById('${q.id}_valDisplay').innerText = this.value">
+                    <div style="display: flex; justify-content: space-between; font-size: 0.85rem; color: #94a3b8; font-weight: 600; margin-top: 8px;">
+                        <span>${minVal} personas</span>
+                        <span>${maxVal} personas</span>
+                    </div>
+                </div>
+            `;
+        } else {
+            const val = respuestasGuardadas[q.id] || "";
+            const inputType = q.tipo === "numero" ? "number" : "text";
+            optionsContainer.innerHTML = `<input type="${inputType}" id="${q.id}" class="custom-input-triage" placeholder="Escribe aquí tu respuesta..." value="${val}">`;
+        }
+    }
+
+    document.getElementById("btnSiguiente").addEventListener("click", function () {
+        const q = preguntasFlujo[indicePregunta];
+        let hayRespuesta = false;
+
+        if (q.tipo === "single") {
+            const sel = document.querySelector(`input[name="${q.id}"]:checked`);
+            if (sel) { respuestasGuardadas[q.id] = sel.value; hayRespuesta = true; }
+        } else if (q.tipo === "multiple") {
+            const sels = Array.from(document.querySelectorAll(`input[name="${q.id}"]:checked`)).map(el => el.value);
+            if (sels.length > 0) { respuestasGuardadas[q.id] = sels; hayRespuesta = true; }
+        } else {
+            const el = document.getElementById(q.id);
+            const val = el ? el.value.trim() : "";
+            if (val !== "") {
+                if (q.tipo === "numero") {
+                    const num = parseInt(val);
+                    if (q.min !== undefined && num < q.min) {
+                        mostrarAlertaPersonalizada(`El valor mínimo requerido es ${q.min}.`, "info");
+                        return;
+                    }
+                    if (q.max !== undefined && num > q.max) {
+                        mostrarAlertaPersonalizada(`El valor máximo permitido es ${q.max}.`, "info");
+                        return;
+                    }
+                }
+                respuestasGuardadas[q.id] = val;
+                hayRespuesta = true;
+            }
+        }
+
+        if (!hayRespuesta) {
+            mostrarAlertaPersonalizada("Por favor responde o selecciona una opción para continuar.", "info");
+            return;
+        }
+
+        historialNavegacion.push(indicePregunta);
+        indicePregunta = obtenerSiguienteIndiceValido(indicePregunta + 1);
+        mostrarPregunta();
+    });
+
+    document.getElementById("btnAtras").addEventListener("click", function () {
+        if (historialNavegacion.length > 0) {
+            indicePregunta = historialNavegacion.pop();
+            mostrarPregunta();
+        }
+    });
+
+    function finalizarCuestionario() {
+        document.getElementById("stepPreguntas").style.display = "none";
+        document.getElementById("formRegistro").style.display = "block";
+        document.querySelector("#triageHeader h2").innerText = "Crea tu cuenta segura";
+        document.getElementById("inputFlujoFinal").value = flujoActual;
+        document.getElementById("progressBar").style.width = "100%";
+    }
+
+    // ENVÍO AJAX DEL FORMULARIO FINAL
+    const formReg = document.getElementById("formRegistro");
+    if (formReg) {
+        formReg.addEventListener("submit", function (e) {
+            e.preventDefault();
+            if (formReg.dataset.enviando === "true") return;
+            formReg.dataset.enviando = "true";
+
+            respuestasGuardadas["pseudonimo"] = document.getElementById("pseudonimoFinal").value;
+            const servicioElegido = document.getElementById("inputServicioOrigen").value;
+            if (servicioElegido) {
+                respuestasGuardadas["servicio_solicitado"] = servicioElegido;
+            }
+
+            document.getElementById("inputRespuestasFinal").value = JSON.stringify(respuestasGuardadas);
+
+            const btnSubmitFinal = document.getElementById("btnSubmitFinal");
+            const originalText = btnSubmitFinal.innerHTML;
+            btnSubmitFinal.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Creando expediente...';
+            btnSubmitFinal.disabled = true;
+
+            fetch(formReg.getAttribute("action"), {
+                method: "POST",
+                body: new FormData(formReg),
+                headers: {
+                    "X-Requested-With": "XMLHttpRequest",
+                    "X-CSRFToken": formReg.querySelector('[name=csrfmiddlewaretoken]').value
+                }
+            })
+            .then(r => r.json())
+            .then(data => {
+                btnSubmitFinal.innerHTML = originalText;
+                btnSubmitFinal.disabled = false;
+                formReg.dataset.enviando = "false";
+
+                if (data.status === "success") {
+                    window.location.href = data.redirect_url;
+                } else {
+                    mostrarAlertaPersonalizada(data.message || "Ocurrió un error al procesar el registro.", "error");
+                }
+            })
+            .catch(err => {
+                btnSubmitFinal.innerHTML = originalText;
+                btnSubmitFinal.disabled = false;
+                formReg.dataset.enviando = "false";
+                mostrarAlertaPersonalizada("Error de conexión. Intenta nuevamente.", "error");
+            });
+        });
+    }
+
+    function mostrarAlertaPersonalizada(mensaje, tipo = "info") {
+        const msg = document.getElementById("feedbackMessage");
+        const iconDiv = document.getElementById("feedbackIcon");
+        msg.innerHTML = mensaje;
+
+        if (tipo === "error") {
+            document.getElementById("feedbackTitle").innerText = "Hubo un problema";
+            iconDiv.innerHTML = '<i class="fas fa-exclamation-triangle" style="color: #ef4444;"></i>';
+        } else {
+            document.getElementById("feedbackTitle").innerText = "Atención";
+            iconDiv.innerHTML = '<i class="fas fa-info-circle" style="color: var(--c-teal);"></i>';
+        }
+        abrirModal("modalFeedback");
+    }
+</script>
+{% endblock %}

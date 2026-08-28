@@ -2153,6 +2153,52 @@ def sesion_individual(request):
     return render(request, 'sesion_individual.html', context)
 
 
+def sesion_pareja(request):
+    now_local = timezone.localtime(timezone.now())
+    hoy = now_local.date()
+    fecha_limite = hoy + timedelta(days=90)
+
+    dias_json = obtener_slots_globales(hoy, fecha_limite, "", tipo_sesion="pareja")
+
+    dias_html = {}
+    for fecha_str, horas_str in dias_json.items():
+        fecha_obj = datetime.strptime(fecha_str, '%Y-%m-%d').date()
+        horas_obj = [datetime.strptime(h, '%I:%M %p').time() for h in horas_str]
+        dias_html[fecha_obj] = horas_obj
+
+    context = {
+        'dias_disponibles_json': dias_json,
+        'dias_disponibles': dias_html,
+        'mostrar_completar_perfil': request.GET.get('completar_perfil') == '1',  
+        'cuestionario_json': json.dumps(CUESTIONARIO_CLINICO),
+        'paypal_client_id': settings.PAYPAL_CLIENT_ID,
+    }
+    return render(request, 'sesion_pareja.html', context)
+
+
+def sesion_familia(request):
+    now_local = timezone.localtime(timezone.now())
+    hoy = now_local.date()
+    fecha_limite = hoy + timedelta(days=90)
+
+    dias_json = obtener_slots_globales(hoy, fecha_limite, "", tipo_sesion="familiar")
+
+    dias_html = {}
+    for fecha_str, horas_str in dias_json.items():
+        fecha_obj = datetime.strptime(fecha_str, '%Y-%m-%d').date()
+        horas_obj = [datetime.strptime(h, '%I:%M %p').time() for h in horas_str]
+        dias_html[fecha_obj] = horas_obj
+
+    context = {
+        'dias_disponibles_json': dias_json,
+        'dias_disponibles': dias_html,
+        'mostrar_completar_perfil': request.GET.get('completar_perfil') == '1',  
+        'cuestionario_json': json.dumps(CUESTIONARIO_CLINICO),
+        'paypal_client_id': settings.PAYPAL_CLIENT_ID,
+    }
+    return render(request, 'sesion_familia.html', context)
+
+
 @csrf_exempt
 def registro_rapido_ajax(request):
     if request.method == 'POST':

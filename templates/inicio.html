@@ -1347,10 +1347,10 @@
     <p class="nav-section-title">Terapias</p>
     <a href="{% url 'sesion_individual' %}" class="nav-item">
       <i class="fas fa-user"></i> Terapia Individual</a>
-    <a href="#" onclick="abrirRegistroDirecto('pareja', 'terapia_pareja'); return false;" class="nav-item">
+    <a href="{% url 'sesion_pareja' %}" class="nav-item">
       <i class="fas fa-heart"></i> Terapia de Pareja
     </a>
-    <a href="#" onclick="abrirRegistroDirecto('familiar', 'terapia_familiar'); return false;" class="nav-item">
+    <a href="{% url 'sesion_familia' %}" class="nav-item">
       <i class="fas fa-people-group"></i> Terapia Familiar
     </a>
     <p class="nav-section-title">Talleres</p>
@@ -1629,7 +1629,7 @@
               <p style="font-size:.85rem;color:var(--c-orange);font-weight:800;margin-bottom:8px;letter-spacing:1px;">
                 PRENSA & SALUD MENTAL</p>
               <h3 style="color:var(--c-dark); font-size:1.6rem; margin-bottom:12px; line-height:1.2;">
-                {{articulo.titulo}}</h3>
+                {{articulo.titulo}} </h3>
               <p style="font-size:1.05rem;">{{ articulo.resumen }}</p>
             </div>
           </div>

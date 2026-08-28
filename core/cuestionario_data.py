@@ -50,6 +50,23 @@ CUESTIONARIO_CLINICO = {
              "opciones": ["Mañana (9:00 a 12:00)", "Tarde (12:00 a 17:00)", "Noche (17:00 a 20:00)", "Fines de semana"]}
         ]
     },
+    "familiar": {
+        "titulo": "Evaluación Clínica (Familiar)",
+        "preguntas": [
+            {"id": "edad", "tipo": "numero", "pregunta": "¿Cuál es tu edad (titular de la solicitud)?"},
+            {"id": "residencia", "tipo": "texto", "pregunta": "¿Cuál es su lugar de residencia familiar?"},
+            {"id": "integrantes_familia", "tipo": "numero", "pregunta": "¿Cuántos integrantes de la familia participarán en las sesiones?", "min": 2, "max": 10},
+            {"id": "motivo_consulta", "tipo": "multiple", "pregunta": "¿Cuál es el motivo principal por el que buscan terapia familiar?",
+             "opciones": ["Problemas de comunicación", "Conflictos entre padres e hijos", "Manejo de límites y reglas", "Duelo o pérdida familiar", "Transiciones difíciles (divorcio, mudanza)", "Problemas de conducta en hijos", "Otro"]},
+            {"id": "meta_terapia", "tipo": "texto", "pregunta": "¿Qué les gustaría lograr como familia con la terapia?"},
+            {"id": "terapia_previa", "tipo": "single", "pregunta": "¿Han asistido a terapia familiar previamente?",
+             "opciones": ["Sí", "No"]},
+            {"id": "modalidad", "tipo": "single", "pregunta": "¿Qué modalidad prefieren?",
+             "opciones": ["Presencial", "En línea", "Indistinto"]},
+            {"id": "horario", "tipo": "multiple", "pregunta": "¿Cuál es su disponibilidad de horario familiar?",
+             "opciones": ["Mañana (9:00 a 12:00)", "Tarde (12:00 a 17:00)", "Noche (17:00 a 20:00)", "Fines de semana"]}
+        ]
+    },
     "tercero": {
         "titulo": "Ayuda para un Tercero",
         "preguntas": [
