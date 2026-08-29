@@ -2199,6 +2199,11 @@ def sesion_familia(request):
     return render(request, 'sesion_familia.html', context)
 
 
+def covision(request):
+    """Landing informativa de Co-Visión y Formación para Profesionales."""
+    return render(request, 'co-vision.html')
+
+
 @csrf_exempt
 def registro_rapido_ajax(request):
     if request.method == 'POST':

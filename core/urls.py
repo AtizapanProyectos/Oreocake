@@ -33,6 +33,7 @@ urlpatterns = [
     path('sesion-individual/', views.sesion_individual, name='sesion_individual'),
     path('sesion-pareja/', views.sesion_pareja, name='sesion_pareja'),
     path('sesion-familia/', views.sesion_familia, name='sesion_familia'),
+    path('co-vision/', views.covision, name='covision'),
     path('registro-rapido/', views.registro_rapido_ajax, name='registro_rapido'),
     path('guardar_cita_ajax/', views.guardar_cita_ajax, name='guardar_cita_ajax'),
     path('guardar-expediente-completo/', views.guardar_expediente_completo, name='guardar_expediente_completo'),
