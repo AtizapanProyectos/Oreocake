@@ -4621,7 +4621,6 @@ def procesar_reportes_citas_manual(request):
     return JsonResponse({'status': 'success', 'procesadas': total})
 
 
-@user_passes_test(es_admin, login_url='/')
 def reporte_crecimiento_sesiones_view(request):
     """
     Dashboard Ejecutivo de Crecimiento y Sesiones HOPE (Estilo CANACAR PDF).
