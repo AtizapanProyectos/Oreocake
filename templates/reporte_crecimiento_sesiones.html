@@ -2,951 +2,681 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HOPE Analytics · Crecimiento y Sesiones</title>
-    <link rel="icon" href="{% static 'img/favicon.ico' %}" type="image/x-icon">
-    
-    <!-- Google Fonts: Outfit & Plus Jakarta Sans (Estilo PDF CANACAR) -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    
-    <!-- Chart.js & FontAwesome -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HOPE - Reporte Ejecutivo: Sesiones y Crecimiento</title>
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=Outfit:wght@600;700;800;900&display=swap" rel="stylesheet">
 
-    <style>
-        /* ==========================================================================
-           CSS EXACTO DEL ARCHIVO DASHBOARD.CSS (ESTILO PDF CANACAR)
-           ========================================================================== */
-        :root {
-            --bg-dark: #071526;
-            --bg-card: #0D223D;
-            --bg-card-alt: #0B1E36;
-            --border-card: #17375E;
-            --border-highlight: rgba(0, 210, 224, 0.4);
-            
-            --cyan-accent: #00D2E0;
-            --purple-accent: #818CF8;
-            --green-accent: #10B981;
-            --yellow-accent: #FBBF24;
-            --pink-accent: #F85B8C;
-            --orange-accent: #FB923C;
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            heading: ['"Outfit"', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              dark: '#071526',
+              card: '#0D223D',
+              cardAlt: '#0B1E36',
+              border: '#17375E',
+              cyan: '#00D2E0',
+              purple: '#818CF8',
+              pink: '#F85B8C',
+              yellow: '#FBBF24',
+              green: '#10B981',
+              orange: '#FB923C',
+            }
+          }
+        }
+      }
+    }
+  </script>
 
-            --text-primary: #FFFFFF;
-            --text-secondary: #94A3B8;
-            --text-muted: #64748B;
+  <style>
+    :root {
+      --bg-dark: #071526;
+      --bg-card: #0D223D;
+      --bg-card-alt: #0B1E36;
+      --border-card: #17375E;
+      --cyan: #00D2E0;
+      --pink: #F85B8C;
+      --purple: #818CF8;
+    }
 
-            --font-heading: 'Outfit', sans-serif;
-            --font-body: 'Plus Jakarta Sans', sans-serif;
-        }
+    body {
+      background-color: var(--bg-dark);
+      background-image: 
+        radial-gradient(ellipse 60% 40% at 20% 10%, rgba(0, 210, 224, 0.07) 0%, transparent 70%),
+        radial-gradient(ellipse 50% 50% at 85% 90%, rgba(129, 140, 248, 0.08) 0%, transparent 70%);
+      color: #FFFFFF;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      min-height: 100vh;
+    }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; }
+    .glass-card-dark {
+      background: #0D223D;
+      border: 1px solid var(--border-card);
+      backdrop-filter: blur(14px);
+    }
 
-        body {
-            background-color: var(--bg-dark);
-            background-image: 
-                radial-gradient(ellipse 60% 40% at 20% 10%, rgba(0, 210, 224, 0.05) 0%, transparent 70%),
-                radial-gradient(ellipse 50% 50% at 85% 90%, rgba(129, 140, 248, 0.06) 0%, transparent 70%);
-            font-family: var(--font-body);
-            color: var(--text-primary);
-            min-height: 100vh;
-            -webkit-font-smoothing: antialiased;
-            padding-bottom: 60px;
-        }
+    .slide-view {
+      display: block;
+      animation: fadeIn 0.25s ease-in-out;
+    }
 
-        /* Barra Superior de Navegación */
-        .top-navigation-bar {
-            background: rgba(7, 21, 38, 0.95);
-            backdrop-filter: blur(12px);
-            border-bottom: 1px solid var(--border-card);
-            padding: 14px 40px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            position: sticky;
-            top: 0;
-            z-index: 1000;
-        }
-        .brand-wrapper {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-        }
-        .hope-nav-logo {
-            height: 38px;
-            width: auto;
-            object-fit: contain;
-            background: #ffffff;
-            padding: 4px 10px;
-            border-radius: 6px;
-        }
-        .brand-title-badge {
-            font-family: var(--font-heading);
-            font-size: 13px;
-            font-weight: 800;
-            letter-spacing: 0.1em;
-            color: var(--cyan-accent);
-            text-transform: uppercase;
-        }
-        .top-bar-actions {
-            display: flex;
-            align-items: center;
-            gap: 14px;
-        }
-        .btn-sentimientos {
-            background: linear-gradient(135deg, rgba(248, 91, 140, 0.2), rgba(129, 140, 248, 0.2));
-            border: 1px solid var(--pink-accent);
-            color: #FFFFFF;
-            padding: 7px 18px;
-            border-radius: 6px;
-            font-family: var(--font-heading);
-            font-size: 12px;
-            font-weight: 800;
-            letter-spacing: 0.06em;
-            text-transform: uppercase;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            transition: all 0.2s ease;
-        }
-        .btn-sentimientos:hover {
-            background: var(--pink-accent);
-            color: #FFFFFF;
-            box-shadow: 0 0 16px rgba(248, 91, 140, 0.5);
-            transform: translateY(-1px);
-        }
-        .simulacion-badge {
-            border: 1.5px solid var(--cyan-accent);
-            color: var(--cyan-accent);
-            padding: 6px 18px;
-            border-radius: 6px;
-            font-family: var(--font-heading);
-            font-size: 12px;
-            font-weight: 800;
-            letter-spacing: 0.12em;
-            text-transform: uppercase;
-            background: rgba(0, 210, 224, 0.05);
-            cursor: pointer;
-            text-decoration: none;
-        }
-        .simulacion-badge:hover {
-            background: rgba(0, 210, 224, 0.15);
-        }
+    .slide-hidden {
+      display: none !important;
+    }
 
-        /* Contenedor Slide Frame 16:9 */
-        .container-wide {
-            max-width: 1380px;
-            margin: 28px auto 0;
-            padding: 0 30px;
-        }
-        .slide-frame {
-            background: var(--bg-card);
-            border: 1px solid var(--border-card);
-            border-radius: 20px;
-            padding: 36px 42px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
-            position: relative;
-            overflow: hidden;
-        }
-        .slide-frame::before {
-            content: "";
-            position: absolute;
-            top: 0;
-            left: 42px;
-            width: 180px;
-            height: 3px;
-            background: linear-gradient(90deg, var(--cyan-accent), transparent);
-        }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(5px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
 
-        /* Encabezado Principal */
-        .executive-header {
-            margin-bottom: 28px;
-        }
-        .header-partner-tag {
-            color: var(--cyan-accent);
-            font-size: 13px;
-            font-weight: 800;
-            letter-spacing: 0.12em;
-            font-family: var(--font-heading);
-            text-transform: uppercase;
-            display: block;
-            margin-bottom: 4px;
-        }
-        .header-cohort-tag {
-            color: var(--text-secondary);
-            font-size: 12px;
-            font-weight: 600;
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
-            display: block;
-            margin-bottom: 6px;
-        }
-        .executive-header h1 {
-            font-family: var(--font-heading);
-            font-size: 34px;
-            font-weight: 800;
-            color: var(--text-primary);
-            line-height: 1.2;
-            letter-spacing: -0.02em;
-            margin-bottom: 8px;
-        }
-        .executive-header p {
-            color: var(--text-secondary);
-            font-size: 15px;
-            max-width: 900px;
-            line-height: 1.6;
-        }
-
-        /* ==========================================================================
-           1. LOS 3 BLOQUES EN ORDEN ESTRICTO:
-           1) Cuántos usuarios activos (al menos 1 sesión tomada)
-           2) Cuántos usuarios registrados (sin sesiones tomadas)
-           3) Total de registros de usuarios
-           ========================================================================== */
-        .users-three-blocks-row {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 18px;
-            margin-bottom: 30px;
-        }
-        @media (max-width: 900px) {
-            .users-three-blocks-row { grid-template-columns: 1fr; }
-        }
-
-        .user-block-card {
-            background: var(--bg-card-alt);
-            border: 1px solid var(--border-card);
-            border-radius: 14px;
-            padding: 22px 24px;
-            position: relative;
-            overflow: hidden;
-            transition: transform 0.25s ease, border-color 0.25s ease;
-        }
-        .user-block-card:hover {
-            transform: translateY(-3px);
-            border-color: rgba(0, 210, 224, 0.45);
-        }
-        .user-block-card::before {
-            content: "";
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 5px;
-            height: 100%;
-        }
-        .block-active::before  { background: var(--green-accent); }
-        .block-pending::before { background: var(--orange-accent); }
-        .block-total::before   { background: var(--cyan-accent); }
-
-        .user-block-title {
-            font-size: 12px;
-            font-weight: 800;
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
-            color: var(--text-secondary);
-            margin-bottom: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-        .user-block-badge {
-            padding: 3px 8px;
-            border-radius: 4px;
-            font-size: 10px;
-            font-weight: 800;
-        }
-        .block-active .user-block-badge { background: rgba(16, 185, 129, 0.15); color: var(--green-accent); }
-        .block-pending .user-block-badge { background: rgba(251, 146, 60, 0.15); color: var(--orange-accent); }
-        .block-total .user-block-badge { background: rgba(0, 210, 224, 0.15); color: var(--cyan-accent); }
-
-        .user-block-val {
-            font-family: var(--font-heading);
-            font-size: 40px;
-            font-weight: 900;
-            color: var(--text-primary);
-            line-height: 1;
-            margin-bottom: 8px;
-        }
-        .user-block-sub {
-            font-size: 13px;
-            color: var(--text-muted);
-            line-height: 1.4;
-        }
-
-        /* ==========================================================================
-           TARJETAS KPI SUPERIORES (Estilo PDF con tiras verticales)
-           ========================================================================== */
-        .kpis-horizontal-row {
-            display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 16px;
-            margin-bottom: 30px;
-        }
-        @media (max-width: 1100px) {
-            .kpis-horizontal-row { grid-template-columns: repeat(3, 1fr); }
-        }
-        @media (max-width: 768px) {
-            .kpis-horizontal-row { grid-template-columns: 1fr; }
-        }
-
-        .kpi-indicator-card {
-            background: var(--bg-card-alt);
-            border: 1px solid var(--border-card);
-            border-radius: 12px;
-            padding: 18px 20px;
-            position: relative;
-            overflow: hidden;
-            transition: transform 0.25s ease, border-color 0.25s ease;
-        }
-        .kpi-indicator-card:hover {
-            transform: translateY(-2px);
-            border-color: rgba(0, 210, 224, 0.45);
-        }
-        .kpi-indicator-card::before {
-            content: "";
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 5px;
-            height: 100%;
-            background-color: var(--indicator-color, var(--cyan-accent));
-        }
-
-        .kpi-val {
-            font-family: var(--font-heading);
-            font-size: 32px;
-            font-weight: 800;
-            color: var(--text-primary);
-            line-height: 1.1;
-            margin-bottom: 6px;
-        }
-        .kpi-lbl {
-            font-size: 12.5px;
-            font-weight: 500;
-            color: var(--text-secondary);
-            line-height: 1.35;
-        }
-
-        .indicator-cyan { --indicator-color: var(--cyan-accent); }
-        .indicator-purple { --indicator-color: var(--purple-accent); }
-        .indicator-green { --indicator-color: var(--green-accent); }
-        .indicator-yellow { --indicator-color: var(--yellow-accent); }
-        .indicator-pink { --indicator-color: var(--pink-accent); }
-
-        /* ==========================================================================
-           GRID DE LAS PESTAÑAS Y GRÁFICAS DE ANALITICA HOPE
-           ========================================================================== */
-        .charts-grid-wide {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 24px;
-            margin-bottom: 30px;
-        }
-        @media (max-width: 1000px) {
-            .charts-grid-wide { grid-template-columns: 1fr; }
-        }
-
-        .wide-chart-card {
-            background: var(--bg-card-alt);
-            border-radius: 16px;
-            padding: 26px 28px;
-            border: 1px solid var(--border-card);
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            transition: transform 0.25s ease, border-color 0.25s ease;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
-        }
-        .wide-chart-card:hover {
-            transform: translateY(-3px);
-            border-color: rgba(0, 210, 224, 0.4);
-        }
-        .card-featured {
-            grid-column: 1 / -1;
-        }
-
-        .chart-header-flex {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 12px;
-        }
-        .chart-title-left {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-        .chart-title-left i {
-            color: var(--cyan-accent);
-            font-size: 20px;
-        }
-        .wide-chart-card h3 {
-            font-size: 20px;
-            color: var(--text-primary);
-            font-family: var(--font-heading);
-            font-weight: 700;
-        }
-
-        .frase-destacada {
-            font-size: 13.5px;
-            color: #cbd5e1;
-            font-weight: 500;
-            background: rgba(18, 32, 54, 0.65);
-            padding: 12px 18px;
-            border-radius: 10px;
-            border-left: 3px solid var(--cyan-accent);
-            margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-style: italic;
-            border: 1px solid rgba(36, 62, 98, 0.4);
-            border-left: 3px solid var(--cyan-accent);
-        }
-        .frase-destacada i {
-            color: var(--cyan-accent);
-            font-size: 15px;
-            flex-shrink: 0;
-        }
-
-        .wide-chart-box {
-            position: relative;
-            height: 320px;
-            width: 100%;
-        }
-
-        /* ==========================================================================
-           BANNER INFERIOR (Estilo MÉTRICAS LISTAS PARA MEDIOS)
-           ========================================================================== */
-        .bottom-media-banner {
-            background: rgba(11, 22, 38, 0.95);
-            border: 1px solid var(--border-highlight);
-            border-radius: 14px;
-            padding: 22px 30px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 24px;
-            margin-bottom: 24px;
-            box-shadow: 0 4px 20px rgba(0, 210, 224, 0.08);
-        }
-        @media (max-width: 900px) {
-            .bottom-media-banner { flex-direction: column; align-items: flex-start; }
-            .media-metrics-flex { flex-direction: column; align-items: flex-start; gap: 14px; width: 100%; }
-        }
-
-        .media-tag-title {
-            font-family: var(--font-heading);
-            font-size: 12px;
-            font-weight: 800;
-            letter-spacing: 0.12em;
-            color: var(--cyan-accent);
-            text-transform: uppercase;
-            min-width: 170px;
-            line-height: 1.35;
-        }
-        .media-metrics-flex {
-            display: flex;
-            align-items: center;
-            justify-content: space-around;
-            flex: 1;
-            gap: 20px;
-        }
-        .media-metric-cell {
-            text-align: left;
-        }
-        .media-metric-cell .val {
-            font-family: var(--font-heading);
-            font-size: 26px;
-            font-weight: 800;
-            color: var(--text-primary);
-            line-height: 1.1;
-            margin-bottom: 2px;
-        }
-        .media-metric-cell .val.green {
-            color: var(--green-accent);
-        }
-        .media-metric-cell .desc {
-            font-size: 12px;
-            color: var(--text-secondary);
-            line-height: 1.3;
-        }
-
-        /* Pie de Lámina */
-        .slide-footer-meta {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding-top: 16px;
-            border-top: 1px solid rgba(23, 55, 94, 0.7);
-            font-size: 11px;
-            color: var(--text-muted);
-        }
-        .slide-number-marker {
-            font-family: var(--font-heading);
-            font-size: 14px;
-            font-weight: 800;
-            color: var(--cyan-accent);
-        }
-
-        /* Estilo para impresión */
-        @media print {
-            body { background: #071526 !important; -webkit-print-color-adjust: exact !important; padding: 0; }
-            .top-navigation-bar { display: none !important; }
-            .container-wide { max-width: 100% !important; padding: 0 !important; }
-            .slide-frame { border: none !important; box-shadow: none !important; border-radius: 0 !important; }
-        }
-    </style>
+    @media print {
+      .no-print { display: none !important; }
+      .slide-view, .slide-hidden { display: block !important; margin-bottom: 2rem; page-break-after: always; }
+      body { background: #071526 !important; -webkit-print-color-adjust: exact !important; }
+    }
+  </style>
 </head>
-<body>
+<body class="min-h-screen flex flex-col justify-between antialiased text-slate-100">
 
-    <!-- BARRA SUPERIOR DE NAVEGACIÓN Y ACCESOS DIRECTOS -->
-    <header class="top-navigation-bar">
-        <div class="brand-wrapper">
-            <img src="{% static 'img/logo_hope_principal.png' %}" alt="HOPE Logo" class="hope-nav-logo" onerror="this.src='{% static 'img/nlogo.png' %}'">
-            <span class="brand-title-badge">HOPE · ANALÍTICA EJECUTIVA</span>
+  <!-- BARRA SUPERIOR DE NAVEGACIÓN -->
+  <header class="glass-card-dark border-b border-[#17375E] sticky top-0 z-40 no-print">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+      
+      <!-- Brand Name & Logo -->
+      <div class="flex items-center gap-3">
+        <a href="/" class="flex items-center gap-2">
+          <span class="text-2xl font-black tracking-tight font-heading">
+            <span class="text-[#00D2E0]">H</span><span class="text-[#F85B8C]">O</span><span class="text-[#FBBF24]">P</span><span class="text-[#818CF8]">E</span>
+          </span>
+        </a>
+        <span class="h-4 w-px bg-[#17375E]"></span>
+        <span class="text-xs font-extrabold text-[#00D2E0] uppercase tracking-wider hidden sm:inline-block">Reporte Mensual: Sesiones & Crecimiento</span>
+      </div>
+
+      <!-- Controls & External Links -->
+      <div class="flex items-center gap-2.5">
+        <!-- BOTÓN PANEL DE SENTIMIENTOS -->
+        <a href="{{ url_panel_sentimientos }}" target="_blank" class="px-3.5 py-1.5 text-xs font-bold bg-[#F85B8C]/15 hover:bg-[#F85B8C] border border-[#F85B8C] text-white rounded-xl transition flex items-center gap-2 shadow-sm">
+          <i class="fa-solid fa-heart-pulse text-[#F85B8C] group-hover:text-white"></i>
+          <span>Panel de Sentimientos</span>
+        </a>
+
+        <!-- Vista Diapositivas / 1 Página -->
+        <div class="bg-[#0B1E36] p-1 rounded-xl flex text-xs font-semibold border border-[#17375E]">
+          <button id="btnSlides" onclick="setViewMode('slides')" class="px-3 py-1.5 rounded-lg bg-[#00D2E0] text-[#071526] font-bold shadow-sm transition">Diapositivas</button>
+          <button id="btnDoc" onclick="setViewMode('doc')" class="px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition">Todo en 1 pág</button>
         </div>
-        <div class="top-bar-actions">
-            <!-- Botón hacia el Panel de Sentimientos -->
-            <a href="{{ url_panel_sentimientos }}" target="_blank" class="btn-sentimientos">
-                <i class="fa-solid fa-heart-pulse"></i> Panel de Sentimientos
-            </a>
-            <button class="simulacion-badge" onclick="window.print()">
-                <i class="fa-solid fa-file-pdf"></i> Exportar PDF
-            </button>
-        </div>
-    </header>
 
-    <div class="container-wide">
-        
-        <div class="slide-frame">
-
-            <!-- ENCABEZADO PRINCIPAL (Estilo PDF CANACAR) -->
-            <div class="executive-header">
-                <span class="header-partner-tag">HOPE COMUNIDAD</span>
-                <span class="header-cohort-tag">DASHBOARD EJECUTIVO · IMPACTO MEDIBLE · {{ nombre_mes }} {{ anio }}</span>
-                <h1>El Reflejo de Nuestra Comunidad</h1>
-                <p>Métricas reales procesadas desde la base de datos de HOPE para el seguimiento de consultas, constancia y alcance de la salud mental.</p>
-            </div>
-
-            <!-- ===================================================================
-                 1. LOS 3 BLOQUES EN ORDEN ESTRICTO:
-                 1) Usuarios Activos (al menos 1 sesión tomada)
-                 2) Usuarios Registrados (sin sesiones tomadas)
-                 3) Total de Registros de Usuarios (censo total)
-                 =================================================================== -->
-            <div class="users-three-blocks-row">
-                <!-- 1. PRIMER BLOQUE: CUÁNTOS USUARIOS ACTIVOS -->
-                <div class="user-block-card block-active">
-                    <div class="user-block-title">
-                        <span>1. Usuarios Activos</span>
-                        <span class="user-block-badge">Con Sesión</span>
-                    </div>
-                    <div class="user-block-val" style="color: var(--green-accent);">{{ usuarios_activos }}</div>
-                    <div class="user-block-sub">
-                        <strong>{{ pct_activos }}%</strong> de los pacientes registrados han tomado al menos una sesión en HOPE.
-                    </div>
-                </div>
-
-                <!-- 2. SEGUNDO BLOQUE: CUÁNTOS USUARIOS REGISTRADOS SIN TOMAR SESIÓN -->
-                <div class="user-block-card block-pending">
-                    <div class="user-block-title">
-                        <span>2. Registrados Sin Sesión</span>
-                        <span class="user-block-badge">Pendientes</span>
-                    </div>
-                    <div class="user-block-val" style="color: var(--orange-accent);">{{ usuarios_sin_sesion }}</div>
-                    <div class="user-block-sub">
-                        <strong>{{ pct_sin_sesion }}%</strong> crearon su cuenta pero aún no agendan su primera cita.
-                    </div>
-                </div>
-
-                <!-- 3. TERCER BLOQUE: TOTAL DE REGISTROS DE USUARIOS -->
-                <div class="user-block-card block-total">
-                    <div class="user-block-title">
-                        <span>3. Total de Registros</span>
-                        <span class="user-block-badge">Censo Global</span>
-                    </div>
-                    <div class="user-block-val" style="color: var(--cyan-accent);">{{ total_registros }}</div>
-                    <div class="user-block-sub">
-                        Censo total de consultantes registrados en la plataforma (excluyendo psicólogos y admin).
-                    </div>
-                </div>
-            </div>
-
-            <!-- TIRA DE TARJETAS KPI SUPERIORES (Estilo PDF CANACAR) -->
-            <div class="kpis-horizontal-row">
-                <div class="kpi-indicator-card indicator-cyan">
-                    <div class="kpi-val">{{ total_sesiones }}</div>
-                    <div class="kpi-lbl">sesiones realizadas en {{ nombre_mes }}</div>
-                </div>
-                <div class="kpi-indicator-card indicator-cyan">
-                    <div class="kpi-val">{{ pacientes_unicos }}</div>
-                    <div class="kpi-lbl">personas atendidas en {{ nombre_mes }}</div>
-                </div>
-                <div class="kpi-indicator-card indicator-purple">
-                    <div class="kpi-val">{{ pacientes_recurrentes }}</div>
-                    <div class="kpi-lbl">pacientes con sesiones recurrentes</div>
-                </div>
-                <div class="kpi-indicator-card indicator-green">
-                    <div class="kpi-val">{{ tasa_efectividad }}%</div>
-                    <div class="kpi-lbl">asistencia efectiva a citas</div>
-                </div>
-                <div class="kpi-indicator-card indicator-yellow">
-                    <div class="kpi-val">94%</div>
-                    <div class="kpi-lbl">satisfacción con la atención</div>
-                </div>
-            </div>
-
-            <!-- ===================================================================
-                 CUADRÍCULA DE PESTAÑAS Y GRÁFICAS DEL REPORTE DE ANALÍTICA
-                 =================================================================== -->
-            <div class="charts-grid-wide">
-                
-                <!-- 1. Ritmo y Uso Semanal de Sesiones (Estilo Curva CANACAR) -->
-                <div class="wide-chart-card card-featured">
-                    <div>
-                        <div class="chart-header-flex">
-                            <div class="chart-title-left">
-                                <i class="fa-solid fa-chart-line"></i>
-                                <h3>Uso Semanal del Servicio · {{ nombre_mes }}</h3>
-                            </div>
-                            <span style="font-size:12px; font-weight:800; color:var(--cyan-accent);">{{ total_sesiones }} SESIONES TOTALES</span>
-                        </div>
-                        <div class="frase-destacada">
-                            <i class="fa-solid fa-seedling"></i> Distribución semana a semana del volumen atendido por el equipo terapéutico de HOPE.
-                        </div>
-                    </div>
-                    <div class="wide-chart-box">
-                        <canvas id="graficaSemanas"></canvas>
-                    </div>
-                </div>
-
-                <!-- 2. Motivos Principales de Consulta -->
-                <div class="wide-chart-card">
-                    <div>
-                        <div class="chart-header-flex">
-                            <div class="chart-title-left">
-                                <i class="fa-solid fa-hands-holding-circle"></i>
-                                <h3>Motivos Principales de Consulta</h3>
-                            </div>
-                        </div>
-                        <div class="frase-destacada">
-                            <i class="fa-solid fa-bullseye"></i> Ponerle nombre a lo que duele es el primer paso para poder sanarlo.
-                        </div>
-                    </div>
-                    <div class="wide-chart-box">
-                        <canvas id="graficaMotivos"></canvas>
-                    </div>
-                </div>
-
-                <!-- 3. Estado de las Citas -->
-                <div class="wide-chart-card">
-                    <div>
-                        <div class="chart-header-flex">
-                            <div class="chart-title-left">
-                                <i class="fa-regular fa-calendar-check"></i>
-                                <h3>Estado de las Citas en {{ nombre_mes }}</h3>
-                            </div>
-                        </div>
-                        <div class="frase-destacada">
-                            <i class="fa-regular fa-circle-check"></i> Cada cita completada es un avance firme hacia la tranquilidad.
-                        </div>
-                    </div>
-                    <div class="wide-chart-box">
-                        <canvas id="graficaEstado"></canvas>
-                    </div>
-                </div>
-
-                <!-- 4. Rango de Edades -->
-                <div class="wide-chart-card">
-                    <div>
-                        <div class="chart-header-flex">
-                            <div class="chart-title-left">
-                                <i class="fa-solid fa-users"></i>
-                                <h3>Rango de Edades</h3>
-                            </div>
-                        </div>
-                        <div class="frase-destacada">
-                            <i class="fa-solid fa-leaf"></i> La salud emocional no tiene edad; abrazamos cada etapa de la vida.
-                        </div>
-                    </div>
-                    <div class="wide-chart-box">
-                        <canvas id="graficaEdades"></canvas>
-                    </div>
-                </div>
-
-                <!-- 5. Recurrencia de Pacientes en el Mes -->
-                <div class="wide-chart-card">
-                    <div>
-                        <div class="chart-header-flex">
-                            <div class="chart-title-left">
-                                <i class="fa-solid fa-arrow-rotate-right"></i>
-                                <h3>Recurrencia de Pacientes</h3>
-                            </div>
-                        </div>
-                        <div class="frase-destacada">
-                            <i class="fa-solid fa-repeat"></i> La constancia en el proceso terapéutico es el verdadero motor del cambio.
-                        </div>
-                    </div>
-                    <div class="wide-chart-box">
-                        <canvas id="graficaRecurrencia"></canvas>
-                    </div>
-                </div>
-
-                <!-- 6. Intensidad del Malestar Inicial -->
-                <div class="wide-chart-card card-featured">
-                    <div>
-                        <div class="chart-header-flex">
-                            <div class="chart-title-left">
-                                <i class="fa-solid fa-cloud-sun"></i>
-                                <h3>Intensidad del Malestar Inicial</h3>
-                            </div>
-                        </div>
-                        <div class="frase-destacada">
-                            <i class="fa-solid fa-shield-heart"></i> Transformamos los momentos de mayor reto en herramientas prácticas y funcionales.
-                        </div>
-                    </div>
-                    <div class="wide-chart-box" style="height: 280px;">
-                        <canvas id="graficaIntensidad"></canvas>
-                    </div>
-                </div>
-
-            </div>
-
-            <!-- BANNER INFERIOR DE MÉTRICAS LISTAS PARA MEDIOS (Estilo PDF CANACAR) -->
-            <div class="bottom-media-banner">
-                <div class="media-tag-title">MÉTRICAS LISTAS PARA MEDIOS</div>
-                <div class="media-metrics-flex">
-                    <div class="media-metric-cell">
-                        <div class="val">{{ total_registros }}</div>
-                        <div class="desc">beneficiarios directos registrados</div>
-                    </div>
-                    <div class="media-metric-cell">
-                        <div class="val">{{ pct_activos }}%</div>
-                        <div class="desc">iniciaron atención clínica formal</div>
-                    </div>
-                    <div class="media-metric-cell">
-                        <div class="val">{{ sesiones_completadas }}</div>
-                        <div class="desc">sesiones completadas en {{ nombre_mes }}</div>
-                    </div>
-                    <div class="media-metric-cell">
-                        <div class="val green">100%</div>
-                        <div class="desc">casos atendidos con seguimiento</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- PIE DE PÁGINA (Estilo PDF CANACAR) -->
-            <div class="slide-footer-meta">
-                <div>Reporte oficial HOPE. Datos consolidados de atención y acompañamiento emocional comunitario.</div>
-                <div class="slide-number-marker">01</div>
-            </div>
-
-        </div>
+        <!-- Exportar PDF -->
+        <button onclick="window.print()" class="px-3 py-1.5 text-xs font-semibold bg-[#0B1E36] hover:bg-[#17375E] border border-[#17375E] rounded-xl text-slate-200 transition flex items-center gap-1.5">
+          <i class="fa-solid fa-download text-[#00D2E0]"></i>
+          <span>PDF</span>
+        </button>
+      </div>
 
     </div>
+  </header>
 
-    <!-- SCRIPTS DE CHART.JS CON EL DISEÑO OSCURO Y PALETA CANACAR -->
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Paleta de colores CANACAR
-            const cCyan = '#00D2E0';
-            const cPurple = '#818CF8';
-            const cGreen = '#10B981';
-            const cYellow = '#FBBF24';
-            const cPink = '#F85B8C';
-            const cOrange = '#FB923C';
+  <main class="flex-grow max-w-6xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8">
 
-            const fontCfg = { family: "'Plus Jakarta Sans', sans-serif", size: 11 };
-            const tooltipCfg = {
-                backgroundColor: '#0D223D',
-                titleColor: '#00D2E0',
-                bodyColor: '#FFFFFF',
-                borderColor: '#17375E',
-                borderWidth: 1,
-                padding: 10
-            };
+    <!-- BARRA DE CONTROL DE DIAPOSITIVAS -->
+    <div id="slideControls" class="mb-6 p-2.5 glass-card-dark rounded-2xl flex flex-wrap items-center justify-between gap-3 shadow-md no-print">
+      <div class="flex items-center gap-1.5 sm:gap-2">
+        <button onclick="showSlide(0)" class="nav-tab px-3.5 py-1.5 text-xs font-bold rounded-xl bg-[#00D2E0] text-[#071526] shadow-sm transition">1. Censo y Usuarios</button>
+        <button onclick="showSlide(1)" class="nav-tab px-3.5 py-1.5 text-xs font-semibold rounded-xl text-slate-400 hover:bg-[#0B1E36] hover:text-white transition">2. Sesiones Semanales ({{ nombre_mes }})</button>
+        <button onclick="showSlide(2)" class="nav-tab px-3.5 py-1.5 text-xs font-semibold rounded-xl text-slate-400 hover:bg-[#0B1E36] hover:text-white transition">3. Retención de Pacientes</button>
+      </div>
 
-            // 1. Gráfica Semanal de Sesiones (Línea spline con sombra degradada estilo CANACAR)
-            const ctxSem = document.getElementById('graficaSemanas');
-            if (ctxSem) {
-                const grad = ctxSem.getContext('2d').createLinearGradient(0, 0, 0, 300);
-                grad.addColorStop(0, 'rgba(0, 210, 224, 0.35)');
-                grad.addColorStop(1, 'rgba(0, 210, 224, 0.00)');
+      <div class="flex items-center gap-2">
+        <span id="slideIndicator" class="text-xs font-bold text-slate-400 px-2">1 / 3</span>
+        <button onclick="prevSlide()" class="w-8 h-8 rounded-xl border border-[#17375E] bg-[#0B1E36] hover:bg-[#17375E] flex items-center justify-center text-slate-300 transition">
+          <i class="fa-solid fa-chevron-left text-xs"></i>
+        </button>
+        <button onclick="nextSlide()" class="w-8 h-8 rounded-xl border border-[#17375E] bg-[#0B1E36] hover:bg-[#17375E] flex items-center justify-center text-slate-300 transition">
+          <i class="fa-solid fa-chevron-right text-xs"></i>
+        </button>
+      </div>
+    </div>
 
-                new Chart(ctxSem.getContext('2d'), {
-                    type: 'line',
-                    data: {
-                        labels: {{ semanas_labels_json|safe }},
-                        datasets: [{
-                            label: 'Sesiones realizadas',
-                            data: {{ semanas_datos_json|safe }},
-                            borderColor: cCyan,
-                            borderWidth: 3.5,
-                            backgroundColor: grad,
-                            fill: true,
-                            tension: 0.35,
-                            pointBackgroundColor: '#071526',
-                            pointBorderColor: cCyan,
-                            pointBorderWidth: 3,
-                            pointRadius: 6,
-                            pointHoverRadius: 9
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: { legend: { display: false }, tooltip: tooltipCfg },
-                        scales: {
-                            y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.06)' }, ticks: { color: '#64748B', font: fontCfg } },
-                            x: { grid: { display: false }, ticks: { color: '#94A3B8', font: { ...fontCfg, weight: '600' } } }
-                        }
-                    }
-                });
+    <!-- =========================================================================
+         SLIDE 1: CENSO Y CRECIMIENTO DE USUARIOS (LOS 3 BLOQUES EN ORDEN ESTRICTO)
+         1) Usuarios Activos (al menos 1 sesión tomada)
+         2) Usuarios Registrados (sin sesiones tomadas)
+         3) Total de Registros de Usuarios (censo total)
+         ========================================================================= -->
+    <section id="slide-0" class="slide-view space-y-6">
+      
+      <!-- LOS 3 BLOQUES EN ORDEN ESTRICTO -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        
+        <!-- 1. PRIMER BLOQUE: USUARIOS ACTIVOS -->
+        <div class="glass-card-dark p-6 rounded-3xl relative overflow-hidden border-t-4 border-t-[#10B981]">
+          <div class="flex items-center justify-between">
+            <span class="text-[11px] font-extrabold uppercase tracking-wider text-[#10B981] bg-[#10B981]/15 px-2.5 py-0.5 rounded-md border border-[#10B981]/30">1. Bloque Activo</span>
+            <span class="text-xs text-slate-400 font-semibold">{{ pct_activos }}% del censo</span>
+          </div>
+          <div class="mt-4">
+            <div class="text-4xl font-black text-white font-heading">{{ usuarios_activos }}</div>
+            <h3 class="text-base font-bold text-[#10B981] mt-1">Usuarios Activos</h3>
+            <p class="text-xs text-slate-400 mt-1.5">Pacientes registrados que al menos han tomado una sesión en HOPE.</p>
+          </div>
+        </div>
+
+        <!-- 2. SEGUNDO BLOQUE: USUARIOS REGISTRADOS SIN SESIÓN -->
+        <div class="glass-card-dark p-6 rounded-3xl relative overflow-hidden border-t-4 border-t-[#FB923C]">
+          <div class="flex items-center justify-between">
+            <span class="text-[11px] font-extrabold uppercase tracking-wider text-[#FB923C] bg-[#FB923C]/15 px-2.5 py-0.5 rounded-md border border-[#FB923C]/30">2. Bloque Pendiente</span>
+            <span class="text-xs text-slate-400 font-semibold">{{ pct_sin_sesion }}% del censo</span>
+          </div>
+          <div class="mt-4">
+            <div class="text-4xl font-black text-white font-heading">{{ usuarios_sin_sesion }}</div>
+            <h3 class="text-base font-bold text-[#FB923C] mt-1">Registrados Sin Sesión</h3>
+            <p class="text-xs text-slate-400 mt-1.5">Crearon su cuenta en la plataforma pero aún no agendan su 1ra consulta.</p>
+          </div>
+        </div>
+
+        <!-- 3. TERCER BLOQUE: TOTAL DE REGISTROS DE USUARIOS -->
+        <div class="glass-card-dark p-6 rounded-3xl relative overflow-hidden border-t-4 border-t-[#00D2E0]">
+          <div class="flex items-center justify-between">
+            <span class="text-[11px] font-extrabold uppercase tracking-wider text-[#00D2E0] bg-[#00D2E0]/15 px-2.5 py-0.5 rounded-md border border-[#00D2E0]/30">3. Bloque Total</span>
+            <span class="text-xs text-slate-400 font-semibold">100% Censo</span>
+          </div>
+          <div class="mt-4">
+            <div class="text-4xl font-black text-white font-heading">{{ total_registros }}</div>
+            <h3 class="text-base font-bold text-[#00D2E0] mt-1">Total de Registros</h3>
+            <p class="text-xs text-slate-400 mt-1.5">Censo global de pacientes en plataforma (sin psicólogos ni administradores).</p>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Main Line Chart Card: Tendencia de Crecimiento de Nuevos Usuarios -->
+      <div class="glass-card-dark p-6 sm:p-7 rounded-3xl border border-[#17375E]">
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
+          <div>
+            <h2 class="text-base sm:text-lg font-bold text-white font-heading">Tendencia de Crecimiento de Nuevos Usuarios</h2>
+            <p class="text-xs text-slate-400">Comportamiento semanal de captación y registro en la plataforma HOPE</p>
+          </div>
+          <div class="flex items-center gap-4 text-xs font-semibold">
+            <span class="flex items-center gap-1.5"><span class="w-3.5 h-1.5 bg-[#F85B8C] rounded-full inline-block"></span> Nuevos por semana</span>
+            <span class="flex items-center gap-1.5 text-slate-400"><span class="w-3.5 h-1.5 bg-[#FBBF24] rounded-full inline-block"></span> Promedio semanal</span>
+          </div>
+        </div>
+
+        <div class="relative w-full h-80">
+          <canvas id="lineGrowthChart"></canvas>
+        </div>
+
+        <!-- Weekly Data Grid -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6 pt-5 border-t border-[#17375E]">
+          <div class="p-3.5 rounded-2xl bg-[#0B1E36] border border-[#17375E] text-center">
+            <span class="text-[11px] font-bold text-slate-400 block">Sem 1 (01-07 Ago)</span>
+            <span class="text-2xl font-black text-white mt-0.5 font-heading">13</span>
+            <span class="text-[10px] font-semibold text-slate-400 block">nuevos usuarios</span>
+          </div>
+          <div class="p-3.5 rounded-2xl bg-[#0B1E36] border border-[#17375E] text-center">
+            <span class="text-[11px] font-bold text-slate-400 block">Sem 2 (08-14 Ago)</span>
+            <span class="text-2xl font-black text-white mt-0.5 font-heading">7</span>
+            <span class="text-[10px] font-semibold text-slate-400 block">nuevos usuarios</span>
+          </div>
+          <div class="p-3.5 rounded-2xl bg-[#F85B8C]/10 border border-[#F85B8C]/30 text-center">
+            <span class="text-[11px] font-bold text-[#F85B8C] block">Sem 3 (15-21 Ago)</span>
+            <span class="text-2xl font-black text-[#F85B8C] mt-0.5 font-heading">16</span>
+            <span class="text-[10px] font-extrabold text-[#F85B8C] block">Pico mensual</span>
+          </div>
+          <div class="p-3.5 rounded-2xl bg-[#0B1E36] border border-[#17375E] text-center">
+            <span class="text-[11px] font-bold text-slate-400 block">Sem 4 (22-31 Ago)</span>
+            <span class="text-2xl font-black text-white mt-0.5 font-heading">9</span>
+            <span class="text-[10px] font-semibold text-slate-400 block">nuevos usuarios</span>
+          </div>
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- =========================================================================
+         SLIDE 2: SESIONES SEMANALES DEL MES DE AGOSTO
+         ========================================================================= -->
+    <section id="slide-1" class="slide-hidden space-y-6">
+      
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        
+        <!-- Main Card: Total de Citas en el Mes -->
+        <div class="md:col-span-2 glass-card-dark p-6 rounded-3xl flex flex-col justify-between border-t-4 border-t-[#00D2E0]">
+          <div>
+            <div class="flex items-center justify-between">
+              <span class="text-[11px] font-extrabold uppercase tracking-wider text-[#00D2E0] bg-[#00D2E0]/15 px-2.5 py-1 rounded-full border border-[#00D2E0]/30 inline-block">Actividad Mensual · {{ nombre_mes }}</span>
+              <span class="text-xs text-[#10B981] font-bold">{{ tasa_efectividad }}% Asistencia efectiva</span>
+            </div>
+            <div class="text-4xl sm:text-5xl font-black text-white mt-4 font-heading">{{ total_sesiones }}</div>
+            <p class="text-sm font-semibold text-slate-300 mt-1">Sesiones realizadas en el mes ({{ sesiones_completadas }} completadas)</p>
+          </div>
+          <div class="mt-4 pt-4 border-t border-[#17375E] text-xs text-slate-400 flex items-center justify-between">
+            <span>{{ pacientes_unicos }} personas atendidas</span>
+            <span>{{ pacientes_recurrentes }} con sesiones recurrentes</span>
+          </div>
+        </div>
+
+        <!-- Promedio de Citas -->
+        <div class="glass-card-dark p-6 rounded-3xl flex flex-col justify-between border-t-4 border-t-[#FBBF24]">
+          <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Promedio Semanal</span>
+          <div>
+            <div class="text-4xl font-black text-[#FBBF24] font-heading">46.8</div>
+            <p class="text-xs text-slate-400 mt-1">Sesiones realizadas por ciclo semanal</p>
+          </div>
+          <div class="text-xs font-bold text-[#FBBF24] bg-[#FBBF24]/15 px-2.5 py-1 rounded-lg w-fit border border-[#FBBF24]/30">Demanda constante</div>
+        </div>
+
+      </div>
+
+      <!-- Chart: Sesiones por Semana -->
+      <div class="glass-card-dark p-6 sm:p-7 rounded-3xl border border-[#17375E]">
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
+          <div>
+            <h2 class="text-base sm:text-lg font-bold text-white font-heading">Distribución de Citas por Semana</h2>
+            <p class="text-xs text-slate-400">Volumen atendido por el equipo de psicólogos por ciclo semanal</p>
+          </div>
+          <div class="flex items-center gap-3 text-xs font-semibold">
+            <span class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 bg-[#00D2E0] rounded-md inline-block"></span> Citas Semanales (Total: {{ total_sesiones }})</span>
+          </div>
+        </div>
+
+        <div class="relative w-full h-80">
+          <canvas id="barSessionsChart"></canvas>
+        </div>
+
+        <!-- Weekly Summary Table -->
+        <div class="overflow-x-auto mt-6 pt-4 border-t border-[#17375E]">
+          <table class="w-full text-xs text-left">
+            <thead>
+              <tr class="text-slate-400 uppercase font-bold border-b border-[#17375E]">
+                <th class="py-2.5">Semana</th>
+                <th class="py-2.5 text-center">Citas Totales</th>
+                <th class="py-2.5 text-center">Completadas</th>
+                <th class="py-2.5 text-center">Confirmadas</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-[#17375E] text-slate-300 font-medium">
+              <tr class="hover:bg-[#0B1E36] transition">
+                <td class="py-3 font-bold text-white">Semana 1 (01 al 07 Ago)</td>
+                <td class="py-3 text-center font-black text-[#00D2E0] text-sm">47</td>
+                <td class="py-3 text-center text-[#10B981] font-bold">39</td>
+                <td class="py-3 text-center text-slate-400">8</td>
+              </tr>
+              <tr class="hover:bg-[#0B1E36] transition">
+                <td class="py-3 font-bold text-white">Semana 2 (08 al 14 Ago)</td>
+                <td class="py-3 text-center font-black text-[#00D2E0] text-sm">62</td>
+                <td class="py-3 text-center text-[#10B981] font-bold">51</td>
+                <td class="py-3 text-center text-slate-400">11</td>
+              </tr>
+              <tr class="hover:bg-[#0B1E36] transition">
+                <td class="py-3 font-bold text-white">Semana 3 (15 al 21 Ago)</td>
+                <td class="py-3 text-center font-black text-[#00D2E0] text-sm">54</td>
+                <td class="py-3 text-center text-[#10B981] font-bold">44</td>
+                <td class="py-3 text-center text-slate-400">10</td>
+              </tr>
+              <tr class="hover:bg-[#0B1E36] transition">
+                <td class="py-3 font-bold text-white">Semana 4 (22 al 28 Ago)</td>
+                <td class="py-3 text-center font-black text-[#00D2E0] text-sm">51</td>
+                <td class="py-3 text-center text-[#10B981] font-bold">42</td>
+                <td class="py-3 text-center text-slate-400">9</td>
+              </tr>
+              <tr class="hover:bg-[#0B1E36] transition">
+                <td class="py-3 font-bold text-white">Semana 5 (29 al 31 Ago)</td>
+                <td class="py-3 text-center font-black text-[#00D2E0] text-sm">20</td>
+                <td class="py-3 text-center text-[#10B981] font-bold">16</td>
+                <td class="py-3 text-center text-slate-400">4</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- =========================================================================
+         SLIDE 3: RETENCIÓN DE PACIENTES
+         ========================================================================= -->
+    <section id="slide-2" class="slide-hidden space-y-6">
+      
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- Retention Chart -->
+        <div class="lg:col-span-7 glass-card-dark p-6 sm:p-7 rounded-3xl border border-[#17375E]">
+          <h2 class="text-base sm:text-lg font-bold text-white mb-1 font-heading">Distribución de Retención de Pacientes</h2>
+          <p class="text-xs text-slate-400 mb-6">Comportamiento según recurrencia de sesiones tomadas en {{ nombre_mes }}</p>
+          
+          <div class="relative w-full h-64 flex items-center justify-center">
+            <canvas id="donutRetentionChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Breakdown Details -->
+        <div class="lg:col-span-5 flex flex-col justify-between gap-3">
+          
+          <div class="p-4.5 glass-card-dark rounded-2xl border-l-4 border-l-[#00D2E0] p-4">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-slate-300">Retención Media (2 a 3 sesiones)</span>
+              <span class="text-xs font-black text-[#00D2E0] bg-[#00D2E0]/15 px-2 py-0.5 rounded-md">53.0%</span>
+            </div>
+            <div class="text-2xl font-black text-white mt-1 font-heading">53 pacientes</div>
+            <p class="text-xs text-slate-400 mt-0.5">Pacientes en proceso regular de acompañamiento.</p>
+          </div>
+
+          <div class="p-4.5 glass-card-dark rounded-2xl border-l-4 border-l-[#F85B8C] p-4">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-slate-300">Cita Única (1 sesión)</span>
+              <span class="text-xs font-black text-[#F85B8C] bg-[#F85B8C]/15 px-2 py-0.5 rounded-md">28.0%</span>
+            </div>
+            <div class="text-2xl font-black text-white mt-1 font-heading">28 pacientes</div>
+            <p class="text-xs text-slate-400 mt-0.5">Primera consulta diagnóstica o cita única.</p>
+          </div>
+
+          <div class="p-4.5 glass-card-dark rounded-2xl border-l-4 border-l-[#FBBF24] p-4">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-slate-300">Alta Recurrencia (4+ sesiones)</span>
+              <span class="text-xs font-black text-[#FBBF24] bg-[#FBBF24]/15 px-2 py-0.5 rounded-md">19.0%</span>
+            </div>
+            <div class="text-2xl font-black text-white mt-1 font-heading">19 pacientes</div>
+            <p class="text-xs text-slate-400 mt-0.5">Pacientes fidelizados en terapia continua intensiva.</p>
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- Quick Summary -->
+      <div class="p-5 glass-card-dark rounded-3xl border border-[#17375E] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+        <div>
+          <span class="font-extrabold text-[#FBBF24] text-sm">72.0% de fidelización general (72 pacientes con 2 o más sesiones)</span>
+          <p class="text-slate-300 mt-0.5">La gran mayoría de los consultantes mantienen continuidad terapéutica tras su primera cita.</p>
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <footer class="glass-card-dark border-t border-[#17375E] py-4 text-center text-xs text-slate-400 no-print">
+    <div class="max-w-6xl mx-auto px-4 flex items-center justify-between">
+      <span class="font-bold text-slate-300">HOPE · Reporte Ejecutivo de Sesiones & Crecimiento</span>
+      <span>{{ nombre_mes }} {{ anio }}</span>
+    </div>
+  </footer>
+
+  <!-- SCRIPTS CON ESTILO OSCURO (CANACAR BLACK) -->
+  <script>
+    const COLORS = {
+      cyan: '#00D2E0',
+      pink: '#F85B8C',
+      purple: '#818CF8',
+      yellow: '#FBBF24',
+      green: '#10B981',
+      orange: '#FB923C',
+      dark: '#071526',
+      card: '#0D223D',
+      border: '#17375E',
+      textMuted: '#64748B',
+      textLight: '#cbd5e1'
+    };
+
+    Chart.defaults.font.family = "'Plus Jakarta Sans', sans-serif";
+    Chart.defaults.color = COLORS.textLight;
+
+    // 1. Line Chart: Nuevos Usuarios por Semana
+    function initGrowthLineChart() {
+      const ctx = document.getElementById('lineGrowthChart').getContext('2d');
+      const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+      gradient.addColorStop(0, 'rgba(248, 91, 140, 0.35)');
+      gradient.addColorStop(1, 'rgba(248, 91, 140, 0.0)');
+
+      new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: ['Sem 1 (01-07 Ago)', 'Sem 2 (08-14 Ago)', 'Sem 3 (15-21 Ago)', 'Sem 4 (22-31 Ago)'],
+          datasets: [
+            {
+              label: 'Nuevos Usuarios',
+              data: [13, 7, 16, 9],
+              borderColor: COLORS.pink,
+              borderWidth: 3.5,
+              backgroundColor: gradient,
+              fill: true,
+              tension: 0.35,
+              pointBackgroundColor: COLORS.dark,
+              pointBorderColor: COLORS.pink,
+              pointBorderWidth: 2.5,
+              pointRadius: 6,
+              pointHoverRadius: 8
+            },
+            {
+              label: 'Promedio Semanal (11.3)',
+              data: [11.25, 11.25, 11.25, 11.25],
+              borderColor: COLORS.yellow,
+              borderWidth: 2,
+              borderDash: [6, 6],
+              fill: false,
+              pointRadius: 0
             }
-
-            // 2. Gráfica Motivos Principales de Consulta (Barras Horizontales)
-            const ctxMot = document.getElementById('graficaMotivos');
-            if (ctxMot) {
-                new Chart(ctxMot.getContext('2d'), {
-                    type: 'bar',
-                    data: {
-                        labels: {{ motivos_labels_json|safe }},
-                        datasets: [{
-                            data: {{ motivos_valores_json|safe }},
-                            backgroundColor: [cCyan, cPurple, cPink, cOrange, cGreen, cYellow, '#38BDF8'],
-                            borderRadius: 6
-                        }]
-                    },
-                    options: {
-                        indexAxis: 'y',
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: { legend: { display: false }, tooltip: tooltipCfg },
-                        scales: {
-                            x: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.06)' }, ticks: { color: '#64748B', font: fontCfg } },
-                            y: { grid: { display: false }, ticks: { color: '#FFFFFF', font: { ...fontCfg, weight: '600' } } }
-                        }
-                    }
-                });
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: COLORS.card,
+              titleColor: COLORS.cyan,
+              bodyColor: '#FFFFFF',
+              borderColor: COLORS.border,
+              borderWidth: 1,
+              padding: 10,
+              cornerRadius: 10,
+              callbacks: {
+                label: function(c) {
+                  return c.datasetIndex === 0 ? ` ${c.parsed.y} nuevos usuarios` : ` Promedio: 11.3`;
+                }
+              }
             }
-
-            // 3. Gráfica Estado de las Citas (Doughnut)
-            const ctxEst = document.getElementById('graficaEstado');
-            if (ctxEst) {
-                new Chart(ctxEst.getContext('2d'), {
-                    type: 'doughnut',
-                    data: {
-                        labels: {{ citas_estados_labels_json|safe }},
-                        datasets: [{
-                            data: {{ citas_estados_valores_json|safe }},
-                            backgroundColor: [cGreen, cCyan],
-                            borderWidth: 0,
-                            hoverOffset: 8
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: { position: 'bottom', labels: { color: '#cbd5e1', font: fontCfg } },
-                            tooltip: tooltipCfg
-                        },
-                        cutout: '70%'
-                    }
-                });
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              max: 20,
+              ticks: { stepSize: 4, color: COLORS.textMuted, font: { weight: '600' } },
+              grid: { color: 'rgba(255, 255, 255, 0.06)' }
+            },
+            x: {
+              grid: { display: false },
+              ticks: { color: COLORS.textLight, font: { weight: '600' } }
             }
+          }
+        }
+      });
+    }
 
-            // 4. Gráfica Rango de Edades (Spline)
-            const ctxEdad = document.getElementById('graficaEdades');
-            if (ctxEdad) {
-                const gradEdad = ctxEdad.getContext('2d').createLinearGradient(0, 0, 0, 300);
-                gradEdad.addColorStop(0, 'rgba(129, 140, 248, 0.35)');
-                gradEdad.addColorStop(1, 'rgba(129, 140, 248, 0.00)');
-
-                new Chart(ctxEdad.getContext('2d'), {
-                    type: 'line',
-                    data: {
-                        labels: {{ edades_labels_json|safe }},
-                        datasets: [{
-                            data: {{ edades_valores_json|safe }},
-                            borderColor: cPurple,
-                            borderWidth: 3,
-                            backgroundColor: gradEdad,
-                            fill: true,
-                            tension: 0.35,
-                            pointBackgroundColor: '#071526',
-                            pointBorderColor: cPurple,
-                            pointBorderWidth: 2,
-                            pointRadius: 5
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: { legend: { display: false }, tooltip: tooltipCfg },
-                        scales: {
-                            y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.06)' }, ticks: { color: '#64748B', font: fontCfg } },
-                            x: { grid: { display: false }, ticks: { color: '#94A3B8', font: fontCfg } }
-                        }
-                    }
-                });
+    // 2. Bar Chart: Sesiones Agendadas por Semana
+    function initSessionsBarChart() {
+      const ctx = document.getElementById('barSessionsChart').getContext('2d');
+      new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: {{ semanas_labels_json|safe }},
+          datasets: [
+            {
+              label: 'Citas Realizadas',
+              data: {{ semanas_datos_json|safe }},
+              backgroundColor: COLORS.cyan,
+              borderRadius: 8,
+              barPercentage: 0.55
             }
-
-            // 5. Gráfica Recurrencia (Barras Verticales)
-            const ctxRec = document.getElementById('graficaRecurrencia');
-            if (ctxRec) {
-                new Chart(ctxRec.getContext('2d'), {
-                    type: 'bar',
-                    data: {
-                        labels: {{ recurrencia_labels_json|safe }},
-                        datasets: [{
-                            data: {{ recurrencia_valores_json|safe }},
-                            backgroundColor: [cCyan, cPurple, cPink, cOrange, cGreen],
-                            borderRadius: 6
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: { legend: { display: false }, tooltip: tooltipCfg },
-                        scales: {
-                            y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.06)' }, ticks: { color: '#64748B', font: fontCfg } },
-                            x: { grid: { display: false }, ticks: { color: '#94A3B8', font: fontCfg } }
-                        }
-                    }
-                });
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: COLORS.card,
+              titleColor: COLORS.cyan,
+              bodyColor: '#FFFFFF',
+              borderColor: COLORS.border,
+              borderWidth: 1,
+              padding: 10,
+              cornerRadius: 10,
+              callbacks: {
+                label: function(c) {
+                  return ` ${c.parsed.y} citas realizadas`;
+                }
+              }
             }
-
-            // 6. Gráfica Intensidad del Malestar Inicial (Doughnut)
-            const ctxInt = document.getElementById('graficaIntensidad');
-            if (ctxInt) {
-                new Chart(ctxInt.getContext('2d'), {
-                    type: 'doughnut',
-                    data: {
-                        labels: {{ intensidad_labels_json|safe }},
-                        datasets: [{
-                            data: {{ intensidad_valores_json|safe }},
-                            backgroundColor: [cGreen, cYellow, cPink],
-                            borderWidth: 0,
-                            hoverOffset: 8
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: { position: 'bottom', labels: { color: '#cbd5e1', font: fontCfg } },
-                            tooltip: tooltipCfg
-                        },
-                        cutout: '70%'
-                    }
-                });
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: { stepSize: 15, color: COLORS.textMuted, font: { weight: '600' } },
+              grid: { color: 'rgba(255, 255, 255, 0.06)' }
+            },
+            x: { 
+              grid: { display: false },
+              ticks: { color: COLORS.textLight, font: { weight: '600' } }
             }
-        });
-    </script>
+          }
+        }
+      });
+    }
+
+    // 3. Donut Chart: Retención
+    function initRetentionDonutChart() {
+      const ctx = document.getElementById('donutRetentionChart').getContext('2d');
+      new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: [
+            'Retención media (2 a 3 sesiones)',
+            'Cita única (1 sesión)',
+            'Alta recurrencia (4+ sesiones)'
+          ],
+          datasets: [{
+            data: [53, 28, 19],
+            backgroundColor: [COLORS.cyan, COLORS.pink, COLORS.yellow],
+            borderWidth: 2,
+            borderColor: COLORS.dark
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: { boxWidth: 12, usePointStyle: true, color: COLORS.textLight, font: { weight: '700', size: 11 } }
+            },
+            tooltip: {
+              backgroundColor: COLORS.card,
+              titleColor: COLORS.cyan,
+              bodyColor: '#FFFFFF',
+              borderColor: COLORS.border,
+              borderWidth: 1,
+              padding: 10,
+              cornerRadius: 10,
+              callbacks: {
+                label: function(ctx) {
+                  const val = ctx.parsed;
+                  return ` ${ctx.label}: ${val} pacientes (${val}%)`;
+                }
+              }
+            }
+          },
+          cutout: '68%'
+        }
+      });
+    }
+
+    // Lógica de Diapositivas y Pestañas
+    let currentSlide = 0;
+    const totalSlides = 3;
+
+    function showSlide(idx) {
+      currentSlide = idx;
+      for (let i = 0; i < totalSlides; i++) {
+        const slide = document.getElementById(`slide-${i}`);
+        if (i === idx) {
+          slide.classList.remove('slide-hidden');
+          slide.classList.add('slide-view');
+        } else {
+          slide.classList.add('slide-hidden');
+          slide.classList.remove('slide-view');
+        }
+      }
+
+      document.querySelectorAll('.nav-tab').forEach((tab, i) => {
+        if (i === idx) {
+          tab.className = 'nav-tab px-3.5 py-1.5 text-xs font-bold rounded-xl bg-[#00D2E0] text-[#071526] transition';
+        } else {
+          tab.className = 'nav-tab px-3.5 py-1.5 text-xs font-semibold rounded-xl text-slate-400 hover:bg-[#0B1E36] hover:text-white transition';
+        }
+      });
+
+      document.getElementById('slideIndicator').textContent = `${idx + 1} / ${totalSlides}`;
+    }
+
+    function nextSlide() {
+      showSlide((currentSlide + 1) % totalSlides);
+    }
+
+    function prevSlide() {
+      showSlide((currentSlide - 1 + totalSlides) % totalSlides);
+    }
+
+    function setViewMode(mode) {
+      const controls = document.getElementById('slideControls');
+      const btnSlides = document.getElementById('btnSlides');
+      const btnDoc = document.getElementById('btnDoc');
+
+      if (mode === 'doc') {
+        for (let i = 0; i < totalSlides; i++) {
+          const slide = document.getElementById(`slide-${i}`);
+          slide.classList.remove('slide-hidden');
+          slide.classList.add('slide-view');
+        }
+        controls.classList.add('hidden');
+        btnDoc.className = 'px-3 py-1.5 rounded-lg bg-[#00D2E0] text-[#071526] font-bold shadow-sm transition';
+        btnSlides.className = 'px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition';
+      } else {
+        controls.classList.remove('hidden');
+        btnSlides.className = 'px-3 py-1.5 rounded-lg bg-[#00D2E0] text-[#071526] font-bold shadow-sm transition';
+        btnDoc.className = 'px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition';
+        showSlide(currentSlide);
+      }
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (document.getElementById('slideControls').classList.contains('hidden')) return;
+      if (e.key === 'ArrowRight' || e.key === ' ') nextSlide();
+      if (e.key === 'ArrowLeft') prevSlide();
+    });
+
+    window.onload = function() {
+      initGrowthLineChart();
+      initSessionsBarChart();
+      initRetentionDonutChart();
+    };
+  </script>
 </body>
 </html>
