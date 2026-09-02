@@ -4619,3 +4619,140 @@ def _procesar_reporte_de_una_cita(cita_id):
 def procesar_reportes_citas_manual(request):
     total = procesar_citas_pendientes_de_reporte()
     return JsonResponse({'status': 'success', 'procesadas': total})
+
+
+@user_passes_test(es_admin, login_url='/')
+def reporte_crecimiento_sesiones_view(request):
+    """
+    Vista ejecutiva del Reporte de Crecimiento y Sesiones de HOPE.
+    Procesa métricas directamente de la Base de Datos:
+    - 3 bloques de usuarios registrados (excluyendo psicólogos):
+        1) Usuarios activos que al menos han tomado una sesión
+        2) Usuarios registrados sin tomar sesión
+        3) Total de registros de pacientes
+    - Métricas operativas y evolución de sesiones del mes de Agosto (o mes seleccionado).
+    - Distribución por tipo de sesión y desglose por especialista.
+    """
+    try:
+        mes_sel = int(request.GET.get('mes', 8))
+    except (TypeError, ValueError):
+        mes_sel = 8
+
+    anio = 2026
+    meses_nombres = {
+        1: 'Enero', 2: 'Febrero', 3: 'Marzo', 4: 'Abril',
+        5: 'Mayo', 6: 'Junio', 7: 'Julio', 8: 'Agosto',
+        9: 'Septiembre', 10: 'Octubre', 11: 'Noviembre', 12: 'Diciembre'
+    }
+    nombre_mes = meses_nombres.get(mes_sel, 'Agosto')
+
+    # 1. UNIVERSO DE USUARIOS REGISTRADOS (SIN PSICÓLOGOS NI SUPERADMIN)
+    psicologos_uids = set(PerfilPsicologo.objects.values_list('usuario_id', flat=True))
+    pacientes_qs = User.objects.exclude(id__in=psicologos_uids).exclude(is_superuser=True)
+    total_registros_pacientes = pacientes_qs.count()
+
+    # Pacientes que al menos han agendado/tomado una sesión (no cancelada)
+    citas_validas = Cita.objects.exclude(estado='Cancelada')
+    usuarios_con_sesion = citas_validas.filter(paciente__in=pacientes_qs).values('paciente').distinct().count()
+    usuarios_sin_sesion = max(0, total_registros_pacientes - usuarios_con_sesion)
+
+    pct_con_sesion = round((usuarios_con_sesion / total_registros_pacientes * 100), 1) if total_registros_pacientes > 0 else 0
+    pct_sin_sesion = round((usuarios_sin_sesion / total_registros_pacientes * 100), 1) if total_registros_pacientes > 0 else 0
+
+    # 2. ACTIVIDAD DE SESIONES DEL MES SELECCIONADO (AGOSTO POR DEFECTO)
+    citas_mes = citas_validas.filter(fecha__year=anio, fecha__month=mes_sel)
+    total_sesiones_mes = citas_mes.count()
+    sesiones_completadas_mes = citas_mes.filter(estado='Completada').count()
+    sesiones_confirmadas_mes = citas_mes.filter(estado='Confirmada').count()
+    nuevos_registros_mes = pacientes_qs.filter(date_joined__year=anio, date_joined__month=mes_sel).count()
+
+    # Desglose por semanas del mes (semanas estándar de 7 días)
+    semanas_rangos = [(1, 7), (8, 14), (15, 21), (22, 28), (29, 31)]
+    semanas_completadas = []
+    semanas_confirmadas = []
+    for d_ini, d_fin in semanas_rangos:
+        semanas_completadas.append(citas_mes.filter(fecha__day__gte=d_ini, fecha__day__lte=d_fin, estado='Completada').count())
+        semanas_confirmadas.append(citas_mes.filter(fecha__day__gte=d_ini, fecha__day__lte=d_fin, estado='Confirmada').count())
+
+    # Distribución por modalidad / tipo de sesión en el mes
+    tipo_individual = citas_mes.filter(tipo_sesion='individual').count()
+    tipo_pareja = citas_mes.filter(tipo_sesion='pareja').count()
+    tipo_familiar = citas_mes.filter(tipo_sesion='familiar').count()
+
+    # 3. CRECIMIENTO TRIMESTRAL (Junio, Julio, Agosto 2026)
+    trimestral_total = []
+    trimestral_comp = []
+    for m in [6, 7, 8]:
+        cq = citas_validas.filter(fecha__year=anio, fecha__month=m)
+        trimestral_total.append(cq.count())
+        trimestral_comp.append(cq.filter(estado='Completada').count())
+
+    crecimiento_pct = 0
+    if trimestral_total[0] > 0:
+        crecimiento_pct = round(((trimestral_total[2] - trimestral_total[0]) / trimestral_total[0]) * 100, 1)
+
+    # 4. ESPECIALISTAS CON MÁS SESIONES EN EL MES
+    top_psi_raw = citas_mes.values(
+        'psicologo__id',
+        'psicologo__usuario__first_name',
+        'psicologo__usuario__last_name',
+        'psicologo__especialidad'
+    ).annotate(
+        total=Count('id'),
+        completadas=Count('id', filter=Q(estado='Completada'))
+    ).order_by('-total')[:10]
+
+    top_psicologos = []
+    for doc in top_psi_raw:
+        fn = doc['psicologo__usuario__first_name'] or ''
+        ln = doc['psicologo__usuario__last_name'] or ''
+        nombre_completo = f"{fn} {ln}".strip() or "Especialista HOPE"
+        inits = (fn[:1] + ln[:1]).upper() if fn and ln else "PS"
+        total_doc = doc['total']
+        comp_doc = doc['completadas']
+        tasa = round((comp_doc / total_doc * 100), 1) if total_doc > 0 else 0
+        part = round((total_doc / total_sesiones_mes * 100), 1) if total_sesiones_mes > 0 else 0
+
+        top_psicologos.append({
+            'nombre': nombre_completo,
+            'iniciales': inits,
+            'especialidad': doc['psicologo__especialidad'] or 'Psicología Clínica',
+            'total': total_doc,
+            'completadas': comp_doc,
+            'tasa': tasa,
+            'participacion': part
+        })
+
+    total_psicologos = PerfilPsicologo.objects.filter(esta_activo=True).count()
+
+    context = {
+        'anio': anio,
+        'nombre_mes': nombre_mes,
+        'mes_seleccionado': mes_sel,
+        'fecha_corte': timezone.now(),
+        'total_psicologos': total_psicologos,
+        # Bloques de usuarios
+        'total_registros_pacientes': total_registros_pacientes,
+        'usuarios_con_sesion': usuarios_con_sesion,
+        'usuarios_sin_sesion': usuarios_sin_sesion,
+        'pct_con_sesion': pct_con_sesion,
+        'pct_sin_sesion': pct_sin_sesion,
+        # Métricas de sesiones de agosto
+        'total_sesiones_mes': total_sesiones_mes,
+        'sesiones_completadas_mes': sesiones_completadas_mes,
+        'sesiones_confirmadas_mes': sesiones_confirmadas_mes,
+        'nuevos_registros_mes': nuevos_registros_mes,
+        # Gráficas
+        'semanas_completadas_json': json.dumps(semanas_completadas),
+        'semanas_confirmadas_json': json.dumps(semanas_confirmadas),
+        'tipo_individual': tipo_individual,
+        'tipo_pareja': tipo_pareja,
+        'tipo_familiar': tipo_familiar,
+        'trimestral_total_json': ", ".join(str(x) for x in trimestral_total),
+        'trimestral_comp_json': ", ".join(str(x) for x in trimestral_comp),
+        'crecimiento_pct': crecimiento_pct,
+        # Tabla de psicólogos
+        'top_psicologos': top_psicologos,
+    }
+
+    return render(request, 'reporte_crecimiento_sesiones.html', context)

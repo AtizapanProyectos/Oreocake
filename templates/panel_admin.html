@@ -802,6 +802,11 @@ body {
     <!-- Contenedor para agrupar el botón y el indicador -->
     <div style="display: flex; gap: 14px; align-items: center;">
       
+      <!-- Botón al nuevo Reporte de Crecimiento y Sesiones -->
+      <a href="{% url 'reporte_crecimiento_sesiones' %}" class="btn-agendar" style="background: linear-gradient(135deg, var(--teal), #1CA6A6); color: #0E3A3A;">
+        <i class="fas fa-chart-line"></i> Reporte Crecimiento
+      </a>
+
       <!-- AQUÍ ESTÁ LA MAGIA CON LA URL CORREGIDA -->
       <a href="{% url 'panel_admin_agendar_cita' %}" class="btn-agendar">
         <i class="fas fa-plus"></i> Agendar Cita

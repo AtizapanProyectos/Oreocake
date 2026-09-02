@@ -87,4 +87,5 @@ urlpatterns = [
     path('api/admin/chat-ai/ask/', views.api_chat_ia_ask, name='api_chat_ia_ask'),
 
     path('admin/procesar-reportes-citas/', views.procesar_reportes_citas_manual, name='procesar_reportes_citas_manual'),
+    path('panel-admin/reporte-crecimiento-sesiones/', views.reporte_crecimiento_sesiones_view, name='reporte_crecimiento_sesiones'),
 ]
