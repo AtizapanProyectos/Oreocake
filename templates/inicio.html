@@ -1807,12 +1807,18 @@
 
         <div style="position: relative; margin-bottom: 10px;">
           <i class="fas fa-lock"
-            style="position: absolute; left: 22px; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 1.2rem;"></i>
-          <input type="password" name="login_password"
-            style="width: 100%; padding: 20px 20px 20px 60px; border-radius: 16px; border: 2px solid #e2e8f0; font-size: 1.05rem; font-family: var(--font-b); background: #f8fafc; color: var(--c-dark); outline: none; transition: 0.3s;"
+            style="position: absolute; left: 22px; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 1.2rem; pointer-events: none;"></i>
+          <input type="password" name="login_password" id="inputLoginPassword"
+            style="width: 100%; padding: 20px 55px 20px 60px; border-radius: 16px; border: 2px solid #e2e8f0; font-size: 1.05rem; font-family: var(--font-b); background: #f8fafc; color: var(--c-dark); outline: none; transition: 0.3s;"
             placeholder="Contraseña" required
             onfocus="this.style.borderColor='var(--c-purple)'; this.style.backgroundColor='#fff'; this.style.boxShadow='0 10px 25px rgba(90,63,163,0.1)';"
             onblur="this.style.borderColor='#e2e8f0'; this.style.backgroundColor='#f8fafc'; this.style.boxShadow='none';">
+          <button type="button" onclick="togglePasswordVisibility('inputLoginPassword', 'eyeIconLogin')"
+            style="position: absolute; right: 20px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: #94a3b8; font-size: 1.15rem; padding: 6px; display: flex; align-items: center; justify-content: center; transition: color 0.2s;"
+            onmouseover="this.style.color='var(--c-purple)'" onmouseout="this.style.color='#94a3b8'"
+            title="Mostrar / ocultar contraseña" aria-label="Mostrar u ocultar contraseña">
+            <i class="fas fa-eye" id="eyeIconLogin"></i>
+          </button>
         </div>
 
         <div style="text-align: right; margin-bottom: 30px;">
@@ -2123,11 +2129,17 @@
                 una Contraseña <span style="color: var(--c-pink);">*</span></label>
               <div style="position: relative;">
                 <i class="fas fa-lock"
-                  style="position: absolute; left: 18px; top: 50%; transform: translateY(-50%); color: #cbd5e1; font-size: 1.2rem;"></i>
-                <input type="password" name="password"
-                  style="width: 100%; padding: 16px 16px 16px 50px; border-radius: 14px; border: 2px solid #cbd5e1; font-size: 1rem; font-family: var(--font-b); outline: none; transition: 0.3s; color: var(--c-dark);"
+                  style="position: absolute; left: 18px; top: 50%; transform: translateY(-50%); color: #cbd5e1; font-size: 1.2rem; pointer-events: none;"></i>
+                <input type="password" name="password" id="inputRegisterPassword"
+                  style="width: 100%; padding: 16px 50px 16px 50px; border-radius: 14px; border: 2px solid #cbd5e1; font-size: 1rem; font-family: var(--font-b); outline: none; transition: 0.3s; color: var(--c-dark);"
                   placeholder="Mínimo 8 caracteres" required onfocus="this.style.borderColor='var(--c-purple)'"
                   onblur="this.style.borderColor='#cbd5e1'">
+                <button type="button" onclick="togglePasswordVisibility('inputRegisterPassword', 'eyeIconRegister')"
+                  style="position: absolute; right: 16px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: #94a3b8; font-size: 1.1rem; padding: 4px; display: flex; align-items: center; justify-content: center; transition: color 0.2s;"
+                  onmouseover="this.style.color='var(--c-purple)'" onmouseout="this.style.color='#94a3b8'"
+                  title="Mostrar / ocultar contraseña" aria-label="Mostrar u ocultar contraseña">
+                  <i class="fas fa-eye" id="eyeIconRegister"></i>
+                </button>
               </div>
             </div>
           </div>
@@ -3250,6 +3262,22 @@
     });
 
 
+
+    function togglePasswordVisibility(inputId, iconId) {
+      const input = document.getElementById(inputId);
+      const icon = document.getElementById(iconId);
+      if (!input || !icon) return;
+
+      if (input.type === 'password') {
+        input.type = 'text';
+        icon.classList.remove('fa-eye');
+        icon.classList.add('fa-eye-slash');
+      } else {
+        input.type = 'password';
+        icon.classList.remove('fa-eye-slash');
+        icon.classList.add('fa-eye');
+      }
+    }
 
   </script>
 </body>
