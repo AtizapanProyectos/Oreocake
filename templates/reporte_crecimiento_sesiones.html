@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>HOPE - Reporte Ejecutivo: Sesiones y Crecimiento</title>
+  <title>HOPE - Reporte Ejecutivo: Sesiones y Crecimiento ({{ nombre_periodo }})</title>
   
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -102,7 +102,7 @@
           </span>
         </a>
         <span class="h-4 w-px bg-[#17375E]"></span>
-        <span class="text-xs font-extrabold text-[#00D2E0] uppercase tracking-wider hidden sm:inline-block">Reporte Mensual: Sesiones & Crecimiento</span>
+        <span class="text-xs font-extrabold text-[#00D2E0] uppercase tracking-wider hidden sm:inline-block">Reporte Ejecutivo: Sesiones & Crecimiento</span>
       </div>
 
       <!-- Controls & External Links -->
@@ -110,7 +110,7 @@
         <!-- BOTÓN PANEL DE SENTIMIENTOS -->
         <a href="{{ url_panel_sentimientos }}" target="_blank" class="px-3.5 py-1.5 text-xs font-bold bg-[#F85B8C]/15 hover:bg-[#F85B8C] border border-[#F85B8C] text-white rounded-xl transition flex items-center gap-2 shadow-sm">
           <i class="fa-solid fa-heart-pulse text-[#F85B8C] group-hover:text-white"></i>
-          <span>Panel de Sentimientos</span>
+          <span class="hidden md:inline">Panel de Sentimientos</span>
         </a>
 
         <!-- Vista Diapositivas / 1 Página -->
@@ -131,11 +131,61 @@
 
   <main class="flex-grow max-w-6xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8">
 
+    <!-- =========================================================================
+         ✦ BARRITA DE OPCIONES / FILTROS DINÁMICOS (POR MES / HISTÓRICO TOTALES) ✦
+         ========================================================================= -->
+    <div class="mb-6 p-3 sm:p-4 glass-card-dark rounded-3xl border border-[#17375E] shadow-xl no-print">
+      <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        
+        <!-- Indicador de Periodo Actual -->
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-[#00D2E0]/20 to-[#818CF8]/20 border border-[#00D2E0]/40 flex items-center justify-center text-[#00D2E0] text-lg">
+            <i class="fa-solid {% if es_historico %}fa-chart-pie{% else %}fa-calendar-days{% endif %}"></i>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Filtrando por:</span>
+              <span class="text-xs font-black uppercase tracking-wider px-2 py-0.5 rounded-full {% if es_historico %}bg-[#818CF8]/20 text-[#818CF8] border border-[#818CF8]/40{% else %}bg-[#00D2E0]/20 text-[#00D2E0] border border-[#00D2E0]/40{% endif %}">
+                {% if es_historico %}Histórico / Totales{% else %}Mes Específico{% endif %}
+              </span>
+            </div>
+            <h1 class="text-base sm:text-lg font-black text-white font-heading">{{ nombre_periodo }}</h1>
+          </div>
+        </div>
+
+        <!-- Opciones de Selección (Botones Interactivos) -->
+        <div class="flex flex-wrap items-center gap-2 w-full md:w-auto">
+          
+          <!-- Botón Histórico / Totales -->
+          <a href="?filtro=historico" 
+             class="px-3.5 py-2 text-xs font-extrabold rounded-2xl border transition flex items-center gap-2 {% if es_historico %}bg-[#818CF8] text-[#071526] border-[#818CF8] shadow-lg shadow-[#818CF8]/20{% else %}bg-[#0B1E36] text-slate-300 border-[#17375E] hover:border-[#818CF8] hover:text-white{% endif %}">
+            <i class="fa-solid fa-layer-group"></i>
+            <span>Histórico / Totales</span>
+          </a>
+
+          <span class="h-6 w-px bg-[#17375E] hidden sm:inline-block"></span>
+
+          <!-- Botones de Meses Disponibles -->
+          <div class="flex items-center gap-1.5 flex-wrap">
+            {% for m in meses_disponibles %}
+              <a href="?filtro=mes&mes={{ m.numero }}" 
+                 class="px-3 py-2 text-xs font-bold rounded-2xl border transition flex items-center gap-1.5 {% if m.activo %}bg-[#00D2E0] text-[#071526] border-[#00D2E0] shadow-lg shadow-[#00D2E0]/20{% else %}bg-[#0B1E36] text-slate-400 border-[#17375E] hover:border-[#00D2E0] hover:text-white{% endif %}">
+                <i class="fa-regular fa-calendar text-[10px]"></i>
+                <span>{{ m.nombre }}</span>
+              </a>
+            {% endfor %}
+          </div>
+
+        </div>
+
+      </div>
+    </div>
+
     <!-- BARRA DE CONTROL DE DIAPOSITIVAS -->
     <div id="slideControls" class="mb-6 p-2.5 glass-card-dark rounded-2xl flex flex-wrap items-center justify-between gap-3 shadow-md no-print">
       <div class="flex items-center gap-1.5 sm:gap-2">
         <button onclick="showSlide(0)" class="nav-tab px-3.5 py-1.5 text-xs font-bold rounded-xl bg-[#00D2E0] text-[#071526] shadow-sm transition">1. Censo y Usuarios</button>
-        <button onclick="showSlide(1)" class="nav-tab px-3.5 py-1.5 text-xs font-semibold rounded-xl text-slate-400 hover:bg-[#0B1E36] hover:text-white transition">2. Sesiones Semanales ({{ nombre_mes }})</button>
+        <button onclick="showSlide(1)" class="nav-tab px-3.5 py-1.5 text-xs font-semibold rounded-xl text-slate-400 hover:bg-[#0B1E36] hover:text-white transition">2. Sesiones ({% if es_historico %}Histórico{% else %}{{ nombre_mes }}{% endif %})</button>
         <button onclick="showSlide(2)" class="nav-tab px-3.5 py-1.5 text-xs font-semibold rounded-xl text-slate-400 hover:bg-[#0B1E36] hover:text-white transition">3. Retención de Pacientes</button>
       </div>
 
@@ -207,11 +257,11 @@
         <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
           <div>
             <h2 class="text-base sm:text-lg font-bold text-white font-heading">Tendencia de Crecimiento de Nuevos Usuarios</h2>
-            <p class="text-xs text-slate-400">Comportamiento semanal de captación y registro en la plataforma HOPE</p>
+            <p class="text-xs text-slate-400">Captación y registro en plataforma HOPE ({% if es_historico %}Evolución Mensual Histórica{% else %}Ciclo {{ nombre_mes }}{% endif %})</p>
           </div>
           <div class="flex items-center gap-4 text-xs font-semibold">
-            <span class="flex items-center gap-1.5"><span class="w-3.5 h-1.5 bg-[#F85B8C] rounded-full inline-block"></span> Nuevos por semana</span>
-            <span class="flex items-center gap-1.5 text-slate-400"><span class="w-3.5 h-1.5 bg-[#FBBF24] rounded-full inline-block"></span> Promedio semanal</span>
+            <span class="flex items-center gap-1.5"><span class="w-3.5 h-1.5 bg-[#F85B8C] rounded-full inline-block"></span> Nuevos registros</span>
+            <span class="flex items-center gap-1.5 text-slate-400"><span class="w-3.5 h-1.5 bg-[#FBBF24] rounded-full inline-block"></span> Promedio ({{ promedio_crecimiento }})</span>
           </div>
         </div>
 
@@ -219,28 +269,15 @@
           <canvas id="lineGrowthChart"></canvas>
         </div>
 
-        <!-- Weekly Data Grid -->
+        <!-- Weekly / Monthly Data Grid -->
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6 pt-5 border-t border-[#17375E]">
-          <div class="p-3.5 rounded-2xl bg-[#0B1E36] border border-[#17375E] text-center">
-            <span class="text-[11px] font-bold text-slate-400 block">Sem 1 (01-07 Ago)</span>
-            <span class="text-2xl font-black text-white mt-0.5 font-heading">13</span>
-            <span class="text-[10px] font-semibold text-slate-400 block">nuevos usuarios</span>
-          </div>
-          <div class="p-3.5 rounded-2xl bg-[#0B1E36] border border-[#17375E] text-center">
-            <span class="text-[11px] font-bold text-slate-400 block">Sem 2 (08-14 Ago)</span>
-            <span class="text-2xl font-black text-white mt-0.5 font-heading">7</span>
-            <span class="text-[10px] font-semibold text-slate-400 block">nuevos usuarios</span>
-          </div>
-          <div class="p-3.5 rounded-2xl bg-[#F85B8C]/10 border border-[#F85B8C]/30 text-center">
-            <span class="text-[11px] font-bold text-[#F85B8C] block">Sem 3 (15-21 Ago)</span>
-            <span class="text-2xl font-black text-[#F85B8C] mt-0.5 font-heading">16</span>
-            <span class="text-[10px] font-extrabold text-[#F85B8C] block">Pico mensual</span>
-          </div>
-          <div class="p-3.5 rounded-2xl bg-[#0B1E36] border border-[#17375E] text-center">
-            <span class="text-[11px] font-bold text-slate-400 block">Sem 4 (22-31 Ago)</span>
-            <span class="text-2xl font-black text-white mt-0.5 font-heading">9</span>
-            <span class="text-[10px] font-semibold text-slate-400 block">nuevos usuarios</span>
-          </div>
+          {% for t in crecimiento_tarjetas %}
+            <div class="p-3.5 rounded-2xl {% if t.destacado %}bg-[#F85B8C]/10 border border-[#F85B8C]/30{% else %}bg-[#0B1E36] border border-[#17375E]{% endif %} text-center">
+              <span class="text-[11px] font-bold {% if t.destacado %}text-[#F85B8C]{% else %}text-slate-400{% endif %} block">{{ t.label }}</span>
+              <span class="text-2xl font-black {% if t.destacado %}text-[#F85B8C]{% else %}text-white{% endif %} mt-0.5 font-heading">{{ t.val }}</span>
+              <span class="text-[10px] font-semibold {% if t.destacado %}text-[#F85B8C]{% else %}text-slate-400{% endif %} block">{{ t.sub }}</span>
+            </div>
+          {% endfor %}
         </div>
 
       </div>
@@ -248,49 +285,57 @@
     </section>
 
     <!-- =========================================================================
-         SLIDE 2: SESIONES SEMANALES DEL MES DE AGOSTO
+         SLIDE 2: SESIONES (DEL MES SELECCIONADO O HISTÓRICO GLOBAL)
          ========================================================================= -->
     <section id="slide-1" class="slide-hidden space-y-6">
       
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
         
-        <!-- Main Card: Total de Citas en el Mes -->
+        <!-- Main Card: Total de Citas -->
         <div class="md:col-span-2 glass-card-dark p-6 rounded-3xl flex flex-col justify-between border-t-4 border-t-[#00D2E0]">
           <div>
             <div class="flex items-center justify-between">
-              <span class="text-[11px] font-extrabold uppercase tracking-wider text-[#00D2E0] bg-[#00D2E0]/15 px-2.5 py-1 rounded-full border border-[#00D2E0]/30 inline-block">Actividad Mensual · {{ nombre_mes }}</span>
+              <span class="text-[11px] font-extrabold uppercase tracking-wider text-[#00D2E0] bg-[#00D2E0]/15 px-2.5 py-1 rounded-full border border-[#00D2E0]/30 inline-block">
+                {{ nombre_periodo }}
+              </span>
               <span class="text-xs text-[#10B981] font-bold">{{ tasa_efectividad }}% Asistencia efectiva</span>
             </div>
             <div class="text-4xl sm:text-5xl font-black text-white mt-4 font-heading">{{ total_sesiones }}</div>
-            <p class="text-sm font-semibold text-slate-300 mt-1">Sesiones realizadas en el mes ({{ sesiones_completadas }} completadas)</p>
+            <p class="text-sm font-semibold text-slate-300 mt-1">Sesiones registradas ({{ sesiones_completadas }} completadas · {{ sesiones_confirmadas }} confirmadas)</p>
           </div>
           <div class="mt-4 pt-4 border-t border-[#17375E] text-xs text-slate-400 flex items-center justify-between">
-            <span>{{ pacientes_unicos }} personas atendidas</span>
+            <span>{{ pacientes_unicos }} consultantes atendidos</span>
             <span>{{ pacientes_recurrentes }} con sesiones recurrentes</span>
           </div>
         </div>
 
         <!-- Promedio de Citas -->
         <div class="glass-card-dark p-6 rounded-3xl flex flex-col justify-between border-t-4 border-t-[#FBBF24]">
-          <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Promedio Semanal</span>
+          <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">
+            {% if es_historico %}Promedio Mensual{% else %}Promedio Semanal{% endif %}
+          </span>
           <div>
-            <div class="text-4xl font-black text-[#FBBF24] font-heading">46.8</div>
-            <p class="text-xs text-slate-400 mt-1">Sesiones realizadas por ciclo semanal</p>
+            <div class="text-4xl font-black text-[#FBBF24] font-heading">{{ promedio_sesiones_texto }}</div>
+            <p class="text-xs text-slate-400 mt-1">
+              {% if es_historico %}Sesiones promedio por mes registrado{% else %}Sesiones promedio por ciclo semanal{% endif %}
+            </p>
           </div>
           <div class="text-xs font-bold text-[#FBBF24] bg-[#FBBF24]/15 px-2.5 py-1 rounded-lg w-fit border border-[#FBBF24]/30">Demanda constante</div>
         </div>
 
       </div>
 
-      <!-- Chart: Sesiones por Semana -->
+      <!-- Chart: Sesiones por Semana / Mes -->
       <div class="glass-card-dark p-6 sm:p-7 rounded-3xl border border-[#17375E]">
         <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
           <div>
-            <h2 class="text-base sm:text-lg font-bold text-white font-heading">Distribución de Citas por Semana</h2>
-            <p class="text-xs text-slate-400">Volumen atendido por el equipo de psicólogos por ciclo semanal</p>
+            <h2 class="text-base sm:text-lg font-bold text-white font-heading">
+              {% if es_historico %}Distribución de Sesiones por Mes{% else %}Distribución de Citas por Semana ({{ nombre_mes }}){% endif %}
+            </h2>
+            <p class="text-xs text-slate-400">Volumen atendido por el equipo clínico de psicólogos</p>
           </div>
           <div class="flex items-center gap-3 text-xs font-semibold">
-            <span class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 bg-[#00D2E0] rounded-md inline-block"></span> Citas Semanales (Total: {{ total_sesiones }})</span>
+            <span class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 bg-[#00D2E0] rounded-md inline-block"></span> Citas del Periodo (Total: {{ total_sesiones }})</span>
           </div>
         </div>
 
@@ -298,48 +343,26 @@
           <canvas id="barSessionsChart"></canvas>
         </div>
 
-        <!-- Weekly Summary Table -->
+        <!-- Summary Table -->
         <div class="overflow-x-auto mt-6 pt-4 border-t border-[#17375E]">
           <table class="w-full text-xs text-left">
             <thead>
               <tr class="text-slate-400 uppercase font-bold border-b border-[#17375E]">
-                <th class="py-2.5">Semana</th>
+                <th class="py-2.5">{% if es_historico %}Mes / Periodo{% else %}Semana{% endif %}</th>
                 <th class="py-2.5 text-center">Citas Totales</th>
                 <th class="py-2.5 text-center">Completadas</th>
                 <th class="py-2.5 text-center">Confirmadas</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-[#17375E] text-slate-300 font-medium">
+              {% for f in filas_tabla %}
               <tr class="hover:bg-[#0B1E36] transition">
-                <td class="py-3 font-bold text-white">Semana 1 (01 al 07 Ago)</td>
-                <td class="py-3 text-center font-black text-[#00D2E0] text-sm">47</td>
-                <td class="py-3 text-center text-[#10B981] font-bold">39</td>
-                <td class="py-3 text-center text-slate-400">8</td>
+                <td class="py-3 font-bold text-white">{{ f.nombre }}</td>
+                <td class="py-3 text-center font-black text-[#00D2E0] text-sm">{{ f.total }}</td>
+                <td class="py-3 text-center text-[#10B981] font-bold">{{ f.completadas }}</td>
+                <td class="py-3 text-center text-slate-400">{{ f.confirmadas }}</td>
               </tr>
-              <tr class="hover:bg-[#0B1E36] transition">
-                <td class="py-3 font-bold text-white">Semana 2 (08 al 14 Ago)</td>
-                <td class="py-3 text-center font-black text-[#00D2E0] text-sm">62</td>
-                <td class="py-3 text-center text-[#10B981] font-bold">51</td>
-                <td class="py-3 text-center text-slate-400">11</td>
-              </tr>
-              <tr class="hover:bg-[#0B1E36] transition">
-                <td class="py-3 font-bold text-white">Semana 3 (15 al 21 Ago)</td>
-                <td class="py-3 text-center font-black text-[#00D2E0] text-sm">54</td>
-                <td class="py-3 text-center text-[#10B981] font-bold">44</td>
-                <td class="py-3 text-center text-slate-400">10</td>
-              </tr>
-              <tr class="hover:bg-[#0B1E36] transition">
-                <td class="py-3 font-bold text-white">Semana 4 (22 al 28 Ago)</td>
-                <td class="py-3 text-center font-black text-[#00D2E0] text-sm">51</td>
-                <td class="py-3 text-center text-[#10B981] font-bold">42</td>
-                <td class="py-3 text-center text-slate-400">9</td>
-              </tr>
-              <tr class="hover:bg-[#0B1E36] transition">
-                <td class="py-3 font-bold text-white">Semana 5 (29 al 31 Ago)</td>
-                <td class="py-3 text-center font-black text-[#00D2E0] text-sm">20</td>
-                <td class="py-3 text-center text-[#10B981] font-bold">16</td>
-                <td class="py-3 text-center text-slate-400">4</td>
-              </tr>
+              {% endfor %}
             </tbody>
           </table>
         </div>
@@ -357,7 +380,7 @@
         <!-- Retention Chart -->
         <div class="lg:col-span-7 glass-card-dark p-6 sm:p-7 rounded-3xl border border-[#17375E]">
           <h2 class="text-base sm:text-lg font-bold text-white mb-1 font-heading">Distribución de Retención de Pacientes</h2>
-          <p class="text-xs text-slate-400 mb-6">Comportamiento según recurrencia de sesiones tomadas en {{ nombre_mes }}</p>
+          <p class="text-xs text-slate-400 mb-6">Comportamiento según recurrencia en {{ nombre_periodo }}</p>
           
           <div class="relative w-full h-64 flex items-center justify-center">
             <canvas id="donutRetentionChart"></canvas>
@@ -370,27 +393,27 @@
           <div class="p-4.5 glass-card-dark rounded-2xl border-l-4 border-l-[#00D2E0] p-4">
             <div class="flex items-center justify-between">
               <span class="text-xs font-bold text-slate-300">Retención Media (2 a 3 sesiones)</span>
-              <span class="text-xs font-black text-[#00D2E0] bg-[#00D2E0]/15 px-2 py-0.5 rounded-md">53.0%</span>
+              <span class="text-xs font-black text-[#00D2E0] bg-[#00D2E0]/15 px-2 py-0.5 rounded-md">{{ pct_2_3_citas }}%</span>
             </div>
-            <div class="text-2xl font-black text-white mt-1 font-heading">53 pacientes</div>
+            <div class="text-2xl font-black text-white mt-1 font-heading">{{ pacs_2_3_citas }} pacientes</div>
             <p class="text-xs text-slate-400 mt-0.5">Pacientes en proceso regular de acompañamiento.</p>
           </div>
 
           <div class="p-4.5 glass-card-dark rounded-2xl border-l-4 border-l-[#F85B8C] p-4">
             <div class="flex items-center justify-between">
               <span class="text-xs font-bold text-slate-300">Cita Única (1 sesión)</span>
-              <span class="text-xs font-black text-[#F85B8C] bg-[#F85B8C]/15 px-2 py-0.5 rounded-md">28.0%</span>
+              <span class="text-xs font-black text-[#F85B8C] bg-[#F85B8C]/15 px-2 py-0.5 rounded-md">{{ pct_1_cita }}%</span>
             </div>
-            <div class="text-2xl font-black text-white mt-1 font-heading">28 pacientes</div>
+            <div class="text-2xl font-black text-white mt-1 font-heading">{{ pacs_1_cita }} pacientes</div>
             <p class="text-xs text-slate-400 mt-0.5">Primera consulta diagnóstica o cita única.</p>
           </div>
 
           <div class="p-4.5 glass-card-dark rounded-2xl border-l-4 border-l-[#FBBF24] p-4">
             <div class="flex items-center justify-between">
               <span class="text-xs font-bold text-slate-300">Alta Recurrencia (4+ sesiones)</span>
-              <span class="text-xs font-black text-[#FBBF24] bg-[#FBBF24]/15 px-2 py-0.5 rounded-md">19.0%</span>
+              <span class="text-xs font-black text-[#FBBF24] bg-[#FBBF24]/15 px-2 py-0.5 rounded-md">{{ pct_4_mas_citas }}%</span>
             </div>
-            <div class="text-2xl font-black text-white mt-1 font-heading">19 pacientes</div>
+            <div class="text-2xl font-black text-white mt-1 font-heading">{{ pacs_4_mas_citas }} pacientes</div>
             <p class="text-xs text-slate-400 mt-0.5">Pacientes fidelizados en terapia continua intensiva.</p>
           </div>
 
@@ -401,7 +424,7 @@
       <!-- Quick Summary -->
       <div class="p-5 glass-card-dark rounded-3xl border border-[#17375E] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
         <div>
-          <span class="font-extrabold text-[#FBBF24] text-sm">72.0% de fidelización general (72 pacientes con 2 o más sesiones)</span>
+          <span class="font-extrabold text-[#FBBF24] text-sm">{{ pct_fidelizacion }}% de fidelización general ({{ pacientes_recurrentes }} consultantes con 2 o más sesiones)</span>
           <p class="text-slate-300 mt-0.5">La gran mayoría de los consultantes mantienen continuidad terapéutica tras su primera cita.</p>
         </div>
       </div>
@@ -413,7 +436,7 @@
   <footer class="glass-card-dark border-t border-[#17375E] py-4 text-center text-xs text-slate-400 no-print">
     <div class="max-w-6xl mx-auto px-4 flex items-center justify-between">
       <span class="font-bold text-slate-300">HOPE · Reporte Ejecutivo de Sesiones & Crecimiento</span>
-      <span>{{ nombre_mes }} {{ anio }}</span>
+      <span>{{ nombre_periodo }}</span>
     </div>
   </footer>
 
@@ -436,21 +459,26 @@
     Chart.defaults.font.family = "'Plus Jakarta Sans', sans-serif";
     Chart.defaults.color = COLORS.textLight;
 
-    // 1. Line Chart: Nuevos Usuarios por Semana
+    // 1. Line Chart: Nuevos Usuarios por Semana / Mes
     function initGrowthLineChart() {
       const ctx = document.getElementById('lineGrowthChart').getContext('2d');
       const gradient = ctx.createLinearGradient(0, 0, 0, 300);
       gradient.addColorStop(0, 'rgba(248, 91, 140, 0.35)');
       gradient.addColorStop(1, 'rgba(248, 91, 140, 0.0)');
 
+      const labels = {{ crecimiento_labels_json|safe }};
+      const dataValues = {{ crecimiento_datos_json|safe }};
+      const prom = {{ promedio_crecimiento }};
+      const promArray = labels.map(() => prom);
+
       new Chart(ctx, {
         type: 'line',
         data: {
-          labels: ['Sem 1 (01-07 Ago)', 'Sem 2 (08-14 Ago)', 'Sem 3 (15-21 Ago)', 'Sem 4 (22-31 Ago)'],
+          labels: labels,
           datasets: [
             {
               label: 'Nuevos Usuarios',
-              data: [13, 7, 16, 9],
+              data: dataValues,
               borderColor: COLORS.pink,
               borderWidth: 3.5,
               backgroundColor: gradient,
@@ -463,8 +491,8 @@
               pointHoverRadius: 8
             },
             {
-              label: 'Promedio Semanal (11.3)',
-              data: [11.25, 11.25, 11.25, 11.25],
+              label: `Promedio (${prom})`,
+              data: promArray,
               borderColor: COLORS.yellow,
               borderWidth: 2,
               borderDash: [6, 6],
@@ -488,7 +516,7 @@
               cornerRadius: 10,
               callbacks: {
                 label: function(c) {
-                  return c.datasetIndex === 0 ? ` ${c.parsed.y} nuevos usuarios` : ` Promedio: 11.3`;
+                  return c.datasetIndex === 0 ? ` ${c.parsed.y} nuevos usuarios` : ` Promedio: ${prom}`;
                 }
               }
             }
@@ -496,8 +524,7 @@
           scales: {
             y: {
               beginAtZero: true,
-              max: 20,
-              ticks: { stepSize: 4, color: COLORS.textMuted, font: { weight: '600' } },
+              ticks: { color: COLORS.textMuted, font: { weight: '600' } },
               grid: { color: 'rgba(255, 255, 255, 0.06)' }
             },
             x: {
@@ -509,7 +536,7 @@
       });
     }
 
-    // 2. Bar Chart: Sesiones Agendadas por Semana
+    // 2. Bar Chart: Sesiones Agendadas por Semana / Mes
     function initSessionsBarChart() {
       const ctx = document.getElementById('barSessionsChart').getContext('2d');
       new Chart(ctx, {
@@ -549,7 +576,7 @@
           scales: {
             y: {
               beginAtZero: true,
-              ticks: { stepSize: 15, color: COLORS.textMuted, font: { weight: '600' } },
+              ticks: { color: COLORS.textMuted, font: { weight: '600' } },
               grid: { color: 'rgba(255, 255, 255, 0.06)' }
             },
             x: { 
@@ -573,7 +600,7 @@
             'Alta recurrencia (4+ sesiones)'
           ],
           datasets: [{
-            data: [53, 28, 19],
+            data: {{ retencion_valores_json|safe }},
             backgroundColor: [COLORS.cyan, COLORS.pink, COLORS.yellow],
             borderWidth: 2,
             borderColor: COLORS.dark
@@ -598,7 +625,7 @@
               callbacks: {
                 label: function(ctx) {
                   const val = ctx.parsed;
-                  return ` ${ctx.label}: ${val} pacientes (${val}%)`;
+                  return ` ${ctx.label}: ${val} pacientes`;
                 }
               }
             }
