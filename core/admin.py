@@ -164,3 +164,11 @@ class ContactoPaisAdmin(ImportExportModelAdmin):
     list_filter = ('country', 'form_type', 'fecha_registro')
     search_fields = ('nombre', 'correo', 'celular')
     readonly_fields = ('fecha_registro',)
+
+@admin.register(TratamientoPaciente)
+class TratamientoPacienteAdmin(admin.ModelAdmin):
+    list_display = ('paciente', 'tipo_servicio', 'psicologo_asignado', 'activo', 'fecha_creacion')
+    list_filter = ('tipo_servicio', 'activo', 'fecha_creacion')
+    search_fields = ('paciente__first_name', 'paciente__username', 'paciente__email', 'psicologo_asignado__usuario__first_name')
+    list_select_related = ('paciente', 'psicologo_asignado', 'psicologo_asignado__usuario')
+    list_per_page = 25

@@ -496,8 +496,31 @@ def registrar_usuario(request):
         except json.JSONDecodeError:
             respuestas_dict = {}
 
-        if User.objects.filter(email=email).exists():
-            return JsonResponse({'status': 'error', 'message': 'Este correo ya está registrado.'})
+        user_existente = User.objects.filter(email__iexact=email).first()
+        if user_existente:
+            # Si el usuario ya está autenticado con esta cuenta
+            if request.user.is_authenticated and request.user.email.lower() == email.lower():
+                user = request.user
+            else:
+                # Verificamos si la contraseña coincide para enlazar el servicio a su cuenta
+                user_auth = authenticate(request, username=user_existente.username, password=password)
+                if user_auth:
+                    login(request, user_auth)
+                    user = user_auth
+                else:
+                    return JsonResponse({
+                        'status': 'error',
+                        'message': 'Este correo ya está registrado en HOPE. Ingresa tu contraseña actual para agregar este servicio a tu cuenta.'
+                    })
+
+            # Guardamos o actualizamos el cuestionario para este flujo_elegido
+            CuestionarioRegistro.objects.update_or_create(
+                paciente=user,
+                flujo_elegido=flujo_elegido,
+                defaults={'respuestas': respuestas_dict}
+            )
+
+            return JsonResponse({'status': 'success', 'redirect_url': reverse('panel_generico')})
 
         user = User.objects.create_user(
             username=email, 
@@ -646,7 +669,7 @@ def panel_generico(request):
     tipo_servicio = "individual"
     preferencia = ""  # 🔥 INICIAMOS LA VARIABLE VACÍA
     
-    ultimo_cuestionario = CuestionarioRegistro.objects.filter(paciente=request.user).last()
+    ultimo_cuestionario = CuestionarioRegistro.objects.filter(paciente=request.user).order_by('-fecha_completado').first()
     if ultimo_cuestionario and ultimo_cuestionario.respuestas:
         respuestas = ultimo_cuestionario.respuestas
         if isinstance(respuestas, str):
@@ -662,30 +685,42 @@ def panel_generico(request):
     hoy = now_local.date()
     hora_actual = now_local.time().replace(second=0, microsecond=0)
 
+    # 🔥 MULTISERVICIO: Obtenemos todos los tratamientos activos del paciente
+    tratamientos = TratamientoPaciente.objects.filter(
+        paciente=request.user, activo=True
+    ).select_related('psicologo_asignado__usuario')
+
     psicologo_asignado = perfil_usuario.psicologo_asignado
+    if not psicologo_asignado and tratamientos.exists():
+        psicologo_asignado = tratamientos.first().psicologo_asignado
+
     hora_limite_paciente = (now_local - timedelta(hours=1)).time().replace(second=0, microsecond=0)
     # Cita próxima
     # 🔥 OPTIMIZACIÓN: select_related evita un query extra al acceder a
     # cita_proxima.psicologo.usuario más abajo en el template.
     cita_proxima = Cita.objects.select_related('psicologo__usuario').filter(
-        Q(fecha__gt=hoy) | Q(fecha=hoy, hora__gte=hora_limite_paciente), # ¡Cambio aquí!
+        Q(fecha__gt=hoy) | Q(fecha=hoy, hora__gte=hora_limite_paciente),
         paciente=request.user,
         estado='Confirmada'
     ).order_by('fecha', 'hora').first()
 
-    # ========================================================= hkgf
-    # =========================================================
     fecha_limite = hoy + timedelta(days=90)
 
     # 🔥 Normalizamos el tipo de sesión inicial (viene del cuestionario) para
     # que la búsqueda de disponibilidad respete la modalidad desde el arranque.
     tipo_sesion_inicial = tipo_servicio if tipo_servicio in TIPOS_SESION_VALIDOS else 'individual'
 
-    if psicologo_asignado:
-        # Paciente con psicólogo asignado: solo sus horarios
-        dias_json = obtener_slots_psicologo(psicologo_asignado, hoy, fecha_limite, tipo_sesion=tipo_sesion_inicial)
+    # Buscamos si tiene psicólogo asignado específicamente para la modalidad inicial
+    tratamiento_inicial = tratamientos.filter(tipo_servicio=tipo_sesion_inicial).first()
+    psicologo_inicial = tratamiento_inicial.psicologo_asignado if tratamiento_inicial else (
+        psicologo_asignado if getattr(psicologo_asignado, CAPACIDAD_POR_TIPO_SESION.get(tipo_sesion_inicial, 'atiende_individual'), False) else None
+    )
+
+    if psicologo_inicial:
+        # Paciente con psicólogo asignado a esta modalidad: solo sus horarios
+        dias_json = obtener_slots_psicologo(psicologo_inicial, hoy, fecha_limite, tipo_sesion=tipo_sesion_inicial)
     else:
-        # 🔥 EL MOMENTO MÁGICO: Le pasamos la 'preferencia' a la función global
+        # Paciente sin psicólogo asignado a esta modalidad: slots globales de especialistas
         dias_json = obtener_slots_globales(hoy, fecha_limite, preferencia, tipo_sesion=tipo_sesion_inicial)
 
     # Convertir a formato que usa el template (dias_html con objetos fecha y hora)
@@ -694,6 +729,33 @@ def panel_generico(request):
         fecha_obj = datetime.strptime(fecha_str, '%Y-%m-%d').date()
         horas_obj = [datetime.strptime(h, '%I:%M %p').time() for h in horas_str]
         dias_html[fecha_obj] = horas_obj
+
+    # Lista de doctores únicos con quienes el paciente tiene tratamientos para el chat
+    doctores_chat = []
+    vistos_doctores = set()
+    for t in tratamientos:
+        if t.psicologo_asignado and t.psicologo_asignado.usuario and t.psicologo_asignado.id not in vistos_doctores:
+            vistos_doctores.add(t.psicologo_asignado.id)
+            doctores_chat.append({
+                'id': t.psicologo_asignado.usuario.id,
+                'nombre': f"Dr(a). {t.psicologo_asignado.usuario.first_name} {t.psicologo_asignado.usuario.last_name or ''}".strip(),
+                'especialidad': t.psicologo_asignado.especialidad or 'Psicoterapeuta',
+                'servicio': t.get_tipo_servicio_display(),
+                'tipo_servicio_key': t.tipo_servicio,
+                'foto': t.psicologo_asignado.foto.url if t.psicologo_asignado.foto else None,
+                'cedula': t.psicologo_asignado.cedula_profesional,
+            })
+
+    if not doctores_chat and psicologo_asignado and psicologo_asignado.usuario:
+        doctores_chat.append({
+            'id': psicologo_asignado.usuario.id,
+            'nombre': f"Dr(a). {psicologo_asignado.usuario.first_name} {psicologo_asignado.usuario.last_name or ''}".strip(),
+            'especialidad': psicologo_asignado.especialidad or 'Psicoterapeuta',
+            'servicio': 'Psicólogo Asignado',
+            'tipo_servicio_key': 'individual',
+            'foto': psicologo_asignado.foto.url if psicologo_asignado.foto else None,
+            'cedula': psicologo_asignado.cedula_profesional,
+        })
 
     # =========================================================
     # TALLERES E INSCRIPCIONES (igual que antes)
@@ -714,6 +776,9 @@ def panel_generico(request):
         'dias_disponibles': dias_html,
         'cita_proxima': cita_proxima,
         'perfil': perfil_usuario,
+        'tratamientos': tratamientos,
+        'doctores_chat': doctores_chat,
+        'tiene_terapeuta_asignado': bool(doctores_chat),
         'tipo_servicio': tipo_servicio,
         'taller_solicitado_obj': taller_solicitado_obj,
         'talleres_padres': talleres_futuros.filter(tipo='padres'),
@@ -775,10 +840,11 @@ def inscribir_taller_ajax(request):
 
 def obtener_disponibilidad_por_tipo_ajax(request):
     """
-    🔥 NUEVO: Cuando el paciente cambia de modalidad en el wizard
-    (individual / pareja / familiar), el frontend llama a este endpoint
-    para refrescar el calendario mostrando SOLO los horarios de los
-    psicólogos habilitados para esa modalidad.
+    🔥 MULTISERVICIO: Cuando el paciente cambia de modalidad en el wizard
+    (individual / pareja / familiar), busca si ya tiene un psicólogo asignado
+    para esa modalidad en TratamientoPaciente. Si lo tiene, muestra sus horarios.
+    Si no lo tiene aún, muestra la disponibilidad global de todos los especialistas
+    habilitados para esa modalidad.
     """
     if not request.user.is_authenticated:
         return JsonResponse({'status': 'error', 'message': 'Debes iniciar sesión.'}, status=403)
@@ -793,7 +859,12 @@ def obtener_disponibilidad_por_tipo_ajax(request):
         return JsonResponse({'status': 'error', 'message': 'Perfil no encontrado.'}, status=400)
 
     preferencia = ""
-    ultimo_cuestionario = CuestionarioRegistro.objects.filter(paciente=request.user).last()
+    ultimo_cuestionario = CuestionarioRegistro.objects.filter(
+        paciente=request.user, flujo_elegido=tipo_sesion
+    ).order_by('-fecha_completado').first()
+    if not ultimo_cuestionario:
+        ultimo_cuestionario = CuestionarioRegistro.objects.filter(paciente=request.user).order_by('-fecha_completado').first()
+
     if ultimo_cuestionario and ultimo_cuestionario.respuestas:
         respuestas = ultimo_cuestionario.respuestas
         if isinstance(respuestas, str):
@@ -805,20 +876,38 @@ def obtener_disponibilidad_por_tipo_ajax(request):
 
     hoy = timezone.localtime(timezone.now()).date()
     fecha_limite = hoy + timedelta(days=90)
-    psicologo_asignado = perfil_usuario.psicologo_asignado
+    campo_capacidad = CAPACIDAD_POR_TIPO_SESION.get(tipo_sesion, 'atiende_individual')
 
-    if psicologo_asignado:
+    # Buscamos si tiene psicólogo asignado específicamente en TratamientoPaciente para esta modalidad
+    tratamiento = TratamientoPaciente.objects.filter(
+        paciente=request.user, tipo_servicio=tipo_sesion, activo=True
+    ).select_related('psicologo_asignado__usuario').first()
+
+    psicologo_asignado = tratamiento.psicologo_asignado if (tratamiento and tratamiento.psicologo_asignado) else None
+
+    # Si no tiene tratamiento de esa modalidad pero tiene en perfil_usuario y ese psicólogo sí atiende esa modalidad
+    if not psicologo_asignado and perfil_usuario.psicologo_asignado:
+        if getattr(perfil_usuario.psicologo_asignado, campo_capacidad, False):
+            psicologo_asignado = perfil_usuario.psicologo_asignado
+
+    if psicologo_asignado and getattr(psicologo_asignado, campo_capacidad, False):
         dias_json = obtener_slots_psicologo(psicologo_asignado, hoy, fecha_limite, tipo_sesion=tipo_sesion)
-        if not dias_json:
-            return JsonResponse({
-                'status': 'success',
-                'dias': {},
-                'aviso': 'Tu terapeuta asignado no atiende esta modalidad todavía. Contáctanos para reasignarte.',
-            })
+        doc_nombre = psicologo_asignado.usuario.first_name if psicologo_asignado.usuario else ""
+        return JsonResponse({
+            'status': 'success',
+            'dias': dias_json,
+            'psicologo_asignado': doc_nombre,
+            'es_asignado': True
+        })
     else:
+        # No tiene psicólogo para esta modalidad: mostramos la disponibilidad global
         dias_json = obtener_slots_globales(hoy, fecha_limite, preferencia, tipo_sesion=tipo_sesion)
-
-    return JsonResponse({'status': 'success', 'dias': dias_json})
+        return JsonResponse({
+            'status': 'success',
+            'dias': dias_json,
+            'psicologo_asignado': None,
+            'es_asignado': False
+        })
 
 
 def calcular_precio_sesion_ajax(request):
@@ -866,22 +955,32 @@ def guardar_cita_ajax(request):
             fecha_obj = datetime.strptime(fecha_str, '%Y-%m-%d').date()
             hora_obj = datetime.strptime(hora_str, '%H:%M').time()
             perfil = request.user.perfil
-            psicologo = perfil.psicologo_asignado
 
+            # 🔥 MULTISERVICIO: Buscamos si ya tiene psicólogo asignado a este servicio específico
+            tratamiento = TratamientoPaciente.objects.filter(
+                paciente=request.user, tipo_servicio=tipo_sesion_str, activo=True
+            ).select_related('psicologo_asignado').first()
+
+            psicologo = tratamiento.psicologo_asignado if (tratamiento and tratamiento.psicologo_asignado) else None
+
+            # Si el doctor de este tratamiento ya no atiende esta modalidad, permitimos reasignar un especialista
             if psicologo and not getattr(psicologo, campo_capacidad, False):
-                return JsonResponse({'status': 'error', 'message': 'Tu terapeuta asignado no atiende esta modalidad. Contáctanos para asignarte a un especialista.'})
+                psicologo = None
 
-            # Lógica de asignación automática (si no tiene psicólogo)
+            # Si no tiene psicólogo asignado para esta modalidad, asignamos automáticamente
             if not psicologo:
                 preferencia = ""
                 try:
-                    cuestionario = request.user.cuestionario_inicial
-                    preferencia = cuestionario.respuestas.get('preferencia_terapeuta', '')
+                    cuestionario = CuestionarioRegistro.objects.filter(
+                        paciente=request.user, flujo_elegido=tipo_sesion_str
+                    ).order_by('-fecha_completado').first()
+                    if not cuestionario:
+                        cuestionario = CuestionarioRegistro.objects.filter(paciente=request.user).order_by('-fecha_completado').first()
+                    if cuestionario:
+                        preferencia = cuestionario.respuestas.get('preferencia_terapeuta', '')
                 except:
                     pass
 
-                # 🔥 OPTIMIZACIÓN VITAL PARA EL PAGO: 
-                # Precargamos los esquemas de horario del día exacto para no hacer N consultas.
                 esquemas_del_dia = EsquemaHorarioPsicologo.objects.filter(
                     activo=True, fecha_inicio__lte=fecha_obj, fecha_fin__gte=fecha_obj
                 )
@@ -917,8 +1016,17 @@ def guardar_cita_ajax(request):
                 if not psicologo:
                     psicologo = psicologos_libres.order_by('carga_historica', '?').first()
 
-                perfil.psicologo_asignado = psicologo
-                perfil.save()
+                # 🔥 Guardamos en TratamientoPaciente específico de esta modalidad
+                TratamientoPaciente.objects.update_or_create(
+                    paciente=request.user,
+                    tipo_servicio=tipo_sesion_str,
+                    defaults={'psicologo_asignado': psicologo, 'activo': True}
+                )
+
+                # Retrocompatibilidad: si el perfil general no tiene psicólogo, lo establecemos
+                if not perfil.psicologo_asignado:
+                    perfil.psicologo_asignado = psicologo
+                    perfil.save(update_fields=['psicologo_asignado'])
                 
                 # Verificación final
                 if Cita.objects.filter(psicologo=psicologo, fecha=fecha_obj, hora=hora_obj, estado='Confirmada').exists():
@@ -1099,17 +1207,35 @@ def panel_doctor(request):
 
 
 
-    mis_pacientes_db = User.objects.filter(perfil__psicologo_asignado=psicologo).annotate(
+    # 🔥 MULTISERVICIO: Incluye pacientes con tratamientos activos, citas o perfil asignado a este psicólogo
+    mis_pacientes_db = User.objects.filter(
+        Q(tratamientos__psicologo_asignado=psicologo) |
+        Q(citas_como_paciente__psicologo=psicologo) |
+        Q(perfil__psicologo_asignado=psicologo)
+    ).distinct().annotate(
         total_citas_paciente=Count('citas_como_paciente', filter=Q(citas_como_paciente__psicologo=psicologo))
-    ).distinct()
+    )
 
-    pacientes_data = [
-        {
+    pacientes_data = []
+    for p in mis_pacientes_db:
+        # Extraemos las modalidades de este paciente con este psicólogo
+        mods = list(
+            TratamientoPaciente.objects.filter(paciente=p, psicologo_asignado=psicologo, activo=True)
+            .values_list('tipo_servicio', flat=True)
+        )
+        if not mods:
+            mods = list(
+                Cita.objects.filter(paciente=p, psicologo=psicologo)
+                .values_list('tipo_sesion', flat=True).distinct()
+            )
+        tipo_dict = dict(TratamientoPaciente.TIPO_CHOICES)
+        modalidades_str = ", ".join(tipo_dict.get(m, m.capitalize()) for m in mods) if mods else "Individual"
+
+        pacientes_data.append({
             'usuario': p,
-            'total_citas': p.total_citas_paciente
-        }
-        for p in mis_pacientes_db
-    ]
+            'total_citas': p.total_citas_paciente,
+            'modalidades': modalidades_str,
+        })
 
     mis_talleres_impartidos = Taller.objects.filter(psicologo=psicologo).order_by('fecha', 'hora')
 
@@ -1268,22 +1394,41 @@ def detalle_paciente(request, paciente_id):
     except User.DoesNotExist:
         return redirect('panel_doctor')
  
-    if getattr(paciente.perfil, 'psicologo_asignado', None) != psicologo:
+    # 🔥 MULTISERVICIO: El doctor tiene acceso si tiene un tratamiento, una cita o está asignado en el perfil
+    tiene_acceso = (
+        TratamientoPaciente.objects.filter(paciente=paciente, psicologo_asignado=psicologo).exists() or
+        Cita.objects.filter(paciente=paciente, psicologo=psicologo).exists() or
+        getattr(paciente.perfil, 'psicologo_asignado', None) == psicologo or
+        request.user.is_superuser
+    )
+    if not tiene_acceso:
         return redirect('panel_doctor')
  
     # =========================================================================
-    # CUESTIONARIO INICIAL (TRIAGE)
+    # CUESTIONARIO INICIAL (TRIAGE) - SOPORTA MÚLTIPLES POR MODALIDAD
     # =========================================================================
     cuestionario = None
     respuestas_formateadas = {}
- 
-    if hasattr(paciente, 'cuestionario_inicial'):
-        cuestionario = paciente.cuestionario_inicial
-        if cuestionario.respuestas:
-            for clave, valor in cuestionario.respuestas.items():
-                clave_limpia = str(clave).replace('_', ' ').capitalize()
-                valor_limpio = ", ".join(str(i) for i in valor) if isinstance(valor, list) else str(valor)
-                respuestas_formateadas[clave_limpia] = valor_limpio
+    cuestionarios_list = []
+
+    for c in CuestionarioRegistro.objects.filter(paciente=paciente).order_by('-fecha_completado'):
+        fmt = {}
+        if c.respuestas:
+            r_dict = c.respuestas if isinstance(c.respuestas, dict) else (json.loads(c.respuestas) if isinstance(c.respuestas, str) else {})
+            for k, v in r_dict.items():
+                clave_limpia = str(k).replace('_', ' ').capitalize()
+                valor_limpio = ", ".join(str(i) for i in v) if isinstance(v, list) else str(v)
+                fmt[clave_limpia] = valor_limpio
+        cuestionarios_list.append({
+            'obj': c,
+            'flujo': c.flujo_elegido.capitalize() if c.flujo_elegido else 'General',
+            'fecha': c.fecha_completado,
+            'respuestas': fmt
+        })
+
+    if cuestionarios_list:
+        cuestionario = cuestionarios_list[0]['obj']
+        respuestas_formateadas = cuestionarios_list[0]['respuestas']
  
     # =========================================================================
     # CONSTRUCCIÓN DE LA LISTA UNIFICADA DE SESIONES
@@ -1360,6 +1505,7 @@ def detalle_paciente(request, paciente_id):
         'total_sesiones': total_sesiones,
         'cuestionario': cuestionario,
         'respuestas_formateadas': respuestas_formateadas,
+        'cuestionarios_list': cuestionarios_list,
         'ipp_labels': json.dumps(ipp_labels), # Pasamos los datos como JSON al frontend
         'ipp_data': json.dumps(ipp_data),
     })
@@ -2372,10 +2518,12 @@ def obtener_contactos_chat(request):
     if not request.user.is_authenticated or not hasattr(request.user, 'perfil_psicologo'):
         return JsonResponse({'status': 'error', 'message': 'No autorizado'})
 
-    psicologo = request.user.perfil_psicologo
-    
-    # Traemos a todos los pacientes asignados a este doctor
-    pacientes = User.objects.filter(perfil__psicologo_asignado=psicologo)
+    # 🔥 MULTISERVICIO: Traemos a todos los pacientes con tratamientos, citas o perfil asignado a este doctor
+    pacientes = User.objects.filter(
+        Q(tratamientos__psicologo_asignado=psicologo) |
+        Q(citas_como_paciente__psicologo=psicologo) |
+        Q(perfil__psicologo_asignado=psicologo)
+    ).distinct()
 
     contactos = []
     for p in pacientes:
@@ -2517,23 +2665,38 @@ def pago_exitoso_clip(request, cita_id):
     try:
         cita = Cita.objects.get(id=cita_id)
         
-        if cita.estado == 'Pendiente de Pago':
+        if cita.estado in ['Pendiente', 'Pendiente de Pago']:
             paciente = cita.paciente
             perfil = paciente.perfil
-            psicologo = perfil.psicologo_asignado
+            
+            # 🔥 MULTISERVICIO: Buscamos si ya tiene psicólogo asignado a este servicio específico
+            tratamiento = TratamientoPaciente.objects.filter(
+                paciente=paciente, tipo_servicio=cita.tipo_sesion, activo=True
+            ).select_related('psicologo_asignado').first()
+
+            psicologo = tratamiento.psicologo_asignado if (tratamiento and tratamiento.psicologo_asignado) else None
+            campo_capacidad = CAPACIDAD_POR_TIPO_SESION.get(cita.tipo_sesion, 'atiende_individual')
+
+            if psicologo and not getattr(psicologo, campo_capacidad, False):
+                psicologo = None
 
             # --- ASIGNACIÓN DE PSICÓLOGO ---
             if not psicologo:
                 preferencia = ""
                 try:
-                    cuestionario = paciente.cuestionario_inicial
-                    preferencia = cuestionario.respuestas.get('preferencia_terapeuta', '')
+                    cuestionario = CuestionarioRegistro.objects.filter(
+                        paciente=paciente, flujo_elegido=cita.tipo_sesion
+                    ).order_by('-fecha_completado').first()
+                    if not cuestionario:
+                        cuestionario = CuestionarioRegistro.objects.filter(paciente=paciente).order_by('-fecha_completado').first()
+                    if cuestionario:
+                        preferencia = cuestionario.respuestas.get('preferencia_terapeuta', '')
                 except:
                     pass
 
                 doctores_con_slot_valido = []
-                for psicologo_temp in PerfilPsicologo.objects.filter(esta_activo=True):
-                    slots_del_dia = obtener_slots_psicologo_para_dia(psicologo_temp, cita.fecha)
+                for psicologo_temp in PerfilPsicologo.objects.filter(esta_activo=True, **{campo_capacidad: True}):
+                    slots_del_dia = obtener_slots_psicologo_para_dia(psicologo_temp, cita.fecha, tipo_sesion=cita.tipo_sesion)
                     if cita.hora.strftime('%I:%M %p') in slots_del_dia:
                         doctores_con_slot_valido.append(psicologo_temp.id)
 
@@ -2556,8 +2719,16 @@ def pago_exitoso_clip(request, cita_id):
                 if not psicologo:
                     psicologo = psicologos_libres.order_by('carga_historica', '?').first()
 
-                perfil.psicologo_asignado = psicologo
-                perfil.save()
+                # Guardamos en TratamientoPaciente específico
+                TratamientoPaciente.objects.update_or_create(
+                    paciente=paciente,
+                    tipo_servicio=cita.tipo_sesion,
+                    defaults={'psicologo_asignado': psicologo, 'activo': True}
+                )
+
+                if not perfil.psicologo_asignado:
+                    perfil.psicologo_asignado = psicologo
+                    perfil.save(update_fields=['psicologo_asignado'])
             else:
                 if Cita.objects.filter(psicologo=psicologo, fecha=cita.fecha, hora=cita.hora, estado='Confirmada').exists():
                     cita.delete()
@@ -2729,7 +2900,12 @@ def admin_disponibilidad_ajax(request):
         return JsonResponse({'status': 'error', 'message': 'Paciente no encontrado o sin perfil.'}, status=404)
 
     preferencia = ""
-    ultimo_cuestionario = CuestionarioRegistro.objects.filter(paciente=paciente).last()
+    ultimo_cuestionario = CuestionarioRegistro.objects.filter(
+        paciente=paciente, flujo_elegido=tipo_sesion
+    ).order_by('-fecha_completado').first()
+    if not ultimo_cuestionario:
+        ultimo_cuestionario = CuestionarioRegistro.objects.filter(paciente=paciente).order_by('-fecha_completado').first()
+
     if ultimo_cuestionario and ultimo_cuestionario.respuestas:
         respuestas = ultimo_cuestionario.respuestas
         if isinstance(respuestas, str):
@@ -2741,17 +2917,21 @@ def admin_disponibilidad_ajax(request):
 
     hoy = timezone.localtime(timezone.now()).date()
     fecha_limite = hoy + timedelta(days=90)
-    psicologo_asignado = perfil_paciente.psicologo_asignado
+    campo_capacidad = CAPACIDAD_POR_TIPO_SESION.get(tipo_sesion, 'atiende_individual')
 
-    if psicologo_asignado:
+    # 🔥 MULTISERVICIO: Buscamos si ya tiene psicólogo para esta modalidad en TratamientoPaciente
+    tratamiento = TratamientoPaciente.objects.filter(
+        paciente=paciente, tipo_servicio=tipo_sesion, activo=True
+    ).select_related('psicologo_asignado__usuario').first()
+
+    psicologo_asignado = tratamiento.psicologo_asignado if (tratamiento and tratamiento.psicologo_asignado) else None
+
+    if not psicologo_asignado and perfil_paciente.psicologo_asignado:
+        if getattr(perfil_paciente.psicologo_asignado, campo_capacidad, False):
+            psicologo_asignado = perfil_paciente.psicologo_asignado
+
+    if psicologo_asignado and getattr(psicologo_asignado, campo_capacidad, False):
         dias_json = obtener_slots_psicologo(psicologo_asignado, hoy, fecha_limite, tipo_sesion=tipo_sesion)
-        if not dias_json:
-            return JsonResponse({
-                'status': 'success',
-                'dias': {},
-                'psicologo_asignado': psicologo_asignado.usuario.first_name,
-                'aviso': 'El terapeuta asignado a este paciente no atiende esta modalidad todavía.',
-            })
     else:
         dias_json = obtener_slots_globales(hoy, fecha_limite, preferencia, tipo_sesion=tipo_sesion)
 
@@ -2802,17 +2982,28 @@ def admin_guardar_cita_ajax(request):
     try:
         fecha_obj = datetime.strptime(fecha_str, '%Y-%m-%d').date()
         hora_obj = datetime.strptime(hora_str, '%H:%M').time()
-        psicologo = perfil.psicologo_asignado
+
+        # 🔥 MULTISERVICIO: Buscamos psicólogo asignado a este servicio específico
+        tratamiento = TratamientoPaciente.objects.filter(
+            paciente=paciente_user, tipo_servicio=tipo_sesion_str, activo=True
+        ).select_related('psicologo_asignado').first()
+
+        psicologo = tratamiento.psicologo_asignado if (tratamiento and tratamiento.psicologo_asignado) else None
 
         if psicologo and not getattr(psicologo, campo_capacidad, False):
-            return JsonResponse({'status': 'error', 'message': 'El terapeuta asignado a este paciente no atiende esta modalidad.'})
+            psicologo = None
 
         # Asignación automática (misma lógica que guardar_cita_ajax)
         if not psicologo:
             preferencia = ""
             try:
-                cuestionario = paciente_user.cuestionario_inicial
-                preferencia = cuestionario.respuestas.get('preferencia_terapeuta', '')
+                cuestionario = CuestionarioRegistro.objects.filter(
+                    paciente=paciente_user, flujo_elegido=tipo_sesion_str
+                ).order_by('-fecha_completado').first()
+                if not cuestionario:
+                    cuestionario = CuestionarioRegistro.objects.filter(paciente=paciente_user).order_by('-fecha_completado').first()
+                if cuestionario:
+                    preferencia = cuestionario.respuestas.get('preferencia_terapeuta', '')
             except Exception:
                 pass
 
@@ -2848,8 +3039,16 @@ def admin_guardar_cita_ajax(request):
             if not psicologo:
                 psicologo = psicologos_libres.order_by('carga_historica', '?').first()
 
-            perfil.psicologo_asignado = psicologo
-            perfil.save()
+            # Guardamos en TratamientoPaciente específico
+            TratamientoPaciente.objects.update_or_create(
+                paciente=paciente_user,
+                tipo_servicio=tipo_sesion_str,
+                defaults={'psicologo_asignado': psicologo, 'activo': True}
+            )
+
+            if not perfil.psicologo_asignado:
+                perfil.psicologo_asignado = psicologo
+                perfil.save(update_fields=['psicologo_asignado'])
 
             if Cita.objects.filter(psicologo=psicologo, fecha=fecha_obj, hora=hora_obj, estado='Confirmada').exists():
                 return JsonResponse({'status': 'error', 'message': 'Ese horario acaba de ser ocupado. Elige otro.'})
@@ -3556,6 +3755,15 @@ def procesar_registro_taller(request):
                  'message': 'Ya existe un registro con este correo para este taller. Si tienes dudas, contáctanos por WhatsApp.'
              })
              
+        # 🔥 MULTISERVICIO: Si el correo pertenece a un usuario con cuenta en HOPE, lo vinculamos a su panel
+        user_match = User.objects.filter(email__iexact=correo).first()
+        if user_match:
+            taller_obj = Taller.objects.filter(
+                Q(nombre__icontains=taller_seleccionado) | Q(tipo__icontains=taller_seleccionado)
+            ).first()
+            if taller_obj:
+                InscripcionTaller.objects.get_or_create(paciente=user_match, taller=taller_obj)
+
         # Registro guardado con éxito
         return JsonResponse({
             'status': 'success',

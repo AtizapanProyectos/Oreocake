@@ -1311,8 +1311,9 @@ body {
           </div>
           <!-- FIN NUEVO BLOQUE DE CONTACTO -->
 
-          <div class="pac-stats">
+          <div class="pac-stats" style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px;">
             <span class="ctag ctag-purple"><i class="fas fa-leaf"></i> {{ data.total_citas }} sesiones</span>
+            <span class="ctag ctag-teal"><i class="fas fa-hand-holding-heart"></i> {{ data.modalidades }}</span>
           </div>
           <div class="pac-divider">
             <a href="{% url 'detalle_paciente' data.usuario.id %}" class="hbtn hbtn-ghost hbtn-full">

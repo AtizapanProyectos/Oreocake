@@ -536,7 +536,40 @@ function mostrarErrorCita(mensaje, opts) {
     {% endif %}
         {% endif %}
 
-        {% if psicologo_asignado %}
+        {% if tratamientos %}
+            <hr style="margin: 40px 0 30px; border: 1px solid #f1f5f9;">
+            <div style="text-align: left; background: #f8fafc; border-radius: 24px; padding: 25px; margin-top: 20px;">
+                <h4 style="font-family: var(--font-headings); font-size: 1.1rem; color: var(--text-main); margin: 0 0 15px 0; text-transform: uppercase; letter-spacing: 1px;">
+                    <i class="fas fa-user-md" style="color: var(--c-purple);"></i> Tus Profesionales Asignados
+                </h4>
+                <div style="display: flex; flex-direction: column; gap: 15px;">
+                    {% for t in tratamientos %}
+                        {% if t.psicologo_asignado %}
+                        <div style="display: flex; align-items: center; gap: 15px; background: white; padding: 15px; border-radius: 16px; border: 1px solid #e2e8f0; flex-wrap: wrap;">
+                            {% if t.psicologo_asignado.foto %}
+                                <img src="{{ t.psicologo_asignado.foto.url }}" alt="Foto del psicólogo" loading="lazy" decoding="async" width="60" height="60" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 2px solid var(--c-purple);">
+                            {% else %}
+                                <div style="width: 60px; height: 60px; border-radius: 50%; background: #e2e8f0; display: flex; align-items: center; justify-content: center; color: var(--c-purple); font-size: 24px;">
+                                    <i class="fas fa-user-md"></i>
+                                </div>
+                            {% endif %}
+                            <div style="flex: 1;">
+                                <span style="display: inline-block; background: #f3e8ff; color: var(--c-purple); font-weight: 700; font-size: 11px; padding: 2px 10px; border-radius: 10px; text-transform: uppercase; margin-bottom: 4px;">
+                                    {{ t.get_tipo_servicio_display }}
+                                </span>
+                                <h4 style="font-family: var(--font-headings); font-size: 1.2rem; margin: 0 0 4px; color: var(--text-main);">
+                                    {{ t.psicologo_asignado.usuario.first_name }} {{ t.psicologo_asignado.usuario.last_name|default:"" }}
+                                </h4>
+                                <p style="margin: 0; font-size: 12px; color: var(--text-muted);">
+                                    <i class="fas fa-id-card"></i> Cédula: {{ t.psicologo_asignado.cedula_profesional }} · {{ t.psicologo_asignado.especialidad|default:"Psicoterapeuta" }}
+                                </p>
+                            </div>
+                        </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+        {% elif psicologo_asignado %}
             <hr style="margin: 40px 0 30px; border: 1px solid #f1f5f9;">
             <div style="text-align: left; background: #f8fafc; border-radius: 24px; padding: 25px; margin-top: 20px;">
                 <div style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap;">
@@ -570,7 +603,7 @@ function mostrarErrorCita(mensaje, opts) {
 
         </div>
         
-        {% else %} {% if user.perfil.psicologo_asignado %}
+        {% else %} {% if tiene_terapeuta_asignado %}
             <div class="chic-card fade-in-up" style="border-top: 6px solid var(--c-yellow); margin-bottom: 40px; text-align: center; background: #fffaf0;">
                 <i class="fas fa-award" style="font-size: 60px; color: var(--c-yellow); margin-bottom: 20px;"></i>
                 <h2 style="font-family: var(--font-headings); font-size: 2.5rem; margin-bottom: 10px;">¡Excelente trabajo en tu sesión!</h2>
@@ -1180,7 +1213,7 @@ function mostrarErrorCita(mensaje, opts) {
 
 {% comment %} La sección de reagendar ahora vive inline junto al botón, no como modal {% endcomment %}
 
-{% if psicologo_asignado %}
+{% if doctores_chat %}
 <div class="btn-flotante-chat" onclick="togglePatientChat()">
     <i class="fas fa-comment-dots"></i>
     <div class="chat-unseen-badge" id="pat-unseen-badge">0</div>
@@ -1188,21 +1221,35 @@ function mostrarErrorCita(mensaje, opts) {
 
 <div class="chat-patient-widget" id="patientChatWidget">
     <div class="c-pat-head">
-        <div class="c-pat-doc">
-            <div class="c-pat-avatar">D</div>
-            <div>
-                <div style="font-family:var(--font-headings); font-weight:800; font-size:16px;">Dr(a). {{ psicologo_asignado.usuario.first_name }}</div>
-                <div style="font-size:11px; opacity:0.8;">Tu terapeuta</div>
+        <div class="c-pat-doc" style="flex: 1; min-width: 0;">
+            {% if doctores_chat|length > 1 %}
+            <div style="display:flex; align-items:center; gap:8px; width:100%;">
+                <div class="c-pat-avatar" id="pat-current-avatar">{{ doctores_chat.0.nombre|slice:":1" }}</div>
+                <div style="flex:1; min-width:0;">
+                    <select id="select-doctor-chat" onchange="cambiarDoctorChat(this.value)" style="background: rgba(255,255,255,0.25); color: white; border: 1px solid rgba(255,255,255,0.4); border-radius: 8px; padding: 4px 8px; font-size: 13px; font-family: var(--font-headings); font-weight: bold; width: 100%; outline: none; cursor: pointer;">
+                        {% for doc in doctores_chat %}
+                        <option value="{{ doc.id }}" style="color: #333; background: #fff;">{{ doc.nombre }} ({{ doc.servicio }})</option>
+                        {% endfor %}
+                    </select>
+                    <div id="pat-doc-subtitle" style="font-size:11px; opacity:0.85; margin-top:2px;">{{ doctores_chat.0.servicio }}</div>
+                </div>
             </div>
+            {% else %}
+            <div class="c-pat-avatar">{{ doctores_chat.0.nombre|slice:":1" }}</div>
+            <div>
+                <div style="font-family:var(--font-headings); font-weight:800; font-size:16px;">{{ doctores_chat.0.nombre }}</div>
+                <div style="font-size:11px; opacity:0.85;">{{ doctores_chat.0.servicio }}</div>
+            </div>
+            {% endif %}
         </div>
-        <i class="fas fa-times" style="cursor:pointer; font-size:20px;" onclick="togglePatientChat()"></i>
+        <i class="fas fa-times" style="cursor:pointer; font-size:20px; margin-left: 10px;" onclick="togglePatientChat()"></i>
     </div>
     <div class="c-pat-body" id="pat-chat-messages">
-        </div>
+    </div>
     <div class="c-pat-foot">
-        <form style="display:flex; gap:10px;" onsubmit="enviarMensajePaciente(event)">
+        <form id="form-chat-paciente" style="display:flex; gap:10px;" onsubmit="enviarMensajePaciente(event)">
             {% csrf_token %}
-            <input type="hidden" name="destinatario_id" value="{{ psicologo_asignado.usuario.id }}">
+            <input type="hidden" name="destinatario_id" id="chat-destinatario-id" value="{{ doctores_chat.0.id }}">
             <input type="text" id="pat-chat-input" name="contenido" placeholder="Escribe tu mensaje..." required style="flex:1; border:1px solid #e2e8f0; border-radius:100px; padding:10px 15px; outline:none; font-family:var(--font-body);">
             <button type="submit" style="background:var(--c-purple); color:white; border:none; width:40px; height:40px; border-radius:50%; cursor:pointer;"><i class="fas fa-paper-plane"></i></button>
         </form>
@@ -1210,11 +1257,25 @@ function mostrarErrorCita(mensaje, opts) {
 </div>
 
 <script>
-// 🔐 getCookie() ahora vive de forma global arriba del archivo (ver script
-// cerca del inicio), para que exista siempre, tenga o no psicólogo asignado.
-
 let chatPatAbierto = false;
-const docId = "{{ psicologo_asignado.usuario.id }}";
+let currentDocId = "{{ doctores_chat.0.id }}";
+
+function cambiarDoctorChat(nuevoDocId) {
+    currentDocId = nuevoDocId;
+    const destInput = document.getElementById('chat-destinatario-id');
+    if (destInput) destInput.value = nuevoDocId;
+    
+    // Actualizar subtítulo
+    const select = document.getElementById('select-doctor-chat');
+    if (select) {
+        const selectedOption = select.options[select.selectedIndex];
+        const avatar = document.getElementById('pat-current-avatar');
+        if (avatar && selectedOption) {
+            avatar.innerText = selectedOption.text.charAt(0);
+        }
+    }
+    cargarMensajesPaciente();
+}
 
 function togglePatientChat() {
     const w = document.getElementById('patientChatWidget');
@@ -1229,7 +1290,8 @@ function togglePatientChat() {
 }
 
 function cargarMensajesPaciente() {
-    fetch(`/api/chat/historial/${docId}/`)
+    if (!currentDocId) return;
+    fetch(`/api/chat/historial/${currentDocId}/`)
         .then(r => r.json())
         .then(d => {
             if(d.status === 'success') {
@@ -1237,7 +1299,6 @@ function cargarMensajesPaciente() {
                 const wasBottom = box.scrollHeight - box.clientHeight <= box.scrollTop + 30;
                 
                 box.innerHTML = d.mensajes.map(m => {
-                    // Reutilizamos las clases CSS del doctor para los mensajes
                     const clase = m.es_mio ? 'msg-mine' : 'msg-theirs';
                     return `<div class="msg-bubble ${clase}" style="max-width:85%; padding:10px 14px;">${m.contenido} <span class="msg-time">${m.fecha}</span></div>`;
                 }).join('');
@@ -1262,17 +1323,10 @@ function enviarMensajePaciente(e) {
         });
 }
 
-// Revisar si hay mensajes nuevos para la campanita
+// Revisar si hay mensajes nuevos periódicamente
 setInterval(() => {
-    if(chatPatAbierto) {
+    if(chatPatAbierto && currentDocId) {
         cargarMensajesPaciente();
-    } else {
-        // Truco rápido: llamamos al historial sin abrir para ver si hay nuevos (opcionalmente podrías hacer un endpoint de "check_unread")
-        fetch(`/api/chat/historial/${docId}/`)
-            .then(r=>r.json())
-            .then(d => {
-                // Si tienes un endpoint para no_leidos sería mejor, pero por ahora se actualiza el chat en background
-            });
     }
 }, 3000);
 </script>

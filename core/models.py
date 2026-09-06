@@ -230,6 +230,48 @@ class UsuarioPerfil(models.Model):
         return str(self.usuario) if self.usuario else "Usuario sin nombre"
 
 # ==========================================
+# 2.1 TRATAMIENTOS Y SERVICIOS POR PACIENTE (MULTISERVICIO)
+# ==========================================
+class TratamientoPaciente(models.Model):
+    TIPO_CHOICES = [
+        ('individual', 'Terapia Individual'),
+        ('pareja', 'Terapia de Pareja'),
+        ('familiar', 'Terapia Familiar'),
+    ]
+    paciente = models.ForeignKey(User, on_delete=models.CASCADE, related_name='tratamientos', verbose_name="Paciente")
+    tipo_servicio = models.CharField(max_length=20, choices=TIPO_CHOICES, db_index=True, verbose_name="Modalidad de Servicio")
+    psicologo_asignado = models.ForeignKey(
+        PerfilPsicologo, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='tratamientos_asignados', verbose_name="Psicólogo Asignado"
+    )
+
+    # Historia clínica y notas clínicas específicas por modalidad de tratamiento
+    historia_clinica = models.TextField(blank=True, null=True, verbose_name="1. Cómo llega el paciente (Historia Clínica de esta modalidad)")
+    focos_rojos = models.TextField(blank=True, null=True, verbose_name="🚨 Focos Rojos / Alertas")
+    recommendaciones_generales = models.TextField(blank=True, null=True, verbose_name="4. Recomendaciones Generales")
+    notas_alta = models.TextField(blank=True, null=True, verbose_name="3. Cómo se va (El Alta)")
+
+    activo = models.BooleanField(default=True, db_index=True, verbose_name="Tratamiento Activo")
+    fecha_creacion = models.DateTimeField(auto_now_add=True, db_index=True)
+    fecha_actualizacion = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ['paciente', 'tipo_servicio']
+        verbose_name = "Tratamiento por Servicio"
+        verbose_name_plural = "Tratamientos por Servicio"
+        indexes = [
+            models.Index(fields=['paciente', 'tipo_servicio']),
+            models.Index(fields=['psicologo_asignado', 'activo']),
+        ]
+
+    def __str__(self):
+        doc_nombre = "Sin asignar"
+        if self.psicologo_asignado and hasattr(self.psicologo_asignado, 'usuario') and self.psicologo_asignado.usuario:
+            doc_nombre = self.psicologo_asignado.usuario.first_name or self.psicologo_asignado.usuario.username
+        paciente_nombre = self.paciente.first_name or self.paciente.username if self.paciente else "Desconocido"
+        return f"{paciente_nombre} - {self.get_tipo_servicio_display()} (Dr(a). {doc_nombre})"
+
+# ==========================================
 # 3. CITAS
 # ==========================================
 class Cita(models.Model):
@@ -309,14 +351,26 @@ class HistorialClinico(models.Model):
 # 5. CUESTIONARIO Y EXTRAS
 # ==========================================
 class CuestionarioRegistro(models.Model):
-    paciente = models.OneToOneField(User, on_delete=models.CASCADE, related_name='cuestionario_inicial')
+    paciente = models.ForeignKey(User, on_delete=models.CASCADE, related_name='cuestionarios')
     flujo_elegido = models.CharField(max_length=50, verbose_name="Tipo de Terapia", db_index=True) # 🔥 OPTIMIZADO
     respuestas = models.JSONField(verbose_name="Respuestas", default=dict)
     fecha_completado = models.DateTimeField(auto_now_add=True, db_index=True) # 🔥 OPTIMIZADO
 
+    class Meta:
+        indexes = [
+            models.Index(fields=['paciente', 'flujo_elegido']),
+            models.Index(fields=['paciente', 'fecha_completado']),
+        ]
+
     def __str__(self):
         paciente_str = self.paciente.first_name if self.paciente else "Desconocido"
         return f"Cuestionario: {paciente_str} ({self.flujo_elegido})"
+
+# Retrocompatibilidad transparente: permite que paciente.cuestionario_inicial siga funcionando
+if not hasattr(User, 'cuestionario_inicial'):
+    def _get_cuestionario_inicial(self):
+        return self.cuestionarios.order_by('-fecha_completado').first() if hasattr(self, 'cuestionarios') else None
+    User.add_to_class('cuestionario_inicial', property(_get_cuestionario_inicial))
 
 class DiaFestivo(models.Model):
     fecha = models.DateField(unique=True, verbose_name="Día bloqueado")
