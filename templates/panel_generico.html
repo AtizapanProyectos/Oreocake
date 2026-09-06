@@ -133,38 +133,183 @@ function mostrarErrorCita(mensaje, opts) {
        ESTRUCTURA GENERAL Y TABS
        ========================================================================== */
     .dashboard-header {
-        background: var(--c-purple); /* Color sólido duro, sin desvanecidos */
-        color: white; padding: 60px 40px; border-radius: 0 0 50px 50px;
-        margin-bottom: 40px; text-align: center;
+        background: linear-gradient(135deg, #2D1B69 0%, #3F267A 42%, #197B7B 85%, #25B8B8 100%);
+        color: white; 
+        padding: 55px 30px 48px; 
+        border-radius: 0 0 44px 44px;
+        margin-bottom: 35px; 
+        text-align: center;
+        box-shadow: 0 16px 40px rgba(45, 27, 105, 0.14);
+        position: relative;
+        overflow: hidden;
     }
 
     .chic-card {
-        background: #ffffff; border-radius: 30px; padding: 40px;
-        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.03); border: 1px solid #f1f5f9;
-        transition: 0.3s; height: 100%;
+        background: #ffffff; border-radius: 28px; padding: 38px;
+        box-shadow: 0 12px 35px rgba(0, 0, 0, 0.03); border: 1px solid #f1f5f9;
+        transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1); height: 100%;
     }
-    .chic-card:hover { transform: translateY(-5px); box-shadow: 0 20px 40px rgba(90, 63, 163, 0.08); }
+    .chic-card:hover { transform: translateY(-4px); box-shadow: 0 20px 40px rgba(90, 63, 163, 0.08); }
 
     .step-tag {
-        font-size: 12px; text-transform: uppercase; letter-spacing: 2px; font-weight: 800; font-family: var(--font-headings);
-        color: var(--c-purple); background: #f3e8ff; padding: 8px 15px;
+        font-size: 11.5px; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 800; font-family: var(--font-headings);
+        color: var(--c-purple); background: #f3e8ff; padding: 7px 16px;
         border-radius: 20px; display: inline-block; margin-bottom: 20px;
     }
 
-    .tabs-nav { display: flex; justify-content: center; gap: 20px; margin-bottom: 40px; flex-wrap: wrap; }
+    .tabs-nav { display: flex; justify-content: center; gap: 15px; margin-bottom: 35px; flex-wrap: wrap; }
     .tab-btn {
-        padding: 15px 40px; border-radius: 100px; font-weight: 700; font-size: 16px; font-family: var(--font-headings);
+        padding: 14px 34px; border-radius: 100px; font-weight: 700; font-size: 15px; font-family: var(--font-headings);
         cursor: pointer; transition: 0.3s; background: white; border: 2px solid #e2e8f0;
         color: var(--text-muted); display: flex; align-items: center; gap: 10px;
     }
+    .tab-btn:hover { border-color: var(--c-teal); color: var(--c-teal); transform: translateY(-1px); }
     .tab-btn.active {
-        background: var(--c-purple); color: white; border-color: var(--c-purple);
-        box-shadow: 0 10px 20px rgba(90, 63, 163, 0.2);
+        background: linear-gradient(135deg, var(--c-purple) 0%, #3B2474 100%); 
+        color: white; border-color: var(--c-purple);
+        box-shadow: 0 10px 22px rgba(90, 63, 163, 0.22);
     }
-    .tab-content { display: none; animation: fadeIn 0.5s; }
+    .tab-content { display: none; animation: fadeIn 0.4s ease; }
     .tab-content.active { display: block; }
 
     @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* ==========================================================================
+       HUB MULTISERVICIO (TARJETAS INDIVIDUAL, PAREJA, FAMILIAR)
+       ========================================================================== */
+    .servicios-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
+        gap: 22px;
+        margin: 25px 0 10px;
+    }
+    .servicio-card {
+        background: white;
+        border-radius: 24px;
+        padding: 30px 24px 26px;
+        border: 2px solid #eef2f6;
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.02);
+        cursor: pointer;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+    }
+    .servicio-card:hover {
+        transform: translateY(-6px);
+        box-shadow: 0 18px 36px rgba(0, 0, 0, 0.06);
+    }
+    
+    .servicio-card.card-indiv:hover, .servicio-card.card-indiv.active {
+        border-color: var(--c-teal);
+        box-shadow: 0 14px 32px rgba(37, 184, 184, 0.18);
+    }
+    .servicio-card.card-pareja:hover, .servicio-card.card-pareja.active {
+        border-color: var(--c-pink);
+        box-shadow: 0 14px 32px rgba(248, 91, 140, 0.18);
+    }
+    .servicio-card.card-familiar:hover, .servicio-card.card-familiar.active {
+        border-color: var(--c-orange);
+        box-shadow: 0 14px 32px rgba(242, 124, 33, 0.18);
+    }
+
+    .servicio-card.active::after {
+        content: '✓ Activo';
+        position: absolute;
+        top: 14px;
+        right: 14px;
+        font-size: 11px;
+        font-weight: 800;
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-family: var(--font-headings);
+    }
+    .servicio-card.card-indiv.active::after { background: #e6fffa; color: var(--c-teal); }
+    .servicio-card.card-pareja.active::after { background: #ffe4e6; color: var(--c-pink); }
+    .servicio-card.card-familiar.active::after { background: #ffedd5; color: var(--c-orange); }
+
+    .serv-badge {
+        font-size: 11px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        padding: 4px 12px;
+        border-radius: 20px;
+        margin-bottom: 16px;
+        font-family: var(--font-headings);
+    }
+    .serv-badge-indiv { background: #e6fffa; color: var(--c-teal); }
+    .serv-badge-pareja { background: #ffe4e6; color: var(--c-pink); }
+    .serv-badge-familiar { background: #ffedd5; color: var(--c-orange); }
+
+    .serv-icon-halo {
+        width: 68px;
+        height: 68px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 28px;
+        margin-bottom: 15px;
+        transition: 0.3s;
+    }
+    .servicio-card:hover .serv-icon-halo {
+        transform: scale(1.1);
+    }
+    .serv-halo-indiv { background: #f0fdfa; color: var(--c-teal); border: 2px solid #ccfbf1; }
+    .serv-halo-pareja { background: #fff1f2; color: var(--c-pink); border: 2px solid #ffe4e6; }
+    .serv-halo-familiar { background: #fff7ed; color: var(--c-orange); border: 2px solid #ffedd5; }
+
+    .serv-title {
+        font-family: var(--font-headings);
+        font-size: 1.3rem;
+        font-weight: 800;
+        color: var(--text-main);
+        margin: 0 0 4px;
+    }
+    .serv-price {
+        font-family: var(--font-headings);
+        font-size: 1.7rem;
+        font-weight: 900;
+        color: var(--text-main);
+        margin: 0 0 10px;
+    }
+    .serv-curr {
+        font-size: 12.5px;
+        font-weight: 700;
+        color: var(--text-muted);
+    }
+    .serv-desc {
+        font-size: 13.5px;
+        color: var(--text-muted);
+        line-height: 1.5;
+        margin: 0 0 18px;
+        flex: 1;
+    }
+    .serv-btn {
+        width: 100%;
+        padding: 12px 18px;
+        border-radius: 100px;
+        border: none;
+        font-weight: 700;
+        font-size: 13.5px;
+        font-family: var(--font-headings);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        transition: 0.25s;
+    }
+    .serv-btn-indiv { background: var(--c-teal); color: white; }
+    .serv-btn-indiv:hover { background: #168a8a; transform: translateY(-1px); }
+    .serv-btn-pareja { background: var(--c-pink); color: white; }
+    .serv-btn-pareja:hover { background: #e04475; transform: translateY(-1px); }
+    .serv-btn-familiar { background: var(--c-orange); color: white; }
+    .serv-btn-familiar:hover { background: #d96510; transform: translateY(-1px); }
 
     /* ==========================================================================
        ESTILOS DEL AGENDADOR CLÍNICO ORIGINAL
@@ -174,34 +319,35 @@ function mostrarErrorCita(mensaje, opts) {
     .mood-btn-huge:hover { transform: scale(1.2); color: var(--c-yellow); }
     .mood-btn-huge.selected { color: var(--c-purple); transform: scale(1.2); }
 
-    .date-carousel { display: flex; gap: 20px !important; overflow-x: auto; padding-top: 10px; padding-bottom: 20px !important; -ms-overflow-style: none; scrollbar-width: none; flex-grow: 1; }
+    .date-carousel { display: flex; gap: 16px !important; overflow-x: auto; padding-top: 10px; padding-bottom: 20px !important; -ms-overflow-style: none; scrollbar-width: none; flex-grow: 1; }
     .date-carousel::-webkit-scrollbar { display: none; }
-    .date-chip { padding: 22px 18px !important; border-radius: 20px; border: 2px solid #f3f4f6; background: #ffffff; box-shadow: 0 4px 15px rgba(0,0,0,0.02); flex-shrink: 0; cursor: pointer; transition: 0.3s; font-family: var(--font-headings); }
-    .date-chip:hover { border-color: var(--c-purple); }
-    .date-chip.active { box-shadow: 0 10px 25px rgba(90, 63, 163, 0.2); transform: translateY(-3px); border-color: var(--c-purple); background: var(--c-purple); color: white; }
+    .date-chip { padding: 18px 16px !important; border-radius: 20px; border: 2px solid #f1f5f9; background: #ffffff; box-shadow: 0 4px 15px rgba(0,0,0,0.02); flex-shrink: 0; cursor: pointer; transition: 0.3s; font-family: var(--font-headings); min-width: 80px; }
+    .date-chip:hover { border-color: var(--c-teal); }
+    .date-chip.active { box-shadow: 0 10px 25px rgba(37, 184, 184, 0.25); transform: translateY(-3px); border-color: var(--c-teal); background: var(--c-teal); color: white; }
     
-    .slots-container { gap: 15px !important; margin-top: 15px; display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
-    .time-slot-btn { padding: 15px !important; border-radius: 12px; border: 2px solid #f3f4f6; background: white; color: var(--text-main); font-weight: 700; cursor: pointer; transition: all 0.2s; font-family: var(--font-body); }
-    .time-slot-btn:hover, .time-slot-btn.active { background: var(--c-purple); color: white; border-color: var(--c-purple); transform: translateY(-2px); }
+    .slots-container { gap: 14px !important; margin-top: 15px; display: grid; grid-template-columns: repeat(auto-fill, minmax(115px, 1fr)); }
+    .time-slot-btn { padding: 14px 10px !important; border-radius: 12px; border: 2px solid #f1f5f9; background: white; color: var(--text-main); font-weight: 700; cursor: pointer; transition: all 0.2s; font-family: var(--font-body); font-size: 14px; }
+    .time-slot-btn:hover, .time-slot-btn.active { background: var(--c-teal); color: white; border-color: var(--c-teal); transform: translateY(-2px); box-shadow: 0 4px 12px rgba(37, 184, 184, 0.2); }
 
     .btn-reagendar-suave {
         display: inline-flex;
         align-items: center;
         gap: 8px;
-        background: #f3e8ff;
-        color: var(--c-purple);
-        border: none;
-        padding: 12px 24px;
+        background: #f1f5f9;
+        color: var(--text-main);
+        border: 1px solid #e2e8f0;
+        padding: 10px 22px;
         border-radius: 50px;
         font-weight: 700;
-        font-size: 14px;
+        font-size: 13.5px;
         font-family: var(--font-body);
         cursor: pointer;
         transition: 0.3s;
     }
     .btn-reagendar-suave:hover {
-        background: var(--c-purple);
+        background: var(--c-teal);
         color: white;
+        border-color: var(--c-teal);
         transform: translateY(-2px);
     }
 
@@ -384,8 +530,11 @@ function mostrarErrorCita(mensaje, opts) {
 </style>
 
 <div class="dashboard-header">
-    <h1 style="font-family: var(--font-headings); font-size: 3rem; margin-bottom: 10px; font-weight: 800;">¡Hola, {{ user.first_name }}!</h1>
-    <p style="font-size: 1.2rem; opacity: 0.9; font-weight: 300;">Tu espacio integral de sanación y bienestar personal.</p>
+    <div style="display: inline-flex; align-items: center; gap: 8px; background: rgba(255, 255, 255, 0.16); backdrop-filter: blur(8px); padding: 6px 18px; border-radius: 50px; font-size: 13px; font-weight: 700; margin-bottom: 16px; border: 1px solid rgba(255, 255, 255, 0.28); color: white;">
+        <i class="fas fa-seedling" style="color: var(--c-yellow);"></i> Tu Espacio Integral de Bienestar HOPE
+    </div>
+    <h1 style="font-family: var(--font-headings); font-size: 2.8rem; margin-bottom: 10px; font-weight: 800; letter-spacing: -0.5px;">¡Hola, {{ user.first_name }}!</h1>
+    <p style="font-size: 1.15rem; opacity: 0.92; font-weight: 300; max-width: 650px; margin: 0 auto;">Cuidamos tu salud emocional con especialistas certificados en cada etapa de tu vida.</p>
 </div>
 
 <div class="container" style="max-width: 1200px; margin: 0 auto; padding-bottom: 100px;">
@@ -398,22 +547,26 @@ function mostrarErrorCita(mensaje, opts) {
     <div id="tab-clinica" class="tab-content active">
         
         {% if cita_proxima %}
-        <div class="chic-card" style="border-top: 6px solid var(--c-purple); text-align: center; margin-bottom: 40px;">
-            <span class="step-tag" style="background: #f3e8ff; color: var(--c-purple);">Próxima Sesión Confirmada</span>
-            <div style="margin: 20px 0;"><i class="fas fa-video" style="font-size: 60px; color: var(--c-purple);"></i></div>
-            <h2 style="font-family: var(--font-headings); font-size: 2.5rem; color: var(--text-main);">Tu sala te espera</h2>
+        <div class="chic-card" style="border-top: 6px solid var(--c-teal); text-align: center; margin-bottom: 35px; box-shadow: 0 16px 40px rgba(37, 184, 184, 0.08);">
+            <span class="step-tag" style="background: #e6fffa; color: var(--c-teal); border: 1px solid #b2f5ea;">
+                <i class="fas fa-check-circle" style="margin-right: 5px;"></i> Próxima Sesión Confirmada
+            </span>
+            <div style="width: 76px; height: 76px; border-radius: 50%; background: #f0fdfa; color: var(--c-teal); display: flex; align-items: center; justify-content: center; margin: 15px auto 18px; font-size: 32px; box-shadow: 0 8px 25px rgba(37, 184, 184, 0.15); border: 2px solid #ccfbf1;">
+                <i class="fas fa-video"></i>
+            </div>
+            <h2 style="font-family: var(--font-headings); font-size: 2.2rem; color: var(--text-main); margin-bottom: 4px;">Tu sala te espera</h2>
+            <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 20px;">
+                Modalidad: <strong style="color: var(--text-main);">{{ cita_proxima.get_tipo_sesion_display|default:cita_proxima.tipo_sesion|title }}</strong>
+            </p>
             
-            <div style="background: #f8fafc; padding: 30px; border-radius: 20px; margin: 25px auto; border: 1px solid #e2e8f0; max-width: 500px;">
-                <p style="color: var(--text-muted); font-size: 16px;">Tienes una sesión programada para el:</p>
-                <h3 style="color: var(--text-main); font-size: 22px; font-family: var(--font-headings);">{{ cita_proxima.fecha|date:"l, d \d\e F"|title }}</h3>
-                <h2 id="horaCitaCDMX" data-fecha="{{ cita_proxima.fecha|date:'Y-m-d' }}" data-hora="{{ cita_proxima.hora|time:'H:i:s' }}" style="color: var(--c-purple); font-size: 36px; font-weight: 800; font-family: var(--font-headings); margin-bottom: 2px;">{{ cita_proxima.hora|time:"h:i A" }} <span style="font-size: 13px; font-weight: 700; color: var(--text-muted); vertical-align: middle;">CDMX</span></h2>
+            <div style="background: #f8fafc; padding: 25px 30px; border-radius: 20px; margin: 20px auto; border: 1px solid #e2e8f0; max-width: 500px;">
+                <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 6px;">Tienes una sesión programada para el:</p>
+                <h3 style="color: var(--text-main); font-size: 22px; font-family: var(--font-headings); margin-bottom: 8px;">{{ cita_proxima.fecha|date:"l, d \d\e F"|title }}</h3>
+                <h2 id="horaCitaCDMX" data-fecha="{{ cita_proxima.fecha|date:'Y-m-d' }}" data-hora="{{ cita_proxima.hora|time:'H:i:s' }}" style="color: var(--c-teal); font-size: 36px; font-weight: 800; font-family: var(--font-headings); margin-bottom: 2px;">{{ cita_proxima.hora|time:"h:i A" }} <span style="font-size: 13px; font-weight: 700; color: var(--text-muted); vertical-align: middle;">CDMX</span></h2>
                 <p id="horaLocalConvertida" style="font-size: 12px; color: var(--text-muted); margin: 2px 0 0 0;"></p>
             </div>
 
             <script>
-                // Muestra automáticamente la hora local del usuario junto a la hora CDMX.
-                // Puramente frontend (usa la zona horaria del navegador): no requiere
-                // cambios de backend/vistas de Django ni geolocalización por IP.
                 document.addEventListener("DOMContentLoaded", function () {
                     const el = document.getElementById('horaCitaCDMX');
                     const resultado = document.getElementById('horaLocalConvertida');
@@ -424,13 +577,11 @@ function mostrarErrorCita(mensaje, opts) {
                     if (!fechaStr || !horaStr) return;
 
                     const zonaLocal = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
-                    // Si el usuario ya está en horario de CDMX, no repetimos la misma hora.
                     if (zonaLocal === 'America/Mexico_City') return;
 
                     const [anio, mes, dia] = fechaStr.split('-').map(Number);
                     const [hh, mm, ss] = horaStr.split(':').map(Number);
 
-                    // CDMX mantiene offset fijo UTC-6 todo el año (sin horario de verano desde 2022)
                     const utcMillis = Date.UTC(anio, mes - 1, dia, hh + 6, mm, ss || 0);
                     const citaComoUTC = new Date(utcMillis);
                     const textoHora = citaComoUTC.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
@@ -439,7 +590,7 @@ function mostrarErrorCita(mensaje, opts) {
                 });
             </script>
 
-{% if cita_proxima.modalidad == 'Presencial' %}
+            {% if cita_proxima.modalidad == 'Presencial' %}
             <div style="background: white; border: 2px dashed var(--c-purple); border-radius: 20px; padding: 40px 30px; max-width: 450px; margin: 0 auto; text-align: center; position: relative; box-shadow: 0 15px 40px rgba(90,63,163,0.1);">
                 <div style="position: absolute; top: -15px; left: 50%; transform: translateX(-50%); background: var(--c-purple); color: white; padding: 8px 25px; border-radius: 100px; font-weight: 800; font-size: 13px; letter-spacing: 2px; text-transform: uppercase; font-family: var(--font-headings);">
                     Pase de Acceso Presencial
@@ -462,14 +613,11 @@ function mostrarErrorCita(mensaje, opts) {
                     <span>TOMA CAPTURA DE ESTE PASE</span>
                 </div>
             </div>
-
-        {% else %}
-
-
-                    <div id="btn-reagendar-container" style="text-align: center; margin: 10px 0 5px;">
-            <button type="button" onclick="toggleSeccionReagendar()" class="btn-reagendar-suave" id="btn-toggle-reagendar">
-                <i class="fas fa-calendar-alt"></i> Reagendar mi cita
-            </button>
+            {% else %}
+            <div id="btn-reagendar-container" style="text-align: center; margin: 10px 0 15px;">
+                <button type="button" onclick="toggleSeccionReagendar()" class="btn-reagendar-suave" id="btn-toggle-reagendar">
+                    <i class="fas fa-calendar-alt"></i> Reagendar este horario
+                </button>
             </div>
 
             <div id="seccionReagendar" class="seccion-reagendar">
@@ -502,114 +650,131 @@ function mostrarErrorCita(mensaje, opts) {
                   class="btn-brutal btn-primary" onclick="confirmarReagendo()">Confirmar nuevo horario</button>
               </div>
             </div>
-            {% if cita_proxima.enlace_meet %}
-                <!-- Candado por horario ELIMINADO a petición: el acceso a la sala ya no se
-                     restringe por tiempo; el botón de ingreso queda siempre visible/activo. -->
-                <div id="btn-unlocked" style="display: block; max-width: 500px; margin: 0 auto;">
-                <a href="{% url 'formulario_previo_meet' cita_proxima.id %}" class="btn-brutal btn-primary" style="width: 100%; justify-content: center; font-size: 18px; text-decoration: none; border-radius: 20px; display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
-                    Ingresar a mi Consulta Online <i class="fas fa-video"></i>
-                </a>
-                <p style="font-size: 12px; color: #94a3b8; text-align: center; margin: -8px 0 15px;"><i class="fas fa-circle-info"></i> Antes de entrar te pediremos responder un breve formulario (2 min).</p>
 
-                    <!-- Botón de soporte WhatsApp debajo del botón de Meet -->
-                <a href="https://wa.me/525521130230?text=Hola%2C%20tengo%20problemas%20para%20ingresar%20a%20mi%20sesi%C3%B3n%20online" 
-                    target="_blank" 
-                    style="display: flex; align-items: center; justify-content: center; gap: 8px; background: #25D366; color: white; padding: 12px 20px; border-radius: 20px; text-decoration: none; font-weight: 600; font-size: 14px; transition: 0.3s;">
-                        <i class="fab fa-whatsapp" style="font-size: 18px;"></i>
-                        ¿Problemas para entrar? Escríbenos
-                </a>
+            {% if cita_proxima.enlace_meet %}
+                <div id="btn-unlocked" style="display: block; max-width: 500px; margin: 0 auto;">
+                    <a href="{% url 'formulario_previo_meet' cita_proxima.id %}" class="btn-brutal btn-primary" style="background: linear-gradient(135deg, var(--c-purple) 0%, #3B2474 100%); width: 100%; justify-content: center; font-size: 17px; text-decoration: none; border-radius: 20px; display: flex; align-items: center; gap: 10px; margin-bottom: 12px; box-shadow: 0 10px 25px rgba(90, 63, 163, 0.2);">
+                        Ingresar a mi Consulta Online <i class="fas fa-video"></i>
+                    </a>
+                    <p style="font-size: 12px; color: #94a3b8; text-align: center; margin: 0 0 14px;"><i class="fas fa-circle-info"></i> Responderás un breve cuestionario previo de 2 min.</p>
+
+                    <a href="https://wa.me/525521130230?text=Hola%2C%20tengo%20problemas%20para%20ingresar%20a%20mi%20sesi%C3%B3n%20online" 
+                        target="_blank" 
+                        style="display: flex; align-items: center; justify-content: center; gap: 8px; background: #25D366; color: white; padding: 12px 20px; border-radius: 20px; text-decoration: none; font-weight: 600; font-size: 14px; transition: 0.3s; box-shadow: 0 4px 15px rgba(37, 211, 102, 0.2);">
+                            <i class="fab fa-whatsapp" style="font-size: 18px;"></i>
+                            ¿Problemas para entrar? Escríbenos
+                    </a>
                     <p style="font-size: 10px; color: #94a3b8; text-align: center; margin-top: 8px;">Soporte técnico vía WhatsApp</p>
                 </div>
-    {% else %}
-    <div style="background: #fffaf0; border: 2px solid #ffedd5; padding: 25px; border-radius: 20px; color: var(--c-orange); max-width: 500px; margin: 0 auto; text-align: center;">
-        <i class="fas fa-file-invoice-dollar" style="font-size: 30px; margin-bottom: 12px;"></i>
-        <p style="font-weight: 800; font-family: var(--font-headings); font-size: 18px;">Validación de pago requerida</p>
-        <p style="font-size: 14px; margin: 5px 0 20px 0; color: var(--text-main);">Aún no se ha generado tu enlace de Meet. Para liberar tu sala virtual, por favor envíanos tu comprobante de pago.</p>
-        
-        <a href="https://wa.me/525521130230?text=Hola,%20adjunto%20mi%20comprobante%20de%20pago%20para%20mi%20sesi%C3%B3n" 
-           target="_blank" 
-           style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; background: #25D366; color: white; padding: 12px 24px; border-radius: 20px; text-decoration: none; font-weight: 600; font-size: 14px; transition: 0.3s; width: 100%;">
-            <i class="fab fa-whatsapp" style="font-size: 20px;"></i>
-            Enviar comprobante por WhatsApp
-        </a>
-    </div>
-    {% endif %}
-        {% endif %}
+            {% else %}
+                <div style="background: #fffaf0; border: 2px solid #ffedd5; padding: 25px; border-radius: 20px; color: var(--c-orange); max-width: 500px; margin: 0 auto; text-align: center;">
+                    <i class="fas fa-file-invoice-dollar" style="font-size: 30px; margin-bottom: 12px;"></i>
+                    <p style="font-weight: 800; font-family: var(--font-headings); font-size: 18px;">Validación de pago requerida</p>
+                    <p style="font-size: 14px; margin: 5px 0 20px 0; color: var(--text-main);">Aún no se ha generado tu enlace de Meet. Para liberar tu sala virtual, por favor envíanos tu comprobante de pago.</p>
+                    
+                    <a href="https://wa.me/525521130230?text=Hola,%20adjunto%20mi%20comprobante%20de%20pago%20para%20mi%20sesi%C3%B3n" 
+                       target="_blank" 
+                       style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; background: #25D366; color: white; padding: 12px 24px; border-radius: 20px; text-decoration: none; font-weight: 600; font-size: 14px; transition: 0.3s; width: 100%;">
+                        <i class="fab fa-whatsapp" style="font-size: 20px;"></i>
+                        Enviar comprobante por WhatsApp
+                    </a>
+                </div>
+            {% endif %}
+            {% endif %}
 
+            <!-- 🔥 BANNER: Agendar otra sesión o modalidad diferente -->
+            <div style="margin-top: 30px; padding-top: 22px; border-top: 1px solid #f1f5f9; text-align: center;">
+                <p style="font-size: 14px; color: var(--text-muted); margin: 0 0 12px; font-weight: 600;">
+                    ¿Deseas iniciar o continuar otro proceso con nosotros?
+                </p>
+                <button type="button" onclick="scrollHaciaServicios()" style="display: inline-flex; align-items: center; gap: 10px; background: linear-gradient(135deg, var(--c-teal) 0%, #168a8a 100%); color: white; border: none; padding: 12px 28px; border-radius: 50px; font-weight: 700; font-size: 14px; cursor: pointer; box-shadow: 0 8px 20px rgba(37, 184, 184, 0.25); transition: 0.3s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+                    <i class="fas fa-calendar-plus"></i> Agendar otra sesión (Individual / Pareja / Familiar)
+                </button>
+            </div>
+        </div>
+
+        <!-- 🩺 PROFESIONALES ASIGNADOS AL PACIENTE -->
         {% if tratamientos %}
-            <hr style="margin: 40px 0 30px; border: 1px solid #f1f5f9;">
-            <div style="text-align: left; background: #f8fafc; border-radius: 24px; padding: 25px; margin-top: 20px;">
-                <h4 style="font-family: var(--font-headings); font-size: 1.1rem; color: var(--text-main); margin: 0 0 15px 0; text-transform: uppercase; letter-spacing: 1px;">
-                    <i class="fas fa-user-md" style="color: var(--c-purple);"></i> Tus Profesionales Asignados
-                </h4>
-                <div style="display: flex; flex-direction: column; gap: 15px;">
-                    {% for t in tratamientos %}
-                        {% if t.psicologo_asignado %}
-                        <div style="display: flex; align-items: center; gap: 15px; background: white; padding: 15px; border-radius: 16px; border: 1px solid #e2e8f0; flex-wrap: wrap;">
-                            {% if t.psicologo_asignado.foto %}
-                                <img src="{{ t.psicologo_asignado.foto.url }}" alt="Foto del psicólogo" loading="lazy" decoding="async" width="60" height="60" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 2px solid var(--c-purple);">
-                            {% else %}
-                                <div style="width: 60px; height: 60px; border-radius: 50%; background: #e2e8f0; display: flex; align-items: center; justify-content: center; color: var(--c-purple); font-size: 24px;">
-                                    <i class="fas fa-user-md"></i>
+            <div class="chic-card" style="margin-bottom: 35px; border-top: 5px solid var(--c-purple);">
+                <div style="text-align: left;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-bottom: 20px;">
+                        <h4 style="font-family: var(--font-headings); font-size: 1.25rem; color: var(--text-main); margin: 0; font-weight: 800; display: flex; align-items: center; gap: 8px;">
+                            <i class="fas fa-user-md" style="color: var(--c-purple);"></i> Tus Profesionales Asignados
+                        </h4>
+                        <span style="font-size: 12px; color: var(--text-muted); font-weight: 600;">Equipo clínico multidisciplinario</span>
+                    </div>
+
+                    <div style="display: flex; flex-direction: column; gap: 15px;">
+                        {% for t in tratamientos %}
+                            {% if t.psicologo_asignado %}
+                            <div style="display: flex; align-items: center; justify-content: space-between; gap: 18px; background: #ffffff; padding: 18px 22px; border-radius: 20px; border: 1.5px solid {% if t.tipo_servicio == 'pareja' %}#ffe4e6{% elif t.tipo_servicio == 'familiar' %}#ffedd5{% else %}#f3e8ff{% endif %}; flex-wrap: wrap; box-shadow: 0 4px 15px rgba(0,0,0,0.02);">
+                                <div style="display: flex; align-items: center; gap: 16px;">
+                                    {% if t.psicologo_asignado.foto %}
+                                        <img src="{{ t.psicologo_asignado.foto.url }}" alt="Foto del psicólogo" loading="lazy" decoding="async" width="60" height="60" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 2.5px solid {% if t.tipo_servicio == 'pareja' %}var(--c-pink){% elif t.tipo_servicio == 'familiar' %}var(--c-orange){% else %}var(--c-purple){% endif %};">
+                                    {% else %}
+                                        <div style="width: 60px; height: 60px; border-radius: 50%; background: #f8fafc; display: flex; align-items: center; justify-content: center; color: var(--c-purple); font-size: 24px; border: 1px solid #e2e8f0;">
+                                            <i class="fas fa-user-md"></i>
+                                        </div>
+                                    {% endif %}
+                                    <div>
+                                        <span style="display: inline-block; background: {% if t.tipo_servicio == 'pareja' %}#ffe4e6; color: var(--c-pink);{% elif t.tipo_servicio == 'familiar' %}#ffedd5; color: var(--c-orange);{% else %}#f3e8ff; color: var(--c-purple);{% endif %} font-weight: 800; font-size: 11px; padding: 3px 12px; border-radius: 12px; text-transform: uppercase; margin-bottom: 4px;">
+                                            {{ t.get_tipo_servicio_display }}
+                                        </span>
+                                        <h4 style="font-family: var(--font-headings); font-size: 1.2rem; margin: 0 0 3px; color: var(--text-main); font-weight: 800;">
+                                            Dr(a). {{ t.psicologo_asignado.usuario.first_name }} {{ t.psicologo_asignado.usuario.last_name|default:"" }}
+                                        </h4>
+                                        <p style="margin: 0; font-size: 12px; color: var(--text-muted);">
+                                            <i class="fas fa-id-card" style="color: var(--c-teal);"></i> Cédula: {{ t.psicologo_asignado.cedula_profesional }} · {{ t.psicologo_asignado.especialidad|default:"Psicoterapeuta" }}
+                                        </p>
+                                    </div>
                                 </div>
-                            {% endif %}
-                            <div style="flex: 1;">
-                                <span style="display: inline-block; background: #f3e8ff; color: var(--c-purple); font-weight: 700; font-size: 11px; padding: 2px 10px; border-radius: 10px; text-transform: uppercase; margin-bottom: 4px;">
-                                    {{ t.get_tipo_servicio_display }}
-                                </span>
-                                <h4 style="font-family: var(--font-headings); font-size: 1.2rem; margin: 0 0 4px; color: var(--text-main);">
-                                    {{ t.psicologo_asignado.usuario.first_name }} {{ t.psicologo_asignado.usuario.last_name|default:"" }}
-                                </h4>
-                                <p style="margin: 0; font-size: 12px; color: var(--text-muted);">
-                                    <i class="fas fa-id-card"></i> Cédula: {{ t.psicologo_asignado.cedula_profesional }} · {{ t.psicologo_asignado.especialidad|default:"Psicoterapeuta" }}
-                                </p>
+                                <button type="button" onclick="seleccionarServicioHub('{{ t.tipo_servicio }}')" style="background: white; border: 1.5px solid #e2e8f0; border-radius: 14px; padding: 10px 18px; font-size: 13px; font-weight: 700; color: var(--text-main); cursor: pointer; display: flex; align-items: center; gap: 8px; transition: 0.2s;" onmouseover="this.style.borderColor='var(--c-teal)'; this.style.color='var(--c-teal)';" onmouseout="this.style.borderColor='#e2e8f0'; this.style.color='var(--text-main)';">
+                                    <i class="fas fa-calendar-alt" style="color: var(--c-teal);"></i> Agendar en esta modalidad
+                                </button>
                             </div>
-                        </div>
-                        {% endif %}
-                    {% endfor %}
+                            {% endif %}
+                        {% endfor %}
+                    </div>
                 </div>
             </div>
         {% elif psicologo_asignado %}
-            <hr style="margin: 40px 0 30px; border: 1px solid #f1f5f9;">
-            <div style="text-align: left; background: #f8fafc; border-radius: 24px; padding: 25px; margin-top: 20px;">
-                <div style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap;">
-                    {% if psicologo_asignado.foto %}
-                        <img src="{{ psicologo_asignado.foto.url }}" alt="Foto del psicólogo" loading="lazy" decoding="async" width="100" height="100" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 3px solid var(--c-purple);">
-                    {% else %}
-                        <div style="width: 100px; height: 100px; border-radius: 50%; background: #e2e8f0; display: flex; align-items: center; justify-content: center; color: var(--c-purple); font-size: 40px;">
-                            <i class="fas fa-user-md"></i>
+            <div class="chic-card" style="margin-bottom: 35px; border-top: 5px solid var(--c-purple);">
+                <div style="text-align: left;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 15px; flex-wrap: wrap;">
+                        <div style="display: flex; align-items: center; gap: 18px;">
+                            {% if psicologo_asignado.foto %}
+                                <img src="{{ psicologo_asignado.foto.url }}" alt="Foto del psicólogo" loading="lazy" decoding="async" width="70" height="70" style="width: 70px; height: 70px; border-radius: 50%; object-fit: cover; border: 3px solid var(--c-purple);">
+                            {% else %}
+                                <div style="width: 70px; height: 70px; border-radius: 50%; background: #f8fafc; display: flex; align-items: center; justify-content: center; color: var(--c-purple); font-size: 28px; border: 1px solid #e2e8f0;">
+                                    <i class="fas fa-user-md"></i>
+                                </div>
+                            {% endif %}
+                            <div>
+                                <span class="step-tag" style="margin: 0 0 6px; padding: 4px 12px; font-size: 11px;">Terapeuta Asignado</span>
+                                <h3 style="font-family: var(--font-headings); font-size: 1.35rem; margin: 0 0 4px; color: var(--text-main); font-weight: 800;">
+                                    Dr(a). {{ psicologo_asignado.usuario.first_name }} {{ psicologo_asignado.usuario.last_name }}
+                                </h3>
+                                <p style="margin: 0; font-size: 13px; color: var(--text-muted);">
+                                    <i class="fas fa-id-card" style="color: var(--c-teal);"></i> Cédula: {{ psicologo_asignado.cedula_profesional }} · {{ psicologo_asignado.especialidad|default:"Psicoterapeuta" }}
+                                </p>
+                            </div>
                         </div>
-                    {% endif %}
-                    <div style="flex: 1;">
-                        <h3 style="font-family: var(--font-headings); font-size: 1.5rem; margin: 0 0 5px; color: var(--text-main);">
-                            {{ psicologo_asignado.usuario.first_name }} {{ psicologo_asignado.usuario.last_name }}
-                        </h3>
-                        <p style="margin: 0; color: var(--c-purple); font-weight: 600;">
-                            <i class="fas fa-stethoscope"></i> {{ psicologo_asignado.especialidad|default:"Psicoterapeuta" }}
-                        </p>
-                        <p style="margin: 5px 0 0; font-size: 13px; color: var(--text-muted);">
-                            <i class="fas fa-id-card"></i> Cédula: {{ psicologo_asignado.cedula_profesional }}
-                        </p>
+                        <button type="button" onclick="seleccionarServicioHub('individual')" style="background: white; border: 1.5px solid #e2e8f0; border-radius: 14px; padding: 10px 18px; font-size: 13px; font-weight: 700; color: var(--text-main); cursor: pointer; display: flex; align-items: center; gap: 8px; transition: 0.2s;" onmouseover="this.style.borderColor='var(--c-teal)'; this.style.color='var(--c-teal)';" onmouseout="this.style.borderColor='#e2e8f0'; this.style.color='var(--text-main)';">
+                            <i class="fas fa-calendar-alt" style="color: var(--c-teal);"></i> Agendar sesión
+                        </button>
                     </div>
                 </div>
-                {% if psicologo_asignado.cv_breve %}
-                    <div style="margin-top: 15px; font-size: 14px; color: var(--text-muted); border-top: 1px solid #e2e8f0; padding-top: 15px;">
-                        <i class="fas fa-graduation-cap"></i> {{ psicologo_asignado.cv_breve|truncatechars:150 }}
-                    </div>
-                {% endif %}
             </div>
         {% endif %}
 
-
-        </div>
-        
-        {% else %} {% if tiene_terapeuta_asignado %}
-            <div class="chic-card fade-in-up" style="border-top: 6px solid var(--c-yellow); margin-bottom: 40px; text-align: center; background: #fffaf0;">
-                <i class="fas fa-award" style="font-size: 60px; color: var(--c-yellow); margin-bottom: 20px;"></i>
-                <h2 style="font-family: var(--font-headings); font-size: 2.5rem; margin-bottom: 10px;">¡Excelente trabajo en tu sesión!</h2>
-                <p style="font-size: 18px; font-weight: 600; margin-bottom: 10px;">¿Cómo te sentiste hoy?</p>
+        {% else %}
+            {% if tiene_terapeuta_asignado %}
+            <div class="chic-card fade-in-up" style="border-top: 6px solid var(--c-yellow); margin-bottom: 35px; text-align: center; background: #fffdf5;">
+                <i class="fas fa-award" style="font-size: 55px; color: var(--c-yellow); margin-bottom: 18px;"></i>
+                <h2 style="font-family: var(--font-headings); font-size: 2.2rem; margin-bottom: 8px; font-weight: 800;">¡Excelente trabajo en tu proceso!</h2>
+                <p style="font-size: 17px; font-weight: 600; margin-bottom: 10px; color: var(--text-main);">¿Cómo te sentiste hoy?</p>
                 
-                <div class="mood-tracker-gigante" style="margin-bottom: 30px;">
+                <div class="mood-tracker-gigante" style="margin-bottom: 25px;">
                     <button class="mood-btn-huge" data-animo="Muy mal" title="Muy mal"><i class="fas fa-sad-cry"></i></button>
                     <button class="mood-btn-huge" data-animo="Triste" title="Triste"><i class="fas fa-frown"></i></button>
                     <button class="mood-btn-huge" data-animo="Normal" title="Normal"><i class="fas fa-meh"></i></button>
@@ -617,208 +782,200 @@ function mostrarErrorCita(mensaje, opts) {
                     <button class="mood-btn-huge" data-animo="Excelente" title="Excelente"><i class="fas fa-grin-stars"></i></button>
                 </div>
 
-                <p style="color: var(--text-muted); margin-bottom: 25px; max-width: 550px; margin-left: auto; margin-right: auto;">Cada paso es un avance enorme. Para mantener este buen ritmo, hemos calculado tu próxima fecha ideal (1 semana).</p>
+                <p style="color: var(--text-muted); margin-bottom: 22px; max-width: 550px; margin-left: auto; margin-right: auto; font-size: 14px;">Cada paso es un avance enorme. Para mantener este buen ritmo, hemos calculado tu próxima fecha ideal recomendada.</p>
 
-                <div style="background: white; border: 2px solid var(--c-purple); padding: 30px; border-radius: 20px; display: inline-block; max-width: 500px; width: 100%;">
-                    <span id="mensaje-proxima-semana" style="font-size: 18px; color: var(--c-purple); font-weight: 700; display: block; margin-bottom: 20px;">
+                <div style="background: white; border: 2px solid #e2e8f0; padding: 25px 30px; border-radius: 20px; display: inline-block; max-width: 500px; width: 100%; box-shadow: 0 6px 20px rgba(0,0,0,0.03);">
+                    <span id="mensaje-proxima-semana" style="font-size: 16px; color: var(--c-teal); font-weight: 700; display: block; margin-bottom: 18px;">
                         <i class="fas fa-calendar-check"></i> Calculando tu próxima fecha...
                     </span>
                     
-                    <button id="btn-confirmar-rapido" class="btn-brutal btn-primary" onclick="cargarHorariosRapidos()" style="width: 100%;">
-                        Ver horarios de ese día <i class="fas fa-clock"></i>
+                    <button id="btn-confirmar-rapido" class="btn-brutal btn-primary" onclick="cargarHorariosRapidos()" style="background: linear-gradient(135deg, var(--c-purple) 0%, #3B2474 100%); width: 100%; font-size: 14px;">
+                        Ver horarios recomendados <i class="fas fa-clock"></i>
                     </button>
 
                     <div id="horarios-rapidos-container" style="display: none; margin-top: 20px; border-top: 1px dashed #e2e8f0; padding-top: 20px;">
                         <p style="font-weight: 600; margin-bottom: 15px;">Horarios disponibles:</p>
                         <div id="quick-slots" class="slots-container" style="justify-content: center; margin-top: 0;"></div>
                     </div>
-                    
-                    <a href="#" onclick="mostrarCalendario(); return false;" style="display: block; margin-top: 20px; color: var(--text-muted); text-decoration: underline;">
-                        ¿Gustas explorar otro horario o fecha en el calendario?
-                    </a>
                 </div>
             </div>
-{% else %}
-            
-            {% if tipo_servicio == 'terapia_pareja' %}
-            <div class="chic-card fade-in-up" style="border-top: 6px solid var(--c-pink); margin-bottom: 40px; background: #fdf2f8;">
-                <div style="display: flex; align-items: center; gap: 30px; flex-wrap: wrap; justify-content: center; text-align: center;">
-                    <i class="fas fa-heart" style="font-size: 60px; color: var(--c-pink);"></i>
-                    <div>
-                        <h3 style="font-family: var(--font-headings); font-size: 2.5rem; color: var(--text-main); margin-bottom: 10px;">Un espacio para crecer juntos</h3>
-                        <p style="color: var(--text-muted); font-size: 16px; margin-bottom: 20px; max-width: 500px;">Bienvenido a su espacio HOPE. Aquí creemos en las reconciliaciones, en la empatía y en construir vínculos sanos. Muy pronto se les asignará un especialista.</p>
-                        <button onclick="mostrarCalendario()" class="btn-brutal btn-primary" style="background: var(--c-pink); color: white; border-radius: 30px; padding: 15px 30px;">
-                            Agendar primera sesión <i class="fas fa-arrow-right"></i>
-                        </button>
-                    </div>
-                </div>
-            </div>
+            {% endif %}
 
-{% elif tipo_servicio == 'terapia_familiar' %}
-            <div class="chic-card fade-in-up" style="border-top: 6px solid var(--c-orange); margin-bottom: 40px; background: #fff7ed;">
-                <div style="display: flex; align-items: center; gap: 30px; flex-wrap: wrap; justify-content: center; text-align: center;">
-                    <i class="fas fa-people-roof" style="font-size: 60px; color: var(--c-orange);"></i>
-                    <div>
-                        <h3 style="font-family: var(--font-headings); font-size: 2.5rem; color: var(--text-main); margin-bottom: 10px;">Un espacio para sanar en familia</h3>
-                        <p style="color: var(--text-muted); font-size: 16px; margin-bottom: 20px; max-width: 500px;">Bienvenidos a su espacio HOPE. Muy pronto se les asignará un especialista en terapia familiar.</p>
-                        <button onclick="seleccionarServicio('familiar')" class="btn-brutal btn-primary" style="background: var(--c-orange); color: white; border-radius: 30px; padding: 15px 30px;">
-                            Agendar primera sesión <i class="fas fa-arrow-right"></i>
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-{% elif tipo_servicio != 'individual' and tipo_servicio != 'terapia_individual' and tipo_servicio != 'terapia_pareja' and tipo_servicio != 'terapia_familiar' and tipo_servicio != '' %}
-            <div class="chic-card fade-in-up" style="border-top: 6px solid var(--c-purple); margin-bottom: 40px; background: #f3e8ff;">
-                <div style="text-align: center; margin-bottom: 30px;">
-                    <i class="fas fa-seedling" style="font-size: 60px; color: var(--c-purple); margin-bottom: 15px;"></i>
-                    <h3 style="font-family: var(--font-headings); font-size: 2.5rem; color: var(--text-main); margin-bottom: 10px;">¡Bienvenido a tu lugar seguro!</h3>
-                    <p style="color: var(--text-muted); font-size: 16px; max-width: 600px; margin: 0 auto;">Todo lo que sientes importa y tú nos importas. Estás a un paso de confirmar tu lugar en este programa especial.</p>
-                </div>
-
-                {% if taller_solicitado_obj %}
-                <div style="background: white; border-radius: 20px; padding: 30px; max-width: 500px; margin: 0 auto; border: 1px solid #e2e8f0; text-align: left; box-shadow: 0 10px 25px rgba(90,63,163,0.05);">
-                    <span class="step-tag" style="margin: 0 0 15px 0; background: #fdf2f8; color: var(--c-purple);">Programa Elegido</span>
-                    <h4 style="font-size: 24px; font-family: var(--font-headings); margin-bottom: 10px; color: var(--text-main);">{{ taller_solicitado_obj.nombre }}</h4>
-                    <p style="font-size: 15px; color: var(--text-muted); margin-bottom: 20px; line-height: 1.6;">{{ taller_solicitado_obj.descripcion }}</p>
+            {% if taller_solicitado_obj %}
+            <div class="chic-card fade-in-up" style="border-top: 6px solid var(--c-purple); margin-bottom: 35px; background: #faf5ff;">
+                <div style="background: white; border-radius: 20px; padding: 30px; max-width: 550px; margin: 0 auto; border: 1px solid #e2e8f0; text-align: left; box-shadow: 0 10px 25px rgba(90,63,163,0.05);">
+                    <span class="step-tag" style="margin: 0 0 15px 0; background: #f3e8ff; color: var(--c-purple);">Taller Solicitado</span>
+                    <h4 style="font-size: 22px; font-family: var(--font-headings); margin-bottom: 10px; color: var(--text-main); font-weight: 800;">{{ taller_solicitado_obj.nombre }}</h4>
+                    <p style="font-size: 14px; color: var(--text-muted); margin-bottom: 20px; line-height: 1.6;">{{ taller_solicitado_obj.descripcion }}</p>
                     
                     <div style="display: flex; gap: 15px; align-items: center; margin-bottom: 25px; background: #f8fafc; padding: 15px; border-radius: 16px; border: 1px dashed #cbd5e1;">
-                        <i class="far fa-calendar-alt" style="font-size: 28px; color: var(--c-purple);"></i>
+                        <i class="far fa-calendar-alt" style="font-size: 26px; color: var(--c-teal);"></i>
                         <div>
-                            <p style="margin: 0; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); font-weight: 800;">Fecha programada</p>
-                           <p style="margin: 0; font-weight: 700; font-size: 16px; color: var(--text-main);">{{ taller_solicitado_obj.fecha|date:"d \d\e F, Y" }} a las {{ taller_solicitado_obj.hora|time:"h:i A" }}</p>
+                            <p style="margin: 0; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); font-weight: 800;">Fecha programada</p>
+                           <p style="margin: 0; font-weight: 700; font-size: 15px; color: var(--text-main);">{{ taller_solicitado_obj.fecha|date:"d \d\e F, Y" }} a las {{ taller_solicitado_obj.hora|time:"h:i A" }}</p>
                         </div>
                     </div>
                     
                     {% if taller_solicitado_obj.id in mis_inscripciones_ids %}
-                        <button class="btn-inscribir btn-inscrito" disabled style="width: 100%; margin-top: 0; padding: 18px;"><i class="fas fa-check-circle"></i> Ya estás inscrito</button>
-                        <button onclick="switchTab('comunidad')" class="btn-outline" style="width: 100%; margin-top: 15px; font-size: 14px; padding: 15px; border-radius: 15px; text-align: center; justify-content: center;">Ir a mis talleres <i class="fas fa-arrow-right"></i></button>
+                        <button class="btn-inscribir btn-inscrito" disabled style="width: 100%; margin-top: 0; padding: 16px;"><i class="fas fa-check-circle"></i> Ya estás inscrito</button>
                     {% elif taller_solicitado_obj.cupos_disponibles == 0 %}
-                        <button class="btn-inscribir" disabled style="width: 100%; margin-top: 0; padding: 18px; background: #cbd5e1;">Cupo Lleno</button>
+                        <button class="btn-inscribir" disabled style="width: 100%; margin-top: 0; padding: 16px; background: #cbd5e1;">Cupo Lleno</button>
                     {% else %}
-                        <button class="btn-brutal btn-primary" style="background: var(--c-purple); width: 100%; margin-top: 0; padding: 18px; color: white;" onclick="inscribirPrograma({{ taller_solicitado_obj.id }}, '{{ taller_solicitado_obj.nombre }}')">Completar Inscripción <i class="fas fa-arrow-right"></i></button>
+                        <button class="btn-brutal btn-primary" style="background: var(--c-purple); width: 100%; margin-top: 0; padding: 16px; color: white;" onclick="inscribirPrograma({{ taller_solicitado_obj.id }}, '{{ taller_solicitado_obj.nombre }}')">Completar Inscripción <i class="fas fa-arrow-right"></i></button>
                     {% endif %}
                 </div>
-                {% endif %}
             </div>
-
-            {% else %}
-<div class="chic-card" style="margin-bottom: 40px; border: none; padding: 50px; background: linear-gradient(135deg, #f3e8ff 0%, #ffffff 100%); box-shadow: 0 20px 40px rgba(90, 63, 163, 0.1); border-radius: 40px; position: relative; overflow: hidden;">
-    
-    <i class="fas fa-calendar-check" style="position: absolute; right: -20px; bottom: -20px; font-size: 150px; color: var(--c-purple); opacity: 0.05;"></i>
-
-    <div style="text-align: center; position: relative; z-index: 1;">
-        <div style="display: inline-block; background: var(--c-purple); color: white; padding: 8px 20px; border-radius: 50px; font-weight: 800; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 20px;">
-            <i class="fas fa-star"></i> Ciencia de HOPE
-        </div>
-        
-        <h2 style="font-family: var(--font-headings); font-size: clamp(1.8rem, 4vw, 2.5rem); color: var(--text-main); margin-bottom: 20px; font-weight: 900;">
-            Tu bienestar en el ritmo ideal
-        </h2>
-        
-        <p style="font-size: 1.25rem; color: var(--text-muted); line-height: 1.6; max-width: 700px; margin: 0 auto 30px auto;">
-            Estudios clínicos confirman que asistir a sesión 
-            <span style="background: var(--c-yellow); color: var(--c-dark); padding: 4px 15px; border-radius: 12px; font-weight: 900; font-family: var(--font-headings); display: inline-block; transform: rotate(-1deg);">cada 7 días</span> 
-            acelera tu proceso de bienestar hasta un 
-            <strong style="color: var(--c-purple);">40% más rápido</strong>.
-        </p>
-<div id="cta-container" style="text-align: center; margin: 50px 0;">
-    <button onclick="iniciarAgendado()" class="btn-brutal btn-primary" style="padding: 25px 60px; font-size: 1.4rem; border-radius: 100px; box-shadow: 0 15px 30px rgba(90, 63, 163, 0.3);">
-        Agendar mi primera sesión <i class="fas fa-calendar-plus" style="margin-left: 10px;"></i>
-    </button>
-</div>
-
-<div id="selector-servicio" style="display: none; text-align: center; margin: 40px 0; animation: fadeIn 0.5s;">
-    <h3 style="font-family: var(--font-headings); font-size: 1.8rem; margin-bottom: 30px;">¿Qué tipo de sesión necesitas?</h3>
-    
-    <div style="display: flex; gap: 25px; justify-content: center; flex-wrap: wrap;">
-        <div class="chic-card" onclick="seleccionarServicio('individual')" style="cursor: pointer; width: 220px; text-align: center; padding: 30px; border: 2px solid #f1f5f9; transition: 0.3s;">
-            <i class="fas fa-user" style="font-size: 40px; color: var(--c-purple); margin-bottom: 15px;"></i>
-            <h4 style="font-family: var(--font-headings); margin: 0 0 8px 0;">Individual</h4>
-            <p style="font-size: 13px; color: var(--text-muted); margin: 0;">$100 MXN</p>
-        </div>
-
-        <div class="chic-card" onclick="seleccionarServicio('pareja')" style="cursor: pointer; width: 220px; text-align: center; padding: 30px; border: 2px solid #f1f5f9; transition: 0.3s;">
-            <i class="fas fa-user-friends" style="font-size: 40px; color: var(--c-pink); margin-bottom: 15px;"></i>
-            <h4 style="font-family: var(--font-headings); margin: 0 0 8px 0;">En Pareja</h4>
-            <p style="font-size: 13px; color: var(--text-muted); margin: 0;">$200 MXN</p>
-        </div>
-
-        <div class="chic-card" onclick="seleccionarServicio('familiar')" style="cursor: pointer; width: 220px; text-align: center; padding: 30px; border: 2px solid #f1f5f9; transition: 0.3s;">
-            <i class="fas fa-people-roof" style="font-size: 40px; color: var(--c-orange); margin-bottom: 15px;"></i>
-            <h4 style="font-family: var(--font-headings); margin: 0 0 8px 0;">Terapia Familiar</h4>
-            <p style="font-size: 13px; color: var(--text-muted); margin: 0;">Desde $200 MXN</p>
-        </div>
-    </div>
-
-    <!-- 🔥 NUEVO: Selector de número de integrantes, solo visible para terapia familiar -->
-    <div id="familiar-integrantes-box" style="display: none; max-width: 420px; margin: 25px auto 0 auto; background: #fff7ed; border: 1px solid #fed7aa; border-radius: 16px; padding: 20px;">
-        <p style="font-size: 14px; font-weight: 700; color: var(--text-main); margin-bottom: 12px;">
-            ¿Cuántos integrantes de la familia asistirán?
-        </p>
-        <div style="display: flex; align-items: center; justify-content: center; gap: 20px;">
-            <button type="button" onclick="cambiarIntegrantesFamilia(-1)" style="width: 40px; height: 40px; border-radius: 50%; border: none; background: var(--c-purple); color: white; font-size: 20px; font-weight: 800; cursor: pointer;">−</button>
-            <span id="familiar-integrantes-valor" style="font-size: 28px; font-weight: 800; min-width: 40px; text-align: center;">2</span>
-            <button type="button" onclick="cambiarIntegrantesFamilia(1)" style="width: 40px; height: 40px; border-radius: 50%; border: none; background: var(--c-purple); color: white; font-size: 20px; font-weight: 800; cursor: pointer;">+</button>
-        </div>
-        <p style="font-size: 12px; color: var(--text-muted); text-align: center; margin: 10px 0 0 0;">
-            Precio base + $100 MXN por cada integrante adicional (mínimo 2).
-        </p>
-    </div>
-</div>
-
-    </div>
-</div>
             {% endif %}
-
         {% endif %}
 
-        
+        <!-- ==========================================================================
+             🌟 HUB MULTISERVICIO: AGENDAR NUEVAS SESIONES (INDIVIDUAL, PAREJA, FAMILIAR)
+             ========================================================================== -->
+        <div class="chic-card" id="seccion-agendar-multiservicio" style="margin-bottom: 35px; border-top: 5px solid var(--c-teal); background: linear-gradient(180deg, #ffffff 0%, #fafbfc 100%);">
+            <div style="text-align: center; max-width: 750px; margin: 0 auto 30px;">
+                <span class="step-tag" style="background: #e6fffa; color: var(--c-teal); border: 1px solid #b2f5ea;">
+                    <i class="fas fa-sparkles"></i> Servicios Disponibles
+                </span>
+                <h2 style="font-family: var(--font-headings); font-size: clamp(1.8rem, 3.5vw, 2.3rem); color: var(--text-main); margin: 8px 0 10px; font-weight: 800;">
+                    ¿Qué tipo de sesión deseas agendar?
+                </h2>
+                <p style="font-size: 15px; color: var(--text-muted); line-height: 1.6; margin: 0;">
+                    Puedes llevar procesos en diferentes modalidades desde tu misma cuenta. Selecciona una opción para ver la disponibilidad de nuestros especialistas.
+                </p>
+            </div>
 
-            <div class="chic-card" id="booking-wizard" {% if not user.perfil.psicologo_asignado %}style="display: none;"{% endif %}>
+            <!-- Las 3 tarjetas de servicio -->
+            <div class="servicios-grid">
+                <!-- Tarjeta Individual -->
+                <div class="servicio-card card-indiv {% if tipo_servicio == 'individual' or not tipo_servicio %}active{% endif %}" 
+                     id="card-serv-individual"
+                     onclick="seleccionarServicioHub('individual')">
+                    <div class="serv-badge serv-badge-indiv">1 Persona · 50 min</div>
+                    <div class="serv-icon-halo serv-halo-indiv">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <h3 class="serv-title">Terapia Individual</h3>
+                    <p class="serv-price">$100 <span class="serv-curr">MXN</span></p>
+                    <p class="serv-desc">Espacio confidencial enfocado en tu crecimiento personal, gestión emocional y bienestar integral.</p>
+                    <button type="button" class="serv-btn serv-btn-indiv">
+                        <span>Agendar Individual</span> <i class="fas fa-arrow-right"></i>
+                    </button>
+                </div>
+
+                <!-- Tarjeta Pareja -->
+                <div class="servicio-card card-pareja {% if tipo_servicio == 'terapia_pareja' or tipo_servicio == 'pareja' %}active{% endif %}" 
+                     id="card-serv-pareja"
+                     onclick="seleccionarServicioHub('pareja')">
+                    <div class="serv-badge serv-badge-pareja">2 Personas · 60 min</div>
+                    <div class="serv-icon-halo serv-halo-pareja">
+                        <i class="fas fa-heart"></i>
+                    </div>
+                    <h3 class="serv-title">Terapia de Pareja</h3>
+                    <p class="serv-price">$200 <span class="serv-curr">MXN</span></p>
+                    <p class="serv-desc">Mejoren la comunicación, resuelvan acuerdos y fortalezcan el vínculo afectivo de su relación.</p>
+                    <button type="button" class="serv-btn serv-btn-pareja">
+                        <span>Agendar en Pareja</span> <i class="fas fa-arrow-right"></i>
+                    </button>
+                </div>
+
+                <!-- Tarjeta Familiar -->
+                <div class="servicio-card card-familiar {% if tipo_servicio == 'terapia_familiar' or tipo_servicio == 'familiar' %}active{% endif %}" 
+                     id="card-serv-familiar"
+                     onclick="seleccionarServicioHub('familiar')">
+                    <div class="serv-badge serv-badge-familiar">Familia · 60 min</div>
+                    <div class="serv-icon-halo serv-halo-familiar">
+                        <i class="fas fa-people-roof"></i>
+                    </div>
+                    <h3 class="serv-title">Terapia Familiar</h3>
+                    <p class="serv-price">Desde $200 <span class="serv-curr">MXN</span></p>
+                    <p class="serv-desc">Acompañamiento sistémico para armonizar la convivencia, crianza y dinámicas del hogar.</p>
+                    <button type="button" class="serv-btn serv-btn-familiar">
+                        <span>Agendar Familiar</span> <i class="fas fa-arrow-right"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Stepper de integrantes para terapia familiar -->
+            <div id="familiar-integrantes-box" style="display: {% if tipo_servicio == 'familiar' or tipo_servicio == 'terapia_familiar' %}block{% else %}none{% endif %}; max-width: 440px; margin: 30px auto 0; background: #fffaf0; border: 1.5px solid #fed7aa; border-radius: 20px; padding: 22px; text-align: center; box-shadow: 0 4px 15px rgba(242,124,33,0.06);">
+                <p style="font-size: 14px; font-weight: 700; color: var(--text-main); margin-bottom: 12px;">
+                    ¿Cuántos integrantes de la familia asistirán?
+                </p>
+                <div style="display: flex; align-items: center; justify-content: center; gap: 20px;">
+                    <button type="button" onclick="cambiarIntegrantesFamilia(-1)" style="width: 40px; height: 40px; border-radius: 50%; border: none; background: var(--c-orange); color: white; font-size: 20px; font-weight: 800; cursor: pointer; transition: 0.2s;">−</button>
+                    <span id="familiar-integrantes-valor" style="font-size: 28px; font-weight: 800; min-width: 40px; text-align: center; font-family: var(--font-headings);">2</span>
+                    <button type="button" onclick="cambiarIntegrantesFamilia(1)" style="width: 40px; height: 40px; border-radius: 50%; border: none; background: var(--c-orange); color: white; font-size: 20px; font-weight: 800; cursor: pointer; transition: 0.2s;">+</button>
+                </div>
+                <p style="font-size: 12px; color: var(--text-muted); text-align: center; margin: 10px 0 0 0;">
+                    Precio base + $100 MXN por cada integrante adicional (mínimo 2).
+                </p>
+            </div>
+        </div>
+
+        <!-- ==========================================================================
+             📅 CALENDARIO Y AGENDAMIENTO (BOOKING WIZARD)
+             ========================================================================== -->
+        <div class="chic-card" id="booking-wizard" style="margin-bottom: 40px;">
+            <div id="wizard-servicio-header" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 25px; padding: 14px 22px; border-radius: 18px; background: #f8fafc; border: 1.5px solid #e2e8f0;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <span id="wizard-service-badge" class="step-tag" style="margin: 0; padding: 6px 14px; font-size: 11px;">
+                        Terapia Individual
+                    </span>
+                    <span id="wizard-service-price" style="font-weight: 800; font-size: 16px; color: var(--text-main); font-family: var(--font-headings);">
+                        $100.00 MXN
+                    </span>
+                </div>
+                <button type="button" onclick="scrollHaciaServicios()" style="background: none; border: none; color: var(--c-teal); font-size: 13px; font-weight: 700; cursor: pointer; text-decoration: underline; display: flex; align-items: center; gap: 6px;">
+                    <i class="fas fa-exchange-alt"></i> Cambiar tipo de sesión
+                </button>
+            </div>
                                           
-                <span class="step-tag">Agendar Nueva Sesión</span>
-                <h2 style="font-family: var(--font-headings); font-size: 2rem; margin-bottom: 30px;">Selecciona el día y la hora</h2>
+            <h2 style="font-family: var(--font-headings); font-size: 1.9rem; margin-bottom: 25px; font-weight: 800; color: var(--text-main);">
+                Selecciona el día y la hora
+            </h2>
 
-                <div id="step-1-schedule">
-                    <div class="date-carousel" id="dateCarousel">
-                        {% for dia, horas in dias_disponibles.items %}
-                            <button type="button" class="date-chip {% if forloop.first %}active{% endif %}" data-target="slots-{{ dia|date:'Ymd' }}" data-fecha="{{ dia|date:'Y-m-d' }}">
-                                <span style="font-size: 11px; display: block; text-transform: uppercase; font-weight: 600; letter-spacing: 1px;">{{ dia|date:"D" }}</span>
-                                <span style="font-size: 28px; font-weight: 800; line-height: 1.1;">{{ dia|date:"d" }}</span>
-                                <span style="font-size: 11px; display: block; text-transform: uppercase; font-weight: 700; opacity: 0.8; margin-top: 2px;">{{ dia|date:"M" }}</span>
-                            </button>
-                        {% empty %}
-                        <p style="color: var(--text-muted); font-style: italic;">No hay fechas disponibles por el momento.</p>
-                        {% endfor %}
-                    </div>
+            <div id="step-1-schedule">
+                <div class="date-carousel" id="dateCarousel">
+                    {% for dia, horas in dias_disponibles.items %}
+                        <button type="button" class="date-chip {% if forloop.first %}active{% endif %}" data-target="slots-{{ dia|date:'Ymd' }}" data-fecha="{{ dia|date:'Y-m-d' }}">
+                            <span style="font-size: 11px; display: block; text-transform: uppercase; font-weight: 600; letter-spacing: 1px;">{{ dia|date:"D" }}</span>
+                            <span style="font-size: 28px; font-weight: 800; line-height: 1.1;">{{ dia|date:"d" }}</span>
+                            <span style="font-size: 11px; display: block; text-transform: uppercase; font-weight: 700; opacity: 0.8; margin-top: 2px;">{{ dia|date:"M" }}</span>
+                        </button>
+                    {% empty %}
+                    <p style="color: var(--text-muted); font-style: italic;">No hay fechas disponibles por el momento.</p>
+                    {% endfor %}
+                </div>
 
-                    <div style="margin-top: 30px;">
-                        {% for dia, horas in dias_disponibles.items %}
-                            <div class="slots-container" id="slots-{{ dia|date:'Ymd' }}" {% if not forloop.first %}style="display: none;"{% endif %}>
-                                {% for h in horas %}
-                                <button class="time-slot-btn" data-fecha="{{ dia|date:'Y-m-d' }}" data-hora="{{ h|time:'H:i' }}">{{ h|time:"h:i A" }}</button>
-                                {% endfor %}
-                            </div>
-                        {% endfor %}
-                    </div>
+                <div id="slotsWrapper" style="margin-top: 30px;">
+                    {% for dia, horas in dias_disponibles.items %}
+                        <div class="slots-container" id="slots-{{ dia|date:'Ymd' }}" {% if not forloop.first %}style="display: none;"{% endif %}>
+                            {% for h in horas %}
+                            <button class="time-slot-btn" data-fecha="{{ dia|date:'Y-m-d' }}" data-hora="{{ h|time:'H:i' }}">{{ h|time:"h:i A" }}</button>
+                            {% endfor %}
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
                 </div>
 
                 <div id="step-2-payment" style="display: none; text-align: center; padding-top: 40px; border-top: 1px solid #f1f5f9; margin-top: 40px;">
-                <button id="btn-back-schedule" style="background:none; border:none; color: var(--c-purple); font-weight: 700; cursor:pointer; font-size: 16px; margin-bottom: 20px; display:block;">
+                <button id="btn-back-schedule" style="background:none; border:none; color: var(--c-teal); font-weight: 700; cursor:pointer; font-size: 15px; margin-bottom: 20px; display:inline-flex; align-items:center; gap:8px;">
                     <i class="fas fa-arrow-left"></i> Volver al calendario
                 </button>
 
                 <h2 class="chic-title" style="color: var(--text-main); font-family: var(--font-headings); font-size: 2rem; margin-bottom: 10px; clear: both;">
                  Confirmar Cita
-                </h2> <p id="selected-time-text" style="font-size: 18px; color: var(--c-purple); margin-bottom: 20px; font-weight: 600;"></p>
+                </h2>
+                <div>
+                    <p id="selected-time-text" style="font-size: 16px; color: var(--c-teal); margin-bottom: 24px; font-weight: 700; background: #e6fffa; display: inline-block; padding: 8px 22px; border-radius: 50px; border: 1px solid #b2f5ea;"></p>
+                </div>
 
                     <div style="margin-bottom: 30px; text-align: left; max-width: 450px; margin-left: auto; margin-right: auto;">
-                        <p style="font-size: 14px; font-weight: 700; color: var(--text-main); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 1px;">Modalidad de tu sesión:</p>
+                        <p style="font-size: 13px; font-weight: 700; color: var(--text-muted); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 1px;">Modalidad de tu sesión:</p>
                         <div style="display: flex; gap: 15px;">
                             <label style="flex: 1; cursor: pointer;">
                                 <input type="radio" name="modalidad_opcion" value="En línea" checked style="display: none;" onclick="seleccionarModalidad('En línea')">
-                                <div id="mod-card-linea" class="mod-card" style="border: 2px solid var(--c-purple); background: #f3e8ff; color: var(--c-purple); padding: 15px; border-radius: 15px; font-weight: 700; transition: 0.3s; text-align: center;">
+                                <div id="mod-card-linea" class="mod-card" style="border: 2px solid var(--c-teal); background: #f0fdfa; color: var(--c-teal); padding: 15px; border-radius: 15px; font-weight: 700; transition: 0.3s; text-align: center;">
                                     <i class="fas fa-video"></i> En Línea
                                 </div>
                             </label>
@@ -832,15 +989,10 @@ function mostrarErrorCita(mensaje, opts) {
                         </div>
                     </div>
                     
-
-                    <div style="clear: both;"></div>
-                    <p id="selected-time-text" style="font-size: 18px; color: var(--c-purple); margin-bottom: 30px; font-weight: 600;"></p>
-                    
                     <div class="payment-box">
                         <p style="text-transform: uppercase; letter-spacing: 2px; font-size: 12px; color: #9ca3af; margin-bottom: 10px; font-weight: 700;">Total a pagar</p>
 
-  
-                        <h3 id="precio-dinamico" style="font-size: 42px; margin-bottom: 2px; color: var(--c-purple); font-weight: 800; font-family: var(--font-headings);">
+                        <h3 id="precio-dinamico" style="font-size: 42px; margin-bottom: 2px; color: var(--text-main); font-weight: 800; font-family: var(--font-headings);">
                             $100.00 <span style="font-size: 16px;">MXN</span>
                         </h3>
                         <p id="desglose-precio" style="font-size: 13px; color: var(--text-muted); margin-bottom: 8px;">
@@ -1484,6 +1636,77 @@ function cambiarIntegrantesFamilia(delta) {
     window.integrantesFamilia = Math.max(min, (window.integrantesFamilia || min) + delta);
     document.getElementById('familiar-integrantes-valor').innerText = window.integrantesFamilia;
     actualizarResumenPrecio();
+    actualizarBadgeWizard(window.tipoServicioAgendado || 'familiar');
+}
+
+function scrollHaciaServicios() {
+    const hub = document.getElementById('seccion-agendar-multiservicio');
+    if (hub) {
+        hub.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+}
+
+function actualizarBadgeWizard(tipo) {
+    const badge = document.getElementById('wizard-service-badge');
+    const priceEl = document.getElementById('wizard-service-price');
+    if (!badge || !priceEl) return;
+
+    const configBadge = {
+        individual: { label: 'Terapia Individual', bg: '#e6fffa', color: 'var(--c-teal)', border: '#b2f5ea' },
+        pareja: { label: 'Terapia de Pareja', bg: '#ffe4e6', color: 'var(--c-pink)', border: '#fecdd3' },
+        familiar: { label: `Terapia Familiar (${window.integrantesFamilia || 2} integrantes)`, bg: '#ffedd5', color: 'var(--c-orange)', border: '#fed7aa' }
+    };
+
+    const cfg = configBadge[tipo] || configBadge.individual;
+    badge.innerText = cfg.label;
+    badge.style.background = cfg.bg;
+    badge.style.color = cfg.color;
+    badge.style.borderColor = cfg.border;
+
+    const { total } = calcularPrecioFrontend(tipo, window.integrantesFamilia);
+    priceEl.innerText = `$${total.toFixed(2)} MXN`;
+}
+
+function seleccionarServicioHub(tipo) {
+    if (tipo === 'terapia_pareja') tipo = 'pareja';
+    if (tipo === 'terapia_familiar') tipo = 'familiar';
+    if (tipo === 'terapia_individual') tipo = 'individual';
+
+    window.tipoServicioAgendado = tipo;
+
+    // Resaltar tarjeta seleccionada en el hub multiservicio
+    document.querySelectorAll('.servicio-card').forEach(c => c.classList.remove('active'));
+    const activeCard = document.getElementById('card-serv-' + tipo);
+    if (activeCard) activeCard.classList.add('active');
+
+    // Mostrar/ocultar stepper de integrantes para terapia familiar
+    const integrantesBox = document.getElementById('familiar-integrantes-box');
+    if (integrantesBox) {
+        integrantesBox.style.display = (tipo === 'familiar') ? 'block' : 'none';
+    }
+    if (tipo === 'familiar' && !window.integrantesFamilia) {
+        window.integrantesFamilia = PRECIOS_CONFIG.min_integrantes_familiar || 2;
+        const valSpan = document.getElementById('familiar-integrantes-valor');
+        if (valSpan) valSpan.innerText = window.integrantesFamilia;
+    }
+
+    // Actualizar precios e indicador en el wizard
+    actualizarResumenPrecio();
+    actualizarBadgeWizard(tipo);
+
+    // Refrescar disponibilidad de especialistas para la modalidad
+    refrescarDisponibilidadPorTipo(tipo);
+
+    // Desplegar el wizard si está colapsado o volver al paso 1
+    const wizard = document.getElementById('booking-wizard');
+    if (wizard) {
+        wizard.style.display = 'block';
+        const step1 = document.getElementById('step-1-schedule');
+        const step2 = document.getElementById('step-2-payment');
+        if (step1) step1.style.display = 'block';
+        if (step2) step2.style.display = 'none';
+        wizard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
 }
 
 // 🔥 NUEVO: refresca el calendario según la modalidad elegida, mostrando
@@ -1504,12 +1727,12 @@ function refrescarDisponibilidadPorTipo(tipo) {
             }
 
             // Reconstruimos el carrusel de fechas y los slots con la nueva data
-            const slotsWrapper = carousel.parentElement.querySelector('div[style*="margin-top: 30px"]') || carousel.parentElement;
+            const slotsWrapper = document.getElementById('slotsWrapper') || carousel.parentElement.querySelector('div[style*="margin-top: 30px"]') || carousel.parentElement;
             carousel.innerHTML = '';
-            const contenedores = document.querySelectorAll('.slots-container');
+            const contenedores = slotsWrapper.querySelectorAll('.slots-container');
             contenedores.forEach(c => c.remove());
 
-            const fechas = Object.keys(data.dias).sort(); // <--- Agregamos .sort()
+            const fechas = Object.keys(data.dias).sort();
             if (fechas.length === 0) {
                 carousel.innerHTML = '<p style="color: var(--text-muted); font-style: italic;">No hay fechas disponibles para esta modalidad por el momento.</p>';
                 return;
@@ -1656,42 +1879,14 @@ function agendarDirectoPrueba() {
 }
 
 // Variable global para guardar qué eligió el usuario
-    window.tipoServicioAgendado = ""; 
+    window.tipoServicioAgendado = window.tipoServicioAgendado || "individual"; 
 
     function iniciarAgendado() {
-        // Ocultamos el botón gigante y mostramos el menú de selección
-        document.getElementById('cta-container').style.display = 'none';
-        document.getElementById('selector-servicio').style.display = 'block';
+        scrollHaciaServicios();
     }
 
     function seleccionarServicio(tipo) {
-        // 1. Guardamos la selección
-        window.tipoServicioAgendado = tipo;
-
-        // 2. Mostramos/ocultamos el stepper de integrantes (solo terapia familiar)
-        const integrantesBox = document.getElementById('familiar-integrantes-box');
-        if (integrantesBox) {
-            integrantesBox.style.display = (tipo === 'familiar') ? 'block' : 'none';
-        }
-        if (tipo === 'familiar') {
-            window.integrantesFamilia = PRECIOS_CONFIG.min_integrantes_familiar || 2;
-            document.getElementById('familiar-integrantes-valor').innerText = window.integrantesFamilia;
-        }
-
-        // 3. Actualizamos el precio y descripción visibles (tiempo real)
-        actualizarResumenPrecio();
-
-        // 4. Refrescamos la disponibilidad para mostrar solo psicólogos
-        //    habilitados para esta modalidad (individual / pareja / familiar)
-        refrescarDisponibilidadPorTipo(tipo);
-
-        // 5. Ocultamos el selector de terapia
-        document.getElementById('selector-servicio').style.display = 'none';
-
-        // 6. Disparamos la función que despliega el calendario
-        mostrarCalendario(); 
-        
-        console.log("Tipo de servicio seleccionado:", tipo);
+        seleccionarServicioHub(tipo);
     }
 
     function cerrarYRecargar() {
@@ -1841,6 +2036,14 @@ function agendarDirectoPrueba() {
         window.horaSeleccionada = "";
         window.animoSeleccionado = "No especificó";
 
+        // Inicializar servicio y precios por defecto
+        const defaultTipo = "{{ tipo_servicio|default:'individual' }}";
+        const tipoNormalizado = (defaultTipo === 'terapia_pareja' || defaultTipo === 'pareja') ? 'pareja' :
+                                (defaultTipo === 'terapia_familiar' || defaultTipo === 'familiar') ? 'familiar' : 'individual';
+        window.tipoServicioAgendado = tipoNormalizado;
+        actualizarBadgeWizard(tipoNormalizado);
+        actualizarResumenPrecio();
+
         // Calcular próxima semana (Post-sesión)
         const msj = document.getElementById("mensaje-proxima-semana");
         if (msj) {
@@ -1909,8 +2112,10 @@ function agendarDirectoPrueba() {
 
                     document.getElementById('selected-time-text').innerHTML = `Has seleccionado el <strong>${fechaObj.toLocaleDateString('es-ES', opciones)}</strong> a las <strong>${slotBtn.innerText}</strong>`;
 
+                    actualizarResumenPrecio();
                     document.getElementById('step-1-schedule').style.display = 'none';
                     document.getElementById('step-2-payment').style.display = 'block';
+                    document.getElementById('step-2-payment').scrollIntoView({ behavior: 'smooth', block: 'start' });
                 }
             });
         }
