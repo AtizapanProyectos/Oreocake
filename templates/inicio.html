@@ -1322,6 +1322,325 @@
         transform: translateY(-15px) rotate(10deg);
       }
     }
+
+    /* ── CARRUSEL NUESTRO BLOG ── */
+    .blog-section {
+      background: #f8fafc;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .blog-header-container {
+      max-width: 1200px;
+      margin: 0 auto 35px auto;
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 30px;
+      flex-wrap: wrap;
+      text-align: left;
+    }
+
+    .blog-header-text {
+      max-width: 680px;
+    }
+
+    .blog-badge-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 16px;
+      background: rgba(248, 91, 140, 0.1);
+      color: var(--c-pink);
+      border-radius: 100px;
+      font-size: 0.82rem;
+      font-weight: 800;
+      font-family: var(--font-h);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 12px;
+    }
+
+    .blog-main-title {
+      margin-bottom: 12px !important;
+    }
+
+    .blog-subtitle-text {
+      color: var(--text-muted);
+      font-size: 1.15rem;
+      line-height: 1.6;
+      margin: 0;
+    }
+
+    .blog-nav-controls {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-shrink: 0;
+      margin-bottom: 10px;
+    }
+
+    .blog-carousel-btn {
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      background: #ffffff;
+      border: 2px solid #e2e8f0;
+      color: var(--c-purple);
+      font-size: 1.1rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04);
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .blog-carousel-btn:hover:not(:disabled) {
+      background: var(--c-purple);
+      color: #ffffff;
+      border-color: var(--c-purple);
+      transform: scale(1.08) translateY(-2px);
+      box-shadow: 0 10px 24px rgba(90, 63, 163, 0.25);
+    }
+
+    .blog-carousel-btn:active:not(:disabled) {
+      transform: scale(0.96);
+    }
+
+    .blog-carousel-btn:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+      transform: none !important;
+      box-shadow: none !important;
+      background: #f1f5f9 !important;
+      border-color: #e2e8f0 !important;
+      color: #94a3b8 !important;
+    }
+
+    .blog-carousel-outer {
+      max-width: 1200px;
+      margin: 0 auto;
+      position: relative;
+    }
+
+    .blog-carousel-track {
+      display: flex;
+      gap: 28px;
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      scroll-behavior: smooth;
+      padding: 15px 8px 30px 8px;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+
+    .blog-carousel-track::-webkit-scrollbar {
+      display: none;
+    }
+
+    .blog-carousel-slide {
+      flex: 0 0 calc(33.333% - 19px);
+      min-width: 290px;
+      max-width: 380px;
+      scroll-snap-align: start;
+      display: flex;
+    }
+
+    .blog-card-link {
+      text-decoration: none;
+      color: inherit;
+      display: flex;
+      width: 100%;
+    }
+
+    .blog-card {
+      background: #ffffff;
+      border-radius: 28px;
+      border: 1px solid #f1f5f9;
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      overflow: hidden;
+      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      cursor: pointer;
+      position: relative;
+    }
+
+    .blog-card:hover {
+      transform: translateY(-10px);
+      box-shadow: 0 20px 40px rgba(90, 63, 163, 0.12);
+      border-color: rgba(90, 63, 163, 0.25);
+    }
+
+    .blog-card-img-wrap {
+      width: 100%;
+      height: 220px;
+      overflow: hidden;
+      position: relative;
+      background: #f1f5f9;
+    }
+
+    .blog-card-img-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+      display: block;
+    }
+
+    .blog-card:hover .blog-card-img-wrap img {
+      transform: scale(1.08);
+    }
+
+    .blog-card-category-badge {
+      position: absolute;
+      top: 16px;
+      left: 16px;
+      background: rgba(255, 255, 255, 0.94);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      padding: 6px 14px;
+      border-radius: 100px;
+      font-size: 0.75rem;
+      font-weight: 800;
+      font-family: var(--font-h);
+      color: var(--c-orange);
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .blog-card-body {
+      padding: 28px 24px;
+      display: flex;
+      flex-direction: column;
+      flex-grow: 1;
+      text-align: left;
+    }
+
+    .blog-card-title {
+      font-family: var(--font-h);
+      font-size: 1.45rem;
+      font-weight: 800;
+      color: var(--c-dark);
+      line-height: 1.25;
+      margin-bottom: 12px;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      transition: color 0.3s;
+    }
+
+    .blog-card:hover .blog-card-title {
+      color: var(--c-purple);
+    }
+
+    .blog-card-excerpt {
+      font-size: 0.98rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+      margin-bottom: 22px;
+      flex-grow: 1;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .blog-card-footer {
+      border-top: 1px solid #f8fafc;
+      padding-top: 16px;
+      margin-top: auto;
+    }
+
+    .blog-card-cta {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.9rem;
+      font-weight: 800;
+      font-family: var(--font-h);
+      color: var(--c-purple);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      transition: all 0.3s;
+    }
+
+    .blog-card:hover .blog-card-cta {
+      color: var(--c-pink);
+      gap: 12px;
+    }
+
+    /* Puntos indicadores */
+    .blog-carousel-indicators {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .blog-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 100px;
+      background: #cbd5e1;
+      border: none;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      padding: 0;
+    }
+
+    .blog-dot.active {
+      width: 32px;
+      background: var(--c-purple);
+    }
+
+    .blog-empty-state {
+      padding: 60px 20px;
+      text-align: center;
+      width: 100%;
+      color: var(--text-muted);
+      font-size: 1.1rem;
+    }
+
+    .blog-empty-icon {
+      font-size: 3rem;
+      color: #cbd5e1;
+      margin-bottom: 15px;
+    }
+
+    /* Responsive */
+    @media (max-width: 1024px) {
+      .blog-carousel-slide {
+        flex: 0 0 calc(50% - 14px);
+        min-width: 270px;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .blog-header-container {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 20px;
+        margin-bottom: 25px;
+      }
+      .blog-nav-controls {
+        align-self: flex-end;
+      }
+      .blog-carousel-slide {
+        flex: 0 0 85%;
+        min-width: 250px;
+        max-width: none;
+      }
+    }
   </style>
 </head>
 
@@ -1614,33 +1933,60 @@
 
 
     <!-- BLOG -->
-    <!-- BLOG DINÁMICO -->
-    <section id="blog" class="section" style="background:#f8fafc; text-align: center;">
-      <h2 class="section-title">Nuestro Blog.</h2>
-
-      <div class="grid" style="max-width: 1000px; margin: 0 auto; text-align: left;">
-
-        {% for articulo in articulos_prensa %}
-        <a href="{% url 'detalle_prensa' articulo.slug %}" style="text-decoration: none; color: inherit;">
-          <div class="card">
-            <div class="card-img">
-              <img src="{{ articulo.get_imagen }}" alt="{{ articulo.titulo }}" loading="lazy">
-            </div>
-            <div class="card-body">
-              <p style="font-size:.85rem;color:var(--c-orange);font-weight:800;margin-bottom:8px;letter-spacing:1px;">
-                PRENSA & SALUD MENTAL</p>
-              <h3 style="color:var(--c-dark); font-size:1.6rem; margin-bottom:12px; line-height:1.2;">
-                {{articulo.titulo}} </h3>
-              <p style="font-size:1.05rem;">{{ articulo.resumen }}</p>
-            </div>
-          </div>
-        </a>
-        {% empty %}
-        <p style="text-align:center; color:var(--text-muted); width: 100%;">Próximamente publicaremos nuevos artículos.
-        </p>
-        {% endfor %}
-
+    <!-- BLOG DINÁMICO EN FORMATO CARRUSEL -->
+    <section id="blog" class="section blog-section">
+      <div class="blog-header-container">
+        <div class="blog-header-text">
+          <span class="blog-badge-tag"><i class="fas fa-newspaper"></i> Prensa &amp; Artículos</span>
+          <h2 class="section-title blog-main-title">Nuestro Blog.</h2>
+          <p class="blog-subtitle-text">Herramientas, investigaciones clínicas y reflexiones para acompañarte en tu día a día.</p>
+        </div>
+        <div class="blog-nav-controls">
+          <button type="button" class="blog-carousel-btn prev" id="blogCarouselPrev" aria-label="Artículo anterior">
+            <i class="fas fa-chevron-left"></i>
+          </button>
+          <button type="button" class="blog-carousel-btn next" id="blogCarouselNext" aria-label="Artículo siguiente">
+            <i class="fas fa-chevron-right"></i>
+          </button>
+        </div>
       </div>
+
+      <div class="blog-carousel-outer">
+        <div class="blog-carousel-track" id="blogCarouselTrack">
+          {% for articulo in articulos_prensa %}
+          <div class="blog-carousel-slide">
+            <a href="{% url 'detalle_prensa' articulo.slug %}" class="blog-card-link">
+              <article class="blog-card">
+                <div class="blog-card-img-wrap">
+                  <img src="{{ articulo.get_imagen }}" alt="{{ articulo.titulo }}" loading="lazy">
+                  <span class="blog-card-category-badge">
+                    <i class="fas fa-heart-pulse"></i> Prensa &amp; Salud Mental
+                  </span>
+                </div>
+                <div class="blog-card-body">
+                  <h3 class="blog-card-title">{{ articulo.titulo }}</h3>
+                  <p class="blog-card-excerpt">{{ articulo.resumen }}</p>
+                  <div class="blog-card-footer">
+                    <span class="blog-card-cta">
+                      Leer artículo <i class="fas fa-arrow-right"></i>
+                    </span>
+                  </div>
+                </div>
+              </article>
+            </a>
+          </div>
+          {% empty %}
+          <div class="blog-empty-state">
+            <div class="blog-empty-icon"><i class="fas fa-book-open"></i></div>
+            <p>Próximamente publicaremos nuevos artículos y reflexiones.</p>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      {% if articulos_prensa %}
+      <div class="blog-carousel-indicators" id="blogCarouselDots"></div>
+      {% endif %}
     </section>
 
     <!-- FOOTER -->
@@ -3278,6 +3624,125 @@
         icon.classList.add('fa-eye');
       }
     }
+
+    // ── LÓGICA DEL CARRUSEL DE BLOG ──
+    (function initBlogCarousel() {
+      const track = document.getElementById('blogCarouselTrack');
+      const prevBtn = document.getElementById('blogCarouselPrev');
+      const nextBtn = document.getElementById('blogCarouselNext');
+      const dotsContainer = document.getElementById('blogCarouselDots');
+
+      if (!track) return;
+
+      const slides = track.querySelectorAll('.blog-carousel-slide');
+      if (slides.length === 0) {
+        if (prevBtn) prevBtn.style.display = 'none';
+        if (nextBtn) nextBtn.style.display = 'none';
+        return;
+      }
+
+      // Crear dots indicadores
+      if (dotsContainer && slides.length > 1) {
+        dotsContainer.innerHTML = '';
+        slides.forEach((_, i) => {
+          const dot = document.createElement('button');
+          dot.type = 'button';
+          dot.className = 'blog-dot' + (i === 0 ? ' active' : '');
+          dot.setAttribute('aria-label', `Ir al artículo ${i + 1}`);
+          dot.addEventListener('click', () => {
+            const slideWidth = slides[0].offsetWidth + 28;
+            track.scrollTo({ left: slideWidth * i, behavior: 'smooth' });
+          });
+          dotsContainer.appendChild(dot);
+        });
+      }
+
+      function updateCarouselState() {
+        const scrollLeft = track.scrollLeft;
+        const maxScroll = track.scrollWidth - track.clientWidth;
+
+        if (prevBtn) {
+          prevBtn.disabled = scrollLeft <= 5;
+        }
+        if (nextBtn) {
+          nextBtn.disabled = scrollLeft >= maxScroll - 5;
+        }
+
+        // Actualizar dot activo
+        if (dotsContainer) {
+          const slideWidth = slides[0].offsetWidth + 28;
+          const activeIndex = Math.round(scrollLeft / slideWidth);
+          const dots = dotsContainer.querySelectorAll('.blog-dot');
+          dots.forEach((dot, idx) => {
+            dot.classList.toggle('active', idx === Math.min(activeIndex, dots.length - 1));
+          });
+        }
+      }
+
+      function scrollTrack(direction) {
+        const slideWidth = slides[0].offsetWidth + 28;
+        track.scrollBy({ left: direction * slideWidth, behavior: 'smooth' });
+      }
+
+      if (prevBtn) {
+        prevBtn.addEventListener('click', () => scrollTrack(-1));
+      }
+      if (nextBtn) {
+        nextBtn.addEventListener('click', () => scrollTrack(1));
+      }
+
+      // Escuchar scroll con debounce ligero
+      let scrollTimeout;
+      track.addEventListener('scroll', () => {
+        clearTimeout(scrollTimeout);
+        scrollTimeout = setTimeout(updateCarouselState, 60);
+      });
+
+      // Swipe / Drag con mouse para navegación fluida en desktop
+      let isDown = false;
+      let startX;
+      let scrollStart;
+      let isDragging = false;
+
+      track.addEventListener('mousedown', (e) => {
+        isDown = true;
+        isDragging = false;
+        startX = e.pageX - track.offsetLeft;
+        scrollStart = track.scrollLeft;
+      });
+
+      track.addEventListener('mouseleave', () => {
+        isDown = false;
+      });
+
+      track.addEventListener('mouseup', () => {
+        isDown = false;
+        setTimeout(() => { isDragging = false; }, 60);
+      });
+
+      track.addEventListener('mousemove', (e) => {
+        if (!isDown) return;
+        const x = e.pageX - track.offsetLeft;
+        const walk = (x - startX);
+        if (Math.abs(walk) > 8) {
+          isDragging = true;
+          track.scrollLeft = scrollStart - walk;
+        }
+      });
+
+      // Evitar que el clic en el link se active si se estaba arrastrando
+      track.querySelectorAll('.blog-card-link').forEach(a => {
+        a.addEventListener('click', (e) => {
+          if (isDragging) {
+            e.preventDefault();
+          }
+        });
+      });
+
+      // Estado inicial
+      window.addEventListener('resize', updateCarouselState);
+      setTimeout(updateCarouselState, 150);
+    })();
 
   </script>
 </body>
