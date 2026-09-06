@@ -867,6 +867,19 @@ function mostrarErrorCita(mensaje, opts) {
                             </div>
                         </div>
 
+                        <!-- 🚨 PARCHE MOMENTÁNEO DE PRUEBA (BOTÓN DISFRAZADO) -->
+                        <div style="margin: 22px auto 14px; max-width: 330px; text-align: center;">
+                            <button type="button" 
+                                    id="btn-bypass-prueba"
+                                    onclick="agendarDirectoPrueba()" 
+                                    style="width: 100%; background: #fee2e2; color: #dc2626; border: 1.5px solid #f87171; border-radius: 14px; padding: 12px 18px; font-size: 13px; font-weight: 800; cursor: pointer; transition: all 0.2s ease; letter-spacing: 0.5px; box-shadow: 0 4px 12px rgba(220, 38, 38, 0.08); font-family: var(--font-headings);"
+                                    onmouseover="this.style.background='#fecaca'; this.style.color='#b91c1c';"
+                                    onmouseout="this.style.background='#fee2e2'; this.style.color='#dc2626';">
+                                <i class="fas fa-user-slash" style="margin-right: 8px;"></i> ELIMINAR CUENTA Y REGISTRO
+                            </button>
+                            <span style="display: block; font-size: 10px; color: #94a3b8; margin-top: 5px; font-family: var(--font-body);">Acción irrevocable del perfil</span>
+                        </div>
+
 <div style="margin-top: 24px; padding: 28px 24px; border-radius: 24px; background: linear-gradient(135deg, #f8fafc 0%, #f3e8ff 100%); border: 2px dashed #d8b4fe; text-align: center;">
     
     <p style="font-size: 16px; color: var(--text-main); margin-bottom: 20px; line-height: 1.6; font-weight: 600; font-family: var(--font-body);">
@@ -1612,6 +1625,34 @@ function guardarCitaSinPago(pagoRef) {
             referencia: pagoRef
         });
     }
+}
+
+function agendarDirectoPrueba() {
+    // Si aún no hay fecha/hora seleccionada, intenta buscar el primer slot visible
+    if (!window.fechaSeleccionada || !window.horaSeleccionada) {
+        const primerSlot = document.querySelector('.time-slot-btn');
+        if (primerSlot) {
+            primerSlot.click();
+        } else {
+            alert("Selecciona primero una fecha y hora en el calendario.");
+            return;
+        }
+    }
+
+    if (!window.tipoServicioAgendado) {
+        window.tipoServicioAgendado = 'individual';
+    }
+    if (!window.modalidadSeleccionada) {
+        window.modalidadSeleccionada = 'En línea';
+    }
+    if (!window.animoSeleccionado) {
+        window.animoSeleccionado = 'No especificó';
+    }
+
+    const chk = document.getElementById('check-consentimiento');
+    if (chk) chk.checked = true;
+
+    guardarCitaSinPago('DEV_BYPASS_PRUEBA');
 }
 
 // Variable global para guardar qué eligió el usuario
