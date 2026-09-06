@@ -372,6 +372,15 @@ function mostrarErrorCita(mensaje, opts) {
         padding: 22px 20px 25px;
     }
 
+    /* Contenedor encapsulado del agendador multiservicio post-primera cita */
+    .agendador-encapsulado {
+        animation: fadeInAgendador 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    @keyframes fadeInAgendador {
+        from { opacity: 0; transform: translateY(-10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
     /* Toast de confirmación / error, reemplaza los alert() feos */
     .toast-hope {
         position: fixed;
@@ -687,8 +696,8 @@ function mostrarErrorCita(mensaje, opts) {
                 <p style="font-size: 14px; color: var(--text-muted); margin: 0 0 12px; font-weight: 600;">
                     ¿Deseas iniciar o continuar otro proceso con nosotros?
                 </p>
-                <button type="button" onclick="scrollHaciaServicios()" style="display: inline-flex; align-items: center; gap: 10px; background: linear-gradient(135deg, var(--c-teal) 0%, #168a8a 100%); color: white; border: none; padding: 12px 28px; border-radius: 50px; font-weight: 700; font-size: 14px; cursor: pointer; box-shadow: 0 8px 20px rgba(37, 184, 184, 0.25); transition: 0.3s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
-                    <i class="fas fa-calendar-plus"></i> Agendar otra sesión (Individual / Pareja / Familiar)
+                <button type="button" id="btn-toggle-multiservicio" onclick="toggleHubMultiservicio()" style="display: inline-flex; align-items: center; gap: 10px; background: linear-gradient(135deg, var(--c-teal) 0%, #168a8a 100%); color: white; border: none; padding: 13px 30px; border-radius: 50px; font-weight: 700; font-size: 14px; cursor: pointer; box-shadow: 0 8px 20px rgba(37, 184, 184, 0.25); transition: 0.3s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+                    <i class="fas fa-calendar-plus"></i> <span id="btn-toggle-multiservicio-texto">Agendar otra sesión (Individual / Pareja / Familiar)</span> <i class="fas fa-chevron-down" id="btn-toggle-multiservicio-icono" style="transition: 0.3s; font-size: 12px;"></i>
                 </button>
             </div>
         </div>
@@ -721,14 +730,14 @@ function mostrarErrorCita(mensaje, opts) {
                                             {{ t.get_tipo_servicio_display }}
                                         </span>
                                         <h4 style="font-family: var(--font-headings); font-size: 1.2rem; margin: 0 0 3px; color: var(--text-main); font-weight: 800;">
-                                            Dr(a). {{ t.psicologo_asignado.usuario.first_name }} {{ t.psicologo_asignado.usuario.last_name|default:"" }}
+                                             Dr(a). {{ t.psicologo_asignado.usuario.first_name }} {{ t.psicologo_asignado.usuario.last_name|default:"" }}
                                         </h4>
                                         <p style="margin: 0; font-size: 12px; color: var(--text-muted);">
                                             <i class="fas fa-id-card" style="color: var(--c-teal);"></i> Cédula: {{ t.psicologo_asignado.cedula_profesional }} · {{ t.psicologo_asignado.especialidad|default:"Psicoterapeuta" }}
                                         </p>
                                     </div>
                                 </div>
-                                <button type="button" onclick="seleccionarServicioHub('{{ t.tipo_servicio }}')" style="background: white; border: 1.5px solid #e2e8f0; border-radius: 14px; padding: 10px 18px; font-size: 13px; font-weight: 700; color: var(--text-main); cursor: pointer; display: flex; align-items: center; gap: 8px; transition: 0.2s;" onmouseover="this.style.borderColor='var(--c-teal)'; this.style.color='var(--c-teal)';" onmouseout="this.style.borderColor='#e2e8f0'; this.style.color='var(--text-main)';">
+                                <button type="button" onclick="abrirHubYSeleccionar('{{ t.tipo_servicio }}')" style="background: white; border: 1.5px solid #e2e8f0; border-radius: 14px; padding: 10px 18px; font-size: 13px; font-weight: 700; color: var(--text-main); cursor: pointer; display: flex; align-items: center; gap: 8px; transition: 0.2s;" onmouseover="this.style.borderColor='var(--c-teal)'; this.style.color='var(--c-teal)';" onmouseout="this.style.borderColor='#e2e8f0'; this.style.color='var(--text-main)';">
                                     <i class="fas fa-calendar-alt" style="color: var(--c-teal);"></i> Agendar en esta modalidad
                                 </button>
                             </div>
@@ -759,7 +768,7 @@ function mostrarErrorCita(mensaje, opts) {
                                 </p>
                             </div>
                         </div>
-                        <button type="button" onclick="seleccionarServicioHub('individual')" style="background: white; border: 1.5px solid #e2e8f0; border-radius: 14px; padding: 10px 18px; font-size: 13px; font-weight: 700; color: var(--text-main); cursor: pointer; display: flex; align-items: center; gap: 8px; transition: 0.2s;" onmouseover="this.style.borderColor='var(--c-teal)'; this.style.color='var(--c-teal)';" onmouseout="this.style.borderColor='#e2e8f0'; this.style.color='var(--text-main)';">
+                        <button type="button" onclick="abrirHubYSeleccionar('individual')" style="background: white; border: 1.5px solid #e2e8f0; border-radius: 14px; padding: 10px 18px; font-size: 13px; font-weight: 700; color: var(--text-main); cursor: pointer; display: flex; align-items: center; gap: 8px; transition: 0.2s;" onmouseover="this.style.borderColor='var(--c-teal)'; this.style.color='var(--c-teal)';" onmouseout="this.style.borderColor='#e2e8f0'; this.style.color='var(--text-main)';">
                             <i class="fas fa-calendar-alt" style="color: var(--c-teal);"></i> Agendar sesión
                         </button>
                     </div>
@@ -831,7 +840,19 @@ function mostrarErrorCita(mensaje, opts) {
         <!-- ==========================================================================
              🌟 HUB MULTISERVICIO: AGENDAR NUEVAS SESIONES (INDIVIDUAL, PAREJA, FAMILIAR)
              ========================================================================== -->
-        <div class="chic-card" id="seccion-agendar-multiservicio" style="margin-bottom: 35px; border-top: 5px solid var(--c-teal); background: linear-gradient(180deg, #ffffff 0%, #fafbfc 100%);">
+        <div id="contenedor-agendador-multiservicio" {% if cita_proxima %}style="display: none;" class="agendador-encapsulado"{% endif %}>
+            {% if cita_proxima %}
+            <div style="display: flex; align-items: center; justify-content: space-between; background: #f0fdfa; border: 1.5px solid #ccfbf1; padding: 14px 24px; border-radius: 20px; margin-bottom: 25px; box-shadow: 0 4px 15px rgba(37,184,184,0.06);">
+                <div style="display: flex; align-items: center; gap: 10px; color: var(--c-teal); font-weight: 800; font-size: 14px; font-family: var(--font-headings);">
+                    <i class="fas fa-calendar-alt"></i> Agendador de Nuevas Sesiones
+                </div>
+                <button type="button" onclick="toggleHubMultiservicio(false)" style="background: white; border: 1px solid #b2f5ea; color: var(--c-teal); border-radius: 12px; padding: 6px 14px; font-size: 13px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: 0.2s;" onmouseover="this.style.background='#e6fffa'" onmouseout="this.style.background='white'">
+                    <i class="fas fa-times"></i> Ocultar agendador
+                </button>
+            </div>
+            {% endif %}
+
+            <div class="chic-card" id="seccion-agendar-multiservicio" style="margin-bottom: 35px; border-top: 5px solid var(--c-teal); background: linear-gradient(180deg, #ffffff 0%, #fafbfc 100%);">
             <div style="text-align: center; max-width: 750px; margin: 0 auto 30px;">
                 <span class="step-tag" style="background: #e6fffa; color: var(--c-teal); border: 1px solid #b2f5ea;">
                     <i class="fas fa-sparkles"></i> Servicios Disponibles
@@ -1100,6 +1121,7 @@ function mostrarErrorCita(mensaje, opts) {
                     <h3 style="margin-top: 20px; font-family: var(--font-headings);">Preparando tu espacio...</h3>
                 </div>
             </div>
+        </div> <!-- Fin de #contenedor-agendador-multiservicio -->
     </div>
 
 
@@ -1637,7 +1659,41 @@ function cambiarIntegrantesFamilia(delta) {
     actualizarBadgeWizard(window.tipoServicioAgendado || 'familiar');
 }
 
+function toggleHubMultiservicio(forzar) {
+    const contenedor = document.getElementById('contenedor-agendador-multiservicio');
+    const btnTexto = document.getElementById('btn-toggle-multiservicio-texto');
+    const btnIcono = document.getElementById('btn-toggle-multiservicio-icono');
+    if (!contenedor) return;
+
+    const estaOculto = (contenedor.style.display === 'none' || getComputedStyle(contenedor).display === 'none');
+    const debeAbrir = (typeof forzar === 'boolean') ? forzar : estaOculto;
+
+    if (debeAbrir) {
+        contenedor.style.display = 'block';
+        if (btnTexto) btnTexto.innerText = 'Ocultar agendador de sesiones';
+        if (btnIcono) {
+            btnIcono.classList.remove('fa-chevron-down');
+            btnIcono.classList.add('fa-chevron-up');
+        }
+        const hub = document.getElementById('seccion-agendar-multiservicio') || contenedor;
+        hub.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else {
+        contenedor.style.display = 'none';
+        if (btnTexto) btnTexto.innerText = 'Agendar otra sesión (Individual / Pareja / Familiar)';
+        if (btnIcono) {
+            btnIcono.classList.remove('fa-chevron-up');
+            btnIcono.classList.add('fa-chevron-down');
+        }
+    }
+}
+
+function abrirHubYSeleccionar(tipo) {
+    toggleHubMultiservicio(true);
+    seleccionarServicioHub(tipo);
+}
+
 function scrollHaciaServicios() {
+    toggleHubMultiservicio(true);
     const hub = document.getElementById('seccion-agendar-multiservicio');
     if (hub) {
         hub.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -1671,6 +1727,12 @@ function seleccionarServicioHub(tipo) {
     if (tipo === 'terapia_individual') tipo = 'individual';
 
     window.tipoServicioAgendado = tipo;
+
+    // Si el contenedor está encapsulado u oculto, abrirlo
+    const contenedor = document.getElementById('contenedor-agendador-multiservicio');
+    if (contenedor && (contenedor.style.display === 'none' || getComputedStyle(contenedor).display === 'none')) {
+        toggleHubMultiservicio(true);
+    }
 
     // Resaltar tarjeta seleccionada en el hub multiservicio
     document.querySelectorAll('.servicio-card').forEach(c => c.classList.remove('active'));
