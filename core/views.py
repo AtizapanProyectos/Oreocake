@@ -3418,7 +3418,11 @@ def formulario_previo_meet(request, cita_id):
         id=cita_id, paciente=request.user, estado='Confirmada'
     )
 
-    if not cita.enlace_meet:
+    meet_url = (cita.enlace_meet or '').strip()
+    if meet_url and not meet_url.startswith(('http://', 'https://')):
+        meet_url = 'https://' + meet_url
+
+    if not meet_url:
         messages.error(request, 'Aún no se ha generado el enlace de tu sesión. Contáctanos por WhatsApp.')
         return redirect('panel_generico')
 
@@ -3428,7 +3432,7 @@ def formulario_previo_meet(request, cita_id):
         RespuestaFormularioOrganica.objects.filter(paciente=request.user, cita=cita).exists()
     )
     if ya_respondido:
-        return redirect(cita.enlace_meet)
+        return redirect(meet_url)
 
     if request.method == 'POST':
         # 1. Procesamiento de los 12 reactivos del IPP
@@ -3499,11 +3503,9 @@ def formulario_previo_meet(request, cita_id):
         ipt_anterior = calcular_ipt(respuesta_anterior.puntaje) if respuesta_anterior else None
         mensaje = _mensaje_tierno_progreso(ipt_actual, ipt_anterior)
 
-        # Proceso de envío de correo asíncrono al psicólogo removido según requerimiento
-
         return JsonResponse({
             'status': 'success',
-            'redirect_url': cita.enlace_meet,
+            'redirect_url': meet_url,
             'ipt': ipt_actual,
             'mensaje': mensaje,
         })

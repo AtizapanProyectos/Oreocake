@@ -406,6 +406,19 @@
         <button type="submit" class="fo-btn-enviar" id="fo-btn-submit">
             Guardar y entrar a mi sesión <i class="fas fa-arrow-right"></i>
         </button>
+
+        <!-- Tarjeta de confirmación y botón directo en la misma pestaña -->
+        <div id="fo-success-box" style="display: none; background: #f0fdf4; border: 2px solid #86efac; border-radius: 24px; padding: 25px; text-align: center; margin-top: 25px; box-shadow: 0 10px 25px rgba(22, 163, 74, 0.08);">
+            <div style="width: 50px; height: 50px; background: #dcfce7; color: #16a34a; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; margin: 0 auto 12px;">
+                <i class="fas fa-check"></i>
+            </div>
+            <h3 style="font-family: var(--font-headings); font-size: 1.25rem; font-weight: 800; color: #166534; margin: 0 0 6px;">¡Respuestas guardadas!</h3>
+            <p style="color: #15803d; font-size: 14px; margin: 0 0 16px;">Redirigiendo a tu sesión en Google Meet en esta misma pestaña...</p>
+            <a id="fo-direct-link" href="#" target="_self" class="fo-btn-enviar" style="text-decoration: none; margin-top: 0; background: linear-gradient(135deg, #16a34a 0%, #15803d 100%); display: inline-flex;">
+                <i class="fas fa-video"></i> Haz clic aquí para entrar a Meet ahora
+            </a>
+            <p style="color: #64748b; font-size: 12px; margin: 12px 0 0;">Si la página no carga en 2 segundos, pulsa el botón verde de arriba.</p>
+        </div>
     </form>
 </div>
 
@@ -469,7 +482,18 @@ document.getElementById('form-organico').addEventListener('submit', function (e)
     .then(data => {
         if (data.status === 'success' && data.redirect_url) {
             btn.innerHTML = '<i class="fas fa-check"></i> ¡Listo! Entrando a tu sesión...';
-            window.location.href = data.redirect_url;
+
+            // 1. Mostrar tarjeta y botón directo en la misma pestaña
+            const successBox = document.getElementById('fo-success-box');
+            const directLink = document.getElementById('fo-direct-link');
+            if (successBox && directLink) {
+                directLink.href = data.redirect_url;
+                successBox.style.display = 'block';
+                successBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+
+            // 2. Redirección en la misma pestaña sin abrir nuevas ventanas
+            window.location.replace(data.redirect_url);
         } else {
             btn.disabled = false;
             btn.innerHTML = textoOriginal;
