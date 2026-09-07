@@ -720,6 +720,95 @@ class RespuestaFormularioOrganica(models.Model):
         return f"Formulario de {nombre} - Cita #{self.cita_id} (puntaje {self.puntaje})"
 
 
+# ==========================================
+# 2.2 EVALUACIÓN INTEGRAL DE SESIÓN (IPP + SATISFACCIÓN)
+# ==========================================
+class EvaluacionSesionPaciente(models.Model):
+    """
+    Evaluación integral de la sesión contestada por el paciente previo a su Meet:
+    1. Índice de Progreso Psicológico (IPP - 12 reactivos)
+    2. Evaluación del Servicio HOPE (3 preguntas de satisfacción en escala 1-5)
+
+    Queda estrictamente asociada a la Cita correspondiente, al Paciente, al
+    Psicólogo que brindó la atención y a la Modalidad/Tratamiento del paciente.
+    """
+    cita = models.OneToOneField(
+        Cita, on_delete=models.CASCADE,
+        related_name='evaluacion_servicio',
+        verbose_name="Sesión / Cita"
+    )
+    paciente = models.ForeignKey(
+        User, on_delete=models.CASCADE,
+        related_name='evaluaciones_sesion',
+        verbose_name="Paciente"
+    )
+    psicologo = models.ForeignKey(
+        PerfilPsicologo, on_delete=models.CASCADE,
+        related_name='evaluaciones_recibidas',
+        verbose_name="Psicólogo que atendió"
+    )
+    tratamiento = models.ForeignKey(
+        TratamientoPaciente, on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='evaluaciones_tratamiento',
+        verbose_name="Tratamiento del Paciente"
+    )
+    tipo_proceso = models.CharField(
+        max_length=20,
+        choices=TratamientoPaciente.TIPO_CHOICES,
+        default='individual',
+        verbose_name="Modalidad de Servicio / Terapia"
+    )
+
+    # --- Bloque 1: Índice de Progreso Psicológico (IPP) ---
+    respuestas_ipp = models.JSONField(default=dict, verbose_name="Respuestas del IPP")
+    puntaje_bruto_ipp = models.PositiveSmallIntegerField(default=0, verbose_name="Puntaje Bruto IPP (12-60)")
+    ipt = models.FloatField(default=0.0, verbose_name="Índice de Progreso Terapéutico IPT (0-100%)")
+
+    # --- Bloque 2: Evaluación del Servicio HOPE (Escala 1 al 5) ---
+    # 1. En general, ¿qué tan satisfecho(a) estás con la atención que has recibido por parte de tu terapeuta?
+    satisfaccion_atencion = models.PositiveSmallIntegerField(
+        default=5,
+        verbose_name="1. Satisfacción con la atención del terapeuta (1-5)"
+    )
+    # 2. Mi terapeuta me hace sentir escuchado(a), comprendido(a) y tratado(a) con respeto durante las sesiones.
+    sentirse_escuchado_respetado = models.PositiveSmallIntegerField(
+        default=5,
+        verbose_name="2. Sentirse escuchado, comprendido y respetado (1-5)"
+    )
+    # 3. Considero que mi proceso terapéutico me ha ayudado a avanzar hacia los objetivos por los que inicié terapia.
+    avance_hacia_objetivos = models.PositiveSmallIntegerField(
+        default=5,
+        verbose_name="3. Avance hacia los objetivos de terapia (1-5)"
+    )
+    promedio_satisfaccion = models.FloatField(
+        default=5.0,
+        verbose_name="Promedio de Satisfacción (1-5)"
+    )
+    comentarios = models.TextField(
+        blank=True, null=True,
+        verbose_name="Comentarios adicionales del paciente (opcional)"
+    )
+
+    fecha_respuesta = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        verbose_name = "Evaluación de Sesión del Paciente"
+        verbose_name_plural = "Evaluaciones de Sesiones de Pacientes"
+        ordering = ['-fecha_respuesta']
+        indexes = [
+            models.Index(fields=['paciente', 'psicologo']),
+            models.Index(fields=['tipo_proceso', 'fecha_respuesta']),
+        ]
+
+    def __str__(self):
+        try:
+            nombre = self.paciente.first_name or self.paciente.username
+        except Exception:
+            nombre = "Paciente"
+        return f"Evaluación de {nombre} - Cita #{self.cita_id} (IPT: {self.ipt}%, Sat: {self.promedio_satisfaccion}/5)"
+
+
 class ContactoVenezuela(models.Model):
     nombre = models.CharField(max_length=200, verbose_name="Nombre completo")
     correo = models.EmailField(verbose_name="Correo electrónico")

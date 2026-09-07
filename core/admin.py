@@ -172,3 +172,12 @@ class TratamientoPacienteAdmin(admin.ModelAdmin):
     search_fields = ('paciente__first_name', 'paciente__username', 'paciente__email', 'psicologo_asignado__usuario__first_name')
     list_select_related = ('paciente', 'psicologo_asignado', 'psicologo_asignado__usuario')
     list_per_page = 25
+
+@admin.register(EvaluacionSesionPaciente)
+class EvaluacionSesionPacienteAdmin(admin.ModelAdmin):
+    list_display = ('paciente', 'psicologo', 'tipo_proceso', 'cita', 'ipt', 'promedio_satisfaccion', 'fecha_respuesta')
+    list_filter = ('tipo_proceso', 'psicologo', 'fecha_respuesta')
+    search_fields = ('paciente__first_name', 'paciente__username', 'paciente__email', 'psicologo__usuario__first_name', 'psicologo__usuario__last_name')
+    list_select_related = ('paciente', 'psicologo', 'psicologo__usuario', 'cita', 'tratamiento')
+    readonly_fields = ('fecha_respuesta', 'puntaje_bruto_ipp', 'ipt', 'promedio_satisfaccion')
+    list_per_page = 25

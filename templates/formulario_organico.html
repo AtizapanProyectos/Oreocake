@@ -22,45 +22,192 @@
 
     body { background-color: var(--bg-panel); font-family: var(--font-body); color: var(--text-main); }
 
-    .fo-wrapper { max-width: 650px; margin: 0 auto; padding: 40px 20px 100px; }
+    .fo-wrapper { max-width: 680px; margin: 0 auto; padding: 40px 20px 100px; }
 
     .fo-header {
-        background: var(--c-purple);
+        background: linear-gradient(135deg, var(--c-purple) 0%, #3B2474 100%);
         color: white;
         padding: 45px 35px;
         border-radius: 30px;
         text-align: center;
-        margin-bottom: 30px;
+        margin-bottom: 35px;
+        box-shadow: 0 15px 35px rgba(90, 63, 163, 0.18);
     }
-    .fo-header i { font-size: 46px; margin-bottom: 15px; display: block; }
-    .fo-header h1 { font-family: var(--font-headings); font-size: 1.9rem; font-weight: 800; margin: 0 0 10px; }
-    .fo-header p { opacity: 0.9; font-size: 1rem; margin: 0; line-height: 1.5; }
+    .fo-header i { font-size: 46px; margin-bottom: 15px; display: block; color: var(--c-yellow); }
+    .fo-header h1 { font-family: var(--font-headings); font-size: 2rem; font-weight: 800; margin: 0 0 10px; }
+    .fo-header p { opacity: 0.92; font-size: 1.05rem; margin: 0; line-height: 1.6; max-width: 540px; margin: 0 auto; }
+
+    /* Separadores de sección tiernos y visuales */
+    .fo-seccion-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        padding: 18px 24px;
+        border-radius: 20px;
+        margin-bottom: 25px;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.03);
+    }
+    .fo-seccion-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        flex-shrink: 0;
+    }
+    .fo-seccion-info h2 {
+        font-family: var(--font-headings);
+        font-size: 1.15rem;
+        font-weight: 800;
+        margin: 0;
+        color: var(--text-main);
+    }
+    .fo-seccion-info p {
+        font-size: 0.85rem;
+        color: var(--text-muted);
+        margin: 2px 0 0;
+    }
 
     .fo-card {
-        background: #ffffff; border-radius: 30px; padding: 35px;
-        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.04); border: 1px solid #f1f5f9;
-        margin-bottom: 25px;
+        background: #ffffff; border-radius: 26px; padding: 30px;
+        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.03); border: 1px solid #f1f5f9;
+        margin-bottom: 22px;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .fo-card:hover {
+        box-shadow: 0 16px 36px rgba(0, 0, 0, 0.05);
     }
 
-    .fo-pregunta { margin-bottom: 12px; font-weight: 800; font-family: var(--font-headings); font-size: 1.1rem; color: var(--text-main); }
+    .fo-progreso {
+        text-align: left;
+        font-size: 11px;
+        font-weight: 800;
+        letter-spacing: 1.2px;
+        text-transform: uppercase;
+        color: var(--c-purple);
+        margin-bottom: 10px;
+    }
+
+    .fo-pregunta {
+        margin-bottom: 16px;
+        font-weight: 700;
+        font-family: var(--font-headings);
+        font-size: 1.1rem;
+        color: var(--text-main);
+        line-height: 1.45;
+    }
 
     .fo-opciones { display: flex; flex-direction: column; gap: 10px; }
     .fo-opcion {
-        display: flex; align-items: center; gap: 12px;
-        border: 2px solid #f1f5f9; border-radius: 15px; padding: 14px 18px;
-        cursor: pointer; transition: 0.2s; font-weight: 600; font-size: 15px;
+        display: flex; align-items: center; gap: 14px;
+        border: 2px solid #f1f5f9; border-radius: 16px; padding: 14px 18px;
+        cursor: pointer; transition: all 0.2s ease; font-weight: 600; font-size: 15px;
+        background: #ffffff;
     }
-    .fo-opcion:hover { border-color: #e2e8f0; }
+    .fo-opcion:hover { border-color: #cbd5e1; background: #fafafa; }
     .fo-opcion input { accent-color: var(--c-purple); width: 18px; height: 18px; }
-    .fo-opcion.seleccionada { border-color: var(--c-purple); background: #f3e8ff; color: var(--c-purple); }
+    .fo-opcion.seleccionada {
+        border-color: var(--c-purple);
+        background: #fbf7ff;
+        color: var(--c-purple);
+        box-shadow: 0 4px 14px rgba(90, 63, 163, 0.08);
+    }
 
-    .fo-progreso { text-align: center; font-size: 12px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; color: var(--c-purple); margin-bottom: 8px; }
+    /* Grid de opciones numéricas 1 a 5 para la sección de Satisfacción */
+    .fo-escala-guia {
+        display: flex;
+        justify-content: space-between;
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--text-muted);
+        margin-bottom: 12px;
+        padding: 0 4px;
+    }
+    .fo-escala-guia span i {
+        margin-right: 4px;
+    }
+
+    .fo-grid-calificacion {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 10px;
+    }
+    .fo-calif-btn {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 14px 6px;
+        border: 2px solid #f1f5f9;
+        border-radius: 16px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        background: #ffffff;
+        text-align: center;
+    }
+    .fo-calif-btn:hover {
+        border-color: var(--c-pink);
+        transform: translateY(-2px);
+    }
+    .fo-calif-btn input {
+        display: none;
+    }
+    .fo-calif-num {
+        font-family: var(--font-headings);
+        font-size: 20px;
+        font-weight: 800;
+        color: var(--text-main);
+        line-height: 1;
+        margin-bottom: 4px;
+    }
+    .fo-calif-txt {
+        font-size: 10px;
+        font-weight: 600;
+        color: var(--text-muted);
+        line-height: 1.2;
+    }
+    .fo-calif-btn.seleccionada {
+        border-color: var(--c-pink);
+        background: #fff1f5;
+        box-shadow: 0 6px 18px rgba(248, 91, 140, 0.15);
+    }
+    .fo-calif-btn.seleccionada .fo-calif-num {
+        color: var(--c-pink);
+    }
+    .fo-calif-btn.seleccionada .fo-calif-txt {
+        color: var(--c-pink);
+        font-weight: 800;
+    }
+
+    .fo-textarea {
+        width: 100%;
+        padding: 16px;
+        border-radius: 16px;
+        border: 2px solid #e2e8f0;
+        font-family: var(--font-body);
+        font-size: 14px;
+        color: var(--text-main);
+        outline: none;
+        resize: vertical;
+        min-height: 90px;
+        transition: border-color 0.2s;
+    }
+    .fo-textarea:focus {
+        border-color: var(--c-purple);
+    }
 
     .fo-btn-enviar {
         width: 100%; padding: 20px; border-radius: 100px; border: none;
-        background: var(--c-purple); color: white; font-family: var(--font-headings);
+        background: linear-gradient(135deg, var(--c-purple) 0%, #3B2474 100%);
+        color: white; font-family: var(--font-headings);
         font-weight: 800; font-size: 17px; letter-spacing: 0.5px; text-transform: uppercase;
         cursor: pointer; transition: 0.3s; display: flex; align-items: center; justify-content: center; gap: 10px;
+        box-shadow: 0 15px 30px rgba(90, 63, 163, 0.25);
+        margin-top: 25px;
     }
     .fo-btn-enviar:hover { background: var(--c-orange); transform: translateY(-2px); box-shadow: 0 15px 30px rgba(242,124,33,0.3); }
     .fo-btn-enviar:disabled { background: #cbd5e1; cursor: not-allowed; transform: none; box-shadow: none; }
@@ -70,20 +217,41 @@
     @media (max-width: 600px) {
         .fo-header { padding: 30px 20px; border-radius: 22px; }
         .fo-card { padding: 22px; border-radius: 22px; }
+        .fo-grid-calificacion { gap: 6px; }
+        .fo-calif-btn { padding: 10px 4px; }
+        .fo-calif-num { font-size: 17px; }
+        .fo-calif-txt { font-size: 9px; }
     }
 </style>
 
 <div class="fo-wrapper">
+    <!-- ENCABEZADO CÁLIDO Y HUMANO -->
     <div class="fo-header">
-        <i class="fas fa-heart-circle-check"></i>
-        <h1>Antes de continuar...</h1>
-        <p>Te tomará aproximadamente <strong>2 minutos</strong>. Por favor responde este breve formulario para poder acceder a tu sesión.</p>
+        <i class="fas fa-heart-pulse"></i>
+        <h1>Un momento para ti 💜</h1>
+        <p>Nos alegra tenerte aquí. Antes de comenzar tu sesión, tómate un par de minutos para responder con calma. Cada respuesta nos ayuda a cuidar de ti y a que tu terapeuta te acompañe con toda la dedicación que mereces.</p>
     </div>
 
-    <div id="fo-error-general" class="fo-error"><i class="fas fa-circle-exclamation"></i> <span id="fo-error-texto">Ocurrió un problema.</span></div>
+    <div id="fo-error-general" class="fo-error">
+        <i class="fas fa-circle-exclamation"></i> <span id="fo-error-texto">Ocurrió un problema.</span>
+    </div>
 
     <form id="form-organico">
         {% csrf_token %}
+
+        <!-- ===================================================================
+             SECCIÓN 1: BIENESTAR Y SEGUIMIENTO PERSONAL (CUESTIONARIO)
+             =================================================================== -->
+        <div class="fo-seccion-header">
+            <div class="fo-seccion-icon" style="background: rgba(90, 63, 163, 0.1); color: var(--c-purple);">
+                <i class="fas fa-seedling"></i>
+            </div>
+            <div class="fo-seccion-info">
+                <h2>¿Cómo ha estado tu bienestar en estos días?</h2>
+                <p>Queremos escuchar cómo te sientes y reconocer cada pasito de tu camino.</p>
+            </div>
+        </div>
+
         {% for pregunta in preguntas %}
         <div class="fo-card">
             <div class="fo-progreso">Pregunta {{ forloop.counter }} de {{ preguntas|length }}</div>
@@ -99,8 +267,144 @@
         </div>
         {% endfor %}
 
+        <!-- ===================================================================
+             SECCIÓN 2: EVALUACIÓN DE TU EXPERIENCIA CON HOPE (SATISFACCIÓN)
+             =================================================================== -->
+        <div class="fo-seccion-header" style="margin-top: 45px;">
+            <div class="fo-seccion-icon" style="background: rgba(248, 91, 140, 0.1); color: var(--c-pink);">
+                <i class="fas fa-heart"></i>
+            </div>
+            <div class="fo-seccion-info">
+                <h2>Tu experiencia en Espacio HOPE</h2>
+                <p>Tu sentir es nuestra mayor prioridad. Cuéntanos qué tal ha sido tu acompañamiento.</p>
+            </div>
+        </div>
+
+        <!-- Pregunta 1 de Satisfacción -->
+        <div class="fo-card">
+            <div class="fo-progreso" style="color: var(--c-pink);">Evaluación de servicio · 1 de 3</div>
+            <div class="fo-pregunta">1. En general, ¿qué tan satisfecho(a) estás con la atención que has recibido por parte de tu terapeuta?</div>
+            
+            <div class="fo-escala-guia">
+                <span><i class="fa-regular fa-face-frown"></i> 1 = Muy insatisfecho(a)</span>
+                <span>5 = Muy satisfecho(a) <i class="fa-regular fa-face-smile-beam"></i></span>
+            </div>
+
+            <div class="fo-grid-calificacion">
+                <label class="fo-calif-btn" data-grupo="sat_1">
+                    <input type="radio" name="sat_1" value="1" required>
+                    <span class="fo-calif-num">1</span>
+                    <span class="fo-calif-txt">Muy insatisfecho</span>
+                </label>
+                <label class="fo-calif-btn" data-grupo="sat_1">
+                    <input type="radio" name="sat_1" value="2" required>
+                    <span class="fo-calif-num">2</span>
+                    <span class="fo-calif-txt">Insatisfecho</span>
+                </label>
+                <label class="fo-calif-btn" data-grupo="sat_1">
+                    <input type="radio" name="sat_1" value="3" required>
+                    <span class="fo-calif-num">3</span>
+                    <span class="fo-calif-txt">Neutral</span>
+                </label>
+                <label class="fo-calif-btn" data-grupo="sat_1">
+                    <input type="radio" name="sat_1" value="4" required>
+                    <span class="fo-calif-num">4</span>
+                    <span class="fo-calif-txt">Satisfecho</span>
+                </label>
+                <label class="fo-calif-btn seleccionada" data-grupo="sat_1">
+                    <input type="radio" name="sat_1" value="5" checked required>
+                    <span class="fo-calif-num">5</span>
+                    <span class="fo-calif-txt">Muy satisfecho</span>
+                </label>
+            </div>
+        </div>
+
+        <!-- Pregunta 2 de Satisfacción -->
+        <div class="fo-card">
+            <div class="fo-progreso" style="color: var(--c-pink);">Evaluación de servicio · 2 de 3</div>
+            <div class="fo-pregunta">2. Mi terapeuta me hace sentir escuchado(a), comprendido(a) y tratado(a) con respeto durante las sesiones.</div>
+
+            <div class="fo-escala-guia">
+                <span><i class="fa-regular fa-face-frown"></i> 1 = Totalmente en desacuerdo</span>
+                <span>5 = Totalmente de acuerdo <i class="fa-regular fa-face-smile-beam"></i></span>
+            </div>
+
+            <div class="fo-grid-calificacion">
+                <label class="fo-calif-btn" data-grupo="sat_2">
+                    <input type="radio" name="sat_2" value="1" required>
+                    <span class="fo-calif-num">1</span>
+                    <span class="fo-calif-txt">En desacuerdo</span>
+                </label>
+                <label class="fo-calif-btn" data-grupo="sat_2">
+                    <input type="radio" name="sat_2" value="2" required>
+                    <span class="fo-calif-num">2</span>
+                    <span class="fo-calif-txt">Poco acuerdo</span>
+                </label>
+                <label class="fo-calif-btn" data-grupo="sat_2">
+                    <input type="radio" name="sat_2" value="3" required>
+                    <span class="fo-calif-num">3</span>
+                    <span class="fo-calif-txt">Neutral</span>
+                </label>
+                <label class="fo-calif-btn" data-grupo="sat_2">
+                    <input type="radio" name="sat_2" value="4" required>
+                    <span class="fo-calif-num">4</span>
+                    <span class="fo-calif-txt">De acuerdo</span>
+                </label>
+                <label class="fo-calif-btn seleccionada" data-grupo="sat_2">
+                    <input type="radio" name="sat_2" value="5" checked required>
+                    <span class="fo-calif-num">5</span>
+                    <span class="fo-calif-txt">Total acuerdo</span>
+                </label>
+            </div>
+        </div>
+
+        <!-- Pregunta 3 de Satisfacción -->
+        <div class="fo-card">
+            <div class="fo-progreso" style="color: var(--c-pink);">Evaluación de servicio · 3 de 3</div>
+            <div class="fo-pregunta">3. Considero que mi proceso terapéutico me ha ayudado a avanzar hacia los objetivos por los que inicié terapia.</div>
+
+            <div class="fo-escala-guia">
+                <span><i class="fa-regular fa-face-frown"></i> 1 = Nada de avance</span>
+                <span>5 = Mucho avance <i class="fa-regular fa-face-smile-beam"></i></span>
+            </div>
+
+            <div class="fo-grid-calificacion">
+                <label class="fo-calif-btn" data-grupo="sat_3">
+                    <input type="radio" name="sat_3" value="1" required>
+                    <span class="fo-calif-num">1</span>
+                    <span class="fo-calif-txt">Sin avance</span>
+                </label>
+                <label class="fo-calif-btn" data-grupo="sat_3">
+                    <input type="radio" name="sat_3" value="2" required>
+                    <span class="fo-calif-num">2</span>
+                    <span class="fo-calif-txt">Poco avance</span>
+                </label>
+                <label class="fo-calif-btn" data-grupo="sat_3">
+                    <input type="radio" name="sat_3" value="3" required>
+                    <span class="fo-calif-num">3</span>
+                    <span class="fo-calif-txt">Regular</span>
+                </label>
+                <label class="fo-calif-btn" data-grupo="sat_3">
+                    <input type="radio" name="sat_3" value="4" required>
+                    <span class="fo-calif-num">4</span>
+                    <span class="fo-calif-txt">Buen avance</span>
+                </label>
+                <label class="fo-calif-btn seleccionada" data-grupo="sat_3">
+                    <input type="radio" name="sat_3" value="5" checked required>
+                    <span class="fo-calif-num">5</span>
+                    <span class="fo-calif-txt">Gran avance</span>
+                </label>
+            </div>
+        </div>
+
+        <!-- Comentario Opcional -->
+        <div class="fo-card">
+            <div class="fo-pregunta" style="font-size: 1rem; margin-bottom: 8px;">¿Hay algo que quieras compartirnos o sugerirnos? <span style="font-weight: 500; color: var(--text-muted); font-size: 13px;">(Opcional)</span></div>
+            <textarea name="comentarios_satisfaccion" class="fo-textarea" placeholder="Escribe aquí cualquier mensaje o sugerencia que desees compartir..."></textarea>
+        </div>
+
         <button type="submit" class="fo-btn-enviar" id="fo-btn-submit">
-            Continuar a mi sesión <i class="fas fa-arrow-right"></i>
+            Guardar y entrar a mi sesión <i class="fas fa-arrow-right"></i>
         </button>
     </form>
 </div>
@@ -121,7 +425,7 @@ function getCookie(name) {
     return cookieValue;
 }
 
-// Resaltar visualmente la opción elegida en cada pregunta
+// Resaltar visualmente las opciones normales de preguntas Likert
 document.querySelectorAll('.fo-opcion input[type="radio"]').forEach(function (input) {
     input.addEventListener('change', function () {
         const grupo = this.name;
@@ -129,6 +433,17 @@ document.querySelectorAll('.fo-opcion input[type="radio"]').forEach(function (in
             label.classList.remove('seleccionada');
         });
         this.closest('.fo-opcion').classList.add('seleccionada');
+    });
+});
+
+// Resaltar visualmente los botones del 1 al 5 en Satisfacción
+document.querySelectorAll('.fo-calif-btn input[type="radio"]').forEach(function (input) {
+    input.addEventListener('change', function () {
+        const grupo = this.name;
+        document.querySelectorAll(`.fo-calif-btn[data-grupo="${grupo}"]`).forEach(function (label) {
+            label.classList.remove('seleccionada');
+        });
+        this.closest('.fo-calif-btn').classList.add('seleccionada');
     });
 });
 
@@ -141,7 +456,7 @@ document.getElementById('form-organico').addEventListener('submit', function (e)
     const btn = document.getElementById('fo-btn-submit');
     const textoOriginal = btn.innerHTML;
     btn.disabled = true;
-    btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Enviando...';
+    btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Guardando respuestas...';
 
     const formData = new FormData(this);
 
@@ -153,7 +468,7 @@ document.getElementById('form-organico').addEventListener('submit', function (e)
     .then(r => r.json())
     .then(data => {
         if (data.status === 'success' && data.redirect_url) {
-            btn.innerHTML = '<i class="fas fa-check"></i> ¡Listo! Redirigiendo...';
+            btn.innerHTML = '<i class="fas fa-check"></i> ¡Listo! Entrando a tu sesión...';
             window.location.href = data.redirect_url;
         } else {
             btn.disabled = false;

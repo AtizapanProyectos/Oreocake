@@ -3423,17 +3423,42 @@ def formulario_previo_meet(request, cita_id):
         return redirect('panel_generico')
 
     # Si ya contestó el formulario para ESTA cita, saltamos directo a Meet.
-    ya_respondido = RespuestaFormularioOrganica.objects.filter(paciente=request.user, cita=cita).exists()
+    ya_respondido = (
+        EvaluacionSesionPaciente.objects.filter(cita=cita).exists() or
+        RespuestaFormularioOrganica.objects.filter(paciente=request.user, cita=cita).exists()
+    )
     if ya_respondido:
         return redirect(cita.enlace_meet)
 
     if request.method == 'POST':
+        # 1. Procesamiento de los 12 reactivos del IPP
         respuestas_dict = {}
         for pregunta in FORMULARIO_ORGANICO_PREGUNTAS:
             valor = request.POST.get(pregunta['id'], '')
             respuestas_dict[pregunta['id']] = valor
 
         puntaje = _calcular_puntaje_formulario_organico(respuestas_dict)
+        ipt_actual = calcular_ipt(puntaje)
+
+        # 2. Procesamiento de la sección de satisfacción (escala 1 a 5)
+        try:
+            sat_1 = int(request.POST.get('sat_1', 5))
+            sat_2 = int(request.POST.get('sat_2', 5))
+            sat_3 = int(request.POST.get('sat_3', 5))
+            sat_1 = max(1, min(5, sat_1))
+            sat_2 = max(1, min(5, sat_2))
+            sat_3 = max(1, min(5, sat_3))
+        except (ValueError, TypeError):
+            sat_1, sat_2, sat_3 = 5, 5, 5
+
+        promedio_sat = round((sat_1 + sat_2 + sat_3) / 3.0, 2)
+        comentarios_sat = request.POST.get('comentarios_satisfaccion', '').strip()
+
+        # 3. Identificar el tratamiento activo del paciente para esta modalidad
+        tratamiento = TratamientoPaciente.objects.filter(
+            paciente=request.user,
+            tipo_servicio=cita.tipo_sesion
+        ).first()
 
         try:
             with transaction.atomic():
@@ -3443,42 +3468,38 @@ def formulario_previo_meet(request, cita_id):
                     paciente=request.user
                 ).exclude(cita=cita).order_by('-fecha_respuesta').first()
 
+                # Guardado en RespuestaFormularioOrganica para retrocompatibilidad
                 RespuestaFormularioOrganica.objects.get_or_create(
                     paciente=request.user,
                     cita=cita,
                     defaults={'respuestas': respuestas_dict, 'puntaje': puntaje}
                 )
+
+                # Guardado en el nuevo modelo con trazabilidad completa
+                EvaluacionSesionPaciente.objects.update_or_create(
+                    cita=cita,
+                    defaults={
+                        'paciente': request.user,
+                        'psicologo': cita.psicologo,
+                        'tratamiento': tratamiento,
+                        'tipo_proceso': cita.tipo_sesion,
+                        'respuestas_ipp': respuestas_dict,
+                        'puntaje_bruto_ipp': puntaje,
+                        'ipt': ipt_actual,
+                        'satisfaccion_atencion': sat_1,
+                        'sentirse_escuchado_respetado': sat_2,
+                        'avance_hacia_objetivos': sat_3,
+                        'promedio_satisfaccion': promedio_sat,
+                        'comentarios': comentarios_sat,
+                    }
+                )
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
 
-        ipt_actual = calcular_ipt(puntaje)
         ipt_anterior = calcular_ipt(respuesta_anterior.puntaje) if respuesta_anterior else None
         mensaje = _mensaje_tierno_progreso(ipt_actual, ipt_anterior)
 
-        # =====================================================================
-        # 🔥 NUEVO: PREPARAR Y ENVIAR CORREO AL DOCTOR EN SEGUNDO PLANO
-        # =====================================================================
-        # 1. Cruzar las IDs de las respuestas con los textos legibles
-        respuestas_legibles = []
-        for p in FORMULARIO_ORGANICO_PREGUNTAS:
-            val_id = respuestas_dict.get(p['id'])
-            # Buscamos el texto exacto ('Nunca', 'Siempre', etc.)
-            texto_val = next((o['texto'] for o in ESCALA_IPP if o['valor'] == val_id), val_id)
-            respuestas_legibles.append({'pregunta': p['texto'], 'respuesta': texto_val})
-
-        # 2. Extraer datos del doctor y paciente
-        psicologo_email = cita.psicologo.usuario.email
-        paciente_nombre = request.user.first_name or request.user.username
-
-        # 3. Lanzar el envío de correo en un Hilo (Thread) separado. 
-        # Esto no bloquea la petición actual; el paciente recibe su JSON de inmediato.
-        if psicologo_email:
-            hilo_correo = threading.Thread(
-                target=_enviar_correo_ipp_async,
-                args=(psicologo_email, paciente_nombre, ipt_actual, ipt_anterior, respuestas_legibles)
-            )
-            hilo_correo.start()
-        # =====================================================================
+        # Proceso de envío de correo asíncrono al psicólogo removido según requerimiento
 
         return JsonResponse({
             'status': 'success',
