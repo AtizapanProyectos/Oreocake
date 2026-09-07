@@ -181,3 +181,12 @@ class EvaluacionSesionPacienteAdmin(admin.ModelAdmin):
     list_select_related = ('paciente', 'psicologo', 'psicologo__usuario', 'cita', 'tratamiento')
     readonly_fields = ('fecha_respuesta', 'puntaje_bruto_ipp', 'ipt', 'promedio_satisfaccion')
     list_per_page = 25
+
+@admin.register(ReporteClinicoPDF)
+class ReporteClinicoPDFAdmin(admin.ModelAdmin):
+    list_display = ('paciente', 'tipo_destinatario', 'numero_sesion', 'psicologo', 'correo_enviado', 'fecha_generacion', 'archivo_pdf')
+    list_filter = ('tipo_destinatario', 'correo_enviado', 'fecha_generacion', 'psicologo')
+    search_fields = ('paciente__first_name', 'paciente__username', 'paciente__email', 'psicologo__usuario__first_name')
+    list_select_related = ('paciente', 'psicologo', 'psicologo__usuario', 'cita', 'tratamiento')
+    readonly_fields = ('fecha_generacion',)
+    list_per_page = 25

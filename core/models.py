@@ -877,4 +877,40 @@ class ContactoPais(models.Model):
     class Meta:
         verbose_name = "Contacto por país"
         verbose_name_plural = "Contactos por país"
-        ordering = ['-fecha_registro']  
+        ordering = ['-fecha_registro']
+
+# ==========================================
+# 11. REPORTES CLÍNICOS EN PDF (ALMACENAMIENTO Y TRAZABILIDAD)
+# ==========================================
+class ReporteClinicoPDF(models.Model):
+    TIPO_DESTINATARIO = [
+        ('paciente', 'Versión Paciente (Check-in / Tareas / Progreso)'),
+        ('psicologo', 'Versión Psicólogo (Expediente Clínico / Evolución)'),
+    ]
+
+    cita = models.ForeignKey(Cita, on_delete=models.CASCADE, related_name='reportes_pdf', verbose_name="Cita asociada")
+    paciente = models.ForeignKey(User, on_delete=models.CASCADE, related_name='reportes_clinicos_pdf', verbose_name="Paciente")
+    psicologo = models.ForeignKey(PerfilPsicologo, on_delete=models.CASCADE, related_name='reportes_emitidos_pdf', verbose_name="Psicólogo tratante")
+    tratamiento = models.ForeignKey(TratamientoPaciente, on_delete=models.SET_NULL, null=True, blank=True, related_name='reportes_pdf', verbose_name="Tratamiento / Modalidad")
+
+    tipo_destinatario = models.CharField(max_length=20, choices=TIPO_DESTINATARIO, verbose_name="Tipo de Reporte", db_index=True)
+    numero_sesion = models.PositiveIntegerField(default=1, verbose_name="Número de sesión")
+
+    archivo_pdf = models.FileField(upload_to='reportes_sesiones/%Y/%m/', verbose_name="Archivo PDF generado")
+    datos_ia_snapshot = models.JSONField(default=dict, blank=True, verbose_name="Resumen de datos clínicos e IA")
+
+    correo_enviado = models.BooleanField(default=False, verbose_name="¿Enviado por correo?")
+    fecha_generacion = models.DateTimeField(auto_now_add=True, db_index=True, verbose_name="Fecha de generación")
+
+    class Meta:
+        verbose_name = "Reporte Clínico en PDF"
+        verbose_name_plural = "Reportes Clínicos en PDF"
+        ordering = ['-fecha_generacion']
+        indexes = [
+            models.Index(fields=['paciente', 'tipo_destinatario']),
+            models.Index(fields=['cita', 'tipo_destinatario']),
+        ]
+
+    def __str__(self):
+        paciente_nom = self.paciente.first_name or self.paciente.username if self.paciente else "Sin paciente"
+        return f"Reporte {self.tipo_destinatario} - Sesión #{self.numero_sesion} ({paciente_nom})"

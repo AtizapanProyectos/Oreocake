@@ -391,6 +391,14 @@
     .footer-note { margin-top: 18px; padding: 12px 16px; }
     .footer { margin-top: 15px; padding: 16px 36px 20px; }
   }
+
+  {% if es_exportacion_pdf %}
+  .toolbar, #patientSearchCard, #btnCambiarPaciente, .upload-label { display: none !important; }
+  .page-wrap { padding: 0 !important; }
+  .sheet { box-shadow: none !important; border-radius: 0 !important; width: 100% !important; margin: 0 auto !important; }
+  body { background: #ffffff !important; }
+  @page { size: Letter; margin: 0; }
+  {% endif %}
 </style>
 </head>
 <body>
@@ -417,11 +425,12 @@
             <div class="logo-slot" id="logoSlotHeader">
               <img id="logoImgHeader" style="display:none;" alt="Logo HOPE">
                 <div class="brand-container">
-                    <img src="{% static 'img/nlogo.png' %}" alt="HOPE Logo">
+                    <img src="{{ logo_base64|default:'/static/img/nlogo.png' }}" alt="HOPE Logo">
                 </div>
             </div>
             <div class="logo-tagline">Oportunidad · Prevención · Esperanza</div>
           </div>
+
           <div class="doc-title">
             <div class="doc-badge"><span class="pulse"></span> Documento clínico</div>
             <h1>Reporte de Check-In</h1>
@@ -444,30 +453,28 @@
             <input type="text" id="buscadorPaciente" placeholder="Escribe el nombre o correo del paciente..." autocomplete="off">
             <div id="resultadosPaciente" style="display:none; position:absolute; left:22px; right:22px; top:66px; z-index:20; background:#fff; border:1.5px solid var(--line); border-radius:10px; box-shadow:var(--shadow); max-height:220px; overflow-y:auto;"></div>
             <div id="estadoCargaPaciente" style="font-size:11.5px; color:var(--ink-soft); margin-top:4px;"></div>
-          </div>
-        </div>
         <button type="button" id="btnCambiarPaciente" class="btn btn-ghost" style="display:none; margin:0 0 16px; background:var(--purple-wash); color:var(--purple-deep);" onclick="mostrarBuscadorPaciente()"></button>
 
         <div class="info-card">
           <div class="field-row wide">
             <div class="field">
               <label><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> Nombre del paciente</label>
-              <input type="text" id="inputNombrePaciente" placeholder="Escribe el nombre completo">
+              <input type="text" id="inputNombrePaciente" value="{{ nombre_paciente|default:'' }}" placeholder="Escribe el nombre completo">
             </div>
             <div class="field">
               <label><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V10M18 20V4M6 20v-4"/></svg> Edad</label>
-              <input type="number" id="inputEdad" placeholder="Ej. 16" min="0">
+              <input type="number" id="inputEdad" value="{{ edad|default:'' }}" placeholder="Ej. 16" min="0">
             </div>
           </div>
 
           <div class="field-row wide">
             <div class="field">
               <label><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M8 2v4M16 2v4M3 10h18"/><path d="M9 15l2 2 4-4"/></svg> Psicólogo(a) y cédula profesional</label>
-              <input type="text" id="inputPsicologo" placeholder="Nombre completo — Cédula No.">
+              <input type="text" id="inputPsicologo" value="{{ psicologo|default:'' }}{% if cedula %} — Cédula No. {{ cedula }}{% endif %}" placeholder="Nombre completo — Cédula No.">
             </div>
             <div class="field">
               <label><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> Fecha de la última sesión</label>
-              <input type="date" id="inputFechaUltimaSesion">
+              <input type="date" id="inputFechaUltimaSesion" value="{{ fecha_ultima_sesion|default:'' }}">
             </div>
           </div>
         </div>
@@ -485,19 +492,19 @@
             <div class="gauge-card">
               <div class="gauge-top">
                 <div class="gauge-eyebrow">Sesión</div>
-                <div class="session-big">#<input type="text" value="3" id="sessionNum"></div>
+                <div class="session-big">#<input type="text" value="{{ sesion_numero|default:'1' }}" id="sessionNum"></div>
               </div>
               <div class="gauge-wrap">
                 <svg viewBox="0 0 220 220">
                   <circle cx="110" cy="110" r="92" stroke="rgba(255,255,255,0.18)" stroke-width="18" fill="none"/>
-                  <circle id="gaugeArc" cx="110" cy="110" r="92" stroke="#FFCF3F" stroke-width="18" fill="none" stroke-linecap="round" stroke-dasharray="578.05" stroke-dashoffset="138.7"/>
+                  <circle id="gaugeArc" cx="110" cy="110" r="92" stroke="#FFCF3F" stroke-width="18" fill="none" stroke-linecap="round" stroke-dasharray="578.05" stroke-dashoffset="{{ gauge_offset|default:'138.7' }}"/>
                 </svg>
                 <div class="gauge-center">
-                  <div class="val"><input type="number" id="ippValue" value="76" min="0" max="100">%</div>
+                  <div class="val"><input type="number" id="ippValue" value="{{ ipp_valor|default:'0' }}" min="0" max="100">%</div>
                   <div class="lbl">IPP</div>
                 </div>
               </div>
-              <div class="gauge-delta up" id="gaugeDelta">▲ <input type="number" id="ippDeltaInput" value="7">% vs. anterior</div>
+              <div class="gauge-delta up" id="gaugeDelta">▲ <input type="number" id="ippDeltaInput" value="{{ ipp_delta|default:'0' }}">% vs. anterior</div>
               <div class="gauge-note">Índice de Progreso Psicológico</div>
             </div>
 
@@ -506,26 +513,26 @@
               <div class="dim-row">
                 <div class="dim-chip" style="background:var(--pink)"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-7-4.35-9.3-8.1C1 9.7 2.4 6.5 5.6 6c2-.3 3.7.8 4.4 2.3C10.7 6.8 12.4 5.7 14.4 6c3.2.5 4.6 3.7 2.9 6.9C15 16.65 12 21 12 21z"/></svg></div>
                 <div class="dim-name">Bienestar emocional</div>
-                <div class="dim-track"><div class="dim-fill" style="width:30%;background:var(--pink)"></div></div>
-                <div class="dim-pct"><input type="number" id="dimBienestar" value="30" min="0" max="100" oninput="updateDim(this)">%</div>
+                <div class="dim-track"><div class="dim-fill" style="width:{{ dims.bienestar|default:dims.Bienestar_emocional|default:0 }}%;background:var(--pink)"></div></div>
+                <div class="dim-pct"><input type="number" id="dimBienestar" value="{{ dims.bienestar|default:dims.Bienestar_emocional|default:'0' }}" min="0" max="100" oninput="updateDim(this)">%</div>
               </div>
               <div class="dim-row">
                 <div class="dim-chip" style="background:var(--orange)"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l8 3v6c0 5-3.4 8.5-8 10-4.6-1.5-8-5-8-10V5l8-3z"/></svg></div>
                 <div class="dim-name">Afrontamiento</div>
-                <div class="dim-track"><div class="dim-fill" style="width:50%;background:var(--orange)"></div></div>
-                <div class="dim-pct"><input type="number" id="dimAfrontamiento" value="50" min="0" max="100" oninput="updateDim(this)">%</div>
+                <div class="dim-track"><div class="dim-fill" style="width:{{ dims.afrontamiento|default:dims.Afrontamiento|default:0 }}%;background:var(--orange)"></div></div>
+                <div class="dim-pct"><input type="number" id="dimAfrontamiento" value="{{ dims.afrontamiento|default:dims.Afrontamiento|default:'0' }}" min="0" max="100" oninput="updateDim(this)">%</div>
               </div>
               <div class="dim-row">
                 <div class="dim-chip" style="background:var(--teal)"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a4 4 0 0 0-5.6 5.6L2 19l3 3 7.1-7.1a4 4 0 0 0 5.6-5.6L14.4 12l-2.4-2.4 2.7-3.3z"/></svg></div>
                 <div class="dim-name">Aplicación de herramientas</div>
-                <div class="dim-track"><div class="dim-fill" style="width:10%;background:var(--teal)"></div></div>
-                <div class="dim-pct"><input type="number" id="dimHerramientas" value="10" min="0" max="100" oninput="updateDim(this)">%</div>
+                <div class="dim-track"><div class="dim-fill" style="width:{{ dims.herramientas|default:dims.Aplicacion_herramientas|default:0 }}%;background:var(--teal)"></div></div>
+                <div class="dim-pct"><input type="number" id="dimHerramientas" value="{{ dims.herramientas|default:dims.Aplicacion_herramientas|default:'0' }}" min="0" max="100" oninput="updateDim(this)">%</div>
               </div>
               <div class="dim-row">
                 <div class="dim-chip" style="background:var(--purple-mid)"><svg viewBox="0 0 24 24" fill="#fff"><path d="M12 2l2.9 6.3 6.9.7-5.2 4.7 1.6 6.8L12 17l-6.2 3.5 1.6-6.8L2.2 9l6.9-.7L12 2z"/></svg></div>
                 <div class="dim-name">Esperanza y autoeficacia</div>
-                <div class="dim-track"><div class="dim-fill" style="width:90%;background:var(--purple-mid)"></div></div>
-                <div class="dim-pct"><input type="number" id="dimEsperanza" value="90" min="0" max="100" oninput="updateDim(this)">%</div>
+                <div class="dim-track"><div class="dim-fill" style="width:{{ dims.esperanza|default:dims.Esperanza_autoeficacia|default:0 }}%;background:var(--purple-mid)"></div></div>
+                <div class="dim-pct"><input type="number" id="dimEsperanza" value="{{ dims.esperanza|default:dims.Esperanza_autoeficacia|default:'0' }}" min="0" max="100" oninput="updateDim(this)">%</div>
               </div>
             </div>
           </div>
@@ -534,26 +541,26 @@
           <div class="evol-full">
             <div class="sub-head"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><rect x="7" y="12" width="3" height="6"/><rect x="12" y="8" width="3" height="10"/><rect x="17" y="4" width="3" height="14"/></svg><h3>Evolución del IPP</h3></div>
             <div class="box">
-              <svg class="evol-watermark" viewBox="0 0 24 24" fill="var(--purple-deep)"><path d="M12 2C9 6 8 9 8 12a4 4 0 0 0 8 0c0-3-1-6-4-10zM4 14c3 0 5 1.5 6 3.5C9 20 6.5 21 4 21c-1 0-1-1-1-2 0-2 .5-4 1-5zm16 0c-3 0-5 1.5-6 3.5 1 2.5 3.5 3.5 6 3.5 1 0 1-1 1-2 0-2-.5-4-1-5z"/></svg>
+              <svg class="evol-watermark" viewBox="0 0 24 24" fill="var(--purple-deep)"><path d="M12 2C9 6 8 9 8 12a4 4 0 0 0 8 0c0-3-1-6-4-10zM4 14c3 0 5 1.5 6 3.5C9 20 6.5 21 4 21c-1 0-1-1-1-2 0-2-.5-4-1-5zm16 0c-3 0-5 1.5-6 3.5 1 2.5 3.5 3.5 6 3.5 1 0 1-1 1-2 0-2-.5-4-1-5z"/></svg>
               <div class="evol-chart-big" id="evolChart">
                 <div class="evol-bar-big">
                   <span class="sprout">🌱</span>
-                  <div class="val-chip"><input type="number" id="evolVal1" value="62" min="0" max="100" oninput="updateEvol()"></div>
-                  <div class="bar" style="height:0%"></div>
-                  <div class="bar-lbl" id="evolLbl1">Sesión 1</div>
+                  <div class="val-chip"><input type="number" id="evolVal1" value="{{ evolucion.0.valor|default:'0' }}" min="0" max="100" oninput="updateEvol()"></div>
+                  <div class="bar" style="height:{{ evolucion.0.valor|default:0 }}%"></div>
+                  <div class="bar-lbl" id="evolLbl1">Sesión {{ evolucion.0.sesion|default:'1' }}</div>
                 </div>
                 <div class="evol-bar-big">
                   <span class="sprout">🌿</span>
-                  <div class="val-chip"><input type="number" id="evolVal2" value="69" min="0" max="100" oninput="updateEvol()"></div>
-                  <div class="bar" style="height:0%"></div>
-                  <div class="bar-lbl" id="evolLbl2">Sesión 2</div>
+                  <div class="val-chip"><input type="number" id="evolVal2" value="{{ evolucion.1.valor|default:'0' }}" min="0" max="100" oninput="updateEvol()"></div>
+                  <div class="bar" style="height:{{ evolucion.1.valor|default:0 }}%"></div>
+                  <div class="bar-lbl" id="evolLbl2">Sesión {{ evolucion.1.sesion|default:'2' }}</div>
                 </div>
                 <div class="evol-bar-big is-current">
                   <div class="now-pill">¡Vas aquí! ✨</div>
                   <span class="sprout">🌳</span>
-                  <div class="val-chip"><input type="number" id="evolVal3" value="76" min="0" max="100" oninput="updateEvol()"></div>
-                  <div class="bar" style="height:0%"></div>
-                  <div class="bar-lbl" id="evolLbl3">Sesión 3</div>
+                  <div class="val-chip"><input type="number" id="evolVal3" value="{{ evolucion.2.valor|default:ipp_valor|default:'0' }}" min="0" max="100" oninput="updateEvol()"></div>
+                  <div class="bar" style="height:{{ evolucion.2.valor|default:ipp_valor|default:0 }}%"></div>
+                  <div class="bar-lbl" id="evolLbl3">Sesión {{ evolucion.2.sesion|default:sesion_numero|default:'3' }}</div>
                 </div>
               </div>
               <div class="evol-caption" id="evolCaption">🌟 <span>Cada sesión suma: tu progreso va construyéndose paso a paso.</span></div>
@@ -594,7 +601,7 @@
                 </div>
               </div>
               <div class="mood-caption" id="moodCaption">Muy bien</div>
-              <input type="hidden" id="moodValue" value="5">
+              <input type="hidden" id="moodValue" value="{{ mood_valor|default:'5' }}">
             </div>
           </div>
         </div>
@@ -609,7 +616,7 @@
             <div class="rule"></div>
           </div>
           <div class="box" style="--accent: var(--yellow)">
-            <div class="editable" id="editableObjetivo" contenteditable="true" data-placeholder="Resumen generado con IA de la tarea que dejó el psicólogo en la sesión..."></div>
+            <div class="editable" id="editableObjetivo" contenteditable="true" data-placeholder="Resumen generado con IA de la tarea que dejó el psicólogo en la sesión...">{{ objetivo_tarea|default:'' }}</div>
           </div>
         </div>
 
@@ -621,7 +628,7 @@
             <div class="rule"></div>
           </div>
           <div class="box" style="--accent: var(--purple-mid)">
-            <div class="editable" id="editableRecomendaciones" contenteditable="true" data-placeholder="Ej. Practicar respiración diafragmática 5 minutos al día..."></div>
+            <div class="editable" id="editableRecomendaciones" contenteditable="true" data-placeholder="Ej. Practicar respiración diafragmática 5 minutos al día...">{{ recomendaciones|default:'' }}</div>
           </div>
         </div>
 
@@ -629,11 +636,11 @@
           <div class="field-row wide" id="proximaSesionFields">
             <div class="field">
               <label><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="M9 16l2 2 4-4"/></svg> Próxima sesión</label>
-              <input type="date" id="inputProximaFecha">
+              <input type="date" id="inputProximaFecha" value="{{ proxima_fecha|default:'' }}">
             </div>
             <div class="field">
               <label><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> Hora sugerida</label>
-              <input type="time" id="inputProximaHora">
+              <input type="time" id="inputProximaHora" value="{{ proxima_hora|default:'' }}">
             </div>
           </div>
           <div id="agendarCitaWrap" style="display:none; text-align:center; padding:6px 0;">
@@ -656,7 +663,7 @@
         <div class="footer-logo-slot" id="logoSlotFooter">
           <img id="logoImgFooter" style="display:none;" alt="Logo HOPE">
                 <div class="brand-container">
-                    <img src="{% static 'img/nlogo.png' %}" alt="HOPE Logo">
+                    <img src="{{ logo_base64|default:'/static/img/nlogo.png' }}" alt="HOPE Logo">
                 </div>
         </div>
         <div class="footer-right">

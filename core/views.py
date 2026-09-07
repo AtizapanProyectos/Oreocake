@@ -46,6 +46,11 @@ import json
 from django.db import transaction  # <--- Agrega esto en tus imports de hasta arriba
 import os
 import uuid
+import base64
+from django.core.files.base import ContentFile
+from django.utils.text import slugify
+from django.core.mail import EmailMultiAlternatives
+from core.utils_pdf import convertir_html_a_pdf
 from django.contrib.auth.decorators import user_passes_test
 
 
@@ -3669,13 +3674,35 @@ def buscar_mis_pacientes_ajax(request):
     return JsonResponse({'status': 'success', 'resultados': resultados})
 
 def renderizar_imagen(request):
-    # Diccionario de contexto con los datos que le pasaremos al template
-    return render(request, 'Pruebas/claude_psioclog.html')
+    cita_id = request.GET.get('cita_id')
+    paciente_id = request.GET.get('paciente_id')
+    contexto = {'logo_base64': _obtener_logo_base64()}
+    if cita_id:
+        cita = Cita.objects.filter(id=cita_id).first()
+        if cita and cita.paciente:
+            contexto.update(_construir_datos_checkin_psicologo(cita.paciente, cita))
+    elif paciente_id:
+        perfil = PerfilPaciente.objects.filter(id=paciente_id).first()
+        paciente = perfil.usuario if perfil else None
+        if paciente:
+            contexto.update(_construir_datos_checkin_psicologo(paciente))
+    return render(request, 'Pruebas/claude_psioclog.html', contexto)
 
 
 def renderizar_pasciente(request):
-    # Diccionario de contexto con los datos que le pasaremos al template
-    return render(request, 'Pruebas/claude_pascinete.html')
+    cita_id = request.GET.get('cita_id')
+    paciente_id = request.GET.get('paciente_id')
+    contexto = {'logo_base64': _obtener_logo_base64()}
+    if cita_id:
+        cita = Cita.objects.filter(id=cita_id).first()
+        if cita and cita.paciente:
+            contexto.update(_construir_datos_checkin_paciente(cita.paciente, cita))
+    elif paciente_id:
+        perfil = PerfilPaciente.objects.filter(id=paciente_id).first()
+        paciente = perfil.usuario if perfil else None
+        if paciente:
+            contexto.update(_construir_datos_checkin_paciente(paciente))
+    return render(request, 'Pruebas/claude_pascinete.html', contexto)
 
 
 TALLERES_DESTACADOS = [
@@ -4394,29 +4421,47 @@ responde únicamente con texto normal.
 
 
 
-def _construir_datos_checkin_paciente(paciente):
+def _obtener_logo_base64():
+    """Devuelve el logo en base64 para incrustación directa en el PDF headless."""
+    try:
+        logo_path = os.path.join(settings.BASE_DIR, 'static', 'img', 'nlogo.png')
+        if os.path.exists(logo_path):
+            with open(logo_path, 'rb') as f:
+                encoded = base64.b64encode(f.read()).decode('utf-8')
+                return f"data:image/png;base64,{encoded}"
+    except Exception as e:
+        logging.getLogger(__name__).warning(f"No se pudo cargar logo base64: {e}")
+    return ""
+
+
+def _construir_datos_checkin_paciente(paciente, cita=None):
     """
-    Construye el diccionario de datos del Reporte de Check-In (versión
-    paciente). Si algo falla (Groq, datos faltantes, etc.) lanza la
-    excepción hacia arriba; quien la llame decide qué hacer con eso.
+    Construye el diccionario de datos del Reporte de Check-In (versión paciente).
     """
     perfil_paciente = getattr(paciente, 'perfil', None)
     psicologo_asignado = getattr(perfil_paciente, 'psicologo_asignado', None)
- 
+
     nombre_paciente = (perfil_paciente.nombre if perfil_paciente and perfil_paciente.nombre else paciente.first_name) or paciente.username
- 
+
     nombre_psicologo = ''
     cedula_psicologo = ''
-    if psicologo_asignado:
-        nombre_psicologo = psicologo_asignado.usuario.first_name if psicologo_asignado.usuario else ''
-        cedula_psicologo = psicologo_asignado.cedula_profesional or ''
- 
+    doc = cita.psicologo if cita and cita.psicologo else psicologo_asignado
+    if doc:
+        nombre_psicologo = doc.usuario.first_name if doc.usuario else ''
+        cedula_psicologo = doc.cedula_profesional or ''
+
     historiales = HistorialClinico.objects.filter(paciente=paciente).order_by('fecha_registro')
-    sesion_numero = historiales.count() or 1
- 
-    ultima_cita = Cita.objects.filter(paciente=paciente).exclude(estado='Cancelada').order_by('-fecha', '-hora').first()
-    fecha_ultima_sesion = ultima_cita.fecha.isoformat() if ultima_cita else ''
- 
+    if cita and hasattr(cita, 'nota_clinica') and cita.nota_clinica:
+        sesion_numero = HistorialClinico.objects.filter(
+            paciente=paciente,
+            fecha_registro__lte=cita.nota_clinica.fecha_registro
+        ).count() or 1
+    else:
+        sesion_numero = historiales.count() or 1
+
+    ultima_cita = cita if cita else Cita.objects.filter(paciente=paciente).exclude(estado='Cancelada').order_by('-fecha', '-hora').first()
+    fecha_ultima_sesion = ultima_cita.fecha.isoformat() if ultima_cita and ultima_cita.fecha else ''
+
     hoy = timezone.localdate()
     ahora_time = timezone.localtime().time()
     proxima_cita = Cita.objects.filter(
@@ -4424,37 +4469,74 @@ def _construir_datos_checkin_paciente(paciente):
     ).exclude(estado='Cancelada').filter(
         Q(fecha__gt=hoy) | Q(fecha=hoy, hora__gte=ahora_time)
     ).order_by('fecha', 'hora').first()
- 
+
     tiene_proxima_cita = proxima_cita is not None
-    proxima_fecha = proxima_cita.fecha.isoformat() if proxima_cita else ''
-    proxima_hora = proxima_cita.hora.strftime('%H:%M') if proxima_cita else ''
- 
+    proxima_fecha = proxima_cita.fecha.strftime('%d/%m/%Y') if proxima_cita and proxima_cita.fecha else ''
+    proxima_hora = proxima_cita.hora.strftime('%H:%M') if proxima_cita and proxima_cita.hora else ''
+
     valores_mood = {'Muy mal': 1, 'Triste': 2, 'Normal': 3, 'Bien': 4, 'Excelente': 5}
     mood_valor = valores_mood.get(ultima_cita.estado_animo, 5) if ultima_cita else 5
- 
-    respuestas_ipp = RespuestaFormularioOrganica.objects.filter(paciente=paciente).order_by('-fecha_respuesta')[:3]
-    respuestas_ipp = list(reversed(respuestas_ipp))
- 
+
+    # Priorizamos el nuevo modelo EvaluacionSesionPaciente si existe
+    evals = list(EvaluacionSesionPaciente.objects.filter(paciente=paciente).order_by('-fecha_respuesta')[:3])
+    evals.reverse()
+
     evolucion = []
-    for i, r in enumerate(respuestas_ipp):
-        evolucion.append({'sesion': i + 1, 'valor': calcular_ipt(r.puntaje) if hasattr(r, 'puntaje') else 0})
- 
-    ipp_valor = evolucion[-1]['valor'] if evolucion else 0
-    ipp_delta = (evolucion[-1]['valor'] - evolucion[-2]['valor']) if len(evolucion) >= 2 else 0
- 
     dims = {'Bienestar emocional': 0, 'Afrontamiento': 0, 'Aplicación de herramientas': 0, 'Esperanza y autoeficacia': 0}
-    if respuestas_ipp:
-        ultima_respuesta = respuestas_ipp[-1].respuestas or {}
+
+    if evals:
+        for i, ev in enumerate(evals):
+            evolucion.append({'sesion': i + 1, 'valor': int(round(ev.ipt or 0))})
+        ipp_valor = evolucion[-1]['valor'] if evolucion else 0
+        ipp_delta = (evolucion[-1]['valor'] - evolucion[-2]['valor']) if len(evolucion) >= 2 else 0
+
+        ultima_resp = evals[-1].respuestas_ipp or {}
         acumulado = {k: [] for k in dims}
         for pregunta in FORMULARIO_ORGANICO_PREGUNTAS:
-            valor_txt = ultima_respuesta.get(pregunta['id'])
+            valor_txt = ultima_resp.get(pregunta['id'])
             puntos = _OPCIONES_POR_PREGUNTA.get(pregunta['id'], {}).get(valor_txt)
             if puntos:
                 acumulado[pregunta['categoria']].append(puntos)
         for categoria, puntos_lista in acumulado.items():
             if puntos_lista:
                 dims[categoria] = round((sum(puntos_lista) / len(puntos_lista)) / 5 * 100)
- 
+    else:
+        # Fallback a histórico anterior
+        respuestas_ipp = list(RespuestaFormularioOrganica.objects.filter(paciente=paciente).order_by('-fecha_respuesta')[:3])
+        respuestas_ipp.reverse()
+        for i, r in enumerate(respuestas_ipp):
+            evolucion.append({'sesion': i + 1, 'valor': calcular_ipt(r.puntaje) if hasattr(r, 'puntaje') else 0})
+        ipp_valor = evolucion[-1]['valor'] if evolucion else 0
+        ipp_delta = (evolucion[-1]['valor'] - evolucion[-2]['valor']) if len(evolucion) >= 2 else 0
+
+        if respuestas_ipp:
+            ultima_resp = respuestas_ipp[-1].respuestas or {}
+            acumulado = {k: [] for k in dims}
+            for pregunta in FORMULARIO_ORGANICO_PREGUNTAS:
+                valor_txt = ultima_resp.get(pregunta['id'])
+                puntos = _OPCIONES_POR_PREGUNTA.get(pregunta['id'], {}).get(valor_txt)
+                if puntos:
+                    acumulado[pregunta['categoria']].append(puntos)
+            for categoria, puntos_lista in acumulado.items():
+                if puntos_lista:
+                    dims[categoria] = round((sum(puntos_lista) / len(puntos_lista)) / 5 * 100)
+
+    # Cálculo exacto del desplazamiento del arco del gauge SVG para paciente (radio 92 -> circ 578.05)
+    gauge_offset = round(578.05 - ((ipp_valor or 0) / 100.0) * 578.05, 2)
+
+    # Aliases para compatibilidad con plantillas
+    dims_compat = {
+        'bienestar': dims.get('Bienestar emocional', 0),
+        'Bienestar_emocional': dims.get('Bienestar emocional', 0),
+        'afrontamiento': dims.get('Afrontamiento', 0),
+        'Afrontamiento': dims.get('Afrontamiento', 0),
+        'herramientas': dims.get('Aplicación de herramientas', 0),
+        'Aplicacion_herramientas': dims.get('Aplicación de herramientas', 0),
+        'esperanza': dims.get('Esperanza y autoeficacia', 0),
+        'Esperanza_autoeficacia': dims.get('Esperanza y autoeficacia', 0),
+        **dims
+    }
+
     bitacoras_texto = ""
     for i, h in enumerate(historiales):
         bitacoras_texto += f"\n--- SESIÓN {i+1} ({h.fecha_registro.strftime('%d/%m/%Y')}) ---\n"
@@ -4463,10 +4545,10 @@ def _construir_datos_checkin_paciente(paciente):
         bitacoras_texto += f"Aprendizaje del paciente: {h.aprendizaje_paciente or 'N/A'}\n"
         bitacoras_texto += f"Cierre: {h.como_se_va or 'N/A'}\n"
         bitacoras_texto += f"Recomendaciones dadas: {h.recomendaciones or 'N/A'}\n"
- 
+
     if not bitacoras_texto:
         bitacoras_texto = "Aún no hay bitácoras registradas para este paciente."
- 
+
     prompt = (
         f"Eres un psicólogo clínico experto redactando el Reporte de Check-In de {nombre_paciente}, "
         f"sesión #{sesion_numero}.\n\n"
@@ -4481,19 +4563,27 @@ def _construir_datos_checkin_paciente(paciente):
         "Devuelve ÚNICAMENTE un JSON válido con esta forma exacta, sin backticks ni texto extra:\n"
         "{\"objetivo_tarea\": \"...\", \"recomendaciones\": \"...\"}"
     )
- 
-    client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
-    response = client.chat.completions.create(
-        model="openai/gpt-oss-120b",
-        messages=[{"role": "user", "content": prompt}],
-        max_tokens=1200,
-        temperature=0.3,
-    )
- 
-    contenido_ia = _extraer_json_groq(response.choices[0].message.content.strip())
-    objetivo_tarea = _ajustar_texto_a_longitud_exacta(contenido_ia.get('objetivo_tarea', ''), 765)
-    recomendaciones = _ajustar_texto_a_longitud_exacta(contenido_ia.get('recomendaciones', ''), 765)
- 
+
+    try:
+        client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
+        response = client.chat.completions.create(
+            model="openai/gpt-oss-120b",
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=1200,
+            temperature=0.3,
+        )
+        contenido_ia = _extraer_json_groq(response.choices[0].message.content.strip())
+        objetivo_tarea = _ajustar_texto_a_longitud_exacta(contenido_ia.get('objetivo_tarea', ''), 765)
+        recomendaciones = _ajustar_texto_a_longitud_exacta(contenido_ia.get('recomendaciones', ''), 765)
+    except Exception as e:
+        logging.getLogger(__name__).warning(f"Aviso en llamada a Groq IA (paciente): {e}. Usando redacción clínica de respaldo.")
+        objetivo_tarea = _ajustar_texto_a_longitud_exacta(
+            f"Continuar trabajando en las metas establecidas en la sesión #{sesion_numero} y aplicar las técnicas de bienestar y autorregulación acordadas con tu terapeuta.", 765
+        )
+        recomendaciones = _ajustar_texto_a_longitud_exacta(
+            "Mantener la práctica regular de los ejercicios acordados en sesión, registrar eventos significativos en tu semana y acudir puntualmente a tu siguiente sesión.", 765
+        )
+
     return {
         'nombre_paciente': nombre_paciente,
         'psicologo': nombre_psicologo,
@@ -4505,59 +4595,97 @@ def _construir_datos_checkin_paciente(paciente):
         'proxima_hora': proxima_hora,
         'ipp_valor': ipp_valor,
         'ipp_delta': ipp_delta,
-        'dims': dims,
+        'dims': dims_compat,
         'evolucion': evolucion,
+        'gauge_offset': gauge_offset,
         'mood_valor': mood_valor,
         'objetivo_tarea': objetivo_tarea,
         'recomendaciones': recomendaciones,
     }
- 
- 
-# ------------------------------------------------------------------------
-# PASO 2.2 — Helper: arma los datos del reporte del PSICÓLOGO
-# (misma idea, tomado de tu generar_reporte_checkin_psicologo_ajax)
-# ------------------------------------------------------------------------
- 
-def _construir_datos_checkin_psicologo(paciente):
+
+
+def _construir_datos_checkin_psicologo(paciente, cita=None):
     perfil_paciente = getattr(paciente, 'perfil', None)
- 
+    psicologo_asignado = getattr(perfil_paciente, 'psicologo_asignado', None)
+
     nombre_paciente = (perfil_paciente.nombre if perfil_paciente and perfil_paciente.nombre else paciente.first_name) or paciente.username
- 
+
     historiales = HistorialClinico.objects.filter(paciente=paciente).order_by('fecha_registro')
-    sesion_numero = historiales.count() or 1
-    ultimo_historial = historiales.last()
- 
-    ultima_cita = Cita.objects.filter(paciente=paciente).exclude(estado='Cancelada').order_by('-fecha', '-hora').first()
-    fecha_ultima_sesion = ultima_cita.fecha.isoformat() if ultima_cita else ''
- 
+    if cita and hasattr(cita, 'nota_clinica') and cita.nota_clinica:
+        sesion_numero = HistorialClinico.objects.filter(
+            paciente=paciente,
+            fecha_registro__lte=cita.nota_clinica.fecha_registro
+        ).count() or 1
+        ultimo_historial = cita.nota_clinica
+    else:
+        sesion_numero = historiales.count() or 1
+        ultimo_historial = historiales.last()
+
+    ultima_cita = cita if cita else Cita.objects.filter(paciente=paciente).exclude(estado='Cancelada').order_by('-fecha', '-hora').first()
+    fecha_ultima_sesion = ultima_cita.fecha.isoformat() if ultima_cita and ultima_cita.fecha else ''
+
     cuestionario_texto = "El paciente no tiene cuestionario inicial registrado."
     if hasattr(paciente, 'cuestionario_inicial'):
         respuestas_cuest = paciente.cuestionario_inicial.respuestas or {}
         cuestionario_texto = "\n".join([f"- {k.replace('_', ' ').capitalize()}: {v}" for k, v in respuestas_cuest.items()]) or cuestionario_texto
- 
-    respuestas_ipp = RespuestaFormularioOrganica.objects.filter(paciente=paciente).order_by('-fecha_respuesta')[:3]
-    respuestas_ipp = list(reversed(respuestas_ipp))
- 
+
+    evals = list(EvaluacionSesionPaciente.objects.filter(paciente=paciente).order_by('-fecha_respuesta')[:3])
+    evals.reverse()
+
     evolucion = []
-    for i, r in enumerate(respuestas_ipp):
-        evolucion.append({'sesion': i + 1, 'valor': calcular_ipt(r.puntaje) if hasattr(r, 'puntaje') else 0})
- 
-    ipp_valor = evolucion[-1]['valor'] if evolucion else 0
-    ipp_delta = (evolucion[-1]['valor'] - evolucion[-2]['valor']) if len(evolucion) >= 2 else 0
- 
     dims = {'Bienestar emocional': 0, 'Afrontamiento': 0, 'Aplicación de herramientas': 0, 'Esperanza y autoeficacia': 0}
-    if respuestas_ipp:
-        ultima_respuesta = respuestas_ipp[-1].respuestas or {}
+
+    if evals:
+        for i, ev in enumerate(evals):
+            evolucion.append({'sesion': i + 1, 'valor': int(round(ev.ipt or 0))})
+        ipp_valor = evolucion[-1]['valor'] if evolucion else 0
+        ipp_delta = (evolucion[-1]['valor'] - evolucion[-2]['valor']) if len(evolucion) >= 2 else 0
+
+        ultima_resp = evals[-1].respuestas_ipp or {}
         acumulado = {k: [] for k in dims}
         for pregunta in FORMULARIO_ORGANICO_PREGUNTAS:
-            valor_txt = ultima_respuesta.get(pregunta['id'])
+            valor_txt = ultima_resp.get(pregunta['id'])
             puntos = _OPCIONES_POR_PREGUNTA.get(pregunta['id'], {}).get(valor_txt)
             if puntos:
                 acumulado[pregunta['categoria']].append(puntos)
         for categoria, puntos_lista in acumulado.items():
             if puntos_lista:
                 dims[categoria] = round((sum(puntos_lista) / len(puntos_lista)) / 5 * 100)
- 
+    else:
+        respuestas_ipp = list(RespuestaFormularioOrganica.objects.filter(paciente=paciente).order_by('-fecha_respuesta')[:3])
+        respuestas_ipp.reverse()
+        for i, r in enumerate(respuestas_ipp):
+            evolucion.append({'sesion': i + 1, 'valor': calcular_ipt(r.puntaje) if hasattr(r, 'puntaje') else 0})
+        ipp_valor = evolucion[-1]['valor'] if evolucion else 0
+        ipp_delta = (evolucion[-1]['valor'] - evolucion[-2]['valor']) if len(evolucion) >= 2 else 0
+
+        if respuestas_ipp:
+            ultima_resp = respuestas_ipp[-1].respuestas or {}
+            acumulado = {k: [] for k in dims}
+            for pregunta in FORMULARIO_ORGANICO_PREGUNTAS:
+                valor_txt = ultima_resp.get(pregunta['id'])
+                puntos = _OPCIONES_POR_PREGUNTA.get(pregunta['id'], {}).get(valor_txt)
+                if puntos:
+                    acumulado[pregunta['categoria']].append(puntos)
+            for categoria, puntos_lista in acumulado.items():
+                if puntos_lista:
+                    dims[categoria] = round((sum(puntos_lista) / len(puntos_lista)) / 5 * 100)
+
+    # Cálculo exacto del gauge para psicólogo (radio 58 -> circ 364.4)
+    gauge_offset_psi = round(364.4 - ((ipp_valor or 0) / 100.0) * 364.4, 2)
+
+    dims_compat = {
+        'bienestar': dims.get('Bienestar emocional', 0),
+        'Bienestar_emocional': dims.get('Bienestar emocional', 0),
+        'afrontamiento': dims.get('Afrontamiento', 0),
+        'Afrontamiento': dims.get('Afrontamiento', 0),
+        'herramientas': dims.get('Aplicación de herramientas', 0),
+        'Aplicacion_herramientas': dims.get('Aplicación de herramientas', 0),
+        'esperanza': dims.get('Esperanza y autoeficacia', 0),
+        'Esperanza_autoeficacia': dims.get('Esperanza y autoeficacia', 0),
+        **dims
+    }
+
     bitacoras_texto = ""
     for i, h in enumerate(historiales):
         bitacoras_texto += f"\n--- SESIÓN {i+1} ({h.fecha_registro.strftime('%d/%m/%Y')}) ---\n"
@@ -4568,7 +4696,7 @@ def _construir_datos_checkin_psicologo(paciente):
         bitacoras_texto += f"Recomendaciones dadas: {h.recomendaciones or 'N/A'}\n"
     if not bitacoras_texto:
         bitacoras_texto = "Aún no hay bitácoras registradas para este paciente."
- 
+
     ultima_sesion_texto = "No hay una última sesión registrada."
     if ultimo_historial:
         ultima_sesion_texto = (
@@ -4578,7 +4706,7 @@ def _construir_datos_checkin_psicologo(paciente):
             f"Cierre: {ultimo_historial.como_se_va or 'N/A'}\n"
             f"Recomendaciones dadas: {ultimo_historial.recomendaciones or 'N/A'}"
         )
- 
+
     prompt = (
         f"Eres un psicólogo clínico experto redactando el Reporte de Check-In (versión para el psicólogo) "
         f"de {nombre_paciente}, sesión #{sesion_numero}.\n\n"
@@ -4598,246 +4726,430 @@ def _construir_datos_checkin_psicologo(paciente):
         "Devuelve ÚNICAMENTE un JSON válido con esta forma exacta, sin backticks ni texto extra:\n"
         "{\"como_llegaste_hope\": \"...\", \"apoyo_ultima_sesion\": \"...\", \"objetivo_tarea\": \"...\", \"recomendaciones\": \"...\"}"
     )
- 
-    client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
-    response = client.chat.completions.create(
-        model="openai/gpt-oss-120b",
-        messages=[{"role": "user", "content": prompt}],
-        max_tokens=1800,
-        temperature=0.3,
-    )
- 
-    contenido_ia = _extraer_json_groq(response.choices[0].message.content.strip())
-    como_llegaste_hope = _ajustar_texto_a_longitud_exacta(contenido_ia.get('como_llegaste_hope', ''), 800)
-    apoyo_ultima_sesion = _ajustar_texto_a_longitud_exacta(contenido_ia.get('apoyo_ultima_sesion', ''), 700)
-    objetivo_tarea = _ajustar_texto_a_longitud_exacta(contenido_ia.get('objetivo_tarea', ''), 780)
-    recomendaciones = _ajustar_texto_a_longitud_exacta(contenido_ia.get('recomendaciones', ''), 780)
- 
+
+    try:
+        client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
+        response = client.chat.completions.create(
+            model="openai/gpt-oss-120b",
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=1800,
+            temperature=0.3,
+        )
+        contenido_ia = _extraer_json_groq(response.choices[0].message.content.strip())
+        como_llegaste_hope = _ajustar_texto_a_longitud_exacta(contenido_ia.get('como_llegaste_hope', ''), 800)
+        apoyo_ultima_sesion = _ajustar_texto_a_longitud_exacta(contenido_ia.get('apoyo_ultima_sesion', ''), 700)
+        objetivo_tarea = _ajustar_texto_a_longitud_exacta(contenido_ia.get('objetivo_tarea', ''), 780)
+        recomendaciones = _ajustar_texto_a_longitud_exacta(contenido_ia.get('recomendaciones', ''), 780)
+    except Exception as e:
+        logging.getLogger(__name__).warning(f"Aviso en llamada a Groq IA (psicólogo): {e}. Usando redacción clínica de respaldo.")
+        como_llegaste_hope = _ajustar_texto_a_longitud_exacta(
+            "El consultante inició su proceso terapéutico en Espacio HOPE en búsqueda de acompañamiento profesional para el desarrollo de herramientas personales y bienestar integral.", 800
+        )
+        apoyo_ultima_sesion = _ajustar_texto_a_longitud_exacta(
+            f"En la sesión #{sesion_numero} se dio seguimiento al motivo de consulta, explorando las dinámicas actuales del paciente y promoviendo la introspección activa.", 700
+        )
+        objetivo_tarea = _ajustar_texto_a_longitud_exacta(
+            "Continuar con la implementación de las técnicas revisadas en sesión y consolidar los compromisos terapéuticos vigentes.", 780
+        )
+        recomendaciones = _ajustar_texto_a_longitud_exacta(
+            "Mantener el registro de conductas y emociones relevantes a lo largo de la semana para su revisión en la siguiente sesión.", 780
+        )
+
     return {
         'nombre_paciente': nombre_paciente,
         'fecha_ultima_sesion': fecha_ultima_sesion,
         'sesion_numero': sesion_numero,
         'ipp_valor': ipp_valor,
         'ipp_delta': ipp_delta,
-        'dims': dims,
+        'dims': dims_compat,
         'evolucion': evolucion,
+        'gauge_offset_psi': gauge_offset_psi,
         'como_llegaste_hope': como_llegaste_hope,
         'apoyo_ultima_sesion': apoyo_ultima_sesion,
         'objetivo_tarea': objetivo_tarea,
         'recomendaciones': recomendaciones,
     }
- 
- 
+
+
 # ------------------------------------------------------------------------
-# PASO 2.3 — Reemplaza el CONTENIDO de tus dos vistas AJAX existentes
-# por esto (mismo nombre de función, misma URL, mismo decorador, mismo
-# JSON de respuesta — solo que ahora usan los helpers de arriba):
+# Vistas AJAX para el visor web en navegador
 # ------------------------------------------------------------------------
- 
 @user_passes_test(lambda u: hasattr(u, 'perfil_psicologo') or u.is_superuser, login_url='/')
 def generar_reporte_checkin_ajax(request):
     paciente_id = request.GET.get('paciente_id')
     if not paciente_id:
         return JsonResponse({'status': 'error', 'message': 'Falta paciente_id'})
- 
+
     try:
         paciente = User.objects.select_related('perfil', 'perfil__psicologo_asignado__usuario').get(id=paciente_id)
     except User.DoesNotExist:
         return JsonResponse({'status': 'error', 'message': 'Paciente no encontrado'})
- 
+
     perfil_paciente = getattr(paciente, 'perfil', None)
     psicologo_asignado = getattr(perfil_paciente, 'psicologo_asignado', None)
- 
+
     if not request.user.is_superuser:
         if not hasattr(request.user, 'perfil_psicologo') or psicologo_asignado != request.user.perfil_psicologo:
             return JsonResponse({'status': 'error', 'message': 'No autorizado para este paciente'})
- 
+
     try:
         datos = _construir_datos_checkin_paciente(paciente)
         return JsonResponse({'status': 'success', 'data': datos})
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)})
- 
- 
+
+
 @user_passes_test(lambda u: hasattr(u, 'perfil_psicologo') or u.is_superuser, login_url='/')
 def generar_reporte_checkin_psicologo_ajax(request):
     paciente_id = request.GET.get('paciente_id')
     if not paciente_id:
         return JsonResponse({'status': 'error', 'message': 'Falta paciente_id'})
- 
+
     try:
         paciente = User.objects.select_related('perfil', 'perfil__psicologo_asignado__usuario').get(id=paciente_id)
     except User.DoesNotExist:
         return JsonResponse({'status': 'error', 'message': 'Paciente no encontrado'})
- 
+
     perfil_paciente = getattr(paciente, 'perfil', None)
     psicologo_asignado = getattr(perfil_paciente, 'psicologo_asignado', None)
- 
+
     if not request.user.is_superuser:
         if not hasattr(request.user, 'perfil_psicologo') or psicologo_asignado != request.user.perfil_psicologo:
             return JsonResponse({'status': 'error', 'message': 'No autorizado para este paciente'})
- 
+
     try:
         datos = _construir_datos_checkin_psicologo(paciente)
         return JsonResponse({'status': 'success', 'data': datos})
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)})
- 
- 
+
+
 # ------------------------------------------------------------------------
-# PASO 2.4 — NUEVO: envío de los correos con header/footer bonito
+# Envío de correos elegantes con archivo PDF adjunto
 # ------------------------------------------------------------------------
- 
-_MOOD_INFO_REPORTE = {
-    1: {'texto': 'Muy mal', 'emoji': '😔'},
-    2: {'texto': 'Triste', 'emoji': '😕'},
-    3: {'texto': 'Normal', 'emoji': '😐'},
-    4: {'texto': 'Bien', 'emoji': '🙂'},
-    5: {'texto': 'Excelente', 'emoji': '🤩'},
-}
- 
- 
-def _enviar_email_reporte_paciente(paciente, datos):
+def _enviar_email_reporte_paciente_con_pdf(paciente, datos, pdf_bytes, filename):
     if not paciente.email:
         return
- 
-    contexto = {
-        **datos,
-        'mood_info': _MOOD_INFO_REPORTE.get(datos.get('mood_valor', 3), _MOOD_INFO_REPORTE[3]),
-    }
- 
-    asunto = f"💜 Tu Reporte de Check-In · Sesión #{datos.get('sesion_numero', '')}"
-    mensaje_html = render_to_string('correo_reporte_paciente.html', contexto)
-    mensaje_plano = strip_tags(mensaje_html)
- 
+
+    sesion_num = datos.get('sesion_numero', 1)
+    nombre_paciente = datos.get('nombre_paciente', paciente.first_name or paciente.username)
+    nombre_psicologo = datos.get('psicologo', '')
+
+    asunto = f"💜 Tu Reporte de Check-In · Sesión #{sesion_num}"
+    doc_txt = f" con Psic. {nombre_psicologo}" if nombre_psicologo else ""
+
+    cuerpo_html = f"""<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body style="margin:0;padding:30px 15px;background-color:#F4F2FA;font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#2B2545;">
+  <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width:560px;background:#ffffff;border-radius:18px;overflow:hidden;box-shadow:0 8px 30px rgba(78,63,145,0.08);">
+    <tr>
+      <td style="background:linear-gradient(135deg,#4E3F91 0%,#6656B5 100%);padding:28px 32px;text-align:center;">
+        <div style="font-size:32px;margin-bottom:6px;">💜</div>
+        <h1 style="margin:0;color:#ffffff;font-size:21px;font-weight:700;">Tu Reporte de Check-In</h1>
+        <p style="margin:4px 0 0;color:#E4E0F9;font-size:12.5px;">Espacio HOPE · Acompañamiento Psicológico</p>
+      </td>
+    </tr>
+    <tr>
+      <td style="padding:28px 32px;line-height:1.6;font-size:14.5px;">
+        <p style="margin-top:0;">Hola <strong style="color:#4E3F91;">{nombre_paciente}</strong>,</p>
+        <p>Esperamos que te encuentres muy bien. Te compartimos que tu <strong>Reporte de Check-In</strong> de la <strong>sesión #{sesion_num}</strong>{doc_txt} ya se encuentra generado.</p>
+        <div style="background:#F8F6FD;border-left:4px solid #26C6C6;border-radius:8px;padding:14px 18px;margin:20px 0;">
+          <p style="margin:0;font-size:13.5px;color:#2B2545;">
+            📎 <strong>Archivo adjunto:</strong> <em>{filename}</em><br>
+            <span style="font-size:12px;color:#6A6383;">En este documento PDF encontrarás el resumen de tu progreso, tus objetivos terapéuticos y las recomendaciones para tu día a día.</span>
+          </p>
+        </div>
+        <p>Cualquier duda, estamos siempre a tu lado.</p>
+        <p style="margin-bottom:0;">Con cariño,<br><strong style="color:#4E3F91;">El Equipo de Espacio HOPE</strong> 💜</p>
+      </td>
+    </tr>
+    <tr>
+      <td style="background:#F9F8FD;padding:14px 32px;text-align:center;font-size:11px;color:#8B7FD1;border-top:1px solid #ECE7F8;">
+        Documento confidencial · Espacio HOPE 2026
+      </td>
+    </tr>
+  </table>
+</body>
+</html>"""
+    cuerpo_plano = strip_tags(cuerpo_html)
+
     email = EmailMultiAlternatives(
         subject=asunto,
-        body=mensaje_plano,
+        body=cuerpo_plano,
         from_email='Espacio HOPE <no-reply@espaciohope.com>',
         to=[paciente.email],
     )
-    email.attach_alternative(mensaje_html, 'text/html')
-    email.send(fail_silently=True)
- 
- 
-def _enviar_email_reporte_psicologo(psicologo, paciente, datos):
+    email.attach_alternative(cuerpo_html, 'text/html')
+    email.attach(filename, pdf_bytes, 'application/pdf')
+    email.send(fail_silently=False)
+
+
+def _enviar_email_reporte_psicologo_con_pdf(psicologo, paciente, datos, pdf_bytes, filename):
     email_doc = psicologo.usuario.email if psicologo and psicologo.usuario else None
     if not email_doc:
         return
- 
-    contexto = {
-        **datos,
-        'nombre_psicologo': psicologo.usuario.first_name if psicologo.usuario else '',
-    }
- 
-    asunto = f"📋 Reporte de Check-In · Paciente: {datos.get('nombre_paciente', '')}"
-    mensaje_html = render_to_string('correo_reporte_psicologo.html', contexto)
-    mensaje_plano = strip_tags(mensaje_html)
- 
+
+    sesion_num = datos.get('sesion_numero', 1)
+    nombre_doc = psicologo.usuario.first_name if psicologo.usuario else 'Doctor(a)'
+    nombre_paciente = datos.get('nombre_paciente', paciente.first_name or paciente.username)
+
+    asunto = f"📋 Reporte Clínico de Sesión #{sesion_num} · {nombre_paciente}"
+
+    cuerpo_html = f"""<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body style="margin:0;padding:30px 15px;background-color:#F4F2FA;font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#2B2545;">
+  <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width:560px;background:#ffffff;border-radius:18px;overflow:hidden;box-shadow:0 8px 30px rgba(78,63,145,0.08);">
+    <tr>
+      <td style="background:linear-gradient(135deg,#4E3F91 0%,#6656B5 100%);padding:28px 32px;text-align:center;">
+        <div style="font-size:32px;margin-bottom:6px;">📋</div>
+        <h1 style="margin:0;color:#ffffff;font-size:21px;font-weight:700;">Reporte Clínico de Sesión</h1>
+        <p style="margin:4px 0 0;color:#E4E0F9;font-size:12.5px;">Expediente Clínico · Espacio HOPE</p>
+      </td>
+    </tr>
+    <tr>
+      <td style="padding:28px 32px;line-height:1.6;font-size:14.5px;">
+        <p style="margin-top:0;">Hola Psic. <strong style="color:#4E3F91;">{nombre_doc}</strong>,</p>
+        <p>Se ha generado exitosamente el reporte clínico correspondiente a la <strong>sesión #{sesion_num}</strong> de tu paciente <strong style="color:#4E3F91;">{nombre_paciente}</strong>.</p>
+        <div style="background:#F8F6FD;border-left:4px solid #F4813F;border-radius:8px;padding:14px 18px;margin:20px 0;">
+          <p style="margin:0;font-size:13.5px;color:#2B2545;">
+            📎 <strong>Archivo adjunto:</strong> <em>{filename}</em><br>
+            <span style="font-size:12px;color:#6A6383;">Contiene el desglose de dimensiones IPP, comparativa con sesiones previas y la síntesis clínica de la sesión.</span>
+          </p>
+        </div>
+        <p>El documento también ha sido respaldado en la base de datos de HOPE.</p>
+        <p style="margin-bottom:0;">Atentamente,<br><strong style="color:#4E3F91;">Dirección Clínica · Espacio HOPE</strong></p>
+      </td>
+    </tr>
+    <tr>
+      <td style="background:#F9F8FD;padding:14px 32px;text-align:center;font-size:11px;color:#8B7FD1;border-top:1px solid #ECE7F8;">
+        Documento confidencial · Espacio HOPE 2026
+      </td>
+    </tr>
+  </table>
+</body>
+</html>"""
+    cuerpo_plano = strip_tags(cuerpo_html)
+
     email = EmailMultiAlternatives(
         subject=asunto,
-        body=mensaje_plano,
+        body=cuerpo_plano,
         from_email='Espacio HOPE <no-reply@espaciohope.com>',
         to=[email_doc],
     )
-    email.attach_alternative(mensaje_html, 'text/html')
-    email.send(fail_silently=True)
- 
- 
+    email.attach_alternative(cuerpo_html, 'text/html')
+    email.attach(filename, pdf_bytes, 'application/pdf')
+    email.send(fail_silently=False)
+
+
 # ------------------------------------------------------------------------
-# PASO 2.5 — NUEVO: el "cerebro" que decide qué citas ya están listas
+# Procesador nocturno / de fondo de reportes
 # ------------------------------------------------------------------------
-# Regla de negocio (tal como la pediste):
-#   - La sesión dura ~1 hora.
-#   - Se espera 1 hora extra después de que termina, para dar tiempo a que
-#     el psicólogo capture su bitácora (lo que tú llamas "notas de Gemini").
-#   - Si a las 24 horas el psicólogo AÚN no ha capturado nada, se manda el
-#     reporte de todos modos (con lo que haya), para que nunca se quede
-#     "atorada" una cita para siempre.
-# ------------------------------------------------------------------------
- 
 DURACION_SESION_MINUTOS = 60
 ESPERA_MINIMA_MINUTOS = 60      # tiempo extra después de que termina la sesión
 ESPERA_MAXIMA_MINUTOS = 24 * 60  # tope: después de esto se manda aunque falte bitácora
- 
- 
-def procesar_citas_pendientes_de_reporte():
+
+
+def _procesar_reporte_de_una_cita(cita_id, log_func=None):
+    """
+    Genera los 2 PDFs (Paciente y Psicólogo), los guarda en base de datos
+    (ReporteClinicoPDF), envía los correos con los PDFs adjuntos y actualiza la cita.
+    """
+    def _log(msg):
+        if log_func:
+            try:
+                log_func(msg)
+            except UnicodeEncodeError:
+                try:
+                    log_func(msg.encode('ascii', errors='replace').decode('ascii'))
+                except Exception:
+                    pass
+        else:
+            logging.getLogger(__name__).info(msg)
+
+    with transaction.atomic():
+        try:
+            cita = Cita.objects.select_for_update().select_related(
+                'paciente__perfil', 'psicologo__usuario', 'nota_clinica'
+            ).get(id=cita_id)
+        except Cita.DoesNotExist:
+            return False, "Cita no encontrada"
+
+        if cita.reporte_enviado:
+            return False, "Reporte ya enviado previamente"
+
+        paciente = cita.paciente
+        psicologo = cita.psicologo
+
+        if not hasattr(cita, 'nota_clinica') or not cita.nota_clinica or not cita.nota_clinica.notas_sesion:
+            return False, "Falta bitácora clínica del psicólogo"
+
+        _log(f"   🤖 Extrayendo métricas y generando síntesis con IA...")
+        datos_paciente = _construir_datos_checkin_paciente(paciente, cita=cita)
+        datos_psicologo = _construir_datos_checkin_psicologo(paciente, cita=cita)
+
+        logo_base64 = _obtener_logo_base64()
+
+        # 1. Renderizar y generar PDF del Paciente
+        _log("   📄 Renderizando PDF del Paciente desde claude_pascinete.html...")
+        contexto_paciente = {
+            **datos_paciente,
+            'es_exportacion_pdf': True,
+            'logo_base64': logo_base64,
+        }
+        html_paciente = render_to_string('Pruebas/claude_pascinete.html', contexto_paciente)
+        pdf_bytes_paciente = convertir_html_a_pdf(html_paciente)
+
+        # 2. Renderizar y generar PDF del Psicólogo
+        _log("   📋 Renderizando PDF Clínico desde claude_psioclog.html...")
+        contexto_psicologo = {
+            **datos_psicologo,
+            'es_exportacion_pdf': True,
+            'logo_base64': logo_base64,
+        }
+        html_psicologo = render_to_string('Pruebas/claude_psioclog.html', contexto_psicologo)
+        pdf_bytes_psicologo = convertir_html_a_pdf(html_psicologo)
+
+        # 3. Guardar en Base de Datos y Disco (ReporteClinicoPDF)
+        sesion_num = datos_paciente.get('sesion_numero', 1)
+        nombre_slug = slugify(paciente.first_name or paciente.username)
+        filename_pac = f"reporte_sesion_{sesion_num}_paciente_{nombre_slug}.pdf"
+        filename_psi = f"reporte_sesion_{sesion_num}_psicologo_{nombre_slug}.pdf"
+
+        tratamiento_obj = getattr(cita, 'tratamiento', None)
+
+        reporte_pac_obj = ReporteClinicoPDF(
+            cita=cita,
+            paciente=paciente,
+            psicologo=psicologo,
+            tratamiento=tratamiento_obj,
+            tipo_destinatario='paciente',
+            numero_sesion=sesion_num,
+            datos_ia_snapshot=datos_paciente,
+        )
+        reporte_pac_obj.archivo_pdf.save(filename_pac, ContentFile(pdf_bytes_paciente), save=True)
+
+        reporte_psi_obj = ReporteClinicoPDF(
+            cita=cita,
+            paciente=paciente,
+            psicologo=psicologo,
+            tratamiento=tratamiento_obj,
+            tipo_destinatario='psicologo',
+            numero_sesion=sesion_num,
+            datos_ia_snapshot=datos_psicologo,
+        )
+        reporte_psi_obj.archivo_pdf.save(filename_psi, ContentFile(pdf_bytes_psicologo), save=True)
+
+        _log(f"   💾 PDFs archivados en el expediente del paciente exitosamente.")
+
+        # 4. Enviar correo al Paciente con PDF adjunto
+        if paciente.email:
+            try:
+                _log(f"   📧 Enviando correo con PDF adjunto a paciente ({paciente.email})...")
+                _enviar_email_reporte_paciente_con_pdf(paciente, datos_paciente, pdf_bytes_paciente, filename_pac)
+                reporte_pac_obj.correo_enviado = True
+                reporte_pac_obj.save(update_fields=['correo_enviado'])
+                _log(f"   ✅ Correo enviado a {paciente.email}.")
+            except Exception as e:
+                _log(f"   ⚠️ Error enviando correo a paciente: {e}")
+
+        # 5. Enviar correo al Psicólogo con PDF adjunto
+        email_doc = psicologo.usuario.email if psicologo and psicologo.usuario else None
+        if email_doc:
+            try:
+                _log(f"   📧 Enviando correo con PDF adjunto a psicólogo ({email_doc})...")
+                _enviar_email_reporte_psicologo_con_pdf(psicologo, paciente, datos_psicologo, pdf_bytes_psicologo, filename_psi)
+                reporte_psi_obj.correo_enviado = True
+                reporte_psi_obj.save(update_fields=['correo_enviado'])
+                _log(f"   ✅ Correo enviado a {email_doc}.")
+            except Exception as e:
+                _log(f"   ⚠️ Error enviando correo a psicólogo: {e}")
+
+        cita.reporte_enviado = True
+        cita.save(update_fields=['reporte_enviado'])
+        return True, "Reporte generado, guardado y enviado con éxito"
+
+
+def procesar_citas_pendientes_de_reporte(log_func=None):
     """
     Revisa todas las citas confirmadas/completadas que aún no tienen su
-    reporte enviado, y para cada una que ya cumplió su tiempo de espera
-    (y de preferencia ya tiene bitácora capturada), genera y envía los
-    dos correos (paciente + psicólogo).
- 
-    Se puede llamar tantas veces como se quiera (cada 10 min, por cron,
-    manualmente, etc.) — es idempotente gracias al campo reporte_enviado
-    y al select_for_update en _procesar_reporte_de_una_cita.
+    reporte enviado. Proporciona logs diagnósticos detallados por cada cita evaluada.
     """
+    def _log(msg):
+        if log_func:
+            try:
+                log_func(msg)
+            except UnicodeEncodeError:
+                try:
+                    log_func(msg.encode('ascii', errors='replace').decode('ascii'))
+                except Exception:
+                    pass
+        else:
+            logging.getLogger(__name__).info(msg)
+
     ahora = timezone.localtime(timezone.now())
- 
+
     citas_candidatas = Cita.objects.filter(
         reporte_enviado=False,
         estado__in=['Confirmada', 'Completada'],
         psicologo__isnull=False,
-    ).select_related('paciente__perfil', 'psicologo__usuario', 'nota_clinica')
- 
+    ).select_related('paciente__perfil', 'psicologo__usuario', 'nota_clinica').order_by('fecha', 'hora')
+
+    total_candidatas = citas_candidatas.count()
+    _log("=" * 80)
+    _log("🌙 [REVISIÓN DE CITAS] Escaneo de Citas Pendientes de Reporte PDF")
+    _log("=" * 80)
+    _log(f"🔍 Citas candidatas encontradas en base de datos: {total_candidatas}")
+
+    if total_candidatas == 0:
+        _log("✨ No hay citas pendientes de reporte en este momento.")
+        _log("=" * 80)
+        return 0
+
     procesadas = 0
+    en_espera_bitacora = 0
+    en_espera_tiempo = 0
+
     for cita in citas_candidatas:
+        pac_nom = cita.paciente.first_name or cita.paciente.username if cita.paciente else 'Desconocido'
+        doc_nom = cita.psicologo.usuario.first_name if cita.psicologo and cita.psicologo.usuario else 'Sin asignar'
+        fecha_cita_str = cita.fecha.strftime('%d/%m/%Y') if cita.fecha else 'S/F'
+        hora_cita_str = cita.hora.strftime('%H:%M') if cita.hora else 'S/H'
+
+        _log(f"\n👉 [Cita #{cita.id}] Paciente: {pac_nom} | Psicólogo: {doc_nom} | Fecha: {fecha_cita_str} {hora_cita_str} | Estado: {cita.estado}")
+
         inicio_cita = timezone.make_aware(datetime.combine(cita.fecha, cita.hora))
         minutos_transcurridos = (ahora - inicio_cita).total_seconds() / 60
         tiempo_minimo_cumplido = minutos_transcurridos >= (DURACION_SESION_MINUTOS + ESPERA_MINIMA_MINUTOS)
- 
+
         if not tiempo_minimo_cumplido:
-            continue  # todavía no le toca ni siquiera empezar a intentar
- 
-        tiene_bitacora = hasattr(cita, 'nota_clinica') and cita.nota_clinica is not None
+            min_restantes = max(0, int((DURACION_SESION_MINUTOS + ESPERA_MINIMA_MINUTOS) - minutos_transcurridos))
+            _log(f"   ⏳ EN ESPERA: La sesión aún no cumple el tiempo de espera mínimo ({min_restantes} min restantes).")
+            en_espera_tiempo += 1
+            continue
+
+        tiene_bitacora = hasattr(cita, 'nota_clinica') and cita.nota_clinica is not None and bool(cita.nota_clinica.notas_sesion)
         tiempo_maximo_cumplido = minutos_transcurridos >= ESPERA_MAXIMA_MINUTOS
- 
+
         if not tiene_bitacora and not tiempo_maximo_cumplido:
-            continue  # esperamos un poco más a que el doctor capture su bitácora
- 
-        _procesar_reporte_de_una_cita(cita.id)
-        procesadas += 1
- 
+            _log("   ⚠️ EN ESPERA DE BITÁCORA: El psicólogo aún no ha capturado la bitácora clínica de esta sesión.")
+            _log("      -> El reporte NO se genera sin bitácora para evitar enviar documentos vacíos.")
+            en_espera_bitacora += 1
+            continue
+
+        exito, mensaje = _procesar_reporte_de_una_cita(cita.id, log_func=_log)
+        if exito:
+            procesadas += 1
+            _log(f"   🎉 [EXITO] Cita #{cita.id} procesada, PDFs generados y enviada correctamente.")
+        else:
+            _log(f"   ❌ [AVISO] Cita #{cita.id}: {mensaje}")
+
+    _log("\n" + "=" * 80)
+    _log(f"📊 RESUMEN: {procesadas} procesadas exitosamente | {en_espera_bitacora} en espera de bitácora | {en_espera_tiempo} en espera de tiempo")
+    _log("=" * 80)
     return procesadas
- 
- 
-def _procesar_reporte_de_una_cita(cita_id):
-    with transaction.atomic():
-        try:
-            cita = Cita.objects.select_for_update().select_related(
-                'paciente__perfil', 'psicologo__usuario'
-            ).get(id=cita_id)
-        except Cita.DoesNotExist:
-            return
- 
-        if cita.reporte_enviado:
-            return  # otra corrida ya lo procesó (protección anti-duplicado)
- 
-        paciente = cita.paciente
-        psicologo = cita.psicologo
- 
-        try:
-            datos_paciente = _construir_datos_checkin_paciente(paciente)
-            _enviar_email_reporte_paciente(paciente, datos_paciente)
-        except Exception as e:
-            logging.getLogger(__name__).error(
-                'Error generando/enviando reporte de PACIENTE (cita %s): %s', cita_id, e
-            )
- 
-        try:
-            datos_psicologo = _construir_datos_checkin_psicologo(paciente)
-            if psicologo:
-                _enviar_email_reporte_psicologo(psicologo, paciente, datos_psicologo)
-        except Exception as e:
-            logging.getLogger(__name__).error(
-                'Error generando/enviando reporte de PSICÓLOGO (cita %s): %s', cita_id, e
-            )
- 
-        # Se marca como procesada aunque algo haya fallado arriba, para no
-        # reintentar infinitamente contra un dato roto (el error ya quedó
-        # en el log para revisión manual).
-        cita.reporte_enviado = True
-        cita.save(update_fields=['reporte_enviado'])
+
  
  
 # ------------------------------------------------------------------------
