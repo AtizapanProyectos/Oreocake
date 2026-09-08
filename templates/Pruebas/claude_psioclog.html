@@ -359,6 +359,42 @@
   .sheet { box-shadow: none !important; border-radius: 0 !important; width: 100% !important; margin: 0 auto !important; }
   body { background: #ffffff !important; }
   @page { size: Letter; margin: 0; }
+
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+
+  .info-card, .section, .box, .progress-grid, .gauge-card, .footer {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  .evol-full {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    page-break-before: always !important;
+    break-before: page !important;
+    margin-top: 15px !important;
+  }
+
+  .field input {
+    border-bottom: none !important;
+    font-weight: 600 !important;
+    color: var(--ink) !important;
+    padding: 2px 0 !important;
+  }
+  input::placeholder {
+    color: transparent !important;
+  }
+  input::-webkit-calendar-picker-indicator {
+    display: none !important;
+  }
+  input::-webkit-inner-spin-button, input::-webkit-outer-spin-button {
+    -webkit-appearance: none !important;
+    margin: 0 !important;
+  }
   {% endif %}
 </style>
 </head>
