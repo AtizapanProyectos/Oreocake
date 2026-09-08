@@ -1,0 +1,691 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Donaciones - Legado de Esperanza | HOPE{% endblock %}
+
+{% block content %}
+<script src="https://www.paypal.com/sdk/js?client-id={{ paypal_client_id }}&currency=MXN&locale=es_MX" defer></script>
+{% csrf_token %}
+
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+    :root {
+        --c-purple: #5A3FA3;
+        --c-purple-light: #7c3aed;
+        --c-pink: #F85B8C;
+        --c-orange: #F27C21;
+        --c-yellow: #F8D33D;
+        --c-teal: #25B8B8;
+        --c-dark: #0f172a;
+        --text-muted: #64748b;
+        --bg-page: #F8FAFC;
+    }
+
+    body {
+        background-color: var(--bg-page);
+        color: var(--c-dark);
+        font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    /* ── CONTENEDOR GENERAL CON AMBIENT BLOBS ── */
+    .don-page-wrapper {
+        position: relative;
+        min-height: calc(100vh - 160px);
+        padding: 15px 20px 100px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        overflow: hidden;
+    }
+
+    .blob-ambient-1 {
+        position: absolute;
+        top: -80px;
+        right: -80px;
+        width: 550px;
+        height: 550px;
+        background: radial-gradient(circle, rgba(248, 91, 140, 0.12) 0%, rgba(248, 91, 140, 0) 70%);
+        border-radius: 50%;
+        filter: blur(50px);
+        pointer-events: none;
+        z-index: 0;
+        animation: floatBlob 14s ease-in-out infinite alternate;
+    }
+
+    .blob-ambient-2 {
+        position: absolute;
+        bottom: 5%;
+        left: -100px;
+        width: 600px;
+        height: 600px;
+        background: radial-gradient(circle, rgba(90, 63, 163, 0.10) 0%, rgba(90, 63, 163, 0) 70%);
+        border-radius: 50%;
+        filter: blur(60px);
+        pointer-events: none;
+        z-index: 0;
+        animation: floatBlob 18s ease-in-out infinite alternate-reverse;
+    }
+
+    @keyframes floatBlob {
+        0% { transform: translate(0, 0) scale(1); }
+        100% { transform: translate(30px, 40px) scale(1.08); }
+    }
+
+    /* ── HEADER HERO ── */
+    .don-hero {
+        position: relative;
+        z-index: 2;
+        text-align: center;
+        max-width: 680px;
+        margin-bottom: 40px;
+    }
+
+    .don-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: rgba(248, 91, 140, 0.1);
+        color: var(--c-pink);
+        padding: 8px 18px;
+        border-radius: 100px;
+        font-size: 14px;
+        font-weight: 700;
+        letter-spacing: 0.3px;
+        margin-bottom: 18px;
+        border: 1px solid rgba(248, 91, 140, 0.2);
+    }
+
+    .don-title {
+        font-family: 'Outfit', sans-serif;
+        font-size: 2.8rem;
+        font-weight: 900;
+        line-height: 1.15;
+        color: var(--c-dark);
+        margin: 0 0 16px;
+    }
+
+    .don-title span {
+        background: linear-gradient(135deg, var(--c-purple) 0%, var(--c-pink) 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    .don-subtitle {
+        font-size: 1.1rem;
+        color: var(--text-muted);
+        line-height: 1.6;
+        margin: 0 auto;
+        max-width: 580px;
+    }
+
+    /* ── TARJETA PRINCIPAL DE DONACIÓN ── */
+    .don-card {
+        position: relative;
+        z-index: 2;
+        width: 100%;
+        max-width: 540px;
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(226, 232, 240, 0.8);
+        border-radius: 32px;
+        padding: 40px 35px;
+        box-shadow: 0 20px 50px rgba(90, 63, 163, 0.08), 0 1px 3px rgba(0, 0, 0, 0.02);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    @media (max-width: 600px) {
+        .don-card { padding: 30px 22px; border-radius: 26px; }
+        .don-title { font-size: 2.2rem; }
+    }
+
+    /* ── EMOJI REACTION ── */
+    .don-emoji-box {
+        text-align: center;
+        margin-bottom: 22px;
+    }
+
+    .don-emoji {
+        display: inline-block;
+        font-size: 4rem;
+        user-select: none;
+        transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    @keyframes bounceInEmoji {
+        0% { transform: scale(0.3); opacity: 0; }
+        50% { transform: scale(1.2); opacity: 1; }
+        70% { transform: scale(0.9); }
+        100% { transform: scale(1); }
+    }
+
+    .bounce-pop {
+        animation: bounceInEmoji 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    /* ── CHIPS DE DONACIÓN ── */
+    .chips-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+        margin-bottom: 24px;
+    }
+
+    .chip-btn {
+        background: #F8FAFC;
+        border: 2px solid #E2E8F0;
+        border-radius: 16px;
+        padding: 14px 10px;
+        font-family: 'Outfit', sans-serif;
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: var(--c-dark);
+        cursor: pointer;
+        transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        text-align: center;
+    }
+
+    .chip-btn:hover {
+        border-color: #CBD5E1;
+        background: #FFFFFF;
+        transform: translateY(-2px);
+    }
+
+    .chip-btn.active {
+        background: linear-gradient(135deg, var(--c-purple) 0%, #432874 100%);
+        color: #FFFFFF;
+        border-color: var(--c-purple);
+        box-shadow: 0 8px 20px rgba(90, 63, 163, 0.25);
+        transform: translateY(-2px);
+    }
+
+    /* ── INPUT DE MONTO ── */
+    .input-amount-wrapper {
+        position: relative;
+        margin-bottom: 12px;
+    }
+
+    .input-amount-prefix {
+        position: absolute;
+        left: 20px;
+        top: 50%;
+        transform: translateY(-50%);
+        font-family: 'Outfit', sans-serif;
+        font-size: 1.8rem;
+        font-weight: 900;
+        color: var(--c-purple);
+        pointer-events: none;
+    }
+
+    .don-input {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 16px 20px 16px 50px;
+        border-radius: 20px;
+        border: 2px solid #E2E8F0;
+        background: #F8FAFC;
+        font-family: 'Outfit', sans-serif;
+        font-size: 2rem;
+        font-weight: 900;
+        color: var(--c-purple);
+        text-align: center;
+        outline: none;
+        transition: all 0.25s ease;
+    }
+
+    .don-input:focus {
+        border-color: var(--c-purple);
+        background: #FFFFFF;
+        box-shadow: 0 10px 25px rgba(90, 63, 163, 0.12);
+    }
+
+    /* ── MENSAJE DE IMPACTO ── */
+    .don-impact-text {
+        text-align: center;
+        font-size: 0.98rem;
+        font-weight: 600;
+        color: var(--text-muted);
+        min-height: 24px;
+        margin-bottom: 28px;
+        padding: 8px 14px;
+        background: rgba(248, 250, 252, 0.8);
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+    }
+
+    .don-impact-text i {
+        color: var(--c-pink);
+    }
+
+    /* ── PAYPAL CONTAINER ── */
+    .paypal-wrapper {
+        position: relative;
+        min-height: 55px;
+        z-index: 1;
+    }
+
+    #paypal-button-container-donacion {
+        min-height: 50px;
+    }
+
+    .paypal-loading-ph {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        padding: 16px;
+        color: var(--text-muted);
+        font-size: 14px;
+        font-weight: 600;
+        background: #F8FAFC;
+        border-radius: 14px;
+        border: 1px dashed #CBD5E1;
+    }
+
+    /* ── TARJETA DE ÉXITO ── */
+    #donacion-exito {
+        display: none;
+        text-align: center;
+        padding: 20px 10px;
+    }
+
+    .success-icon-box {
+        width: 80px;
+        height: 80px;
+        margin: 0 auto 20px;
+        border-radius: 50%;
+        background: #ECFDF5;
+        color: #10B981;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 38px;
+        box-shadow: 0 10px 25px rgba(16, 185, 129, 0.2);
+    }
+
+    /* ── SELLOS DE SEGURIDAD ── */
+    .don-seals {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 18px;
+        margin-top: 24px;
+        padding-top: 20px;
+        border-top: 1px solid #F1F5F9;
+        color: #94A3B8;
+        font-size: 12px;
+        font-weight: 600;
+    }
+
+    .don-seals span {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    /* ── PILARES DE IMPACTO ── */
+    .don-pillars {
+        position: relative;
+        z-index: 2;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 22px;
+        max-width: 960px;
+        width: 100%;
+        margin-top: 60px;
+    }
+
+    @media (max-width: 768px) {
+        .don-pillars { grid-template-columns: 1fr; gap: 16px; }
+    }
+
+    .pillar-card {
+        background: #FFFFFF;
+        border: 1px solid #E2E8F0;
+        border-radius: 24px;
+        padding: 28px 24px;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.02);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .pillar-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 15px 35px rgba(90, 63, 163, 0.06);
+    }
+
+    .pillar-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 22px;
+        margin-bottom: 18px;
+    }
+
+    .pillar-icon.purple { background: rgba(90, 63, 163, 0.1); color: var(--c-purple); }
+    .pillar-icon.pink { background: rgba(248, 91, 140, 0.1); color: var(--c-pink); }
+    .pillar-icon.teal { background: rgba(37, 184, 184, 0.1); color: var(--c-teal); }
+
+    .pillar-card h3 {
+        font-family: 'Outfit', sans-serif;
+        font-size: 1.25rem;
+        font-weight: 800;
+        margin: 0 0 8px;
+        color: var(--c-dark);
+    }
+
+    .pillar-card p {
+        font-size: 0.92rem;
+        color: var(--text-muted);
+        line-height: 1.55;
+        margin: 0;
+    }
+
+    /* ── FAQ ── */
+    .don-faq-section {
+        position: relative;
+        z-index: 2;
+        max-width: 750px;
+        width: 100%;
+        margin-top: 70px;
+    }
+
+    .faq-title {
+        font-family: 'Outfit', sans-serif;
+        font-size: 1.9rem;
+        font-weight: 800;
+        text-align: center;
+        margin-bottom: 25px;
+    }
+
+    .faq-item {
+        background: #FFFFFF;
+        border: 1px solid #E2E8F0;
+        border-radius: 18px;
+        padding: 20px 24px;
+        margin-bottom: 14px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
+    }
+
+    .faq-item h4 {
+        font-family: 'Outfit', sans-serif;
+        font-size: 1.08rem;
+        font-weight: 700;
+        margin: 0 0 8px;
+        color: var(--c-dark);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .faq-item h4 i {
+        color: var(--c-purple);
+        font-size: 16px;
+    }
+
+    .faq-item p {
+        font-size: 0.94rem;
+        color: var(--text-muted);
+        line-height: 1.6;
+        margin: 0;
+    }
+</style>
+
+<div class="don-page-wrapper">
+    <div class="blob-ambient-1"></div>
+    <div class="blob-ambient-2"></div>
+
+    <!-- ══ HEADER HERO ══ -->
+    <div class="don-hero">
+        <div class="don-badge">
+            <i class="fas fa-heart"></i> Legado de Esperanza
+        </div>
+        <h1 class="don-title">
+            Haz posible que un joven reciba <span>terapia hoy</span>
+        </h1>
+        <p class="don-subtitle">
+            Cada peso donado se transforma en consultas psicológicas clínicas guiadas por especialistas colegiados para personas que no pueden costearlas.
+        </p>
+    </div>
+
+    <!-- ══ TARJETA DE DONACIÓN ══ -->
+    <div class="don-card">
+        <!-- Formulario activo -->
+        <div id="donacion-box">
+            <div class="don-emoji-box">
+                <div id="donEmoji" class="don-emoji">😊</div>
+            </div>
+
+            <!-- Chips de montos predefinidos -->
+            <div class="chips-grid">
+                <button type="button" class="chip-btn" data-monto="100">$100</button>
+                <button type="button" class="chip-btn active" data-monto="400">$400</button>
+                <button type="button" class="chip-btn" data-monto="1200">$1,200</button>
+                <button type="button" class="chip-btn" data-monto="7200">$7,200</button>
+                <button type="button" class="chip-btn" data-monto="14500">$14,500</button>
+                <button type="button" class="chip-btn" data-monto="">Otro</button>
+            </div>
+
+            <!-- Input editable del monto -->
+            <div class="input-amount-wrapper">
+                <span class="input-amount-prefix">$</span>
+                <input type="number" id="donAmount" class="don-input" value="400" min="10" step="10" placeholder="0">
+            </div>
+
+            <!-- Frase de impacto dinámica -->
+            <div id="donImpact" class="don-impact-text">
+                <i class="fas fa-sparkles"></i> <span>"Dona un mes de terapia."</span>
+            </div>
+
+            <!-- Contenedor del Botón de PayPal -->
+            <div class="paypal-wrapper">
+                <div id="paypal-loading" class="paypal-loading-ph">
+                    <i class="fas fa-circle-notch fa-spin"></i> Cargando pasarela segura de PayPal...
+                </div>
+                <div id="paypal-button-container-donacion"></div>
+            </div>
+
+            <!-- Sellos de confianza -->
+            <div class="don-seals">
+                <span><i class="fas fa-shield-halved" style="color: #10B981;"></i> Encriptación SSL</span>
+                <span><i class="fab fa-paypal" style="color: #003087;"></i> PayPal Oficial</span>
+                <span><i class="fas fa-hand-holding-heart" style="color: var(--c-pink);"></i> 100% Solidario</span>
+            </div>
+        </div>
+
+        <!-- Vista de Éxito tras donación -->
+        <div id="donacion-exito">
+            <div class="success-icon-box">
+                <i class="fas fa-check"></i>
+            </div>
+            <h2 style="font-family: 'Outfit', sans-serif; font-size: 2rem; font-weight: 900; margin: 0 0 12px; color: var(--c-dark);">
+                ¡Gracias por tu gran corazón! 🤍
+            </h2>
+            <p style="color: var(--text-muted); font-size: 1.05rem; line-height: 1.6; margin-bottom: 25px;">
+                Tu donación ha sido confirmada con éxito. Has sembrado una semilla de alivio y esperanza en la vida de un paciente.
+            </p>
+            <div style="background: #F8FAFC; border-radius: 16px; padding: 18px; margin-bottom: 25px; border: 1px solid #E2E8F0;">
+                <p style="margin: 0; font-size: 0.92rem; color: #475569; font-weight: 600;">
+                    Te enviaremos el comprobante oficial de PayPal a tu correo electrónico.
+                </p>
+            </div>
+            <a href="{% url 'inicio' %}" class="btn-primary" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 16px; font-size: 1.05rem; border-radius: 16px; text-decoration: none; font-weight: 700;">
+                Volver al inicio <i class="fas fa-arrow-right"></i>
+            </a>
+        </div>
+    </div>
+
+    <!-- ══ PILARES DE TRANSPARENCIA ══ -->
+    <div class="don-pillars">
+        <div class="pillar-card">
+            <div class="pillar-icon purple">
+                <i class="fas fa-user-doctor"></i>
+            </div>
+            <h3>Atención Profesional</h3>
+            <p>Las terapias son impartidas por psicólogos clínicos acreditados con experiencia en adolescentes, adultos y familias.</p>
+        </div>
+
+        <div class="pillar-card">
+            <div class="pillar-icon pink">
+                <i class="fas fa-shield-heart"></i>
+            </div>
+            <h3>Acompañamiento Continuo</h3>
+            <p>No es una ayuda aislada: financiamos procesos psicoterapéuticos con metas claras y evaluación constante.</p>
+        </div>
+
+        <div class="pillar-card">
+            <div class="pillar-icon teal">
+                <i class="fas fa-chart-pie"></i>
+            </div>
+            <h3>Transparencia Total</h3>
+            <p>Cada recurso donado se destina íntegramente al pago de horas clínicas de consulta para pacientes becados.</p>
+        </div>
+    </div>
+
+    <!-- ══ PREGUNTAS FRECUENTES ══ -->
+    <div class="don-faq-section">
+        <h3 class="faq-title">Preguntas Frecuentes sobre tu Donación</h3>
+
+        <div class="faq-item">
+            <h4><i class="fas fa-circle-question"></i> ¿Puedo donar si no tengo cuenta de PayPal?</h4>
+            <p>Sí. Al presionar el botón de PayPal, se abrirá la opción de pagar directamente con tarjeta de débito o crédito (Visa, Mastercard, Amex) sin necesidad de crear una cuenta.</p>
+        </div>
+
+        <div class="faq-item">
+            <h4><i class="fas fa-globe"></i> ¿Puedo donar desde fuera de México?</h4>
+            <p>¡Totalmente! PayPal acepta donaciones internacionales y realiza la conversión automática de tu moneda local (USD, EUR, etc.) a pesos mexicanos sin comisiones extra para ti.</p>
+        </div>
+
+        <div class="faq-item">
+            <h4><i class="fas fa-hand-holding-dollar"></i> ¿Cómo se eligen a las personas beneficiadas?</h4>
+            <p>A través de un estudio socioeconómico y una entrevista clínica inicial realizada por nuestro equipo de trabajo social y dirección clínica.</p>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const donAmount = document.getElementById('donAmount');
+    const donImpact = document.getElementById('donImpact');
+    const donEmoji = document.getElementById('donEmoji');
+    const chips = document.querySelectorAll('.chip-btn');
+    const paypalLoading = document.getElementById('paypal-loading');
+
+    const IMPACT_MAP = [
+        { monto: 100, texto: '"Dona una sesión inicial para quien lo necesita."', emoji: '🤍' },
+        { monto: 400, texto: '"Dona un mes de terapia y acompañamiento."', emoji: '😊' },
+        { monto: 1200, texto: '"Terapia para 1 persona (proceso trimestral)."', emoji: '💖' },
+        { monto: 7200, texto: '"Media beca semestral de psicoterapia."', emoji: '🌟' },
+        { monto: 14500, texto: '"1 beca anual completa de salud mental."', emoji: '🪽' },
+    ];
+
+    function actualizarImpacto(val) {
+        const num = parseFloat(val) || 0;
+        
+        // Animación de pop al emoji
+        donEmoji.classList.remove('bounce-pop');
+        void donEmoji.offsetWidth; // Forzar reflow
+        donEmoji.classList.add('bounce-pop');
+
+        const match = IMPACT_MAP.find(item => item.monto === num);
+        if (match) {
+            donImpact.innerHTML = `<i class="fas fa-sparkles"></i> <span>${match.texto}</span>`;
+            donEmoji.textContent = match.emoji;
+        } else if (num > 0) {
+            donImpact.innerHTML = `<i class="fas fa-star" style="color: var(--c-yellow);"></i> <span>"¡Eres un Padrino de Honor transformando vidas!"</span>`;
+            donEmoji.textContent = '🚀';
+        } else {
+            donImpact.innerHTML = `<i class="fas fa-hand-holding-heart"></i> <span>"Ingresa un monto para apadrinar una terapia."</span>`;
+            donEmoji.textContent = '🌱';
+        }
+    }
+
+    chips.forEach(chip => {
+        chip.addEventListener('click', function () {
+            chips.forEach(c => c.classList.remove('active'));
+            this.classList.add('active');
+
+            const monto = this.dataset.monto;
+            if (monto !== '') {
+                donAmount.value = monto;
+                actualizarImpacto(monto);
+            } else {
+                donAmount.value = '';
+                donAmount.focus();
+                actualizarImpacto(0);
+            }
+        });
+    });
+
+    donAmount.addEventListener('input', function () {
+        const actualVal = parseFloat(this.value);
+        chips.forEach(c => {
+            if (parseFloat(c.dataset.monto) === actualVal) {
+                c.classList.add('active');
+            } else {
+                c.classList.remove('active');
+            }
+        });
+        actualizarImpacto(this.value);
+    });
+
+    // Estado inicial
+    actualizarImpacto(400);
+
+    // ── RENDERIZADO DE PAYPAL DIRECTO ──
+    function initPayPalButtons() {
+        if (typeof paypal === 'undefined') {
+            setTimeout(initPayPalButtons, 200);
+            return;
+        }
+
+        if (paypalLoading) paypalLoading.style.display = 'none';
+
+        paypal.Buttons({
+            style: {
+                layout: 'vertical',
+                color: 'blue',
+                shape: 'rect',
+                label: 'donate',
+                height: 48
+            },
+            createOrder: function (data, actions) {
+                let montoVal = parseFloat(donAmount.value);
+                if (!montoVal || montoVal <= 0) {
+                    montoVal = 400.00;
+                    donAmount.value = '400';
+                }
+                return actions.order.create({
+                    purchase_units: [{
+                        description: 'Donación HOPE - Legado de Esperanza',
+                        amount: {
+                            currency_code: 'MXN',
+                            value: montoVal.toFixed(2)
+                        }
+                    }]
+                });
+            },
+            onApprove: function (data, actions) {
+                return actions.order.capture().then(function (details) {
+                    document.getElementById('donacion-box').style.display = 'none';
+                    document.getElementById('donacion-exito').style.display = 'block';
+                    document.getElementById('donacion-exito').scrollIntoView({ behavior: 'smooth', block: 'center' });
+                });
+            },
+            onError: function (err) {
+                console.error('Error PayPal Donación:', err);
+                alert('Hubo un inconveniente al conectar con PayPal. Por favor intenta nuevamente.');
+            }
+        }).render('#paypal-button-container-donacion');
+    }
+
+    initPayPalButtons();
+});
+</script>
+{% endblock %}

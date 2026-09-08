@@ -3176,6 +3176,17 @@ def formulario_venezuela(request):
 
 
 # =========================================================================
+# 🤍 PÁGINA DEDICADA DE DONACIONES — LEGADO DE ESPERANZA
+# =========================================================================
+def donaciones_view(request):
+    """Página dedicada para donaciones directas con PayPal (Legado de Esperanza)."""
+    context = {
+        'paypal_client_id': settings.PAYPAL_CLIENT_ID,
+    }
+    return render(request, 'donaciones.html', context)
+
+
+# =========================================================================
 # 🇻🇪 PÁGINA DE DONACIONES — COMUNIDAD VENEZOLANA
 # =========================================================================
 # Vista dedicada (antes vivía solo como modal en inicio.html). Reutiliza la
