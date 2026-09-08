@@ -1,0 +1,9 @@
+# Configuración de Nixpacks para Railway
+# Instala Chromium automáticamente durante la construcción del contenedor
+
+[phases.setup]
+nixPkgs = ["chromium"]
+
+[variables]
+CHROME_BIN = "/root/.nix-profile/bin/chromium"
+PUPPETEER_EXECUTABLE_PATH = "/root/.nix-profile/bin/chromium"

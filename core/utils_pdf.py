@@ -42,6 +42,12 @@ def obtener_ejecutable_chromium():
         "/usr/lib/chromium-browser/chromium-browser",
         "/app/.apt/usr/bin/google-chrome",
         "/app/.apt/usr/bin/google-chrome-stable",
+        # Rutas comunes de Nixpacks en Railway
+        "/root/.nix-profile/bin/chromium",
+        "/root/.nix-profile/bin/chromium-browser",
+        "/nix/var/nix/profiles/default/bin/chromium",
+        os.path.expanduser("~/.nix-profile/bin/chromium"),
+        os.path.expanduser("~/.nix-profile/bin/chromium-browser"),
         # Rutas comunes en Windows
         r"C:\Program Files\Google\Chrome\Application\chrome.exe",
         r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe",
@@ -52,8 +58,14 @@ def obtener_ejecutable_chromium():
         os.path.expandvars(r"%PROGRAMFILES(X86)%\Microsoft\Edge\Application\msedge.exe"),
     ]
 
-    # Búsqueda en caches de Puppeteer si estuvieran descargados en el servidor
-    for patron in ["/root/.cache/puppeteer/chrome/*/*/chrome", os.path.expanduser("~/.cache/puppeteer/chrome/*/*/chrome")]:
+    # Búsqueda en store de Nix (Railway) o caches de Puppeteer
+    patrones_glob = [
+        "/root/.cache/puppeteer/chrome/*/*/chrome",
+        os.path.expanduser("~/.cache/puppeteer/chrome/*/*/chrome"),
+        "/nix/store/*-chromium-*/bin/chromium",
+        "/nix/store/*-chromium-*/bin/chromium-browser",
+    ]
+    for patron in patrones_glob:
         candidatos.extend(glob.glob(patron))
 
     for ruta in candidatos:

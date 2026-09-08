@@ -5,6 +5,7 @@ from . import views
 urlpatterns = [
     path('', views.inicio, name='inicio'),
     path('login/', views.modulo_informativo, name='modulo_informativo'),
+    path('informativo/', views.modulo_informativo, name='informativo'),
     path('registro-ajax/', views.registrar_usuario, name='registro_usuario'),
     path('activar/<uidb64>/<token>/', views.activar_cuenta, name='activar_cuenta'),
     path('login-ajax/', views.login_usuario, name='login_usuario'),
