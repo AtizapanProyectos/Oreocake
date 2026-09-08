@@ -409,15 +409,12 @@ def generar_link_meet(fecha_obj, hora_obj, paciente_nombre, psicologo_nombre, pa
         start_format = inicio_datetime.isoformat() + '-06:00'
         end_format = fin_datetime.isoformat() + '-06:00'
  
-        # 🔧 FIX: armamos la lista de attendees SOLO con emails válidos.
-        # Si alguno viene vacío o mal formado, se omite (no truena el evento)
-        # pero el nombre de esa persona sigue apareciendo en el título.
+        # 🔧 FIX: armamos la lista de attendees SOLO para el psicólogo.
+        # Al paciente NO se le agrega como attendee en Google Calendar para evitar
+        # que Google Calendar le envíe la invitación directa por correo o le calendarice
+        # el enlace crudo de Meet. El paciente debe ingresar a través de la plataforma HOPE
+        # respondiendo su formulario clínico previo.
         attendees = []
-        if _email_valido(paciente_email):
-            attendees.append({'email': paciente_email.strip()})
-        else:
-            print(f"⚠️ Meet sin invitar por correo al paciente (email inválido/vacío): {paciente_email!r}")
- 
         if _email_valido(psicologo_email):
             attendees.append({'email': psicologo_email.strip()})
         else:
@@ -1058,7 +1055,7 @@ def guardar_cita_ajax(request):
                     id_google = datos_meet['id_evento']
 
             # Crear la cita
-            Cita.objects.create(
+            cita = Cita.objects.create(
                 paciente=request.user,
                 psicologo=psicologo,
                 fecha=fecha_obj,
@@ -1075,7 +1072,10 @@ def guardar_cita_ajax(request):
 
             # Enviar correo (asumiendo que las funciones render_to_string, strip_tags y send_mail están importadas)
             asunto = 'Confirmación de tu sesión en HOPE'
-            link_correo = link_final if link_final else "Cita Presencial (Revisa tu panel para ver la dirección)"
+            if link_final:
+                link_correo = request.build_absolute_uri(reverse('formulario_previo_meet', args=[cita.id]))
+            else:
+                link_correo = "Cita Presencial (Revisa tu panel para ver la dirección)"
             contexto = {
                 'nombre': request.user.first_name,
                 'psicologo_nombre': psicologo.usuario.first_name,
@@ -2765,7 +2765,10 @@ def pago_exitoso_clip(request, cita_id):
 
             # --- CORREO ---
             asunto = 'Confirmación de tu sesión en HOPE'
-            link_correo = link_final if link_final else "Cita Presencial (Revisa tu panel para ver la dirección)"
+            if link_final:
+                link_correo = request.build_absolute_uri(reverse('formulario_previo_meet', args=[cita.id]))
+            else:
+                link_correo = "Cita Presencial (Revisa tu panel para ver la dirección)"
             contexto = {
                 'nombre': paciente.first_name,
                 'psicologo_nombre': psicologo.usuario.first_name,
@@ -3077,7 +3080,7 @@ def admin_guardar_cita_ajax(request):
                 link_final = datos_meet['link']
                 id_google = datos_meet['id_evento']
 
-        Cita.objects.create(
+        cita = Cita.objects.create(
             paciente=paciente_user,
             psicologo=psicologo,
             fecha=fecha_obj,
@@ -3094,7 +3097,10 @@ def admin_guardar_cita_ajax(request):
 
         # Mismo correo de confirmación que ya usa el flujo normal
         asunto = 'Confirmación de tu sesión en HOPE'
-        link_correo = link_final if link_final else "Cita Presencial (Revisa tu panel para ver la dirección)"
+        if link_final:
+            link_correo = request.build_absolute_uri(reverse('formulario_previo_meet', args=[cita.id]))
+        else:
+            link_correo = "Cita Presencial (Revisa tu panel para ver la dirección)"
         contexto = {
             'nombre': paciente_user.first_name,
             'psicologo_nombre': psicologo.usuario.first_name,
@@ -3415,13 +3421,13 @@ def _enviar_correo_ipp_async(psicologo_email, paciente_nombre, ipt_actual, ipt_a
         import logging
         logging.getLogger(__name__).error(f"Error enviando correo IPP al doctor: {e}")
 
-@login_required
 def formulario_previo_meet(request, cita_id):
 
     cita = get_object_or_404(
-        Cita.objects.select_related('psicologo__usuario'),
-        id=cita_id, paciente=request.user, estado='Confirmada'
+        Cita.objects.select_related('psicologo__usuario', 'paciente'),
+        id=cita_id, estado='Confirmada'
     )
+    paciente = cita.paciente
 
     meet_url = (cita.enlace_meet or '').strip()
     if meet_url and not meet_url.startswith(('http://', 'https://')):
@@ -3431,10 +3437,15 @@ def formulario_previo_meet(request, cita_id):
         messages.error(request, 'Aún no se ha generado el enlace de tu sesión. Contáctanos por WhatsApp.')
         return redirect('panel_generico')
 
+    # Si quien entra es el psicólogo asignado a la cita (o superusuario), va directo a Meet
+    if request.user.is_authenticated:
+        if (hasattr(request.user, 'perfil_psicologo') and cita.psicologo and cita.psicologo.usuario == request.user) or request.user.is_superuser:
+            return redirect(meet_url)
+
     # Si ya contestó el formulario para ESTA cita, saltamos directo a Meet.
     ya_respondido = (
         EvaluacionSesionPaciente.objects.filter(cita=cita).exists() or
-        RespuestaFormularioOrganica.objects.filter(paciente=request.user, cita=cita).exists()
+        RespuestaFormularioOrganica.objects.filter(paciente=paciente, cita=cita).exists()
     )
     if ya_respondido:
         return redirect(meet_url)
@@ -3465,7 +3476,7 @@ def formulario_previo_meet(request, cita_id):
 
         # 3. Identificar el tratamiento activo del paciente para esta modalidad
         tratamiento = TratamientoPaciente.objects.filter(
-            paciente=request.user,
+            paciente=paciente,
             tipo_servicio=cita.tipo_sesion
         ).first()
 
@@ -3474,12 +3485,12 @@ def formulario_previo_meet(request, cita_id):
                 Cita.objects.select_for_update().get(id=cita.id)
 
                 respuesta_anterior = RespuestaFormularioOrganica.objects.filter(
-                    paciente=request.user
+                    paciente=paciente
                 ).exclude(cita=cita).order_by('-fecha_respuesta').first()
 
                 # Guardado en RespuestaFormularioOrganica para retrocompatibilidad
                 RespuestaFormularioOrganica.objects.get_or_create(
-                    paciente=request.user,
+                    paciente=paciente,
                     cita=cita,
                     defaults={'respuestas': respuestas_dict, 'puntaje': puntaje}
                 )
@@ -3488,7 +3499,7 @@ def formulario_previo_meet(request, cita_id):
                 EvaluacionSesionPaciente.objects.update_or_create(
                     cita=cita,
                     defaults={
-                        'paciente': request.user,
+                        'paciente': paciente,
                         'psicologo': cita.psicologo,
                         'tratamiento': tratamiento,
                         'tipo_proceso': cita.tipo_sesion,
@@ -3502,6 +3513,15 @@ def formulario_previo_meet(request, cita_id):
                         'comentarios': comentarios_sat,
                     }
                 )
+
+                # Si el usuario no tenía sesión abierta en este navegador/dispositivo,
+                # lo autenticamos en segundo plano para que ya tenga su sesión iniciada en HOPE
+                if not request.user.is_authenticated:
+                    try:
+                        login(request, paciente, backend='django.contrib.auth.backends.ModelBackend')
+                    except Exception as auth_err:
+                        print(f"Aviso auto-login paciente: {auth_err}")
+
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
 
@@ -3581,15 +3601,21 @@ def api_citas_hoy(request):
         telefono_paciente = cita.paciente.perfil.telefono if hasattr(cita.paciente, 'perfil') else None
         numero_pac_limpio = _limpiar_numero_whatsapp(telefono_paciente)
         
-        # Sacamos el nombre del consultante
+        # Sacamos los nombres del consultante y del doctor
         nombre_paciente = cita.paciente.first_name or cita.paciente.username
+        nombre_doctor = (cita.psicologo.usuario.first_name or cita.psicologo.usuario.username) if (cita.psicologo and cita.psicologo.usuario) else "Sin asignar"
         
+        link_sesion_previa = request.build_absolute_uri(reverse('formulario_previo_meet', args=[cita.id]))
+
         lista_json.append({
+            "cita_id": cita.id,
             "hora": cita.hora.strftime('%H:%M'),
-            "telefono_doctor": numero_doc_limpio,       # Cambié el nombre para distinguirlo
-            "telefono_paciente": numero_pac_limpio,     # Agregamos al paciente al JSON
+            "nombre_doctor": nombre_doctor,
+            "telefono_doctor": numero_doc_limpio,
             "nombre_paciente": nombre_paciente,
-            "link_meet": cita.enlace_meet or "No asignado"
+            "telefono_paciente": numero_pac_limpio,
+            "link_meet": cita.enlace_meet or "No asignado",
+            "link_sesion": link_sesion_previa
         })
             
     return JsonResponse(lista_json, safe=False)
