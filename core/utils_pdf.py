@@ -12,6 +12,8 @@ def obtener_ejecutable_chromium():
     Localiza el ejecutable de Chromium / Chrome / Edge disponible en el sistema.
     Funciona en Windows (entorno local), Linux (Docker / Heroku / Servidores de producción) y Mac.
     """
+    import glob
+
     candidatos = [
         # Variables de entorno comunes (Heroku buildpack, Docker, CI/CD, etc.)
         os.environ.get("GOOGLE_CHROME_BIN"),
@@ -20,6 +22,26 @@ def obtener_ejecutable_chromium():
         os.environ.get("CHROMIUM_PATH"),
         os.environ.get("PUPPETEER_EXECUTABLE_PATH"),
         os.environ.get("EDGE_BIN"),
+        # Comandos en PATH (Linux / Docker / Mac / Windows)
+        shutil.which("google-chrome"),
+        shutil.which("google-chrome-stable"),
+        shutil.which("chromium"),
+        shutil.which("chromium-browser"),
+        shutil.which("msedge"),
+        shutil.which("chrome"),
+        # Rutas directas comunes en Linux / Docker / Heroku / VPS
+        "/usr/bin/google-chrome",
+        "/usr/bin/google-chrome-stable",
+        "/usr/bin/chromium",
+        "/usr/bin/chromium-browser",
+        "/usr/local/bin/google-chrome",
+        "/usr/local/bin/chromium",
+        "/snap/bin/chromium",
+        "/snap/bin/chromium-browser",
+        "/usr/lib/chromium/chromium",
+        "/usr/lib/chromium-browser/chromium-browser",
+        "/app/.apt/usr/bin/google-chrome",
+        "/app/.apt/usr/bin/google-chrome-stable",
         # Rutas comunes en Windows
         r"C:\Program Files\Google\Chrome\Application\chrome.exe",
         r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe",
@@ -28,28 +50,62 @@ def obtener_ejecutable_chromium():
         os.path.expandvars(r"%LOCALAPPDATA%\Google\Chrome\Application\chrome.exe"),
         os.path.expandvars(r"%PROGRAMFILES%\Google\Chrome\Application\chrome.exe"),
         os.path.expandvars(r"%PROGRAMFILES(X86)%\Microsoft\Edge\Application\msedge.exe"),
-        # Comandos en PATH (Linux / Docker / Mac / Windows)
-        shutil.which("google-chrome"),
-        shutil.which("google-chrome-stable"),
-        shutil.which("chromium"),
-        shutil.which("chromium-browser"),
-        shutil.which("msedge"),
-        shutil.which("chrome"),
-        # Rutas directas comunes en Linux / Docker / Heroku
-        "/app/.apt/usr/bin/google-chrome",
-        "/app/.apt/usr/bin/google-chrome-stable",
-        "/usr/bin/google-chrome",
-        "/usr/bin/google-chrome-stable",
-        "/usr/bin/chromium",
-        "/usr/bin/chromium-browser",
-        "/snap/bin/chromium",
     ]
+
+    # Búsqueda en caches de Puppeteer si estuvieran descargados en el servidor
+    for patron in ["/root/.cache/puppeteer/chrome/*/*/chrome", os.path.expanduser("~/.cache/puppeteer/chrome/*/*/chrome")]:
+        candidatos.extend(glob.glob(patron))
 
     for ruta in candidatos:
         if ruta and os.path.exists(ruta):
             return ruta
 
     return None
+
+
+def obtener_diagnostico_motor_pdf():
+    """
+    Retorna el estado detallado del motor PDF activo en el servidor para diagnósticos en producción.
+    """
+    browser_bin = obtener_ejecutable_chromium()
+    if browser_bin:
+        return {
+            'disponible': True,
+            'es_optimo': True,
+            'motor': 'Chromium Headless (Vectorial de Alta Fidelidad)',
+            'ruta': browser_bin,
+            'color': 'success',
+            'mensaje': 'Motor óptimo detectado. Los PDFs se generarán con estilos CSS, colores y tipografías idénticas a la web.',
+            'comando_instalacion': None,
+        }
+
+    try:
+        import weasyprint
+        return {
+            'disponible': True,
+            'es_optimo': True,
+            'motor': 'WeasyPrint (HTML a PDF)',
+            'ruta': 'Python WeasyPrint',
+            'color': 'info',
+            'mensaje': 'Motor WeasyPrint disponible.',
+            'comando_instalacion': None,
+        }
+    except ImportError:
+        pass
+
+    return {
+        'disponible': False,
+        'es_optimo': False,
+        'motor': 'PyMuPDF (Modo Emergencia Básico)',
+        'ruta': 'Librería fitz (Python)',
+        'color': 'danger',
+        'mensaje': (
+            'Chromium/Chrome NO está instalado o detectado en este servidor. '
+            'El motor de emergencia PyMuPDF no soporta CSS moderno, flexbox ni colores avanzados. '
+            'Para que tus PDFs se vean exactamente como en la web, instala Chromium en tu servidor.'
+        ),
+        'comando_instalacion': 'sudo apt update && sudo apt install -y chromium-browser (o google-chrome-stable)',
+    }
 
 
 def convertir_html_a_pdf(html_content):
@@ -75,26 +131,32 @@ def convertir_html_a_pdf(html_content):
             pdf_generado = False
 
             for h_flag in flags_headless:
-                cmd = [
-                    browser_bin,
-                    h_flag,
-                    '--disable-gpu',
-                    '--no-sandbox',
-                    '--disable-dev-shm-usage',
-                    '--no-pdf-header-footer',
-                    '--run-all-compositor-stages-before-draw',
-                    '--virtual-time-budget=2500',
-                    f'--print-to-pdf={temp_pdf}',
-                    temp_html_url
-                ]
+                for target_input in [temp_html_url, temp_html]:
+                    cmd = [
+                        browser_bin,
+                        h_flag,
+                        '--disable-gpu',
+                        '--no-sandbox',
+                        '--disable-setuid-sandbox',
+                        '--disable-dev-shm-usage',
+                        '--no-pdf-header-footer',
+                        '--allow-file-access-from-files',
+                        '--enable-local-file-accesses',
+                        '--run-all-compositor-stages-before-draw',
+                        '--virtual-time-budget=2500',
+                        f'--print-to-pdf={temp_pdf}',
+                        target_input
+                    ]
 
-                res = subprocess.run(cmd, capture_output=True, timeout=40)
-                if res.returncode == 0 and os.path.exists(temp_pdf) and os.path.getsize(temp_pdf) > 1000:
-                    pdf_generado = True
+                    res = subprocess.run(cmd, capture_output=True, timeout=40)
+                    if res.returncode == 0 and os.path.exists(temp_pdf) and os.path.getsize(temp_pdf) > 1000:
+                        pdf_generado = True
+                        break
+                    else:
+                        stderr_msg = res.stderr.decode('utf-8', errors='ignore')
+                        logger.warning(f"Chromium ({h_flag} / {target_input}) retorno código {res.returncode}: {stderr_msg}")
+                if pdf_generado:
                     break
-                else:
-                    stderr_msg = res.stderr.decode('utf-8', errors='ignore')
-                    logger.warning(f"Chromium ({h_flag}) retorno código {res.returncode}: {stderr_msg}")
 
             if pdf_generado:
                 with open(temp_pdf, 'rb') as f_pdf:

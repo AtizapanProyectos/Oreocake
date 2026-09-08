@@ -1,0 +1,1337 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Gestor y Despacho de Reportes Clínicos en PDF · HOPE{% endblock %}
+
+{% block content %}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+<style>
+/* ==========================================================================
+   HOPE · GESTOR DE REPORTES CLÍNICOS EN PDF PARA PRODUCCIÓN
+   Paleta institucional: #5A3FA3 (Púrpura) · #25B8B8 (Teal) · #F85B8C (Rosa) · #F27C21 (Naranja)
+   ========================================================================== */
+
+:root {
+  --hope-p:       #5A3FA3;
+  --hope-p-dark:  #3b2575;
+  --hope-p-light: #EDE9FF;
+  --hope-p-subtle:#F8F6FF;
+  --hope-teal:    #25B8B8;
+  --hope-teal-l:  #E6FAFA;
+  --hope-pink:    #F85B8C;
+  --hope-pink-l:  #FFF0F5;
+  --hope-orange:  #F27C21;
+  --hope-orange-l:#FFF5ED;
+  --hope-yellow:  #F8D33D;
+  --hope-green:   #10B981;
+  --hope-green-l: #ECFDF5;
+  --hope-red:     #EF4444;
+  --hope-red-l:   #FEF2F2;
+
+  --ink-primary:  #0F172A;
+  --ink-secondary:#475569;
+  --ink-muted:    #64748B;
+  --ink-faint:    #94A3B8;
+  --border-card:  rgba(90, 63, 163, 0.12);
+  --border-light: rgba(148, 163, 184, 0.2);
+  --bg-app:       #F8F9FD;
+  --card-bg:      #FFFFFF;
+  --shadow-subtle:0 4px 20px -2px rgba(90, 63, 163, 0.06), 0 2px 6px -1px rgba(0, 0, 0, 0.04);
+  --shadow-hover: 0 12px 30px -4px rgba(90, 63, 163, 0.14), 0 4px 10px -2px rgba(0, 0, 0, 0.05);
+}
+
+body {
+  background: var(--bg-app);
+  color: var(--ink-primary);
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  min-height: 100vh;
+}
+
+.report-manager-wrap {
+  max-width: 1240px;
+  margin: 120px auto 70px;
+  padding: 0 24px;
+}
+
+/* Header */
+.header-card {
+  background: linear-gradient(135deg, #5A3FA3 0%, #432b82 60%, #25B8B8 140%);
+  border-radius: 24px;
+  padding: 36px 40px;
+  color: #fff;
+  box-shadow: 0 18px 36px -10px rgba(90, 63, 163, 0.35);
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 28px;
+}
+
+.header-card::before {
+  content: '';
+  position: absolute;
+  top: -50px; right: -50px;
+  width: 260px; height: 260px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0) 70%);
+}
+
+.header-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(10px);
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  margin-bottom: 12px;
+}
+
+.header-card h1 {
+  font-family: 'Outfit', sans-serif;
+  font-size: 30px;
+  font-weight: 800;
+  margin: 0 0 8px;
+  letter-spacing: -0.01em;
+}
+
+.header-card p {
+  font-size: 15px;
+  color: rgba(255, 255, 255, 0.88);
+  max-width: 760px;
+  line-height: 1.55;
+  margin: 0;
+}
+
+/* Diagnostics bar */
+.diag-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 28px;
+}
+
+@media (max-width: 768px) {
+  .diag-grid { grid-template-columns: 1fr; }
+}
+
+.diag-card {
+  background: var(--card-bg);
+  border-radius: 18px;
+  padding: 18px 22px;
+  border: 1px solid var(--border-card);
+  box-shadow: var(--shadow-subtle);
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.diag-icon {
+  width: 44px; height: 44px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.diag-icon.success { background: var(--hope-green-l); color: var(--hope-green); }
+.diag-icon.danger  { background: var(--hope-red-l); color: var(--hope-red); }
+.diag-icon.warning { background: var(--hope-orange-l); color: var(--hope-orange); }
+
+.diag-body h4 {
+  font-family: 'Outfit', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  margin: 0 0 4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.diag-body p {
+  font-size: 12.5px;
+  color: var(--ink-secondary);
+  line-height: 1.45;
+  margin: 0 0 6px;
+}
+
+.diag-cmd {
+  background: #0f172a;
+  color: #38bdf8;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 11.5px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  display: block;
+  word-break: break-all;
+  margin-top: 6px;
+  user-select: all;
+}
+
+/* Search and selector block */
+.selector-box {
+  background: var(--card-bg);
+  border-radius: 20px;
+  padding: 24px 28px;
+  border: 1px solid var(--border-card);
+  box-shadow: var(--shadow-subtle);
+  margin-bottom: 28px;
+}
+
+.selector-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  align-items: flex-end;
+}
+
+@media (max-width: 768px) {
+  .selector-grid { grid-template-columns: 1fr; }
+}
+
+.field-label {
+  display: block;
+  font-family: 'Outfit', sans-serif;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--hope-p);
+  margin-bottom: 8px;
+}
+
+.search-input-wrap {
+  display: flex;
+  gap: 10px;
+}
+
+.search-input {
+  flex: 1;
+  padding: 12px 16px;
+  font-size: 15px;
+  font-family: inherit;
+  font-weight: 600;
+  border-radius: 12px;
+  border: 1.5px solid var(--border-card);
+  background: #fff;
+  color: var(--ink-primary);
+  outline: none;
+  transition: all 0.2s;
+}
+
+.search-input:focus {
+  border-color: var(--hope-p);
+  box-shadow: 0 0 0 4px rgba(90, 63, 163, 0.12);
+}
+
+.quick-select {
+  width: 100%;
+  padding: 13px 16px;
+  font-size: 13.5px;
+  font-family: inherit;
+  font-weight: 500;
+  border-radius: 12px;
+  border: 1.5px solid var(--border-card);
+  background: #fff;
+  color: var(--ink-primary);
+  outline: none;
+  cursor: pointer;
+}
+
+.quick-select:focus {
+  border-color: var(--hope-p);
+}
+
+/* Section Titles */
+.section-title {
+  font-family: 'Outfit', sans-serif;
+  font-size: 19px;
+  font-weight: 800;
+  color: var(--hope-p);
+  margin: 0 0 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.section-title i {
+  color: var(--hope-teal);
+  font-size: 18px;
+}
+
+/* Recipient cards ("Van a ir para él y para él") */
+.recipients-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-bottom: 28px;
+}
+
+@media (max-width: 768px) {
+  .recipients-grid { grid-template-columns: 1fr; }
+}
+
+.recipient-card {
+  background: var(--card-bg);
+  border-radius: 20px;
+  padding: 24px 26px;
+  border: 1.5px solid var(--border-card);
+  box-shadow: var(--shadow-subtle);
+  position: relative;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.recipient-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-hover);
+}
+
+.recipient-badge-top {
+  position: absolute;
+  top: 18px; right: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 999px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.badge-paciente { background: var(--hope-pink-l); color: var(--hope-pink); }
+.badge-psicologo { background: var(--hope-teal-l); color: var(--hope-teal); }
+
+.recipient-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.recipient-avatar {
+  width: 54px; height: 54px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  font-weight: 800;
+  color: #fff;
+  flex-shrink: 0;
+  font-family: 'Outfit', sans-serif;
+}
+
+.avatar-paciente { background: linear-gradient(135deg, #F85B8C, #F27C21); }
+.avatar-psicologo { background: linear-gradient(135deg, #5A3FA3, #25B8B8); }
+
+.recipient-info h3 {
+  font-family: 'Outfit', sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  margin: 0 0 4px;
+  color: var(--ink-primary);
+}
+
+.recipient-info .email-pill {
+  font-size: 13px;
+  color: var(--hope-p);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.recipient-meta-list {
+  list-style: none;
+  padding: 0; margin: 0;
+  border-top: 1px dashed var(--border-light);
+  padding-top: 14px;
+}
+
+.recipient-meta-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  margin-bottom: 10px;
+}
+
+.recipient-meta-item:last-child { margin-bottom: 0; }
+.recipient-meta-item .label { color: var(--ink-muted); font-weight: 500; }
+.recipient-meta-item .value { font-weight: 700; color: var(--ink-primary); }
+
+/* Files preview cards */
+.files-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-bottom: 28px;
+}
+
+@media (max-width: 768px) {
+  .files-grid { grid-template-columns: 1fr; }
+}
+
+.file-card {
+  background: var(--card-bg);
+  border-radius: 20px;
+  padding: 22px 24px;
+  border: 1.5px solid var(--border-card);
+  box-shadow: var(--shadow-subtle);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.file-header {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+.pdf-icon-box {
+  width: 48px; height: 48px;
+  border-radius: 14px;
+  background: var(--hope-red-l);
+  color: var(--hope-red);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.file-details h4 {
+  font-family: 'Outfit', sans-serif;
+  font-size: 15.5px;
+  font-weight: 700;
+  margin: 0 0 4px;
+}
+
+.file-details .filename {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 12px;
+  color: var(--ink-secondary);
+  word-break: break-all;
+}
+
+.file-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+  border-top: 1px solid var(--border-light);
+  padding-top: 14px;
+}
+
+.btn-preview {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 9px 14px;
+  border-radius: 10px;
+  font-size: 12.5px;
+  font-weight: 700;
+  text-decoration: none;
+  background: var(--hope-p-light);
+  color: var(--hope-p);
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-preview:hover {
+  background: var(--hope-p);
+  color: #fff;
+}
+
+.btn-download {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 9px 14px;
+  border-radius: 10px;
+  font-size: 12.5px;
+  font-weight: 700;
+  text-decoration: none;
+  background: var(--hope-teal-l);
+  color: var(--hope-teal);
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-download:hover {
+  background: var(--hope-teal);
+  color: #fff;
+}
+
+/* Email preview box ("Qué dirá el correo") */
+.email-box-card {
+  background: var(--card-bg);
+  border-radius: 20px;
+  padding: 24px 28px;
+  border: 1px solid var(--border-card);
+  box-shadow: var(--shadow-subtle);
+  margin-bottom: 28px;
+}
+
+.email-tabs {
+  display: flex;
+  gap: 8px;
+  border-bottom: 2px solid var(--border-light);
+  margin-bottom: 20px;
+}
+
+.email-tab-btn {
+  padding: 10px 20px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink-muted);
+  border: none;
+  background: none;
+  cursor: pointer;
+  position: relative;
+  transition: color 0.2s;
+}
+
+.email-tab-btn.active {
+  color: var(--hope-p);
+}
+
+.email-tab-btn.active::after {
+  content: '';
+  position: absolute;
+  bottom: -2px; left: 0; right: 0;
+  height: 3px;
+  background: var(--hope-p);
+  border-radius: 3px 3px 0 0;
+}
+
+.email-mockup {
+  background: #FDFDFF;
+  border: 1px solid var(--border-card);
+  border-radius: 14px;
+  padding: 20px 24px;
+}
+
+.email-header-row {
+  display: flex;
+  font-size: 13px;
+  margin-bottom: 8px;
+}
+
+.email-header-row .hdr-lbl {
+  width: 90px;
+  color: var(--ink-muted);
+  font-weight: 600;
+}
+
+.email-header-row .hdr-val {
+  font-weight: 700;
+  color: var(--ink-primary);
+}
+
+.email-attachment-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--hope-p);
+  margin: 10px 0 16px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.email-body-text {
+  font-size: 13.5px;
+  line-height: 1.65;
+  color: #334155;
+  white-space: pre-line;
+  padding-top: 14px;
+  border-top: 1px dashed var(--border-light);
+}
+
+/* Action block & console */
+.action-card {
+  background: var(--card-bg);
+  border-radius: 20px;
+  padding: 28px;
+  border: 1.5px solid var(--border-card);
+  box-shadow: var(--shadow-subtle);
+  margin-bottom: 30px;
+}
+
+.action-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.toggle-group {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.custom-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-secondary);
+  cursor: pointer;
+}
+
+.custom-check input {
+  width: 17px; height: 17px;
+  accent-color: var(--hope-p);
+  cursor: pointer;
+}
+
+.btn-cta-group {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.btn-primary-action {
+  background: linear-gradient(135deg, #5A3FA3 0%, #432b82 100%);
+  color: #fff;
+  padding: 14px 28px;
+  border-radius: 14px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 10px 22px -6px rgba(90, 63, 163, 0.45);
+  transition: all 0.2s;
+}
+
+.btn-primary-action:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 28px -6px rgba(90, 63, 163, 0.55);
+}
+
+.btn-primary-action:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-secondary-action {
+  background: var(--hope-p-light);
+  color: var(--hope-p);
+  padding: 14px 24px;
+  border-radius: 14px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s;
+}
+
+.btn-secondary-action:hover {
+  background: rgba(90, 63, 163, 0.18);
+}
+
+/* Console result view */
+.console-box {
+  background: #0f172a;
+  border-radius: 16px;
+  padding: 22px 24px;
+  color: #f8fafc;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  box-shadow: inset 0 2px 8px rgba(0,0,0,0.5);
+  display: none;
+}
+
+.console-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #334155;
+  padding-bottom: 12px;
+  margin-bottom: 16px;
+}
+
+.console-header h4 {
+  font-family: 'Outfit', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  color: #38bdf8;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.stage-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: #1e293b;
+  margin-bottom: 8px;
+  font-size: 13px;
+}
+
+.stage-item .stage-title {
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.stage-badge {
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 999px;
+}
+
+.stage-badge.ok { background: #065f46; color: #34d399; }
+.stage-badge.fail { background: #991b1b; color: #f87171; }
+.stage-badge.warn { background: #92400e; color: #fbbf24; }
+
+.console-summary-alert {
+  padding: 14px 18px;
+  border-radius: 12px;
+  font-size: 13.5px;
+  font-weight: 600;
+  margin-top: 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.console-summary-alert.success { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(52, 211, 153, 0.3); }
+.console-summary-alert.warning { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(251, 191, 36, 0.3); }
+.console-summary-alert.error   { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(248, 113, 113, 0.3); }
+
+/* Spinners */
+.spinner-btn {
+  display: none;
+  width: 18px; height: 18px;
+  border: 2.5px solid rgba(255,255,255,0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+</style>
+
+<div class="report-manager-wrap">
+
+  <!-- HEADER -->
+  <div class="header-card">
+    <div class="header-badge">
+      <i class="fa-solid fa-file-pdf"></i> Módulo Clínico de Producción
+    </div>
+    <h1>Despacho de Reportes Clínicos en PDF</h1>
+    <p>
+      Genera, inspecciona y envía los reportes vectoriales de alta fidelidad para el <b>Paciente</b> y el <b>Psicólogo</b>.
+      Verifica destinatarios, contenidos y valida errores de entrega en tiempo real.
+    </p>
+  </div>
+
+  <!-- SERVER HEALTH DIAGNOSTICS -->
+  <div class="diag-grid">
+    <!-- Motor PDF Status -->
+    <div class="diag-card">
+      <div class="diag-icon {{ diagnostico_motor.color }}">
+        <i class="fa-solid {% if diagnostico_motor.es_optimo %}fa-circle-check{% else %}fa-triangle-exclamation{% endif %}"></i>
+      </div>
+      <div class="diag-body">
+        <h4>
+          Motor PDF: {{ diagnostico_motor.motor }}
+          {% if diagnostico_motor.es_optimo %}
+            <span class="stage-badge ok">Vectorial Óptimo</span>
+          {% else %}
+            <span class="stage-badge fail">Básico / Degradado</span>
+          {% endif %}
+        </h4>
+        <p>{{ diagnostico_motor.mensaje }}</p>
+        {% if diagnostico_motor.ruta %}
+          <div style="font-size:11.5px; color:var(--ink-muted);"><b>Ruta detectada:</b> {{ diagnostico_motor.ruta }}</div>
+        {% endif %}
+        {% if diagnostico_motor.comando_instalacion %}
+          <p style="margin-top:6px; font-weight:700; color:var(--hope-red);">Para activar el motor vectorial en tu servidor ejecuta:</p>
+          <code class="diag-cmd">{{ diagnostico_motor.comando_instalacion }}</code>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- SMTP Status -->
+    <div class="diag-card">
+      <div class="diag-icon {% if smtp_info.configurado %}success{% else %}warning{% endif %}">
+        <i class="fa-solid {% if smtp_info.configurado %}fa-envelope-circle-check{% else %}fa-envelope-open-text{% endif %}"></i>
+      </div>
+      <div class="diag-body">
+        <h4>
+          Servidor SMTP (Gmail / HOPE)
+          {% if smtp_info.configurado %}
+            <span class="stage-badge ok">Activo</span>
+          {% else %}
+            <span class="stage-badge warn">Credenciales Pendientes</span>
+          {% endif %}
+        </h4>
+        <p>
+          {% if smtp_info.configurado %}
+            Servidor listo para entregar correos con archivos PDF adjuntos desde <b>{{ smtp_info.user }}</b>.
+          {% else %}
+            No se detectaron variables <code>EMAIL_HOST_USER</code> o <code>EMAIL_HOST_PASSWORD</code> en el entorno. Puedes generar y guardar los PDFs en disco sin enviar correos.
+          {% endif %}
+        </p>
+        <div style="font-size:11.5px; color:var(--ink-muted);"><b>Host:</b> {{ smtp_info.host }}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SELECTOR DE CITA -->
+  <div class="selector-box">
+    <div class="selector-grid">
+      <div>
+        <label class="field-label" for="inputCitaId">
+          <i class="fa-solid fa-hashtag"></i> ID de Cita a Procesar
+        </label>
+        <div class="search-input-wrap">
+          <input type="number" id="inputCitaId" class="search-input" placeholder="Ej. 753" value="{{ cita_preseleccionada }}">
+          <button type="button" class="btn-primary-action" onclick="cargarCitaInfo()">
+            <i class="fa-solid fa-magnifying-glass"></i> Cargar Cita
+          </button>
+        </div>
+      </div>
+
+      <div>
+        <label class="field-label" for="selectCitasRecientes">
+          <i class="fa-solid fa-clock-rotate-left"></i> O selecciona una cita reciente con notas:
+        </label>
+        <select id="selectCitasRecientes" class="quick-select" onchange="seleccionarCitaDesdeSelect(this.value)">
+          <option value="">-- Elige una cita reciente --</option>
+          {% for c in citas_recientes %}
+            <option value="{{ c.id }}" {% if cita_preseleccionada == c.id|stringformat:'s' %}selected{% endif %}>
+              Cita #{{ c.id }} — {{ c.paciente.first_name|default:c.paciente.username }} | {{ c.psicologo.usuario.first_name }} ({{ c.fecha|date:'d/m/Y' }}) {% if c.nota_clinica and c.nota_clinica.notas_sesion %}📝{% else %}⚠️ Sin bitácora{% endif %}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONTENEDOR DINÁMICO DE DATOS DE LA CITA -->
+  <div id="contenedorDetalleCita" style="display:none;">
+
+    <!-- SECCIÓN: VAN A IR PARA ÉL Y PARA ÉL (DESTINATARIOS) -->
+    <h3 class="section-title">
+      <i class="fa-solid fa-users"></i> Destinatarios del Reporte ("Van a ir para él y para él")
+    </h3>
+
+    <div class="recipients-grid">
+      <!-- Tarjeta Paciente -->
+      <div class="recipient-card">
+        <span class="recipient-badge-top badge-paciente">Paciente</span>
+        <div class="recipient-header">
+          <div class="recipient-avatar avatar-paciente" id="avatarPac">P</div>
+          <div class="recipient-info">
+            <h3 id="pacNombre">Cargando...</h3>
+            <span class="email-pill" id="pacEmailWrap">
+              <i class="fa-solid fa-envelope"></i> <span id="pacEmail"></span>
+            </span>
+          </div>
+        </div>
+        <ul class="recipient-meta-list">
+          <li class="recipient-meta-item">
+            <span class="label">Número de Sesión:</span>
+            <span class="value" id="pacSesionNum">Sesión #1</span>
+          </li>
+          <li class="recipient-meta-item">
+            <span class="label">Evaluación IPP:</span>
+            <span class="value" id="pacIppEstado">
+              <span class="stage-badge ok">Respondido</span>
+            </span>
+          </li>
+          <li class="recipient-meta-item">
+            <span class="label">Estado de la Cita:</span>
+            <span class="value" id="citaEstado">Confirmada</span>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Tarjeta Psicólogo -->
+      <div class="recipient-card">
+        <span class="recipient-badge-top badge-psicologo">Psicólogo Tratante</span>
+        <div class="recipient-header">
+          <div class="recipient-avatar avatar-psicologo" id="avatarPsi">T</div>
+          <div class="recipient-info">
+            <h3 id="psiNombre">Cargando...</h3>
+            <span class="email-pill" id="psiEmailWrap">
+              <i class="fa-solid fa-envelope"></i> <span id="psiEmail"></span>
+            </span>
+          </div>
+        </div>
+        <ul class="recipient-meta-list">
+          <li class="recipient-meta-item">
+            <span class="label">Cédula Profesional:</span>
+            <span class="value" id="psiCedula">13479646</span>
+          </li>
+          <li class="recipient-meta-item">
+            <span class="label">Bitácora Clínica:</span>
+            <span class="value" id="psiBitacoraEstado">
+              <span class="stage-badge ok">Capturada</span>
+            </span>
+          </li>
+          <li class="recipient-meta-item">
+            <span class="label">Fecha y Hora de Sesión:</span>
+            <span class="value" id="citaFechaHora">07/09/2026 18:00</span>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- SECCIÓN: ARCHIVOS PDF QUE SE GENERARÁN -->
+    <h3 class="section-title">
+      <i class="fa-solid fa-folder-open"></i> Archivos PDF del Reporte Clínico
+    </h3>
+
+    <div class="files-grid">
+      <!-- Archivo Paciente -->
+      <div class="file-card">
+        <div class="file-header">
+          <div class="pdf-icon-box">
+            <i class="fa-solid fa-file-pdf"></i>
+          </div>
+          <div class="file-details">
+            <h4>Reporte de Check-In (Versión Paciente)</h4>
+            <div class="filename" id="archivoPacNombre">reporte_sesion_1_paciente.pdf</div>
+          </div>
+        </div>
+        <div class="file-actions">
+          <a href="#" id="btnVerHtmlPac" target="_blank" class="btn-preview">
+            <i class="fa-solid fa-eye"></i> Previsualizar HTML
+          </a>
+          <a href="#" id="btnDescargarPdfPac" target="_blank" class="btn-download">
+            <i class="fa-solid fa-download"></i> Descargar / Ver PDF
+          </a>
+        </div>
+      </div>
+
+      <!-- Archivo Psicólogo -->
+      <div class="file-card">
+        <div class="file-header">
+          <div class="pdf-icon-box" style="background:var(--hope-teal-l); color:var(--hope-teal);">
+            <i class="fa-solid fa-file-medical"></i>
+          </div>
+          <div class="file-details">
+            <h4>Reporte Clínico y Evolución (Versión Psicólogo)</h4>
+            <div class="filename" id="archivoPsiNombre">reporte_sesion_1_psicologo.pdf</div>
+          </div>
+        </div>
+        <div class="file-actions">
+          <a href="#" id="btnVerHtmlPsi" target="_blank" class="btn-preview">
+            <i class="fa-solid fa-eye"></i> Previsualizar HTML
+          </a>
+          <a href="#" id="btnDescargarPdfPsi" target="_blank" class="btn-download">
+            <i class="fa-solid fa-download"></i> Descargar / Ver PDF
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECCIÓN: QUÉ DIRÁ EL CORREO -->
+    <h3 class="section-title">
+      <i class="fa-solid fa-paper-plane"></i> ¿Qué dirá el correo? (Vista previa del mensaje)
+    </h3>
+
+    <div class="email-box-card">
+      <div class="email-tabs">
+        <button type="button" class="email-tab-btn active" id="tabBtnPac" onclick="cambiarTabCorreo('pac')">
+          <i class="fa-solid fa-user"></i> Correo para el Paciente
+        </button>
+        <button type="button" class="email-tab-btn" id="tabBtnPsi" onclick="cambiarTabCorreo('psi')">
+          <i class="fa-solid fa-user-doctor"></i> Correo para el Psicólogo
+        </button>
+      </div>
+
+      <!-- Correo Paciente Mockup -->
+      <div class="email-mockup" id="emailMockupPac">
+        <div class="email-header-row">
+          <span class="hdr-lbl">De:</span>
+          <span class="hdr-val" id="mailPacDe">Espacio HOPE &lt;no-reply@espaciohope.com&gt;</span>
+        </div>
+        <div class="email-header-row">
+          <span class="hdr-lbl">Para:</span>
+          <span class="hdr-val" id="mailPacPara"></span>
+        </div>
+        <div class="email-header-row">
+          <span class="hdr-lbl">Asunto:</span>
+          <span class="hdr-val" id="mailPacAsunto"></span>
+        </div>
+        <div class="email-attachment-pill">
+          <i class="fa-solid fa-paperclip"></i> <span id="mailPacAdjunto">reporte.pdf</span>
+        </div>
+        <div class="email-body-text" id="mailPacCuerpo"></div>
+      </div>
+
+      <!-- Correo Psicólogo Mockup -->
+      <div class="email-mockup" id="emailMockupPsi" style="display:none;">
+        <div class="email-header-row">
+          <span class="hdr-lbl">De:</span>
+          <span class="hdr-val" id="mailPsiDe">Espacio HOPE &lt;no-reply@espaciohope.com&gt;</span>
+        </div>
+        <div class="email-header-row">
+          <span class="hdr-lbl">Para:</span>
+          <span class="hdr-val" id="mailPsiPara"></span>
+        </div>
+        <div class="email-header-row">
+          <span class="hdr-lbl">Asunto:</span>
+          <span class="hdr-val" id="mailPsiAsunto"></span>
+        </div>
+        <div class="email-attachment-pill">
+          <i class="fa-solid fa-paperclip"></i> <span id="mailPsiAdjunto">reporte.pdf</span>
+        </div>
+        <div class="email-body-text" id="mailPsiCuerpo"></div>
+      </div>
+    </div>
+
+    <!-- SECCIÓN: ACCIONES Y CONSOLA DE DIAGNÓSTICO -->
+    <div class="action-card">
+      <div class="action-controls">
+        <div class="toggle-group">
+          <label class="custom-check">
+            <input type="checkbox" id="checkForzar" checked>
+            <span>Forzar regeneración aunque ya se haya marcado como enviado</span>
+          </label>
+          <label class="custom-check">
+            <input type="checkbox" id="checkSoloGenerar">
+            <span>Modo Simulación (Solo generar PDFs sin enviar correo SMTP)</span>
+          </label>
+        </div>
+
+        <div class="btn-cta-group">
+          <button type="button" class="btn-secondary-action" onclick="ejecutarEnvio(true)">
+            <i class="fa-solid fa-file-arrow-down"></i> Solo Generar PDFs
+          </button>
+          <button type="button" class="btn-primary-action" id="btnEnviarPrincipal" onclick="ejecutarEnvio(false)">
+            <span class="spinner-btn" id="spinnerEnvio"></span>
+            <i class="fa-solid fa-paper-plane" id="iconoEnvio"></i> Generar Reportes y Enviar Ahora
+          </button>
+        </div>
+      </div>
+
+      <!-- CONSOLA EN VIVO DE ERRORES Y SEGUIMIENTO -->
+      <div class="console-box" id="consolaResultados">
+        <div class="console-header">
+          <h4><i class="fa-solid fa-terminal"></i> Consola de Ejecución y Diagnóstico de Entrega</h4>
+          <span id="consolaStatusBadge" class="stage-badge warn">Procesando...</span>
+        </div>
+        <div id="listaEtapasConsola">
+          <!-- Las fases se insertan dinámicamente -->
+        </div>
+        <div id="resumenConsola"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+let currentCitaData = null;
+
+// Al cargar la página, si viene ?cita_id preseleccionada, cargarla
+document.addEventListener('DOMContentLoaded', () => {
+  const preId = document.getElementById('inputCitaId').value.trim();
+  if (preId) {
+    cargarCitaInfo();
+  }
+});
+
+function seleccionarCitaDesdeSelect(citaId) {
+  if (citaId) {
+    document.getElementById('inputCitaId').value = citaId;
+    cargarCitaInfo();
+  }
+}
+
+async function cargarCitaInfo() {
+  const citaId = document.getElementById('inputCitaId').value.trim();
+  if (!citaId) {
+    alert('Por favor escribe o selecciona un ID de cita.');
+    return;
+  }
+
+  const contenedor = document.getElementById('contenedorDetalleCita');
+  contenedor.style.display = 'none';
+
+  try {
+    const res = await fetch(`/panel-admin/api/info-reporte-cita/${citaId}/`);
+    const data = await res.json();
+
+    if (data.status !== 'success') {
+      alert(data.mensaje || 'No se encontró la cita.');
+      return;
+    }
+
+    currentCitaData = data.data;
+    renderizarDatosCita(currentCitaData);
+    contenedor.style.display = 'block';
+    contenedor.scrollIntoView({ behavior: 'smooth' });
+
+  } catch (err) {
+    console.error(err);
+    alert('Error de conexión al cargar la información de la cita.');
+  }
+}
+
+function renderizarDatosCita(d) {
+  // Paciente
+  document.getElementById('avatarPac').textContent = (d.paciente.nombre || 'P')[0].toUpperCase();
+  document.getElementById('pacNombre').textContent = d.paciente.nombre;
+  document.getElementById('pacEmail').textContent = d.paciente.email || 'Sin correo registrado';
+  document.getElementById('pacSesionNum').textContent = `Sesión #${d.paciente.sesion_numero}`;
+  
+  const pacIppEl = document.getElementById('pacIppEstado');
+  if (d.paciente.ha_respondido_ipp) {
+    pacIppEl.innerHTML = `<span class="stage-badge ok"><i class="fa-solid fa-check"></i> Respondido (${d.paciente.ipt_puntaje}%)</span>`;
+  } else {
+    pacIppEl.innerHTML = `<span class="stage-badge warn">Sin IPP contestado</span>`;
+  }
+
+  document.getElementById('citaEstado').textContent = d.estado + (d.reporte_enviado ? ' (Reporte ya emitido)' : ' (Pendiente)');
+
+  // Psicólogo
+  document.getElementById('avatarPsi').textContent = (d.psicologo.nombre || 'T')[0].toUpperCase();
+  document.getElementById('psiNombre').textContent = d.psicologo.nombre;
+  document.getElementById('psiEmail').textContent = d.psicologo.email || 'Sin correo registrado';
+  document.getElementById('psiCedula').textContent = d.psicologo.cedula;
+
+  const psiBitacoraEl = document.getElementById('psiBitacoraEstado');
+  if (d.psicologo.tiene_bitacora) {
+    psiBitacoraEl.innerHTML = `<span class="stage-badge ok"><i class="fa-solid fa-check"></i> Capturada (${d.psicologo.extracto_bitacora.length} caracteres)</span>`;
+  } else {
+    psiBitacoraEl.innerHTML = `<span class="stage-badge fail"><i class="fa-solid fa-triangle-exclamation"></i> Falta bitácora clínica</span>`;
+  }
+
+  document.getElementById('citaFechaHora').textContent = `${d.fecha} ${d.hora}`;
+
+  // Archivos PDF
+  document.getElementById('archivoPacNombre').textContent = d.archivos.paciente_nombre;
+  document.getElementById('btnVerHtmlPac').href = d.archivos.paciente_html_url;
+  document.getElementById('btnDescargarPdfPac').href = d.archivos.paciente_url;
+
+  document.getElementById('archivoPsiNombre').textContent = d.archivos.psicologo_nombre;
+  document.getElementById('btnVerHtmlPsi').href = d.archivos.psicologo_html_url;
+  document.getElementById('btnDescargarPdfPsi').href = d.archivos.psicologo_url;
+
+  // Correo Paciente
+  document.getElementById('mailPacDe').textContent = d.correo_paciente.de;
+  document.getElementById('mailPacPara').textContent = d.correo_paciente.para;
+  document.getElementById('mailPacAsunto').textContent = d.correo_paciente.asunto;
+  document.getElementById('mailPacAdjunto').textContent = d.correo_paciente.adjunto;
+  document.getElementById('mailPacCuerpo').textContent = d.correo_paciente.cuerpo;
+
+  // Correo Psicólogo
+  document.getElementById('mailPsiDe').textContent = d.correo_psicologo.de;
+  document.getElementById('mailPsiPara').textContent = d.correo_psicologo.para;
+  document.getElementById('mailPsiAsunto').textContent = d.correo_psicologo.asunto;
+  document.getElementById('mailPsiAdjunto').textContent = d.correo_psicologo.adjunto;
+  document.getElementById('mailPsiCuerpo').textContent = d.correo_psicologo.cuerpo;
+}
+
+function cambiarTabCorreo(tab) {
+  const btnPac = document.getElementById('tabBtnPac');
+  const btnPsi = document.getElementById('tabBtnPsi');
+  const boxPac = document.getElementById('emailMockupPac');
+  const boxPsi = document.getElementById('emailMockupPsi');
+
+  if (tab === 'pac') {
+    btnPac.classList.add('active');
+    btnPsi.classList.remove('active');
+    boxPac.style.display = 'block';
+    boxPsi.style.display = 'none';
+  } else {
+    btnPsi.classList.add('active');
+    btnPac.classList.remove('active');
+    boxPsi.style.display = 'block';
+    boxPac.style.display = 'none';
+  }
+}
+
+async function ejecutarEnvio(soloGenerarForzado = false) {
+  if (!currentCitaData) return;
+
+  const citaId = currentCitaData.cita_id;
+  const forzar = document.getElementById('checkForzar').checked;
+  const soloGenerar = soloGenerarForzado || document.getElementById('checkSoloGenerar').checked;
+
+  const btn = document.getElementById('btnEnviarPrincipal');
+  const spinner = document.getElementById('spinnerEnvio');
+  const icono = document.getElementById('iconoEnvio');
+  const consola = document.getElementById('consolaResultados');
+  const listaEtapas = document.getElementById('listaEtapasConsola');
+  const badgeConsola = document.getElementById('consolaStatusBadge');
+  const resumenConsola = document.getElementById('resumenConsola');
+
+  btn.disabled = true;
+  spinner.style.display = 'inline-block';
+  icono.style.display = 'none';
+
+  consola.style.display = 'block';
+  badgeConsola.className = 'stage-badge warn';
+  badgeConsola.textContent = 'Ejecutando proceso...';
+  listaEtapas.innerHTML = `
+    <div class="stage-item">
+      <span class="stage-title"><i class="fa-solid fa-spinner fa-spin"></i> Conectando al motor de IA y renderizando PDFs...</span>
+      <span class="stage-badge warn">En curso</span>
+    </div>
+  `;
+  resumenConsola.innerHTML = '';
+  consola.scrollIntoView({ behavior: 'smooth' });
+
+  try {
+    const formData = new FormData();
+    formData.append('forzar', forzar ? 'true' : 'false');
+    formData.append('solo_generar', soloGenerar ? 'true' : 'false');
+
+    // Token CSRF de cookie si existe
+    const csrfToken = getCookie('csrftoken');
+
+    const res = await fetch(`/panel-admin/api/ejecutar-envio-reporte/${citaId}/`, {
+      method: 'POST',
+      body: formData,
+      headers: {
+        'X-CSRFToken': csrfToken
+      }
+    });
+
+    const data = await res.json();
+    btn.disabled = false;
+    spinner.style.display = 'none';
+    icono.style.display = 'inline-block';
+
+    if (data.status === 'success') {
+      badgeConsola.className = 'stage-badge ok';
+      badgeConsola.textContent = 'Completado';
+    } else {
+      badgeConsola.className = 'stage-badge fail';
+      badgeConsola.textContent = 'Finalizado con avisos / error';
+    }
+
+    // Renderizar etapas
+    const etapas = data.detalles?.etapas || [];
+    let etapasHtml = '';
+
+    etapas.forEach(et => {
+      const cls = et.ok ? 'ok' : 'fail';
+      const icon = et.ok ? 'fa-check' : 'fa-xmark';
+      etapasHtml += `
+        <div class="stage-item">
+          <span class="stage-title">
+            <i class="fa-solid ${icon}" style="color: ${et.ok ? '#34d399' : '#f87171'}"></i>
+            ${et.etapa}
+          </span>
+          <span style="font-size:12px; color:#cbd5e1; margin:0 12px; flex:1; text-align:right;">${et.detalle}</span>
+          <span class="stage-badge ${cls}">${et.ok ? 'OK' : 'Error'}</span>
+        </div>
+      `;
+    });
+
+    listaEtapas.innerHTML = etapasHtml;
+
+    // Resumen y botones de descarga directa
+    const archivos = data.detalles?.archivos;
+    let resumenHtml = '';
+    if (data.status === 'success') {
+      resumenHtml = `
+        <div class="console-summary-alert success">
+          <i class="fa-solid fa-circle-check"></i>
+          <div>
+            <b>${data.mensaje}</b>
+            ${archivos ? `
+              <div style="margin-top:10px; display:flex; gap:10px;">
+                <a href="${archivos.paciente_url}" target="_blank" class="btn-download" style="padding:6px 14px; font-size:12px;">
+                  <i class="fa-solid fa-download"></i> Descargar PDF Paciente
+                </a>
+                <a href="${archivos.psicologo_url}" target="_blank" class="btn-download" style="padding:6px 14px; font-size:12px;">
+                  <i class="fa-solid fa-download"></i> Descargar PDF Psicólogo
+                </a>
+              </div>
+            ` : ''}
+          </div>
+        </div>
+      `;
+    } else {
+      resumenHtml = `
+        <div class="console-summary-alert error">
+          <i class="fa-solid fa-triangle-exclamation"></i>
+          <div>
+            <b>${data.mensaje}</b>
+            ${data.detalles?.errores?.length ? `<div style="margin-top:6px; font-size:12px;">${data.detalles.errores.join('<br>')}</div>` : ''}
+          </div>
+        </div>
+      `;
+    }
+
+    resumenConsola.innerHTML = resumenHtml;
+
+  } catch (err) {
+    btn.disabled = false;
+    spinner.style.display = 'none';
+    icono.style.display = 'inline-block';
+    badgeConsola.className = 'stage-badge fail';
+    badgeConsola.textContent = 'Error de conexión';
+    listaEtapas.innerHTML = `
+      <div class="stage-item">
+        <span class="stage-title"><i class="fa-solid fa-xmark" style="color:#f87171"></i> Error en la petición</span>
+        <span class="stage-badge fail">${err.message}</span>
+      </div>
+    `;
+  }
+}
+
+function getCookie(name) {
+  let cookieValue = null;
+  if (document.cookie && document.cookie !== '') {
+    const cookies = document.cookie.split(';');
+    for (let i = 0; i < cookies.length; i++) {
+      const cookie = cookies[i].trim();
+      if (cookie.substring(0, name.length + 1) === (name + '=')) {
+        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+        break;
+      }
+    }
+  }
+  return cookieValue;
+}
+</script>
+{% endblock %}

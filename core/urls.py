@@ -88,4 +88,10 @@ urlpatterns = [
 
     path('admin/procesar-reportes-citas/', views.procesar_reportes_citas_manual, name='procesar_reportes_citas_manual'),
     path('panel-admin/reporte-crecimiento-sesiones/', views.reporte_crecimiento_sesiones_view, name='reporte_crecimiento_sesiones'),
+
+    # URLs para el Gestor Visual de Reportes Clínicos en PDF
+    path('panel-admin/enviar-reporte-cita/', views.panel_gestor_envio_reporte_view, name='gestor_envio_reporte_cita'),
+    path('panel-admin/api/info-reporte-cita/<int:cita_id>/', views.api_info_reporte_cita, name='api_info_reporte_cita'),
+    path('panel-admin/api/ejecutar-envio-reporte/<int:cita_id>/', views.api_ejecutar_envio_reporte, name='api_ejecutar_envio_reporte'),
+    path('panel-admin/descargar-reporte-pdf/<int:cita_id>/<str:tipo>/', views.descargar_reporte_pdf_cita, name='descargar_reporte_pdf_cita'),
 ]

@@ -16,7 +16,7 @@ from django.core.paginator import Paginator
 import logging
 from django.db.models import Avg, Case, When, Value, IntegerField, Q, Prefetch
 from django.utils import timezone
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse, FileResponse, Http404
 from django.shortcuts import render
 from django.core.paginator import Paginator
 # pyrefly: ignore [missing-import]
@@ -50,7 +50,7 @@ import base64
 from django.core.files.base import ContentFile
 from django.utils.text import slugify
 from django.core.mail import EmailMultiAlternatives
-from core.utils_pdf import convertir_html_a_pdf
+from core.utils_pdf import convertir_html_a_pdf, obtener_diagnostico_motor_pdf, obtener_ejecutable_chromium
 from django.contrib.auth.decorators import user_passes_test
 
 
@@ -4968,48 +4968,91 @@ def _procesar_reporte_de_una_cita(cita_id, log_func=None):
         else:
             logging.getLogger(__name__).info(msg)
 
+def _procesar_reporte_de_una_cita_detallado(cita_id, log_func=None, forzar=False, solo_generar=False):
+    """
+    Versión con reporte minucioso de cada fase (extracción, renderizado paciente/psicólogo,
+    almacenamiento en BD, y despacho de correos con detalles de errores SMTP).
+    """
+    def _log(msg):
+        if log_func:
+            try:
+                log_func(msg)
+            except UnicodeEncodeError:
+                try:
+                    log_func(msg.encode('ascii', errors='replace').decode('ascii'))
+                except Exception:
+                    pass
+        else:
+            logging.getLogger(__name__).info(msg)
+
+    detalles = {
+        'cita_id': cita_id,
+        'etapas': [],
+        'archivos': {},
+        'errores': [],
+    }
+
     with transaction.atomic():
         try:
             cita = Cita.objects.select_for_update().select_related(
                 'paciente__perfil', 'psicologo__usuario', 'nota_clinica'
             ).get(id=cita_id)
         except Cita.DoesNotExist:
-            return False, "Cita no encontrada"
+            detalles['etapas'].append({'etapa': 'Búsqueda de Cita', 'ok': False, 'detalle': f'No existe ninguna cita con ID #{cita_id}'})
+            return False, "Cita no encontrada", detalles
 
-        if cita.reporte_enviado:
-            return False, "Reporte ya enviado previamente"
+        if cita.reporte_enviado and not forzar:
+            detalles['etapas'].append({'etapa': 'Validación de Envío', 'ok': False, 'detalle': 'El reporte ya había sido enviado previamente para esta cita (activa la casilla "Forzar" para regenerar y reenviar).'})
+            return False, "Reporte ya enviado previamente", detalles
 
         paciente = cita.paciente
         psicologo = cita.psicologo
 
         if not hasattr(cita, 'nota_clinica') or not cita.nota_clinica or not cita.nota_clinica.notas_sesion:
-            return False, "Falta bitácora clínica del psicólogo"
+            detalles['etapas'].append({'etapa': 'Validación de Bitácora', 'ok': False, 'detalle': 'Falta la bitácora clínica del psicólogo. El psicólogo tratante aún no ha capturado notas_sesion para esta cita.'})
+            return False, "Falta bitácora clínica del psicólogo", detalles
 
         _log(f"   🤖 Extrayendo métricas y generando síntesis con IA...")
-        datos_paciente = _construir_datos_checkin_paciente(paciente, cita=cita)
-        datos_psicologo = _construir_datos_checkin_psicologo(paciente, cita=cita)
-
-        logo_base64 = _obtener_logo_base64()
+        try:
+            datos_paciente = _construir_datos_checkin_paciente(paciente, cita=cita)
+            datos_psicologo = _construir_datos_checkin_psicologo(paciente, cita=cita)
+            logo_base64 = _obtener_logo_base64()
+            detalles['etapas'].append({'etapa': 'Métricas Clínicas e IA', 'ok': True, 'detalle': f'Datos sintetizados. Sesión #{datos_paciente.get("sesion_numero", 1)}, IPP: {datos_paciente.get("ipp_valor", 0)}%'})
+        except Exception as e:
+            detalles['etapas'].append({'etapa': 'Métricas Clínicas e IA', 'ok': False, 'detalle': f'Error procesando métricas: {e}'})
+            return False, f"Error en métricas: {e}", detalles
 
         # 1. Renderizar y generar PDF del Paciente
         _log("   📄 Renderizando PDF del Paciente desde claude_pascinete.html...")
-        contexto_paciente = {
-            **datos_paciente,
-            'es_exportacion_pdf': True,
-            'logo_base64': logo_base64,
-        }
-        html_paciente = render_to_string('Pruebas/claude_pascinete.html', contexto_paciente)
-        pdf_bytes_paciente = convertir_html_a_pdf(html_paciente)
+        try:
+            contexto_paciente = {
+                **datos_paciente,
+                'es_exportacion_pdf': True,
+                'logo_base64': logo_base64,
+            }
+            html_paciente = render_to_string('Pruebas/claude_pascinete.html', contexto_paciente)
+            pdf_bytes_paciente = convertir_html_a_pdf(html_paciente)
+            kb_pac = round(len(pdf_bytes_paciente) / 1024, 1)
+            detalles['etapas'].append({'etapa': 'Generación PDF Paciente', 'ok': True, 'detalle': f'Generado exitosamente ({kb_pac} KB)'})
+        except Exception as e:
+            detalles['etapas'].append({'etapa': 'Generación PDF Paciente', 'ok': False, 'detalle': f'Error generando PDF: {e}'})
+            return False, f"Error generando PDF paciente: {e}", detalles
 
         # 2. Renderizar y generar PDF del Psicólogo
         _log("   📋 Renderizando PDF Clínico desde claude_psioclog.html...")
-        contexto_psicologo = {
-            **datos_psicologo,
-            'es_exportacion_pdf': True,
-            'logo_base64': logo_base64,
-        }
-        html_psicologo = render_to_string('Pruebas/claude_psioclog.html', contexto_psicologo)
-        pdf_bytes_psicologo = convertir_html_a_pdf(html_psicologo)
+        try:
+            contexto_psicologo = {
+                **datos_psicologo,
+                'es_exportacion_pdf': True,
+                'logo_base64': logo_base64,
+            }
+            html_psicologo = render_to_string('Pruebas/claude_psioclog.html', contexto_psicologo)
+            pdf_bytes_psicologo = convertir_html_a_pdf(html_psicologo)
+            kb_psi = round(len(pdf_bytes_psicologo) / 1024, 1)
+            detalles['etapas'].append({'etapa': 'Generación PDF Psicólogo', 'ok': True, 'detalle': f'Generado exitosamente ({kb_psi} KB)'})
+        except Exception as e:
+            detalles['etapas'].append({'etapa': 'Generación PDF Psicólogo', 'ok': False, 'detalle': f'Error generando PDF: {e}'})
+            return False, f"Error generando PDF psicólogo: {e}", detalles
 
         # 3. Guardar en Base de Datos y Disco (ReporteClinicoPDF)
         sesion_num = datos_paciente.get('sesion_numero', 1)
@@ -5041,20 +5084,46 @@ def _procesar_reporte_de_una_cita(cita_id, log_func=None):
         )
         reporte_psi_obj.archivo_pdf.save(filename_psi, ContentFile(pdf_bytes_psicologo), save=True)
 
+        detalles['etapas'].append({
+            'etapa': 'Archivado en Base de Datos',
+            'ok': True,
+            'detalle': f'Registrado en ReporteClinicoPDF (Paciente ID #{reporte_pac_obj.id}, Psicólogo ID #{reporte_psi_obj.id})'
+        })
+        detalles['archivos'] = {
+            'paciente_url': f'/panel-admin/descargar-reporte-pdf/{cita.id}/paciente/',
+            'psicologo_url': f'/panel-admin/descargar-reporte-pdf/{cita.id}/psicologo/',
+            'paciente_nombre': filename_pac,
+            'psicologo_nombre': filename_psi,
+        }
         _log(f"   💾 PDFs archivados en el expediente del paciente exitosamente.")
 
-        # 4. Enviar correo al Paciente con PDF adjunto
+        # 4 y 5. Enviar correos si no es modo solo generar
+        if solo_generar:
+            _log("   ℹ️ Modo simulación / solo generar activo. Se omitió el despacho de correos.")
+            detalles['etapas'].append({'etapa': 'Despacho de Correos', 'ok': True, 'detalle': 'Omitido intencionalmente (modo solo generar PDF activado).'})
+            cita.reporte_enviado = True
+            cita.save(update_fields=['reporte_enviado'])
+            return True, "PDFs generados y guardados con éxito en base de datos (sin enviar correo)", detalles
+
+        email_pac_ok = False
+        email_psi_ok = False
+
         if paciente.email:
             try:
                 _log(f"   📧 Enviando correo con PDF adjunto a paciente ({paciente.email})...")
                 _enviar_email_reporte_paciente_con_pdf(paciente, datos_paciente, pdf_bytes_paciente, filename_pac)
                 reporte_pac_obj.correo_enviado = True
                 reporte_pac_obj.save(update_fields=['correo_enviado'])
+                email_pac_ok = True
+                detalles['etapas'].append({'etapa': 'Envío Correo Paciente', 'ok': True, 'detalle': f'Correo enviado con PDF adjunto a {paciente.email}'})
                 _log(f"   ✅ Correo enviado a {paciente.email}.")
             except Exception as e:
+                detalles['etapas'].append({'etapa': 'Envío Correo Paciente', 'ok': False, 'detalle': f'Fallo al enviar correo a {paciente.email}: {e}'})
+                detalles['errores'].append(f'Correo paciente: {e}')
                 _log(f"   ⚠️ Error enviando correo a paciente: {e}")
+        else:
+            detalles['etapas'].append({'etapa': 'Envío Correo Paciente', 'ok': False, 'detalle': 'El paciente no tiene dirección de correo electrónico registrada.'})
 
-        # 5. Enviar correo al Psicólogo con PDF adjunto
         email_doc = psicologo.usuario.email if psicologo and psicologo.usuario else None
         if email_doc:
             try:
@@ -5062,13 +5131,32 @@ def _procesar_reporte_de_una_cita(cita_id, log_func=None):
                 _enviar_email_reporte_psicologo_con_pdf(psicologo, paciente, datos_psicologo, pdf_bytes_psicologo, filename_psi)
                 reporte_psi_obj.correo_enviado = True
                 reporte_psi_obj.save(update_fields=['correo_enviado'])
+                email_psi_ok = True
+                detalles['etapas'].append({'etapa': 'Envío Correo Psicólogo', 'ok': True, 'detalle': f'Correo enviado con PDF adjunto a {email_doc}'})
                 _log(f"   ✅ Correo enviado a {email_doc}.")
             except Exception as e:
+                detalles['etapas'].append({'etapa': 'Envío Correo Psicólogo', 'ok': False, 'detalle': f'Fallo al enviar correo a {email_doc}: {e}'})
+                detalles['errores'].append(f'Correo psicólogo: {e}')
                 _log(f"   ⚠️ Error enviando correo a psicólogo: {e}")
+        else:
+            detalles['etapas'].append({'etapa': 'Envío Correo Psicólogo', 'ok': False, 'detalle': 'El psicólogo tratante no tiene correo registrado.'})
 
         cita.reporte_enviado = True
         cita.save(update_fields=['reporte_enviado'])
-        return True, "Reporte generado, guardado y enviado con éxito"
+
+        if email_pac_ok and email_psi_ok:
+            return True, "Reporte generado, guardado y enviado con éxito a ambos destinatarios", detalles
+        elif email_pac_ok or email_psi_ok:
+            return True, "Reporte generado y guardado, pero solo se entregó a uno de los destinatarios", detalles
+        else:
+            return True, "Reporte generado y guardado exitosamente en base de datos, pero falló el despacho SMTP de correos", detalles
+
+
+def _procesar_reporte_de_una_cita(cita_id, log_func=None, forzar=False, solo_generar=False):
+    exito, mensaje, _ = _procesar_reporte_de_una_cita_detallado(
+        cita_id, log_func=log_func, forzar=forzar, solo_generar=solo_generar
+    )
+    return exito, mensaje
 
 
 def procesar_citas_pendientes_de_reporte(log_func=None):
@@ -5162,6 +5250,219 @@ def procesar_citas_pendientes_de_reporte(log_func=None):
 def procesar_reportes_citas_manual(request):
     total = procesar_citas_pendientes_de_reporte()
     return JsonResponse({'status': 'success', 'procesadas': total})
+
+
+# ========================================================================
+# 🚀 GESTOR VISUAL DE REPORTES CLÍNICOS EN PDF PARA PRODUCCIÓN
+# Permite inspeccionar, validar destinatarios, previsualizar correos/PDFs
+# y ejecutar el despacho con trazabilidad y diagnóstico de errores en vivo.
+# ========================================================================
+
+@user_passes_test(es_admin, login_url='/')
+def panel_gestor_envio_reporte_view(request):
+    diagnostico_motor = obtener_diagnostico_motor_pdf()
+
+    smtp_ok = bool(getattr(settings, 'EMAIL_HOST_USER', None) and getattr(settings, 'EMAIL_HOST_PASSWORD', None))
+    smtp_info = {
+        'configurado': smtp_ok,
+        'host': getattr(settings, 'EMAIL_HOST', 'smtp.gmail.com'),
+        'user': getattr(settings, 'EMAIL_HOST_USER', 'No configurado'),
+    }
+
+    citas_recientes = Cita.objects.filter(
+        psicologo__isnull=False
+    ).select_related('paciente', 'psicologo__usuario', 'nota_clinica').order_by('-fecha', '-hora')[:30]
+
+    cita_preseleccionada = request.GET.get('cita_id', '')
+
+    contexto = {
+        'diagnostico_motor': diagnostico_motor,
+        'smtp_info': smtp_info,
+        'citas_recientes': citas_recientes,
+        'cita_preseleccionada': cita_preseleccionada,
+    }
+    return render(request, 'gestor_envio_reporte.html', contexto)
+
+
+@user_passes_test(es_admin, login_url='/')
+def api_info_reporte_cita(request, cita_id):
+    cita = Cita.objects.filter(id=cita_id).select_related(
+        'paciente__perfil', 'psicologo__usuario', 'nota_clinica'
+    ).first()
+
+    if not cita:
+        return JsonResponse({'status': 'error', 'mensaje': f'No existe ninguna cita con ID #{cita_id}'}, status=404)
+
+    paciente = cita.paciente
+    psicologo = cita.psicologo
+
+    from core.models import EvaluacionSesionPaciente
+    eval_ipp = EvaluacionSesionPaciente.objects.filter(cita=cita).first()
+    if not eval_ipp and paciente:
+        eval_ipp = EvaluacionSesionPaciente.objects.filter(paciente=paciente).order_by('-fecha_respuesta').first()
+
+    ha_respondido_ipp = eval_ipp is not None
+    ipt_puntaje = round(eval_ipp.ipt, 1) if eval_ipp else 0.0
+
+    sesion_num = 1
+    if paciente and psicologo:
+        sesion_num = Cita.objects.filter(
+            paciente=paciente,
+            psicologo=psicologo,
+            fecha__lte=cita.fecha,
+            estado__in=['Confirmada', 'Completada']
+        ).count()
+        if sesion_num == 0:
+            sesion_num = 1
+
+    nombre_pac = paciente.get_full_name() or paciente.username if paciente else "Sin paciente"
+    email_pac = paciente.email if paciente else ""
+    nombre_slug = slugify(paciente.first_name or paciente.username) if paciente else "paciente"
+
+    nombre_psi = psicologo.usuario.get_full_name() or psicologo.usuario.username if psicologo and psicologo.usuario else "Sin psicólogo"
+    email_psi = psicologo.usuario.email if psicologo and psicologo.usuario else ""
+    cedula_psi = psicologo.cedula_profesional or "Sin cédula registrada" if psicologo else "N/A"
+
+    tiene_bitacora = hasattr(cita, 'nota_clinica') and cita.nota_clinica is not None and bool(cita.nota_clinica.notas_sesion)
+    extracto_bitacora = cita.nota_clinica.notas_sesion[:300] + ('...' if len(cita.nota_clinica.notas_sesion) > 300 else '') if tiene_bitacora else ""
+
+    filename_pac = f"reporte_sesion_{sesion_num}_paciente_{nombre_slug}.pdf"
+    filename_psi = f"reporte_sesion_{sesion_num}_psicologo_{nombre_slug}.pdf"
+
+    reportes_previos = []
+    for r in ReporteClinicoPDF.objects.filter(cita=cita).order_by('-fecha_generacion'):
+        reportes_previos.append({
+            'id': r.id,
+            'tipo': r.tipo_destinatario,
+            'archivo_nombre': os.path.basename(r.archivo_pdf.name) if r.archivo_pdf else '',
+            'archivo_url': r.archivo_pdf.url if r.archivo_pdf else '',
+            'correo_enviado': r.correo_enviado,
+            'fecha': r.fecha_generacion.strftime('%d/%m/%Y %H:%M') if r.fecha_generacion else '',
+        })
+
+    remitente_correo = getattr(settings, 'DEFAULT_FROM_EMAIL', 'Espacio HOPE <no-reply@espaciohope.com>')
+
+    cuerpo_pac = (
+        f"Hola {paciente.first_name or nombre_pac},\n\n"
+        f"Esperamos que te encuentres muy bien. Te compartimos adjunto en formato PDF tu Reporte de Check-In correspondiente a tu sesión #{sesion_num} en Espacio HOPE.\n\n"
+        f"En este documento encontrarás:\n"
+        f"• Tu progreso psicológico y bienestar general\n"
+        f"• El resumen de tus objetivos y tareas acordadas\n"
+        f"• Recomendaciones personalizadas de tu terapeuta\n\n"
+        f"Estamos contigo en cada paso de tu camino. Si necesitas agendar tu próxima sesión, puedes hacerlo en https://espaciohope.com/\n\n"
+        f"Con cariño,\n"
+        f"Equipo Espacio HOPE 💜"
+    )
+
+    cuerpo_psi = (
+        f"Estimado(a) {psicologo.usuario.first_name or nombre_psi},\n\n"
+        f"Te compartimos adjunto el Reporte Clínico de Check-In de tu paciente {nombre_pac} correspondiente a la sesión #{sesion_num}.\n\n"
+        f"El documento incluye:\n"
+        f"• Desglose del Índice de Progreso Psicológico (IPP)\n"
+        f"• Registro de antecedentes y cómo llegó a HOPE\n"
+        f"• Apoyo brindado y notas de la última sesión\n"
+        f"• Objetivos, tareas y recomendaciones clínicas\n\n"
+        f"Este reporte ha sido archivado en el expediente clínico digital del paciente en Espacio HOPE.\n\n"
+        f"Atentamente,\n"
+        f"Dirección Clínica HOPE"
+    )
+
+    data = {
+        'cita_id': cita.id,
+        'fecha': cita.fecha.strftime('%d/%m/%Y') if cita.fecha else 'S/F',
+        'hora': cita.hora.strftime('%H:%M') if cita.hora else 'S/H',
+        'estado': cita.estado,
+        'reporte_enviado': cita.reporte_enviado,
+        'paciente': {
+            'id': paciente.id if paciente else None,
+            'nombre': nombre_pac,
+            'email': email_pac,
+            'sesion_numero': sesion_num,
+            'tiene_email': bool(email_pac),
+            'ha_respondido_ipp': ha_respondido_ipp,
+            'ipt_puntaje': ipt_puntaje,
+        },
+        'psicologo': {
+            'id': psicologo.id if psicologo else None,
+            'nombre': nombre_psi,
+            'email': email_psi,
+            'cedula': cedula_psi,
+            'tiene_email': bool(email_psi),
+            'tiene_bitacora': tiene_bitacora,
+            'extracto_bitacora': extracto_bitacora,
+        },
+        'archivos': {
+            'paciente_nombre': filename_pac,
+            'psicologo_nombre': filename_psi,
+            'paciente_url': f'/panel-admin/descargar-reporte-pdf/{cita.id}/paciente/',
+            'psicologo_url': f'/panel-admin/descargar-reporte-pdf/{cita.id}/psicologo/',
+            'paciente_html_url': f'/report2/?cita_id={cita.id}',
+            'psicologo_html_url': f'/report/?cita_id={cita.id}',
+            'reportes_previos': reportes_previos,
+        },
+        'correo_paciente': {
+            'de': remitente_correo,
+            'para': email_pac or 'Sin correo registrado',
+            'asunto': f'📋 Tu Reporte de Sesión #{sesion_num} · Espacio HOPE 💜',
+            'adjunto': filename_pac,
+            'cuerpo': cuerpo_pac,
+        },
+        'correo_psicologo': {
+            'de': remitente_correo,
+            'para': email_psi or 'Sin correo registrado',
+            'asunto': f'📋 Reporte Clínico y Evolución de {nombre_pac} — Sesión #{sesion_num} · Espacio HOPE',
+            'adjunto': filename_psi,
+            'cuerpo': cuerpo_psi,
+        }
+    }
+    return JsonResponse({'status': 'success', 'data': data})
+
+
+@user_passes_test(es_admin, login_url='/')
+@require_POST
+def api_ejecutar_envio_reporte(request, cita_id):
+    forzar = request.POST.get('forzar') in ['true', 'True', '1', True]
+    solo_generar = request.POST.get('solo_generar') in ['true', 'True', '1', True]
+
+    exito, mensaje, detalles = _procesar_reporte_de_una_cita_detallado(
+        cita_id, forzar=forzar, solo_generar=solo_generar
+    )
+
+    return JsonResponse({
+        'status': 'success' if exito else 'error',
+        'mensaje': mensaje,
+        'detalles': detalles
+    })
+
+
+@user_passes_test(es_admin, login_url='/')
+def descargar_reporte_pdf_cita(request, cita_id, tipo):
+    if tipo not in ['paciente', 'psicologo']:
+        raise Http404("Tipo de reporte no válido")
+
+    reporte_db = ReporteClinicoPDF.objects.filter(cita_id=cita_id, tipo_destinatario=tipo).order_by('-id').first()
+    if reporte_db and reporte_db.archivo_pdf and os.path.exists(reporte_db.archivo_pdf.path):
+        filename = os.path.basename(reporte_db.archivo_pdf.name)
+        response = FileResponse(open(reporte_db.archivo_pdf.path, 'rb'), content_type='application/pdf')
+        response['Content-Disposition'] = f'inline; filename="{filename}"'
+        return response
+
+    cita = get_object_or_404(Cita.objects.select_related('paciente', 'psicologo__usuario', 'nota_clinica'), id=cita_id)
+    logo_base64 = _obtener_logo_base64()
+    if tipo == 'paciente':
+        datos = _construir_datos_checkin_paciente(cita.paciente, cita=cita)
+        template_name = 'Pruebas/claude_pascinete.html'
+    else:
+        datos = _construir_datos_checkin_psicologo(cita.paciente, cita=cita)
+        template_name = 'Pruebas/claude_psioclog.html'
+
+    html = render_to_string(template_name, {**datos, 'es_exportacion_pdf': True, 'logo_base64': logo_base64})
+    pdf_bytes = convertir_html_a_pdf(html)
+    nombre_slug = slugify(cita.paciente.first_name or cita.paciente.username)
+    filename = f"reporte_cita_{cita.id}_{tipo}_{nombre_slug}.pdf"
+    response = HttpResponse(pdf_bytes, content_type='application/pdf')
+    response['Content-Disposition'] = f'inline; filename="{filename}"'
+    return response
 
 
 def reporte_crecimiento_sesiones_view(request):
