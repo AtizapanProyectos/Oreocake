@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Consentimiento Informado - HOPE</title>
+  <style>
+    @page {
+      size: letter;
+      margin: 18mm 20mm 20mm 20mm;
+      @bottom-right {
+        content: counter(page) " de " counter(pages);
+        font-size: 8.5pt;
+        color: #64748b;
+        font-family: Arial, sans-serif;
+      }
+    }
+    *, *::before, *::after {
+      box-sizing: border-box;
+    }
+    body {
+      font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+      font-size: 9.2pt;
+      line-height: 1.42;
+      color: #1e293b;
+      margin: 0;
+      padding: 0;
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 2px solid #f1f5f9;
+      padding-bottom: 12px;
+      margin-bottom: 16px;
+    }
+    .header-left h1 {
+      font-size: 13.5pt;
+      font-weight: 800;
+      color: #0f172a;
+      margin: 0 0 3px 0;
+      letter-spacing: -0.2px;
+      text-transform: uppercase;
+    }
+    .header-left p {
+      margin: 0;
+      font-size: 8.5pt;
+      color: #64748b;
+      font-weight: 600;
+      letter-spacing: 0.8px;
+    }
+    .logo-container img {
+      max-height: 38px;
+      width: auto;
+      object-fit: contain;
+    }
+    .badge-doc {
+      display: inline-block;
+      background: #f0fdfa;
+      color: #0d9488;
+      border: 1px solid #99f6e4;
+      font-size: 7.5pt;
+      font-weight: 700;
+      text-transform: uppercase;
+      padding: 2px 7px;
+      border-radius: 4px;
+      margin-bottom: 6px;
+    }
+    h2.section-title {
+      font-size: 9.2pt;
+      font-weight: 700;
+      color: #0f172a;
+      margin: 10px 0 4px 0;
+      text-transform: uppercase;
+      letter-spacing: 0.2px;
+    }
+    p {
+      margin: 0 0 7px 0;
+      text-align: justify;
+    }
+    ul {
+      margin: 3px 0 8px 18px;
+      padding: 0;
+    }
+    li {
+      margin-bottom: 3px;
+    }
+    .checklist {
+      list-style: none;
+      margin: 5px 0 8px 0;
+      padding: 0;
+    }
+    .checklist li {
+      margin-bottom: 4px;
+      padding-left: 20px;
+      position: relative;
+    }
+    .check-box {
+      position: absolute;
+      left: 0;
+      top: 1px;
+      display: inline-block;
+      width: 13px;
+      height: 13px;
+      border: 1.5px solid #0d9488;
+      background: #f0fdfa;
+      border-radius: 3px;
+      text-align: center;
+      line-height: 12px;
+      font-size: 9px;
+      color: #0d9488;
+      font-weight: 900;
+    }
+    .signature-card {
+      margin-top: 16px;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 10px;
+      background: #f8fafc;
+      padding: 14px 18px;
+      page-break-inside: avoid;
+    }
+    .sig-grid {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      gap: 20px;
+    }
+    .sig-box {
+      flex: 1;
+      text-align: center;
+      border-top: 1.5px solid #0f172a;
+      padding-top: 6px;
+      margin-top: 8px;
+    }
+    .sig-img {
+      max-height: 65px;
+      max-width: 220px;
+      margin: 0 auto 4px auto;
+      display: block;
+    }
+    .meta-box {
+      flex: 1.1;
+      font-size: 8pt;
+      color: #475569;
+      line-height: 1.45;
+      background: #ffffff;
+      padding: 10px 12px;
+      border-radius: 6px;
+      border: 1px solid #cbd5e1;
+    }
+    .meta-box strong {
+      color: #0f172a;
+    }
+    .digital-seal {
+      margin-top: 10px;
+      padding-top: 8px;
+      border-top: 1px dashed #cbd5e1;
+      font-size: 7.2pt;
+      color: #64748b;
+      display: flex;
+      justify-content: space-between;
+    }
+    .page-break {
+      page-break-before: always;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- PÁGINA 1 -->
+  <div class="header">
+    <div class="header-left">
+      <span class="badge-doc">Documento Clínico Oficial</span>
+      <h1>Consentimiento Informado para Atención Psicológica</h1>
+      <p>HOPE &middot; OPORTUNIDAD, PREVENCIÓN, ESPERANZA</p>
+    </div>
+    <div class="logo-container">
+      {% if logo_base64 %}
+      <img src="{{ logo_base64 }}" alt="Logo HOPE">
+      {% else %}
+      <img src="https://espaciohope.com/static/img/nlogo.png" alt="Logo HOPE">
+      {% endif %}
+    </div>
+  </div>
+
+  <h2 class="section-title">1. Objetivo del Documento</h2>
+  <p>El presente consentimiento informado tiene como finalidad brindar información clara sobre las características, alcances, beneficios, riesgos, derechos y responsabilidades relacionadas con el proceso de atención psicológica.</p>
+  <p>La firma de este documento indica que el consultante ha recibido información suficiente sobre el servicio y acepta participar de manera voluntaria en el proceso terapéutico.</p>
+
+  <h2 class="section-title">2. Naturaleza de la Atención Psicológica</h2>
+  <p>La atención psicológica es un servicio profesional orientado a la evaluación, comprensión y abordaje de dificultades emocionales, cognitivas, conductuales, interpersonales y de bienestar psicológico.</p>
+  <p>El proceso terapéutico constituye un trabajo colaborativo entre el psicólogo y el consultante, dirigido al logro de objetivos previamente acordados.</p>
+  <p>Se entiende que los resultados pueden variar dependiendo de diversos factores, incluyendo la participación activa del consultante y las características particulares de cada caso.</p>
+
+  <h2 class="section-title">3. Modelo de Intervención</h2>
+  <p>La atención se realizará principalmente desde un enfoque Cognitivo-Conductual y de Terapia Breve, basado en evidencia científica. Las intervenciones pueden incluir:</p>
+  <ul>
+    <li>Entrevista clínica.</li>
+    <li>Psicoeducación.</li>
+    <li>Establecimiento de objetivos terapéuticos.</li>
+    <li>Registros psicológicos.</li>
+    <li>Técnicas cognitivas y conductuales.</li>
+    <li>Entrenamiento en habilidades de autorregulación.</li>
+    <li>Actividades o tareas entre sesiones.</li>
+    <li>Estrategias de prevención de recaídas.</li>
+  </ul>
+
+  <h2 class="section-title">4. Participación Voluntaria</h2>
+  <p>La participación en el proceso terapéutico es completamente voluntaria. El consultante tiene derecho a solicitar información sobre su tratamiento, formular preguntas, expresar dudas o inconformidades, retirar su consentimiento en cualquier momento, y suspender o concluir el proceso cuando lo considere pertinente.</p>
+
+  <h2 class="section-title">5. Confidencialidad</h2>
+  <p>Toda la información proporcionada durante las sesiones será tratada de manera estrictamente confidencial conforme a los principios éticos y legales aplicables al ejercicio profesional de la psicología. La confidencialidad podrá ser limitada únicamente en los siguientes casos de excepción:</p>
+  <ul>
+    <li>Riesgo inminente para la vida o integridad del consultante.</li>
+    <li>Riesgo inminente para terceros.</li>
+    <li>Situaciones de abuso, violencia o maltrato cuando la legislación exija notificación obligatoria.</li>
+    <li>Requerimiento expreso emitido por autoridad judicial o administrativa competente.</li>
+    <li>Cualquier otra situación contemplada imperativamente por la legislación vigente.</li>
+  </ul>
+
+  <h2 class="section-title">6. Registro Clínico</h2>
+  <p>El psicólogo elaborará las notas clínicas y registros necesarios para el seguimiento terapéutico. La información será resguardada de manera confidencial y utilizada exclusivamente para fines clínicos, administrativos o legales permitidos por la normativa aplicable en salud.</p>
+
+  <h2 class="section-title">7. Sesiones y Asistencia</h2>
+  <p>La duración habitual de cada sesión será de aproximadamente 50 minutos. El consultante se compromete a asistir puntualmente a las sesiones programadas y a informar oportunamente cualquier cancelación o solicitud de reprogramación conforme a las políticas vigentes de la clínica.</p>
+
+  <h2 class="section-title">8. Comunicación entre Sesiones</h2>
+  <p>La comunicación fuera de sesión tendrá fines exclusivamente administrativos o de coordinación. La atención psicológica no constituye un servicio de urgencias médicas ni de atención de crisis aguda 24/7. En caso de crisis psicológica, psiquiátrica o médica grave, el consultante deberá acudir de inmediato a los servicios de urgencias de su localidad o llamar al 911 / líneas de emergencia de su país.</p>
+
+  <h2 class="section-title">9. Autorización para Telepsicología</h2>
+  <ul class="checklist">
+    <li><span class="check-box">&#10003;</span> <strong>Acepto recibir atención psicológica mediante medios virtuales</strong> (videollamada y plataformas digitales seguras) cuando sea necesario.</li>
+    <li><span class="check-box">&#10003;</span> <strong>Comprendo las limitaciones tecnológicas</strong> que pueden afectar la calidad o estabilidad de la comunicación electrónica.</li>
+    <li><span class="check-box">&#10003;</span> <strong>Me comprometo a procurar un espacio privado, seguro y libre de interrupciones</strong> durante las sesiones virtuales.</li>
+  </ul>
+
+  <h2 class="section-title">10. Declaración de Consentimiento</h2>
+  <p style="margin-bottom: 4px;">Declaro expresamente que:</p>
+  <ul>
+    <li>He leído este documento en su totalidad y comprendido sus alcances.</li>
+    <li>He recibido información suficiente sobre el servicio psicológico y se me ha brindado la oportunidad de formular preguntas.</li>
+    <li>Comprendo los alcances y límites de la confidencialidad, así como los beneficios y riesgos potenciales del proceso.</li>
+    <li>Acepto participar voluntariamente en el proceso de atención psicológica en Espacio HOPE.</li>
+  </ul>
+
+  <!-- BLOQUE DE FIRMA DIGITAL -->
+  <div class="signature-card">
+    <div class="sig-grid">
+      <div class="sig-box">
+        {% if consentimiento.firma_base64 %}
+        <img class="sig-img" src="{{ consentimiento.firma_base64 }}" alt="Firma del Consultante">
+        {% endif %}
+        <div style="font-weight: 700; font-size: 8.5pt; color: #0f172a; text-transform: uppercase;">
+          {{ consentimiento.nombre_firmante|default:paciente.first_name }}
+        </div>
+        <div style="font-size: 7.2pt; color: #64748b; margin-top: 1px;">
+          Firma Electrónica del Consultante
+        </div>
+      </div>
+
+      <div class="meta-box">
+        <div><strong>Consultante:</strong> {{ consentimiento.nombre_firmante|default:paciente.first_name }}</div>
+        <div><strong>Correo electrónico:</strong> {{ paciente.email }}</div>
+        <div><strong>Fecha y hora de firma:</strong> {{ fecha_str }}</div>
+        <div><strong>Modalidad de consentimiento:</strong> Firma digital por trazo en pantalla táctil / cursor</div>
+        <div><strong>Estado del documento:</strong> Válido y ratificado digitalmente</div>
+      </div>
+    </div>
+
+    <div class="digital-seal">
+      <span>Folio de Validación: <strong>HOPE-CI-{{ consentimiento.id }}-{{ folio_hash }}</strong></span>
+      <span>Dirección IP: <strong>{{ consentimiento.ip_registro|default:"Registro seguro" }}</strong></span>
+      <span>Plataforma: <strong>Espacio HOPE v{{ consentimiento.version|default:"1.0" }}</strong></span>
+    </div>
+  </div>
+
+</body>
+</html>

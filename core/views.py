@@ -773,6 +773,12 @@ def panel_generico(request):
     if tipo_servicio not in ['individual', 'terapia_individual', 'terapia_pareja', '']:
         taller_solicitado_obj = Taller.objects.filter(nombre=tipo_servicio, fecha__gte=hoy).first()
 
+    # Verificación de Consentimiento Informado:
+    # 1. Si el usuario ya firmó digitalmente en el nuevo modelo -> True
+    # 2. Si es un usuario existente que ya cuenta con citas registradas -> True (retrocompatibilidad automática)
+    tiene_consentimiento = ConsentimientoInformado.objects.filter(paciente=request.user).exists() or Cita.objects.filter(paciente=request.user).exists()
+    ultimo_consentimiento = ConsentimientoInformado.objects.filter(paciente=request.user).first()
+
     return render(request, 'panel_generico.html', {
         'dias_disponibles_json': dias_json,
         'dias_disponibles': dias_html,
@@ -783,6 +789,8 @@ def panel_generico(request):
         'tiene_terapeuta_asignado': bool(doctores_chat),
         'tipo_servicio': tipo_servicio,
         'taller_solicitado_obj': taller_solicitado_obj,
+        'tiene_consentimiento': tiene_consentimiento,
+        'consentimiento_pdf_url': ultimo_consentimiento.archivo_pdf.url if (ultimo_consentimiento and ultimo_consentimiento.archivo_pdf) else None,
         'talleres_padres': talleres_futuros.filter(tipo='padres'),
         'talleres_pareja': talleres_futuros.filter(tipo='pareja'),
         'talleres_grupales': talleres_futuros.filter(tipo='grupal'),
@@ -839,6 +847,79 @@ def inscribir_taller_ajax(request):
         except Taller.DoesNotExist:
             return JsonResponse({'status': 'error', 'message': 'El programa no existe.'})
     return JsonResponse({'status': 'error', 'message': 'Petición no válida.'})
+
+
+def guardar_consentimiento_ajax(request):
+    """
+    Registra la firma digital del consultante, valida telepsicología
+    y genera el archivo oficial en PDF con sello de validación.
+    """
+    if request.method != 'POST':
+        return JsonResponse({'status': 'error', 'message': 'Método no permitido.'}, status=405)
+
+    if not request.user.is_authenticated:
+        return JsonResponse({'status': 'error', 'message': 'Debes iniciar sesión para firmar el consentimiento.'}, status=401)
+
+    firma_base64 = request.POST.get('firma_base64', '').strip()
+    nombre_firmante = request.POST.get('nombre_firmante', '').strip()
+    acepta_telepsicologia = request.POST.get('acepta_telepsicologia', 'true').lower() in ['true', '1', 'yes']
+    declaracion_consentimiento = request.POST.get('declaracion_consentimiento', 'true').lower() in ['true', '1', 'yes']
+
+    if not firma_base64:
+        return JsonResponse({'status': 'error', 'message': 'La firma digital es obligatoria.'})
+
+    if not nombre_firmante:
+        nombre_firmante = (request.user.get_full_name() or request.user.first_name or request.user.username).strip()
+
+    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+    if x_forwarded_for:
+        ip = x_forwarded_for.split(',')[0].strip()
+    else:
+        ip = request.META.get('REMOTE_ADDR')
+    user_agent = request.META.get('HTTP_USER_AGENT', '')
+
+    try:
+        consentimiento = ConsentimientoInformado.objects.create(
+            paciente=request.user,
+            nombre_firmante=nombre_firmante,
+            acepta_telepsicologia=acepta_telepsicologia,
+            declaracion_consentimiento=declaracion_consentimiento,
+            firma_base64=firma_base64,
+            ip_registro=ip,
+            user_agent=user_agent[:500] if user_agent else '',
+            version="1.0"
+        )
+
+        # Generar PDF oficial
+        import hashlib
+        logo_b64 = _obtener_logo_base64()
+        fecha_str = consentimiento.fecha_firma.strftime('%d/%m/%Y %H:%M')
+        folio_hash = hashlib.md5(f"{consentimiento.id}-{request.user.id}".encode()).hexdigest()[:8].upper()
+
+        context_pdf = {
+            'consentimiento': consentimiento,
+            'paciente': request.user,
+            'fecha_str': fecha_str,
+            'folio_hash': folio_hash,
+            'logo_base64': logo_b64,
+        }
+
+        html_content = render_to_string('documentos/consentimiento_pdf.html', context_pdf)
+        pdf_bytes = convertir_html_a_pdf(html_content)
+
+        filename = f"consentimiento_{request.user.id}_{consentimiento.id}.pdf"
+        consentimiento.archivo_pdf.save(filename, ContentFile(pdf_bytes), save=True)
+
+        return JsonResponse({
+            'status': 'success',
+            'message': 'Consentimiento firmado y registrado exitosamente.',
+            'pdf_url': consentimiento.archivo_pdf.url if consentimiento.archivo_pdf else None,
+            'tiene_consentimiento': True
+        })
+    except Exception as e:
+        logging.getLogger(__name__).error(f"Error al guardar consentimiento informado: {e}", exc_info=True)
+        return JsonResponse({'status': 'error', 'message': f'Error al registrar el consentimiento: {str(e)}'})
+
 
 def obtener_disponibilidad_por_tipo_ajax(request):
     """
@@ -926,6 +1007,17 @@ def guardar_cita_ajax(request):
     if request.method == 'POST':
         if not request.user.is_authenticated:
             return JsonResponse({'status': 'error', 'message': 'Debes iniciar sesión.'})
+
+        # Verificación de Consentimiento Informado:
+        # Retrocompatibilidad: Los usuarios ya registrados con citas previas pasan automáticamente.
+        # Nuevos consultantes deben tener su ConsentimientoInformado firmado.
+        tiene_consentimiento = ConsentimientoInformado.objects.filter(paciente=request.user).exists() or Cita.objects.filter(paciente=request.user).exists()
+        if not tiene_consentimiento:
+            return JsonResponse({
+                'status': 'error',
+                'message': 'Es necesario firmar el Consentimiento Informado antes de agendar tu cita.',
+                'requiere_consentimiento': True
+            })
 
         fecha_str = request.POST.get('fecha')
         hora_str = request.POST.get('hora')

@@ -11,6 +11,8 @@
 {% csrf_token %}
 
 <script>
+window.tieneConsentimiento = {{ tiene_consentimiento|yesno:"true,false" }};
+window.consentimientoPdfUrl = "{{ consentimiento_pdf_url|default:'' }}";
 
 function getCookie(name) {
     let cookieValue = null;
@@ -1026,95 +1028,124 @@ function mostrarErrorCita(mensaje, opts) {
                       
                 
 
-                        <div style="background: #fff1f2; border: 1px solid #fecdd3; padding: 15px; border-radius: 16px; margin-bottom: 25px; text-align: left; box-shadow: 0 4px 10px rgba(248,91,140,0.05);">
-                            <label style="display: flex; align-items: start; gap: 12px; font-size: 13px; color: var(--text-main); cursor: pointer;">
-                                <input type="checkbox" id="check-consentimiento" style="min-width: 20px; height: 20px; margin-top: 2px; accent-color: var(--c-pink);">
-                                <span style="line-height: 1.4;">He leído y acepto el <a href="#" onclick="document.getElementById('modalConsentimiento').style.display='flex'; return false;" style="color: var(--c-pink); font-weight: 800; text-decoration: none;">Consentimiento Informado</a> para recibir atención psicológica con mucho amor. 💜</span>
-                            </label>
-                        </div>
-                        
-
-                        <div id="paypal-button-container" style="margin-top: 15px; min-height: 55px;">
-                            <div id="paypal-loading-placeholder" style="display: flex; align-items: center; justify-content: center; gap: 10px; padding: 14px; color: var(--text-muted); font-family: var(--font-body); font-size: 14px;">
-                                <i class="fas fa-circle-notch fa-spin"></i> Cargando opciones de pago, espera un momento...
+                        <!-- BADGE DE CONSENTIMIENTO INFORMADO FIRMADO Y VERIFICADO -->
+                        <div id="consentimiento-badge-verificado" style="{% if not tiene_consentimiento %}display: none;{% endif %} background: #f0fdf4; border: 1.5px solid #86efac; padding: 16px 20px; border-radius: 18px; margin-bottom: 24px; text-align: left; box-shadow: 0 4px 12px rgba(34,197,94,0.06);">
+                            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+                                <div style="display: flex; align-items: center; gap: 14px;">
+                                    <div style="width: 42px; height: 42px; border-radius: 50%; background: #dcfce7; color: #16a34a; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0;">
+                                        <i class="fas fa-file-signature"></i>
+                                    </div>
+                                    <div>
+                                        <div style="font-weight: 800; font-size: 14px; color: #15803d; font-family: var(--font-headings);">Consentimiento Informado Aprobado</div>
+                                        <div style="font-size: 12px; color: #166534; font-family: var(--font-body);">Documento clínico y autorización legal en regla para tu atención psicológica.</div>
+                                    </div>
+                                </div>
+                                <div id="wrapper-btn-pdf" style="display: inline-block;">
+                                    {% if consentimiento_pdf_url %}
+                                    <a id="btn-ver-pdf-consentimiento" href="{{ consentimiento_pdf_url }}" target="_blank" style="background: white; border: 1.5px solid #86efac; color: #15803d; padding: 7px 15px; border-radius: 12px; font-size: 12px; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.04);">
+                                        <i class="fas fa-file-pdf"></i> Ver PDF Oficial
+                                    </a>
+                                    {% endif %}
+                                </div>
                             </div>
                         </div>
 
-                        <!-- 🚨 PARCHE MOMENTÁNEO DE PRUEBA (BOTÓN DISFRAZADO) -->
-                        <div style="margin: 22px auto 14px; max-width: 330px; text-align: center;">
-                            <button type="button" 
-                                    id="btn-bypass-prueba"
-                                    onclick="agendarDirectoPrueba()" 
-                                    style="width: 100%; background: #fee2e2; color: #dc2626; border: 1.5px solid #f87171; border-radius: 14px; padding: 12px 18px; font-size: 13px; font-weight: 800; cursor: pointer; transition: all 0.2s ease; letter-spacing: 0.5px; box-shadow: 0 4px 12px rgba(220, 38, 38, 0.08); font-family: var(--font-headings);"
-                                    onmouseover="this.style.background='#fecaca'; this.style.color='#b91c1c';"
-                                    onmouseout="this.style.background='#fee2e2'; this.style.color='#dc2626';">
-                                <i class="fas fa-user-slash" style="margin-right: 8px;"></i> ELIMINAR CUENTA Y REGISTRO
+                        <!-- TARJETA DE PROTECCIÓN / BLOQUEO PARA NUEVOS CONSULTANTES -->
+                        <div id="consentimiento-bloqueo-card" style="{% if tiene_consentimiento %}display: none;{% endif %} background: linear-gradient(135deg, #fff7ed 0%, #fef2f2 100%); border: 2px dashed #f97316; padding: 26px 22px; border-radius: 22px; margin-bottom: 26px; text-align: center; box-shadow: 0 8px 24px rgba(249,115,22,0.08);">
+                            <div style="width: 56px; height: 56px; border-radius: 18px; background: #ffedd5; color: #ea580c; display: flex; align-items: center; justify-content: center; font-size: 24px; margin: 0 auto 14px auto;">
+                                <i class="fas fa-shield-alt"></i>
+                            </div>
+                            <h4 style="font-family: var(--font-headings); font-size: 18px; font-weight: 800; color: #9a3412; margin: 0 0 8px 0;">
+                                Opciones de pago protegidas
+                            </h4>
+                            <p style="font-size: 13.5px; color: #7c2d12; line-height: 1.55; margin: 0 auto 18px auto; max-width: 480px; font-family: var(--font-body);">
+                                Como parte del protocolo clínico oficial de <strong>Espacio HOPE</strong>, los métodos de pago (PayPal y Transferencia) se habilitarán inmediatamente después de firmar digitalmente tu <strong>Consentimiento Informado para Atención Psicológica</strong>.
+                            </p>
+                            <button type="button" id="btn-abrir-firma-consentimiento" onclick="abrirModalConsentimiento()" style="background: linear-gradient(135deg, var(--c-purple) 0%, #7c3aed 100%); color: white; border: none; border-radius: 14px; padding: 14px 30px; font-size: 14px; font-weight: 800; cursor: pointer; box-shadow: 0 6px 20px rgba(90,63,163,0.32); display: inline-flex; align-items: center; gap: 10px; transition: transform 0.2s ease; font-family: var(--font-headings);" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
+                                <i class="fas fa-file-signature"></i> Revisar y Firmar Consentimiento Digital
                             </button>
-                            <span style="display: block; font-size: 10px; color: #94a3b8; margin-top: 5px; font-family: var(--font-body);">Acción irrevocable del perfil</span>
                         </div>
 
-<div style="margin-top: 24px; padding: 28px 24px; border-radius: 24px; background: linear-gradient(135deg, #f8fafc 0%, #f3e8ff 100%); border: 2px dashed #d8b4fe; text-align: center;">
-    
-    <p style="font-size: 16px; color: var(--text-main); margin-bottom: 20px; line-height: 1.6; font-weight: 600; font-family: var(--font-body);">
-        ¿Prefieres transferencia directa amigo? Paga a estos números de cuenta y <br>
-        <span style="display: inline-block; margin-top: 10px;">
-            <strong style="color: #1DA851; font-size: 18px; font-weight: 900; background: #e8f9f0; padding: 6px 14px; border-radius: 12px; border: 2px solid #25D366;">¡Envíanos tu comprobante por WhatsApp!</strong>
-        </span>
-    </p>
+                        <!-- SECCIÓN PROTEGIDA DE MÉTODOS DE PAGO -->
+                        <div id="seccion-metodos-pago" style="{% if not tiene_consentimiento %}display: none;{% endif %}">
+                            <div id="paypal-button-container" style="margin-top: 15px; min-height: 55px;">
+                                <div id="paypal-loading-placeholder" style="display: flex; align-items: center; justify-content: center; gap: 10px; padding: 14px; color: var(--text-muted); font-family: var(--font-body); font-size: 14px;">
+                                    <i class="fas fa-circle-notch fa-spin"></i> Cargando opciones de pago, espera un momento...
+                                </div>
+                            </div>
 
-    <div style="background: white; border-radius: 12px; padding: 10px; margin-bottom: 24px; display: inline-block; box-shadow: 0 4px 10px rgba(0,0,0,0.02);">
-        <p style="margin: 0; font-size: 14px; color: var(--text-muted); font-family: var(--font-body);">
-            <strong>Titular:</strong> Servicios de Atención Emocional Juvenil SAPI de CV<br>
-            <strong>Banco:</strong> BBVA
-        </p>
-    </div>
+                            <!-- PARCHE MOMENTÁNEO DE PRUEBA (BOTÓN DISFRAZADO) -->
+                            <div style="margin: 22px auto 14px; max-width: 330px; text-align: center;">
+                                <button type="button" 
+                                        id="btn-bypass-prueba"
+                                        onclick="agendarDirectoPrueba()" 
+                                        style="width: 100%; background: #fee2e2; color: #dc2626; border: 1.5px solid #f87171; border-radius: 14px; padding: 12px 18px; font-size: 13px; font-weight: 800; cursor: pointer; transition: all 0.2s ease; letter-spacing: 0.5px; box-shadow: 0 4px 12px rgba(220, 38, 38, 0.08); font-family: var(--font-headings);"
+                                        onmouseover="this.style.background='#fecaca'; this.style.color='#b91c1c';"
+                                        onmouseout="this.style.background='#fee2e2'; this.style.color='#dc2626';">
+                                    <i class="fas fa-user-slash" style="margin-right: 8px;"></i> ELIMINAR CUENTA Y REGISTRO
+                                </button>
+                                <span style="display: block; font-size: 10px; color: #94a3b8; margin-top: 5px; font-family: var(--font-body);">Acción irrevocable del perfil</span>
+                            </div>
 
-    <!-- Contenedor de las dos monedas -->
-    <div style="display: flex; flex-wrap: wrap; gap: 20px; justify-content: center;">
-        
-        <!-- Tarjeta MXN -->
-        <div style="background: #ffffff; border: 2px solid #e2e8f0; padding: 20px; border-radius: 20px; flex: 1; min-width: 240px; box-shadow: 0 10px 25px rgba(90, 63, 163, 0.08); transition: 0.3s;" onmouseover="this.style.borderColor='var(--c-purple)'" onmouseout="this.style.borderColor='#e2e8f0'">
-            <h4 style="margin: 0 0 15px 0; color: var(--c-purple); font-family: var(--font-headings); font-size: 18px; display: flex; align-items: center; justify-content: center; gap: 8px;">
-                🇲🇽 Moneda MXN
-            </h4>
-            <p style="margin: 8px 0; font-size: 15px; color: var(--text-main); font-family: var(--font-body);">
-                <span style="color: var(--text-muted); font-size: 13px; display: block;">No. de Cuenta</span>
-                <strong>0127845901</strong>
-            </p>
-            <p style="margin: 8px 0; font-size: 15px; color: var(--text-main); font-family: var(--font-body);">
-                <span style="color: var(--text-muted); font-size: 13px; display: block;">CLABE</span>
-                <strong>012180001278459015</strong>
-            </p>
-        </div>
+                            <div style="margin-top: 24px; padding: 28px 24px; border-radius: 24px; background: linear-gradient(135deg, #f8fafc 0%, #f3e8ff 100%); border: 2px dashed #d8b4fe; text-align: center;">
+                                <p style="font-size: 16px; color: var(--text-main); margin-bottom: 20px; line-height: 1.6; font-weight: 600; font-family: var(--font-body);">
+                                    ¿Prefieres transferencia directa? Paga a estos números de cuenta y <br>
+                                    <span style="display: inline-block; margin-top: 10px;">
+                                        <strong style="color: #1DA851; font-size: 18px; font-weight: 900; background: #e8f9f0; padding: 6px 14px; border-radius: 12px; border: 2px solid #25D366;">¡Envíanos tu comprobante por WhatsApp!</strong>
+                                    </span>
+                                </p>
 
-        <!-- Tarjeta USD -->
-        <div style="background: #ffffff; border: 2px solid #e2e8f0; padding: 20px; border-radius: 20px; flex: 1; min-width: 240px; box-shadow: 0 10px 25px rgba(90, 63, 163, 0.08); transition: 0.3s;" onmouseover="this.style.borderColor='var(--c-teal)'" onmouseout="this.style.borderColor='#e2e8f0'">
-            <h4 style="margin: 0 0 15px 0; color: var(--c-teal); font-family: var(--font-headings); font-size: 18px; display: flex; align-items: center; justify-content: center; gap: 8px;">
-                🇺🇸 Moneda USD
-            </h4>
-            <p style="margin: 8px 0; font-size: 15px; color: var(--text-main); font-family: var(--font-body);">
-                <span style="color: var(--text-muted); font-size: 13px; display: block;">No. de Cuenta</span>
-                <strong>0127845960</strong>
-            </p>
-            <p style="margin: 8px 0; font-size: 15px; color: var(--text-main); font-family: var(--font-body);">
-                <span style="color: var(--text-muted); font-size: 13px; display: block;">CLABE</span>
-                <strong>012180001278459604</strong>
-            </p>
-        </div>
+                                <div style="background: white; border-radius: 12px; padding: 10px; margin-bottom: 24px; display: inline-block; box-shadow: 0 4px 10px rgba(0,0,0,0.02);">
+                                    <p style="margin: 0; font-size: 14px; color: var(--text-muted); font-family: var(--font-body);">
+                                        <strong>Titular:</strong> Servicios de Atención Emocional Juvenil SAPI de CV<br>
+                                        <strong>Banco:</strong> BBVA
+                                    </p>
+                                </div>
 
-    </div>
-    
-    <!-- Botón directo a WhatsApp súper resaltado -->
-    <div style="margin-top: 30px;">
-        <a href="https://wa.me/525521130230?text=Hola%2C%20adjunto%20mi%20comprobante%20de%20pago%20por%20transferencia%20para%20mi%20sesi%C3%B3n" target="_blank" rel="noopener" style="display: inline-flex; align-items: center; gap: 12px; background: #25D366; color: white; padding: 16px 32px; border-radius: 50px; text-decoration: none; font-weight: 800; font-size: 17px; font-family: var(--font-headings); box-shadow: 0 10px 25px rgba(37, 211, 102, 0.3); transition: 0.3s;" onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 15px 30px rgba(37, 211, 102, 0.4)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 10px 25px rgba(37, 211, 102, 0.3)';">
-            <!-- Icono de WhatsApp en SVG -->
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16">
-                <path d="M13.601 2.326A7.854 7.854 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c-.003 1.396.366 2.76 1.057 3.965L0 16l4.204-1.102a7.933 7.933 0 0 0 3.79.965h.004c4.368 0 7.926-3.558 7.93-7.93A7.898 7.898 0 0 0 13.6 2.326zM7.994 14.521a6.573 6.573 0 0 1-3.356-.92l-.24-.144-2.494.654.666-2.433-.156-.251a6.56 6.56 0 0 1-1.007-3.505c0-3.626 2.957-6.584 6.591-6.584a6.56 6.56 0 0 1 4.66 1.931 6.557 6.557 0 0 1 1.928 4.66c-.004 3.639-2.961 6.592-6.592 6.592zm3.615-4.934c-.197-.099-1.17-.578-1.353-.646-.182-.065-.315-.099-.445.099-.133.197-.513.646-.627.775-.114.133-.232.148-.43.05-.197-.1-.836-.308-1.592-.985-.59-.525-.985-1.175-1.103-1.372-.114-.198-.011-.304.088-.403.087-.088.197-.232.296-.346.1-.114.133-.198.198-.33.065-.134.034-.248-.015-.347-.05-.099-.445-1.076-.612-1.47-.16-.389-.323-.335-.445-.34-.114-.007-.247-.007-.38-.007a.729.729 0 0 0-.529.247c-.182.198-.691.677-.691 1.654 0 .977.71 1.916.81 2.049.098.133 1.394 2.132 3.383 2.992.47.205.84.326 1.129.418.475.152.904.129 1.246.08.38-.058 1.171-.48 1.338-.943.164-.464.164-.86.114-.943-.049-.084-.182-.133-.38-.232z"/>
-            </svg>
-            Enviar Comprobante
-        </a>
-    </div>
-</div>
+                                <!-- Contenedor de las dos monedas (0 emojis) -->
+                                <div style="display: flex; flex-wrap: wrap; gap: 20px; justify-content: center;">
+                                    <!-- Tarjeta MXN -->
+                                    <div style="background: #ffffff; border: 2px solid #e2e8f0; padding: 20px; border-radius: 20px; flex: 1; min-width: 240px; box-shadow: 0 10px 25px rgba(90, 63, 163, 0.08); transition: 0.3s;" onmouseover="this.style.borderColor='var(--c-purple)'" onmouseout="this.style.borderColor='#e2e8f0'">
+                                        <h4 style="margin: 0 0 15px 0; color: var(--c-purple); font-family: var(--font-headings); font-size: 18px; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                                            <span style="display: inline-block; background: #f3e8ff; color: var(--c-purple); font-size: 12px; font-weight: 800; padding: 2px 8px; border-radius: 6px;">MXN</span> Moneda Nacional
+                                        </h4>
+                                        <p style="margin: 8px 0; font-size: 15px; color: var(--text-main); font-family: var(--font-body);">
+                                            <span style="color: var(--text-muted); font-size: 13px; display: block;">No. de Cuenta</span>
+                                            <strong>0127845901</strong>
+                                        </p>
+                                        <p style="margin: 8px 0; font-size: 15px; color: var(--text-main); font-family: var(--font-body);">
+                                            <span style="color: var(--text-muted); font-size: 13px; display: block;">CLABE</span>
+                                            <strong>012180001278459015</strong>
+                                        </p>
+                                    </div>
+
+                                    <!-- Tarjeta USD -->
+                                    <div style="background: #ffffff; border: 2px solid #e2e8f0; padding: 20px; border-radius: 20px; flex: 1; min-width: 240px; box-shadow: 0 10px 25px rgba(90, 63, 163, 0.08); transition: 0.3s;" onmouseover="this.style.borderColor='var(--c-teal)'" onmouseout="this.style.borderColor='#e2e8f0'">
+                                        <h4 style="margin: 0 0 15px 0; color: var(--c-teal); font-family: var(--font-headings); font-size: 18px; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                                            <span style="display: inline-block; background: #ccfbf1; color: var(--c-teal); font-size: 12px; font-weight: 800; padding: 2px 8px; border-radius: 6px;">USD</span> Dólares Americanos
+                                        </h4>
+                                        <p style="margin: 8px 0; font-size: 15px; color: var(--text-main); font-family: var(--font-body);">
+                                            <span style="color: var(--text-muted); font-size: 13px; display: block;">No. de Cuenta</span>
+                                            <strong>0127845960</strong>
+                                        </p>
+                                        <p style="margin: 8px 0; font-size: 15px; color: var(--text-main); font-family: var(--font-body);">
+                                            <span style="color: var(--text-muted); font-size: 13px; display: block;">CLABE</span>
+                                            <strong>012180001278459604</strong>
+                                        </p>
+                                    </div>
+                                </div>
+                                
+                                <!-- Botón directo a WhatsApp súper resaltado -->
+                                <div style="margin-top: 30px;">
+                                    <a href="https://wa.me/525521130230?text=Hola%2C%20adjunto%20mi%20comprobante%20de%20pago%20por%20transferencia%20para%20mi%20sesi%C3%B3n" target="_blank" rel="noopener" style="display: inline-flex; align-items: center; gap: 12px; background: #25D366; color: white; padding: 16px 32px; border-radius: 50px; text-decoration: none; font-weight: 800; font-size: 17px; font-family: var(--font-headings); box-shadow: 0 10px 25px rgba(37, 211, 102, 0.3); transition: 0.3s;" onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 15px 30px rgba(37, 211, 102, 0.4)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 10px 25px rgba(37, 211, 102, 0.3)';">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16">
+                                            <path d="M13.601 2.326A7.854 7.854 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c-.003 1.396.366 2.76 1.057 3.965L0 16l4.204-1.102a7.933 7.933 0 0 0 3.79.965h.004c4.368 0 7.926-3.558 7.93-7.93A7.898 7.898 0 0 0 13.6 2.326zM7.994 14.521a6.573 6.573 0 0 1-3.356-.92l-.24-.144-2.494.654.666-2.433-.156-.251a6.56 6.56 0 0 1-1.007-3.505c0-3.626 2.957-6.584 6.591-6.584a6.56 6.56 0 0 1 4.66 1.931 6.557 6.557 0 0 1 1.928 4.66c-.004 3.639-2.961 6.592-6.592 6.592zm3.615-4.934c-.197-.099-1.17-.578-1.353-.646-.182-.065-.315-.099-.445.099-.133.197-.513.646-.627.775-.114.133-.232.148-.43.05-.197-.1-.836-.308-1.592-.985-.59-.525-.985-1.175-1.103-1.372-.114-.198-.011-.304.088-.403.087-.088.197-.232.296-.346.1-.114.133-.198.198-.33.065-.134.034-.248-.015-.347-.05-.099-.445-1.076-.612-1.47-.16-.389-.323-.335-.445-.34-.114-.007-.247-.007-.38-.007a.729.729 0 0 0-.529.247c-.182.198-.691.677-.691 1.654 0 .977.71 1.916.81 2.049.098.133 1.394 2.132 3.383 2.992.47.205.84.326 1.129.418.475.152.904.129 1.246.08.38-.058 1.171-.48 1.338-.943.164-.464.164-.86.114-.943-.049-.084-.182-.133-.38-.232z"/>
+                                        </svg>
+                                        Enviar Comprobante
+                                    </a>
+                                </div>
+                            </div>
+                        </div> <!-- Fin #seccion-metodos-pago -->
 
                 <div id="step-3-loading" style="display: none; text-align: center; padding: 60px 0;">
                     <i class="fas fa-circle-notch fa-spin" style="font-size: 50px; color: var(--c-purple);"></i>
@@ -1349,50 +1380,158 @@ function mostrarErrorCita(mensaje, opts) {
 </div>
 
 
-<div id="modalConsentimiento" class="modal-overlay" style="z-index: 6000; display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(5px); align-items: center; justify-content: center; padding: 20px;">
-  <div class="modal-box" style="width: 100%; max-width: 650px; text-align: left; padding: 40px; border-radius: 30px; border-top: 8px solid var(--c-pink); background: #fffaf0; position: relative; animation: popIn 0.4s ease forwards;">
-    <button class="modal-close" onclick="document.getElementById('modalConsentimiento').style.display='none'" style="position: absolute; top: 25px; right: 25px; background: none; border: none; font-size: 20px; color: #94a3b8; cursor: pointer;"><i class="fas fa-times"></i></button>
-    
-    <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 25px;">
-        <div style="width: 55px; height: 55px; border-radius: 16px; background: #fdf2f8; color: var(--c-pink); display: flex; align-items: center; justify-content: center; font-size: 26px;">
-            <i class="fas fa-hand-holding-heart"></i>
-        </div>
-        <div>
-            <h2 style="font-family: var(--font-headings); font-size: 1.6rem; color: var(--c-dark); margin: 0; font-weight: 800;">Consentimiento Informado</h2>
-            <p style="color: var(--text-muted); margin: 0; font-size: 0.95rem;">Cuidamos de ti y de tu proceso. 🌸</p>
-        </div>
-    </div>
-    
-    <div style="max-height: 45vh; overflow-y: auto; padding-right: 15px; font-size: 0.95rem; color: var(--text-muted); line-height: 1.6; text-align: justify;">
-        
-        <p style="margin-bottom: 15px; background: white; padding: 15px; border-radius: 12px; border: 1px solid #fecdd3;"><strong style="color: var(--c-pink);">I. DATOS DEL PACIENTE</strong><br>
-        <span style="color: var(--c-dark); font-weight: 600;">Nombre:</span> {{ user.first_name }} {{ user.last_name }}<br>
-        <span style="color: var(--c-dark); font-weight: 600;">Edad:</span> Mayor de 18 años<br>
-        <span style="color: var(--c-dark); font-weight: 600;">Fecha:</span> {% now "d \d\e F, Y" %}</p>
+<!-- ESTILOS PARA ANIMACIÓN VECTORIAL DE FIRMA DIGITAL (0 EMOJIS) -->
+<style>
+@keyframes sigDashAnimation {
+    0% { stroke-dashoffset: 320; opacity: 0.2; }
+    18% { opacity: 1; }
+    80% { stroke-dashoffset: 0; opacity: 1; }
+    100% { stroke-dashoffset: 0; opacity: 0.2; }
+}
+@keyframes fingerMoveAnimation {
+    0% { transform: translate(18px, 26px) scale(0.92); opacity: 0.2; }
+    18% { opacity: 1; }
+    80% { transform: translate(195px, 23px) scale(0.92); opacity: 1; }
+    100% { transform: translate(195px, 23px) scale(0.92); opacity: 0.2; }
+}
+.animated-sig-stroke {
+    stroke-dasharray: 320;
+    stroke-dashoffset: 320;
+    animation: sigDashAnimation 2.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+.animated-finger-hand {
+    animation: fingerMoveAnimation 2.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+</style>
 
-        <p style="margin-bottom: 15px;"><strong style="color: var(--c-pink);">II. NATURALEZA DEL SERVICIO</strong><br>
-        Declaro que entiendo que los servicios brindados por HOPE consisten en acompañamiento psicológico, orientación y atención emocional. Este servicio no constituye atención médica ni psiquiátrica, ni sustituye servicios de urgencia.</p>
-        
-        <p style="margin-bottom: 15px;"><strong style="color: var(--c-pink);">III. ALCANCE Y LIMITACIONES</strong><br>
-        Los resultados del proceso no están garantizados. El avance depende de mi participación activa. El servicio se limita al espacio de sesión.</p>
-        
-        <p style="margin-bottom: 15px;"><strong style="color: var(--c-pink);">IV. CONFIDENCIALIDAD</strong><br>
-        Mi información será confidencial excepto en casos de riesgo, violencia o requerimiento legal.</p>
-        
-        <p style="margin-bottom: 15px;"><strong style="color: var(--c-pink);">V. INTERVENCIÓN EN CRISIS</strong><br>
-        Autorizo contacto con familiares, canalización médica o aviso a autoridades si es necesario.</p>
-        
-        <p style="margin-bottom: 15px;"><strong style="color: var(--c-pink);">VI. PROTECCIÓN DE DATOS</strong><br>
-        Autorizo el uso de mis datos para atención terapéutica, administración y uso anonimizado.</p>
-        
-        <p style="margin-bottom: 15px;"><strong style="color: var(--c-pink);">VII. DESLINDE DE RESPONSABILIDAD</strong><br>
-        HOPE no garantiza resultados ni es responsable de decisiones fuera de sesión. HOPE no es un servicio de emergencia.</p>
-        
-        <p style="margin-bottom: 15px; font-weight: 600; color: var(--c-dark);"><strong style="color: var(--c-pink);">VIII. CONSENTIMIENTO</strong><br>
-        Declaro que entiendo y acepto lo anterior de manera libre y voluntaria.</p>
+<!-- MODAL DE CONSENTIMIENTO INFORMADO Y FIRMA DIGITAL -->
+<div id="modalConsentimiento" class="modal-overlay" style="z-index: 6000; display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.75); backdrop-filter: blur(6px); align-items: center; justify-content: center; padding: 16px; overflow-y: auto;">
+  <div class="modal-box" style="width: 100%; max-width: 760px; max-height: 94vh; display: flex; flex-direction: column; text-align: left; padding: 26px 28px; border-radius: 24px; border-top: 6px solid var(--c-purple); background: #ffffff; position: relative; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); animation: popIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;">
+    
+    <!-- Botón Cerrar -->
+    <button type="button" class="modal-close" onclick="cerrarModalConsentimiento()" style="position: absolute; top: 18px; right: 18px; background: #f1f5f9; border: none; width: 34px; height: 34px; border-radius: 50%; font-size: 15px; color: #64748b; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s;" onmouseover="this.style.background='#e2e8f0'; this.style.color='#0f172a';" onmouseout="this.style.background='#f1f5f9'; this.style.color='#64748b';">
+      <i class="fas fa-times"></i>
+    </button>
+    
+    <!-- Header del Modal -->
+    <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid #f1f5f9;">
+      <div style="width: 46px; height: 46px; border-radius: 14px; background: #ede9fe; color: var(--c-purple); display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0;">
+        <i class="fas fa-file-signature"></i>
+      </div>
+      <div>
+        <span style="font-size: 10.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px; color: var(--c-purple); background: #f5f3ff; padding: 2px 8px; border-radius: 6px; display: inline-block; margin-bottom: 2px;">Documento Clínico Oficial</span>
+        <h2 style="font-family: var(--font-headings); font-size: 1.3rem; color: #0f172a; margin: 0; font-weight: 800;">Consentimiento Informado para Atención Psicológica</h2>
+        <p style="color: #64748b; margin: 0; font-size: 0.85rem; font-family: var(--font-body);">Espacio HOPE &middot; Oportunidad, Prevención, Esperanza</p>
+      </div>
     </div>
     
-    <button class="btn-primary" style="width: 100%; justify-content: center; margin-top: 25px; background: var(--c-pink); border-radius: 16px; padding: 15px; border: none; color: white; font-weight: bold; font-size: 1rem; cursor: pointer; transition: 0.3s;" onclick="document.getElementById('modalConsentimiento').style.display='none'">Entendido y Aceptado 💜</button>
+    <!-- Contenedor scrollable con el texto legal de las 10 secciones -->
+    <div style="flex: 1; overflow-y: auto; max-height: 34vh; padding: 16px 18px; background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 14px; font-size: 12px; color: #334155; line-height: 1.55; margin-bottom: 14px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);">
+        
+        <div style="background: white; border: 1px solid #cbd5e1; border-radius: 10px; padding: 10px 14px; margin-bottom: 12px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+            <div><strong>Consultante:</strong> {{ user.get_full_name|default:user.first_name }}</div>
+            <div><strong>Correo:</strong> {{ user.email }}</div>
+            <div><strong>Fecha:</strong> {% now "d/m/Y" %}</div>
+        </div>
+
+        <h4 style="font-size: 12.5px; font-weight: 800; color: #0f172a; margin: 10px 0 3px 0; text-transform: uppercase;">1. Objetivo del Documento</h4>
+        <p style="margin: 0 0 8px 0;">El presente consentimiento informado tiene como finalidad brindar información clara sobre las características, alcances, beneficios, riesgos, derechos y responsabilidades relacionadas con el proceso de atención psicológica. La firma indica que el consultante ha recibido información suficiente y acepta participar de manera voluntaria.</p>
+
+        <h4 style="font-size: 12.5px; font-weight: 800; color: #0f172a; margin: 10px 0 3px 0; text-transform: uppercase;">2. Naturaleza de la Atención Psicológica</h4>
+        <p style="margin: 0 0 8px 0;">Servicio profesional orientado a la evaluación, comprensión y abordaje de dificultades emocionales, cognitivas y conductuales. Constituye un trabajo colaborativo dirigido al logro de objetivos acordados. Los resultados dependen del caso y la participación activa del consultante.</p>
+
+        <h4 style="font-size: 12.5px; font-weight: 800; color: #0f172a; margin: 10px 0 3px 0; text-transform: uppercase;">3. Modelo de Intervención</h4>
+        <p style="margin: 0 0 8px 0;">Atención basada en Terapia Cognitivo-Conductual y Terapia Breve con respaldo científico. Puede incluir entrevista clínica, psicoeducación, registros, entrenamiento en autorregulación y tareas terapéuticas intersesión.</p>
+
+        <h4 style="font-size: 12.5px; font-weight: 800; color: #0f172a; margin: 10px 0 3px 0; text-transform: uppercase;">4. Participación Voluntaria</h4>
+        <p style="margin: 0 0 8px 0;">La atención es voluntaria. El consultante tiene derecho a solicitar información, formular dudas, expresar inconformidades, revocar su consentimiento y suspender o concluir el proceso en cualquier momento.</p>
+
+        <h4 style="font-size: 12.5px; font-weight: 800; color: #0f172a; margin: 10px 0 3px 0; text-transform: uppercase;">5. Confidencialidad y Límites Éticos</h4>
+        <p style="margin: 0 0 4px 0;">Toda información es confidencial. La confidencialidad podrá ser exceptuada únicamente en situaciones de:</p>
+        <ul style="margin: 0 0 8px 18px; padding: 0;">
+            <li>Riesgo inminente para la vida o integridad del consultante o de terceros.</li>
+            <li>Situaciones de abuso, maltrato o violencia que requieran notificación obligatoria legal.</li>
+            <li>Mandato expreso de autoridad judicial o legal competente.</li>
+        </ul>
+
+        <h4 style="font-size: 12.5px; font-weight: 800; color: #0f172a; margin: 10px 0 3px 0; text-transform: uppercase;">6. Registro Clínico</h4>
+        <p style="margin: 0 0 8px 0;">El profesional elaborará notas y registros clínicos necesarios para el seguimiento terapéutico conforme a la legislación de salud y protección de datos aplicable.</p>
+
+        <h4 style="font-size: 12.5px; font-weight: 800; color: #0f172a; margin: 10px 0 3px 0; text-transform: uppercase;">7. Sesiones y Puntualidad</h4>
+        <p style="margin: 0 0 8px 0;">Cada sesión ordinaria tiene una duración de aproximadamente 50 minutos. El consultante se compromete a acudir con puntualidad y a notificar cancelaciones oportunamente.</p>
+
+        <h4 style="font-size: 12.5px; font-weight: 800; color: #0f172a; margin: 10px 0 3px 0; text-transform: uppercase;">8. Comunicación Fuera de Sesión</h4>
+        <p style="margin: 0 0 8px 0;">La comunicación entre sesiones tiene fines exclusivamente de coordinación o administrativos. Espacio HOPE no es una línea de urgencias médicas ni psiquiátricas 24 horas. En caso de crisis o urgencia vital, el consultante debe acudir de inmediato a los centros de urgencias de su localidad o marcar a las líneas de emergencia (911).</p>
+
+        <h4 style="font-size: 12.5px; font-weight: 800; color: #0f172a; margin: 10px 0 3px 0; text-transform: uppercase;">9. Autorización para Telepsicología</h4>
+        <p style="margin: 0 0 8px 0;">Se autoriza la atención mediante videoconferencia y medios digitales seguros, comprometiéndose a contar con un espacio privado y libre de interrupciones.</p>
+
+        <h4 style="font-size: 12.5px; font-weight: 800; color: #0f172a; margin: 10px 0 3px 0; text-transform: uppercase;">10. Declaración de Consentimiento</h4>
+        <p style="margin: 0;">Declaro haber leído y entendido este consentimiento informado, reconociendo mi derecho a resolver dudas y aceptando voluntariamente recibir atención psicológica en Espacio HOPE.</p>
+    </div>
+
+    <!-- Aceptación de Telepsicología -->
+    <div style="margin-bottom: 12px;">
+        <label style="display: flex; align-items: center; gap: 10px; font-size: 12px; font-weight: 700; color: #1e293b; cursor: pointer; user-select: none;">
+            <input type="checkbox" id="check-acepta-telepsicologia" checked style="width: 17px; height: 17px; accent-color: var(--c-purple); cursor: pointer;">
+            <span>Acepto los términos del Consentimiento Informado y autorizo la atención por Telepsicología.</span>
+        </label>
+    </div>
+
+    <!-- Nombre del Firmante -->
+    <div style="margin-bottom: 12px;">
+        <label style="display: block; font-size: 11px; font-weight: 800; text-transform: uppercase; color: #64748b; margin-bottom: 4px; letter-spacing: 0.5px;">Nombre Completo del Firmante:</label>
+        <input type="text" id="nombre-firmante-input" value="{{ user.get_full_name|default:user.first_name }}" placeholder="Ingresa tu nombre completo" style="width: 100%; border: 1.5px solid #cbd5e1; border-radius: 10px; padding: 8px 12px; font-size: 13px; font-family: var(--font-body); font-weight: 600; color: #0f172a; outline: none; box-sizing: border-box; transition: border-color 0.2s;" onfocus="this.style.borderColor='var(--c-purple)'" onblur="this.style.borderColor='#cbd5e1'">
+    </div>
+
+    <!-- Recuadro para firma con Dedo / Cursor y Guía Animada (0 emojis) -->
+    <div style="position: relative; margin-bottom: 14px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+            <span style="font-size: 11px; font-weight: 800; text-transform: uppercase; color: #64748b; letter-spacing: 0.5px;">Firma Digital en Pantalla:</span>
+            <button type="button" onclick="limpiarFirma()" style="background: none; border: none; color: #64748b; font-size: 11px; font-weight: 700; cursor: pointer; padding: 2px 6px; display: inline-flex; align-items: center; gap: 4px;" onmouseover="this.style.color='#dc2626'" onmouseout="this.style.color='#64748b'">
+                <i class="fas fa-undo"></i> Borrar trazo
+            </button>
+        </div>
+
+        <div id="contenedor-canvas-firma" style="position: relative; width: 100%; height: 140px; background: #ffffff; border: 2px dashed #a5b4fc; border-radius: 14px; overflow: hidden; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02); touch-action: none;">
+            
+            <!-- Canvas real -->
+            <canvas id="canvas-firma" style="width: 100%; height: 100%; display: block; cursor: crosshair; touch-action: none;"></canvas>
+            
+            <!-- Línea de base para la firma -->
+            <div style="position: absolute; bottom: 25px; left: 10%; right: 10%; border-bottom: 1px solid #e2e8f0; pointer-events: none; text-align: center;">
+                <span style="position: relative; top: 16px; font-size: 9.5px; color: #94a3b8; letter-spacing: 0.5px; text-transform: uppercase;">Línea de firma</span>
+            </div>
+
+            <!-- Guía animada vector SVG con dedo trazando (0 emojis) -->
+            <div id="signature-guide-overlay" style="position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; background: rgba(255,255,255,0.88); transition: opacity 0.3s ease; z-index: 4;">
+                <svg width="230" height="75" viewBox="0 0 230 75" fill="none" xmlns="http://www.w3.org/2000/svg" style="overflow: visible;">
+                    <!-- Trazo animado de firma con stroke-dashoffset -->
+                    <path class="animated-sig-stroke" d="M 25 45 Q 50 14 70 42 T 105 36 T 140 50 Q 165 20 185 44 T 210 40" stroke="#6366f1" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+                    
+                    <!-- Mano estilizada con dedo índice señalando (vector puro, 0 emojis) -->
+                    <g class="animated-finger-hand">
+                        <path d="M 10 26 C 10 18 16 12 22 12 C 26 12 29 14 31 17 L 31 4 C 31 1.8 32.8 0 35 0 C 37.2 0 39 1.8 39 4 L 39 22 C 39 20.5 40.5 19.5 42 19.5 C 43.5 19.5 45 20.5 45 22 L 45 24 C 45 22.5 46.5 21.5 48 21.5 C 49.5 21.5 51 22.5 51 24 L 51 35 C 51 45 43 53 33 53 L 24 53 C 16 53 10 45 10 37 Z" fill="#4f46e5" opacity="0.95" />
+                        <circle cx="35" cy="4" r="2.5" fill="#a5b4fc" />
+                    </g>
+                </svg>
+                <div style="margin-top: 3px; font-size: 11.5px; font-weight: 700; color: #4338ca; font-family: var(--font-headings); letter-spacing: 0.2px;">
+                    Traza tu firma aquí con tu dedo o cursor
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Botones de Acción -->
+    <div style="display: flex; gap: 10px; justify-content: flex-end;">
+      <button type="button" onclick="cerrarModalConsentimiento()" style="background: #f1f5f9; color: #475569; border: none; border-radius: 12px; padding: 10px 18px; font-size: 13px; font-weight: 700; cursor: pointer;">
+        Cancelar
+      </button>
+      <button type="button" id="btn-confirmar-firma" onclick="guardarConsentimientoDigital()" style="background: linear-gradient(135deg, var(--c-purple) 0%, #7c3aed 100%); color: white; border: none; border-radius: 12px; padding: 10px 22px; font-size: 13.5px; font-weight: 800; cursor: pointer; box-shadow: 0 4px 14px rgba(90,63,163,0.35); display: inline-flex; align-items: center; gap: 8px; transition: transform 0.15s ease;" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
+        <i class="fas fa-check-circle"></i> Confirmar y Guardar Firma
+      </button>
+    </div>
+
   </div>
 </div>
 
@@ -2079,6 +2218,12 @@ function agendarDirectoPrueba() {
         
         document.getElementById('selected-time-text').innerHTML = `Elegiste el <strong>${fechaObj.toLocaleDateString('es-ES', opciones)}</strong> a las <strong>${horaAmPm}</strong>.`;
         document.getElementById('step-2-payment').scrollIntoView({behavior: 'smooth', block: 'start'});
+
+        if (!window.tieneConsentimiento) {
+            setTimeout(function() {
+                abrirModalConsentimiento();
+            }, 350);
+        }
     }
 
     // Alertas
@@ -2176,6 +2321,12 @@ function agendarDirectoPrueba() {
                     document.getElementById('step-1-schedule').style.display = 'none';
                     document.getElementById('step-2-payment').style.display = 'block';
                     document.getElementById('step-2-payment').scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+                    if (!window.tieneConsentimiento) {
+                        setTimeout(function() {
+                            abrirModalConsentimiento();
+                        }, 350);
+                    }
                 }
             });
         }
@@ -2243,9 +2394,8 @@ document.addEventListener("DOMContentLoaded", function () {
             
             // 1. Validaciones ANTES de abrir la ventana de PayPal
             onClick: function(data, actions) {
-                const checkConsentimiento = document.getElementById('check-consentimiento');
-                if (checkConsentimiento && !checkConsentimiento.checked) {
-                    document.getElementById('alerta-consentimiento').style.display = 'flex';
+                if (!window.tieneConsentimiento) {
+                    abrirModalConsentimiento();
                     return actions.reject();
                 }
                 if (!window.fechaSeleccionada || !window.horaSeleccionada) {
@@ -2447,9 +2597,221 @@ function confirmarReagendo() {
         btnConfirmar.disabled = false;
         mostrarToast('Error de conexión. Intenta de nuevo.', 'error');
     });
+// =========================================================================
+// GESTIÓN DE CONSENTIMIENTO INFORMADO Y FIRMA DIGITAL (0 EMOJIS)
+// =========================================================================
+let canvasFirma = null;
+let ctxFirma = null;
+let estaDibujando = false;
+let haFirmado = false;
+let ultimoX = 0;
+let ultimoY = 0;
+
+function inicializarCanvasFirma() {
+    canvasFirma = document.getElementById('canvas-firma');
+    if (!canvasFirma) return;
+    ctxFirma = canvasFirma.getContext('2d');
+
+    const contenedor = document.getElementById('contenedor-canvas-firma');
+    const rect = contenedor ? contenedor.getBoundingClientRect() : canvasFirma.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+
+    canvasFirma.width = (rect.width || 540) * dpr;
+    canvasFirma.height = (rect.height || 140) * dpr;
+
+    ctxFirma.scale(dpr, dpr);
+    ctxFirma.lineCap = 'round';
+    ctxFirma.lineJoin = 'round';
+    ctxFirma.strokeStyle = '#0f172a';
+    ctxFirma.lineWidth = 2.8;
+
+    canvasFirma.onpointerdown = empezarTrazo;
+    canvasFirma.onpointermove = moverTrazo;
+    canvasFirma.onpointerup = terminarTrazo;
+    canvasFirma.onpointercancel = terminarTrazo;
 }
 
+function obtenerCoordenadas(e) {
+    const rect = canvasFirma.getBoundingClientRect();
+    return {
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top
+    };
+}
 
+function empezarTrazo(e) {
+    e.preventDefault();
+    try {
+        canvasFirma.setPointerCapture(e.pointerId);
+    } catch (err) {}
+    estaDibujando = true;
+    haFirmado = true;
+
+    // Ocultar guía vectorial animada
+    const guia = document.getElementById('signature-guide-overlay');
+    if (guia) {
+        guia.style.opacity = '0';
+        guia.style.pointerEvents = 'none';
+    }
+
+    const pos = obtenerCoordenadas(e);
+    ultimoX = pos.x;
+    ultimoY = pos.y;
+
+    ctxFirma.beginPath();
+    ctxFirma.moveTo(ultimoX, ultimoY);
+    ctxFirma.lineTo(ultimoX + 0.2, ultimoY + 0.2);
+    ctxFirma.stroke();
+}
+
+function moverTrazo(e) {
+    if (!estaDibujando) return;
+    e.preventDefault();
+    const pos = obtenerCoordenadas(e);
+
+    ctxFirma.beginPath();
+    ctxFirma.moveTo(ultimoX, ultimoY);
+    ctxFirma.lineTo(pos.x, pos.y);
+    ctxFirma.stroke();
+
+    ultimoX = pos.x;
+    ultimoY = pos.y;
+}
+
+function terminarTrazo(e) {
+    if (!estaDibujando) return;
+    e.preventDefault();
+    estaDibujando = false;
+    try {
+        canvasFirma.releasePointerCapture(e.pointerId);
+    } catch (err) {}
+}
+
+function limpiarFirma() {
+    if (!canvasFirma || !ctxFirma) return;
+    const dpr = window.devicePixelRatio || 1;
+    ctxFirma.clearRect(0, 0, canvasFirma.width / dpr, canvasFirma.height / dpr);
+    haFirmado = false;
+    const guia = document.getElementById('signature-guide-overlay');
+    if (guia) {
+        guia.style.opacity = '1';
+        guia.style.pointerEvents = 'none';
+    }
+}
+
+function abrirModalConsentimiento() {
+    const modal = document.getElementById('modalConsentimiento');
+    if (modal) {
+        modal.style.display = 'flex';
+        setTimeout(() => {
+            inicializarCanvasFirma();
+        }, 120);
+    }
+}
+
+function cerrarModalConsentimiento() {
+    const modal = document.getElementById('modalConsentimiento');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
+function guardarConsentimientoDigital() {
+    if (!haFirmado) {
+        alert("Por favor, traza tu firma con tu dedo o cursor en el recuadro antes de continuar.");
+        return;
+    }
+
+    const chkTele = document.getElementById('check-acepta-telepsicologia');
+    if (chkTele && !chkTele.checked) {
+        alert("Es necesario aceptar los términos del Consentimiento Informado y la autorización de Telepsicología.");
+        return;
+    }
+
+    const inputNombre = document.getElementById('nombre-firmante-input');
+    const nombre = inputNombre ? inputNombre.value.trim() : '';
+    if (!nombre) {
+        alert("Por favor, ingresa tu nombre completo.");
+        return;
+    }
+
+    const btnConfirmar = document.getElementById('btn-confirmar-firma');
+    const originalContent = btnConfirmar.innerHTML;
+    btnConfirmar.disabled = true;
+    btnConfirmar.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Registrando firma y generando PDF...';
+
+    const firmaB64 = canvasFirma.toDataURL('image/png');
+
+    const formData = new FormData();
+    formData.append('firma_base64', firmaB64);
+    formData.append('nombre_firmante', nombre);
+    formData.append('acepta_telepsicologia', 'true');
+    formData.append('declaracion_consentimiento', 'true');
+    formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+
+    fetch("{% url 'guardar_consentimiento_ajax' %}", {
+        method: 'POST',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: formData
+    })
+    .then(r => r.json())
+    .then(data => {
+        btnConfirmar.disabled = false;
+        btnConfirmar.innerHTML = originalContent;
+
+        if (data.status === 'success') {
+            window.tieneConsentimiento = true;
+            cerrarModalConsentimiento();
+
+            // 1. Ocultar tarjeta de bloqueo
+            const cardBloqueo = document.getElementById('consentimiento-bloqueo-card');
+            if (cardBloqueo) cardBloqueo.style.display = 'none';
+
+            // 2. Mostrar badge de consentimiento verificado
+            const badgeVerificado = document.getElementById('consentimiento-badge-verificado');
+            if (badgeVerificado) {
+                badgeVerificado.style.display = 'block';
+                if (data.pdf_url) {
+                    const wrapperPdf = document.getElementById('wrapper-btn-pdf');
+                    if (wrapperPdf) {
+                        wrapperPdf.innerHTML = `
+                            <a id="btn-ver-pdf-consentimiento" href="${data.pdf_url}" target="_blank" style="background: white; border: 1.5px solid #86efac; color: #15803d; padding: 7px 15px; border-radius: 12px; font-size: 12px; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.04);">
+                                <i class="fas fa-file-pdf"></i> Ver PDF Oficial
+                            </a>
+                        `;
+                    }
+                }
+            }
+
+            // 3. Desbloquear métodos de pago protegidos (PayPal y Transferencia)
+            const seccionPago = document.getElementById('seccion-metodos-pago');
+            if (seccionPago) {
+                seccionPago.style.display = 'block';
+                seccionPago.style.opacity = '0';
+                seccionPago.style.transition = 'opacity 0.4s ease';
+                setTimeout(() => {
+                    seccionPago.style.opacity = '1';
+                }, 20);
+            }
+
+            if (typeof mostrarToast === 'function') {
+                mostrarToast('Consentimiento firmado y registrado correctamente.', 'exito');
+            } else {
+                alert('Consentimiento firmado y registrado con éxito. Ya puedes realizar tu pago.');
+            }
+        } else {
+            alert(data.message || 'Error al guardar el consentimiento.');
+        }
+    })
+    .catch(err => {
+        btnConfirmar.disabled = false;
+        btnConfirmar.innerHTML = originalContent;
+        console.error("Error al registrar consentimiento:", err);
+        alert('Error de conexión al registrar el consentimiento. Por favor, intenta de nuevo.');
+    });
+}
 
 </script>
 

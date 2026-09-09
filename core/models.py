@@ -372,6 +372,31 @@ if not hasattr(User, 'cuestionario_inicial'):
         return self.cuestionarios.order_by('-fecha_completado').first() if hasattr(self, 'cuestionarios') else None
     User.add_to_class('cuestionario_inicial', property(_get_cuestionario_inicial))
 
+class ConsentimientoInformado(models.Model):
+    paciente = models.ForeignKey(User, on_delete=models.CASCADE, related_name='consentimientos')
+    nombre_firmante = models.CharField(max_length=200, verbose_name="Nombre del firmante")
+    acepta_telepsicologia = models.BooleanField(default=True, verbose_name="Acepta telepsicología")
+    declaracion_consentimiento = models.BooleanField(default=True, verbose_name="Declaración aceptada")
+    firma_base64 = models.TextField(verbose_name="Firma en Base64")
+    archivo_pdf = models.FileField(upload_to='consentimientos/', blank=True, null=True, verbose_name="Archivo PDF")
+    ip_registro = models.GenericIPAddressField(null=True, blank=True, verbose_name="IP de registro")
+    user_agent = models.TextField(blank=True, null=True, verbose_name="Navegador o dispositivo")
+    fecha_firma = models.DateTimeField(auto_now_add=True, verbose_name="Fecha y hora de firma", db_index=True)
+    version = models.CharField(max_length=20, default="1.0", verbose_name="Versión del documento")
+
+    class Meta:
+        verbose_name = "Consentimiento Informado"
+        verbose_name_plural = "Consentimientos Informados"
+        ordering = ['-fecha_firma']
+        indexes = [
+            models.Index(fields=['paciente', 'fecha_firma']),
+        ]
+
+    def __str__(self):
+        nombre = self.nombre_firmante or (self.paciente.first_name if self.paciente else 'Consultante')
+        fecha = self.fecha_firma.strftime('%d/%m/%Y %H:%M') if self.fecha_firma else ''
+        return f"Consentimiento: {nombre} ({fecha})"
+
 class DiaFestivo(models.Model):
     fecha = models.DateField(unique=True, verbose_name="Día bloqueado")
     motivo = models.CharField(max_length=150, blank=True, null=True)

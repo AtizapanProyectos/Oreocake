@@ -189,4 +189,13 @@ class ReporteClinicoPDFAdmin(admin.ModelAdmin):
     search_fields = ('paciente__first_name', 'paciente__username', 'paciente__email', 'psicologo__usuario__first_name')
     list_select_related = ('paciente', 'psicologo', 'psicologo__usuario', 'cita', 'tratamiento')
     readonly_fields = ('fecha_generacion',)
-    list_per_page = 25
+    list_per_page = 25
+
+@admin.register(ConsentimientoInformado)
+class ConsentimientoInformadoAdmin(admin.ModelAdmin):
+    list_display = ('paciente', 'nombre_firmante', 'acepta_telepsicologia', 'ip_registro', 'fecha_firma', 'archivo_pdf')
+    list_filter = ('acepta_telepsicologia', 'fecha_firma')
+    search_fields = ('nombre_firmante', 'paciente__first_name', 'paciente__email', 'ip_registro')
+    readonly_fields = ('fecha_firma', 'ip_registro', 'user_agent')
+    list_per_page = 25
+
