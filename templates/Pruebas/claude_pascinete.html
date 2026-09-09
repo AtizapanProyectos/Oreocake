@@ -480,7 +480,7 @@
             </div>
             <div class="field">
               <label><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V10M18 20V4M6 20v-4"/></svg> Edad</label>
-              <input type="number" id="inputEdad" value="{{ edad|default:'' }}" placeholder="Ej. 16" min="0">
+              <input type="{% if es_exportacion_pdf %}text{% else %}number{% endif %}" id="inputEdad" value="{{ edad|default:'' }}" placeholder="Ej. 16" min="0">
             </div>
           </div>
 
@@ -561,26 +561,23 @@
               <svg class="evol-watermark" viewBox="0 0 24 24" fill="var(--purple-deep)"><path d="M12 2C9 6 8 9 8 12a4 4 0 0 0 8 0c0-3-1-6-4-10zM4 14c3 0 5 1.5 6 3.5C9 20 6.5 21 4 21c-1 0-1-1-1-2 0-2-.5-4-1-5zm16 0c-3 0-5 1.5-6 3.5 1 2.5 3.5 3.5 6 3.5 1 0 1-1 1-2 0-2-.5-4-1-5z"/></svg>
               <div class="evol-chart-big" id="evolChart">
                 <div class="evol-bar-big">
-                  <span class="sprout">🌱</span>
                   <div class="val-chip"><input type="number" id="evolVal1" value="{{ evolucion.0.valor|default:'0' }}" min="0" max="100" oninput="updateEvol()"></div>
                   <div class="bar" style="height:{{ evolucion.0.valor|default:0 }}%"></div>
                   <div class="bar-lbl" id="evolLbl1">Sesión {{ evolucion.0.sesion|default:'1' }}</div>
                 </div>
                 <div class="evol-bar-big">
-                  <span class="sprout">🌿</span>
                   <div class="val-chip"><input type="number" id="evolVal2" value="{{ evolucion.1.valor|default:'0' }}" min="0" max="100" oninput="updateEvol()"></div>
                   <div class="bar" style="height:{{ evolucion.1.valor|default:0 }}%"></div>
                   <div class="bar-lbl" id="evolLbl2">Sesión {{ evolucion.1.sesion|default:'2' }}</div>
                 </div>
                 <div class="evol-bar-big is-current">
-                  <div class="now-pill">¡Vas aquí! ✨</div>
-                  <span class="sprout">🌳</span>
+                  <div class="now-pill">¡Vas aquí!</div>
                   <div class="val-chip"><input type="number" id="evolVal3" value="{{ evolucion.2.valor|default:ipp_valor|default:'0' }}" min="0" max="100" oninput="updateEvol()"></div>
                   <div class="bar" style="height:{{ evolucion.2.valor|default:ipp_valor|default:0 }}%"></div>
                   <div class="bar-lbl" id="evolLbl3">Sesión {{ evolucion.2.sesion|default:sesion_numero|default:'3' }}</div>
                 </div>
               </div>
-              <div class="evol-caption" id="evolCaption">🌟 <span>Cada sesión suma: tu progreso va construyéndose paso a paso.</span></div>
+              <div class="evol-caption" id="evolCaption"><span>Cada sesión suma: tu progreso va construyéndose paso a paso.</span></div>
             </div>
           </div>
             <div class="spacer-1cm"></div>
@@ -749,8 +746,7 @@
       if(diff > 2) pool = evolMessages.up;
       else if(diff < -2) pool = evolMessages.down;
       const msg = pool[Math.floor(Math.random() * pool.length)];
-      const parts = msg.split(' ');
-      captionEl.innerHTML = `${parts[0]} <span>${parts.slice(1).join(' ')}</span>`;
+      captionEl.innerHTML = `<span>${msg.trim()}</span>`;
     }
   }
 
@@ -865,6 +861,7 @@
 
       // Datos generales
       document.getElementById('inputNombrePaciente').value = d.nombre_paciente || '';
+      document.getElementById('inputEdad').value = d.edad || '';
       document.getElementById('inputPsicologo').value = d.psicologo ? `${d.psicologo} — Cédula ${d.cedula || 'N/D'}` : '';
       document.getElementById('inputFechaUltimaSesion').value = d.fecha_ultima_sesion || '';
       document.getElementById('sessionNum').value = d.sesion_numero || 1;

@@ -3656,31 +3656,23 @@ def api_citas_hoy(request):
 
 def _ajustar_texto_a_longitud_exacta(texto, longitud=728):
     """
-    Fuerza a que el texto tenga EXACTAMENTE `longitud` caracteres
-    (letras, números, espacios, puntuación y viñetas cuentan).
-
-    - Si el texto es más largo: se recorta en el último espacio antes
-      del límite (para no partir una palabra) y se rellena con espacios
-      hasta llegar exacto a `longitud`.
-    - Si el texto es más corto: se rellena con espacios al final hasta
-      llegar exacto a `longitud`.
-
-    Los espacios de relleno son invisibles al renderizarse en HTML, así
-    que el contenido se ve igual, pero la cuenta de caracteres es exacta.
+    Ajusta el texto para que no exceda la longitud máxima en caracteres.
+    - Si el texto es más largo: se recorta en el último espacio antes del límite
+      (para no partir una palabra).
+    - Si está vacío o es None: devuelve cadena vacía sin rellenar con espacios en blanco.
     """
     texto = (texto or "").strip()
+    if not texto:
+        return ""
 
     if len(texto) > longitud:
         corte = texto.rfind(' ', 0, longitud)
-        if corte == -1 or corte < longitud * 0.8:
+        if corte == -1 or corte < int(longitud * 0.7):
             corte = longitud
         texto = texto[:corte].rstrip()
 
-    faltante = longitud - len(texto)
-    if faltante > 0:
-        texto = texto + (' ' * faltante)
-
     return texto
+
 
 
 @user_passes_test(lambda u: hasattr(u, 'perfil_psicologo') or u.is_superuser, login_url='/')
@@ -4480,6 +4472,14 @@ def _construir_datos_checkin_paciente(paciente, cita=None):
 
     nombre_paciente = (perfil_paciente.nombre if perfil_paciente and perfil_paciente.nombre else paciente.first_name) or paciente.username
 
+    # 1. Obtener edad desde CuestionarioRegistro o perfil del paciente
+    edad = ''
+    cuestionario_obj = CuestionarioRegistro.objects.filter(paciente=paciente).order_by('-fecha_completado').first()
+    if cuestionario_obj and isinstance(cuestionario_obj.respuestas, dict):
+        edad = cuestionario_obj.respuestas.get('edad') or cuestionario_obj.respuestas.get('edad_tercero') or ''
+    if not edad and perfil_paciente:
+        edad = getattr(perfil_paciente, 'edad', '') or ''
+
     nombre_psicologo = ''
     cedula_psicologo = ''
     doc = cita.psicologo if cita and cita.psicologo else psicologo_asignado
@@ -4493,8 +4493,10 @@ def _construir_datos_checkin_paciente(paciente, cita=None):
             paciente=paciente,
             fecha_registro__lte=cita.nota_clinica.fecha_registro
         ).count() or 1
+        ultimo_historial = cita.nota_clinica
     else:
         sesion_numero = historiales.count() or 1
+        ultimo_historial = historiales.last()
 
     ultima_cita = cita if cita else Cita.objects.filter(paciente=paciente).exclude(estado='Cancelada').order_by('-fecha', '-hora').first()
     fecha_ultima_sesion = ultima_cita.fecha.isoformat() if ultima_cita and ultima_cita.fecha else ''
@@ -4586,6 +4588,19 @@ def _construir_datos_checkin_paciente(paciente, cita=None):
     if not bitacoras_texto:
         bitacoras_texto = "Aún no hay bitácoras registradas para este paciente."
 
+    # Textos clínicos de respaldo extraídos de la bitácora real del psicólogo
+    if ultimo_historial and ultimo_historial.aprendizaje_paciente and len(ultimo_historial.aprendizaje_paciente.strip()) > 10:
+        objetivo_tarea_fallback = f"Continuar trabajando en los aprendizajes y reflexiones de la sesión #{sesion_numero}: {ultimo_historial.aprendizaje_paciente.strip()}"
+    elif ultimo_historial and ultimo_historial.notas_sesion and len(ultimo_historial.notas_sesion.strip()) > 10:
+        objetivo_tarea_fallback = f"Continuar trabajando en las metas establecidas en la sesión #{sesion_numero}: {ultimo_historial.notas_sesion.strip()}"
+    else:
+        objetivo_tarea_fallback = f"Continuar trabajando en las metas establecidas en la sesión #{sesion_numero} y aplicar las técnicas de bienestar y autorregulación acordadas con tu terapeuta."
+
+    if ultimo_historial and ultimo_historial.recomendaciones and len(ultimo_historial.recomendaciones.strip()) > 10:
+        recomendaciones_fallback = ultimo_historial.recomendaciones.strip()
+    else:
+        recomendaciones_fallback = "Mantener la práctica regular de los ejercicios acordados en sesión, registrar eventos significativos en tu semana y acudir puntualmente a tu siguiente sesión."
+
     prompt = (
         f"Eres un psicólogo clínico experto redactando el Reporte de Check-In de {nombre_paciente}, "
         f"sesión #{sesion_numero}.\n\n"
@@ -4594,35 +4609,38 @@ def _construir_datos_checkin_paciente(paciente, cita=None):
         "1. \"objetivo_tarea\": un resumen claro de la tarea/objetivo que el psicólogo dejó al paciente "
         "en la última sesión (o el objetivo terapéutico vigente si no hay tarea explícita).\n"
         "2. \"recomendaciones\": recomendaciones concretas y accionables para el paciente antes de la próxima sesión.\n\n"
-        "REGLA CRÍTICA DE FORMATO: cada uno de los dos textos debe tener exactamente 750 caracteres "
-        "(contando letras, números, espacios y signos de puntuación), redactado en párrafos completos, "
-        "cálido pero profesional, sin inventar información que no esté en las bitácoras.\n\n"
-        "Devuelve ÚNICAMENTE un JSON válido con esta forma exacta, sin backticks ni texto extra:\n"
+        "REGLA CRÍTICA DE FORMATO: redactado en párrafos completos, cálido pero profesional, sin inventar información que no esté en las bitácoras.\n\n"
+        "Devuelve ÚNICAMENTE un JSON válido con esta forma exacta:\n"
         "{\"objetivo_tarea\": \"...\", \"recomendaciones\": \"...\"}"
     )
 
-    try:
-        client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
-        response = client.chat.completions.create(
-            model="openai/gpt-oss-120b",
-            messages=[{"role": "user", "content": prompt}],
-            max_tokens=1200,
-            temperature=0.3,
-        )
-        contenido_ia = _extraer_json_groq(response.choices[0].message.content.strip())
-        objetivo_tarea = _ajustar_texto_a_longitud_exacta(contenido_ia.get('objetivo_tarea', ''), 765)
-        recomendaciones = _ajustar_texto_a_longitud_exacta(contenido_ia.get('recomendaciones', ''), 765)
-    except Exception as e:
-        logging.getLogger(__name__).warning(f"Aviso en llamada a Groq IA (paciente): {e}. Usando redacción clínica de respaldo.")
-        objetivo_tarea = _ajustar_texto_a_longitud_exacta(
-            f"Continuar trabajando en las metas establecidas en la sesión #{sesion_numero} y aplicar las técnicas de bienestar y autorregulación acordadas con tu terapeuta.", 765
-        )
-        recomendaciones = _ajustar_texto_a_longitud_exacta(
-            "Mantener la práctica regular de los ejercicios acordados en sesión, registrar eventos significativos en tu semana y acudir puntualmente a tu siguiente sesión.", 765
-        )
+    groq_api_key = os.environ.get("GROQ_API_KEY")
+    if groq_api_key:
+        try:
+            client = Groq(api_key=groq_api_key)
+            response = client.chat.completions.create(
+                model="llama-3.3-70b-versatile",
+                messages=[{"role": "user", "content": prompt}],
+                response_format={"type": "json_object"},
+                max_tokens=1200,
+                temperature=0.3,
+            )
+            contenido_ia = _extraer_json_groq(response.choices[0].message.content.strip())
+            raw_obj = (contenido_ia.get('objetivo_tarea') or '').strip() if isinstance(contenido_ia, dict) else ''
+            raw_rec = (contenido_ia.get('recomendaciones') or '').strip() if isinstance(contenido_ia, dict) else ''
+            objetivo_tarea = _ajustar_texto_a_longitud_exacta(raw_obj if raw_obj else objetivo_tarea_fallback, 765)
+            recomendaciones = _ajustar_texto_a_longitud_exacta(raw_rec if raw_rec else recomendaciones_fallback, 765)
+        except Exception as e:
+            logging.getLogger(__name__).warning(f"Aviso en llamada a Groq IA (paciente): {e}. Usando redacción clínica de respaldo.")
+            objetivo_tarea = _ajustar_texto_a_longitud_exacta(objetivo_tarea_fallback, 765)
+            recomendaciones = _ajustar_texto_a_longitud_exacta(recomendaciones_fallback, 765)
+    else:
+        objetivo_tarea = _ajustar_texto_a_longitud_exacta(objetivo_tarea_fallback, 765)
+        recomendaciones = _ajustar_texto_a_longitud_exacta(recomendaciones_fallback, 765)
 
     return {
         'nombre_paciente': nombre_paciente,
+        'edad': str(edad) if edad else '',
         'psicologo': nombre_psicologo,
         'cedula': cedula_psicologo,
         'fecha_ultima_sesion': fecha_ultima_sesion,
@@ -4647,6 +4665,15 @@ def _construir_datos_checkin_psicologo(paciente, cita=None):
 
     nombre_paciente = (perfil_paciente.nombre if perfil_paciente and perfil_paciente.nombre else paciente.first_name) or paciente.username
 
+    # 1. Obtener edad desde CuestionarioRegistro o perfil del paciente
+    edad = ''
+    cuestionario_obj = CuestionarioRegistro.objects.filter(paciente=paciente).order_by('-fecha_completado').first()
+    respuestas_cuest = cuestionario_obj.respuestas if cuestionario_obj and isinstance(cuestionario_obj.respuestas, dict) else {}
+    if respuestas_cuest:
+        edad = respuestas_cuest.get('edad') or respuestas_cuest.get('edad_tercero') or ''
+    if not edad and perfil_paciente:
+        edad = getattr(perfil_paciente, 'edad', '') or ''
+
     historiales = HistorialClinico.objects.filter(paciente=paciente).order_by('fecha_registro')
     if cita and hasattr(cita, 'nota_clinica') and cita.nota_clinica:
         sesion_numero = HistorialClinico.objects.filter(
@@ -4662,9 +4689,66 @@ def _construir_datos_checkin_psicologo(paciente, cita=None):
     fecha_ultima_sesion = ultima_cita.fecha.isoformat() if ultima_cita and ultima_cita.fecha else ''
 
     cuestionario_texto = "El paciente no tiene cuestionario inicial registrado."
-    if hasattr(paciente, 'cuestionario_inicial'):
-        respuestas_cuest = paciente.cuestionario_inicial.respuestas or {}
-        cuestionario_texto = "\n".join([f"- {k.replace('_', ' ').capitalize()}: {v}" for k, v in respuestas_cuest.items()]) or cuestionario_texto
+    if respuestas_cuest:
+        cuestionario_texto = "\n".join([f"- {k.replace('_', ' ').capitalize()}: {v}" for k, v in respuestas_cuest.items()])
+
+    # Síntesis clínica de cómo llegó a HOPE (basada en CuestionarioRegistro)
+    partes_como_llegaste = []
+    motivos = respuestas_cuest.get('motivo_consulta')
+    if isinstance(motivos, list):
+        motivos_txt = ", ".join([str(m) for m in motivos])
+    else:
+        motivos_txt = str(motivos or '').strip()
+
+    meta = str(respuestas_cuest.get('meta_terapia') or '').strip()
+    estado = str(respuestas_cuest.get('estado_semana') or '').strip()
+    intensidad = str(respuestas_cuest.get('intensidad_malestar') or '').strip()
+    previa = str(respuestas_cuest.get('terapia_previa') or '').strip()
+    exp_prev = str(respuestas_cuest.get('exp_previa') or '').strip()
+
+    if motivos_txt:
+        partes_como_llegaste.append(f"El consultante inició su proceso en Espacio HOPE reportando como motivo principal de consulta: {motivos_txt}.")
+    else:
+        partes_como_llegaste.append("El consultante inició su proceso terapéutico en Espacio HOPE en búsqueda de acompañamiento profesional integral.")
+
+    if meta:
+        partes_como_llegaste.append(f"Su meta terapéutica primordial establecida fue: {meta}.")
+
+    if estado or intensidad:
+        detalles = []
+        if estado:
+            detalles.append(f"un estado anímico predominante de {estado.lower()}")
+        if intensidad:
+            detalles.append(f"un nivel de malestar inicial de {intensidad}/10")
+        partes_como_llegaste.append(f"Al momento de su ingreso reportó {' con '.join(detalles)}.")
+
+    if previa:
+        if 's' in previa.lower():
+            partes_como_llegaste.append("Cuenta con experiencia terapéutica previa" + (f" ({exp_prev})." if exp_prev else ", buscando consolidar herramientas de bienestar."))
+        else:
+            partes_como_llegaste.append("Inicia este proceso como su primera aproximación terapéutica formal, mostrando apertura y disposición al trabajo clínico.")
+
+    como_llegaste_fallback = " ".join(partes_como_llegaste)
+
+    # Fallbacks clínicos basados en el último historial / bitácora real
+    if ultimo_historial and ultimo_historial.notas_sesion and len(ultimo_historial.notas_sesion.strip()) > 10:
+        apoyo_fallback = f"En la sesión #{sesion_numero} se dio seguimiento clínico integral enfocado en: {ultimo_historial.notas_sesion.strip()}."
+        if ultimo_historial.como_se_va and len(ultimo_historial.como_se_va.strip()) > 10:
+            apoyo_fallback += f" Cierre: {ultimo_historial.como_se_va.strip()}."
+    else:
+        apoyo_fallback = f"En la sesión #{sesion_numero} se dio seguimiento clínico al motivo de consulta, explorando dinámicas emocionales y promoviendo la introspección activa."
+
+    if ultimo_historial and ultimo_historial.aprendizaje_paciente and len(ultimo_historial.aprendizaje_paciente.strip()) > 10:
+        objetivo_tarea_fallback = f"Dar seguimiento a los aprendizajes y reflexiones de la sesión #{sesion_numero}: {ultimo_historial.aprendizaje_paciente.strip()}."
+    elif ultimo_historial and ultimo_historial.notas_sesion and len(ultimo_historial.notas_sesion.strip()) > 10:
+        objetivo_tarea_fallback = f"Continuar trabajando en las metas establecidas en la sesión #{sesion_numero}: {ultimo_historial.notas_sesion.strip()}."
+    else:
+        objetivo_tarea_fallback = f"Continuar con la implementación de las técnicas revisadas en la sesión #{sesion_numero} y consolidar los compromisos terapéuticos vigentes."
+
+    if ultimo_historial and ultimo_historial.recomendaciones and len(ultimo_historial.recomendaciones.strip()) > 10:
+        recomendaciones_fallback = ultimo_historial.recomendaciones.strip()
+    else:
+        recomendaciones_fallback = "Mantener el registro de conductas y emociones relevantes a lo largo de la semana para su revisión en la siguiente sesión."
 
     evals = list(EvaluacionSesionPaciente.objects.filter(paciente=paciente).order_by('-fecha_respuesta')[:3])
     evals.reverse()
@@ -4752,48 +4836,50 @@ def _construir_datos_checkin_psicologo(paciente, cita=None):
         f"HISTORIAL COMPLETO DE BITÁCORAS:\n{bitacoras_texto}\n\n"
         "Redacta EXACTAMENTE estos 4 textos, cada uno en párrafos completos, con tono clínico y profesional, "
         "sin inventar información que no esté en los datos anteriores:\n\n"
-        "1. \"como_llegaste_hope\": resumen del motivo y contexto con el que el paciente llegó a HOPE, "
-        "basado en el cuestionario inicial. Debe tener exactamente 800 caracteres.\n"
-        "2. \"apoyo_ultima_sesion\": resumen del apoyo brindado por HOPE en la ÚLTIMA sesión. "
-        "Debe tener exactamente 700 caracteres.\n"
-        "3. \"objetivo_tarea\": la tarea u objetivo terapéutico que se dejó al paciente. "
-        "Debe tener exactamente 780 caracteres.\n"
-        "4. \"recomendaciones\": recomendaciones concretas y accionables para el paciente antes de la próxima sesión. "
-        "Debe tener exactamente 780 caracteres.\n\n"
-        "Devuelve ÚNICAMENTE un JSON válido con esta forma exacta, sin backticks ni texto extra:\n"
+        "1. \"como_llegaste_hope\": resumen del motivo y contexto con el que el paciente llegó a HOPE, basado en el cuestionario inicial.\n"
+        "2. \"apoyo_ultima_sesion\": resumen del apoyo brindado por HOPE en la ÚLTIMA sesión.\n"
+        "3. \"objetivo_tarea\": la tarea u objetivo terapéutico que se dejó al paciente.\n"
+        "4. \"recomendaciones\": recomendaciones concretas y accionables para el paciente antes de la próxima sesión.\n\n"
+        "Devuelve ÚNICAMENTE un JSON válido con esta forma exacta:\n"
         "{\"como_llegaste_hope\": \"...\", \"apoyo_ultima_sesion\": \"...\", \"objetivo_tarea\": \"...\", \"recomendaciones\": \"...\"}"
     )
 
-    try:
-        client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
-        response = client.chat.completions.create(
-            model="openai/gpt-oss-120b",
-            messages=[{"role": "user", "content": prompt}],
-            max_tokens=1800,
-            temperature=0.3,
-        )
-        contenido_ia = _extraer_json_groq(response.choices[0].message.content.strip())
-        como_llegaste_hope = _ajustar_texto_a_longitud_exacta(contenido_ia.get('como_llegaste_hope', ''), 800)
-        apoyo_ultima_sesion = _ajustar_texto_a_longitud_exacta(contenido_ia.get('apoyo_ultima_sesion', ''), 700)
-        objetivo_tarea = _ajustar_texto_a_longitud_exacta(contenido_ia.get('objetivo_tarea', ''), 780)
-        recomendaciones = _ajustar_texto_a_longitud_exacta(contenido_ia.get('recomendaciones', ''), 780)
-    except Exception as e:
-        logging.getLogger(__name__).warning(f"Aviso en llamada a Groq IA (psicólogo): {e}. Usando redacción clínica de respaldo.")
-        como_llegaste_hope = _ajustar_texto_a_longitud_exacta(
-            "El consultante inició su proceso terapéutico en Espacio HOPE en búsqueda de acompañamiento profesional para el desarrollo de herramientas personales y bienestar integral.", 800
-        )
-        apoyo_ultima_sesion = _ajustar_texto_a_longitud_exacta(
-            f"En la sesión #{sesion_numero} se dio seguimiento al motivo de consulta, explorando las dinámicas actuales del paciente y promoviendo la introspección activa.", 700
-        )
-        objetivo_tarea = _ajustar_texto_a_longitud_exacta(
-            "Continuar con la implementación de las técnicas revisadas en sesión y consolidar los compromisos terapéuticos vigentes.", 780
-        )
-        recomendaciones = _ajustar_texto_a_longitud_exacta(
-            "Mantener el registro de conductas y emociones relevantes a lo largo de la semana para su revisión en la siguiente sesión.", 780
-        )
+    groq_api_key = os.environ.get("GROQ_API_KEY")
+    if groq_api_key:
+        try:
+            client = Groq(api_key=groq_api_key)
+            response = client.chat.completions.create(
+                model="llama-3.3-70b-versatile",
+                messages=[{"role": "user", "content": prompt}],
+                response_format={"type": "json_object"},
+                max_tokens=1800,
+                temperature=0.3,
+            )
+            contenido_ia = _extraer_json_groq(response.choices[0].message.content.strip())
+            raw_como = (contenido_ia.get('como_llegaste_hope') or '').strip() if isinstance(contenido_ia, dict) else ''
+            raw_apoyo = (contenido_ia.get('apoyo_ultima_sesion') or '').strip() if isinstance(contenido_ia, dict) else ''
+            raw_obj = (contenido_ia.get('objetivo_tarea') or '').strip() if isinstance(contenido_ia, dict) else ''
+            raw_rec = (contenido_ia.get('recomendaciones') or '').strip() if isinstance(contenido_ia, dict) else ''
+
+            como_llegaste_hope = _ajustar_texto_a_longitud_exacta(raw_como if raw_como else como_llegaste_fallback, 800)
+            apoyo_ultima_sesion = _ajustar_texto_a_longitud_exacta(raw_apoyo if raw_apoyo else apoyo_fallback, 700)
+            objetivo_tarea = _ajustar_texto_a_longitud_exacta(raw_obj if raw_obj else objetivo_tarea_fallback, 780)
+            recomendaciones = _ajustar_texto_a_longitud_exacta(raw_rec if raw_rec else recomendaciones_fallback, 780)
+        except Exception as e:
+            logging.getLogger(__name__).warning(f"Aviso en llamada a Groq IA (psicólogo): {e}. Usando redacción clínica de respaldo.")
+            como_llegaste_hope = _ajustar_texto_a_longitud_exacta(como_llegaste_fallback, 800)
+            apoyo_ultima_sesion = _ajustar_texto_a_longitud_exacta(apoyo_fallback, 700)
+            objetivo_tarea = _ajustar_texto_a_longitud_exacta(objetivo_tarea_fallback, 780)
+            recomendaciones = _ajustar_texto_a_longitud_exacta(recomendaciones_fallback, 780)
+    else:
+        como_llegaste_hope = _ajustar_texto_a_longitud_exacta(como_llegaste_fallback, 800)
+        apoyo_ultima_sesion = _ajustar_texto_a_longitud_exacta(apoyo_fallback, 700)
+        objetivo_tarea = _ajustar_texto_a_longitud_exacta(objetivo_tarea_fallback, 780)
+        recomendaciones = _ajustar_texto_a_longitud_exacta(recomendaciones_fallback, 780)
 
     return {
         'nombre_paciente': nombre_paciente,
+        'edad': str(edad) if edad else '',
         'fecha_ultima_sesion': fecha_ultima_sesion,
         'sesion_numero': sesion_numero,
         'ipp_valor': ipp_valor,
