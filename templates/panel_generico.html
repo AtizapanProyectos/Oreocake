@@ -2208,22 +2208,22 @@ function agendarDirectoPrueba() {
         let hiddenChip = document.querySelector(`.date-chip[data-fecha="${fecha}"]`);
         if(hiddenChip) hiddenChip.classList.add('active');
 
-        document.getElementById('booking-wizard').style.display = 'block';
-        document.getElementById('step-1-schedule').style.display = 'none';
-        document.getElementById('step-2-payment').style.display = 'block';
-
         let partes = fecha.split('-');
         let fechaObj = new Date(partes[0], partes[1]-1, partes[2]);
         const opciones = { weekday: 'long', month: 'long', day: 'numeric' };
         
         document.getElementById('selected-time-text').innerHTML = `Elegiste el <strong>${fechaObj.toLocaleDateString('es-ES', opciones)}</strong> a las <strong>${horaAmPm}</strong>.`;
-        document.getElementById('step-2-payment').scrollIntoView({behavior: 'smooth', block: 'start'});
 
+        // Si es consultante nuevo sin consentimiento: abrir modal de consentimiento ANTES de levantar pagos
         if (!window.tieneConsentimiento) {
-            setTimeout(function() {
-                abrirModalConsentimiento();
-            }, 350);
+            abrirModalConsentimiento();
+            return;
         }
+
+        document.getElementById('booking-wizard').style.display = 'block';
+        document.getElementById('step-1-schedule').style.display = 'none';
+        document.getElementById('step-2-payment').style.display = 'block';
+        document.getElementById('step-2-payment').scrollIntoView({behavior: 'smooth', block: 'start'});
     }
 
     // Alertas
@@ -2318,15 +2318,16 @@ function agendarDirectoPrueba() {
                     document.getElementById('selected-time-text').innerHTML = `Has seleccionado el <strong>${fechaObj.toLocaleDateString('es-ES', opciones)}</strong> a las <strong>${slotBtn.innerText}</strong>`;
 
                     actualizarResumenPrecio();
+
+                    // Si es consultante nuevo sin consentimiento: abrir consentimiento ANTES de levantar pagos
+                    if (!window.tieneConsentimiento) {
+                        abrirModalConsentimiento();
+                        return;
+                    }
+
                     document.getElementById('step-1-schedule').style.display = 'none';
                     document.getElementById('step-2-payment').style.display = 'block';
                     document.getElementById('step-2-payment').scrollIntoView({ behavior: 'smooth', block: 'start' });
-
-                    if (!window.tieneConsentimiento) {
-                        setTimeout(function() {
-                            abrirModalConsentimiento();
-                        }, 350);
-                    }
                 }
             });
         }
@@ -2597,6 +2598,8 @@ function confirmarReagendo() {
         btnConfirmar.disabled = false;
         mostrarToast('Error de conexión. Intenta de nuevo.', 'error');
     });
+}
+
 // =========================================================================
 // GESTIÓN DE CONSENTIMIENTO INFORMADO Y FIRMA DIGITAL (0 EMOJIS)
 // =========================================================================
@@ -2794,6 +2797,19 @@ function guardarConsentimientoDigital() {
                 setTimeout(() => {
                     seccionPago.style.opacity = '1';
                 }, 20);
+            }
+
+            // 4. Si el usuario ya había seleccionado fecha y hora, levantar la pantalla de pagos
+            if (window.fechaSeleccionada && window.horaSeleccionada) {
+                const wizard = document.getElementById('booking-wizard');
+                if (wizard) wizard.style.display = 'block';
+                const step1 = document.getElementById('step-1-schedule');
+                if (step1) step1.style.display = 'none';
+                const step2 = document.getElementById('step-2-payment');
+                if (step2) {
+                    step2.style.display = 'block';
+                    step2.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
             }
 
             if (typeof mostrarToast === 'function') {
