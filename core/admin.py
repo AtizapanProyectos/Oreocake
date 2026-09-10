@@ -198,4 +198,15 @@ class ConsentimientoInformadoAdmin(admin.ModelAdmin):
     search_fields = ('nombre_firmante', 'paciente__first_name', 'paciente__email', 'ip_registro')
     readonly_fields = ('fecha_firma', 'ip_registro', 'user_agent')
     list_per_page = 25
+
+
+@admin.register(DocumentoRepositorioClinico)
+class DocumentoRepositorioClinicoAdmin(admin.ModelAdmin):
+    list_display = ('titulo', 'categoria', 'paciente', 'psicologo', 'es_institucional', 'fecha_documento', 'archivo', 'fecha_creacion')
+    list_filter = ('categoria', 'es_institucional', 'fecha_documento', 'psicologo')
+    search_fields = ('titulo', 'descripcion', 'contenido_extraido', 'paciente__first_name', 'paciente__last_name', 'paciente__email', 'psicologo__usuario__first_name')
+    list_select_related = ('paciente', 'psicologo', 'psicologo__usuario')
+    readonly_fields = ('fecha_creacion', 'fecha_actualizacion')
+    list_per_page = 25
+
 

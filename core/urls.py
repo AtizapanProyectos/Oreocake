@@ -98,4 +98,10 @@ urlpatterns = [
     path('panel-admin/api/info-reporte-cita/<int:cita_id>/', views.api_info_reporte_cita, name='api_info_reporte_cita'),
     path('panel-admin/api/ejecutar-envio-reporte/<int:cita_id>/', views.api_ejecutar_envio_reporte, name='api_ejecutar_envio_reporte'),
     path('panel-admin/descargar-reporte-pdf/<int:cita_id>/<str:tipo>/', views.descargar_reporte_pdf_cita, name='descargar_reporte_pdf_cita'),
-]
+
+    # Repositorio Clínico Global para Psicólogos
+    path('repositorio-clinico/', views.repositorio_clinico_view, name='repositorio_clinico'),
+    path('api/repositorio-clinico/subir/', views.subir_documento_repositorio_ajax, name='subir_documento_repositorio'),
+    path('api/repositorio-clinico/consultar/', views.consultar_repositorio_groq_ajax, name='consultar_repositorio_groq'),
+    path('api/repositorio-clinico/eliminar/<int:doc_id>/', views.eliminar_documento_repositorio_ajax, name='eliminar_documento_repositorio'),
+]

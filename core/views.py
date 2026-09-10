@@ -5904,4 +5904,373 @@ def reporte_crecimiento_sesiones_view(request):
     }
 
     return render(request, 'reporte_crecimiento_sesiones.html', context)
+
+
+# ==========================================
+# 12. REPOSITORIO GLOBAL CLÍNICO (DOCUMENTOS Y EXPEDIENTES)
+# ==========================================
+
+def _es_psicologo_activo(user):
+    return user.is_authenticated and hasattr(user, 'perfil_psicologo')
+
+
+def repositorio_clinico_view(request):
+    """
+    Vista principal del Repositorio Clínico Global para psicólogos con sesión activa.
+    Organizado en las 7 categorías clínicas solicitadas:
+    - Consentimiento informado
+    - Pruebas psicométricas aplicadas
+    - Ejercicios realizados en sesiones
+    - Tareas entregadas por los consultantes
+    - Notas clínicas importantes del consultante
+    - Llenado de procesos y procedimientos (cuando aplique)
+    - Otros
+    """
+    if not _es_psicologo_activo(request.user):
+        return redirect('modulo_informativo')
+
+    psicologo = request.user.perfil_psicologo
+
+    # Filtros
+    categoria_sel = request.GET.get('categoria', '').strip()
+    paciente_id = request.GET.get('paciente', '').strip()
+    q_busqueda = request.GET.get('q', '').strip()
+
+    documentos_qs = DocumentoRepositorioClinico.objects.select_related(
+        'paciente', 'psicologo', 'psicologo__usuario'
+    )
+
+    if categoria_sel and categoria_sel != 'todos':
+        documentos_qs = documentos_qs.filter(categoria=categoria_sel)
+
+    if paciente_id:
+        if paciente_id == 'institucional':
+            documentos_qs = documentos_qs.filter(es_institucional=True)
+        elif paciente_id.isdigit():
+            documentos_qs = documentos_qs.filter(paciente_id=int(paciente_id))
+
+    if q_busqueda:
+        documentos_qs = documentos_qs.filter(
+            Q(titulo__icontains=q_busqueda) |
+            Q(descripcion__icontains=q_busqueda) |
+            Q(contenido_extraido__icontains=q_busqueda) |
+            Q(paciente__first_name__icontains=q_busqueda) |
+            Q(paciente__last_name__icontains=q_busqueda) |
+            Q(paciente__username__icontains=q_busqueda)
+        )
+
+    # Conteo por categorías para badges en pestañas
+    conteo_categorias = {
+        'todos': DocumentoRepositorioClinico.objects.count(),
+        'consentimiento': DocumentoRepositorioClinico.objects.filter(categoria='consentimiento').count(),
+        'pruebas_psicometricas': DocumentoRepositorioClinico.objects.filter(categoria='pruebas_psicometricas').count(),
+        'ejercicios_sesion': DocumentoRepositorioClinico.objects.filter(categoria='ejercicios_sesion').count(),
+        'tareas_consultante': DocumentoRepositorioClinico.objects.filter(categoria='tareas_consultante').count(),
+        'notas_clinicas': DocumentoRepositorioClinico.objects.filter(categoria='notas_clinicas').count(),
+        'procesos_procedimientos': DocumentoRepositorioClinico.objects.filter(categoria='procesos_procedimientos').count(),
+        'otros': DocumentoRepositorioClinico.objects.filter(categoria='otros').count(),
+    }
+
+    # Pacientes disponibles en el sistema (excluyendo psicólogos y staff)
+    pacientes = User.objects.filter(
+        Q(perfil__es_psicologo=False) | Q(perfil__isnull=True)
+    ).exclude(is_staff=True).order_by('first_name', 'last_name', 'username')
+
+    total_documentos = documentos_qs.count()
+
+    context = {
+        'psicologo': psicologo,
+        'documentos': documentos_qs[:120],
+        'total_documentos': total_documentos,
+        'conteo_categorias': conteo_categorias,
+        'pacientes': pacientes,
+        'categorias_choices': DocumentoRepositorioClinico.CATEGORIAS_CHOICES,
+        'categoria_activa': categoria_sel or 'todos',
+        'paciente_activo': paciente_id,
+        'q_busqueda': q_busqueda,
+        'hoy': timezone.localdate(),
+    }
+    return render(request, 'repositorio_clinico.html', context)
+
+
+@require_POST
+def subir_documento_repositorio_ajax(request):
+    """
+    Endpoint AJAX para que los psicólogos suban documentos o registren notas clínicas
+    en el repositorio con extracción automática de texto (PyMuPDF / docx).
+    """
+    if not _es_psicologo_activo(request.user):
+        return JsonResponse({'status': 'error', 'message': 'No tienes permisos de psicólogo para esta acción.'}, status=403)
+
+    psicologo = request.user.perfil_psicologo
+
+    categoria = request.POST.get('categoria', '').strip()
+    titulo = request.POST.get('titulo', '').strip()
+    descripcion = request.POST.get('descripcion', '').strip()
+    fecha_doc_str = request.POST.get('fecha_documento', '').strip()
+    es_institucional = request.POST.get('es_institucional') in ['true', '1', 'on', True]
+    paciente_id = request.POST.get('paciente_id', '').strip()
+    archivo = request.FILES.get('archivo')
+
+    # Validaciones obligatorias
+    valid_categories = dict(DocumentoRepositorioClinico.CATEGORIAS_CHOICES).keys()
+    if not categoria or categoria not in valid_categories:
+        return JsonResponse({'status': 'error', 'message': 'Selecciona una categoría clínica válida.'}, status=400)
+
+    if not titulo:
+        return JsonResponse({'status': 'error', 'message': 'El título del documento o nota es obligatorio.'}, status=400)
+
+    paciente = None
+    if not es_institucional:
+        if paciente_id and paciente_id.isdigit():
+            try:
+                paciente = User.objects.get(pk=int(paciente_id))
+            except User.DoesNotExist:
+                return JsonResponse({'status': 'error', 'message': 'El consultante seleccionado no existe.'}, status=404)
+        else:
+            return JsonResponse({'status': 'error', 'message': 'Debes asociar un consultante o marcar el documento como institucional.'}, status=400)
+
+    # Fecha
+    fecha_documento = timezone.localdate()
+    if fecha_doc_str:
+        try:
+            fecha_documento = datetime.strptime(fecha_doc_str, '%Y-%m-%d').date()
+        except ValueError:
+            pass
+
+    # Extracción de texto indexable
+    texto_extraido = ""
+    if archivo:
+        ext = archivo.name.rsplit('.', 1)[-1].lower() if '.' in archivo.name else ''
+        try:
+            if ext == 'pdf':
+                doc_pdf = fitz.open(stream=archivo.read(), filetype="pdf")
+                for pag in doc_pdf:
+                    texto_extraido += pag.get_text() + "\n"
+                doc_pdf.close()
+                archivo.seek(0)
+            elif ext in ['doc', 'docx']:
+                doc_word = docx.Document(archivo)
+                texto_extraido = "\n".join(p.text for p in doc_word.paragraphs if p.text.strip())
+                archivo.seek(0)
+            elif ext in ['txt', 'csv']:
+                texto_extraido = archivo.read().decode('utf-8', errors='ignore')
+                archivo.seek(0)
+        except Exception as e:
+            logging.getLogger(__name__).warning(f"No se pudo extraer texto automático de {archivo.name}: {e}")
+            archivo.seek(0)
+
+    # Combinamos descripción y texto del archivo para el buscador
+    contenido_indexable = ""
+    if descripcion:
+        contenido_indexable += f"Observaciones/Notas: {descripcion}\n\n"
+    if texto_extraido:
+        contenido_indexable += f"Contenido del archivo: {texto_extraido}"
+
+    doc = DocumentoRepositorioClinico.objects.create(
+        psicologo=psicologo,
+        paciente=paciente,
+        categoria=categoria,
+        titulo=titulo,
+        descripcion=descripcion,
+        archivo=archivo,
+        contenido_extraido=contenido_indexable.strip(),
+        fecha_documento=fecha_documento,
+        es_institucional=es_institucional
+    )
+
+    paciente_nombre = f"{paciente.first_name} {paciente.last_name}".strip() if paciente else "Institucional"
+
+    return JsonResponse({
+        'status': 'success',
+        'message': 'Documento registrado y procesado correctamente en el repositorio.',
+        'documento': {
+            'id': doc.id,
+            'titulo': doc.titulo,
+            'categoria': doc.categoria,
+            'categoria_display': doc.get_categoria_display(),
+            'paciente_nombre': paciente_nombre,
+            'fecha_documento': doc.fecha_documento.strftime('%d/%m/%Y'),
+            'archivo_url': doc.archivo.url if doc.archivo else None,
+            'extension': doc.extension_archivo,
+            'tamano_mb': doc.tamano_archivo_mb,
+            'es_institucional': doc.es_institucional,
+        }
+    })
+
+
+@require_POST
+def consultar_repositorio_groq_ajax(request):
+    """
+    Motor de consulta clínica inteligente del repositorio con Groq.
+    Lee y localiza documentos, consentimientos y expedientes basándose en lenguaje natural,
+    con un tono estrictamente médico/clínico, estructurado y libre de clichés o 'varitas mágicas'.
+    """
+    if not _es_psicologo_activo(request.user):
+        return JsonResponse({'status': 'error', 'message': 'Acceso no autorizado.'}, status=403)
+
+    try:
+        data = json.loads(request.body.decode('utf-8')) if request.body else request.POST
+    except Exception:
+        data = request.POST
+
+    consulta = data.get('consulta', '').strip()
+    paciente_id = data.get('paciente_id', '').strip()
+    categoria_filtro = data.get('categoria', '').strip()
+
+    if not consulta:
+        return JsonResponse({'status': 'error', 'message': 'Por favor ingresa tu consulta clínica.'}, status=400)
+
+    groq_api_key = os.environ.get('GROQ_API_KEY')
+    if not groq_api_key:
+        return JsonResponse({'status': 'error', 'message': 'El servicio de procesamiento de consultas no está disponible temporalmente (API Key no configurada).'}, status=503)
+
+    # 1. Búsqueda y filtrado de candidatos en DocumentoRepositorioClinico
+    docs_qs = DocumentoRepositorioClinico.objects.select_related('paciente', 'psicologo', 'psicologo__usuario')
+
+    paciente_objeto = None
+    if paciente_id and paciente_id.isdigit():
+        docs_qs = docs_qs.filter(paciente_id=int(paciente_id))
+        paciente_objeto = User.objects.filter(pk=int(paciente_id)).first()
+
+    if categoria_filtro and categoria_filtro != 'todos':
+        docs_qs = docs_qs.filter(categoria=categoria_filtro)
+
+    # Buscar palabras clave de la consulta
+    palabras = [p.lower() for p in re.findall(r'\w{3,}', consulta)]
+    q_filter = Q()
+    for p in palabras[:5]:
+        q_filter |= (
+            Q(titulo__icontains=p) |
+            Q(descripcion__icontains=p) |
+            Q(contenido_extraido__icontains=p) |
+            Q(paciente__first_name__icontains=p) |
+            Q(paciente__last_name__icontains=p)
+        )
+
+    docs_coincidentes = list(docs_qs.filter(q_filter).distinct().order_by('-fecha_documento')[:10])
+    if not docs_coincidentes:
+        docs_coincidentes = list(docs_qs.order_by('-fecha_documento')[:8])
+
+    # 2. Si la consulta involucra consentimiento o a un paciente específico, buscar también en ConsentimientoInformado
+    info_consentimiento = ""
+    consulta_lower = consulta.lower()
+    if 'consentimiento' in consulta_lower or paciente_objeto:
+        cons_qs = ConsentimientoInformado.objects.all()
+        if paciente_objeto:
+            cons_qs = cons_qs.filter(paciente=paciente_objeto)
+        else:
+            for p in palabras[:3]:
+                cons_qs = cons_qs.filter(
+                    Q(nombre_firmante__icontains=p) | Q(paciente__first_name__icontains=p) | Q(paciente__last_name__icontains=p)
+                )
+        for c in cons_qs[:3]:
+            info_consentimiento += (
+                f"- [Consentimiento Informado Digital] Paciente: {c.paciente.first_name} {c.paciente.last_name} | "
+                f"Firmante: {c.nombre_firmante} | Fecha de firma: {c.fecha_firma.strftime('%d/%m/%Y %H:%M')} | "
+                f"Aceptó telepsicología: {'Sí' if c.acepta_telepsicologia else 'No'} | IP: {c.ip_registro or 'N/A'}\n"
+            )
+
+    # 3. Formatear expediente para Groq
+    contexto_documentos = []
+    documentos_referenciados = []
+
+    for d in docs_coincidentes:
+        paciente_txt = f"{d.paciente.first_name} {d.paciente.last_name}" if d.paciente else "Institucional"
+        extracto = (d.contenido_extraido or d.descripcion or "Sin transcripción")[0:800]
+        contexto_documentos.append(
+            f"ID: #{d.id}\n"
+            f"Título: {d.titulo}\n"
+            f"Categoría: {d.get_categoria_display()}\n"
+            f"Consultante: {paciente_txt}\n"
+            f"Fecha de documento: {d.fecha_documento.strftime('%d/%m/%Y')}\n"
+            f"Registrado por: Lic. {d.psicologo.usuario.first_name} {d.psicologo.usuario.last_name}\n"
+            f"Tiene archivo adjunto: {'Sí (' + d.extension_archivo.upper() + ')' if d.archivo else 'No (Nota clínica)'}\n"
+            f"Contenido/Extracto:\n{extracto}\n"
+        )
+        documentos_referenciados.append({
+            'id': d.id,
+            'titulo': d.titulo,
+            'categoria': d.categoria,
+            'categoria_display': d.get_categoria_display(),
+            'paciente_nombre': paciente_txt,
+            'fecha': d.fecha_documento.strftime('%d/%m/%Y'),
+            'archivo_url': d.archivo.url if d.archivo else None,
+            'extension': d.extension_archivo,
+            'tamano_mb': d.tamano_archivo_mb,
+        })
+
+    bloque_contexto = "\n---\n".join(contexto_documentos) if contexto_documentos else "No se encontraron documentos directos en el repositorio."
+    if info_consentimiento:
+        bloque_contexto += f"\n\nRegistros de Consentimiento Informado del Sistema:\n{info_consentimiento}"
+
+    prompt_sistema = (
+        "Eres el Asistente de Consulta y Localización Documental del Repositorio Clínico HOPE.\n"
+        "Tu labor es responder a la consulta del profesional de la salud mental de forma rigurosa, clínica, concisa y ordenada, "
+        "basándote de manera estricta y exclusiva en los documentos del repositorio proporcionados.\n\n"
+        "NORMAS OBLIGATORIAS:\n"
+        "1. Mantén un tono formal, clínico e institucional. Jamás utilices expresiones coloquiales, emojis, ni menciones de 'inteligencia artificial', 'IA' ni 'varitas mágicas'.\n"
+        "2. Sintetiza directamente los hallazgos solicitados respondiendo con precisión a la duda planteada.\n"
+        "3. Cita explícitamente el documento, la fecha y la categoría de donde extraes cada dato (ejemplo: 'En el documento [Título] del DD/MM/AAAA...').\n"
+        "4. Si la consulta pide información de un consultante que no figura en los extractos, indícalo claramente: 'No se localiza registro de [...] en los documentos analizados del repositorio.'\n"
+        "5. Formatea tu respuesta en HTML limpio usando <p>, <ul>, <li>, <b>, <strong>. No uses <html>, <body> ni bloques de código markdown."
+    )
+
+    prompt_usuario = (
+        f"CONSULTA DEL PROFESIONAL:\n{consulta}\n\n"
+        f"EXPEDIENTES Y DOCUMENTOS ENCONTRADOS EN EL REPOSITORIO:\n"
+        f"{bloque_contexto}\n\n"
+        f"Redacta el informe de localización y síntesis clínica pertinente:"
+    )
+
+    try:
+        client = Groq(api_key=groq_api_key)
+        response = client.chat.completions.create(
+            model="openai/gpt-oss-120b",
+            messages=[
+                {"role": "system", "content": prompt_sistema},
+                {"role": "user", "content": prompt_usuario}
+            ],
+            max_tokens=1500,
+            temperature=0.1
+        )
+        respuesta_html = response.choices[0].message.content.strip()
+        respuesta_html = respuesta_html.replace('```html', '').replace('```', '')
+
+        return JsonResponse({
+            'status': 'success',
+            'respuesta': respuesta_html,
+            'documentos': documentos_referenciados
+        })
+    except Exception as e:
+        logging.getLogger(__name__).error(f"Error en consulta Groq del repositorio clínico: {e}")
+        return JsonResponse({
+            'status': 'error',
+            'message': f"Ocurrió un error al procesar la consulta clínica: {str(e)}"
+        }, status=500)
+
+
+@require_POST
+def eliminar_documento_repositorio_ajax(request, doc_id):
+    """
+    Endpoint para eliminar un documento del repositorio clínico por parte del psicólogo.
+    """
+    if not _es_psicologo_activo(request.user):
+        return JsonResponse({'status': 'error', 'message': 'No tienes permisos para esta acción.'}, status=403)
+
+    psicologo = request.user.perfil_psicologo
+    doc = get_object_or_404(DocumentoRepositorioClinico, pk=doc_id)
+
+    if doc.psicologo != psicologo and not request.user.is_staff:
+        return JsonResponse({'status': 'error', 'message': 'Solo el psicólogo responsable puede eliminar este registro.'}, status=403)
+
+    if doc.archivo:
+        try:
+            doc.archivo.delete(save=False)
+        except Exception:
+            pass
+
+    doc.delete()
+    return JsonResponse({'status': 'success', 'message': 'Documento eliminado correctamente del repositorio.'})
+
 

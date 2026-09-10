@@ -938,4 +938,62 @@ class ReporteClinicoPDF(models.Model):
 
     def __str__(self):
         paciente_nom = self.paciente.first_name or self.paciente.username if self.paciente else "Sin paciente"
-        return f"Reporte {self.tipo_destinatario} - Sesión #{self.numero_sesion} ({paciente_nom})"
+        return f"Reporte {self.tipo_destinatario} - Sesión #{self.numero_sesion} ({paciente_nom})"
+
+
+# ==========================================
+# 12. REPOSITORIO GLOBAL CLÍNICO (DOCUMENTOS Y EXPEDIENTES)
+# ==========================================
+class DocumentoRepositorioClinico(models.Model):
+    CATEGORIAS_CHOICES = [
+        ('consentimiento', 'Consentimiento informado'),
+        ('pruebas_psicometricas', 'Pruebas psicométricas aplicadas'),
+        ('ejercicios_sesion', 'Ejercicios realizados en sesiones'),
+        ('tareas_consultante', 'Tareas entregadas por los consultantes'),
+        ('notas_clinicas', 'Notas clínicas importantes del consultante'),
+        ('procesos_procedimientos', 'Llenado de procesos y procedimientos (cuando aplique)'),
+        ('otros', 'Otros'),
+    ]
+
+    psicologo = models.ForeignKey(PerfilPsicologo, on_delete=models.CASCADE, related_name='documentos_repositorio', verbose_name="Psicólogo Responsable")
+    paciente = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='documentos_clinicos_repositorio', verbose_name="Consultante Asociado")
+    categoria = models.CharField(max_length=50, choices=CATEGORIAS_CHOICES, db_index=True, verbose_name="Categoría del Documento")
+    titulo = models.CharField(max_length=255, verbose_name="Título del Documento o Nota")
+    descripcion = models.TextField(blank=True, null=True, verbose_name="Descripción u Observaciones Clínicas")
+    archivo = models.FileField(upload_to='repositorio_clinico/%Y/%m/', blank=True, null=True, verbose_name="Archivo Adjunto")
+    contenido_extraido = models.TextField(blank=True, null=True, verbose_name="Texto Extraído para Búsqueda")
+    fecha_documento = models.DateField(default=timezone.localdate, db_index=True, verbose_name="Fecha del Documento")
+    es_institucional = models.BooleanField(default=False, db_index=True, verbose_name="¿Es formato/proceso institucional general?")
+    
+    fecha_creacion = models.DateTimeField(auto_now_add=True, db_index=True, verbose_name="Fecha de Carga")
+    fecha_actualizacion = models.DateTimeField(auto_now=True, verbose_name="Última Actualización")
+
+    class Meta:
+        verbose_name = "Documento del Repositorio Clínico"
+        verbose_name_plural = "Documentos del Repositorio Clínico"
+        ordering = ['-fecha_documento', '-fecha_creacion']
+        indexes = [
+            models.Index(fields=['categoria', 'fecha_documento']),
+            models.Index(fields=['paciente', 'categoria']),
+            models.Index(fields=['psicologo', 'categoria']),
+        ]
+
+    def __str__(self):
+        destinatario = f"Consultante: {self.paciente.first_name} {self.paciente.last_name}".strip() if self.paciente else "Institucional"
+        return f"[{self.get_categoria_display()}] {self.titulo} - {destinatario}"
+
+    @property
+    def extension_archivo(self):
+        if self.archivo and '.' in self.archivo.name:
+            return self.archivo.name.rsplit('.', 1)[-1].lower()
+        return ''
+
+    @property
+    def tamano_archivo_mb(self):
+        if self.archivo:
+            try:
+                return round(self.archivo.size / (1024 * 1024), 2)
+            except Exception:
+                return None
+        return None
+

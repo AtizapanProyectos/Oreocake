@@ -1,0 +1,1374 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Repositorio Clínico — HOPE{% endblock %}
+
+{% block content %}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+/* ==========================================================
+   REPOSITORIO CLÍNICO INSTITUCIONAL HOPE
+   Estilo sobrio, clínico, sin clichés de IA ni varitas mágicas
+   ========================================================== */
+
+:root {
+  --repo-primary: #5A3FA3;
+  --repo-primary-light: #F0EDFA;
+  --repo-teal: #1F8A8A;
+  --repo-teal-light: #E6F6F6;
+  --repo-dark: #1E293B;
+  --repo-slate: #475569;
+  --repo-muted: #64748B;
+  --repo-border: #E2E8F0;
+  --repo-surface: #F8FAFC;
+  --repo-white: #FFFFFF;
+  --repo-blue-light: #EFF6FF;
+  --repo-amber: #D97706;
+  --repo-amber-light: #FEF3C7;
+  --repo-rose: #E11D48;
+  --repo-rose-light: #FFE4E6;
+}
+
+.repo-container {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 30px 20px 80px;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  color: var(--repo-dark);
+}
+
+/* Header Institucional */
+.repo-header {
+  background: var(--repo-white);
+  border: 1px solid var(--repo-border);
+  border-radius: 20px;
+  padding: 28px 32px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 20px;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04);
+  margin-bottom: 24px;
+}
+
+.repo-header-info h1 {
+  font-family: 'Outfit', sans-serif;
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--repo-dark);
+  margin: 0 0 6px 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.repo-header-info h1 i {
+  color: var(--repo-primary);
+  font-size: 24px;
+}
+
+.repo-header-info p {
+  font-size: 14px;
+  color: var(--repo-muted);
+  margin: 0;
+}
+
+.repo-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.btn-repo-back {
+  background: var(--repo-surface);
+  color: var(--repo-slate);
+  border: 1px solid var(--repo-border);
+  padding: 10px 18px;
+  border-radius: 12px;
+  font-size: 13.5px;
+  font-weight: 600;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+}
+
+.btn-repo-back:hover {
+  background: #E2E8F0;
+  color: var(--repo-dark);
+}
+
+.btn-repo-upload {
+  background: var(--repo-primary);
+  color: #FFFFFF;
+  border: none;
+  padding: 11px 22px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 4px 12px rgba(90, 63, 163, 0.25);
+  transition: all 0.2s ease;
+}
+
+.btn-repo-upload:hover {
+  background: #4B338D;
+  transform: translateY(-1px);
+}
+
+/* Panel de Consulta Rápida de Expedientes */
+.repo-search-card {
+  background: linear-gradient(135deg, #FFFFFF 0%, #F8FAFC 100%);
+  border: 1px solid var(--repo-border);
+  border-left: 5px solid var(--repo-teal);
+  border-radius: 18px;
+  padding: 24px;
+  margin-bottom: 28px;
+  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.03);
+}
+
+.repo-search-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.repo-search-header h2 {
+  font-family: 'Outfit', sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--repo-dark);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.repo-search-header h2 i {
+  color: var(--repo-teal);
+  font-size: 17px;
+}
+
+.repo-search-header span {
+  font-size: 12.5px;
+  color: var(--repo-muted);
+}
+
+.repo-search-form {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.repo-search-input-wrap {
+  flex: 1;
+  min-width: 280px;
+  position: relative;
+}
+
+.repo-search-input-wrap i {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--repo-muted);
+  font-size: 15px;
+}
+
+.repo-search-input {
+  width: 100%;
+  padding: 12px 14px 12px 42px;
+  border: 1px solid var(--repo-border);
+  border-radius: 12px;
+  font-size: 14px;
+  outline: none;
+  background: #FFFFFF;
+  box-sizing: border-box;
+  font-family: inherit;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.repo-search-input:focus {
+  border-color: var(--repo-teal);
+  box-shadow: 0 0 0 3px rgba(31, 138, 138, 0.12);
+}
+
+.repo-select-paciente-search {
+  min-width: 210px;
+  padding: 12px 14px;
+  border: 1px solid var(--repo-border);
+  border-radius: 12px;
+  font-size: 13.5px;
+  outline: none;
+  background: #FFFFFF;
+  color: var(--repo-dark);
+  font-family: inherit;
+}
+
+.btn-repo-consultar {
+  background: var(--repo-teal);
+  color: #FFFFFF;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+}
+
+.btn-repo-consultar:hover {
+  background: #176B6B;
+}
+
+/* Área de resultados de consulta clínica */
+.repo-ai-result {
+  display: none;
+  margin-top: 20px;
+  padding: 20px 24px;
+  background: #FFFFFF;
+  border: 1px solid #D8E7E7;
+  border-radius: 14px;
+  box-shadow: 0 4px 14px rgba(31, 138, 138, 0.06);
+  animation: fadeIn 0.3s ease-out;
+}
+
+.repo-ai-result-title {
+  font-family: 'Outfit', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--repo-teal);
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.repo-ai-result-body {
+  font-size: 14px;
+  line-height: 1.6;
+  color: #334155;
+}
+
+.repo-ai-result-body p {
+  margin: 0 0 10px;
+}
+
+.repo-ai-result-body ul {
+  margin: 0 0 12px 20px;
+}
+
+.repo-ai-result-body li {
+  margin-bottom: 6px;
+}
+
+.repo-ai-docs-list {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px dashed #CBD5E1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.repo-doc-chip {
+  background: var(--repo-surface);
+  border: 1px solid var(--repo-border);
+  padding: 6px 12px;
+  border-radius: 10px;
+  font-size: 12.5px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--repo-dark);
+  text-decoration: none;
+  transition: all 0.15s ease;
+}
+
+.repo-doc-chip:hover {
+  background: var(--repo-teal-light);
+  border-color: var(--repo-teal);
+  color: var(--repo-teal);
+}
+
+/* Navegación por Categorías (Pestañas Clínicas) */
+.repo-tabs-container {
+  margin-bottom: 24px;
+  overflow-x: auto;
+  white-space: nowrap;
+  padding-bottom: 6px;
+}
+
+.repo-tabs-list {
+  display: inline-flex;
+  gap: 8px;
+  background: #FFFFFF;
+  padding: 6px;
+  border-radius: 14px;
+  border: 1px solid var(--repo-border);
+}
+
+.repo-tab-item {
+  padding: 9px 16px;
+  border-radius: 10px;
+  font-size: 13.5px;
+  font-weight: 600;
+  text-decoration: none;
+  color: var(--repo-slate);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.15s ease;
+}
+
+.repo-tab-item:hover {
+  background: var(--repo-surface);
+  color: var(--repo-dark);
+}
+
+.repo-tab-item.active {
+  background: var(--repo-primary);
+  color: #FFFFFF;
+}
+
+.repo-tab-badge {
+  background: rgba(0, 0, 0, 0.08);
+  font-size: 11px;
+  padding: 2px 7px;
+  border-radius: 20px;
+  font-weight: 700;
+}
+
+.repo-tab-item.active .repo-tab-badge {
+  background: rgba(255, 255, 255, 0.25);
+  color: #FFFFFF;
+}
+
+/* Filtros secundarios y conteo */
+.repo-subbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.repo-subbar-count {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--repo-slate);
+}
+
+.repo-subbar-count span {
+  color: var(--repo-dark);
+  font-weight: 700;
+}
+
+.repo-filter-form {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.repo-filter-select, .repo-filter-input {
+  padding: 8px 12px;
+  border: 1px solid var(--repo-border);
+  border-radius: 10px;
+  font-size: 13px;
+  background: #FFFFFF;
+  color: var(--repo-dark);
+  font-family: inherit;
+  outline: none;
+}
+
+.repo-filter-select:focus, .repo-filter-input:focus {
+  border-color: var(--repo-primary);
+}
+
+/* Grid de Documentos */
+.repo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+  gap: 20px;
+}
+
+.repo-card {
+  background: #FFFFFF;
+  border: 1px solid var(--repo-border);
+  border-radius: 16px;
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.03);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  position: relative;
+}
+
+.repo-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(90, 63, 163, 0.08);
+  border-color: #CBD5E1;
+}
+
+.repo-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+/* Badges de categoría clínica */
+.repo-cat-badge {
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.badge-consentimiento { background: #E0E7FF; color: #3730A3; }
+.badge-pruebas_psicometricas { background: #E6F6F6; color: #0E7490; }
+.badge-ejercicios_sesion { background: #ECFDF5; color: #047857; }
+.badge-tareas_consultante { background: #FEF3C7; color: #B45309; }
+.badge-notas_clinicas { background: #F3E8FF; color: #6B21A8; }
+.badge-procesos_procedimientos { background: #F1F5F9; color: #334155; }
+.badge-otros { background: #F3F4F6; color: #4B5563; }
+
+.repo-card-date {
+  font-size: 12px;
+  color: var(--repo-muted);
+  font-weight: 500;
+}
+
+.repo-card-title {
+  font-family: 'Outfit', sans-serif;
+  font-size: 16.5px;
+  font-weight: 700;
+  color: var(--repo-dark);
+  margin: 0 0 8px;
+  line-height: 1.35;
+}
+
+.repo-card-patient {
+  font-size: 13px;
+  color: var(--repo-primary);
+  font-weight: 600;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.repo-card-desc {
+  font-size: 13px;
+  color: var(--repo-slate);
+  line-height: 1.5;
+  margin-bottom: 16px;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.repo-card-footer {
+  border-top: 1px solid #F1F5F9;
+  padding-top: 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.repo-file-meta {
+  font-size: 12px;
+  color: var(--repo-muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.repo-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-card-action {
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 12.5px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid var(--repo-border);
+  background: var(--repo-surface);
+  color: var(--repo-slate);
+  transition: all 0.15s ease;
+}
+
+.btn-card-action:hover {
+  background: #E2E8F0;
+  color: var(--repo-dark);
+}
+
+.btn-card-action.primary {
+  background: var(--repo-primary-light);
+  border-color: rgba(90, 63, 163, 0.2);
+  color: var(--repo-primary);
+}
+
+.btn-card-action.primary:hover {
+  background: var(--repo-primary);
+  color: #FFFFFF;
+}
+
+.btn-card-delete {
+  color: #94A3B8;
+  background: transparent;
+  border: none;
+  padding: 6px;
+  cursor: pointer;
+  border-radius: 6px;
+  font-size: 13px;
+  transition: color 0.15s ease;
+}
+
+.btn-card-delete:hover {
+  color: var(--repo-rose);
+  background: var(--repo-rose-light);
+}
+
+/* Estado Vacío */
+.repo-empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  background: #FFFFFF;
+  border: 1px dashed #CBD5E1;
+  border-radius: 20px;
+  grid-column: 1 / -1;
+}
+
+.repo-empty-state i {
+  font-size: 46px;
+  color: #94A3B8;
+  margin-bottom: 16px;
+}
+
+.repo-empty-state h3 {
+  font-family: 'Outfit', sans-serif;
+  font-size: 19px;
+  font-weight: 700;
+  color: var(--repo-dark);
+  margin-bottom: 6px;
+}
+
+.repo-empty-state p {
+  font-size: 14px;
+  color: var(--repo-muted);
+  max-width: 440px;
+  margin: 0 auto 20px;
+}
+
+/* ==========================================================
+   MODAL DE CARGA DE DOCUMENTOS CLÍNICOS
+   ========================================================== */
+.repo-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(4px);
+  z-index: 10000;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.repo-modal-overlay.active {
+  display: flex;
+}
+
+.repo-modal-box {
+  background: #FFFFFF;
+  border-radius: 22px;
+  width: 100%;
+  max-width: 620px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  animation: popIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.repo-modal-header {
+  padding: 22px 28px;
+  border-bottom: 1px solid var(--repo-border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.repo-modal-header h3 {
+  font-family: 'Outfit', sans-serif;
+  font-size: 19px;
+  font-weight: 700;
+  color: var(--repo-dark);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.repo-modal-close {
+  background: transparent;
+  border: none;
+  color: #94A3B8;
+  font-size: 18px;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 8px;
+}
+
+.repo-modal-close:hover {
+  background: #F1F5F9;
+  color: var(--repo-dark);
+}
+
+.repo-modal-body {
+  padding: 24px 28px;
+}
+
+.repo-form-group {
+  margin-bottom: 18px;
+}
+
+.repo-form-group label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--repo-dark);
+  margin-bottom: 6px;
+}
+
+.repo-form-group label span.req {
+  color: var(--repo-rose);
+}
+
+.repo-form-control {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid var(--repo-border);
+  border-radius: 10px;
+  font-size: 13.5px;
+  color: var(--repo-dark);
+  background: #FFFFFF;
+  box-sizing: border-box;
+  font-family: inherit;
+  outline: none;
+}
+
+.repo-form-control:focus {
+  border-color: var(--repo-primary);
+  box-shadow: 0 0 0 3px rgba(90, 63, 163, 0.1);
+}
+
+.repo-checkbox-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--repo-surface);
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--repo-border);
+  margin-bottom: 18px;
+  cursor: pointer;
+}
+
+.repo-checkbox-group input {
+  cursor: pointer;
+  width: 16px;
+  height: 16px;
+  accent-color: var(--repo-primary);
+}
+
+.repo-checkbox-group span {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--repo-dark);
+}
+
+.repo-dropzone {
+  border: 2px dashed #CBD5E1;
+  border-radius: 12px;
+  padding: 24px;
+  text-align: center;
+  background: #FAFBFD;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.repo-dropzone:hover {
+  border-color: var(--repo-primary);
+  background: var(--repo-primary-light);
+}
+
+.repo-dropzone i {
+  font-size: 32px;
+  color: var(--repo-muted);
+  margin-bottom: 8px;
+}
+
+.repo-dropzone p {
+  font-size: 13px;
+  color: var(--repo-slate);
+  margin: 0 0 4px;
+}
+
+.repo-dropzone span {
+  font-size: 11.5px;
+  color: var(--repo-muted);
+}
+
+.repo-file-selected {
+  margin-top: 10px;
+  padding: 8px 12px;
+  background: #FFFFFF;
+  border: 1px solid var(--repo-border);
+  border-radius: 8px;
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12.5px;
+  color: var(--repo-dark);
+}
+
+.repo-modal-footer {
+  padding: 18px 28px 24px;
+  border-top: 1px solid var(--repo-border);
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.btn-modal-cancel {
+  background: #F1F5F9;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 10px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--repo-slate);
+  cursor: pointer;
+}
+
+.btn-modal-submit {
+  background: var(--repo-primary);
+  color: #FFFFFF;
+  border: none;
+  padding: 10px 22px;
+  border-radius: 10px;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-modal-submit:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* Animaciones */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes popIn {
+  0% { transform: scale(0.95); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* Spinner */
+.repo-spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: #FFFFFF;
+  animation: spin 0.8s ease-in-out infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (max-width: 768px) {
+  .repo-header { padding: 20px; }
+  .repo-header-actions { width: 100%; justify-content: space-between; }
+  .repo-grid { grid-template-columns: 1fr; }
+  .repo-search-form { flex-direction: column; }
+  .repo-search-input-wrap, .repo-select-paciente-search, .btn-repo-consultar { width: 100%; }
+}
+</style>
+
+<div class="repo-container">
+
+  <!-- 1. ENCABEZADO INSTITUCIONAL -->
+  <div class="repo-header">
+    <div class="repo-header-info">
+      <h1><i class="fas fa-folder-open"></i> Repositorio Clínico HOPE</h1>
+      <p>Gestión documental centralizada, expedientes organizados y consulta clínica para terapeutas.</p>
+    </div>
+    <div class="repo-header-actions">
+      <a href="{% url 'panel_doctor' %}" class="btn-repo-back">
+        <i class="fas fa-arrow-left"></i> Volver a Mi Panel
+      </a>
+      <button class="btn-repo-upload" onclick="abrirModalSubida()">
+        <i class="fas fa-file-arrow-up"></i> Cargar Documento o Nota
+      </button>
+    </div>
+  </div>
+
+  <!-- 2. BÚSQUEDA Y CONSULTA CLÍNICA DE EXPEDIENTES (ASISTIDA POR GROQ) -->
+  <div class="repo-search-card">
+    <div class="repo-search-header">
+      <h2><i class="fas fa-stethoscope"></i> Consulta Rápida de Expedientes</h2>
+      <span>Búsqueda temática, antecedentes y análisis documental</span>
+    </div>
+
+    <form class="repo-search-form" id="formConsultaClinica" onsubmit="realizarConsultaClinica(event)">
+      <div class="repo-search-input-wrap">
+        <i class="fas fa-search"></i>
+        <input 
+          type="text" 
+          id="inputConsultaClinica" 
+          class="repo-search-input" 
+          placeholder="Ej. ¿Qué pruebas psicométricas tiene el paciente? o ¿Qué ejercicios se acordaron en sesión?"
+          required
+        >
+      </div>
+
+      <select id="selectPacienteConsulta" class="repo-select-paciente-search">
+        <option value="">Todos los consultantes</option>
+        {% for p in pacientes %}
+          <option value="{{ p.id }}">{{ p.first_name }} {{ p.last_name|default:"" }} ({{ p.username }})</option>
+        {% endfor %}
+      </select>
+
+      <button type="submit" class="btn-repo-consultar" id="btnEjecutarConsulta">
+        <i class="fas fa-clipboard-check"></i> <span id="btnTextConsulta">Consultar</span>
+      </button>
+    </form>
+
+    <!-- Caja de Respuesta Clínica -->
+    <div class="repo-ai-result" id="cajaResultadoConsulta">
+      <div class="repo-ai-result-title">
+        <span><i class="fas fa-file-medical-alt"></i> Informe Clínico de Localización</span>
+        <button type="button" onclick="cerrarResultadoConsulta()" style="background:none;border:none;color:#64748B;cursor:pointer;">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="repo-ai-result-body" id="cuerpoResultadoConsulta"></div>
+      <div class="repo-ai-docs-list" id="listaDocumentosCitados"></div>
+    </div>
+  </div>
+
+  <!-- 3. NAVEGACIÓN POR LAS 7 CATEGORÍAS CLÍNICAS -->
+  <div class="repo-tabs-container">
+    <div class="repo-tabs-list">
+      <a href="?categoria=todos{% if paciente_activo %}&paciente={{ paciente_activo }}{% endif %}{% if q_busqueda %}&q={{ q_busqueda }}{% endif %}" 
+         class="repo-tab-item {% if categoria_activa == 'todos' %}active{% endif %}">
+        <i class="fas fa-layer-group"></i> Todos los Documentos
+        <span class="repo-tab-badge">{{ conteo_categorias.todos }}</span>
+      </a>
+
+      <a href="?categoria=consentimiento{% if paciente_activo %}&paciente={{ paciente_activo }}{% endif %}{% if q_busqueda %}&q={{ q_busqueda }}{% endif %}" 
+         class="repo-tab-item {% if categoria_activa == 'consentimiento' %}active{% endif %}">
+        <i class="fas fa-file-signature"></i> Consentimiento informado
+        <span class="repo-tab-badge">{{ conteo_categorias.consentimiento }}</span>
+      </a>
+
+      <a href="?categoria=pruebas_psicometricas{% if paciente_activo %}&paciente={{ paciente_activo }}{% endif %}{% if q_busqueda %}&q={{ q_busqueda }}{% endif %}" 
+         class="repo-tab-item {% if categoria_activa == 'pruebas_psicometricas' %}active{% endif %}">
+        <i class="fas fa-chart-line"></i> Pruebas psicométricas
+        <span class="repo-tab-badge">{{ conteo_categorias.pruebas_psicometricas }}</span>
+      </a>
+
+      <a href="?categoria=ejercicios_sesion{% if paciente_activo %}&paciente={{ paciente_activo }}{% endif %}{% if q_busqueda %}&q={{ q_busqueda }}{% endif %}" 
+         class="repo-tab-item {% if categoria_activa == 'ejercicios_sesion' %}active{% endif %}">
+        <i class="fas fa-brain"></i> Ejercicios en sesión
+        <span class="repo-tab-badge">{{ conteo_categorias.ejercicios_sesion }}</span>
+      </a>
+
+      <a href="?categoria=tareas_consultante{% if paciente_activo %}&paciente={{ paciente_activo }}{% endif %}{% if q_busqueda %}&q={{ q_busqueda }}{% endif %}" 
+         class="repo-tab-item {% if categoria_activa == 'tareas_consultante' %}active{% endif %}">
+        <i class="fas fa-tasks"></i> Tareas de consultantes
+        <span class="repo-tab-badge">{{ conteo_categorias.tareas_consultante }}</span>
+      </a>
+
+      <a href="?categoria=notas_clinicas{% if paciente_activo %}&paciente={{ paciente_activo }}{% endif %}{% if q_busqueda %}&q={{ q_busqueda }}{% endif %}" 
+         class="repo-tab-item {% if categoria_activa == 'notas_clinicas' %}active{% endif %}">
+        <i class="fas fa-notes-medical"></i> Notas clínicas importantes
+        <span class="repo-tab-badge">{{ conteo_categorias.notas_clinicas }}</span>
+      </a>
+
+      <a href="?categoria=procesos_procedimientos{% if paciente_activo %}&paciente={{ paciente_activo }}{% endif %}{% if q_busqueda %}&q={{ q_busqueda }}{% endif %}" 
+         class="repo-tab-item {% if categoria_activa == 'procesos_procedimientos' %}active{% endif %}">
+        <i class="fas fa-book-medical"></i> Procesos y procedimientos
+        <span class="repo-tab-badge">{{ conteo_categorias.procesos_procedimientos }}</span>
+      </a>
+
+      <a href="?categoria=otros{% if paciente_activo %}&paciente={{ paciente_activo }}{% endif %}{% if q_busqueda %}&q={{ q_busqueda }}{% endif %}" 
+         class="repo-tab-item {% if categoria_activa == 'otros' %}active{% endif %}">
+        <i class="fas fa-folder"></i> Otros
+        <span class="repo-tab-badge">{{ conteo_categorias.otros }}</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- 4. BARRA DE FILTRADO SECUNDARIO -->
+  <div class="repo-subbar">
+    <div class="repo-subbar-count">
+      Mostrando <span>{{ total_documentos }}</span> registros en el archivo clínico
+    </div>
+
+    <form method="GET" action="{% url 'repositorio_clinico' %}" class="repo-filter-form">
+      <input type="hidden" name="categoria" value="{{ categoria_activa }}">
+      
+      <select name="paciente" class="repo-filter-select" onchange="this.form.submit()">
+        <option value="">Todos los consultantes</option>
+        <option value="institucional" {% if paciente_activo == 'institucional' %}selected{% endif %}>Documentos Institucionales</option>
+        {% for p in pacientes %}
+          <option value="{{ p.id }}" {% if paciente_activo == p.id|stringformat:"i" %}selected{% endif %}>
+            {{ p.first_name }} {{ p.last_name|default:"" }}
+          </option>
+        {% endfor %}
+      </select>
+
+      <input 
+        type="text" 
+        name="q" 
+        value="{{ q_busqueda }}" 
+        class="repo-filter-input" 
+        placeholder="Filtrar por texto..."
+      >
+      <button type="submit" class="btn-card-action">
+        <i class="fas fa-filter"></i>
+      </button>
+
+      {% if q_busqueda or paciente_activo or categoria_activa != 'todos' %}
+        <a href="{% url 'repositorio_clinico' %}" class="btn-card-action" title="Limpiar filtros">
+          <i class="fas fa-rotate-left"></i> Limpiar
+        </a>
+      {% endif %}
+    </form>
+  </div>
+
+  <!-- 5. GRID DE DOCUMENTOS -->
+  <div class="repo-grid" id="contenedorDocumentos">
+    {% for doc in documentos %}
+      <div class="repo-card" id="card-doc-{{ doc.id }}">
+        <div>
+          <div class="repo-card-top">
+            <span class="repo-cat-badge badge-{{ doc.categoria }}">
+              <i class="fas fa-tag"></i> {{ doc.get_categoria_display }}
+            </span>
+            <span class="repo-card-date">
+              <i class="far fa-calendar-alt"></i> {{ doc.fecha_documento|date:"d/m/Y" }}
+            </span>
+          </div>
+
+          <h3 class="repo-card-title">{{ doc.titulo }}</h3>
+
+          <div class="repo-card-patient">
+            {% if doc.es_institucional %}
+              <i class="fas fa-hospital-user" style="color: var(--repo-slate);"></i>
+              <span style="color: var(--repo-slate);">Formato / Proceso Institucional</span>
+            {% else %}
+              <i class="fas fa-user"></i>
+              <span>Consultante: {{ doc.paciente.first_name }} {{ doc.paciente.last_name|default:"" }}</span>
+            {% endif %}
+          </div>
+
+          {% if doc.descripcion %}
+            <p class="repo-card-desc">{{ doc.descripcion }}</p>
+          {% elif doc.contenido_extraido %}
+            <p class="repo-card-desc">{{ doc.contenido_extraido|truncatewords:25 }}</p>
+          {% else %}
+            <p class="repo-card-desc" style="font-style: italic; color: #94A3B8;">Sin descripción adjunta.</p>
+          {% endif %}
+        </div>
+
+        <div class="repo-card-footer">
+          <div class="repo-file-meta">
+            {% if doc.archivo %}
+              {% if doc.extension_archivo == 'pdf' %}
+                <i class="fas fa-file-pdf" style="color: #EF4444; font-size: 15px;"></i>
+              {% elif doc.extension_archivo in 'doc,docx' %}
+                <i class="fas fa-file-word" style="color: #2563EB; font-size: 15px;"></i>
+              {% elif doc.extension_archivo in 'jpg,jpeg,png,webp' %}
+                <i class="fas fa-file-image" style="color: #10B981; font-size: 15px;"></i>
+              {% else %}
+                <i class="fas fa-file-lines" style="color: var(--repo-muted); font-size: 15px;"></i>
+              {% endif %}
+              <span>{{ doc.extension_archivo|upper }} {% if doc.tamano_archivo_mb %}({{ doc.tamano_archivo_mb }} MB){% endif %}</span>
+            {% else %}
+              <i class="fas fa-pen-to-square" style="color: var(--repo-primary);"></i>
+              <span>Nota clínica directa</span>
+            {% endif %}
+          </div>
+
+          <div class="repo-card-actions">
+            {% if doc.archivo %}
+              <a href="{{ doc.archivo.url }}" target="_blank" class="btn-card-action primary">
+                <i class="fas fa-arrow-up-right-from-square"></i> Ver Archivo
+              </a>
+            {% endif %}
+            <button type="button" class="btn-card-delete" onclick="eliminarDocumento({{ doc.id }}, '{{ doc.titulo|escapejs }}')" title="Eliminar registro">
+              <i class="fas fa-trash-alt"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    {% empty %}
+      <div class="repo-empty-state">
+        <i class="fas fa-folder-open"></i>
+        <h3>No se encontraron documentos</h3>
+        <p>No existen registros en esta categoría o para los filtros aplicados. Puedes cargar nuevos expedientes o notas clínicas usando el botón superior.</p>
+        <button class="btn-repo-upload" onclick="abrirModalSubida()">
+          <i class="fas fa-file-arrow-up"></i> Cargar Primer Documento
+        </button>
+      </div>
+    {% endfor %}
+  </div>
+
+</div>
+
+<!-- ==========================================================
+     MODAL DE SUBIDA DE DOCUMENTOS
+     ========================================================== -->
+<div class="repo-modal-overlay" id="modalSubirDocumento">
+  <div class="repo-modal-box">
+    <div class="repo-modal-header">
+      <h3><i class="fas fa-file-arrow-up" style="color: var(--repo-primary);"></i> Cargar Documento al Repositorio</h3>
+      <button class="repo-modal-close" onclick="cerrarModalSubida()"><i class="fas fa-times"></i></button>
+    </div>
+
+    <form id="formSubirDocumento" onsubmit="guardarDocumentoRepositorio(event)">
+      <div class="repo-modal-body">
+        
+        <!-- Tipo de documento / Institucional -->
+        <label class="repo-checkbox-group">
+          <input type="checkbox" id="checkInstitucional" onchange="toggleInstitucional(this.checked)">
+          <span>Marcar como Documento / Procedimiento Institucional (aplica a toda la clínica)</span>
+        </label>
+
+        <!-- Selección de consultante -->
+        <div class="repo-form-group" id="grupoConsultante">
+          <label for="selectConsultante">Consultante Asociado <span class="req">*</span></label>
+          <select id="selectConsultante" class="repo-form-control" required>
+            <option value="">Selecciona al consultante...</option>
+            {% for p in pacientes %}
+              <option value="{{ p.id }}">{{ p.first_name }} {{ p.last_name|default:"" }} ({{ p.username }})</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- Categoría clínica requerida -->
+        <div class="repo-form-group">
+          <label for="selectCategoriaDoc">Categoría Clínica <span class="req">*</span></label>
+          <select id="selectCategoriaDoc" class="repo-form-control" required>
+            <option value="">Selecciona la categoría...</option>
+            {% for code, name in categorias_choices %}
+              <option value="{{ code }}">{{ name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- Título -->
+        <div class="repo-form-group">
+          <label for="inputTituloDoc">Título del Documento o Nota <span class="req">*</span></label>
+          <input type="text" id="inputTituloDoc" class="repo-form-control" placeholder="Ej. Inventario Beck de Ansiedad - Sesión #4" required>
+        </div>
+
+        <!-- Fecha del documento -->
+        <div class="repo-form-group">
+          <label for="inputFechaDoc">Fecha del Documento o Sesión</label>
+          <input type="date" id="inputFechaDoc" class="repo-form-control" value="{{ hoy|date:'Y-m-d' }}">
+        </div>
+
+        <!-- Carga de Archivo -->
+        <div class="repo-form-group">
+          <label>Archivo Adjunto (PDF, Word, Imágenes o Texto)</label>
+          <div class="repo-dropzone" onclick="document.getElementById('fileInputDoc').click()">
+            <i class="fas fa-cloud-arrow-up"></i>
+            <p>Haz clic o arrastra un archivo aquí</p>
+            <span>Formatos aceptados: PDF, DOC, DOCX, JPG, PNG, TXT (Máx. 10MB)</span>
+          </div>
+          <input type="file" id="fileInputDoc" style="display: none;" onchange="archivoSeleccionado(this)" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.webp,.txt">
+          <div class="repo-file-selected" id="infoArchivoSeleccionado">
+            <span id="nombreArchivo"><i class="fas fa-paperclip"></i> Archivo cargado</span>
+            <button type="button" onclick="quitarArchivo()" style="background:none;border:none;color:#E11D48;cursor:pointer;"><i class="fas fa-times"></i></button>
+          </div>
+        </div>
+
+        <!-- Observaciones / Notas -->
+        <div class="repo-form-group">
+          <label for="textDescripcionDoc">Descripción u Observaciones Clínicas</label>
+          <textarea id="textDescripcionDoc" class="repo-form-control" rows="3" placeholder="Registra observaciones clave, hallazgos o acuerdos de la sesión..."></textarea>
+        </div>
+
+      </div>
+
+      <div class="repo-modal-footer">
+        <button type="button" class="btn-modal-cancel" onclick="cerrarModalSubida()">Cancelar</button>
+        <button type="submit" class="btn-modal-submit" id="btnGuardarDoc">
+          <i class="fas fa-check"></i> <span id="btnTextGuardar">Guardar en Repositorio</span>
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+// ==========================================================
+// CONTROL DEL MODAL DE SUBIDA
+// ==========================================================
+function abrirModalSubida() {
+  document.getElementById('modalSubirDocumento').classList.add('active');
+  document.body.style.overflow = 'hidden';
+}
+
+function cerrarModalSubida() {
+  document.getElementById('modalSubirDocumento').classList.remove('active');
+  document.body.style.overflow = 'auto';
+  document.getElementById('formSubirDocumento').reset();
+  quitarArchivo();
+  toggleInstitucional(false);
+}
+
+function toggleInstitucional(esInstitucional) {
+  const grupo = document.getElementById('grupoConsultante');
+  const select = document.getElementById('selectConsultante');
+  if (esInstitucional) {
+    grupo.style.display = 'none';
+    select.removeAttribute('required');
+    select.value = '';
+  } else {
+    grupo.style.display = 'block';
+    select.setAttribute('required', 'required');
+  }
+}
+
+function archivoSeleccionado(input) {
+  if (input.files && input.files[0]) {
+    const f = input.files[0];
+    document.getElementById('nombreArchivo').innerHTML = `<i class="fas fa-paperclip"></i> <b>${f.name}</b> (${(f.size / (1024*1024)).toFixed(2)} MB)`;
+    document.getElementById('infoArchivoSeleccionado').style.display = 'flex';
+  }
+}
+
+function quitarArchivo() {
+  document.getElementById('fileInputDoc').value = '';
+  document.getElementById('infoArchivoSeleccionado').style.display = 'none';
+}
+
+// Envío AJAX de subida de documento
+function guardarDocumentoRepositorio(e) {
+  e.preventDefault();
+
+  const btn = document.getElementById('btnGuardarDoc');
+  const btnText = document.getElementById('btnTextGuardar');
+  const esInstitucional = document.getElementById('checkInstitucional').checked;
+  const pacienteId = document.getElementById('selectConsultante').value;
+  const categoria = document.getElementById('selectCategoriaDoc').value;
+  const titulo = document.getElementById('inputTituloDoc').value.trim();
+  const fechaDoc = document.getElementById('inputFechaDoc').value;
+  const descripcion = document.getElementById('textDescripcionDoc').value.trim();
+  const fileInput = document.getElementById('fileInputDoc');
+
+  if (!esInstitucional && !pacienteId) {
+    alert('Por favor selecciona un consultante o marca la casilla de documento institucional.');
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append('categoria', categoria);
+  formData.append('titulo', titulo);
+  formData.append('fecha_documento', fechaDoc);
+  formData.append('descripcion', descripcion);
+  formData.append('es_institucional', esInstitucional ? 'true' : 'false');
+  if (!esInstitucional) {
+    formData.append('paciente_id', pacienteId);
+  }
+  if (fileInput.files && fileInput.files[0]) {
+    formData.append('archivo', fileInput.files[0]);
+  }
+
+  // Feedback de carga
+  btn.disabled = true;
+  btnText.innerHTML = '<span class="repo-spinner"></span> Indexando documento...';
+
+  // Token CSRF
+  const csrftoken = '{{ csrf_token }}';
+
+  fetch("{% url 'subir_documento_repositorio' %}", {
+    method: 'POST',
+    headers: {
+      'X-CSRFToken': csrftoken
+    },
+    body: formData
+  })
+  .then(res => res.json())
+  .then(data => {
+    btn.disabled = false;
+    btnText.innerHTML = 'Guardar en Repositorio';
+
+    if (data.status === 'success') {
+      cerrarModalSubida();
+      // Recargar la vista para actualizar contadores y catálogo ordenado
+      window.location.reload();
+    } else {
+      alert('Error: ' + (data.message || 'No se pudo registrar el documento.'));
+    }
+  })
+  .catch(err => {
+    btn.disabled = false;
+    btnText.innerHTML = 'Guardar en Repositorio';
+    alert('Ocurrió un error al procesar la solicitud: ' + err);
+  });
+}
+
+// ==========================================================
+// CONSULTA RÁPIDA DE EXPEDIENTES ASISTIDA POR GROQ
+// ==========================================================
+function realizarConsultaClinica(e) {
+  e.preventDefault();
+
+  const consulta = document.getElementById('inputConsultaClinica').value.trim();
+  const pacienteId = document.getElementById('selectPacienteConsulta').value;
+  const btn = document.getElementById('btnEjecutarConsulta');
+  const btnText = document.getElementById('btnTextConsulta');
+  const caja = document.getElementById('cajaResultadoConsulta');
+  const cuerpo = document.getElementById('cuerpoResultadoConsulta');
+  const listaDocs = document.getElementById('listaDocumentosCitados');
+
+  if (!consulta) return;
+
+  btn.disabled = true;
+  btnText.innerHTML = '<span class="repo-spinner"></span> Analizando expedientes...';
+  caja.style.display = 'block';
+  cuerpo.innerHTML = '<div style="color: #64748B; font-style: italic;"><i class="fas fa-spinner fa-spin"></i> Localizando registros clínicos e integrando informe...</div>';
+  listaDocs.innerHTML = '';
+
+  const csrftoken = '{{ csrf_token }}';
+
+  fetch("{% url 'consultar_repositorio_groq' %}", {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRFToken': csrftoken
+    },
+    body: JSON.stringify({
+      consulta: consulta,
+      paciente_id: pacienteId,
+      categoria: '{{ categoria_activa }}'
+    })
+  })
+  .then(res => res.json())
+  .then(data => {
+    btn.disabled = false;
+    btnText.innerHTML = 'Consultar';
+
+    if (data.status === 'success') {
+      cuerpo.innerHTML = data.respuesta;
+
+      if (data.documentos && data.documentos.length > 0) {
+        let chipsHtml = '<span style="font-size:12px;font-weight:600;color:#475569;width:100%;margin-bottom:4px;"><i class="fas fa-paperclip"></i> Registros documentales localizados:</span>';
+        data.documentos.forEach(d => {
+          if (d.archivo_url) {
+            chipsHtml += `<a href="${d.archivo_url}" target="_blank" class="repo-doc-chip" title="Ver documento original">
+              <i class="fas fa-file-medical"></i> <b>${d.titulo}</b> (${d.fecha}) - ${d.paciente_nombre}
+            </a>`;
+          } else {
+            chipsHtml += `<span class="repo-doc-chip">
+              <i class="fas fa-notes-medical"></i> <b>${d.titulo}</b> (${d.fecha}) - ${d.paciente_nombre}
+            </span>`;
+          }
+        });
+        listaDocs.innerHTML = chipsHtml;
+      }
+    } else {
+      cuerpo.innerHTML = `<div style="color: #DC2626;"><i class="fas fa-exclamation-triangle"></i> ${data.message || 'No fue posible completar la consulta clínica.'}</div>`;
+    }
+  })
+  .catch(err => {
+    btn.disabled = false;
+    btnText.innerHTML = 'Consultar';
+    cuerpo.innerHTML = `<div style="color: #DC2626;"><i class="fas fa-exclamation-triangle"></i> Error de conexión: ${err}</div>`;
+  });
+}
+
+function cerrarResultadoConsulta() {
+  document.getElementById('cajaResultadoConsulta').style.display = 'none';
+}
+
+// ==========================================================
+// ELIMINAR DOCUMENTO
+// ==========================================================
+function eliminarDocumento(id, titulo) {
+  if (!confirm(`¿Confirmas la eliminación del documento "${titulo}" del repositorio clínico?`)) {
+    return;
+  }
+
+  const csrftoken = '{{ csrf_token }}';
+
+  fetch(`/api/repositorio-clinico/eliminar/${id}/`, {
+    method: 'POST',
+    headers: {
+      'X-CSRFToken': csrftoken
+    }
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.status === 'success') {
+      const card = document.getElementById(`card-doc-${id}`);
+      if (card) {
+        card.style.opacity = '0';
+        card.style.transform = 'scale(0.95)';
+        setTimeout(() => card.remove(), 250);
+      }
+    } else {
+      alert(data.message || 'No fue posible eliminar el documento.');
+    }
+  })
+  .catch(err => alert('Error de conexión: ' + err));
+}
+</script>
+{% endblock %}
