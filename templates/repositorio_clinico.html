@@ -842,13 +842,36 @@
   <!-- 1. ENCABEZADO INSTITUCIONAL -->
   <div class="repo-header">
     <div class="repo-header-info">
-      <h1><i class="fas fa-folder-open"></i> Repositorio Clínico HOPE</h1>
-      <p>Gestión documental centralizada, expedientes organizados y consulta clínica para terapeutas.</p>
+      <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px; flex-wrap: wrap;">
+        <h1 style="margin:0;"><i class="fas fa-folder-open"></i> Repositorio Clínico HOPE</h1>
+        {% if es_admin %}
+          <span style="background: #EDE9FF; color: #5A3FA3; padding: 4px 12px; border-radius: 20px; font-size: 11.5px; font-weight: 700; display: inline-flex; align-items: center; gap: 5px;">
+            <i class="fas fa-shield-halved"></i> Super Administrador · Acceso Total
+          </span>
+        {% else %}
+          <span style="background: #E6F6F6; color: #1F8A8A; padding: 4px 12px; border-radius: 20px; font-size: 11.5px; font-weight: 700; display: inline-flex; align-items: center; gap: 5px;">
+            <i class="fas fa-user-doctor"></i> Mis Consultantes Asignados
+          </span>
+        {% endif %}
+      </div>
+      <p>
+        {% if es_admin %}
+          Panel de supervisión global: consulta y gestión de expedientes de todos los consultantes y formatos clínicos de la institución.
+        {% else %}
+          Gestión documental de mis consultantes asignados, expedientes clínicos y formatos institucionales.
+        {% endif %}
+      </p>
     </div>
     <div class="repo-header-actions">
-      <a href="{% url 'panel_doctor' %}" class="btn-repo-back">
-        <i class="fas fa-arrow-left"></i> Volver a Mi Panel
-      </a>
+      {% if es_admin %}
+        <a href="{% url 'panel_admin' %}" class="btn-repo-back">
+          <i class="fas fa-arrow-left"></i> Panel de Dirección
+        </a>
+      {% else %}
+        <a href="{% url 'panel_doctor' %}" class="btn-repo-back">
+          <i class="fas fa-arrow-left"></i> Volver a Mi Panel
+        </a>
+      {% endif %}
       <button class="btn-repo-upload" onclick="abrirModalSubida()">
         <i class="fas fa-file-arrow-up"></i> Cargar Documento o Nota
       </button>
@@ -875,11 +898,12 @@
       </div>
 
       <select id="selectPacienteConsulta" class="repo-select-paciente-search">
-        <option value="">Todos los consultantes</option>
+        <option value="">{% if es_admin %}Todos los consultantes de la plataforma{% else %}Todos mis consultantes{% endif %}</option>
         {% for p in pacientes %}
           <option value="{{ p.id }}">{{ p.first_name }} {{ p.last_name|default:"" }} ({{ p.username }})</option>
         {% endfor %}
       </select>
+
 
       <button type="submit" class="btn-repo-consultar" id="btnEjecutarConsulta">
         <i class="fas fa-clipboard-check"></i> <span id="btnTextConsulta">Consultar</span>
@@ -962,7 +986,7 @@
       <input type="hidden" name="categoria" value="{{ categoria_activa }}">
       
       <select name="paciente" class="repo-filter-select" onchange="this.form.submit()">
-        <option value="">Todos los consultantes</option>
+        <option value="">{% if es_admin %}Todos los consultantes{% else %}Todos mis consultantes{% endif %}</option>
         <option value="institucional" {% if paciente_activo == 'institucional' %}selected{% endif %}>Documentos Institucionales</option>
         {% for p in pacientes %}
           <option value="{{ p.id }}" {% if paciente_activo == p.id|stringformat:"i" %}selected{% endif %}>
@@ -1015,6 +1039,18 @@
               <span>Consultante: {{ doc.paciente.first_name }} {{ doc.paciente.last_name|default:"" }}</span>
             {% endif %}
           </div>
+
+          <div style="font-size: 11.5px; color: var(--repo-muted); margin-bottom: 10px; display: flex; align-items: center; gap: 5px;">
+            <i class="fas fa-user-doctor" style="font-size: 11px;"></i>
+            <span>
+              {% if doc.psicologo and doc.psicologo.usuario %}
+                Lic. {{ doc.psicologo.usuario.first_name }} {{ doc.psicologo.usuario.last_name }}
+              {% else %}
+                Dirección / Institucional
+              {% endif %}
+            </span>
+          </div>
+
 
           {% if doc.descripcion %}
             <p class="repo-card-desc">{{ doc.descripcion }}</p>

@@ -5910,35 +5910,56 @@ def reporte_crecimiento_sesiones_view(request):
 # 12. REPOSITORIO GLOBAL CLÍNICO (DOCUMENTOS Y EXPEDIENTES)
 # ==========================================
 
-def _es_psicologo_activo(user):
-    return user.is_authenticated and hasattr(user, 'perfil_psicologo')
+def _es_usuario_autorizado_repositorio(user):
+    """Permite acceso a psicólogos activos y a usuarios superadministradores o staff."""
+    return user.is_authenticated and (user.is_superuser or user.is_staff or hasattr(user, 'perfil_psicologo'))
 
 
 def repositorio_clinico_view(request):
     """
-    Vista principal del Repositorio Clínico Global para psicólogos con sesión activa.
-    Organizado en las 7 categorías clínicas solicitadas:
-    - Consentimiento informado
-    - Pruebas psicométricas aplicadas
-    - Ejercicios realizados en sesiones
-    - Tareas entregadas por los consultantes
-    - Notas clínicas importantes del consultante
-    - Llenado de procesos y procedimientos (cuando aplique)
-    - Otros
+    Vista principal del Repositorio Clínico Global:
+    - Superadministradores: pueden visualizar, consultar y gestionar todos los documentos y pacientes.
+    - Psicólogos: ven exclusivamente sus propios pacientes asignados y documentos institucionales generales.
     """
-    if not _es_psicologo_activo(request.user):
+    if not _es_usuario_autorizado_repositorio(request.user):
         return redirect('modulo_informativo')
 
-    psicologo = request.user.perfil_psicologo
+    es_admin = request.user.is_superuser or request.user.is_staff
+    psicologo = getattr(request.user, 'perfil_psicologo', None)
 
-    # Filtros
+    # Definir el universo de pacientes y documentos según el rol
+    if es_admin:
+        # Administrador general: acceso total a todos los pacientes del sistema
+        pacientes = User.objects.filter(
+            Q(perfil__es_psicologo=False) | Q(perfil__isnull=True)
+        ).exclude(is_staff=True).order_by('first_name', 'last_name', 'username')
+
+        documentos_base_qs = DocumentoRepositorioClinico.objects.select_related(
+            'paciente', 'psicologo', 'psicologo__usuario'
+        )
+    else:
+        # Psicólogo: ÚNICAMENTE sus propios pacientes asignados (citas, tratamientos o perfil)
+        pacientes = User.objects.filter(
+            Q(tratamientos__psicologo_asignado=psicologo) |
+            Q(citas_como_paciente__psicologo=psicologo) |
+            Q(perfil__psicologo_asignado=psicologo)
+        ).distinct().order_by('first_name', 'last_name', 'username')
+
+        # Documentos: sólo de sus pacientes, subidos por él o institucionales
+        documentos_base_qs = DocumentoRepositorioClinico.objects.select_related(
+            'paciente', 'psicologo', 'psicologo__usuario'
+        ).filter(
+            Q(es_institucional=True) |
+            Q(psicologo=psicologo) |
+            Q(paciente__in=pacientes)
+        )
+
+    # Filtros de usuario
     categoria_sel = request.GET.get('categoria', '').strip()
     paciente_id = request.GET.get('paciente', '').strip()
     q_busqueda = request.GET.get('q', '').strip()
 
-    documentos_qs = DocumentoRepositorioClinico.objects.select_related(
-        'paciente', 'psicologo', 'psicologo__usuario'
-    )
+    documentos_qs = documentos_base_qs
 
     if categoria_sel and categoria_sel != 'todos':
         documentos_qs = documentos_qs.filter(categoria=categoria_sel)
@@ -5947,7 +5968,11 @@ def repositorio_clinico_view(request):
         if paciente_id == 'institucional':
             documentos_qs = documentos_qs.filter(es_institucional=True)
         elif paciente_id.isdigit():
-            documentos_qs = documentos_qs.filter(paciente_id=int(paciente_id))
+            # Si es psicólogo, garantizar que solo filtre si el paciente le pertenece
+            if es_admin or pacientes.filter(pk=int(paciente_id)).exists():
+                documentos_qs = documentos_qs.filter(paciente_id=int(paciente_id))
+            else:
+                documentos_qs = documentos_qs.none()
 
     if q_busqueda:
         documentos_qs = documentos_qs.filter(
@@ -5959,26 +5984,22 @@ def repositorio_clinico_view(request):
             Q(paciente__username__icontains=q_busqueda)
         )
 
-    # Conteo por categorías para badges en pestañas
+    # Conteo de categorías limitado al alcance autorizado del usuario
     conteo_categorias = {
-        'todos': DocumentoRepositorioClinico.objects.count(),
-        'consentimiento': DocumentoRepositorioClinico.objects.filter(categoria='consentimiento').count(),
-        'pruebas_psicometricas': DocumentoRepositorioClinico.objects.filter(categoria='pruebas_psicometricas').count(),
-        'ejercicios_sesion': DocumentoRepositorioClinico.objects.filter(categoria='ejercicios_sesion').count(),
-        'tareas_consultante': DocumentoRepositorioClinico.objects.filter(categoria='tareas_consultante').count(),
-        'notas_clinicas': DocumentoRepositorioClinico.objects.filter(categoria='notas_clinicas').count(),
-        'procesos_procedimientos': DocumentoRepositorioClinico.objects.filter(categoria='procesos_procedimientos').count(),
-        'otros': DocumentoRepositorioClinico.objects.filter(categoria='otros').count(),
+        'todos': documentos_base_qs.count(),
+        'consentimiento': documentos_base_qs.filter(categoria='consentimiento').count(),
+        'pruebas_psicometricas': documentos_base_qs.filter(categoria='pruebas_psicometricas').count(),
+        'ejercicios_sesion': documentos_base_qs.filter(categoria='ejercicios_sesion').count(),
+        'tareas_consultante': documentos_base_qs.filter(categoria='tareas_consultante').count(),
+        'notas_clinicas': documentos_base_qs.filter(categoria='notas_clinicas').count(),
+        'procesos_procedimientos': documentos_base_qs.filter(categoria='procesos_procedimientos').count(),
+        'otros': documentos_base_qs.filter(categoria='otros').count(),
     }
-
-    # Pacientes disponibles en el sistema (excluyendo psicólogos y staff)
-    pacientes = User.objects.filter(
-        Q(perfil__es_psicologo=False) | Q(perfil__isnull=True)
-    ).exclude(is_staff=True).order_by('first_name', 'last_name', 'username')
 
     total_documentos = documentos_qs.count()
 
     context = {
+        'es_admin': es_admin,
         'psicologo': psicologo,
         'documentos': documentos_qs[:120],
         'total_documentos': total_documentos,
@@ -5996,13 +6017,15 @@ def repositorio_clinico_view(request):
 @require_POST
 def subir_documento_repositorio_ajax(request):
     """
-    Endpoint AJAX para que los psicólogos suban documentos o registren notas clínicas
-    en el repositorio con extracción automática de texto (PyMuPDF / docx).
+    Endpoint AJAX para subir documentos o registrar notas clínicas:
+    - Superadministradores: pueden subir para cualquier paciente o formato institucional.
+    - Psicólogos: únicamente pueden subir para sus propios pacientes asignados o institucional.
     """
-    if not _es_psicologo_activo(request.user):
-        return JsonResponse({'status': 'error', 'message': 'No tienes permisos de psicólogo para esta acción.'}, status=403)
+    if not _es_usuario_autorizado_repositorio(request.user):
+        return JsonResponse({'status': 'error', 'message': 'No tienes permisos para esta acción.'}, status=403)
 
-    psicologo = request.user.perfil_psicologo
+    es_admin = request.user.is_superuser or request.user.is_staff
+    psicologo = getattr(request.user, 'perfil_psicologo', None)
 
     categoria = request.POST.get('categoria', '').strip()
     titulo = request.POST.get('titulo', '').strip()
@@ -6025,6 +6048,16 @@ def subir_documento_repositorio_ajax(request):
         if paciente_id and paciente_id.isdigit():
             try:
                 paciente = User.objects.get(pk=int(paciente_id))
+                # Restricción: Si es psicólogo, verificar que el paciente le pertenezca
+                if not es_admin and psicologo:
+                    mis_pacientes_ids = User.objects.filter(
+                        Q(tratamientos__psicologo_asignado=psicologo) |
+                        Q(citas_como_paciente__psicologo=psicologo) |
+                        Q(perfil__psicologo_asignado=psicologo)
+                    ).values_list('id', flat=True)
+
+                    if paciente.id not in mis_pacientes_ids:
+                        return JsonResponse({'status': 'error', 'message': 'Solo puedes cargar documentos de tus propios consultantes asignados.'}, status=403)
             except User.DoesNotExist:
                 return JsonResponse({'status': 'error', 'message': 'El consultante seleccionado no existe.'}, status=404)
         else:
@@ -6102,12 +6135,15 @@ def subir_documento_repositorio_ajax(request):
 @require_POST
 def consultar_repositorio_groq_ajax(request):
     """
-    Motor de consulta clínica inteligente del repositorio con Groq.
-    Lee y localiza documentos, consentimientos y expedientes basándose en lenguaje natural,
-    con un tono estrictamente médico/clínico, estructurado y libre de clichés o 'varitas mágicas'.
+    Motor de consulta clínica inteligente del repositorio con Groq:
+    - Superadministradores: pueden consultar libremente sobre cualquier paciente o registro.
+    - Psicólogos: su consulta se acota estrictamente a sus propios consultantes asignados y documentos institucionales.
     """
-    if not _es_psicologo_activo(request.user):
+    if not _es_usuario_autorizado_repositorio(request.user):
         return JsonResponse({'status': 'error', 'message': 'Acceso no autorizado.'}, status=403)
+
+    es_admin = request.user.is_superuser or request.user.is_staff
+    psicologo = getattr(request.user, 'perfil_psicologo', None)
 
     try:
         data = json.loads(request.body.decode('utf-8')) if request.body else request.POST
@@ -6125,13 +6161,30 @@ def consultar_repositorio_groq_ajax(request):
     if not groq_api_key:
         return JsonResponse({'status': 'error', 'message': 'El servicio de procesamiento de consultas no está disponible temporalmente (API Key no configurada).'}, status=503)
 
-    # 1. Búsqueda y filtrado de candidatos en DocumentoRepositorioClinico
+    # Universo de consulta delimitado por permisos
     docs_qs = DocumentoRepositorioClinico.objects.select_related('paciente', 'psicologo', 'psicologo__usuario')
+    pacientes_autorizados_qs = None
+
+    if not es_admin and psicologo:
+        pacientes_autorizados_qs = User.objects.filter(
+            Q(tratamientos__psicologo_asignado=psicologo) |
+            Q(citas_como_paciente__psicologo=psicologo) |
+            Q(perfil__psicologo_asignado=psicologo)
+        ).distinct()
+
+        docs_qs = docs_qs.filter(
+            Q(es_institucional=True) |
+            Q(psicologo=psicologo) |
+            Q(paciente__in=pacientes_autorizados_qs)
+        )
 
     paciente_objeto = None
     if paciente_id and paciente_id.isdigit():
-        docs_qs = docs_qs.filter(paciente_id=int(paciente_id))
-        paciente_objeto = User.objects.filter(pk=int(paciente_id)).first()
+        if es_admin or (pacientes_autorizados_qs and pacientes_autorizados_qs.filter(pk=int(paciente_id)).exists()):
+            docs_qs = docs_qs.filter(paciente_id=int(paciente_id))
+            paciente_objeto = User.objects.filter(pk=int(paciente_id)).first()
+        else:
+            docs_qs = docs_qs.none()
 
     if categoria_filtro and categoria_filtro != 'todos':
         docs_qs = docs_qs.filter(categoria=categoria_filtro)
@@ -6152,11 +6205,14 @@ def consultar_repositorio_groq_ajax(request):
     if not docs_coincidentes:
         docs_coincidentes = list(docs_qs.order_by('-fecha_documento')[:8])
 
-    # 2. Si la consulta involucra consentimiento o a un paciente específico, buscar también en ConsentimientoInformado
+    # Consentimientos informados restringidos al alcance autorizado
     info_consentimiento = ""
     consulta_lower = consulta.lower()
     if 'consentimiento' in consulta_lower or paciente_objeto:
         cons_qs = ConsentimientoInformado.objects.all()
+        if not es_admin and pacientes_autorizados_qs:
+            cons_qs = cons_qs.filter(paciente__in=pacientes_autorizados_qs)
+
         if paciente_objeto:
             cons_qs = cons_qs.filter(paciente=paciente_objeto)
         else:
@@ -6164,6 +6220,7 @@ def consultar_repositorio_groq_ajax(request):
                 cons_qs = cons_qs.filter(
                     Q(nombre_firmante__icontains=p) | Q(paciente__first_name__icontains=p) | Q(paciente__last_name__icontains=p)
                 )
+
         for c in cons_qs[:3]:
             info_consentimiento += (
                 f"- [Consentimiento Informado Digital] Paciente: {c.paciente.first_name} {c.paciente.last_name} | "
@@ -6171,20 +6228,22 @@ def consultar_repositorio_groq_ajax(request):
                 f"Aceptó telepsicología: {'Sí' if c.acepta_telepsicologia else 'No'} | IP: {c.ip_registro or 'N/A'}\n"
             )
 
-    # 3. Formatear expediente para Groq
+    # Formatear expediente para Groq
     contexto_documentos = []
     documentos_referenciados = []
 
     for d in docs_coincidentes:
         paciente_txt = f"{d.paciente.first_name} {d.paciente.last_name}" if d.paciente else "Institucional"
         extracto = (d.contenido_extraido or d.descripcion or "Sin transcripción")[0:800]
+        responsable_txt = f"Lic. {d.psicologo.usuario.first_name} {d.psicologo.usuario.last_name}" if (d.psicologo and d.psicologo.usuario) else "Dirección / Administración"
+
         contexto_documentos.append(
             f"ID: #{d.id}\n"
             f"Título: {d.titulo}\n"
             f"Categoría: {d.get_categoria_display()}\n"
             f"Consultante: {paciente_txt}\n"
             f"Fecha de documento: {d.fecha_documento.strftime('%d/%m/%Y')}\n"
-            f"Registrado por: Lic. {d.psicologo.usuario.first_name} {d.psicologo.usuario.last_name}\n"
+            f"Registrado por: {responsable_txt}\n"
             f"Tiene archivo adjunto: {'Sí (' + d.extension_archivo.upper() + ')' if d.archivo else 'No (Nota clínica)'}\n"
             f"Contenido/Extracto:\n{extracto}\n"
         )
@@ -6253,16 +6312,19 @@ def consultar_repositorio_groq_ajax(request):
 @require_POST
 def eliminar_documento_repositorio_ajax(request, doc_id):
     """
-    Endpoint para eliminar un documento del repositorio clínico por parte del psicólogo.
+    Endpoint para eliminar un documento del repositorio clínico:
+    - Superadministradores: pueden eliminar cualquier registro.
+    - Psicólogos: únicamente pueden eliminar los documentos registrados por ellos mismos.
     """
-    if not _es_psicologo_activo(request.user):
+    if not _es_usuario_autorizado_repositorio(request.user):
         return JsonResponse({'status': 'error', 'message': 'No tienes permisos para esta acción.'}, status=403)
 
-    psicologo = request.user.perfil_psicologo
+    es_admin = request.user.is_superuser or request.user.is_staff
+    psicologo = getattr(request.user, 'perfil_psicologo', None)
     doc = get_object_or_404(DocumentoRepositorioClinico, pk=doc_id)
 
-    if doc.psicologo != psicologo and not request.user.is_staff:
-        return JsonResponse({'status': 'error', 'message': 'Solo el psicólogo responsable puede eliminar este registro.'}, status=403)
+    if not es_admin and doc.psicologo != psicologo:
+        return JsonResponse({'status': 'error', 'message': 'Solo el psicólogo responsable o un administrador pueden eliminar este registro.'}, status=403)
 
     if doc.archivo:
         try:
@@ -6272,5 +6334,6 @@ def eliminar_documento_repositorio_ajax(request, doc_id):
 
     doc.delete()
     return JsonResponse({'status': 'success', 'message': 'Documento eliminado correctamente del repositorio.'})
+
 
 

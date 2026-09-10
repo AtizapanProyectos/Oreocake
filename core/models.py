@@ -955,7 +955,7 @@ class DocumentoRepositorioClinico(models.Model):
         ('otros', 'Otros'),
     ]
 
-    psicologo = models.ForeignKey(PerfilPsicologo, on_delete=models.CASCADE, related_name='documentos_repositorio', verbose_name="Psicólogo Responsable")
+    psicologo = models.ForeignKey(PerfilPsicologo, on_delete=models.SET_NULL, null=True, blank=True, related_name='documentos_repositorio', verbose_name="Psicólogo Responsable")
     paciente = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='documentos_clinicos_repositorio', verbose_name="Consultante Asociado")
     categoria = models.CharField(max_length=50, choices=CATEGORIAS_CHOICES, db_index=True, verbose_name="Categoría del Documento")
     titulo = models.CharField(max_length=255, verbose_name="Título del Documento o Nota")
