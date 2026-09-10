@@ -23,7 +23,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 #SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY')
 SECRET_KEY = 'django-insecure-70c)rfvkj57#%*tialyzlfda=h@uqh6n#k(p$#e+mk^upfcv5k'
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
 
 DATA_UPLOAD_MAX_NUMBER_FIELDS = 10000
