@@ -116,7 +116,7 @@
       <!-- Controls & External Links -->
       <div class="flex items-center gap-2.5">
         <!-- BOTÓN PANEL DE SENTIMIENTOS -->
-        <a href="{{ url_panel_sentimientos }}" target="_blank" class="px-3.5 py-1.5 text-xs font-bold bg-[#F85B8C]/15 hover:bg-[#F85B8C] border border-[#F85B8C] text-white rounded-xl transition flex items-center gap-2 shadow-sm">
+        <a href="{% url 'panel_sentimientos' %}" target="_blank" class="px-3.5 py-1.5 text-xs font-bold bg-[#F85B8C]/15 hover:bg-[#F85B8C] border border-[#F85B8C] text-white rounded-xl transition flex items-center gap-2 shadow-sm">
           <i class="fa-solid fa-heart-pulse text-[#F85B8C] group-hover:text-white"></i>
           <span class="hidden md:inline">Panel de Sentimientos</span>
         </a>
@@ -356,7 +356,7 @@
     </section>
 
     <!-- =========================================================================
-         SLIDE 2: SESIONES Y CITAS (COMPLETADAS VS CONFIRMADAS / PROGRAMADAS)
+         SLIDE 2: SESIONES Y CITAS DEL PERIODO
          ========================================================================= -->
     <section id="slide-1" class="slide-hidden space-y-6">
       
@@ -373,7 +373,7 @@
             </div>
             <div class="text-4xl sm:text-5xl font-black text-white mt-4 font-heading">{{ total_sesiones }}</div>
             <p class="text-sm font-semibold text-slate-300 mt-1">
-              Sesiones totales agendadas: <span class="text-[#10B981] font-bold">{{ sesiones_completadas }} completadas</span> · <span class="text-[#00D2E0] font-bold">{{ sesiones_confirmadas }} confirmadas</span>
+              Sesiones registradas y programadas en la plataforma HOPE
             </p>
           </div>
           <div class="mt-4 pt-4 border-t border-[#17375E] text-xs text-slate-400 flex items-center justify-between">
@@ -398,18 +398,17 @@
 
       </div>
 
-      <!-- Chart: Sesiones Completadas vs Confirmadas por Semana / Mes -->
+      <!-- Chart: Sesiones por Semana / Mes -->
       <div class="glass-card-dark p-6 sm:p-7 rounded-3xl border border-[#17375E]">
         <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
           <div>
             <h2 class="text-base sm:text-lg font-bold text-white font-heading">
               {% if es_historico %}Distribución de Sesiones por Mes{% else %}Distribución de Citas por Semana ({{ nombre_periodo }}){% endif %}
             </h2>
-            <p class="text-xs text-slate-400">Desglose real entre citas completadas y citas confirmadas/programadas</p>
+            <p class="text-xs text-slate-400">Volumen atendido y agendado por el equipo clínico de HOPE</p>
           </div>
           <div class="flex items-center gap-4 text-xs font-semibold">
-            <span class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 bg-[#10B981] rounded-md inline-block"></span> Completadas ({{ sesiones_completadas }})</span>
-            <span class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 bg-[#00D2E0] rounded-md inline-block"></span> Confirmadas / Programadas ({{ sesiones_confirmadas }})</span>
+            <span class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 bg-[#00D2E0] rounded-md inline-block"></span> Citas Totales del Periodo ({{ total_sesiones }})</span>
           </div>
         </div>
 
@@ -423,18 +422,14 @@
             <thead>
               <tr class="text-slate-400 uppercase font-bold border-b border-[#17375E]">
                 <th class="py-2.5">{% if es_historico %}Mes / Periodo{% else %}Semana / Periodo{% endif %}</th>
-                <th class="py-2.5 text-center">Citas Totales</th>
-                <th class="py-2.5 text-center">Completadas (Realizadas)</th>
-                <th class="py-2.5 text-center">Confirmadas (Por Realizar)</th>
+                <th class="py-2.5 text-center">Sesiones Totales</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-[#17375E] text-slate-300 font-medium">
               {% for f in filas_tabla %}
               <tr class="hover:bg-[#0B1E36] transition">
                 <td class="py-3 font-bold text-white">{{ f.nombre }}</td>
-                <td class="py-3 text-center font-black text-white text-sm">{{ f.total }}</td>
-                <td class="py-3 text-center text-[#10B981] font-bold">{{ f.completadas }}</td>
-                <td class="py-3 text-center text-[#00D2E0] font-bold">{{ f.confirmadas }}</td>
+                <td class="py-3 text-center font-black text-[#00D2E0] text-sm">{{ f.total }}</td>
               </tr>
               {% endfor %}
             </tbody>
@@ -864,7 +859,7 @@
       });
     }
 
-    // 2. Bar Chart: Sesiones Agendadas por Semana / Mes (COMPLETADAS VS CONFIRMADAS)
+    // 2. Bar Chart: Sesiones Agendadas por Semana / Mes
     function initSessionsBarChart() {
       const ctx = document.getElementById('barSessionsChart').getContext('2d');
       new Chart(ctx, {
@@ -873,20 +868,11 @@
           labels: {{ semanas_labels_json|safe }},
           datasets: [
             {
-              label: 'Completadas (Realizadas)',
-              data: {{ semanas_completadas_json|safe }},
-              backgroundColor: COLORS.green,
-              borderRadius: 6,
-              barPercentage: 0.65,
-              categoryPercentage: 0.8
-            },
-            {
-              label: 'Confirmadas (Por Realizar)',
-              data: {{ semanas_confirmadas_json|safe }},
+              label: 'Sesiones Totales',
+              data: {{ semanas_datos_json|safe }},
               backgroundColor: COLORS.cyan,
               borderRadius: 6,
-              barPercentage: 0.65,
-              categoryPercentage: 0.8
+              barPercentage: 0.65
             }
           ]
         },
@@ -895,9 +881,7 @@
           maintainAspectRatio: false,
           plugins: {
             legend: { 
-              display: true,
-              position: 'top',
-              labels: { boxWidth: 12, usePointStyle: true, color: COLORS.textLight, font: { weight: '700', size: 11 } }
+              display: false
             },
             tooltip: {
               backgroundColor: COLORS.card,

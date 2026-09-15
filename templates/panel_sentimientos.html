@@ -1,0 +1,1056 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>El Reflejo de Nuestra Comunidad | HOPE</title>
+  
+  <!-- Tailwind CSS & Chart.js -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
+  <!-- FontAwesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            heading: ['"Outfit"', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              dark: '#071526',
+              card: '#0D223D',
+              cardAlt: '#0B1E36',
+              border: '#17375E',
+              cyan: '#00D2E0',
+              purple: '#818CF8',
+              pink: '#F85B8C',
+              yellow: '#FBBF24',
+              green: '#10B981',
+              orange: '#FB923C',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    :root {
+      --bg-dark: #071526;
+      --bg-card: #0D223D;
+      --border-card: #17375E;
+      --cyan: #00D2E0;
+      --pink: #F85B8C;
+      --purple: #818CF8;
+      --green: #10B981;
+      --yellow: #FBBF24;
+      --orange: #FB923C;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      background-image: 
+        radial-gradient(ellipse 65% 45% at 20% 8%, rgba(248, 91, 140, 0.08) 0%, transparent 70%),
+        radial-gradient(ellipse 55% 50% at 85% 90%, rgba(0, 210, 224, 0.08) 0%, transparent 70%);
+      color: #FFFFFF;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      min-height: 100vh;
+    }
+
+    .glass-card-dark {
+      background: #0D223D;
+      border: 1px solid var(--border-card);
+      backdrop-filter: blur(14px);
+    }
+
+    .frase-destacada {
+      background: rgba(11, 30, 54, 0.7);
+      border: 1px solid rgba(23, 55, 94, 0.8);
+      border-left: 3px solid var(--pink);
+      color: #CBD5E1;
+      padding: 0.65rem 0.9rem;
+      border-radius: 0.75rem;
+      font-size: 0.775rem;
+      font-style: italic;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-top: 0.65rem;
+      margin-bottom: 1rem;
+    }
+
+    .frase-destacada-cyan {
+      border-left-color: var(--cyan);
+    }
+    .frase-destacada-green {
+      border-left-color: var(--green);
+    }
+    .frase-destacada-yellow {
+      border-left-color: var(--yellow);
+    }
+    .frase-destacada-purple {
+      border-left-color: var(--purple);
+    }
+    .frase-destacada-orange {
+      border-left-color: var(--orange);
+    }
+
+    input[type="date"]::-webkit-calendar-picker-indicator {
+      filter: invert(1);
+      cursor: pointer;
+    }
+
+    .animate-wide {
+      animation: fadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media print {
+      .no-print { display: none !important; }
+      body { background: #071526 !important; -webkit-print-color-adjust: exact !important; }
+    }
+  </style>
+</head>
+
+<body class="min-h-screen flex flex-col justify-between antialiased text-slate-100">
+
+  <!-- =========================================================================
+       BARRA SUPERIOR DE NAVEGACIÓN
+       ========================================================================= -->
+  <header class="glass-card-dark border-b border-[#17375E] sticky top-0 z-40 no-print">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+      
+      <!-- Brand Logo & Platform Name -->
+      <div class="flex items-center gap-3">
+        <a href="/" class="flex items-center gap-2">
+          <span class="text-2xl font-black tracking-tight font-heading">
+            <span class="text-[#00D2E0]">H</span><span class="text-[#F85B8C]">O</span><span class="text-[#FBBF24]">P</span><span class="text-[#818CF8]">E</span>
+          </span>
+        </a>
+        <span class="h-4 w-px bg-[#17375E]"></span>
+        <span class="text-xs font-extrabold text-[#F85B8C] uppercase tracking-wider hidden sm:inline-block">Panel de Sentimientos & Comunidad</span>
+      </div>
+
+      <!-- Quick Navigation & Admin Controls -->
+      <div class="flex items-center gap-2.5">
+        <!-- Botón Volver a Admin -->
+        <a href="{% url 'panel_admin' %}" class="px-3 py-1.5 text-xs font-bold bg-[#0B1E36] hover:bg-[#17375E] border border-[#17375E] text-slate-200 rounded-xl transition flex items-center gap-1.5 shadow-sm">
+          <i class="fa-solid fa-arrow-left text-[#00D2E0]"></i>
+          <span class="hidden md:inline">Panel Admin</span>
+        </a>
+
+        <!-- Botón Reporte Crecimiento -->
+        <a href="{% url 'reporte_crecimiento_sesiones' %}" class="px-3 py-1.5 text-xs font-bold bg-[#00D2E0]/15 hover:bg-[#00D2E0] border border-[#00D2E0] text-[#00D2E0] hover:text-[#071526] rounded-xl transition flex items-center gap-1.5 shadow-sm">
+          <i class="fa-solid fa-chart-line"></i>
+          <span class="hidden md:inline">Crecimiento & Sesiones</span>
+        </a>
+
+        <!-- Exportar / Imprimir -->
+        <button onclick="window.print()" class="px-3 py-1.5 text-xs font-semibold bg-[#0B1E36] hover:bg-[#17375E] border border-[#17375E] rounded-xl text-slate-200 transition flex items-center gap-1.5">
+          <i class="fa-solid fa-download text-[#F85B8C]"></i>
+          <span>PDF</span>
+        </button>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- =========================================================================
+       CONTENIDO PRINCIPAL
+       ========================================================================= -->
+  <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6">
+
+    <!-- BARRITA DE FILTROS EN TIEMPO REAL: CALENDARIO, MESES E HISTÓRICO -->
+    <div class="p-4 sm:p-5 glass-card-dark rounded-3xl border border-[#17375E] shadow-xl no-print animate-wide">
+      <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+        
+        <!-- Indicador de Filtro -->
+        <div class="flex items-center gap-3">
+          <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-[#F85B8C]/20 to-[#818CF8]/20 border border-[#F85B8C]/40 flex items-center justify-center text-[#F85B8C] text-xl shrink-0">
+            <i class="fa-solid fa-heart-pulse"></i>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Filtrando por:</span>
+              <span class="text-xs font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full {% if es_rango_personalizado %}bg-[#10B981]/20 text-[#10B981] border border-[#10B981]/40{% elif es_historico %}bg-[#818CF8]/20 text-[#818CF8] border border-[#818CF8]/40{% else %}bg-[#F85B8C]/20 text-[#F85B8C] border border-[#F85B8C]/40{% endif %}">
+                {% if es_rango_personalizado %}Rango Personalizado{% elif es_historico %}Histórico Global{% else %}Mes Específico{% endif %}
+              </span>
+            </div>
+            <h2 class="text-base sm:text-lg font-black text-white font-heading mt-0.5">{{ nombre_periodo }}</h2>
+          </div>
+        </div>
+
+        <!-- FORMULARIO DE CALENDARIO (DE TAL FECHA A TAL FECHA) -->
+        <form method="GET" action="" class="flex flex-wrap items-center gap-2 w-full lg:w-auto bg-[#071526]/60 p-2 rounded-2xl border border-[#17375E]">
+          <div class="flex items-center gap-1.5">
+            <span class="text-[11px] font-bold text-slate-400 pl-1">Desde:</span>
+            <input type="date" name="fecha_inicio" value="{{ fecha_inicio }}" required 
+                   class="bg-[#0B1E36] border border-[#17375E] text-white text-xs font-semibold rounded-xl px-2.5 py-1.5 focus:outline-none focus:border-[#F85B8C] transition" />
+          </div>
+
+          <div class="flex items-center gap-1.5">
+            <span class="text-[11px] font-bold text-slate-400">Hasta:</span>
+            <input type="date" name="fecha_fin" value="{{ fecha_fin }}" required 
+                   class="bg-[#0B1E36] border border-[#17375E] text-white text-xs font-semibold rounded-xl px-2.5 py-1.5 focus:outline-none focus:border-[#F85B8C] transition" />
+          </div>
+
+          <button type="submit" 
+                  class="px-3.5 py-1.5 text-xs font-extrabold bg-[#F85B8C] hover:bg-[#e44a7b] text-white rounded-xl transition flex items-center gap-1.5 shadow-md shadow-[#F85B8C]/20">
+            <i class="fa-solid fa-filter"></i>
+            <span>Filtrar</span>
+          </button>
+        </form>
+
+        <!-- ACCESOS RÁPIDOS (HISTÓRICO Y MESES) -->
+        <div class="flex flex-wrap items-center gap-1.5 w-full lg:w-auto">
+          <!-- Botón Histórico -->
+          <a href="?filtro=historico" 
+             class="px-3 py-1.5 text-xs font-extrabold rounded-xl border transition flex items-center gap-1.5 {% if es_historico %}bg-[#818CF8] text-[#071526] border-[#818CF8] shadow-lg shadow-[#818CF8]/20{% else %}bg-[#0B1E36] text-slate-300 border-[#17375E] hover:border-[#818CF8] hover:text-white{% endif %}">
+            <i class="fa-solid fa-layer-group text-[10px]"></i>
+            <span>Histórico</span>
+          </a>
+
+          <!-- Botones de Meses -->
+          {% for m in meses_disponibles %}
+            <a href="?filtro=mes&mes={{ m.numero }}" 
+               class="px-2.5 py-1.5 text-xs font-bold rounded-xl border transition flex items-center gap-1 {% if m.activo %}bg-[#F85B8C] text-white border-[#F85B8C] shadow-lg shadow-[#F85B8C]/20{% else %}bg-[#0B1E36] text-slate-400 border-[#17375E] hover:border-[#F85B8C] hover:text-white{% endif %}">
+              <span>{{ m.nombre }}</span>
+            </a>
+          {% endfor %}
+        </div>
+
+      </div>
+    </div>
+
+    <!-- HEADER EJECUTIVO IDÉNTICO AL DEL DISEÑO ADJUNTO -->
+    <div class="glass-card-dark p-6 sm:p-8 rounded-3xl border border-[#17375E] relative overflow-hidden animate-wide" style="animation-delay: 0.1s;">
+      <div class="absolute right-0 top-0 bottom-0 w-1/3 bg-gradient-to-l from-[#F85B8C]/10 to-transparent pointer-events-none"></div>
+      <div class="max-w-3xl">
+        <div class="flex items-center gap-2 text-xs font-extrabold text-[#F85B8C] uppercase tracking-wider mb-2">
+          <i class="fa-solid fa-compass"></i>
+          <span>Observatorio de Bienestar Emocional</span>
+        </div>
+        <h1 class="text-3xl sm:text-4xl font-black text-white font-heading leading-tight tracking-tight">
+          El Reflejo de Nuestra Comunidad
+        </h1>
+        <p class="text-sm sm:text-base text-slate-300 mt-2 font-medium leading-relaxed">
+          Una mirada cálida y profunda a las historias, las emociones y el camino hacia el bienestar de cada persona que confía en nosotros.
+        </p>
+      </div>
+
+      <!-- KPIs DE RESUMEN CLÍNICO -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6 pt-5 border-t border-[#17375E]">
+        <div class="p-3.5 rounded-2xl bg-[#0B1E36] border border-[#17375E]">
+          <span class="text-[11px] font-bold text-slate-400 block">Cuestionarios Iniciales</span>
+          <span class="text-2xl font-black text-[#00D2E0] font-heading mt-0.5">{{ total_cuestionarios }}</span>
+          <span class="text-[10px] text-slate-400 block">consultantes en censo</span>
+        </div>
+        <div class="p-3.5 rounded-2xl bg-[#0B1E36] border border-[#17375E]">
+          <span class="text-[11px] font-bold text-slate-400 block">Sesiones Agendadas</span>
+          <span class="text-2xl font-black text-[#10B981] font-heading mt-0.5">{{ total_citas }}</span>
+          <span class="text-[10px] text-slate-400 block">citas en el periodo</span>
+        </div>
+        <div class="p-3.5 rounded-2xl bg-[#0B1E36] border border-[#17375E]">
+          <span class="text-[11px] font-bold text-slate-400 block">Pacientes Atendidos</span>
+          <span class="text-2xl font-black text-[#818CF8] font-heading mt-0.5">{{ pacs_unicos }}</span>
+          <span class="text-[10px] text-slate-400 block">personas con acompañamiento</span>
+        </div>
+        <div class="p-3.5 rounded-2xl bg-[#0B1E36] border border-[#17375E]">
+          <span class="text-[11px] font-bold text-slate-400 block">Malestar Promedio Inicial</span>
+          <span class="text-2xl font-black text-[#FB923C] font-heading mt-0.5">{{ promedio_malestar }} <span class="text-xs text-slate-400 font-normal">/ 10</span></span>
+          <span class="text-[10px] text-slate-400 block">escala de ingreso</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- =========================================================================
+         LAS 6 GRÁFICAS DESTACADAS DE LA COMUNIDAD (DISEÑO EXACTO)
+         ========================================================================= -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+      <!-- 1. ESTADO DE ÁNIMO AL LLEGAR -->
+      <div class="glass-card-dark p-6 sm:p-7 rounded-3xl border border-[#17375E] flex flex-col justify-between animate-wide" style="animation-delay: 0.2s;">
+        <div>
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-2xl bg-[#F85B8C]/15 border border-[#F85B8C]/40 flex items-center justify-center text-[#F85B8C] text-lg">
+              <i class="fa-solid fa-heart-pulse"></i>
+            </div>
+            <div>
+              <h3 class="text-lg font-bold text-white font-heading">Estado de Ánimo al Llegar</h3>
+              <p class="text-xs text-slate-400">Cómo se sienten los pacientes en su primera semana</p>
+            </div>
+          </div>
+          <div class="frase-destacada">
+            <i class="fa-solid fa-heart-pulse text-[#F85B8C]"></i>
+            <span>Sin importar cómo llegues hoy, este espacio siempre será seguro para ti.</span>
+          </div>
+        </div>
+        <div class="relative w-full h-80 flex items-center justify-center mt-2">
+          <canvas id="graficaAnimo"></canvas>
+        </div>
+      </div>
+
+      <!-- 2. MOTIVOS PRINCIPALES DE CONSULTA -->
+      <div class="glass-card-dark p-6 sm:p-7 rounded-3xl border border-[#17375E] flex flex-col justify-between animate-wide" style="animation-delay: 0.3s;">
+        <div>
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-2xl bg-[#00D2E0]/15 border border-[#00D2E0]/40 flex items-center justify-center text-[#00D2E0] text-lg">
+              <i class="fa-solid fa-hands-holding-circle"></i>
+            </div>
+            <div>
+              <h3 class="text-lg font-bold text-white font-heading">Motivos Principales de Consulta</h3>
+              <p class="text-xs text-slate-400">Problemáticas más reportadas por la comunidad</p>
+            </div>
+          </div>
+          <div class="frase-destacada frase-destacada-cyan">
+            <i class="fa-solid fa-hands-holding-circle text-[#00D2E0]"></i>
+            <span>Ponerle nombre a lo que duele es el primer paso para poder sanarlo.</span>
+          </div>
+        </div>
+        <div class="relative w-full h-80 flex items-center justify-center mt-2">
+          <canvas id="graficaMotivos"></canvas>
+        </div>
+      </div>
+
+      <!-- 3. ESTADO DE LAS CITAS -->
+      <div class="glass-card-dark p-6 sm:p-7 rounded-3xl border border-[#17375E] flex flex-col justify-between animate-wide" style="animation-delay: 0.4s;">
+        <div>
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-2xl bg-[#10B981]/15 border border-[#10B981]/40 flex items-center justify-center text-[#10B981] text-lg">
+              <i class="fa-regular fa-calendar-check"></i>
+            </div>
+            <div>
+              <h3 class="text-lg font-bold text-white font-heading">Estado de las Citas</h3>
+              <p class="text-xs text-slate-400">Volumen y efectividad de sesiones en el periodo</p>
+            </div>
+          </div>
+          <div class="frase-destacada frase-destacada-green">
+            <i class="fa-regular fa-calendar-check text-[#10B981]"></i>
+            <span>Cada cita completada es un avance firme hacia la tranquilidad.</span>
+          </div>
+        </div>
+        <div class="relative w-full h-80 flex items-center justify-center mt-2">
+          <canvas id="graficaEstado"></canvas>
+        </div>
+      </div>
+
+      <!-- 4. RANGO DE EDADES -->
+      <div class="glass-card-dark p-6 sm:p-7 rounded-3xl border border-[#17375E] flex flex-col justify-between animate-wide" style="animation-delay: 0.5s;">
+        <div>
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-2xl bg-[#FBBF24]/15 border border-[#FBBF24]/40 flex items-center justify-center text-[#FBBF24] text-lg">
+              <i class="fa-solid fa-seedling"></i>
+            </div>
+            <div>
+              <h3 class="text-lg font-bold text-white font-heading">Rango de Edades</h3>
+              <p class="text-xs text-slate-400">Distribución etaria de las personas acompañadas</p>
+            </div>
+          </div>
+          <div class="frase-destacada frase-destacada-yellow">
+            <i class="fa-solid fa-seedling text-[#FBBF24]"></i>
+            <span>La salud emocional no tiene edad; abrazamos cada etapa de la vida.</span>
+          </div>
+        </div>
+        <div class="relative w-full h-80 flex items-center justify-center mt-2">
+          <canvas id="graficaEdades"></canvas>
+        </div>
+      </div>
+
+      <!-- 5. RECURRENCIA DE PACIENTES -->
+      <div class="glass-card-dark p-6 sm:p-7 rounded-3xl border border-[#17375E] flex flex-col justify-between animate-wide" style="animation-delay: 0.6s;">
+        <div>
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-2xl bg-[#818CF8]/15 border border-[#818CF8]/40 flex items-center justify-center text-[#818CF8] text-lg">
+              <i class="fa-solid fa-arrow-rotate-right"></i>
+            </div>
+            <div>
+              <h3 class="text-lg font-bold text-white font-heading">Recurrencia de Pacientes</h3>
+              <p class="text-xs text-slate-400">Frecuencia y constancia en el proceso terapéutico</p>
+            </div>
+          </div>
+          <div class="frase-destacada frase-destacada-purple">
+            <i class="fa-solid fa-arrow-rotate-right text-[#818CF8]"></i>
+            <span>La constancia en el proceso terapéutico es el verdadero motor del cambio.</span>
+          </div>
+        </div>
+        <div class="relative w-full h-80 flex items-center justify-center mt-2">
+          <canvas id="graficaRecurrencia"></canvas>
+        </div>
+      </div>
+
+      <!-- 6. INTENSIDAD DEL MALESTAR INICIAL -->
+      <div class="glass-card-dark p-6 sm:p-7 rounded-3xl border border-[#17375E] flex flex-col justify-between animate-wide" style="animation-delay: 0.7s;">
+        <div>
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-2xl bg-[#FB923C]/15 border border-[#FB923C]/40 flex items-center justify-center text-[#FB923C] text-lg">
+              <i class="fa-solid fa-cloud-sun"></i>
+            </div>
+            <div>
+              <h3 class="text-lg font-bold text-white font-heading">Intensidad del Malestar Inicial</h3>
+              <p class="text-xs text-slate-400">Escala de malestar declarada al ingresar (1 al 10)</p>
+            </div>
+          </div>
+          <div class="frase-destacada frase-destacada-orange">
+            <i class="fa-solid fa-cloud-sun text-[#FB923C]"></i>
+            <span>Transformamos los momentos de mayor reto en herramientas prácticas.</span>
+          </div>
+        </div>
+        <div class="relative w-full h-80 flex items-center justify-center mt-2">
+          <canvas id="graficaIntensidad"></canvas>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- =========================================================================
+         SECCIÓN EXTRA: RADIOGRAFÍA COMPLETA POR CADA PREGUNTA DEL CUESTIONARIO INICIAL
+         ========================================================================= -->
+    <div class="pt-6 space-y-6 animate-wide" style="animation-delay: 0.8s;">
+      
+      <div class="glass-card-dark p-6 sm:p-7 rounded-3xl border border-[#17375E] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div>
+          <span class="text-[11px] font-extrabold uppercase tracking-wider text-[#00D2E0] bg-[#00D2E0]/15 px-3 py-1 rounded-full border border-[#00D2E0]/30 inline-block mb-1.5">
+            Cuestionario de Primer Registro (Triage Clínico)
+          </span>
+          <h2 class="text-2xl font-black text-white font-heading">Radiografía por Pregunta del Cuestionario</h2>
+          <p class="text-xs text-slate-400 mt-1">Análisis pormenorizado de todas las preguntas respondidas por cada paciente al darse de alta en HOPE.</p>
+        </div>
+        <div class="flex items-center gap-2 text-xs font-bold text-slate-300 bg-[#071526] px-3 py-1.5 rounded-xl border border-[#17375E]">
+          <i class="fa-solid fa-clipboard-question text-[#F85B8C]"></i>
+          <span>7 Dimensiones Evaluadas</span>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+        <!-- PREGUNTA 1: PENSAMIENTOS DE RIESGO / AUTOLESIÓN -->
+        <div class="glass-card-dark p-5 sm:p-6 rounded-3xl border border-[#17375E] flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between">
+              <span class="text-[10px] font-extrabold uppercase tracking-wider text-[#F85B8C] bg-[#F85B8C]/15 px-2 py-0.5 rounded-md">1. Riesgo Clínico</span>
+              <i class="fa-solid fa-shield-heart text-[#F85B8C]"></i>
+            </div>
+            <h4 class="text-sm font-bold text-white mt-2">¿Pensamientos de autolesión o riesgo?</h4>
+            <p class="text-[11px] text-slate-400 mt-0.5">Filtro de contención inmediata y priorización clínica.</p>
+          </div>
+          <div class="relative w-full h-60 mt-3">
+            <canvas id="graficaRiesgo"></canvas>
+          </div>
+        </div>
+
+        <!-- PREGUNTA 2: EXPERIENCIA EN TERAPIA PREVIA -->
+        <div class="glass-card-dark p-5 sm:p-6 rounded-3xl border border-[#17375E] flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between">
+              <span class="text-[10px] font-extrabold uppercase tracking-wider text-[#00D2E0] bg-[#00D2E0]/15 px-2 py-0.5 rounded-md">2. Experiencia Previa</span>
+              <i class="fa-solid fa-clock-rotate-left text-[#00D2E0]"></i>
+            </div>
+            <h4 class="text-sm font-bold text-white mt-2">¿Ha tomado terapia psicológica antes?</h4>
+            <p class="text-[11px] text-slate-400 mt-0.5">Pacientes con procesos previos vs primera consulta de su vida.</p>
+          </div>
+          <div class="relative w-full h-60 mt-3">
+            <canvas id="graficaTerapiaPrevia"></canvas>
+          </div>
+        </div>
+
+        <!-- PREGUNTA 3: PREFERENCIA DE GÉNERO DEL TERAPEUTA -->
+        <div class="glass-card-dark p-5 sm:p-6 rounded-3xl border border-[#17375E] flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between">
+              <span class="text-[10px] font-extrabold uppercase tracking-wider text-[#818CF8] bg-[#818CF8]/15 px-2 py-0.5 rounded-md">3. Afinidad de Género</span>
+              <i class="fa-solid fa-user-doctor text-[#818CF8]"></i>
+            </div>
+            <h4 class="text-sm font-bold text-white mt-2">Preferencia de Terapeuta</h4>
+            <p class="text-[11px] text-slate-400 mt-0.5">Inclinación del consultante para su asignación profesional.</p>
+          </div>
+          <div class="relative w-full h-60 mt-3">
+            <canvas id="graficaPreferencia"></canvas>
+          </div>
+        </div>
+
+        <!-- PREGUNTA 4: FRANJAS HORARIAS PREFERIDAS -->
+        <div class="glass-card-dark p-5 sm:p-6 rounded-3xl border border-[#17375E] flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between">
+              <span class="text-[10px] font-extrabold uppercase tracking-wider text-[#FBBF24] bg-[#FBBF24]/15 px-2 py-0.5 rounded-md">4. Horarios</span>
+              <i class="fa-regular fa-clock text-[#FBBF24]"></i>
+            </div>
+            <h4 class="text-sm font-bold text-white mt-2">Franjas Horarias Solicitadas</h4>
+            <p class="text-[11px] text-slate-400 mt-0.5">Momentos del día con mayor demanda de atención.</p>
+          </div>
+          <div class="relative w-full h-60 mt-3">
+            <canvas id="graficaHorarios"></canvas>
+          </div>
+        </div>
+
+        <!-- PREGUNTA 5: MODALIDAD DE ATENCIÓN -->
+        <div class="glass-card-dark p-5 sm:p-6 rounded-3xl border border-[#17375E] flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between">
+              <span class="text-[10px] font-extrabold uppercase tracking-wider text-[#10B981] bg-[#10B981]/15 px-2 py-0.5 rounded-md">5. Modalidad</span>
+              <i class="fa-solid fa-laptop-medical text-[#10B981]"></i>
+            </div>
+            <h4 class="text-sm font-bold text-white mt-2">Modalidad de Consulta</h4>
+            <p class="text-[11px] text-slate-400 mt-0.5">Preferencia de telepsicología online o presencial.</p>
+          </div>
+          <div class="relative w-full h-60 mt-3">
+            <canvas id="graficaModalidad"></canvas>
+          </div>
+        </div>
+
+        <!-- PREGUNTA 6: LUGARES DE RESIDENCIA -->
+        <div class="glass-card-dark p-5 sm:p-6 rounded-3xl border border-[#17375E] flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between">
+              <span class="text-[10px] font-extrabold uppercase tracking-wider text-[#FB923C] bg-[#FB923C]/15 px-2 py-0.5 rounded-md">6. Territorio</span>
+              <i class="fa-solid fa-map-location-dot text-[#FB923C]"></i>
+            </div>
+            <h4 class="text-sm font-bold text-white mt-2">Ciudades y Regiones</h4>
+            <p class="text-[11px] text-slate-400 mt-0.5">Top de entidades federativas de donde nos consultan.</p>
+          </div>
+          <div class="relative w-full h-60 mt-3">
+            <canvas id="graficaResidencia"></canvas>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- PREGUNTA 7: SERVICIO SOLICITADO & MURO DE METAS TERAPÉUTICAS -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- Gráfica de Servicio Solicitado -->
+        <div class="lg:col-span-5 glass-card-dark p-6 rounded-3xl border border-[#17375E] flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between">
+              <span class="text-[10px] font-extrabold uppercase tracking-wider text-[#818CF8] bg-[#818CF8]/15 px-2 py-0.5 rounded-md">7. Servicio</span>
+              <i class="fa-solid fa-users-viewfinder text-[#818CF8]"></i>
+            </div>
+            <h4 class="text-base font-bold text-white mt-2">Tipo de Terapia Solicitada</h4>
+            <p class="text-xs text-slate-400 mt-0.5">Individual, Pareja, Familiar o Talleres.</p>
+          </div>
+          <div class="relative w-full h-64 mt-4">
+            <canvas id="graficaServicio"></canvas>
+          </div>
+        </div>
+
+        <!-- Muro de Metas de los Pacientes -->
+        <div class="lg:col-span-7 glass-card-dark p-6 rounded-3xl border border-[#17375E] flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between">
+              <span class="text-[10px] font-extrabold uppercase tracking-wider text-[#F85B8C] bg-[#F85B8C]/15 px-2 py-0.5 rounded-md">8. Metas Personales</span>
+              <i class="fa-solid fa-quote-right text-[#F85B8C]"></i>
+            </div>
+            <h4 class="text-base font-bold text-white mt-2">¿Cuál es tu principal meta al venir a HOPE?</h4>
+            <p class="text-xs text-slate-400 mt-0.5">Muestra de testimonios genuinos expresados textualmente por consultantes al ingresar.</p>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mt-4 max-h-72 overflow-y-auto pr-1">
+            {% for meta in metas_muestra %}
+              <div class="p-3 rounded-2xl bg-[#071526]/80 border border-[#17375E] text-xs text-slate-300 italic flex items-start gap-2 hover:border-[#00D2E0] transition">
+                <i class="fa-solid fa-feather-pointed text-[#00D2E0] shrink-0 mt-0.5 text-[10px]"></i>
+                <span>"{{ meta }}"</span>
+              </div>
+            {% empty %}
+              <div class="col-span-2 text-center py-6 text-slate-400 text-xs">
+                No hay metas registradas en el periodo seleccionado.
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- =========================================================================
+       FOOTER
+       ========================================================================= -->
+  <footer class="mt-12 border-t border-[#17375E] py-6 text-center text-xs text-slate-400 no-print">
+    <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
+      <div class="flex items-center gap-2">
+        <span class="font-extrabold text-white">HOPE · Espacio de Acompañamiento Psicológico</span>
+        <span>— Dashboard Comunitario</span>
+      </div>
+      <div class="text-[11px] text-slate-400">
+        Actualizado en tiempo real · {{ fecha_corte|date:"d M Y, H:i" }}
+      </div>
+    </div>
+  </footer>
+
+  <!-- =========================================================================
+       SCRIPTS DE RENDERIZADO CON CHART.JS
+       ========================================================================= -->
+  <script>
+    const COLORS = {
+      cyan: '#00D2E0',
+      pink: '#F85B8C',
+      purple: '#818CF8',
+      yellow: '#FBBF24',
+      green: '#10B981',
+      orange: '#FB923C',
+      card: '#0D223D',
+      dark: '#071526',
+      border: '#17375E',
+      textMuted: '#94A3B8',
+      textLight: '#E2E8F0',
+      palette: ['#00D2E0', '#F85B8C', '#818CF8', '#FBBF24', '#10B981', '#FB923C', '#38BDF8', '#C084FC']
+    };
+
+    Chart.defaults.font.family = '"Plus Jakarta Sans", sans-serif';
+    Chart.defaults.color = COLORS.textMuted;
+
+    // 1. ÁNIMO AL LLEGAR
+    function initGraficaAnimo() {
+      const ctx = document.getElementById('graficaAnimo').getContext('2d');
+      new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: {{ animo_labels_json|safe }},
+          datasets: [{
+            data: {{ animo_values_json|safe }},
+            backgroundColor: [COLORS.pink, COLORS.purple, COLORS.orange, COLORS.green, COLORS.cyan],
+            borderWidth: 2,
+            borderColor: COLORS.dark
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: { boxWidth: 10, usePointStyle: true, color: COLORS.textLight, font: { weight: '600', size: 10 } }
+            },
+            tooltip: {
+              backgroundColor: COLORS.card,
+              titleColor: COLORS.cyan,
+              bodyColor: '#FFFFFF',
+              borderColor: COLORS.border,
+              borderWidth: 1,
+              padding: 10,
+              cornerRadius: 10
+            }
+          },
+          cutout: '62%'
+        }
+      });
+    }
+
+    // 2. MOTIVOS PRINCIPALES
+    function initGraficaMotivos() {
+      const ctx = document.getElementById('graficaMotivos').getContext('2d');
+      new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: {{ motivo_labels_json|safe }},
+          datasets: [{
+            label: 'Consultantes',
+            data: {{ motivo_values_json|safe }},
+            backgroundColor: COLORS.cyan,
+            borderRadius: 6,
+            barPercentage: 0.65
+          }]
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: COLORS.card,
+              titleColor: COLORS.cyan,
+              bodyColor: '#FFFFFF',
+              borderColor: COLORS.border,
+              borderWidth: 1,
+              padding: 10,
+              cornerRadius: 10
+            }
+          },
+          scales: {
+            x: {
+              beginAtZero: true,
+              grid: { color: 'rgba(255, 255, 255, 0.06)' },
+              ticks: { color: COLORS.textMuted }
+            },
+            y: {
+              grid: { display: false },
+              ticks: { color: COLORS.textLight, font: { weight: '600', size: 10 } }
+            }
+          }
+        }
+      });
+    }
+
+    // 3. ESTADO DE LAS CITAS
+    function initGraficaEstado() {
+      const ctx = document.getElementById('graficaEstado').getContext('2d');
+      new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: {{ estado_labels_json|safe }},
+          datasets: [{
+            data: {{ estado_values_json|safe }},
+            backgroundColor: [COLORS.green, COLORS.cyan, COLORS.orange, COLORS.pink],
+            borderWidth: 2,
+            borderColor: COLORS.dark
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: { boxWidth: 10, usePointStyle: true, color: COLORS.textLight, font: { weight: '600', size: 10 } }
+            },
+            tooltip: {
+              backgroundColor: COLORS.card,
+              titleColor: COLORS.cyan,
+              bodyColor: '#FFFFFF',
+              borderColor: COLORS.border,
+              borderWidth: 1,
+              padding: 10,
+              cornerRadius: 10
+            }
+          },
+          cutout: '62%'
+        }
+      });
+    }
+
+    // 4. RANGO DE EDADES
+    function initGraficaEdades() {
+      const ctx = document.getElementById('graficaEdades').getContext('2d');
+      new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: {{ edad_labels_json|safe }},
+          datasets: [{
+            label: 'Personas',
+            data: {{ edad_values_json|safe }},
+            backgroundColor: COLORS.yellow,
+            borderRadius: 6,
+            barPercentage: 0.6
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: COLORS.card,
+              titleColor: COLORS.cyan,
+              bodyColor: '#FFFFFF',
+              borderColor: COLORS.border,
+              borderWidth: 1,
+              padding: 10,
+              cornerRadius: 10
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              grid: { color: 'rgba(255, 255, 255, 0.06)' },
+              ticks: { color: COLORS.textMuted }
+            },
+            x: {
+              grid: { display: false },
+              ticks: { color: COLORS.textLight, font: { weight: '600', size: 10 } }
+            }
+          }
+        }
+      });
+    }
+
+    // 5. RECURRENCIA DE PACIENTES
+    function initGraficaRecurrencia() {
+      const ctx = document.getElementById('graficaRecurrencia').getContext('2d');
+      new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: {{ recurrencia_labels_json|safe }},
+          datasets: [{
+            data: {{ recurrencia_values_json|safe }},
+            backgroundColor: [COLORS.cyan, COLORS.purple, COLORS.yellow],
+            borderWidth: 2,
+            borderColor: COLORS.dark
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: { boxWidth: 10, usePointStyle: true, color: COLORS.textLight, font: { weight: '600', size: 10 } }
+            },
+            tooltip: {
+              backgroundColor: COLORS.card,
+              titleColor: COLORS.cyan,
+              bodyColor: '#FFFFFF',
+              borderColor: COLORS.border,
+              borderWidth: 1,
+              padding: 10,
+              cornerRadius: 10
+            }
+          },
+          cutout: '62%'
+        }
+      });
+    }
+
+    // 6. INTENSIDAD DEL MALESTAR INICIAL
+    function initGraficaIntensidad() {
+      const ctx = document.getElementById('graficaIntensidad').getContext('2d');
+      const colors = [
+        COLORS.cyan, COLORS.cyan, COLORS.cyan,
+        COLORS.yellow, COLORS.yellow, COLORS.yellow,
+        COLORS.orange, COLORS.orange,
+        COLORS.pink, COLORS.pink
+      ];
+      new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: {{ intensidad_labels_json|safe }},
+          datasets: [{
+            label: 'Consultantes',
+            data: {{ intensidad_values_json|safe }},
+            backgroundColor: colors,
+            borderRadius: 6,
+            barPercentage: 0.65
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: COLORS.card,
+              titleColor: COLORS.cyan,
+              bodyColor: '#FFFFFF',
+              borderColor: COLORS.border,
+              borderWidth: 1,
+              padding: 10,
+              cornerRadius: 10
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              grid: { color: 'rgba(255, 255, 255, 0.06)' },
+              ticks: { color: COLORS.textMuted }
+            },
+            x: {
+              grid: { display: false },
+              ticks: { color: COLORS.textLight, font: { weight: '600', size: 10 } }
+            }
+          }
+        }
+      });
+    }
+
+    // ==========================================
+    // GRÁFICAS DE RADIOGRAFÍA POR PREGUNTA
+    // ==========================================
+
+    function initGraficasCuestionario() {
+      // Riesgo
+      const ctxRiesgo = document.getElementById('graficaRiesgo').getContext('2d');
+      new Chart(ctxRiesgo, {
+        type: 'pie',
+        data: {
+          labels: {{ riesgo_labels_json|safe }},
+          datasets: [{
+            data: {{ riesgo_values_json|safe }},
+            backgroundColor: [COLORS.green, COLORS.pink],
+            borderColor: COLORS.dark,
+            borderWidth: 2
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'bottom', labels: { boxWidth: 10, usePointStyle: true, color: COLORS.textLight, font: { size: 10 } } }
+          }
+        }
+      });
+
+      // Terapia Previa
+      const ctxTerapia = document.getElementById('graficaTerapiaPrevia').getContext('2d');
+      new Chart(ctxTerapia, {
+        type: 'doughnut',
+        data: {
+          labels: {{ terapia_labels_json|safe }},
+          datasets: [{
+            data: {{ terapia_values_json|safe }},
+            backgroundColor: [COLORS.cyan, COLORS.yellow],
+            borderColor: COLORS.dark,
+            borderWidth: 2
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: '60%',
+          plugins: {
+            legend: { position: 'bottom', labels: { boxWidth: 10, usePointStyle: true, color: COLORS.textLight, font: { size: 10 } } }
+          }
+        }
+      });
+
+      // Preferencia
+      const ctxPref = document.getElementById('graficaPreferencia').getContext('2d');
+      new Chart(ctxPref, {
+        type: 'bar',
+        data: {
+          labels: {{ preferencia_labels_json|safe }},
+          datasets: [{
+            data: {{ preferencia_values_json|safe }},
+            backgroundColor: [COLORS.purple, COLORS.pink, COLORS.cyan],
+            borderRadius: 6,
+            barPercentage: 0.6
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.06)' }, ticks: { color: COLORS.textMuted } },
+            x: { grid: { display: false }, ticks: { color: COLORS.textLight, font: { size: 10 } } }
+          }
+        }
+      });
+
+      // Horarios
+      const ctxHorarios = document.getElementById('graficaHorarios').getContext('2d');
+      new Chart(ctxHorarios, {
+        type: 'bar',
+        data: {
+          labels: {{ horario_labels_json|safe }},
+          datasets: [{
+            data: {{ horario_values_json|safe }},
+            backgroundColor: COLORS.yellow,
+            borderRadius: 6,
+            barPercentage: 0.65
+          }]
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.06)' }, ticks: { color: COLORS.textMuted } },
+            y: { grid: { display: false }, ticks: { color: COLORS.textLight, font: { size: 9 } } }
+          }
+        }
+      });
+
+      // Modalidad
+      const ctxMod = document.getElementById('graficaModalidad').getContext('2d');
+      new Chart(ctxMod, {
+        type: 'doughnut',
+        data: {
+          labels: {{ modalidad_labels_json|safe }},
+          datasets: [{
+            data: {{ modalidad_values_json|safe }},
+            backgroundColor: [COLORS.green, COLORS.cyan, COLORS.orange],
+            borderColor: COLORS.dark,
+            borderWidth: 2
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: '60%',
+          plugins: {
+            legend: { position: 'bottom', labels: { boxWidth: 10, usePointStyle: true, color: COLORS.textLight, font: { size: 10 } } }
+          }
+        }
+      });
+
+      // Residencia
+      const ctxRes = document.getElementById('graficaResidencia').getContext('2d');
+      new Chart(ctxRes, {
+        type: 'bar',
+        data: {
+          labels: {{ residencia_labels_json|safe }},
+          datasets: [{
+            data: {{ residencia_values_json|safe }},
+            backgroundColor: COLORS.orange,
+            borderRadius: 6,
+            barPercentage: 0.65
+          }]
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.06)' }, ticks: { color: COLORS.textMuted } },
+            y: { grid: { display: false }, ticks: { color: COLORS.textLight, font: { size: 9 } } }
+          }
+        }
+      });
+
+      // Servicio
+      const ctxServ = document.getElementById('graficaServicio').getContext('2d');
+      new Chart(ctxServ, {
+        type: 'bar',
+        data: {
+          labels: {{ servicio_labels_json|safe }},
+          datasets: [{
+            data: {{ servicio_values_json|safe }},
+            backgroundColor: COLORS.purple,
+            borderRadius: 6,
+            barPercentage: 0.6
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.06)' }, ticks: { color: COLORS.textMuted } },
+            x: { grid: { display: false }, ticks: { color: COLORS.textLight, font: { size: 10 } } }
+          }
+        }
+      });
+    }
+
+    window.onload = function() {
+      initGraficaAnimo();
+      initGraficaMotivos();
+      initGraficaEstado();
+      initGraficaEdades();
+      initGraficaRecurrencia();
+      initGraficaIntensidad();
+      initGraficasCuestionario();
+    };
+  </script>
+
+</body>
+</html>

@@ -105,4 +105,8 @@ urlpatterns = [
     path('api/repositorio-clinico/subir/', views.subir_documento_repositorio_ajax, name='subir_documento_repositorio'),
     path('api/repositorio-clinico/consultar/', views.consultar_repositorio_groq_ajax, name='consultar_repositorio_groq'),
     path('api/repositorio-clinico/eliminar/<int:doc_id>/', views.eliminar_documento_repositorio_ajax, name='eliminar_documento_repositorio'),
+
+    # Panel de Sentimientos y Comunidad
+    path('sentimientos/', views.panel_sentimientos_view, name='panel_sentimientos'),
+    path('sentimiento/', views.panel_sentimientos_view),
 ]

@@ -6218,10 +6218,356 @@ def reporte_crecimiento_sesiones_view(request):
         'psicologos_chart_datos_json': json.dumps(psicologos_chart_datos),
         'psicologos_chart_cants_json': json.dumps(psicologos_chart_cants),
 
-        'url_panel_sentimientos': 'https://analytics.espaciohope.com/',
+        'url_panel_sentimientos': '/sentimientos/',
     }
 
     return render(request, 'reporte_crecimiento_sesiones.html', context)
+
+
+# ==========================================
+# 11.5 PANEL DE SENTIMIENTOS Y COMUNIDAD
+# ==========================================
+
+def panel_sentimientos_view(request):
+    """
+    Dashboard Clínico y Comunitario: 'El Reflejo de Nuestra Comunidad'.
+    Filtros en tiempo real por calendario (fecha_inicio a fecha_fin), mes e histórico.
+    Despliega las 6 gráficas principales de la comunidad:
+      1) Estado de Ánimo al Llegar (graficaAnimo)
+      2) Motivos Principales de Consulta (graficaMotivos)
+      3) Estado de las Citas (graficaEstado)
+      4) Rango de Edades (graficaEdades)
+      5) Recurrencia de Pacientes (graficaRecurrencia)
+      6) Intensidad del Malestar Inicial (graficaIntensidad)
+    Más la radiografía completa por cada pregunta del cuestionario inicial:
+      - Pensamientos de riesgo/autolesión
+      - Terapia previa
+      - Preferencia de terapeuta (Mujer/Hombre/Indistinto)
+      - Horarios solicitados
+      - Modalidad
+      - Lugar de residencia
+      - Servicio / Tipo de terapia solicitada
+      - Muestra de metas de terapia
+    """
+    from collections import Counter
+
+    fecha_inicio_str = request.GET.get('fecha_inicio', '').strip()
+    fecha_fin_str = request.GET.get('fecha_fin', '').strip()
+    filtro_req = request.GET.get('filtro', '').strip().lower()
+    periodo_req = request.GET.get('periodo', '').strip().lower()
+
+    es_historico = (filtro_req in ['historico', 'totales', 'all'] or periodo_req in ['historico', 'totales', 'all'])
+
+    d_ini = None
+    d_fin = None
+    es_rango_personalizado = False
+
+    if fecha_inicio_str and fecha_fin_str and not es_historico:
+        try:
+            d_ini = datetime.strptime(fecha_inicio_str, '%Y-%m-%d').date()
+            d_fin = datetime.strptime(fecha_fin_str, '%Y-%m-%d').date()
+            if d_ini > d_fin:
+                d_ini, d_fin = d_fin, d_ini
+            es_rango_personalizado = True
+        except (ValueError, TypeError):
+            d_ini, d_fin = None, None
+            es_rango_personalizado = False
+
+    try:
+        mes_sel = int(request.GET.get('mes', 9))
+    except (TypeError, ValueError):
+        mes_sel = 9
+
+    try:
+        anio = int(request.GET.get('anio', 2026))
+    except (TypeError, ValueError):
+        anio = 2026
+
+    meses_nombres = {
+        1: 'Enero', 2: 'Febrero', 3: 'Marzo', 4: 'Abril',
+        5: 'Mayo', 6: 'Junio', 7: 'Julio', 8: 'Agosto',
+        9: 'Septiembre', 10: 'Octubre', 11: 'Noviembre', 12: 'Diciembre'
+    }
+    nombre_mes = meses_nombres.get(mes_sel, 'Septiembre')
+
+    cuestionarios_qs = CuestionarioRegistro.objects.all().select_related('paciente')
+    citas_validas = Cita.objects.exclude(estado='Cancelada').select_related('paciente')
+
+    if es_rango_personalizado:
+        filtro_activo = 'rango'
+        nombre_periodo = f"{d_ini.strftime('%d/%m/%Y')} al {d_fin.strftime('%d/%m/%Y')}"
+        subtitulo_periodo = f"Datos del {d_ini.strftime('%d/%m/%Y')} al {d_fin.strftime('%d/%m/%Y')}"
+        cuestionarios_filtrados = cuestionarios_qs.filter(fecha_completado__date__gte=d_ini, fecha_completado__date__lte=d_fin)
+        citas_filtradas = citas_validas.filter(fecha__gte=d_ini, fecha__lte=d_fin)
+    elif es_historico:
+        filtro_activo = 'historico'
+        nombre_periodo = 'Histórico Global (Comunidad HOPE)'
+        subtitulo_periodo = 'Reflejo global acumulado de todas las personas atendidas'
+        cuestionarios_filtrados = cuestionarios_qs
+        citas_filtradas = citas_validas
+    else:
+        filtro_activo = 'mes'
+        nombre_periodo = f"{nombre_mes} {anio}"
+        subtitulo_periodo = f"Comunidad atendida en el mes de {nombre_mes} {anio}"
+        cuestionarios_filtrados = cuestionarios_qs.filter(fecha_completado__year=anio, fecha_completado__month=mes_sel)
+        citas_filtradas = citas_validas.filter(fecha__year=anio, fecha__month=mes_sel)
+
+    # Si en el filtro por mes no hay suficientes registros de cuestionario (ej. creados en fechas previas),
+    # tomamos los cuestionarios de los pacientes que tuvieron cita en ese mes o el conjunto general
+    if not cuestionarios_filtrados.exists():
+        pacientes_mes = list(citas_filtradas.values_list('paciente_id', flat=True).distinct())
+        if pacientes_mes:
+            cuestionarios_filtrados = cuestionarios_qs.filter(paciente_id__in=pacientes_mes)
+        if not cuestionarios_filtrados.exists():
+            cuestionarios_filtrados = cuestionarios_qs
+
+    total_cuestionarios = cuestionarios_filtrados.count()
+    total_citas = citas_filtradas.count()
+
+    animos = Counter()
+    motivos = Counter()
+    edades = {
+        'Menores de 18': 0,
+        '18 a 24 años': 0,
+        '25 a 34 años': 0,
+        '35 a 44 años': 0,
+        '45 a 54 años': 0,
+        '55+ años': 0,
+    }
+    intensidades = {str(i): 0 for i in range(1, 11)}
+    suma_intensidad = 0
+    conteo_intensidad = 0
+
+    riesgos = Counter()
+    terapias_previas = Counter()
+    preferencias = Counter()
+    horarios = Counter()
+    modalidades = Counter()
+    residencias = Counter()
+    servicios = Counter()
+    metas_lista = []
+
+    for c in cuestionarios_filtrados:
+        r = c.respuestas or {}
+        # 1. Ánimo
+        a = r.get('estado_semana')
+        if a:
+            animos[str(a).strip()] += 1
+        # 2. Motivo consulta
+        m = r.get('motivo_consulta')
+        if isinstance(m, list):
+            for item in m:
+                motivos[str(item).strip()] += 1
+        elif m:
+            motivos[str(m).strip()] += 1
+        # 3. Edad
+        ed = r.get('edad')
+        if ed:
+            try:
+                val = int(ed)
+                if val < 18:
+                    edades['Menores de 18'] += 1
+                elif 18 <= val <= 24:
+                    edades['18 a 24 años'] += 1
+                elif 25 <= val <= 34:
+                    edades['25 a 34 años'] += 1
+                elif 35 <= val <= 44:
+                    edades['35 a 44 años'] += 1
+                elif 45 <= val <= 54:
+                    edades['45 a 54 años'] += 1
+                else:
+                    edades['55+ años'] += 1
+            except (ValueError, TypeError):
+                pass
+        # 4. Intensidad malestar (1 a 10)
+        inte = r.get('intensidad_malestar')
+        if inte:
+            try:
+                val_int = int(inte)
+                if 1 <= val_int <= 10:
+                    intensidades[str(val_int)] += 1
+                    suma_intensidad += val_int
+                    conteo_intensidad += 1
+            except (ValueError, TypeError):
+                pass
+        # 5. Riesgo
+        rk = r.get('riesgo')
+        if rk:
+            norm_rk = 'Sí (Atención Prioritaria)' if str(rk).strip().lower() in ['si', 'sí', 'true', '1'] else 'No'
+            riesgos[norm_rk] += 1
+        # 6. Terapia previa
+        tp = r.get('terapia_previa') or r.get('exp_previa')
+        if tp:
+            norm_tp = 'Sí (Con Experiencia)' if str(tp).strip().lower() in ['si', 'sí', 'true', '1'] else 'Primera vez en terapia'
+            terapias_previas[norm_tp] += 1
+        # 7. Preferencia terapeuta
+        pref = r.get('preferencia_terapeuta')
+        if pref:
+            preferencias[str(pref).strip().capitalize()] += 1
+        # 8. Horarios
+        h = r.get('horario')
+        if isinstance(h, list):
+            for item in h:
+                horarios[str(item).strip()] += 1
+        elif h:
+            horarios[str(h).strip()] += 1
+        # 9. Modalidad
+        mod = r.get('modalidad')
+        if mod:
+            modalidades[str(mod).strip()] += 1
+        # 10. Residencia
+        res = r.get('residencia')
+        if res:
+            res_clean = str(res).strip()
+            if res_clean.lower() in ['cdmx', 'ciudad de mexico', 'ciudad de méxico']:
+                res_clean = 'Ciudad de México'
+            elif res_clean.lower() in ['edomex', 'estado de mexico', 'estado de méxico']:
+                res_clean = 'Estado de México'
+            residencias[res_clean] += 1
+        # 11. Servicio
+        serv = r.get('servicio_solicitado') or c.flujo_elegido
+        if serv:
+            serv_map = {
+                'terapia_individual': 'Terapia Individual',
+                'terapia_pareja': 'Terapia de Pareja',
+                'terapia_familiar': 'Terapia Familiar',
+                'talleres': 'Talleres Psicoeducativos',
+                'eco_vision': 'Eco-visión / Taller',
+                'solo_talleres': 'Talleres',
+            }
+            serv_label = serv_map.get(str(serv).lower(), str(serv).replace('_', ' ').title())
+            servicios[serv_label] += 1
+        # 12. Metas
+        meta = r.get('meta_terapia')
+        if meta and len(str(meta).strip()) > 3:
+            metas_lista.append(str(meta).strip())
+
+    promedio_malestar = round(suma_intensidad / conteo_intensidad, 1) if conteo_intensidad > 0 else 7.1
+
+    # 3. Estado de las Citas
+    conteo_estados_citas = Counter(citas_filtradas.values_list('estado', flat=True))
+    if not conteo_estados_citas:
+        conteo_estados_citas = {'Completada': 0, 'Confirmada': 0}
+
+    # 5. Recurrencia de Pacientes en el periodo
+    pac_counts = citas_filtradas.values('paciente').annotate(c=Count('id'))
+    pacs_unicos = pac_counts.count()
+    rec_1 = pac_counts.filter(c=1).count()
+    rec_2_3 = pac_counts.filter(c__gte=2, c__lte=3).count()
+    rec_4_mas = pac_counts.filter(c__gte=4).count()
+
+    if pacs_unicos == 0:
+        global_counts = citas_validas.values('paciente').annotate(c=Count('id'))
+        pacs_unicos = global_counts.count()
+        rec_1 = global_counts.filter(c=1).count()
+        rec_2_3 = global_counts.filter(c__gte=2, c__lte=3).count()
+        rec_4_mas = global_counts.filter(c__gte=4).count()
+
+    # Formatear datos para JSON de Chart.js
+    animo_labels = list(animos.keys())
+    animo_values = list(animos.values())
+
+    top_motivos = motivos.most_common(8)
+    motivo_labels = [m[0] for m in top_motivos]
+    motivo_values = [m[1] for m in top_motivos]
+
+    estado_labels = list(conteo_estados_citas.keys())
+    estado_values = list(conteo_estados_citas.values())
+
+    edad_labels = list(edades.keys())
+    edad_values = list(edades.values())
+
+    recurrencia_labels = ['Cita Única (1 sesión)', 'Retención Media (2-3 sesiones)', 'Alta Recurrencia (4+ sesiones)']
+    recurrencia_values = [rec_1, rec_2_3, rec_4_mas]
+
+    intensidad_labels = [f"Nivel {i}" for i in range(1, 11)]
+    intensidad_values = [intensidades[str(i)] for i in range(1, 11)]
+
+    # Cuestionario detallado
+    riesgo_labels = list(riesgos.keys())
+    riesgo_values = list(riesgos.values())
+
+    terapia_labels = list(terapias_previas.keys())
+    terapia_values = list(terapias_previas.values())
+
+    preferencia_labels = list(preferencias.keys())
+    preferencia_values = list(preferencias.values())
+
+    horario_top = horarios.most_common(6)
+    horario_labels = [h[0] for h in horario_top]
+    horario_values = [h[1] for h in horario_top]
+
+    modalidad_labels = list(modalidades.keys()) if modalidades else ['En línea', 'Presencial']
+    modalidad_values = list(modalidades.values()) if modalidades else [total_cuestionarios or 1, 0]
+
+    residencia_top = residencias.most_common(7)
+    residencia_labels = [r[0] for r in residencia_top]
+    residencia_values = [r[1] for r in residencia_top]
+
+    servicio_labels = [s[0] for s in servicios.most_common(5)]
+    servicio_values = [s[1] for s in servicios.most_common(5)]
+
+    # Meses para barra de filtros
+    meses_disponibles = [
+        {'numero': 6, 'nombre': 'Junio', 'activo': (not es_historico and not es_rango_personalizado and mes_sel == 6)},
+        {'numero': 7, 'nombre': 'Julio', 'activo': (not es_historico and not es_rango_personalizado and mes_sel == 7)},
+        {'numero': 8, 'nombre': 'Agosto', 'activo': (not es_historico and not es_rango_personalizado and mes_sel == 8)},
+        {'numero': 9, 'nombre': 'Septiembre', 'activo': (not es_historico and not es_rango_personalizado and mes_sel == 9)},
+    ]
+
+    context = {
+        'anio': anio,
+        'nombre_mes': nombre_mes,
+        'mes_seleccionado': mes_sel,
+        'fecha_inicio': fecha_inicio_str,
+        'fecha_fin': fecha_fin_str,
+        'nombre_periodo': nombre_periodo,
+        'subtitulo_periodo': subtitulo_periodo,
+        'filtro_activo': filtro_activo,
+        'es_historico': es_historico,
+        'es_rango_personalizado': es_rango_personalizado,
+        'meses_disponibles': meses_disponibles,
+        'fecha_corte': timezone.now(),
+
+        # KPIs
+        'total_cuestionarios': total_cuestionarios,
+        'total_citas': total_citas,
+        'promedio_malestar': promedio_malestar,
+        'pacs_unicos': pacs_unicos,
+
+        # 6 Gráficas Principales
+        'animo_labels_json': json.dumps(animo_labels),
+        'animo_values_json': json.dumps(animo_values),
+        'motivo_labels_json': json.dumps(motivo_labels),
+        'motivo_values_json': json.dumps(motivo_values),
+        'estado_labels_json': json.dumps(estado_labels),
+        'estado_values_json': json.dumps(estado_values),
+        'edad_labels_json': json.dumps(edad_labels),
+        'edad_values_json': json.dumps(edad_values),
+        'recurrencia_labels_json': json.dumps(recurrencia_labels),
+        'recurrencia_values_json': json.dumps(recurrencia_values),
+        'intensidad_labels_json': json.dumps(intensidad_labels),
+        'intensidad_values_json': json.dumps(intensidad_values),
+
+        # Radiografía Preguntas Cuestionario Registro
+        'riesgo_labels_json': json.dumps(riesgo_labels),
+        'riesgo_values_json': json.dumps(riesgo_values),
+        'terapia_labels_json': json.dumps(terapia_labels),
+        'terapia_values_json': json.dumps(terapia_values),
+        'preferencia_labels_json': json.dumps(preferencia_labels),
+        'preferencia_values_json': json.dumps(preferencia_values),
+        'horario_labels_json': json.dumps(horario_labels),
+        'horario_values_json': json.dumps(horario_values),
+        'modalidad_labels_json': json.dumps(modalidad_labels),
+        'modalidad_values_json': json.dumps(modalidad_values),
+        'residencia_labels_json': json.dumps(residencia_labels),
+        'residencia_values_json': json.dumps(residencia_values),
+        'servicio_labels_json': json.dumps(servicio_labels),
+        'servicio_values_json': json.dumps(servicio_values),
+        'metas_muestra': metas_lista[:18],
+    }
+
+    return render(request, 'panel_sentimientos.html', context)
 
 
 # ==========================================
