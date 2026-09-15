@@ -327,30 +327,8 @@
         </div>
       </div>
 
-      <!-- 3. ESTADO DE LAS CITAS -->
+      <!-- 3. RANGO DE EDADES -->
       <div class="glass-card-dark p-6 sm:p-7 rounded-3xl border border-[#17375E] flex flex-col justify-between animate-wide" style="animation-delay: 0.4s;">
-        <div>
-          <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-2xl bg-[#10B981]/15 border border-[#10B981]/40 flex items-center justify-center text-[#10B981] text-lg">
-              <i class="fa-regular fa-calendar-check"></i>
-            </div>
-            <div>
-              <h3 class="text-lg font-bold text-white font-heading">Estado de las Citas</h3>
-              <p class="text-xs text-slate-400">Volumen y efectividad de sesiones en el periodo</p>
-            </div>
-          </div>
-          <div class="frase-destacada frase-destacada-green">
-            <i class="fa-regular fa-calendar-check text-[#10B981]"></i>
-            <span>Cada cita completada es un avance firme hacia la tranquilidad.</span>
-          </div>
-        </div>
-        <div class="relative w-full h-80 flex items-center justify-center mt-2">
-          <canvas id="graficaEstado"></canvas>
-        </div>
-      </div>
-
-      <!-- 4. RANGO DE EDADES -->
-      <div class="glass-card-dark p-6 sm:p-7 rounded-3xl border border-[#17375E] flex flex-col justify-between animate-wide" style="animation-delay: 0.5s;">
         <div>
           <div class="flex items-center gap-3">
             <div class="w-10 h-10 rounded-2xl bg-[#FBBF24]/15 border border-[#FBBF24]/40 flex items-center justify-center text-[#FBBF24] text-lg">
@@ -371,30 +349,8 @@
         </div>
       </div>
 
-      <!-- 5. RECURRENCIA DE PACIENTES -->
-      <div class="glass-card-dark p-6 sm:p-7 rounded-3xl border border-[#17375E] flex flex-col justify-between animate-wide" style="animation-delay: 0.6s;">
-        <div>
-          <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-2xl bg-[#818CF8]/15 border border-[#818CF8]/40 flex items-center justify-center text-[#818CF8] text-lg">
-              <i class="fa-solid fa-arrow-rotate-right"></i>
-            </div>
-            <div>
-              <h3 class="text-lg font-bold text-white font-heading">Recurrencia de Pacientes</h3>
-              <p class="text-xs text-slate-400">Frecuencia y constancia en el proceso terapéutico</p>
-            </div>
-          </div>
-          <div class="frase-destacada frase-destacada-purple">
-            <i class="fa-solid fa-arrow-rotate-right text-[#818CF8]"></i>
-            <span>La constancia en el proceso terapéutico es el verdadero motor del cambio.</span>
-          </div>
-        </div>
-        <div class="relative w-full h-80 flex items-center justify-center mt-2">
-          <canvas id="graficaRecurrencia"></canvas>
-        </div>
-      </div>
-
-      <!-- 6. INTENSIDAD DEL MALESTAR INICIAL -->
-      <div class="glass-card-dark p-6 sm:p-7 rounded-3xl border border-[#17375E] flex flex-col justify-between animate-wide" style="animation-delay: 0.7s;">
+      <!-- 4. INTENSIDAD DEL MALESTAR INICIAL -->
+      <div class="glass-card-dark p-6 sm:p-7 rounded-3xl border border-[#17375E] flex flex-col justify-between animate-wide" style="animation-delay: 0.5s;">
         <div>
           <div class="flex items-center gap-3">
             <div class="w-10 h-10 rounded-2xl bg-[#FB923C]/15 border border-[#FB923C]/40 flex items-center justify-center text-[#FB923C] text-lg">
@@ -699,44 +655,7 @@
       });
     }
 
-    // 3. ESTADO DE LAS CITAS
-    function initGraficaEstado() {
-      const ctx = document.getElementById('graficaEstado').getContext('2d');
-      new Chart(ctx, {
-        type: 'doughnut',
-        data: {
-          labels: {{ estado_labels_json|safe }},
-          datasets: [{
-            data: {{ estado_values_json|safe }},
-            backgroundColor: [COLORS.green, COLORS.cyan, COLORS.orange, COLORS.pink],
-            borderWidth: 2,
-            borderColor: COLORS.dark
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: {
-              position: 'bottom',
-              labels: { boxWidth: 10, usePointStyle: true, color: COLORS.textLight, font: { weight: '600', size: 10 } }
-            },
-            tooltip: {
-              backgroundColor: COLORS.card,
-              titleColor: COLORS.cyan,
-              bodyColor: '#FFFFFF',
-              borderColor: COLORS.border,
-              borderWidth: 1,
-              padding: 10,
-              cornerRadius: 10
-            }
-          },
-          cutout: '62%'
-        }
-      });
-    }
-
-    // 4. RANGO DE EDADES
+    // 3. RANGO DE EDADES
     function initGraficaEdades() {
       const ctx = document.getElementById('graficaEdades').getContext('2d');
       new Chart(ctx, {
@@ -777,43 +696,6 @@
               ticks: { color: COLORS.textLight, font: { weight: '600', size: 10 } }
             }
           }
-        }
-      });
-    }
-
-    // 5. RECURRENCIA DE PACIENTES
-    function initGraficaRecurrencia() {
-      const ctx = document.getElementById('graficaRecurrencia').getContext('2d');
-      new Chart(ctx, {
-        type: 'doughnut',
-        data: {
-          labels: {{ recurrencia_labels_json|safe }},
-          datasets: [{
-            data: {{ recurrencia_values_json|safe }},
-            backgroundColor: [COLORS.cyan, COLORS.purple, COLORS.yellow],
-            borderWidth: 2,
-            borderColor: COLORS.dark
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: {
-              position: 'bottom',
-              labels: { boxWidth: 10, usePointStyle: true, color: COLORS.textLight, font: { weight: '600', size: 10 } }
-            },
-            tooltip: {
-              backgroundColor: COLORS.card,
-              titleColor: COLORS.cyan,
-              bodyColor: '#FFFFFF',
-              borderColor: COLORS.border,
-              borderWidth: 1,
-              padding: 10,
-              cornerRadius: 10
-            }
-          },
-          cutout: '62%'
         }
       });
     }
@@ -1044,9 +926,7 @@
     window.onload = function() {
       initGraficaAnimo();
       initGraficaMotivos();
-      initGraficaEstado();
       initGraficaEdades();
-      initGraficaRecurrencia();
       initGraficaIntensidad();
       initGraficasCuestionario();
     };
