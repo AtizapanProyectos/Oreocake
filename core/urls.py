@@ -51,7 +51,6 @@ urlpatterns = [
     path('api/registrar-taller/', views.procesar_registro_taller, name='registrar_taller_ajax'),
     path('reagendar-cita/', views.reagendar_cita_ajax, name='reagendar_cita'),
     path('sesion-previa/<int:cita_id>/', views.formulario_previo_meet, name='formulario_previo_meet'),
-    path('api/guardar-consentimiento/', views.guardar_consentimiento_ajax, name='guardar_consentimiento_ajax'),
 
 #Pruebas y produccion
 # Agrega estas líneas dentro de tu `urlpatterns` en urls.py
@@ -92,6 +91,8 @@ urlpatterns = [
 
     path('admin/procesar-reportes-citas/', views.procesar_reportes_citas_manual, name='procesar_reportes_citas_manual'),
     path('panel-admin/reporte-crecimiento-sesiones/', views.reporte_crecimiento_sesiones_view, name='reporte_crecimiento_sesiones'),
+    path('panel-admin/reporte-crecimiento-sesiones/exportar/', views.exportar_usuarios_reporte_view, name='exportar_usuarios_reporte'),
+    path('panel-admin/reporte-crecimiento-sesiones/api-usuarios/', views.api_usuarios_reporte_view, name='api_usuarios_reporte'),
 
     # URLs para el Gestor Visual de Reportes Clínicos en PDF
     path('panel-admin/enviar-reporte-cita/', views.panel_gestor_envio_reporte_view, name='gestor_envio_reporte_cita'),
@@ -104,4 +105,4 @@ urlpatterns = [
     path('api/repositorio-clinico/subir/', views.subir_documento_repositorio_ajax, name='subir_documento_repositorio'),
     path('api/repositorio-clinico/consultar/', views.consultar_repositorio_groq_ajax, name='consultar_repositorio_groq'),
     path('api/repositorio-clinico/eliminar/<int:doc_id>/', views.eliminar_documento_repositorio_ajax, name='eliminar_documento_repositorio'),
-]
+]

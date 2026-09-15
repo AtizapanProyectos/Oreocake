@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>HOPE - Reporte Ejecutivo: Sesiones y Crecimiento ({{ nombre_periodo }})</title>
+  <title>HOPE - Reporte Ejecutivo: Sesiones, Crecimiento & Satisfacción ({{ nombre_periodo }})</title>
   
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -49,6 +49,8 @@
       --cyan: #00D2E0;
       --pink: #F85B8C;
       --purple: #818CF8;
+      --green: #10B981;
+      --yellow: #FBBF24;
     }
 
     body {
@@ -81,6 +83,12 @@
       to { opacity: 1; transform: translateY(0); }
     }
 
+    /* Estilo para los datepickers en dark mode */
+    input[type="date"]::-webkit-calendar-picker-indicator {
+      filter: invert(1);
+      cursor: pointer;
+    }
+
     @media print {
       .no-print { display: none !important; }
       .slide-view, .slide-hidden { display: block !important; margin-bottom: 2rem; page-break-after: always; }
@@ -92,7 +100,7 @@
 
   <!-- BARRA SUPERIOR DE NAVEGACIÓN -->
   <header class="glass-card-dark border-b border-[#17375E] sticky top-0 z-40 no-print">
-    <div class="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
       
       <!-- Brand Name & Logo -->
       <div class="flex items-center gap-3">
@@ -102,7 +110,7 @@
           </span>
         </a>
         <span class="h-4 w-px bg-[#17375E]"></span>
-        <span class="text-xs font-extrabold text-[#00D2E0] uppercase tracking-wider hidden sm:inline-block">Reporte Ejecutivo: Sesiones & Crecimiento</span>
+        <span class="text-xs font-extrabold text-[#00D2E0] uppercase tracking-wider hidden sm:inline-block">Reporte Ejecutivo: Sesiones, Crecimiento & Satisfacción</span>
       </div>
 
       <!-- Controls & External Links -->
@@ -129,68 +137,83 @@
     </div>
   </header>
 
-  <main class="flex-grow max-w-6xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8">
+  <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8">
 
     <!-- =========================================================================
-         ✦ BARRITA DE OPCIONES / FILTROS DINÁMICOS (POR MES / HISTÓRICO TOTALES) ✦
+         ✦ BARRITA DE OPCIONES: SELECTOR DE CALENDARIO (DE FECHA A FECHA) Y ACCESOS RÁPIDOS ✦
          ========================================================================= -->
-    <div class="mb-6 p-3 sm:p-4 glass-card-dark rounded-3xl border border-[#17375E] shadow-xl no-print">
-      <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+    <div class="mb-6 p-4 sm:p-5 glass-card-dark rounded-3xl border border-[#17375E] shadow-xl no-print">
+      <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
         
         <!-- Indicador de Periodo Actual -->
         <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-[#00D2E0]/20 to-[#818CF8]/20 border border-[#00D2E0]/40 flex items-center justify-center text-[#00D2E0] text-lg">
-            <i class="fa-solid {% if es_historico %}fa-chart-pie{% else %}fa-calendar-days{% endif %}"></i>
+          <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-[#00D2E0]/20 to-[#818CF8]/20 border border-[#00D2E0]/40 flex items-center justify-center text-[#00D2E0] text-xl shrink-0">
+            <i class="fa-solid {% if es_rango_personalizado %}fa-calendar-check{% elif es_historico %}fa-chart-pie{% else %}fa-calendar-days{% endif %}"></i>
           </div>
           <div>
             <div class="flex items-center gap-2">
               <span class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Filtrando por:</span>
-              <span class="text-xs font-black uppercase tracking-wider px-2 py-0.5 rounded-full {% if es_historico %}bg-[#818CF8]/20 text-[#818CF8] border border-[#818CF8]/40{% else %}bg-[#00D2E0]/20 text-[#00D2E0] border border-[#00D2E0]/40{% endif %}">
-                {% if es_historico %}Histórico / Totales{% else %}Mes Específico{% endif %}
+              <span class="text-xs font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full {% if es_rango_personalizado %}bg-[#10B981]/20 text-[#10B981] border border-[#10B981]/40{% elif es_historico %}bg-[#818CF8]/20 text-[#818CF8] border border-[#818CF8]/40{% else %}bg-[#00D2E0]/20 text-[#00D2E0] border border-[#00D2E0]/40{% endif %}">
+                {% if es_rango_personalizado %}Rango Personalizado{% elif es_historico %}Histórico / Totales{% else %}Mes Específico{% endif %}
               </span>
             </div>
-            <h1 class="text-base sm:text-lg font-black text-white font-heading">{{ nombre_periodo }}</h1>
+            <h1 class="text-base sm:text-lg font-black text-white font-heading mt-0.5">{{ nombre_periodo }}</h1>
           </div>
         </div>
 
-        <!-- Opciones de Selección (Botones Interactivos) -->
-        <div class="flex flex-wrap items-center gap-2 w-full md:w-auto">
-          
-          <!-- Botón Histórico / Totales -->
-          <a href="?filtro=historico" 
-             class="px-3.5 py-2 text-xs font-extrabold rounded-2xl border transition flex items-center gap-2 {% if es_historico %}bg-[#818CF8] text-[#071526] border-[#818CF8] shadow-lg shadow-[#818CF8]/20{% else %}bg-[#0B1E36] text-slate-300 border-[#17375E] hover:border-[#818CF8] hover:text-white{% endif %}">
-            <i class="fa-solid fa-layer-group"></i>
-            <span>Histórico / Totales</span>
-          </a>
-
-          <span class="h-6 w-px bg-[#17375E] hidden sm:inline-block"></span>
-
-          <!-- Botones de Meses Disponibles -->
-          <div class="flex items-center gap-1.5 flex-wrap">
-            {% for m in meses_disponibles %}
-              <a href="?filtro=mes&mes={{ m.numero }}" 
-                 class="px-3 py-2 text-xs font-bold rounded-2xl border transition flex items-center gap-1.5 {% if m.activo %}bg-[#00D2E0] text-[#071526] border-[#00D2E0] shadow-lg shadow-[#00D2E0]/20{% else %}bg-[#0B1E36] text-slate-400 border-[#17375E] hover:border-[#00D2E0] hover:text-white{% endif %}">
-                <i class="fa-regular fa-calendar text-[10px]"></i>
-                <span>{{ m.nombre }}</span>
-              </a>
-            {% endfor %}
+        <!-- FORMULARIO DE CALENDARIO (DE TAL FECHA A TAL FECHA) -->
+        <form method="GET" action="" class="flex flex-wrap items-center gap-2 w-full lg:w-auto bg-[#071526]/60 p-2 rounded-2xl border border-[#17375E]">
+          <div class="flex items-center gap-1.5">
+            <span class="text-[11px] font-bold text-slate-400 pl-1">Desde:</span>
+            <input type="date" name="fecha_inicio" value="{{ fecha_inicio }}" required 
+                   class="bg-[#0B1E36] border border-[#17375E] text-white text-xs font-semibold rounded-xl px-2.5 py-1.5 focus:outline-none focus:border-[#00D2E0] transition" />
           </div>
 
+          <div class="flex items-center gap-1.5">
+            <span class="text-[11px] font-bold text-slate-400">Hasta:</span>
+            <input type="date" name="fecha_fin" value="{{ fecha_fin }}" required 
+                   class="bg-[#0B1E36] border border-[#17375E] text-white text-xs font-semibold rounded-xl px-2.5 py-1.5 focus:outline-none focus:border-[#00D2E0] transition" />
+          </div>
+
+          <button type="submit" 
+                  class="px-3.5 py-1.5 text-xs font-extrabold bg-[#00D2E0] hover:bg-[#00bcc9] text-[#071526] rounded-xl transition flex items-center gap-1.5 shadow-md shadow-[#00D2E0]/20">
+            <i class="fa-solid fa-filter"></i>
+            <span>Filtrar</span>
+          </button>
+        </form>
+
+        <!-- ACCESOS RÁPIDOS (HISTÓRICO Y MESES) -->
+        <div class="flex flex-wrap items-center gap-1.5 w-full lg:w-auto">
+          <!-- Botón Histórico / Totales -->
+          <a href="?filtro=historico" 
+             class="px-3 py-1.5 text-xs font-extrabold rounded-xl border transition flex items-center gap-1.5 {% if es_historico %}bg-[#818CF8] text-[#071526] border-[#818CF8] shadow-lg shadow-[#818CF8]/20{% else %}bg-[#0B1E36] text-slate-300 border-[#17375E] hover:border-[#818CF8] hover:text-white{% endif %}">
+            <i class="fa-solid fa-layer-group text-[10px]"></i>
+            <span>Histórico</span>
+          </a>
+
+          <!-- Botones de Meses -->
+          {% for m in meses_disponibles %}
+            <a href="?filtro=mes&mes={{ m.numero }}" 
+               class="px-2.5 py-1.5 text-xs font-bold rounded-xl border transition flex items-center gap-1 {% if m.activo %}bg-[#00D2E0] text-[#071526] border-[#00D2E0] shadow-lg shadow-[#00D2E0]/20{% else %}bg-[#0B1E36] text-slate-400 border-[#17375E] hover:border-[#00D2E0] hover:text-white{% endif %}">
+              <span>{{ m.nombre }}</span>
+            </a>
+          {% endfor %}
         </div>
 
       </div>
     </div>
 
-    <!-- BARRA DE CONTROL DE DIAPOSITIVAS -->
+    <!-- BARRA DE CONTROL DE DIAPOSITIVAS (4 PESTAÑAS) -->
     <div id="slideControls" class="mb-6 p-2.5 glass-card-dark rounded-2xl flex flex-wrap items-center justify-between gap-3 shadow-md no-print">
-      <div class="flex items-center gap-1.5 sm:gap-2">
+      <div class="flex items-center gap-1.5 sm:gap-2 flex-wrap">
         <button onclick="showSlide(0)" class="nav-tab px-3.5 py-1.5 text-xs font-bold rounded-xl bg-[#00D2E0] text-[#071526] shadow-sm transition">1. Censo y Usuarios</button>
-        <button onclick="showSlide(1)" class="nav-tab px-3.5 py-1.5 text-xs font-semibold rounded-xl text-slate-400 hover:bg-[#0B1E36] hover:text-white transition">2. Sesiones ({% if es_historico %}Histórico{% else %}{{ nombre_mes }}{% endif %})</button>
+        <button onclick="showSlide(1)" class="nav-tab px-3.5 py-1.5 text-xs font-semibold rounded-xl text-slate-400 hover:bg-[#0B1E36] hover:text-white transition">2. Sesiones y Citas</button>
         <button onclick="showSlide(2)" class="nav-tab px-3.5 py-1.5 text-xs font-semibold rounded-xl text-slate-400 hover:bg-[#0B1E36] hover:text-white transition">3. Retención de Pacientes</button>
+        <button onclick="showSlide(3)" class="nav-tab px-3.5 py-1.5 text-xs font-semibold rounded-xl text-slate-400 hover:bg-[#0B1E36] hover:text-white transition">4. Satisfacción y Psicólogos ⭐</button>
       </div>
 
       <div class="flex items-center gap-2">
-        <span id="slideIndicator" class="text-xs font-bold text-slate-400 px-2">1 / 3</span>
+        <span id="slideIndicator" class="text-xs font-bold text-slate-400 px-2">1 / 4</span>
         <button onclick="prevSlide()" class="w-8 h-8 rounded-xl border border-[#17375E] bg-[#0B1E36] hover:bg-[#17375E] flex items-center justify-center text-slate-300 transition">
           <i class="fa-solid fa-chevron-left text-xs"></i>
         </button>
@@ -201,52 +224,100 @@
     </div>
 
     <!-- =========================================================================
-         SLIDE 1: CENSO Y CRECIMIENTO DE USUARIOS (LOS 3 BLOQUES EN ORDEN ESTRICTO)
+         SLIDE 1: CENSO Y CRECIMIENTO DE USUARIOS (CON BOTONES DE DESCARGA DE BASE)
          1) Usuarios Activos (al menos 1 sesión tomada)
          2) Usuarios Registrados (sin sesiones tomadas)
          3) Total de Registros de Usuarios (censo total)
          ========================================================================= -->
     <section id="slide-0" class="slide-view space-y-6">
       
-      <!-- LOS 3 BLOQUES EN ORDEN ESTRICTO -->
+      <!-- LOS 3 BLOQUES EN ORDEN ESTRICTO CON ACCIONES DE DESCARGA Y VISTA -->
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
         
         <!-- 1. PRIMER BLOQUE: USUARIOS ACTIVOS -->
-        <div class="glass-card-dark p-6 rounded-3xl relative overflow-hidden border-t-4 border-t-[#10B981]">
-          <div class="flex items-center justify-between">
-            <span class="text-[11px] font-extrabold uppercase tracking-wider text-[#10B981] bg-[#10B981]/15 px-2.5 py-0.5 rounded-md border border-[#10B981]/30">1. Bloque Activo</span>
-            <span class="text-xs text-slate-400 font-semibold">{{ pct_activos }}% del censo</span>
+        <div class="glass-card-dark p-6 rounded-3xl relative overflow-hidden border-t-4 border-t-[#10B981] flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between">
+              <span class="text-[11px] font-extrabold uppercase tracking-wider text-[#10B981] bg-[#10B981]/15 px-2.5 py-0.5 rounded-md border border-[#10B981]/30">1. Bloque Activo</span>
+              <span class="text-xs text-slate-400 font-semibold">{{ pct_activos }}% del censo</span>
+            </div>
+            <div class="mt-4">
+              <div class="text-4xl font-black text-white font-heading">{{ usuarios_activos }}</div>
+              <h3 class="text-base font-bold text-[#10B981] mt-1">Usuarios Activos</h3>
+              <p class="text-xs text-slate-400 mt-1.5">Pacientes registrados que al menos han tomado una sesión en HOPE.</p>
+            </div>
           </div>
-          <div class="mt-4">
-            <div class="text-4xl font-black text-white font-heading">{{ usuarios_activos }}</div>
-            <h3 class="text-base font-bold text-[#10B981] mt-1">Usuarios Activos</h3>
-            <p class="text-xs text-slate-400 mt-1.5">Pacientes registrados que al menos han tomado una sesión en HOPE.</p>
+
+          <!-- BOTONES DE DESCARGA Y VISTA -->
+          <div class="mt-5 pt-4 border-t border-[#17375E] flex items-center gap-2">
+            <a href="{% url 'exportar_usuarios_reporte' %}?tipo=activos" 
+               class="flex-1 py-2 px-2.5 text-xs font-bold text-center bg-[#10B981]/20 hover:bg-[#10B981] text-[#10B981] hover:text-[#071526] border border-[#10B981]/40 rounded-xl transition flex items-center justify-center gap-1.5 shadow-sm">
+              <i class="fa-solid fa-file-excel"></i>
+              <span>Descargar Base</span>
+            </a>
+            <button onclick="abrirModalUsuarios('activos')" 
+                    class="py-2 px-3 text-xs font-semibold bg-[#0B1E36] hover:bg-[#17375E] border border-[#17375E] text-slate-200 rounded-xl transition flex items-center justify-center gap-1.5">
+              <i class="fa-regular fa-eye"></i>
+              <span>Ver</span>
+            </button>
           </div>
         </div>
 
         <!-- 2. SEGUNDO BLOQUE: USUARIOS REGISTRADOS SIN SESIÓN -->
-        <div class="glass-card-dark p-6 rounded-3xl relative overflow-hidden border-t-4 border-t-[#FB923C]">
-          <div class="flex items-center justify-between">
-            <span class="text-[11px] font-extrabold uppercase tracking-wider text-[#FB923C] bg-[#FB923C]/15 px-2.5 py-0.5 rounded-md border border-[#FB923C]/30">2. Bloque Pendiente</span>
-            <span class="text-xs text-slate-400 font-semibold">{{ pct_sin_sesion }}% del censo</span>
+        <div class="glass-card-dark p-6 rounded-3xl relative overflow-hidden border-t-4 border-t-[#FB923C] flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between">
+              <span class="text-[11px] font-extrabold uppercase tracking-wider text-[#FB923C] bg-[#FB923C]/15 px-2.5 py-0.5 rounded-md border border-[#FB923C]/30">2. Bloque Pendiente</span>
+              <span class="text-xs text-slate-400 font-semibold">{{ pct_sin_sesion }}% del censo</span>
+            </div>
+            <div class="mt-4">
+              <div class="text-4xl font-black text-white font-heading">{{ usuarios_sin_sesion }}</div>
+              <h3 class="text-base font-bold text-[#FB923C] mt-1">Registrados Sin Sesión</h3>
+              <p class="text-xs text-slate-400 mt-1.5">Crearon su cuenta en la plataforma pero aún no agendan su 1ra consulta.</p>
+            </div>
           </div>
-          <div class="mt-4">
-            <div class="text-4xl font-black text-white font-heading">{{ usuarios_sin_sesion }}</div>
-            <h3 class="text-base font-bold text-[#FB923C] mt-1">Registrados Sin Sesión</h3>
-            <p class="text-xs text-slate-400 mt-1.5">Crearon su cuenta en la plataforma pero aún no agendan su 1ra consulta.</p>
+
+          <!-- BOTONES DE DESCARGA Y VISTA -->
+          <div class="mt-5 pt-4 border-t border-[#17375E] flex items-center gap-2">
+            <a href="{% url 'exportar_usuarios_reporte' %}?tipo=inactivos" 
+               class="flex-1 py-2 px-2.5 text-xs font-bold text-center bg-[#FB923C]/20 hover:bg-[#FB923C] text-[#FB923C] hover:text-[#071526] border border-[#FB923C]/40 rounded-xl transition flex items-center justify-center gap-1.5 shadow-sm">
+              <i class="fa-solid fa-file-excel"></i>
+              <span>Descargar Base</span>
+            </a>
+            <button onclick="abrirModalUsuarios('inactivos')" 
+                    class="py-2 px-3 text-xs font-semibold bg-[#0B1E36] hover:bg-[#17375E] border border-[#17375E] text-slate-200 rounded-xl transition flex items-center justify-center gap-1.5">
+              <i class="fa-regular fa-eye"></i>
+              <span>Ver</span>
+            </button>
           </div>
         </div>
 
         <!-- 3. TERCER BLOQUE: TOTAL DE REGISTROS DE USUARIOS -->
-        <div class="glass-card-dark p-6 rounded-3xl relative overflow-hidden border-t-4 border-t-[#00D2E0]">
-          <div class="flex items-center justify-between">
-            <span class="text-[11px] font-extrabold uppercase tracking-wider text-[#00D2E0] bg-[#00D2E0]/15 px-2.5 py-0.5 rounded-md border border-[#00D2E0]/30">3. Bloque Total</span>
-            <span class="text-xs text-slate-400 font-semibold">100% Censo</span>
+        <div class="glass-card-dark p-6 rounded-3xl relative overflow-hidden border-t-4 border-t-[#00D2E0] flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between">
+              <span class="text-[11px] font-extrabold uppercase tracking-wider text-[#00D2E0] bg-[#00D2E0]/15 px-2.5 py-0.5 rounded-md border border-[#00D2E0]/30">3. Bloque Total</span>
+              <span class="text-xs text-slate-400 font-semibold">100% Censo</span>
+            </div>
+            <div class="mt-4">
+              <div class="text-4xl font-black text-white font-heading">{{ total_registros }}</div>
+              <h3 class="text-base font-bold text-[#00D2E0] mt-1">Total de Registros</h3>
+              <p class="text-xs text-slate-400 mt-1.5">Censo global de pacientes en plataforma (sin psicólogos ni administradores).</p>
+            </div>
           </div>
-          <div class="mt-4">
-            <div class="text-4xl font-black text-white font-heading">{{ total_registros }}</div>
-            <h3 class="text-base font-bold text-[#00D2E0] mt-1">Total de Registros</h3>
-            <p class="text-xs text-slate-400 mt-1.5">Censo global de pacientes en plataforma (sin psicólogos ni administradores).</p>
+
+          <!-- BOTONES DE DESCARGA Y VISTA -->
+          <div class="mt-5 pt-4 border-t border-[#17375E] flex items-center gap-2">
+            <a href="{% url 'exportar_usuarios_reporte' %}?tipo=todos" 
+               class="flex-1 py-2 px-2.5 text-xs font-bold text-center bg-[#00D2E0]/20 hover:bg-[#00D2E0] text-[#00D2E0] hover:text-[#071526] border border-[#00D2E0]/40 rounded-xl transition flex items-center justify-center gap-1.5 shadow-sm">
+              <i class="fa-solid fa-file-excel"></i>
+              <span>Descargar Censo</span>
+            </a>
+            <button onclick="abrirModalUsuarios('todos')" 
+                    class="py-2 px-3 text-xs font-semibold bg-[#0B1E36] hover:bg-[#17375E] border border-[#17375E] text-slate-200 rounded-xl transition flex items-center justify-center gap-1.5">
+              <i class="fa-regular fa-eye"></i>
+              <span>Ver</span>
+            </button>
           </div>
         </div>
 
@@ -257,7 +328,7 @@
         <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
           <div>
             <h2 class="text-base sm:text-lg font-bold text-white font-heading">Tendencia de Crecimiento de Nuevos Usuarios</h2>
-            <p class="text-xs text-slate-400">Captación y registro en plataforma HOPE ({% if es_historico %}Evolución Mensual Histórica{% else %}Ciclo {{ nombre_mes }}{% endif %})</p>
+            <p class="text-xs text-slate-400">Captación y registro verídico semanal en plataforma HOPE ({{ nombre_periodo }})</p>
           </div>
           <div class="flex items-center gap-4 text-xs font-semibold">
             <span class="flex items-center gap-1.5"><span class="w-3.5 h-1.5 bg-[#F85B8C] rounded-full inline-block"></span> Nuevos registros</span>
@@ -270,10 +341,10 @@
         </div>
 
         <!-- Weekly / Monthly Data Grid -->
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6 pt-5 border-t border-[#17375E]">
+        <div class="grid grid-cols-2 sm:grid-cols-5 gap-3 mt-6 pt-5 border-t border-[#17375E]">
           {% for t in crecimiento_tarjetas %}
             <div class="p-3.5 rounded-2xl {% if t.destacado %}bg-[#F85B8C]/10 border border-[#F85B8C]/30{% else %}bg-[#0B1E36] border border-[#17375E]{% endif %} text-center">
-              <span class="text-[11px] font-bold {% if t.destacado %}text-[#F85B8C]{% else %}text-slate-400{% endif %} block">{{ t.label }}</span>
+              <span class="text-[11px] font-bold {% if t.destacado %}text-[#F85B8C]{% else %}text-slate-400{% endif %} block truncate">{{ t.label }}</span>
               <span class="text-2xl font-black {% if t.destacado %}text-[#F85B8C]{% else %}text-white{% endif %} mt-0.5 font-heading">{{ t.val }}</span>
               <span class="text-[10px] font-semibold {% if t.destacado %}text-[#F85B8C]{% else %}text-slate-400{% endif %} block">{{ t.sub }}</span>
             </div>
@@ -285,7 +356,7 @@
     </section>
 
     <!-- =========================================================================
-         SLIDE 2: SESIONES (DEL MES SELECCIONADO O HISTÓRICO GLOBAL)
+         SLIDE 2: SESIONES Y CITAS (COMPLETADAS VS CONFIRMADAS / PROGRAMADAS)
          ========================================================================= -->
     <section id="slide-1" class="slide-hidden space-y-6">
       
@@ -301,7 +372,9 @@
               <span class="text-xs text-[#10B981] font-bold">{{ tasa_efectividad }}% Asistencia efectiva</span>
             </div>
             <div class="text-4xl sm:text-5xl font-black text-white mt-4 font-heading">{{ total_sesiones }}</div>
-            <p class="text-sm font-semibold text-slate-300 mt-1">Sesiones registradas ({{ sesiones_completadas }} completadas · {{ sesiones_confirmadas }} confirmadas)</p>
+            <p class="text-sm font-semibold text-slate-300 mt-1">
+              Sesiones totales agendadas: <span class="text-[#10B981] font-bold">{{ sesiones_completadas }} completadas</span> · <span class="text-[#00D2E0] font-bold">{{ sesiones_confirmadas }} confirmadas</span>
+            </p>
           </div>
           <div class="mt-4 pt-4 border-t border-[#17375E] text-xs text-slate-400 flex items-center justify-between">
             <span>{{ pacientes_unicos }} consultantes atendidos</span>
@@ -325,17 +398,18 @@
 
       </div>
 
-      <!-- Chart: Sesiones por Semana / Mes -->
+      <!-- Chart: Sesiones Completadas vs Confirmadas por Semana / Mes -->
       <div class="glass-card-dark p-6 sm:p-7 rounded-3xl border border-[#17375E]">
         <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
           <div>
             <h2 class="text-base sm:text-lg font-bold text-white font-heading">
-              {% if es_historico %}Distribución de Sesiones por Mes{% else %}Distribución de Citas por Semana ({{ nombre_mes }}){% endif %}
+              {% if es_historico %}Distribución de Sesiones por Mes{% else %}Distribución de Citas por Semana ({{ nombre_periodo }}){% endif %}
             </h2>
-            <p class="text-xs text-slate-400">Volumen atendido por el equipo clínico de psicólogos</p>
+            <p class="text-xs text-slate-400">Desglose real entre citas completadas y citas confirmadas/programadas</p>
           </div>
-          <div class="flex items-center gap-3 text-xs font-semibold">
-            <span class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 bg-[#00D2E0] rounded-md inline-block"></span> Citas del Periodo (Total: {{ total_sesiones }})</span>
+          <div class="flex items-center gap-4 text-xs font-semibold">
+            <span class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 bg-[#10B981] rounded-md inline-block"></span> Completadas ({{ sesiones_completadas }})</span>
+            <span class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 bg-[#00D2E0] rounded-md inline-block"></span> Confirmadas / Programadas ({{ sesiones_confirmadas }})</span>
           </div>
         </div>
 
@@ -348,19 +422,19 @@
           <table class="w-full text-xs text-left">
             <thead>
               <tr class="text-slate-400 uppercase font-bold border-b border-[#17375E]">
-                <th class="py-2.5">{% if es_historico %}Mes / Periodo{% else %}Semana{% endif %}</th>
+                <th class="py-2.5">{% if es_historico %}Mes / Periodo{% else %}Semana / Periodo{% endif %}</th>
                 <th class="py-2.5 text-center">Citas Totales</th>
-                <th class="py-2.5 text-center">Completadas</th>
-                <th class="py-2.5 text-center">Confirmadas</th>
+                <th class="py-2.5 text-center">Completadas (Realizadas)</th>
+                <th class="py-2.5 text-center">Confirmadas (Por Realizar)</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-[#17375E] text-slate-300 font-medium">
               {% for f in filas_tabla %}
               <tr class="hover:bg-[#0B1E36] transition">
                 <td class="py-3 font-bold text-white">{{ f.nombre }}</td>
-                <td class="py-3 text-center font-black text-[#00D2E0] text-sm">{{ f.total }}</td>
+                <td class="py-3 text-center font-black text-white text-sm">{{ f.total }}</td>
                 <td class="py-3 text-center text-[#10B981] font-bold">{{ f.completadas }}</td>
-                <td class="py-3 text-center text-slate-400">{{ f.confirmadas }}</td>
+                <td class="py-3 text-center text-[#00D2E0] font-bold">{{ f.confirmadas }}</td>
               </tr>
               {% endfor %}
             </tbody>
@@ -431,16 +505,270 @@
 
     </section>
 
+    <!-- =========================================================================
+         SLIDE 4 (NUEVA): SATISFACCIÓN Y CALIDAD CLÍNICA
+         1) Métricas de Satisfacción General HOPE
+         2) Desglose por Psicólogo (uno por uno con notas y reactivos)
+         ========================================================================= -->
+    <section id="slide-3" class="slide-hidden space-y-6">
+      
+      <!-- KPIs SUPERIORES DE SATISFACCIÓN -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        
+        <!-- 1. Calificación Promedio Global -->
+        <div class="glass-card-dark p-5 rounded-3xl border-t-4 border-t-[#10B981] flex flex-col justify-between">
+          <div class="flex items-center justify-between">
+            <span class="text-[10px] font-extrabold uppercase tracking-wider text-[#10B981] bg-[#10B981]/15 px-2 py-0.5 rounded-md">Satisfacción Global</span>
+            <span class="text-xs text-slate-400 font-semibold">{{ total_evaluaciones }} encuestas</span>
+          </div>
+          <div class="mt-3">
+            <div class="flex items-baseline gap-2">
+              <span class="text-4xl font-black text-white font-heading">{{ promedio_satisfaccion_general }}</span>
+              <span class="text-base text-slate-400 font-bold">/ 5.0</span>
+            </div>
+            <div class="flex items-center gap-1 text-[#FBBF24] text-xs mt-1">
+              <i class="fa-solid fa-star"></i>
+              <i class="fa-solid fa-star"></i>
+              <i class="fa-solid fa-star"></i>
+              <i class="fa-solid fa-star"></i>
+              <i class="fa-solid fa-star-half-stroke"></i>
+              <span class="text-white font-bold ml-1 text-xs">({{ pct_satisfaccion_general }}% Aprobación)</span>
+            </div>
+          </div>
+          <p class="text-[11px] text-slate-400 mt-2">Promedio general obtenido en las encuestas de sesión HOPE.</p>
+        </div>
+
+        <!-- 2. Atención del Terapeuta -->
+        <div class="glass-card-dark p-5 rounded-3xl border-t-4 border-t-[#00D2E0] flex flex-col justify-between">
+          <span class="text-[10px] font-extrabold uppercase tracking-wider text-[#00D2E0] bg-[#00D2E0]/15 px-2 py-0.5 rounded-md w-fit">Reactivo 1</span>
+          <div class="mt-3">
+            <div class="text-3xl font-black text-[#00D2E0] font-heading">{{ prom_atencion }} <span class="text-sm font-semibold text-slate-400">/ 5.0</span></div>
+            <h4 class="text-xs font-bold text-white mt-1">Atención del Terapeuta</h4>
+          </div>
+          <p class="text-[11px] text-slate-400 mt-2">Grado de satisfacción con el trato y acompañamiento del psicólogo.</p>
+        </div>
+
+        <!-- 3. Sentirse Escuchado y Respetado -->
+        <div class="glass-card-dark p-5 rounded-3xl border-t-4 border-t-[#818CF8] flex flex-col justify-between">
+          <span class="text-[10px] font-extrabold uppercase tracking-wider text-[#818CF8] bg-[#818CF8]/15 px-2 py-0.5 rounded-md w-fit">Reactivo 2</span>
+          <div class="mt-3">
+            <div class="text-3xl font-black text-[#818CF8] font-heading">{{ prom_escucha }} <span class="text-sm font-semibold text-slate-400">/ 5.0</span></div>
+            <h4 class="text-xs font-bold text-white mt-1">Escucha & Empatía</h4>
+          </div>
+          <p class="text-[11px] text-slate-400 mt-2">El paciente se siente escuchado, comprendido y tratado con respeto.</p>
+        </div>
+
+        <!-- 4. Avance hacia Objetivos -->
+        <div class="glass-card-dark p-5 rounded-3xl border-t-4 border-t-[#FBBF24] flex flex-col justify-between">
+          <span class="text-[10px] font-extrabold uppercase tracking-wider text-[#FBBF24] bg-[#FBBF24]/15 px-2 py-0.5 rounded-md w-fit">Reactivo 3</span>
+          <div class="mt-3">
+            <div class="text-3xl font-black text-[#FBBF24] font-heading">{{ prom_avance }} <span class="text-sm font-semibold text-slate-400">/ 5.0</span></div>
+            <h4 class="text-xs font-bold text-white mt-1">Avance hacia Objetivos</h4>
+          </div>
+          <p class="text-[11px] text-slate-400 mt-2">Percepción del paciente sobre su progreso en los motivos de consulta.</p>
+        </div>
+
+      </div>
+
+      <!-- GRÁFICAS DE CALIDAD GENERAL Y MODALIDADES -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- Distribución de Estrellas -->
+        <div class="lg:col-span-5 glass-card-dark p-6 rounded-3xl border border-[#17375E] flex flex-col justify-between">
+          <div>
+            <h3 class="text-base font-bold text-white font-heading">Distribución de Calificaciones</h3>
+            <p class="text-xs text-slate-400 mt-0.5">Rangos de satisfacción evaluados por los pacientes</p>
+          </div>
+
+          <div class="relative w-full h-56 my-3 flex items-center justify-center">
+            <canvas id="satisfactionDonutChart"></canvas>
+          </div>
+
+          <div class="grid grid-cols-3 gap-2 pt-3 border-t border-[#17375E] text-center">
+            <div class="p-2 bg-[#0B1E36] rounded-xl">
+              <span class="text-[10px] text-slate-400 block font-bold">Individual</span>
+              <span class="text-sm font-black text-[#00D2E0] font-heading">{{ mod_ind }} ⭐</span>
+            </div>
+            <div class="p-2 bg-[#0B1E36] rounded-xl">
+              <span class="text-[10px] text-slate-400 block font-bold">Pareja</span>
+              <span class="text-sm font-black text-[#F85B8C] font-heading">{{ mod_par }} ⭐</span>
+            </div>
+            <div class="p-2 bg-[#0B1E36] rounded-xl">
+              <span class="text-[10px] text-slate-400 block font-bold">Familiar</span>
+              <span class="text-sm font-black text-[#FBBF24] font-heading">{{ mod_fam }} ⭐</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Comparativa de Satisfacción por Psicólogo (Gráfica Horizontal) -->
+        <div class="lg:col-span-7 glass-card-dark p-6 rounded-3xl border border-[#17375E]">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h3 class="text-base font-bold text-white font-heading">Ranking de Satisfacción por Psicólogo</h3>
+              <p class="text-xs text-slate-400">Calificación promedio (escala 1 a 5) recibida por cada terapeuta</p>
+            </div>
+            <span class="text-xs font-bold text-[#10B981] bg-[#10B981]/15 px-2.5 py-1 rounded-lg border border-[#10B981]/30">
+              Alta excelencia clínica
+            </span>
+          </div>
+
+          <div class="relative w-full h-72">
+            <canvas id="psychologistsBarChart"></canvas>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- CATÁLOGO DETALLADO: UNO POR UNO DE LOS PSICÓLOGOS CON SUS MÉTRICAS -->
+      <div class="glass-card-dark p-6 sm:p-7 rounded-3xl border border-[#17375E]">
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
+          <div>
+            <h3 class="text-base sm:text-lg font-bold text-white font-heading">Detalle de Satisfacción por Terapeuta</h3>
+            <p class="text-xs text-slate-400">Métricas específicas por reactivo y comentarios de pacientes atendidos</p>
+          </div>
+          <span class="text-xs text-slate-400 font-semibold">{{ psicologos_stats|length }} psicólogos evaluados</span>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {% for p in psicologos_stats %}
+            <div class="bg-[#0B1E36] p-5 rounded-2xl border border-[#17375E] hover:border-[#00D2E0]/50 transition flex flex-col justify-between">
+              <div>
+                <!-- Header del Psicólogo -->
+                <div class="flex items-start justify-between gap-2">
+                  <div>
+                    <h4 class="text-sm font-black text-white">{{ p.nombre }}</h4>
+                    <span class="text-[11px] text-slate-400 block">{{ p.especialidad }}</span>
+                  </div>
+                  <div class="text-right">
+                    <span class="text-base font-black text-[#FBBF24] font-heading">{{ p.promedio }} ⭐</span>
+                    <span class="text-[10px] text-slate-400 block">{{ p.cant }} encuesta{{ p.cant|pluralize:"s" }}</span>
+                  </div>
+                </div>
+
+                <!-- Barra de Progreso -->
+                <div class="w-full bg-[#071526] rounded-full h-2 mt-3 overflow-hidden">
+                  <div class="bg-gradient-to-r from-[#00D2E0] to-[#10B981] h-2 rounded-full" style="width: {{ p.porcentaje }}%;"></div>
+                </div>
+
+                <!-- Desglose de Reactivos -->
+                <div class="grid grid-cols-3 gap-1.5 mt-3 pt-3 border-t border-[#17375E]/60 text-center">
+                  <div class="p-1.5 bg-[#071526]/50 rounded-lg">
+                    <span class="text-[9px] text-slate-400 uppercase font-bold block">Atención</span>
+                    <span class="text-xs font-bold text-[#00D2E0]">{{ p.atencion }}</span>
+                  </div>
+                  <div class="p-1.5 bg-[#071526]/50 rounded-lg">
+                    <span class="text-[9px] text-slate-400 uppercase font-bold block">Escucha</span>
+                    <span class="text-xs font-bold text-[#818CF8]">{{ p.escucha }}</span>
+                  </div>
+                  <div class="p-1.5 bg-[#071526]/50 rounded-lg">
+                    <span class="text-[9px] text-slate-400 uppercase font-bold block">Objetivos</span>
+                    <span class="text-xs font-bold text-[#FBBF24]">{{ p.avance }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Comentarios de Pacientes (si existen) -->
+              {% if p.comentarios %}
+                <div class="mt-3 pt-2.5 border-t border-[#17375E]/60">
+                  <span class="text-[10px] font-bold text-slate-400 flex items-center gap-1 mb-1">
+                    <i class="fa-solid fa-comment-dots text-[#00D2E0]"></i> Testimonio de paciente:
+                  </span>
+                  {% for c in p.comentarios %}
+                    <p class="text-[11px] text-slate-300 italic bg-[#071526]/40 p-2 rounded-lg mb-1 border-l-2 border-l-[#00D2E0]">
+                      "{{ c }}"
+                    </p>
+                  {% endfor %}
+                </div>
+              {% endif %}
+
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+
+    </section>
+
   </main>
 
   <footer class="glass-card-dark border-t border-[#17375E] py-4 text-center text-xs text-slate-400 no-print">
-    <div class="max-w-6xl mx-auto px-4 flex items-center justify-between">
-      <span class="font-bold text-slate-300">HOPE · Reporte Ejecutivo de Sesiones & Crecimiento</span>
+    <div class="max-w-7xl mx-auto px-4 flex items-center justify-between">
+      <span class="font-bold text-slate-300">HOPE · Reporte Ejecutivo de Sesiones, Crecimiento & Calidad</span>
       <span>{{ nombre_periodo }}</span>
     </div>
   </footer>
 
-  <!-- SCRIPTS CON ESTILO OSCURO (CANACAR BLACK) -->
+  <!-- =========================================================================
+       ✦ MODAL VISOR INTERACTIVO DE BASE DE USUARIOS ✦
+       ========================================================================= -->
+  <div id="modalUsuarios" class="fixed inset-0 z-50 bg-[#071526]/80 backdrop-blur-md hidden items-center justify-center p-4">
+    <div class="glass-card-dark border border-[#17375E] rounded-3xl max-w-4xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden animate-fadeIn">
+      
+      <!-- Modal Header -->
+      <div class="p-5 border-b border-[#17375E] flex items-center justify-between bg-[#0B1E36]">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-2xl bg-[#00D2E0]/20 border border-[#00D2E0]/40 flex items-center justify-center text-[#00D2E0]">
+            <i class="fa-solid fa-users text-base"></i>
+          </div>
+          <div>
+            <h3 id="modalTitulo" class="text-base font-bold text-white font-heading">Base de Usuarios</h3>
+            <p id="modalSubtitulo" class="text-xs text-slate-400">Consultantes registrados en la plataforma</p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <a id="btnDescargarModal" href="#" class="px-3.5 py-1.5 text-xs font-bold bg-[#10B981] hover:bg-[#059669] text-[#071526] rounded-xl transition flex items-center gap-1.5 shadow-md">
+            <i class="fa-solid fa-file-excel"></i>
+            <span>Descargar CSV</span>
+          </a>
+          <button onclick="cerrarModalUsuarios()" class="w-8 h-8 rounded-xl border border-[#17375E] bg-[#071526] hover:bg-[#17375E] text-slate-400 hover:text-white flex items-center justify-center transition">
+            <i class="fa-solid fa-xmark text-sm"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Buscador interno -->
+      <div class="p-3.5 border-b border-[#17375E] bg-[#071526]/50 flex items-center gap-3">
+        <div class="relative flex-grow">
+          <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-xs text-slate-500"></i>
+          <input type="text" id="inputBuscarUsuario" oninput="filtrarTablaUsuarios()" placeholder="Buscar por nombre, correo, teléfono o motivo..." class="w-full pl-9 pr-4 py-2 text-xs bg-[#0B1E36] border border-[#17375E] rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-[#00D2E0] transition" />
+        </div>
+        <span id="modalConteoRegistros" class="text-xs font-semibold text-slate-400 whitespace-nowrap">0 usuarios</span>
+      </div>
+
+      <!-- Tabla con Scroll -->
+      <div class="p-4 overflow-y-auto flex-grow max-h-[60vh]">
+        <div id="modalLoading" class="py-12 text-center text-slate-400 text-xs">
+          <i class="fa-solid fa-circle-notch fa-spin text-2xl text-[#00D2E0] mb-2 block"></i>
+          Cargando base de datos...
+        </div>
+        <div class="overflow-x-auto">
+          <table id="tablaUsuariosModal" class="w-full text-xs text-left hidden">
+            <thead>
+              <tr class="text-slate-400 uppercase font-bold border-b border-[#17375E]">
+                <th class="py-2.5 px-3">Paciente</th>
+                <th class="py-2.5 px-3">Teléfono</th>
+                <th class="py-2.5 px-3">Correo</th>
+                <th class="py-2.5 px-3">Motivo Llegada a HOPE</th>
+                <th class="py-2.5 px-3 text-center">Estado</th>
+                <th class="py-2.5 px-3 text-center">Citas</th>
+              </tr>
+            </thead>
+            <tbody id="tbodyUsuariosModal" class="divide-y divide-[#17375E] text-slate-300 font-medium">
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="p-3.5 border-t border-[#17375E] bg-[#0B1E36] flex items-center justify-between text-xs text-slate-400">
+        <span>Mostrando registros directos con nombre, teléfono, correo y motivo clínico</span>
+        <button onclick="cerrarModalUsuarios()" class="px-3.5 py-1.5 rounded-xl border border-[#17375E] hover:bg-[#17375E] text-slate-300 transition font-semibold">Cerrar</button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- SCRIPTS Y CHART.JS -->
   <script>
     const COLORS = {
       cyan: '#00D2E0',
@@ -459,7 +787,7 @@
     Chart.defaults.font.family = "'Plus Jakarta Sans', sans-serif";
     Chart.defaults.color = COLORS.textLight;
 
-    // 1. Line Chart: Nuevos Usuarios por Semana / Mes
+    // 1. Line Chart: Nuevos Usuarios por Semana / Mes (DATOS VERÍDICOS)
     function initGrowthLineChart() {
       const ctx = document.getElementById('lineGrowthChart').getContext('2d');
       const gradient = ctx.createLinearGradient(0, 0, 0, 300);
@@ -536,7 +864,7 @@
       });
     }
 
-    // 2. Bar Chart: Sesiones Agendadas por Semana / Mes
+    // 2. Bar Chart: Sesiones Agendadas por Semana / Mes (COMPLETADAS VS CONFIRMADAS)
     function initSessionsBarChart() {
       const ctx = document.getElementById('barSessionsChart').getContext('2d');
       new Chart(ctx, {
@@ -545,11 +873,20 @@
           labels: {{ semanas_labels_json|safe }},
           datasets: [
             {
-              label: 'Citas Realizadas',
-              data: {{ semanas_datos_json|safe }},
+              label: 'Completadas (Realizadas)',
+              data: {{ semanas_completadas_json|safe }},
+              backgroundColor: COLORS.green,
+              borderRadius: 6,
+              barPercentage: 0.65,
+              categoryPercentage: 0.8
+            },
+            {
+              label: 'Confirmadas (Por Realizar)',
+              data: {{ semanas_confirmadas_json|safe }},
               backgroundColor: COLORS.cyan,
-              borderRadius: 8,
-              barPercentage: 0.55
+              borderRadius: 6,
+              barPercentage: 0.65,
+              categoryPercentage: 0.8
             }
           ]
         },
@@ -557,7 +894,11 @@
           responsive: true,
           maintainAspectRatio: false,
           plugins: {
-            legend: { display: false },
+            legend: { 
+              display: true,
+              position: 'top',
+              labels: { boxWidth: 12, usePointStyle: true, color: COLORS.textLight, font: { weight: '700', size: 11 } }
+            },
             tooltip: {
               backgroundColor: COLORS.card,
               titleColor: COLORS.cyan,
@@ -568,7 +909,7 @@
               cornerRadius: 10,
               callbacks: {
                 label: function(c) {
-                  return ` ${c.parsed.y} citas realizadas`;
+                  return ` ${c.dataset.label}: ${c.parsed.y} sesiones`;
                 }
               }
             }
@@ -635,14 +976,121 @@
       });
     }
 
-    // Lógica de Diapositivas y Pestañas
+    // 4. Donut Chart: Satisfacción (Distribución de Estrellas)
+    function initSatisfactionDonutChart() {
+      const ctx = document.getElementById('satisfactionDonutChart').getContext('2d');
+      new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: [
+            '5 Estrellas (Excelente)',
+            '4 Estrellas (Bueno)',
+            '3 Estrellas (Regular)',
+            '1-2 Estrellas (A Mejorar)'
+          ],
+          datasets: [{
+            data: {{ distribucion_estrellas_json|safe }},
+            backgroundColor: [COLORS.green, COLORS.cyan, COLORS.yellow, COLORS.pink],
+            borderWidth: 2,
+            borderColor: COLORS.dark
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: { boxWidth: 10, usePointStyle: true, color: COLORS.textLight, font: { weight: '700', size: 10 } }
+            },
+            tooltip: {
+              backgroundColor: COLORS.card,
+              titleColor: COLORS.cyan,
+              bodyColor: '#FFFFFF',
+              borderColor: COLORS.border,
+              borderWidth: 1,
+              padding: 10,
+              cornerRadius: 10,
+              callbacks: {
+                label: function(ctx) {
+                  return ` ${ctx.label}: ${ctx.parsed} pacientes`;
+                }
+              }
+            }
+          },
+          cutout: '65%'
+        }
+      });
+    }
+
+    // 5. Horizontal Bar Chart: Comparativa por Psicólogo
+    function initPsychologistsBarChart() {
+      const ctx = document.getElementById('psychologistsBarChart').getContext('2d');
+      const labels = {{ psicologos_chart_labels_json|safe }};
+      const dataValues = {{ psicologos_chart_datos_json|safe }};
+      const cants = {{ psicologos_chart_cants_json|safe }};
+
+      new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Calificación Promedio',
+            data: dataValues,
+            backgroundColor: COLORS.cyan,
+            borderRadius: 6,
+            barPercentage: 0.65
+          }]
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: COLORS.card,
+              titleColor: COLORS.cyan,
+              bodyColor: '#FFFFFF',
+              borderColor: COLORS.border,
+              borderWidth: 1,
+              padding: 10,
+              cornerRadius: 10,
+              callbacks: {
+                label: function(c) {
+                  const idx = c.dataIndex;
+                  return ` Calificación: ${c.parsed.x} ⭐ (${cants[idx]} encuestas)`;
+                }
+              }
+            }
+          },
+          scales: {
+            x: {
+              min: 3.5,
+              max: 5.0,
+              ticks: { color: COLORS.textMuted, font: { weight: '600' } },
+              grid: { color: 'rgba(255, 255, 255, 0.06)' }
+            },
+            y: {
+              ticks: { color: COLORS.textLight, font: { weight: '700', size: 11 } },
+              grid: { display: false }
+            }
+          }
+        }
+      });
+    }
+
+    // =========================================================================
+    // LÓGICA DE NAVEGACIÓN ENTRE DIAPOSITIVAS (4 PESTAÑAS)
+    // =========================================================================
     let currentSlide = 0;
-    const totalSlides = 3;
+    const totalSlides = 4;
 
     function showSlide(idx) {
       currentSlide = idx;
       for (let i = 0; i < totalSlides; i++) {
         const slide = document.getElementById(`slide-${i}`);
+        if (!slide) continue;
         if (i === idx) {
           slide.classList.remove('slide-hidden');
           slide.classList.add('slide-view');
@@ -679,8 +1127,10 @@
       if (mode === 'doc') {
         for (let i = 0; i < totalSlides; i++) {
           const slide = document.getElementById(`slide-${i}`);
-          slide.classList.remove('slide-hidden');
-          slide.classList.add('slide-view');
+          if (slide) {
+            slide.classList.remove('slide-hidden');
+            slide.classList.add('slide-view');
+          }
         }
         controls.classList.add('hidden');
         btnDoc.className = 'px-3 py-1.5 rounded-lg bg-[#00D2E0] text-[#071526] font-bold shadow-sm transition';
@@ -694,15 +1144,106 @@
     }
 
     document.addEventListener('keydown', (e) => {
+      if (document.getElementById('modalUsuarios') && !document.getElementById('modalUsuarios').classList.contains('hidden')) return;
       if (document.getElementById('slideControls').classList.contains('hidden')) return;
       if (e.key === 'ArrowRight' || e.key === ' ') nextSlide();
       if (e.key === 'ArrowLeft') prevSlide();
     });
 
+    // =========================================================================
+    // LÓGICA DEL MODAL DE USUARIOS
+    // =========================================================================
+    let usuariosGlobales = [];
+
+    function abrirModalUsuarios(tipo) {
+      const modal = document.getElementById('modalUsuarios');
+      const loading = document.getElementById('modalLoading');
+      const tabla = document.getElementById('tablaUsuariosModal');
+      const tbody = document.getElementById('tbodyUsuariosModal');
+      const btnDescargar = document.getElementById('btnDescargarModal');
+
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      loading.classList.remove('hidden');
+      tabla.classList.add('hidden');
+      tbody.innerHTML = '';
+      document.getElementById('inputBuscarUsuario').value = '';
+
+      btnDescargar.href = `{% url 'exportar_usuarios_reporte' %}?tipo=${tipo}`;
+
+      fetch(`{% url 'api_usuarios_reporte' %}?tipo=${tipo}`)
+        .then(res => res.json())
+        .then(data => {
+          loading.classList.add('hidden');
+          tabla.classList.remove('hidden');
+          document.getElementById('modalTitulo').textContent = data.titulo || 'Base de Usuarios';
+          document.getElementById('modalSubtitulo').textContent = `${data.total} consultantes registrados`;
+          document.getElementById('modalConteoRegistros').textContent = `${data.total} usuarios`;
+          usuariosGlobales = data.usuarios || [];
+          renderizarTablaUsuarios(usuariosGlobales);
+        })
+        .catch(err => {
+          loading.innerHTML = '<span class="text-red-400">Error al cargar la base de usuarios.</span>';
+        });
+    }
+
+    function renderizarTablaUsuarios(lista) {
+      const tbody = document.getElementById('tbodyUsuariosModal');
+      tbody.innerHTML = '';
+
+      if (lista.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center py-6 text-slate-400">No se encontraron usuarios</td></tr>';
+        return;
+      }
+
+      lista.forEach(u => {
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-[#0B1E36] transition';
+        tr.innerHTML = `
+          <td class="py-2.5 px-3 font-bold text-white">${u.nombre}</td>
+          <td class="py-2.5 px-3 text-[#00D2E0] font-mono">${u.telefono}</td>
+          <td class="py-2.5 px-3 text-slate-300">${u.correo}</td>
+          <td class="py-2.5 px-3 text-slate-300 max-w-xs truncate" title="${u.motivo}">${u.motivo}</td>
+          <td class="py-2.5 px-3 text-center">
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${u.estado === 'Activo' ? 'bg-[#10B981]/20 text-[#10B981]' : 'bg-[#FB923C]/20 text-[#FB923C]'}">
+              ${u.estado}
+            </span>
+          </td>
+          <td class="py-2.5 px-3 text-center font-bold text-white">${u.citas}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function filtrarTablaUsuarios() {
+      const query = document.getElementById('inputBuscarUsuario').value.toLowerCase().trim();
+      if (!query) {
+        renderizarTablaUsuarios(usuariosGlobales);
+        document.getElementById('modalConteoRegistros').textContent = `${usuariosGlobales.length} usuarios`;
+        return;
+      }
+      const filtrados = usuariosGlobales.filter(u => 
+        u.nombre.toLowerCase().includes(query) ||
+        u.telefono.toLowerCase().includes(query) ||
+        u.correo.toLowerCase().includes(query) ||
+        u.motivo.toLowerCase().includes(query)
+      );
+      renderizarTablaUsuarios(filtrados);
+      document.getElementById('modalConteoRegistros').textContent = `${filtrados.length} encontrados`;
+    }
+
+    function cerrarModalUsuarios() {
+      const modal = document.getElementById('modalUsuarios');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
     window.onload = function() {
       initGrowthLineChart();
       initSessionsBarChart();
       initRetentionDonutChart();
+      initSatisfactionDonutChart();
+      initPsychologistsBarChart();
     };
   </script>
 </body>

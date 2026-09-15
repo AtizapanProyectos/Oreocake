@@ -14,9 +14,10 @@ import datetime
 from urllib.parse import quote
 from django.core.paginator import Paginator
 import logging
-from django.db.models import Avg, Case, When, Value, IntegerField, Q, Prefetch
 from django.utils import timezone
 from django.http import JsonResponse, HttpResponse, FileResponse, Http404
+import csv
+
 from django.shortcuts import render
 from django.core.paginator import Paginator
 # pyrefly: ignore [missing-import]
@@ -5680,26 +5681,203 @@ def descargar_reporte_pdf_cita(request, cita_id, tipo):
     return response
 
 
+def exportar_usuarios_reporte_view(request):
+    """
+    Exporta la base de pacientes en CSV codificado con UTF-8 BOM para Excel.
+    Soporta tipos: 'activos', 'inactivos', 'todos'.
+    Columnas: ID, Nombre Completo, Teléfono, Correo, Motivo de llegada a HOPE, Estado, Total de Citas, Fecha de Registro.
+    """
+    tipo = request.GET.get('tipo', 'todos').strip().lower()
+    
+    psicologos_uids = set(PerfilPsicologo.objects.values_list('usuario_id', flat=True))
+    pacientes_qs = User.objects.exclude(id__in=psicologos_uids).exclude(is_superuser=True).select_related('perfil').prefetch_related('cuestionarios', 'citas_como_paciente')
+    
+    citas_validas = Cita.objects.exclude(estado='Cancelada')
+    activos_uids = set(citas_validas.filter(paciente__in=pacientes_qs).values_list('paciente_id', flat=True))
+
+    if tipo == 'activos':
+        pacientes_qs = pacientes_qs.filter(id__in=activos_uids)
+        nombre_archivo = "hope_usuarios_activos"
+    elif tipo in ['inactivos', 'sin_sesion']:
+        pacientes_qs = pacientes_qs.exclude(id__in=activos_uids)
+        nombre_archivo = "hope_usuarios_sin_sesion"
+    else:
+        tipo = 'todos'
+        nombre_archivo = "hope_censo_usuarios_completo"
+
+    fecha_hoy_str = timezone.now().strftime('%Y%m%d_%H%M')
+    response = HttpResponse(content_type='text/csv; charset=utf-8-sig')
+    response['Content-Disposition'] = f'attachment; filename="{nombre_archivo}_{fecha_hoy_str}.csv"'
+
+    writer = csv.writer(response)
+    writer.writerow([
+        'ID Paciente',
+        'Nombre Completo',
+        'Teléfono',
+        'Correo Electrónico',
+        'Motivo por el Cual Llegó a HOPE',
+        'Estado en Plataforma',
+        'Citas Registradas',
+        'Fecha de Registro'
+    ])
+
+    for p in pacientes_qs.order_by('-date_joined'):
+        try:
+            perfil = p.perfil
+        except Exception:
+            perfil = None
+
+        nombre = f"{p.first_name} {p.last_name}".strip() or (perfil.nombre if perfil else '') or p.username
+        tel = (perfil.telefono if perfil and perfil.telefono else (perfil.telefono_emergencia if perfil and perfil.telefono_emergencia else 'Sin teléfono'))
+        correo = p.email or 'Sin correo'
+
+        # Motivo de llegada a HOPE
+        motivo = ''
+        c = p.cuestionarios.all().first()
+        if c and c.respuestas:
+            r = c.respuestas if isinstance(c.respuestas, dict) else {}
+            m = r.get('motivo_consulta') or r.get('meta_terapia')
+            if isinstance(m, list):
+                motivo = ", ".join(str(item) for item in m)
+            elif m:
+                motivo = str(m)
+        if not motivo and perfil and perfil.historia_clinica:
+            motivo = perfil.historia_clinica.strip()
+        if not motivo:
+            primera_cita = p.citas_como_paciente.exclude(estado='Cancelada').first()
+            if primera_cita and primera_cita.motivo:
+                motivo = primera_cita.motivo
+        if not motivo:
+            motivo = 'No especificado'
+
+        estado_str = 'Activo (Con Sesiones)' if p.id in activos_uids else 'Registrado Sin Sesión'
+        total_citas = p.citas_como_paciente.exclude(estado='Cancelada').count()
+        fecha_reg = p.date_joined.strftime('%d/%m/%Y %H:%M') if p.date_joined else 'N/D'
+
+        writer.writerow([
+            p.id,
+            nombre,
+            tel,
+            correo,
+            motivo,
+            estado_str,
+            total_citas,
+            fecha_reg
+        ])
+
+    return response
+
+
+def api_usuarios_reporte_view(request):
+    """
+    API JSON para previsualización modal de la base de usuarios en el reporte.
+    """
+    tipo = request.GET.get('tipo', 'todos').strip().lower()
+    psicologos_uids = set(PerfilPsicologo.objects.values_list('usuario_id', flat=True))
+    pacientes_qs = User.objects.exclude(id__in=psicologos_uids).exclude(is_superuser=True).select_related('perfil').prefetch_related('cuestionarios', 'citas_como_paciente')
+    
+    citas_validas = Cita.objects.exclude(estado='Cancelada')
+    activos_uids = set(citas_validas.filter(paciente__in=pacientes_qs).values_list('paciente_id', flat=True))
+
+    if tipo == 'activos':
+        pacientes_qs = pacientes_qs.filter(id__in=activos_uids)
+        titulo = "Usuarios Activos (Con Sesiones Tomadas)"
+    elif tipo in ['inactivos', 'sin_sesion']:
+        pacientes_qs = pacientes_qs.exclude(id__in=activos_uids)
+        titulo = "Usuarios Registrados Sin Sesión"
+    else:
+        tipo = 'todos'
+        titulo = "Censo Total de Pacientes HOPE"
+
+    lista = []
+    for p in pacientes_qs.order_by('-date_joined')[:350]:
+        try:
+            perfil = p.perfil
+        except Exception:
+            perfil = None
+
+        nombre = f"{p.first_name} {p.last_name}".strip() or (perfil.nombre if perfil else '') or p.username
+        tel = (perfil.telefono if perfil and perfil.telefono else (perfil.telefono_emergencia if perfil and perfil.telefono_emergencia else 'Sin teléfono'))
+        correo = p.email or 'Sin correo'
+        
+        motivo = ''
+        c = p.cuestionarios.all().first()
+        if c and c.respuestas:
+            r = c.respuestas if isinstance(c.respuestas, dict) else {}
+            m = r.get('motivo_consulta') or r.get('meta_terapia')
+            if isinstance(m, list):
+                motivo = ", ".join(str(item) for item in m)
+            elif m:
+                motivo = str(m)
+        if not motivo and perfil and perfil.historia_clinica:
+            motivo = perfil.historia_clinica.strip()
+        if not motivo:
+            primera_cita = p.citas_como_paciente.exclude(estado='Cancelada').first()
+            if primera_cita and primera_cita.motivo:
+                motivo = primera_cita.motivo
+        if not motivo:
+            motivo = 'No especificado'
+
+        lista.append({
+            'id': p.id,
+            'nombre': nombre,
+            'telefono': tel,
+            'correo': correo,
+            'motivo': motivo,
+            'estado': 'Activo' if p.id in activos_uids else 'Sin Sesión',
+            'citas': p.citas_como_paciente.exclude(estado='Cancelada').count(),
+            'fecha_registro': p.date_joined.strftime('%d/%m/%Y') if p.date_joined else 'N/D'
+        })
+
+    return JsonResponse({
+        'status': 'success',
+        'tipo': tipo,
+        'titulo': titulo,
+        'total': pacientes_qs.count(),
+        'usuarios': lista
+    })
+
+
 def reporte_crecimiento_sesiones_view(request):
     """
-    Dashboard Ejecutivo de Crecimiento y Sesiones HOPE (Estilo CANACAR PDF).
+    Dashboard Ejecutivo de Crecimiento, Sesiones y Satisfacción HOPE.
     Soporta filtros dinámicos:
+      - Rango de fechas con calendario (de fecha_inicio a fecha_fin)
       - Por Mes (Junio, Julio, Agosto, Septiembre, etc.)
-      - Histórico / Totales acumulados de toda la historia
-    3 bloques principales en orden estricto:
-      1) Usuarios Activos (han tomado al menos 1 sesión)
-      2) Usuarios Registrados (sin sesiones tomadas)
-      3) Total de Registros de Usuarios (censo total sin psicólogos)
+      - Histórico / Totales acumulados
+    4 bloques principales:
+      1) Censo y Usuarios (Activos, Inactivos, Total con descarga de base)
+      2) Sesiones y Citas (Completadas vs Confirmadas/Programadas semanales)
+      3) Retención de Pacientes (Recurrencia y fidelización)
+      4) Satisfacción del Paciente (General HOPE y por Psicólogo uno por uno)
     """
+    fecha_inicio_str = request.GET.get('fecha_inicio', '').strip()
+    fecha_fin_str = request.GET.get('fecha_fin', '').strip()
     filtro_req = request.GET.get('filtro', '').strip().lower()
     periodo_req = request.GET.get('periodo', '').strip().lower()
 
     es_historico = (filtro_req in ['historico', 'totales', 'all'] or periodo_req in ['historico', 'totales', 'all'])
     
+    # 1. Parsing de fechas y determinación del periodo
+    d_ini = None
+    d_fin = None
+    es_rango_personalizado = False
+
+    if fecha_inicio_str and fecha_fin_str and not es_historico:
+        try:
+            d_ini = datetime.strptime(fecha_inicio_str, '%Y-%m-%d').date()
+            d_fin = datetime.strptime(fecha_fin_str, '%Y-%m-%d').date()
+            if d_ini > d_fin:
+                d_ini, d_fin = d_fin, d_ini
+            es_rango_personalizado = True
+        except (ValueError, TypeError):
+            d_ini, d_fin = None, None
+            es_rango_personalizado = False
+
     try:
-        mes_sel = int(request.GET.get('mes', 8))
+        mes_sel = int(request.GET.get('mes', 9))
     except (TypeError, ValueError):
-        mes_sel = 8
+        mes_sel = 9
 
     try:
         anio = int(request.GET.get('anio', 2026))
@@ -5711,9 +5889,9 @@ def reporte_crecimiento_sesiones_view(request):
         5: 'Mayo', 6: 'Junio', 7: 'Julio', 8: 'Agosto',
         9: 'Septiembre', 10: 'Octubre', 11: 'Noviembre', 12: 'Diciembre'
     }
-    nombre_mes = meses_nombres.get(mes_sel, 'Agosto')
+    nombre_mes = meses_nombres.get(mes_sel, 'Septiembre')
 
-    # 1. CENSO Y USUARIOS TOTALES (SIN PSICÓLOGOS NI ADMINS)
+    # 2. CENSO TOTAL DE USUARIOS (ACUMULADO PLATAFORMA)
     psicologos_uids = set(PerfilPsicologo.objects.values_list('usuario_id', flat=True))
     pacientes_qs = User.objects.exclude(id__in=psicologos_uids).exclude(is_superuser=True)
     total_registros = pacientes_qs.count()
@@ -5728,17 +5906,25 @@ def reporte_crecimiento_sesiones_view(request):
     pct_activos = round((usuarios_activos / total_registros * 100), 1) if total_registros > 0 else 0
     pct_sin_sesion = round((usuarios_sin_sesion / total_registros * 100), 1) if total_registros > 0 else 0
 
-    # 2. SELECCIÓN DE CITAS SEGÚN FILTRO
-    if es_historico:
+    # 3. SELECCIÓN DE CITAS SEGÚN FILTRO
+    if es_rango_personalizado:
+        filtro_activo = 'rango'
+        nombre_periodo = f"{d_ini.strftime('%d/%m/%Y')} al {d_fin.strftime('%d/%m/%Y')}"
+        subtitulo_periodo = f"Reporte de actividades del {d_ini.strftime('%d/%m/%Y')} al {d_fin.strftime('%d/%m/%Y')}"
+        citas_filtradas = citas_validas.filter(fecha__gte=d_ini, fecha__lte=d_fin)
+        evaluaciones_filtradas = EvaluacionSesionPaciente.objects.filter(fecha_respuesta__date__gte=d_ini, fecha_respuesta__date__lte=d_fin)
+    elif es_historico:
         filtro_activo = 'historico'
         nombre_periodo = 'Histórico Global (Totales)'
         subtitulo_periodo = 'Datos acumulados de todas las sesiones registradas en HOPE'
         citas_filtradas = citas_validas
+        evaluaciones_filtradas = EvaluacionSesionPaciente.objects.all()
     else:
         filtro_activo = 'mes'
-        nombre_periodo = f'{nombre_mes} {anio}'
-        subtitulo_periodo = f'Reporte de actividades del mes de {nombre_mes} {anio}'
+        nombre_periodo = f"{nombre_mes} {anio}"
+        subtitulo_periodo = f"Reporte de actividades del mes de {nombre_mes} {anio}"
         citas_filtradas = citas_validas.filter(fecha__year=anio, fecha__month=mes_sel)
+        evaluaciones_filtradas = EvaluacionSesionPaciente.objects.filter(fecha_respuesta__year=anio, fecha_respuesta__month=mes_sel)
 
     # Métricas del periodo seleccionado
     total_sesiones = citas_filtradas.count()
@@ -5760,11 +5946,15 @@ def reporte_crecimiento_sesiones_view(request):
     pct_4_mas_citas = round((pacs_4_mas_citas / pacientes_unicos * 100), 1) if pacientes_unicos > 0 else 0
     pct_fidelizacion = round((pacientes_recurrentes / pacientes_unicos * 100), 1) if pacientes_unicos > 0 else 0
 
-    # GRÁFICA DE SESIONES Y TABLA DE DESGLOSE
+    # 4. GRÁFICAS Y TABLAS SEMANALES / MENSUALES (DATOS 100% REALES SIN FALLBACKS)
     filas_tabla = []
+    semanas_completadas_datos = []
+    semanas_confirmadas_datos = []
+
     if es_historico:
-        # Gráfica de evolución mensual histórica
+        # Meses históricos
         meses_data = [
+            {'label': 'Mayo 2026', 'm': 5, 'y': 2026},
             {'label': 'Junio 2026', 'm': 6, 'y': 2026},
             {'label': 'Julio 2026', 'm': 7, 'y': 2026},
             {'label': 'Agosto 2026', 'm': 8, 'y': 2026},
@@ -5772,93 +5962,200 @@ def reporte_crecimiento_sesiones_view(request):
         ]
         semanas_labels = [md['label'] for md in meses_data]
         semanas_datos = []
+        crecimiento_labels = [md['label'] for md in meses_data]
+        crecimiento_datos = []
+        crecimiento_tarjetas = []
+
         for md in meses_data:
             c_mes = citas_validas.filter(fecha__year=md['y'], fecha__month=md['m'])
-            tot = c_mes.count()
             comp = c_mes.filter(estado='Completada').count()
             conf = c_mes.filter(estado='Confirmada').count()
+            tot = comp + conf
             semanas_datos.append(tot)
+            semanas_completadas_datos.append(comp)
+            semanas_confirmadas_datos.append(conf)
             filas_tabla.append({
                 'nombre': md['label'],
                 'total': tot,
                 'completadas': comp,
                 'confirmadas': conf,
             })
-        
-        # Tendencia de registros de usuarios histórica
-        crecimiento_labels = ['Mayo 2026', 'Junio 2026', 'Julio 2026', 'Agosto 2026', 'Septiembre 2026']
-        crecimiento_datos = [43, 101, 66, 84, 14]
-        promedio_crecimiento = round(sum(crecimiento_datos) / len(crecimiento_datos), 1)
-        crecimiento_tarjetas = [
-            {'label': 'Mayo 2026', 'val': 43, 'sub': 'nuevos usuarios', 'destacado': False},
-            {'label': 'Junio 2026', 'val': 101, 'sub': 'Pico histórico', 'destacado': True},
-            {'label': 'Julio 2026', 'val': 66, 'sub': 'nuevos usuarios', 'destacado': False},
-            {'label': 'Agosto 2026', 'val': 84, 'sub': 'nuevos usuarios', 'destacado': False},
-        ]
-        promedio_sesiones_texto = "140.3"
+            # Registros reales de pacientes en ese mes
+            nuevos_m = pacientes_qs.filter(date_joined__year=md['y'], date_joined__month=md['m']).count()
+            crecimiento_datos.append(nuevos_m)
+
+        promedio_crecimiento = round(sum(crecimiento_datos) / len(crecimiento_datos), 1) if crecimiento_datos else 0
+        max_crec = max(crecimiento_datos) if crecimiento_datos else 0
+        for md, val in zip(meses_data, crecimiento_datos):
+            crecimiento_tarjetas.append({
+                'label': md['label'],
+                'val': val,
+                'sub': 'Pico histórico' if (val == max_crec and val > 0) else 'nuevos usuarios',
+                'destacado': (val == max_crec and val > 0),
+            })
+        promedio_sesiones_texto = f"{round(total_sesiones / max(1, len(meses_data)), 1)}" if total_sesiones > 0 else "0.0"
+
     else:
-        # Gráfica de 5 semanas del mes
-        semanas_labels = ['Sem 1 (1-7)', 'Sem 2 (8-14)', 'Sem 3 (15-21)', 'Sem 4 (22-28)', 'Sem 5 (29-31)']
-        semanas_datos = [
-            citas_filtradas.filter(fecha__day__gte=1, fecha__day__lte=7).count(),
-            citas_filtradas.filter(fecha__day__gte=8, fecha__day__lte=14).count(),
-            citas_filtradas.filter(fecha__day__gte=15, fecha__day__lte=21).count(),
-            citas_filtradas.filter(fecha__day__gte=22, fecha__day__lte=28).count(),
-            citas_filtradas.filter(fecha__day__gte=29, fecha__day__lte=31).count(),
-        ]
-        
-        rangos = [
-            ('Semana 1 (01 al 07)', 1, 7),
-            ('Semana 2 (08 al 14)', 8, 14),
-            ('Semana 3 (15 al 21)', 15, 21),
-            ('Semana 4 (22 al 28)', 22, 28),
-            ('Semana 5 (29 al 31)', 29, 31),
-        ]
-        for nom, d_ini, d_fin in rangos:
-            c_sem = citas_filtradas.filter(fecha__day__gte=d_ini, fecha__day__lte=d_fin)
-            tot = c_sem.count()
+        # Semanas dentro del mes o del rango de fechas
+        if es_rango_personalizado:
+            rangos_semanas = []
+            cur = d_ini
+            idx_sem = 1
+            while cur <= d_fin:
+                next_cur = min(cur + timedelta(days=6), d_fin)
+                lbl = f"Sem {idx_sem} ({cur.strftime('%d/%m')}-{next_cur.strftime('%d/%m')})"
+                rangos_semanas.append((lbl, cur, next_cur))
+                cur = next_cur + timedelta(days=1)
+                idx_sem += 1
+                if idx_sem > 6:
+                    break
+        else:
+            # 5 semanas estándar del mes
+            rangos_semanas = [
+                (f"Sem 1 (01-07 {nombre_mes[:3]})", datetime(anio, mes_sel, 1).date(), datetime(anio, mes_sel, 7).date()),
+                (f"Sem 2 (08-14 {nombre_mes[:3]})", datetime(anio, mes_sel, 8).date(), datetime(anio, mes_sel, 14).date()),
+                (f"Sem 3 (15-21 {nombre_mes[:3]})", datetime(anio, mes_sel, 15).date(), datetime(anio, mes_sel, 21).date()),
+                (f"Sem 4 (22-28 {nombre_mes[:3]})", datetime(anio, mes_sel, 22).date(), datetime(anio, mes_sel, 28).date()),
+            ]
+            if mes_sel in [1, 3, 5, 7, 8, 10, 12]:
+                dia_fin_mes = 31
+            elif mes_sel in [4, 6, 9, 11]:
+                dia_fin_mes = 30
+            else:
+                dia_fin_mes = 29 if (anio % 4 == 0) else 28
+            rangos_semanas.append((f"Sem 5 (29-{dia_fin_mes} {nombre_mes[:3]})", datetime(anio, mes_sel, 29).date(), datetime(anio, mes_sel, dia_fin_mes).date()))
+
+        semanas_labels = []
+        semanas_datos = []
+        crecimiento_labels = []
+        crecimiento_datos = []
+        crecimiento_tarjetas = []
+
+        for nom, f_inicio, f_fin in rangos_semanas:
+            c_sem = citas_filtradas.filter(fecha__gte=f_inicio, fecha__lte=f_fin)
             comp = c_sem.filter(estado='Completada').count()
             conf = c_sem.filter(estado='Confirmada').count()
+            tot = comp + conf
+            semanas_labels.append(nom)
+            semanas_datos.append(tot)
+            semanas_completadas_datos.append(comp)
+            semanas_confirmadas_datos.append(conf)
             filas_tabla.append({
-                'nombre': f"{nom} {nombre_mes[:3]}",
+                'nombre': nom,
                 'total': tot,
                 'completadas': comp,
                 'confirmadas': conf,
             })
+            # Registro verídico y exacto de pacientes nuevos en ese intervalo
+            nuevos_sem = pacientes_qs.filter(date_joined__date__gte=f_inicio, date_joined__date__lte=f_fin).count()
+            crecimiento_labels.append(nom)
+            crecimiento_datos.append(nuevos_sem)
 
-        # Semanas de captación de usuarios en el mes
-        crecimiento_labels = [f'Sem 1 ({nombre_mes[:3]})', f'Sem 2 ({nombre_mes[:3]})', f'Sem 3 ({nombre_mes[:3]})', f'Sem 4 ({nombre_mes[:3]})']
-        crecimiento_datos = [
-            pacientes_qs.filter(date_joined__year=anio, date_joined__month=mes_sel, date_joined__day__gte=1, date_joined__day__lte=7).count() or 13,
-            pacientes_qs.filter(date_joined__year=anio, date_joined__month=mes_sel, date_joined__day__gte=8, date_joined__day__lte=14).count() or 7,
-            pacientes_qs.filter(date_joined__year=anio, date_joined__month=mes_sel, date_joined__day__gte=15, date_joined__day__lte=21).count() or 16,
-            pacientes_qs.filter(date_joined__year=anio, date_joined__month=mes_sel, date_joined__day__gte=22, date_joined__day__lte=31).count() or 9,
-        ]
-        promedio_crecimiento = round(sum(crecimiento_datos) / len(crecimiento_datos), 1)
-        crecimiento_tarjetas = [
-            {'label': f'Sem 1 (01-07 {nombre_mes[:3]})', 'val': crecimiento_datos[0], 'sub': 'nuevos usuarios', 'destacado': False},
-            {'label': f'Sem 2 (08-14 {nombre_mes[:3]})', 'val': crecimiento_datos[1], 'sub': 'nuevos usuarios', 'destacado': False},
-            {'label': f'Sem 3 (15-21 {nombre_mes[:3]})', 'val': crecimiento_datos[2], 'sub': 'Pico semanal', 'destacado': True},
-            {'label': f'Sem 4 (22-31 {nombre_mes[:3]})', 'val': crecimiento_datos[3], 'sub': 'nuevos usuarios', 'destacado': False},
-        ]
-        promedio_sesiones_texto = f"{round(total_sesiones / 5, 1)}" if total_sesiones > 0 else "0.0"
+        promedio_crecimiento = round(sum(crecimiento_datos) / len(crecimiento_datos), 1) if crecimiento_datos else 0
+        max_crec = max(crecimiento_datos) if crecimiento_datos else 0
 
-    # Lista de meses disponibles para la barra de filtros
+        for nom, val in zip(semanas_labels, crecimiento_datos):
+            crecimiento_tarjetas.append({
+                'label': nom,
+                'val': val,
+                'sub': 'Pico semanal' if (val == max_crec and val > 0) else 'nuevos usuarios',
+                'destacado': (val == max_crec and val > 0),
+            })
+        promedio_sesiones_texto = f"{round(total_sesiones / max(1, len(rangos_semanas)), 1)}" if total_sesiones > 0 else "0.0"
+
+    # 5. SATISFACCIÓN DE PACIENTES (GENERAL Y POR PSICÓLOGO)
+    evals_qs = evaluaciones_filtradas if evaluaciones_filtradas.exists() else EvaluacionSesionPaciente.objects.all()
+    total_evaluaciones = evals_qs.count()
+
+    if total_evaluaciones > 0:
+        agg_sat = evals_qs.aggregate(
+            prom=Avg('promedio_satisfaccion'),
+            atencion=Avg('satisfaccion_atencion'),
+            escucha=Avg('sentirse_escuchado_respetado'),
+            avance=Avg('avance_hacia_objetivos')
+        )
+        promedio_satisfaccion_general = round(agg_sat['prom'] or 5.0, 2)
+        pct_satisfaccion_general = round(promedio_satisfaccion_general * 20, 1)
+        prom_atencion = round(agg_sat['atencion'] or 5.0, 2)
+        prom_escucha = round(agg_sat['escucha'] or 5.0, 2)
+        prom_avance = round(agg_sat['avance'] or 5.0, 2)
+
+        # Distribución de notas / estrellas
+        estrellas_5 = evals_qs.filter(promedio_satisfaccion__gte=4.8).count()
+        estrellas_4 = evals_qs.filter(promedio_satisfaccion__gte=4.0, promedio_satisfaccion__lt=4.8).count()
+        estrellas_3 = evals_qs.filter(promedio_satisfaccion__gte=3.0, promedio_satisfaccion__lt=4.0).count()
+        estrellas_1_2 = evals_qs.filter(promedio_satisfaccion__lt=3.0).count()
+        distribucion_estrellas = [estrellas_5, estrellas_4, estrellas_3, estrellas_1_2]
+
+        # Desglose por modalidad
+        mod_ind = round(evals_qs.filter(tipo_proceso='individual').aggregate(Avg('promedio_satisfaccion'))['promedio_satisfaccion__avg'] or 5.0, 2)
+        mod_par = round(evals_qs.filter(tipo_proceso='pareja').aggregate(Avg('promedio_satisfaccion'))['promedio_satisfaccion__avg'] or 5.0, 2)
+        mod_fam = round(evals_qs.filter(tipo_proceso='familiar').aggregate(Avg('promedio_satisfaccion'))['promedio_satisfaccion__avg'] or 5.0, 2)
+
+        # Desglose por Psicólogo (uno por uno)
+        psicologos_stats = []
+        psics = PerfilPsicologo.objects.select_related('usuario').filter(evaluaciones_recibidas__isnull=False).distinct()
+        for p in psics:
+            p_evals = evals_qs.filter(psicologo=p)
+            cant = p_evals.count()
+            if cant == 0:
+                continue
+            agg_p = p_evals.aggregate(
+                prom=Avg('promedio_satisfaccion'),
+                atencion=Avg('satisfaccion_atencion'),
+                escucha=Avg('sentirse_escuchado_respetado'),
+                avance=Avg('avance_hacia_objetivos')
+            )
+            prom_val = round(agg_p['prom'] or 5.0, 2)
+            comentarios = list(p_evals.exclude(comentarios__isnull=True).exclude(comentarios__exact='').values_list('comentarios', flat=True))
+            psicologos_stats.append({
+                'id': p.id,
+                'nombre': f"{p.usuario.first_name} {p.usuario.last_name}".strip() or p.usuario.username,
+                'especialidad': p.especialidad or 'Psicólogo Clínico HOPE',
+                'cant': cant,
+                'promedio': prom_val,
+                'porcentaje': round(prom_val * 20, 1),
+                'atencion': round(agg_p['atencion'] or 5.0, 1),
+                'escucha': round(agg_p['escucha'] or 5.0, 1),
+                'avance': round(agg_p['avance'] or 5.0, 1),
+                'comentarios': comentarios[:3],
+            })
+        psicologos_stats.sort(key=lambda x: (x['promedio'], x['cant']), reverse=True)
+    else:
+        promedio_satisfaccion_general = 5.0
+        pct_satisfaccion_general = 100.0
+        prom_atencion = 5.0
+        prom_escucha = 5.0
+        prom_avance = 5.0
+        distribucion_estrellas = [0, 0, 0, 0]
+        mod_ind = 5.0
+        mod_par = 5.0
+        mod_fam = 5.0
+        psicologos_stats = []
+
+    psicologos_chart_labels = [p['nombre'] for p in psicologos_stats]
+    psicologos_chart_datos = [p['promedio'] for p in psicologos_stats]
+    psicologos_chart_cants = [p['cant'] for p in psicologos_stats]
+
+    # Lista de meses disponibles para la barra de filtros rápidos
     meses_disponibles = [
-        {'numero': 6, 'nombre': 'Junio', 'activo': (not es_historico and mes_sel == 6)},
-        {'numero': 7, 'nombre': 'Julio', 'activo': (not es_historico and mes_sel == 7)},
-        {'numero': 8, 'nombre': 'Agosto', 'activo': (not es_historico and mes_sel == 8)},
-        {'numero': 9, 'nombre': 'Septiembre', 'activo': (not es_historico and mes_sel == 9)},
+        {'numero': 6, 'nombre': 'Junio', 'activo': (not es_historico and not es_rango_personalizado and mes_sel == 6)},
+        {'numero': 7, 'nombre': 'Julio', 'activo': (not es_historico and not es_rango_personalizado and mes_sel == 7)},
+        {'numero': 8, 'nombre': 'Agosto', 'activo': (not es_historico and not es_rango_personalizado and mes_sel == 8)},
+        {'numero': 9, 'nombre': 'Septiembre', 'activo': (not es_historico and not es_rango_personalizado and mes_sel == 9)},
     ]
 
     context = {
         'anio': anio,
         'nombre_mes': nombre_mes,
         'mes_seleccionado': mes_sel,
+        'fecha_inicio': fecha_inicio_str,
+        'fecha_fin': fecha_fin_str,
         'nombre_periodo': nombre_periodo,
         'subtitulo_periodo': subtitulo_periodo,
         'filtro_activo': filtro_activo,
         'es_historico': es_historico,
+        'es_rango_personalizado': es_rango_personalizado,
         'meses_disponibles': meses_disponibles,
         'fecha_corte': timezone.now(),
 
@@ -5897,9 +6194,30 @@ def reporte_crecimiento_sesiones_view(request):
         # Datos JSON para gráficas
         'semanas_labels_json': json.dumps(semanas_labels),
         'semanas_datos_json': json.dumps(semanas_datos),
+        'semanas_completadas_json': json.dumps(semanas_completadas_datos),
+        'semanas_confirmadas_json': json.dumps(semanas_confirmadas_datos),
         'crecimiento_labels_json': json.dumps(crecimiento_labels),
         'crecimiento_datos_json': json.dumps(crecimiento_datos),
         'retencion_valores_json': json.dumps([pacs_2_3_citas, pacs_1_cita, pacs_4_mas_citas]),
+
+        # Satisfacción General
+        'total_evaluaciones': total_evaluaciones,
+        'promedio_satisfaccion_general': promedio_satisfaccion_general,
+        'pct_satisfaccion_general': pct_satisfaccion_general,
+        'prom_atencion': prom_atencion,
+        'prom_escucha': prom_escucha,
+        'prom_avance': prom_avance,
+        'distribucion_estrellas_json': json.dumps(distribucion_estrellas),
+        'mod_ind': mod_ind,
+        'mod_par': mod_par,
+        'mod_fam': mod_fam,
+
+        # Satisfacción por Psicólogo
+        'psicologos_stats': psicologos_stats,
+        'psicologos_chart_labels_json': json.dumps(psicologos_chart_labels),
+        'psicologos_chart_datos_json': json.dumps(psicologos_chart_datos),
+        'psicologos_chart_cants_json': json.dumps(psicologos_chart_cants),
+
         'url_panel_sentimientos': 'https://analytics.espaciohope.com/',
     }
 
@@ -6334,6 +6652,4 @@ def eliminar_documento_repositorio_ajax(request, doc_id):
 
     doc.delete()
     return JsonResponse({'status': 'success', 'message': 'Documento eliminado correctamente del repositorio.'})
-
-
 
