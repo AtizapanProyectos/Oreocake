@@ -4,7 +4,7 @@ from requests import request
 from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_protect
 # pyrefly: ignore [missing-import]
-from django.db.models import Count
+from django.db.models import Count, Prefetch
 from decimal import Decimal
 import threading
 from django.shortcuts import render, redirect
@@ -41,7 +41,7 @@ from django.template.loader import render_to_string
 from django.utils.html import strip_tags
 from django.contrib.auth import login
 
-from django.db.models import Q, Count
+from django.db.models import Q, Count, Prefetch
 from datetime import datetime, timedelta, time
 import json
 from django.db import transaction  # <--- Agrega esto en tus imports de hasta arriba
@@ -65,7 +65,7 @@ from .models import *
 from .cuestionario_data import CUESTIONARIO_CLINICO
 from django.utils import timezone
 from django.utils import timezone as tz
-from django.db.models import Count, Avg, Sum, Min, Max
+from django.db.models import Count, Avg, Sum, Min, Max, Prefetch
 
 
 
