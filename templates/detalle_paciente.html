@@ -451,9 +451,16 @@
                                         Sesión del {{ cita.fecha|date:"d M Y" }} a las {{ cita.hora|time:"H:i" }}
                                     </p>
                                 </div>
-                                <button class="meet-trigger-btn" onclick="cargarMeet('{{ cita.id }}', this)">
-                                    <i class="fas fa-sync-alt"></i> Sincronizar
-                                </button>
+                                <div style="display:flex;gap:8px;">
+                                    <button class="meet-trigger-btn" onclick="cargarMeet('{{ cita.id }}', this)">
+                                        <i class="fas fa-sync-alt"></i> Sincronizar
+                                    </button>
+                                    {% if not sesion.tiene_historial %}
+                                    <button class="meet-trigger-btn" id="btn-auto-ia-{{ cita.id }}" style="background:var(--c-purple);color:white;border-color:var(--c-purple);" onclick="generarBitacoraDesdeMeet('{{ cita.id }}', this)">
+                                        <i class="fas fa-wand-magic-sparkles"></i> Crear Bitácora con IA
+                                    </button>
+                                    {% endif %}
+                                </div>
                             </div>
                             <div class="meet-loading" style="display:none;">
                                 <i class="fas fa-circle-notch fa-spin" style="font-size:28px;color:var(--c-indigo);margin-bottom:12px;display:block;"></i>
@@ -825,6 +832,44 @@
                 if (result) { result.innerHTML = '<div style="color: #ef4444; font-weight: bold; padding: 10px 0;">Fallo de conexión. Intenta de nuevo.</div>'; result.style.display = 'block'; result.style.padding = '0'; }
                 btnObj.innerHTML = '<i class="fas fa-sync-alt"></i> Reintentar';
                 btnObj.disabled = false;
+            });
+    }
+
+    function generarBitacoraDesdeMeet(citaId, btnObj) {
+        if (!confirm('¿Deseas que la IA analice las notas de Google Meet y genere la bitácora clínica para esta sesión automáticamente?')) return;
+
+        const container = document.getElementById('meet-content-' + citaId);
+        const result = container ? container.querySelector('.meet-result') : null;
+
+        btnObj.disabled = true;
+        btnObj.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Analizando con IA...';
+
+        fetch(`/generar-bitacora-meet-ia/${citaId}/`)
+            .then(r => r.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    btnObj.innerHTML = '<i class="fas fa-check"></i> ¡Bitácora Creada!';
+                    btnObj.style.background = '#10B981';
+                    btnObj.style.borderColor = '#10B981';
+                    if (result) {
+                        result.innerHTML = `<div style="color: #10b981; font-weight: bold; padding: 12px 0;"><i class="fas fa-check-circle"></i> ${data.message} Recargando página...</div>`;
+                    }
+                    setTimeout(() => { window.location.reload(); }, 1500);
+                } else {
+                    btnObj.disabled = false;
+                    btnObj.innerHTML = '<i class="fas fa-wand-magic-sparkles"></i> Reintentar IA';
+                    if (result) {
+                        result.innerHTML = `<div style="color: #ef4444; font-weight: bold; padding: 12px 0;"><i class="fas fa-exclamation-triangle"></i> ${data.message}</div>`;
+                    }
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                btnObj.disabled = false;
+                btnObj.innerHTML = '<i class="fas fa-wand-magic-sparkles"></i> Reintentar IA';
+                if (result) {
+                    result.innerHTML = `<div style="color: #ef4444; font-weight: bold; padding: 12px 0;"><i class="fas fa-exclamation-triangle"></i> Error de conexión con el servidor.</div>`;
+                }
             });
     }
 

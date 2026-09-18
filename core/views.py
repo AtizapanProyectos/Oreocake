@@ -2175,6 +2175,304 @@ def check_meet_notes(request, cita_id):
         return JsonResponse({'status': 'error', 'message': str(e)})
 
 
+def _extraer_texto_de_google_doc(file_url, creds=None):
+    """
+    Descarga el contenido de un Google Doc en texto plano.
+    Soporta URLs públicas directamente y también descarga autenticada si hay credenciales.
+    """
+    import re
+    import requests
+    
+    # Extraer el ID del documento
+    match = re.search(r'/document/d/([a-zA-Z0-9-_]+)', file_url)
+    if not match:
+        # Si la URL no es de Google Docs directa o es un enlace de Drive
+        match = re.search(r'/file/d/([a-zA-Z0-9-_]+)', file_url)
+    
+    doc_id = match.group(1) if match else None
+    
+    # 1. Intentar descarga en formato texto vía export
+    if doc_id:
+        export_url = f"https://docs.google.com/document/d/{doc_id}/export?format=txt"
+        headers = {}
+        if creds and hasattr(creds, 'token') and creds.token:
+            headers['Authorization'] = f"Bearer {creds.token}"
+        try:
+            resp = requests.get(export_url, headers=headers, timeout=15)
+            if resp.status_code == 200 and len(resp.text.strip()) > 20:
+                return resp.text.strip()
+        except Exception as e:
+            pass
+
+    # 2. Intentar GET directo a la URL (para docs públicos)
+    try:
+        resp = requests.get(file_url, timeout=15)
+        if resp.status_code == 200:
+            texto = resp.text.strip()
+            # Limpiar etiquetas HTML básicas si devolvió HTML
+            if '<html' in texto.lower():
+                from bs4 import BeautifulSoup
+                soup = BeautifulSoup(texto, 'html.parser')
+                return soup.get_text(separator='\n').strip()
+            return texto
+    except Exception:
+        pass
+
+    return ""
+
+
+def _generar_bitacora_con_ia_de_texto(texto_notas, paciente_nombre=""):
+    """
+    Llama a Groq para estructurar las notas/resumen de Google Meet en los 5 campos clínicos.
+    """
+    from groq import Groq
+    client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
+
+    prompt_instrucciones = (
+        f"Eres un psicólogo clínico supervisor y experto. A continuación tienes las notas de sesión y/o resumen "
+        f"de Google Meet generadas para el paciente {paciente_nombre}.\n\n"
+        "Lee el texto, analiza el contexto clínico y distribuye la información en formato JSON.\n"
+        "Si hay una transcripción completa junto con el resumen o notas de reunión, PRIORIZA las notas de reunión / resumen.\n\n"
+        "Usa ESTRICTAMENTE estas 5 claves:\n"
+        "- \"como_llega\": Análisis del estado inicial, puntualidad, actitud al llegar y ánimo.\n"
+        "- \"notas_sesion\": El desarrollo de la consulta, temas hablados, dinámicas, observaciones.\n"
+        "- \"aprendizaje_paciente\": Conclusiones del paciente o qué se llevó de la sesión.\n"
+        "- \"como_se_va\": Estado emocional al finalizar, notas de alta o cierre de sesión.\n"
+        "- \"recomendaciones\": Tareas, sugerencias o indicaciones para la siguiente sesión.\n\n"
+        "Si no encuentras información para alguna categoría, escribe una breve deducción coherente o déjala como cadena vacía (\"\").\n"
+        "IMPORTANTE: Devuelve ÚNICAMENTE el JSON válido en texto plano, sin bloques de código markdown (```json), ni explicaciones."
+    )
+
+    response = client.chat.completions.create(
+        model="openai/gpt-oss-120b",
+        messages=[
+            {"role": "system", "content": prompt_instrucciones},
+            {"role": "user", "content": texto_notas[:12000]}
+        ],
+        max_tokens=2500,
+        temperature=0.1,
+    )
+
+    texto_respuesta = response.choices[0].message.content.strip()
+    return _extraer_json_groq(texto_respuesta)
+
+
+def generar_bitacora_automatica_meet(cita_id, log_func=None):
+    """
+    Recupera los attachments de Google Meet de la cita dada,
+    extrae el texto de las notas de Google Docs, procesa con Groq y
+    crea o actualiza el HistorialClinico automáticamente.
+    Retorna (exito: bool, mensaje: str).
+    """
+    def _log(msg):
+        if log_func:
+            try:
+                log_func(msg)
+            except Exception:
+                pass
+        else:
+            logging.getLogger(__name__).info(msg)
+
+    try:
+        cita = Cita.objects.filter(id=cita_id).select_related('paciente', 'psicologo__usuario').first()
+        if not cita:
+            return False, f"Cita #{cita_id} no encontrada."
+
+        # Verificar si ya tiene bitácora con notas
+        if hasattr(cita, 'nota_clinica') and cita.nota_clinica and bool(cita.nota_clinica.notas_sesion):
+            return True, f"Cita #{cita_id} ya cuenta con bitácora clínica previamente guardada."
+
+        if not cita.id_evento_google:
+            return False, f"Cita #{cita_id} no tiene id_evento_google (posiblemente presencial o sin Meet)."
+
+        token_json_str = os.environ.get('GOOGLE_TOKEN_JSON')
+        if not token_json_str:
+            return False, "Variable GOOGLE_TOKEN_JSON no configurada en el entorno."
+
+        from google.oauth2.credentials import Credentials
+        from googleapiclient.discovery import build
+
+        creds = Credentials.from_authorized_user_info(
+            json.loads(token_json_str),
+            ['https://www.googleapis.com/auth/calendar.events']
+        )
+        service = build('calendar', 'v3', credentials=creds)
+
+        event = service.events().get(calendarId='primary', eventId=cita.id_evento_google).execute()
+        attachments = event.get('attachments', [])
+
+        if not attachments:
+            return False, f"Google aún no ha vinculado documentos en los attachments del evento para la Cita #{cita_id}."
+
+        # Buscar el archivo de notas o transcripción de Google Doc
+        texto_acumulado = ""
+        for a in attachments:
+            url = a.get('fileUrl', '')
+            if url:
+                texto_extraido = _extraer_texto_de_google_doc(url, creds=creds)
+                if texto_extraido:
+                    texto_acumulado += f"\n\n--- DOCUMENTO: {a.get('title', 'Notas Meet')} ---\n" + texto_extraido
+
+        if not texto_acumulado.strip():
+            return False, f"No se pudo extraer texto legible de los attachments de Google Meet para la Cita #{cita_id}."
+
+        paciente_nom = cita.paciente.first_name if cita.paciente else "Paciente"
+        _log(f"   🤖 [IA GROQ] Procesando notas clínicas de Google Docs ({len(texto_acumulado)} caracteres)...")
+
+        datos_ia = _generar_bitacora_con_ia_de_texto(texto_acumulado, paciente_nombre=paciente_nom)
+        if not datos_ia or not isinstance(datos_ia, dict):
+            return False, "La IA no devolvió una estructura JSON válida para la bitácora."
+
+        notas_sesion = datos_ia.get('notas_sesion', '').strip()
+        if not notas_sesion:
+            notas_sesion = "Sesión clínica documentada mediante sincronización automática de Google Meet."
+
+        # Crear o actualizar HistorialClinico
+        historial, creado = HistorialClinico.objects.get_or_create(
+            cita=cita,
+            defaults={
+                'paciente': cita.paciente,
+                'psicologo': cita.psicologo,
+                'como_llega': datos_ia.get('como_llega', ''),
+                'notas_sesion': notas_sesion,
+                'aprendizaje_paciente': datos_ia.get('aprendizaje_paciente', ''),
+                'como_se_va': datos_ia.get('como_se_va', ''),
+                'recomendaciones': datos_ia.get('recomendaciones', '')
+            }
+        )
+
+        if not creado:
+            # Si ya existía sin notas o como borrador, actualizamos los campos
+            historial.como_llega = datos_ia.get('como_llega', historial.como_llega or '')
+            historial.notas_sesion = notas_sesion
+            historial.aprendizaje_paciente = datos_ia.get('aprendizaje_paciente', historial.aprendizaje_paciente or '')
+            historial.como_se_va = datos_ia.get('como_se_va', historial.como_se_va or '')
+            historial.recomendaciones = datos_ia.get('recomendaciones', historial.recomendaciones or '')
+            historial.save()
+
+        # Marcar la cita como completada
+        if cita.estado != 'Completada':
+            cita.estado = 'Completada'
+            cita.save()
+
+        return True, f"Bitácora creada y vinculada exitosamente con IA para la Cita #{cita_id}."
+
+    except Exception as e:
+        return False, f"Error generando bitácora automática para Cita #{cita_id}: {str(e)}"
+
+
+@user_passes_test(lambda u: hasattr(u, 'perfil_psicologo') or u.is_staff)
+def api_generar_bitacora_automatica_meet(request, cita_id):
+    """
+    Endpoint manual para que el psicólogo pueda solicitar generar la bitácora
+    con IA a partir de las notas de Google Meet en cualquier momento.
+    """
+    exito, mensaje = generar_bitacora_automatica_meet(cita_id)
+    if exito:
+        return JsonResponse({'status': 'success', 'message': mensaje})
+    return JsonResponse({'status': 'error', 'message': mensaje})
+
+
+def procesar_bitacoras_historicas_meet(log_func=None, limite=None):
+    """
+    Escanea todas las citas pasadas que NO tengan bitácora escrita por psicólogo
+    e intenta generarlas automáticamente desde las notas de Google Meet con IA.
+    Retorna un diccionario detallado con estadísticas completas del proceso.
+    """
+    def _log(msg):
+        if log_func:
+            try:
+                log_func(msg)
+            except Exception:
+                pass
+        else:
+            logging.getLogger(__name__).info(msg)
+
+    ahora = timezone.localtime(timezone.now())
+
+    # Citas pasadas que están confirmadas o completadas
+    query = Cita.objects.filter(
+        fecha__lte=ahora.date()
+    ).select_related('paciente', 'psicologo__usuario', 'nota_clinica').order_by('-fecha', '-hora')
+
+    citas = list(query)
+    if limite:
+        citas = citas[:limite]
+
+    total_analizadas = len(citas)
+    ya_con_bitacora = 0
+    sin_evento_google = 0
+    sin_notas_en_google = 0
+    creadas_con_exito = 0
+    errores = 0
+
+    _log("=" * 80)
+    _log("🚀 [BARRIDO HISTÓRICO] Generación Automática de Bitácoras con IA (Google Meet)")
+    _log(f"📋 Total de citas pasadas a evaluar: {total_analizadas}")
+    _log("=" * 80)
+
+    for cita in citas:
+        pac_nom = cita.paciente.first_name if cita.paciente else 'Desconocido'
+        doc_nom = cita.psicologo.usuario.first_name if (cita.psicologo and cita.psicologo.usuario) else 'Sin psicólogo'
+        f_str = cita.fecha.strftime('%d/%m/%Y') if cita.fecha else 'S/F'
+        h_str = cita.hora.strftime('%H:%M') if cita.hora else 'S/H'
+
+        # 1. ¿Ya tiene bitácora con notas escritas?
+        if hasattr(cita, 'nota_clinica') and cita.nota_clinica and bool(cita.nota_clinica.notas_sesion and cita.nota_clinica.notas_sesion.strip()):
+            ya_con_bitacora += 1
+            continue
+
+        # 2. ¿Tiene ID de evento de Google Meet?
+        if not cita.id_evento_google:
+            sin_evento_google += 1
+            _log(f"⏩ [Cita #{cita.id}] {pac_nom} con {doc_nom} ({f_str} {h_str}) -> SIN ID DE MEET (Presencial o sin Google Calendar).")
+            continue
+
+        _log(f"🔍 [Cita #{cita.id}] {pac_nom} con {doc_nom} ({f_str} {h_str}) -> Evaluando notas en Google Meet...")
+
+        exito, msg = generar_bitacora_automatica_meet(cita.id, log_func=_log)
+        if exito:
+            creadas_con_exito += 1
+            _log(f"   🎉 [BITÁCORA CREADA: SÍ] Cita #{cita.id}: {msg}")
+        else:
+            if "Google aún no ha vinculado documentos" in msg or "No se pudo extraer texto" in msg:
+                sin_notas_en_google += 1
+                _log(f"   ℹ️ [BITÁCORA CREADA: NO] Cita #{cita.id}: No se encontraron notas/transcripción en Google Calendar.")
+            else:
+                errores += 1
+                _log(f"   ⚠️ [ERROR] Cita #{cita.id}: {msg}")
+
+    _log("\n" + "=" * 80)
+    _log("📊 RESUMEN FINAL DEL BARRIDO HISTÓRICO:")
+    _log(f"   • Total citas evaluadas:                   {total_analizadas}")
+    _log(f"   • Omitidas (ya tenían bitácora):          {ya_con_bitacora}")
+    _log(f"   • Omitidas (sin ID de evento / Meet):     {sin_evento_google}")
+    _log(f"   • Sin notas o transcripción en Google:    {sin_notas_en_google}")
+    _log(f"   • ✅ Bitácoras creadas con IA con éxito:   {creadas_con_exito}")
+    _log(f"   • ❌ Errores técnicos encontrados:        {errores}")
+    _log("=" * 80)
+
+    return {
+        'total_analizadas': total_analizadas,
+        'ya_con_bitacora': ya_con_bitacora,
+        'sin_evento_google': sin_evento_google,
+        'sin_notas_en_google': sin_notas_en_google,
+        'creadas_con_exito': creadas_con_exito,
+        'errores': errores
+    }
+
+
+@user_passes_test(lambda u: u.is_staff)
+def api_procesar_bitacoras_historicas_meet(request):
+    """
+    Endpoint administrativo para disparar el barrido histórico desde el navegador
+    o panel de administración.
+    """
+    limite = request.GET.get('limite')
+    limite_int = int(limite) if (limite and limite.isdigit()) else None
+    resumen = procesar_bitacoras_historicas_meet(limite=limite_int)
+    return JsonResponse({'status': 'success', 'data': resumen})
+
 def obtener_bitacora(request, historial_id):
     if not request.user.is_authenticated:
         return JsonResponse({'status': 'error'})
@@ -5436,18 +5734,30 @@ def procesar_citas_pendientes_de_reporte(log_func=None):
         tiene_bitacora = hasattr(cita, 'nota_clinica') and cita.nota_clinica is not None and bool(cita.nota_clinica.notas_sesion)
         tiempo_maximo_cumplido = minutos_transcurridos >= ESPERA_MAXIMA_MINUTOS
 
+        # Si aún no tiene bitácora, intentamos generarla automáticamente con IA a partir de las notas de Google Meet
+        if not tiene_bitacora:
+            _log(f"   🤖 [AUTO-BITÁCORA] Cita #{cita.id} sin bitácora. Intentando generar automáticamente desde notas de Google Meet...")
+            auto_exito, auto_msg = generar_bitacora_automatica_meet(cita.id, log_func=_log)
+            if auto_exito:
+                _log(f"   ✅ [BITÁCORA CREADA: SÍ] Cita #{cita.id}: {auto_msg}")
+                # Refrescamos la cita para detectar la nota recién creada
+                cita.refresh_from_db()
+                tiene_bitacora = hasattr(cita, 'nota_clinica') and cita.nota_clinica is not None and bool(cita.nota_clinica.notas_sesion)
+            else:
+                _log(f"   ⚠️ [BITÁCORA CREADA: NO] Cita #{cita.id}: {auto_msg}")
+
         if not tiene_bitacora and not tiempo_maximo_cumplido:
-            _log("   ⚠️ EN ESPERA DE BITÁCORA: El psicólogo aún no ha capturado la bitácora clínica de esta sesión.")
-            _log("      -> El reporte NO se genera sin bitácora para evitar enviar documentos vacíos.")
+            _log("   ⚠️ EN ESPERA DE BITÁCORA: Aún no hay bitácora clínica para esta sesión.")
+            _log("      -> [REPORTE ENVIADO: NO] El reporte NO se genera sin bitácora para evitar enviar documentos vacíos.")
             en_espera_bitacora += 1
             continue
 
         exito, mensaje = _procesar_reporte_de_una_cita(cita.id, log_func=_log)
         if exito:
             procesadas += 1
-            _log(f"   🎉 [EXITO] Cita #{cita.id} procesada, PDFs generados y enviada correctamente.")
+            _log(f"   🎉 [REPORTE ENVIADO: SÍ] Cita #{cita.id} procesada, PDFs generados y reporte enviado por correo.")
         else:
-            _log(f"   ❌ [AVISO] Cita #{cita.id}: {mensaje}")
+            _log(f"   ❌ [REPORTE ENVIADO: NO] Cita #{cita.id}: {mensaje}")
 
     _log("\n" + "=" * 80)
     _log(f"📊 RESUMEN: {procesadas} procesadas exitosamente | {en_espera_bitacora} en espera de bitácora | {en_espera_tiempo} en espera de tiempo")
