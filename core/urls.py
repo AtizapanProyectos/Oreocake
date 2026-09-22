@@ -109,7 +109,12 @@ urlpatterns = [
     path('api/repositorio-clinico/consultar/', views.consultar_repositorio_groq_ajax, name='consultar_repositorio_groq'),
     path('api/repositorio-clinico/eliminar/<int:doc_id>/', views.eliminar_documento_repositorio_ajax, name='eliminar_documento_repositorio'),
 
-    # Panel de Sentimientos y Comunidad
+    # Panel de Sentimientos y Comunidad (Tradicional)
     path('sentimientos/', views.panel_sentimientos_view, name='panel_sentimientos'),
     path('sentimiento/', views.panel_sentimientos_view),
+
+    # Panel Metodológico de Evolución Clínica (Basado en PDF de 13 Diapositivas)
+    path('sentimientos-metodologia/', views.panel_sentimientos_metodologia_view, name='panel_sentimientos_metodologia'),
+    path('reporte-metodologico/', views.panel_sentimientos_metodologia_view, name='reporte_metodologico'),
 ]
+

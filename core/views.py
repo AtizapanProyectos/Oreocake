@@ -2243,18 +2243,43 @@ def _generar_bitacora_con_ia_de_texto(texto_notas, paciente_nombre=""):
         "IMPORTANTE: Devuelve ÚNICAMENTE el JSON válido en texto plano, sin bloques de código markdown (```json), ni explicaciones."
     )
 
-    response = client.chat.completions.create(
-        model="openai/gpt-oss-120b",
-        messages=[
-            {"role": "system", "content": prompt_instrucciones},
-            {"role": "user", "content": texto_notas[:12000]}
-        ],
-        max_tokens=2500,
-        temperature=0.1,
-    )
+    # Recorte a 8000 caracteres para evitar desbordar el TPM (Tokens Por Minuto) de Groq
+    texto_seguro = texto_notas[:8000]
 
-    texto_respuesta = response.choices[0].message.content.strip()
-    return _extraer_json_groq(texto_respuesta)
+    try:
+        response = client.chat.completions.create(
+            model="openai/gpt-oss-120b",
+            messages=[
+                {"role": "system", "content": prompt_instrucciones},
+                {"role": "user", "content": texto_seguro}
+            ],
+            max_tokens=2000,
+            temperature=0.1,
+        )
+        texto_respuesta = response.choices[0].message.content.strip()
+        return _extraer_json_groq(texto_respuesta)
+    except Exception as e_groq:
+        err_str = str(e_groq)
+        # Si da 429 (límite de velocidad en 120b) o timeout, usamos Llama 3.3 70B como respaldo inmediato
+        if "429" in err_str or "rate_limit" in err_str.lower() or "limit" in err_str.lower():
+            import time
+            time.sleep(2)
+            try:
+                response = client.chat.completions.create(
+                    model="llama-3.3-70b-versatile",
+                    messages=[
+                        {"role": "system", "content": prompt_instrucciones},
+                        {"role": "user", "content": texto_seguro}
+                    ],
+                    max_tokens=2000,
+                    temperature=0.1,
+                )
+                texto_respuesta = response.choices[0].message.content.strip()
+                return _extraer_json_groq(texto_respuesta)
+            except Exception as e_fallback:
+                raise Exception(f"Fallo en Groq (120b y 70b): {str(e_fallback)}")
+        else:
+            raise e_groq
 
 
 def generar_bitacora_automatica_meet(cita_id, log_func=None):
@@ -2442,6 +2467,10 @@ def procesar_bitacoras_historicas_meet(log_func=None, limite=None):
                 errores += 1
                 _log(f"   ⚠️ [ERROR] Cita #{cita.id}: {msg}")
 
+        # Pequeña pausa de cortesía para no saturar el Rate Limit de Groq
+        import time
+        time.sleep(1.5)
+
     _log("\n" + "=" * 80)
     _log("📊 RESUMEN FINAL DEL BARRIDO HISTÓRICO:")
     _log(f"   • Total citas evaluadas:                   {total_analizadas}")
@@ -2466,10 +2495,11 @@ def procesar_bitacoras_historicas_meet(log_func=None, limite=None):
 def api_procesar_bitacoras_historicas_meet(request):
     """
     Endpoint administrativo para disparar el barrido histórico desde el navegador
-    o panel de administración.
+    o panel de administración. Por seguridad web, si no se especifica límite,
+    procesa un lote seguro de 3 citas para evitar timeouts de Gunicorn.
     """
     limite = request.GET.get('limite')
-    limite_int = int(limite) if (limite and limite.isdigit()) else None
+    limite_int = int(limite) if (limite and limite.isdigit()) else 3
     resumen = procesar_bitacoras_historicas_meet(limite=limite_int)
     return JsonResponse({'status': 'success', 'data': resumen})
 
@@ -6878,6 +6908,418 @@ def panel_sentimientos_view(request):
     }
 
     return render(request, 'panel_sentimientos.html', context)
+
+
+# ==========================================
+# PANEL METODOLÓGICO DE EVOLUCIÓN CLÍNICA (BASADO EN METODOLOGÍA DEL PDF)
+# ==========================================
+def panel_sentimientos_metodologia_view(request):
+    """
+    Boceto / Landing Ejecutiva de Evolución Clínica y Sentimientos
+    basada en la metodología científica y clínica del PDF (13 diapositivas):
+      1. Check-In (Línea base + medición pre-sesión)
+      2. Trayectoria Individual
+      3. Etapa Terapéutica (1-2: Línea base, 3-4: Inicio, 5-8: Proceso, 9+: Mantenimiento)
+      4. Cambio Individual (Última medición - Primera medición)
+      5. Clasificación (Mejora, Se mantiene, Disminución, No evaluable)
+      6. Agregación por Etapa y Dimensión
+      7. Indicadores Mensuales Clave
+      8. Conclusión Ejecutiva basada en reglas (DATOS -> REGLAS -> CLASIFICACIÓN -> INDICADORES -> CONCLUSIÓN)
+    """
+    from collections import Counter
+    import random
+
+    fecha_inicio_str = request.GET.get('fecha_inicio', '').strip()
+    fecha_fin_str = request.GET.get('fecha_fin', '').strip()
+    filtro_req = request.GET.get('filtro', '').strip().lower()
+    periodo_req = request.GET.get('periodo', '').strip().lower()
+
+    es_historico = (filtro_req in ['historico', 'totales', 'all'] or periodo_req in ['historico', 'totales', 'all'])
+
+    d_ini = None
+    d_fin = None
+    es_rango_personalizado = False
+
+    if fecha_inicio_str and fecha_fin_str and not es_historico:
+        try:
+            d_ini = datetime.strptime(fecha_inicio_str, '%Y-%m-%d').date()
+            d_fin = datetime.strptime(fecha_fin_str, '%Y-%m-%d').date()
+            if d_ini > d_fin:
+                d_ini, d_fin = d_fin, d_ini
+            es_rango_personalizado = True
+        except (ValueError, TypeError):
+            d_ini, d_fin = None, None
+            es_rango_personalizado = False
+
+    try:
+        mes_sel = int(request.GET.get('mes', 9))
+    except (TypeError, ValueError):
+        mes_sel = 9
+
+    try:
+        anio = int(request.GET.get('anio', 2026))
+    except (TypeError, ValueError):
+        anio = 2026
+
+    meses_nombres = {
+        1: 'Enero', 2: 'Febrero', 3: 'Marzo', 4: 'Abril',
+        5: 'Mayo', 6: 'Junio', 7: 'Julio', 8: 'Agosto',
+        9: 'Septiembre', 10: 'Octubre', 11: 'Noviembre', 12: 'Diciembre'
+    }
+    nombre_mes = meses_nombres.get(mes_sel, 'Septiembre')
+
+    if es_rango_personalizado:
+        filtro_activo = 'rango'
+        nombre_periodo = f"{d_ini.strftime('%d/%m/%Y')} al {d_fin.strftime('%d/%m/%Y')}"
+        subtitulo_periodo = f"Datos del {d_ini.strftime('%d/%m/%Y')} al {d_fin.strftime('%d/%m/%Y')}"
+    elif es_historico:
+        filtro_activo = 'historico'
+        nombre_periodo = 'Histórico Global (Cohorte Longitudinal HOPE)'
+        subtitulo_periodo = 'Trazabilidad y evolución clínica acumulada'
+    else:
+        filtro_activo = 'mes'
+        nombre_periodo = f"{nombre_mes} {anio}"
+        subtitulo_periodo = f"Censo y efectividad clínica en {nombre_mes} {anio}"
+
+    # 1. Consultar datos reales de la BD
+    citas_validas = Cita.objects.exclude(estado='Cancelada').select_related('paciente')
+    cuestionarios_qs = CuestionarioRegistro.objects.all().select_related('paciente')
+    evaluaciones_qs = EvaluacionSesionPaciente.objects.all().select_related('paciente', 'psicologo')
+
+    if es_rango_personalizado:
+        citas_filtradas = citas_validas.filter(fecha__gte=d_ini, fecha__lte=d_fin)
+        cuest_filtrados = cuestionarios_qs.filter(fecha_completado__date__gte=d_ini, fecha_completado__date__lte=d_fin)
+    elif es_historico:
+        citas_filtradas = citas_validas
+        cuest_filtrados = cuestionarios_qs
+    else:
+        citas_filtradas = citas_validas.filter(fecha__year=anio, fecha__month=mes_sel)
+        cuest_filtrados = cuestionarios_qs.filter(fecha_completado__year=anio, fecha_completado__month=mes_sel)
+
+    # Conteo base
+    total_citas_bd = citas_filtradas.count()
+    pacientes_unicos_bd = citas_filtradas.values('paciente_id').distinct().count()
+    total_cuest_bd = cuest_filtrados.count()
+
+    # Si la BD tiene pocos registros en el mes seleccionado, aseguramos una visualización
+    # sólida y rica para el boceto del reporte como solicitó el usuario ("datos de prueba realistas")
+    base_pacientes = max(pacientes_unicos_bd, 142 if not es_rango_personalizado else 85)
+    base_sesiones = max(total_citas_bd, 438 if not es_rango_personalizado else 260)
+    base_nuevos = round(base_pacientes * 0.338)  # ~48 nuevos
+    cobertura_checkin = 88.5  # %
+
+    # 2. Distribución por Etapas Terapéuticas (Lámina 3)
+    # 1–2 sesiones → Ingreso / línea base
+    # 3–4 sesiones → Inicio del tratamiento
+    # 5–8 sesiones → Proceso terapéutico
+    # 9+ sesiones → Mantenimiento / resultados
+    etapa1_cant = round(base_pacientes * 0.338)  # 48 (1-2 sesiones)
+    etapa2_cant = round(base_pacientes * 0.254)  # 36 (3-4 sesiones)
+    etapa3_cant = round(base_pacientes * 0.268)  # 38 (5-8 sesiones)
+    etapa4_cant = base_pacientes - (etapa1_cant + etapa2_cant + etapa3_cant)  # 20 (9+ sesiones)
+
+    etapa1_pct = round((etapa1_cant / base_pacientes) * 100, 1)
+    etapa2_pct = round((etapa2_cant / base_pacientes) * 100, 1)
+    etapa3_pct = round((etapa3_cant / base_pacientes) * 100, 1)
+    etapa4_pct = round((etapa4_cant / base_pacientes) * 100, 1)
+
+    # 3. Criterio Longitudinal & Clasificación del Cambio (Láminas 4, 5, 6)
+    # Lámina 4: Consultante con 1 solo cuestionario -> No evaluable / Sin evidencia de cambio (Línea base)
+    no_evaluables_cant = round(base_pacientes * 0.268)  # 38 pacientes con 1 sola medición
+    evaluables_cant = base_pacientes - no_evaluables_cant  # 104 pacientes evaluables (>= 2 mediciones)
+
+    # Entre los evaluables (Lámina 6):
+    # Mejora, Se mantiene, Disminución
+    mejora_cant = round(evaluables_cant * 0.760)   # 79
+    mantiene_cant = round(evaluables_cant * 0.183) # 19
+    disminucion_cant = evaluables_cant - (mejora_cant + mantiene_cant) # 6
+
+    mejora_pct_evaluables = round((mejora_cant / evaluables_cant) * 100, 1) # 76.0%
+    mantiene_pct_evaluables = round((mantiene_cant / evaluables_cant) * 100, 1) # 18.3%
+    disminucion_pct_evaluables = round((disminucion_cant / evaluables_cant) * 100, 1) # 5.7%
+
+    # 4. Evolución por Dimensión Clínica (Lámina 8)
+    # 5 Dimensiones evaluadas en Check-in / IPP
+    dimensiones_nombres = [
+        'Bienestar Emocional',
+        'Afrontamiento & Resiliencia',
+        'Regulación del Malestar',
+        'Vínculos & Relaciones',
+        'Metas & Sentido de Vida'
+    ]
+
+    # Medias de cada dimensión por etapa (Escala 1 al 10)
+    dim_etapa1 = [4.2, 4.6, 3.8, 5.1, 4.9]
+    dim_etapa2 = [5.8, 5.9, 5.3, 6.0, 6.1]
+    dim_etapa3 = [7.6, 7.8, 7.4, 7.3, 7.9]
+    dim_etapa4 = [8.8, 8.9, 8.6, 8.4, 9.1]
+
+    # Promedio global de ingreso vs actual de evaluables
+    promedio_ingreso_global = 4.5
+    promedio_actual_global = 7.8
+    cambio_delta_promedio = round(promedio_actual_global - promedio_ingreso_global, 1)
+
+    # 5. Dos Niveles de Lectura: Muestra de Trayectorias Individuales (Lámina 9)
+    # Muestra representativa de consultantes con su trayectoria longitudinal real/sintetizada
+    consultantes_muestra = [
+        {
+            'codigo': 'HP-2041',
+            'paciente_anon': 'M. Rodríguez V.',
+            'etapa_num': 4,
+            'etapa_nombre': 'Mantenimiento / Resultados',
+            'etapa_badge_color': 'green',
+            'sesiones': 12,
+            'linea_base': 38,
+            'puntaje_actual': 86,
+            'delta': '+48%',
+            'delta_num': 48,
+            'clasificacion': 'Mejora',
+            'clasificacion_badge': 'Mejora Significativa',
+            'clasificacion_color': 'green',
+            'trayectoria': [38, 45, 52, 60, 68, 71, 74, 78, 80, 83, 85, 86],
+            'dimension_fuerte': 'Afrontamiento',
+            'cita_reciente': '21/09/2026'
+        },
+        {
+            'codigo': 'HP-2089',
+            'paciente_anon': 'C. Lozano P.',
+            'etapa_num': 3,
+            'etapa_nombre': 'Proceso Terapéutico',
+            'etapa_badge_color': 'yellow',
+            'sesiones': 7,
+            'linea_base': 42,
+            'puntaje_actual': 79,
+            'delta': '+37%',
+            'delta_num': 37,
+            'clasificacion': 'Mejora',
+            'clasificacion_badge': 'Mejora Significativa',
+            'clasificacion_color': 'green',
+            'trayectoria': [42, 46, 55, 62, 70, 75, 79],
+            'dimension_fuerte': 'Regulación Emocional',
+            'cita_reciente': '19/09/2026'
+        },
+        {
+            'codigo': 'HP-2114',
+            'paciente_anon': 'A. Morales T.',
+            'etapa_num': 3,
+            'etapa_nombre': 'Proceso Terapéutico',
+            'etapa_badge_color': 'yellow',
+            'sesiones': 6,
+            'linea_base': 50,
+            'puntaje_actual': 76,
+            'delta': '+26%',
+            'delta_num': 26,
+            'clasificacion': 'Mejora',
+            'clasificacion_badge': 'Mejora Continua',
+            'clasificacion_color': 'green',
+            'trayectoria': [50, 52, 58, 65, 70, 76],
+            'dimension_fuerte': 'Metas Personales',
+            'cita_reciente': '18/09/2026'
+        },
+        {
+            'codigo': 'HP-2150',
+            'paciente_anon': 'S. Navarro G.',
+            'etapa_num': 2,
+            'etapa_nombre': 'Inicio del Tratamiento',
+            'etapa_badge_color': 'purple',
+            'sesiones': 4,
+            'linea_base': 45,
+            'puntaje_actual': 62,
+            'delta': '+17%',
+            'delta_num': 17,
+            'clasificacion': 'Mejora',
+            'clasificacion_badge': 'Mejora Inicial',
+            'clasificacion_color': 'green',
+            'trayectoria': [45, 48, 54, 62],
+            'dimension_fuerte': 'Bienestar Afectivo',
+            'cita_reciente': '20/09/2026'
+        },
+        {
+            'codigo': 'HP-2178',
+            'paciente_anon': 'J. Fernández R.',
+            'etapa_num': 2,
+            'etapa_nombre': 'Inicio del Tratamiento',
+            'etapa_badge_color': 'purple',
+            'sesiones': 3,
+            'linea_base': 58,
+            'puntaje_actual': 60,
+            'delta': '+2%',
+            'delta_num': 2,
+            'clasificacion': 'Se mantiene',
+            'clasificacion_badge': 'Estabilidad Clínica',
+            'clasificacion_color': 'yellow',
+            'trayectoria': [58, 56, 60],
+            'dimension_fuerte': 'Vínculos de Apoyo',
+            'cita_reciente': '17/09/2026'
+        },
+        {
+            'codigo': 'HP-2201',
+            'paciente_anon': 'L. Herrera S.',
+            'etapa_num': 3,
+            'etapa_nombre': 'Proceso Terapéutico',
+            'etapa_badge_color': 'yellow',
+            'sesiones': 5,
+            'linea_base': 64,
+            'puntaje_actual': 63,
+            'delta': '-1%',
+            'delta_num': -1,
+            'clasificacion': 'Se mantiene',
+            'clasificacion_badge': 'Fase de Contención',
+            'clasificacion_color': 'yellow',
+            'trayectoria': [64, 60, 62, 61, 63],
+            'dimension_fuerte': 'Afrontamiento',
+            'cita_reciente': '15/09/2026'
+        },
+        {
+            'codigo': 'HP-2234',
+            'paciente_anon': 'E. Ramírez D.',
+            'etapa_num': 2,
+            'etapa_nombre': 'Inicio del Tratamiento',
+            'etapa_badge_color': 'purple',
+            'sesiones': 3,
+            'linea_base': 55,
+            'puntaje_actual': 48,
+            'delta': '-7%',
+            'delta_num': -7,
+            'clasificacion': 'Disminución',
+            'clasificacion_badge': 'Disminución / Agudización',
+            'clasificacion_color': 'pink',
+            'trayectoria': [55, 50, 48],
+            'dimension_fuerte': 'Atención Prioritaria',
+            'cita_reciente': '16/09/2026'
+        },
+        {
+            'codigo': 'HP-2280',
+            'paciente_anon': 'F. Soto M.',
+            'etapa_num': 1,
+            'etapa_nombre': 'Ingreso / Línea Base',
+            'etapa_badge_color': 'cyan',
+            'sesiones': 1,
+            'linea_base': 35,
+            'puntaje_actual': 35,
+            'delta': 'N/E',
+            'delta_num': 0,
+            'clasificacion': 'No evaluable',
+            'clasificacion_badge': 'Línea Base (1 sola medición)',
+            'clasificacion_color': 'slate',
+            'trayectoria': [35],
+            'dimension_fuerte': 'Triage Inicial',
+            'cita_reciente': '22/09/2026'
+        },
+        {
+            'codigo': 'HP-2292',
+            'paciente_anon': 'D. Castro B.',
+            'etapa_num': 1,
+            'etapa_nombre': 'Ingreso / Línea Base',
+            'etapa_badge_color': 'cyan',
+            'sesiones': 1,
+            'linea_base': 40,
+            'puntaje_actual': 40,
+            'delta': 'N/E',
+            'delta_num': 0,
+            'clasificacion': 'No evaluable',
+            'clasificacion_badge': 'Línea Base (1 sola medición)',
+            'clasificacion_color': 'slate',
+            'trayectoria': [40],
+            'dimension_fuerte': 'Triage Inicial',
+            'cita_reciente': '22/09/2026'
+        },
+        {
+            'codigo': 'HP-1995',
+            'paciente_anon': 'V. Benítez H.',
+            'etapa_num': 4,
+            'etapa_nombre': 'Mantenimiento / Resultados',
+            'etapa_badge_color': 'green',
+            'sesiones': 10,
+            'linea_base': 41,
+            'puntaje_actual': 90,
+            'delta': '+49%',
+            'delta_num': 49,
+            'clasificacion': 'Mejora',
+            'clasificacion_badge': 'Alta / Mantenimiento',
+            'clasificacion_color': 'green',
+            'trayectoria': [41, 49, 56, 64, 72, 78, 82, 85, 88, 90],
+            'dimension_fuerte': 'Autonomía y Bienestar',
+            'cita_reciente': '14/09/2026'
+        }
+    ]
+
+    # Meses disponibles para el selector
+    meses_disponibles = [
+        {'numero': 6, 'nombre': 'Junio', 'activo': (not es_historico and not es_rango_personalizado and mes_sel == 6)},
+        {'numero': 7, 'nombre': 'Julio', 'activo': (not es_historico and not es_rango_personalizado and mes_sel == 7)},
+        {'numero': 8, 'nombre': 'Agosto', 'activo': (not es_historico and not es_rango_personalizado and mes_sel == 8)},
+        {'numero': 9, 'nombre': 'Septiembre', 'activo': (not es_historico and not es_rango_personalizado and mes_sel == 9)},
+    ]
+
+    context = {
+        'anio': anio,
+        'nombre_mes': nombre_mes,
+        'mes_seleccionado': mes_sel,
+        'fecha_inicio': fecha_inicio_str,
+        'fecha_fin': fecha_fin_str,
+        'nombre_periodo': nombre_periodo,
+        'subtitulo_periodo': subtitulo_periodo,
+        'filtro_activo': filtro_activo,
+        'es_historico': es_historico,
+        'es_rango_personalizado': es_rango_personalizado,
+        'meses_disponibles': meses_disponibles,
+        'fecha_corte': timezone.now(),
+
+        # Indicadores Mensuales Clave (Lámina 7)
+        'total_usuarios': base_pacientes,
+        'usuarios_nuevos': base_nuevos,
+        'total_sesiones': base_sesiones,
+        'cobertura_checkin': cobertura_checkin,
+        'evaluables_cant': evaluables_cant,
+        'no_evaluables_cant': no_evaluables_cant,
+        'mejora_cant': mejora_cant,
+        'mantiene_cant': mantiene_cant,
+        'disminucion_cant': disminucion_cant,
+        'mejora_pct_evaluables': mejora_pct_evaluables,
+        'mantiene_pct_evaluables': mantiene_pct_evaluables,
+        'disminucion_pct_evaluables': disminucion_pct_evaluables,
+        'retencion_pct': round(((base_pacientes - etapa1_cant) / base_pacientes) * 100, 1),
+
+        # Etapas Terapéuticas (Lámina 3)
+        'etapa1_cant': etapa1_cant,
+        'etapa2_cant': etapa2_cant,
+        'etapa3_cant': etapa3_cant,
+        'etapa4_cant': etapa4_cant,
+        'etapa1_pct': etapa1_pct,
+        'etapa2_pct': etapa2_pct,
+        'etapa3_pct': etapa3_pct,
+        'etapa4_pct': etapa4_pct,
+
+        # JSON para Chart.js
+        'etapas_labels_json': json.dumps(['1-2 Sesiones (Ingreso)', '3-4 Sesiones (Inicio)', '5-8 Sesiones (Proceso)', '9+ Sesiones (Mantenimiento)']),
+        'etapas_values_json': json.dumps([etapa1_cant, etapa2_cant, etapa3_cant, etapa4_cant]),
+
+        'clasificacion_labels_json': json.dumps(['Mejora Clínica', 'Se Mantiene (Estable)', 'Disminución', 'No Evaluable (Línea Base)']),
+        'clasificacion_values_json': json.dumps([mejora_cant, mantiene_cant, disminucion_cant, no_evaluables_cant]),
+
+        'evaluables_labels_json': json.dumps(['Mejora Clínica (Δ > 0)', 'Estabilidad Clínica (Δ ≈ 0)', 'Disminución (Δ < 0)']),
+        'evaluables_values_json': json.dumps([mejora_cant, mantiene_cant, disminucion_cant]),
+
+        # Dimensiones (Lámina 8)
+        'dimensiones_labels_json': json.dumps(dimensiones_nombres),
+        'dim_etapa1_json': json.dumps(dim_etapa1),
+        'dim_etapa2_json': json.dumps(dim_etapa2),
+        'dim_etapa3_json': json.dumps(dim_etapa3),
+        'dim_etapa4_json': json.dumps(dim_etapa4),
+
+        # Trayectorias individuales (Lámina 9)
+        'consultantes_muestra': consultantes_muestra,
+        'consultantes_muestra_json': json.dumps(consultantes_muestra),
+
+        # Medias globales
+        'promedio_ingreso_global': promedio_ingreso_global,
+        'promedio_actual_global': promedio_actual_global,
+        'cambio_delta_promedio': cambio_delta_promedio,
+    }
+
+    return render(request, 'panel_sentimientos_metodologico.html', context)
+
 
 
 # ==========================================
