@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Panel Metodológico de Evolución Clínica | HOPE</title>
+  <title>Reporte Metodológico de Evolución Clínica | HOPE</title>
   
   <!-- Tailwind CSS & Chart.js -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -61,8 +61,8 @@
     body {
       background-color: var(--bg-dark);
       background-image: 
-        radial-gradient(ellipse 65% 45% at 15% 8%, rgba(0, 210, 224, 0.09) 0%, transparent 65%),
-        radial-gradient(ellipse 55% 50% at 85% 20%, rgba(248, 91, 140, 0.08) 0%, transparent 70%),
+        radial-gradient(ellipse 65% 45% at 15% 8%, rgba(0, 210, 224, 0.08) 0%, transparent 65%),
+        radial-gradient(ellipse 55% 50% at 85% 20%, rgba(248, 91, 140, 0.07) 0%, transparent 70%),
         radial-gradient(ellipse 60% 40% at 50% 85%, rgba(129, 140, 248, 0.06) 0%, transparent 70%);
       color: #FFFFFF;
       font-family: 'Plus Jakarta Sans', sans-serif;
@@ -75,18 +75,12 @@
       backdrop-filter: blur(14px);
     }
 
-    .glass-card-soft {
-      background: rgba(11, 30, 54, 0.85);
-      border: 1px solid rgba(23, 55, 94, 0.85);
-      backdrop-filter: blur(12px);
-    }
-
-    .methodology-pill {
+    .pipeline-step {
       background: rgba(11, 30, 54, 0.9);
       border: 1px solid #17375E;
       transition: all 0.25s ease;
     }
-    .methodology-pill:hover {
+    .pipeline-step:hover {
       border-color: #00D2E0;
       transform: translateY(-2px);
     }
@@ -97,18 +91,18 @@
     }
 
     .animate-fade {
-      animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      animation: fadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     }
 
     @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(10px); }
+      from { opacity: 0; transform: translateY(8px); }
       to { opacity: 1; transform: translateY(0); }
     }
 
     /* Modal Backdrop */
     .modal-backdrop {
-      background-color: rgba(7, 21, 38, 0.85);
-      backdrop-filter: blur(6px);
+      background-color: rgba(7, 21, 38, 0.88);
+      backdrop-filter: blur(8px);
     }
 
     @media print {
@@ -135,9 +129,9 @@
         </a>
         <span class="h-4 w-px bg-[#17375E]"></span>
         <div class="flex items-center gap-2">
-          <span class="text-xs font-black text-[#00D2E0] uppercase tracking-wider hidden sm:inline-block">Observatorio de Evolución Clínica</span>
-          <span class="text-[10px] font-extrabold bg-[#00D2E0]/15 text-[#00D2E0] px-2 py-0.5 rounded-full border border-[#00D2E0]/30 hidden md:inline-block">
-            Modelo Longitudinal v2
+          <span class="text-xs font-black text-[#00D2E0] uppercase tracking-wider hidden sm:inline-block">Reporte Metodológico de Evolución Clínica</span>
+          <span class="text-[10px] font-extrabold bg-[#00D2E0]/15 text-[#00D2E0] px-2.5 py-0.5 rounded-full border border-[#00D2E0]/30 hidden md:inline-block">
+            Longitudinal por Etapas
           </span>
         </div>
       </div>
@@ -232,178 +226,203 @@
     </div>
 
     <!-- =========================================================================
-         BANNER METODOLÓGICO: FLUJO COMPLETO (SLIDE 1 & SLIDE 2 DEL PDF)
+         PIPELINE VISUAL: ORDEN METODOLÓGICO ESTRICTO (LÁMINA 12 DEL PDF)
+         DATOS → REGLAS → CLASIFICACIÓN → INDICADORES → CONCLUSIÓN
          ========================================================================= -->
-    <div class="glass-card-dark p-6 sm:p-7 rounded-3xl border border-[#17375E] relative overflow-hidden animate-fade">
-      <div class="absolute -right-12 -top-12 w-64 h-64 bg-gradient-to-bl from-[#00D2E0]/15 to-transparent rounded-full blur-2xl pointer-events-none"></div>
-
-      <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-5 pb-5 border-b border-[#17375E]">
-        <div class="max-w-2xl">
-          <div class="flex items-center gap-2 text-xs font-extrabold text-[#00D2E0] uppercase tracking-wider mb-2">
-            <i class="fa-solid fa-dna"></i>
-            <span>Flujo Clínico Metodológico</span>
-          </div>
-          <h1 class="text-2xl sm:text-3xl font-black text-white font-heading leading-tight tracking-tight">
-            Evolución Longitudinal por Etapas & Trayectorias
-          </h1>
-          <p class="text-xs sm:text-sm text-slate-300 mt-1.5 font-medium leading-relaxed">
-            Elimina el sesgo de agregación: analiza a cada consultante según su momento terapéutico real, distinguiendo línea base de progreso continuo.
-          </p>
-        </div>
-
-        <!-- Desafío Metodológico Resuelto (Slide 2) -->
-        <div class="bg-[#071526]/80 p-3.5 rounded-2xl border border-[#17375E] text-xs max-w-md">
-          <div class="flex items-center gap-2 text-[#FBBF24] font-bold mb-1">
-            <i class="fa-solid fa-triangle-exclamation"></i>
-            <span>Premisa Metodológica (PDF Pág. 2)</span>
-          </div>
-          <p class="text-[11px] text-slate-400 leading-snug">
-            "Una sola media mensual mezcla etapas distintas. Medimos cambio sin perder la trayectoria individual: <strong class="text-slate-200">1 cuestionario = Línea Base</strong> (no evaluable); <strong class="text-slate-200">≥2 sesiones = Cambio Longitudinal</strong>."
-          </p>
-        </div>
+    <div class="p-3.5 rounded-2xl glass-card-dark border border-[#17375E] flex flex-wrap items-center justify-between gap-2 text-xs">
+      <div class="flex items-center gap-2">
+        <span class="text-[10px] font-black uppercase text-slate-400">Jerarquía del Modelo (Pág. 12):</span>
       </div>
 
-      <!-- PIPELINE STEPPER INTERACTIVO DE 8 PASOS (SLIDE 1) -->
-      <div class="mt-5 pt-1 overflow-x-auto pb-2">
-        <div class="flex items-center min-w-[850px] gap-2">
-          
-          <div class="methodology-pill p-2.5 rounded-2xl flex-1 text-center border-l-2 border-l-[#00D2E0]">
-            <span class="text-[9px] font-black text-[#00D2E0] uppercase tracking-wider block">Paso 1</span>
-            <span class="text-xs font-bold text-white block mt-0.5">CHECK-IN</span>
-            <span class="text-[10px] text-slate-400 block mt-0.5">Medición pre-sesión</span>
-          </div>
-
-          <i class="fa-solid fa-chevron-right text-[10px] text-[#17375E] shrink-0"></i>
-
-          <div class="methodology-pill p-2.5 rounded-2xl flex-1 text-center border-l-2 border-l-[#818CF8]">
-            <span class="text-[9px] font-black text-[#818CF8] uppercase tracking-wider block">Paso 2</span>
-            <span class="text-xs font-bold text-white block mt-0.5">TRAYECTORIA</span>
-            <span class="text-[10px] text-slate-400 block mt-0.5">Serie histórica</span>
-          </div>
-
-          <i class="fa-solid fa-chevron-right text-[10px] text-[#17375E] shrink-0"></i>
-
-          <div class="methodology-pill p-2.5 rounded-2xl flex-1 text-center border-l-2 border-l-[#FBBF24]">
-            <span class="text-[9px] font-black text-[#FBBF24] uppercase tracking-wider block">Paso 3</span>
-            <span class="text-xs font-bold text-white block mt-0.5">ETAPA</span>
-            <span class="text-[10px] text-slate-400 block mt-0.5">1-2, 3-4, 5-8, 9+</span>
-          </div>
-
-          <i class="fa-solid fa-chevron-right text-[10px] text-[#17375E] shrink-0"></i>
-
-          <div class="methodology-pill p-2.5 rounded-2xl flex-1 text-center border-l-2 border-l-[#10B981]">
-            <span class="text-[9px] font-black text-[#10B981] uppercase tracking-wider block">Paso 4</span>
-            <span class="text-xs font-bold text-white block mt-0.5">CAMBIO Δ</span>
-            <span class="text-[10px] text-slate-400 block mt-0.5">Última − Primera</span>
-          </div>
-
-          <i class="fa-solid fa-chevron-right text-[10px] text-[#17375E] shrink-0"></i>
-
-          <div class="methodology-pill p-2.5 rounded-2xl flex-1 text-center border-l-2 border-l-[#FB923C]">
-            <span class="text-[9px] font-black text-[#FB923C] uppercase tracking-wider block">Paso 5</span>
-            <span class="text-xs font-bold text-white block mt-0.5">CLASIFICACIÓN</span>
-            <span class="text-[10px] text-slate-400 block mt-0.5">Mejora/Estable/Disminución</span>
-          </div>
-
-          <i class="fa-solid fa-chevron-right text-[10px] text-[#17375E] shrink-0"></i>
-
-          <div class="methodology-pill p-2.5 rounded-2xl flex-1 text-center border-l-2 border-l-[#F85B8C]">
-            <span class="text-[9px] font-black text-[#F85B8C] uppercase tracking-wider block">Paso 6</span>
-            <span class="text-xs font-bold text-white block mt-0.5">AGREGACIÓN</span>
-            <span class="text-[10px] text-slate-400 block mt-0.5">Por etapa y dimensión</span>
-          </div>
-
-          <i class="fa-solid fa-chevron-right text-[10px] text-[#17375E] shrink-0"></i>
-
-          <div class="methodology-pill p-2.5 rounded-2xl flex-1 text-center border-l-2 border-l-[#00D2E0]">
-            <span class="text-[9px] font-black text-[#00D2E0] uppercase tracking-wider block">Paso 7</span>
-            <span class="text-xs font-bold text-white block mt-0.5">INDICADORES</span>
-            <span class="text-[10px] text-slate-400 block mt-0.5">KPIs ejecutivos</span>
-          </div>
-
-          <i class="fa-solid fa-chevron-right text-[10px] text-[#17375E] shrink-0"></i>
-
-          <div class="methodology-pill p-2.5 rounded-2xl flex-1 text-center border-l-2 border-l-[#818CF8] bg-[#818CF8]/10">
-            <span class="text-[9px] font-black text-[#818CF8] uppercase tracking-wider block">Paso 8</span>
-            <span class="text-xs font-bold text-white block mt-0.5">CONCLUSIÓN</span>
-            <span class="text-[10px] text-slate-400 block mt-0.5">Narrativa con IA</span>
-          </div>
-
-        </div>
-      </div>
-    </div>
-
-    <!-- =========================================================================
-         SECCIÓN 1: INDICADORES MENSUALES CLAVE (SLIDE 7 DEL PDF)
-         ========================================================================= -->
-    <div class="space-y-3">
-      <div class="flex items-center justify-between">
-        <div class="flex items-center gap-2">
-          <span class="w-2.5 h-2.5 rounded-full bg-[#00D2E0]"></span>
-          <h2 class="text-lg font-black text-white font-heading">Indicadores Mensuales del Reporte (Lámina 7)</h2>
-        </div>
-        <span class="text-xs text-slate-400">Total de consultantes: <strong class="text-white">{{ total_usuarios }}</strong></span>
-      </div>
-
-      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+      <div class="flex flex-wrap items-center gap-2">
+        <a href="#sec-datos" class="px-3 py-1 rounded-xl bg-[#00D2E0]/15 text-[#00D2E0] border border-[#00D2E0]/30 font-bold flex items-center gap-1.5 hover:bg-[#00D2E0] hover:text-[#071526] transition">
+          <span>1. DATOS</span>
+        </a>
+        <i class="fa-solid fa-arrow-right text-[10px] text-slate-500"></i>
         
-        <!-- 1. Usuarios Atendidos -->
-        <div class="p-4 rounded-3xl glass-card-dark border border-[#17375E] relative overflow-hidden group hover:border-[#00D2E0] transition">
-          <span class="text-[11px] font-bold text-slate-400 block">Usuarios Atendidos</span>
-          <span class="text-2xl sm:text-3xl font-black text-[#00D2E0] font-heading mt-1 block">{{ total_usuarios }}</span>
-          <span class="text-[10px] text-slate-400 block mt-0.5">población total activa</span>
-        </div>
+        <a href="#sec-reglas" class="px-3 py-1 rounded-xl bg-[#818CF8]/15 text-[#818CF8] border border-[#818CF8]/30 font-bold flex items-center gap-1.5 hover:bg-[#818CF8] hover:text-[#071526] transition">
+          <span>2. REGLAS (Etapas)</span>
+        </a>
+        <i class="fa-solid fa-arrow-right text-[10px] text-slate-500"></i>
 
-        <!-- 2. Usuarios Nuevos -->
-        <div class="p-4 rounded-3xl glass-card-dark border border-[#17375E] relative overflow-hidden group hover:border-[#F85B8C] transition">
-          <span class="text-[11px] font-bold text-slate-400 block">Usuarios Nuevos</span>
-          <span class="text-2xl sm:text-3xl font-black text-[#F85B8C] font-heading mt-1 block">{{ usuarios_nuevos }}</span>
-          <span class="text-[10px] text-slate-400 block mt-0.5">primer ingreso ({{ etapa1_pct }}%)</span>
-        </div>
+        <a href="#sec-clasificacion" class="px-3 py-1 rounded-xl bg-[#10B981]/15 text-[#10B981] border border-[#10B981]/30 font-bold flex items-center gap-1.5 hover:bg-[#10B981] hover:text-[#071526] transition">
+          <span>3. CLASIFICACIÓN (Efectividad)</span>
+        </a>
+        <i class="fa-solid fa-arrow-right text-[10px] text-slate-500"></i>
 
-        <!-- 3. Número de Sesiones -->
-        <div class="p-4 rounded-3xl glass-card-dark border border-[#17375E] relative overflow-hidden group hover:border-[#10B981] transition">
-          <span class="text-[11px] font-bold text-slate-400 block">Número de Sesiones</span>
-          <span class="text-2xl sm:text-3xl font-black text-[#10B981] font-heading mt-1 block">{{ total_sesiones }}</span>
-          <span class="text-[10px] text-slate-400 block mt-0.5">consultas completadas</span>
-        </div>
+        <a href="#sec-indicadores" class="px-3 py-1 rounded-xl bg-[#FBBF24]/15 text-[#FBBF24] border border-[#FBBF24]/30 font-bold flex items-center gap-1.5 hover:bg-[#FBBF24] hover:text-[#071526] transition">
+          <span>4. INDICADORES MENSUALES</span>
+        </a>
+        <i class="fa-solid fa-arrow-right text-[10px] text-slate-500"></i>
 
-        <!-- 4. Cobertura de Check-in -->
-        <div class="p-4 rounded-3xl glass-card-dark border border-[#17375E] relative overflow-hidden group hover:border-[#FBBF24] transition">
-          <span class="text-[11px] font-bold text-slate-400 block">Cobertura Check-In</span>
-          <span class="text-2xl sm:text-3xl font-black text-[#FBBF24] font-heading mt-1 block">{{ cobertura_checkin }}%</span>
-          <span class="text-[10px] text-slate-400 block mt-0.5">tasa de adherencia test</span>
-        </div>
-
-        <!-- 5. Tasa de Mejora (en Evaluables) -->
-        <div class="p-4 rounded-3xl glass-card-dark border border-[#17375E] relative overflow-hidden group hover:border-[#818CF8] transition">
-          <span class="text-[11px] font-bold text-slate-400 block">Mejora en Evaluables</span>
-          <span class="text-2xl sm:text-3xl font-black text-[#818CF8] font-heading mt-1 block">{{ mejora_pct_evaluables }}%</span>
-          <span class="text-[10px] text-slate-400 block mt-0.5">{{ mejora_cant }} de {{ evaluables_cant }} evaluables</span>
-        </div>
-
-        <!-- 6. Retención Terapéutica -->
-        <div class="p-4 rounded-3xl glass-card-dark border border-[#17375E] relative overflow-hidden group hover:border-[#FB923C] transition">
-          <span class="text-[11px] font-bold text-slate-400 block">Retención (≥3 Sesiones)</span>
-          <span class="text-2xl sm:text-3xl font-black text-[#FB923C] font-heading mt-1 block">{{ retencion_pct }}%</span>
-          <span class="text-[10px] text-slate-400 block mt-0.5">continuidad terapéutica</span>
-        </div>
-
+        <a href="#sec-conclusion" class="px-3 py-1 rounded-xl bg-[#F85B8C]/15 text-[#F85B8C] border border-[#F85B8C]/30 font-bold flex items-center gap-1.5 hover:bg-[#F85B8C] hover:text-white transition">
+          <span>5. CONCLUSIÓN (IA)</span>
+        </a>
       </div>
     </div>
 
+
     <!-- =========================================================================
-         SECCIÓN 2: ORGANIZACIÓN POR ETAPAS TERAPÉUTICAS (SLIDE 3 DEL PDF)
+         APARTADO 4 / LÁMINA 7: ¿QUÉ MEDIREMOS EN EL REPORTE MENSUAL?
+         (Exactamente los puntos solicitados por el PDF)
          ========================================================================= -->
-    <div class="glass-card-dark p-6 sm:p-7 rounded-3xl border border-[#17375E] space-y-6">
+    <div id="sec-indicadores" class="glass-card-dark p-6 sm:p-7 rounded-3xl border border-[#17375E] space-y-5 animate-fade">
+      
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-[#17375E]">
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="text-[10px] font-black uppercase tracking-wider text-[#FBBF24] bg-[#FBBF24]/15 px-2.5 py-0.5 rounded-full border border-[#FBBF24]/30">
+              Lámina 7 del PDF
+            </span>
+          </div>
+          <h2 class="text-xl sm:text-2xl font-black text-white font-heading mt-1">
+            ¿Qué mediremos en el reporte mensual?
+          </h2>
+          <p class="text-xs text-slate-400 mt-0.5">Indicadores cuantitativos consolidados del periodo analizado.</p>
+        </div>
+
+        <div class="flex items-center gap-2 text-xs bg-[#071526] px-3.5 py-2 rounded-2xl border border-[#17375E] text-slate-300">
+          <i class="fa-solid fa-clipboard-check text-[#10B981]"></i>
+          <span>Total Población Atendida: <strong class="text-white">{{ total_usuarios }}</strong></span>
+        </div>
+      </div>
+
+      <!-- GRID CON LOS PUNTOS EXACTOS DE LA LÁMINA 7 -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        
+        <!-- 1. Usuarios atendidos -->
+        <div class="p-4 rounded-2xl bg-[#071526]/80 border border-[#17375E] flex items-start gap-3.5">
+          <div class="w-10 h-10 rounded-xl bg-[#00D2E0]/15 border border-[#00D2E0]/40 flex items-center justify-center text-[#00D2E0] text-lg shrink-0 mt-0.5">
+            <i class="fa-solid fa-users"></i>
+          </div>
+          <div>
+            <span class="text-[11px] font-bold text-slate-400 block">• Usuarios atendidos</span>
+            <span class="text-2xl font-black text-white font-heading mt-0.5 block">{{ total_usuarios }}</span>
+            <span class="text-[10px] text-slate-400 block">consultantes totales con expediente activo</span>
+          </div>
+        </div>
+
+        <!-- 2. Usuarios nuevos -->
+        <div class="p-4 rounded-2xl bg-[#071526]/80 border border-[#17375E] flex items-start gap-3.5">
+          <div class="w-10 h-10 rounded-xl bg-[#F85B8C]/15 border border-[#F85B8C]/40 flex items-center justify-center text-[#F85B8C] text-lg shrink-0 mt-0.5">
+            <i class="fa-solid fa-user-plus"></i>
+          </div>
+          <div>
+            <span class="text-[11px] font-bold text-slate-400 block">• Usuarios nuevos</span>
+            <span class="text-2xl font-black text-[#F85B8C] font-heading mt-0.5 block">{{ usuarios_nuevos }}</span>
+            <span class="text-[10px] text-slate-400 block">primer ingreso en el periodo ({{ etapa1_pct }}%)</span>
+          </div>
+        </div>
+
+        <!-- 3. Número de sesiones -->
+        <div class="p-4 rounded-2xl bg-[#071526]/80 border border-[#17375E] flex items-start gap-3.5">
+          <div class="w-10 h-10 rounded-xl bg-[#10B981]/15 border border-[#10B981]/40 flex items-center justify-center text-[#10B981] text-lg shrink-0 mt-0.5">
+            <i class="fa-solid fa-calendar-check"></i>
+          </div>
+          <div>
+            <span class="text-[11px] font-bold text-slate-400 block">• Número de sesiones</span>
+            <span class="text-2xl font-black text-[#10B981] font-heading mt-0.5 block">{{ total_sesiones }}</span>
+            <span class="text-[10px] text-slate-400 block">consultas terapéuticas brindadas</span>
+          </div>
+        </div>
+
+        <!-- 4. Distribución por etapa terapéutica (Usuarios con 1, 2-4, 5-8 y 9+ sesiones) -->
+        <div class="p-4 rounded-2xl bg-[#071526]/80 border border-[#17375E] md:col-span-2 lg:col-span-2">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-[11px] font-bold text-slate-400 block">• Distribución por etapa terapéutica (1, 2–4, 5–8 y 9+ sesiones)</span>
+            <span class="text-[10px] text-[#00D2E0] font-bold">{{ total_usuarios }} consultantes</span>
+          </div>
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
+            <div class="p-2.5 rounded-xl bg-[#0B1E36] border border-[#00D2E0]/40 text-center">
+              <span class="text-[10px] text-[#00D2E0] font-extrabold block">1–2 Sesiones</span>
+              <span class="text-lg font-black text-white block mt-0.5">{{ etapa1_cant }}</span>
+              <span class="text-[10px] text-slate-400 block">Ingreso ({{ etapa1_pct }}%)</span>
+            </div>
+            <div class="p-2.5 rounded-xl bg-[#0B1E36] border border-[#818CF8]/40 text-center">
+              <span class="text-[10px] text-[#818CF8] font-extrabold block">3–4 Sesiones</span>
+              <span class="text-lg font-black text-white block mt-0.5">{{ etapa2_cant }}</span>
+              <span class="text-[10px] text-slate-400 block">Inicio ({{ etapa2_pct }}%)</span>
+            </div>
+            <div class="p-2.5 rounded-xl bg-[#0B1E36] border border-[#FBBF24]/40 text-center">
+              <span class="text-[10px] text-[#FBBF24] font-extrabold block">5–8 Sesiones</span>
+              <span class="text-lg font-black text-white block mt-0.5">{{ etapa3_cant }}</span>
+              <span class="text-[10px] text-slate-400 block">Proceso ({{ etapa3_pct }}%)</span>
+            </div>
+            <div class="p-2.5 rounded-xl bg-[#0B1E36] border border-[#10B981]/40 text-center">
+              <span class="text-[10px] text-[#10B981] font-extrabold block">9+ Sesiones</span>
+              <span class="text-lg font-black text-white block mt-0.5">{{ etapa4_cant }}</span>
+              <span class="text-[10px] text-slate-400 block">Mantenimiento ({{ etapa4_pct }}%)</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 5. Cobertura de Check-In -->
+        <div class="p-4 rounded-2xl bg-[#071526]/80 border border-[#17375E] flex items-start gap-3.5">
+          <div class="w-10 h-10 rounded-xl bg-[#FBBF24]/15 border border-[#FBBF24]/40 flex items-center justify-center text-[#FBBF24] text-lg shrink-0 mt-0.5">
+            <i class="fa-solid fa-bullseye"></i>
+          </div>
+          <div>
+            <span class="text-[11px] font-bold text-slate-400 block">• Cobertura de Check-In</span>
+            <span class="text-2xl font-black text-[#FBBF24] font-heading mt-0.5 block">{{ cobertura_checkin }}%</span>
+            <span class="text-[10px] text-slate-400 block">mediciones completadas previo a sesión</span>
+          </div>
+        </div>
+
+        <!-- 6. Proporción con mejora, estabilidad o disminución entre evaluables -->
+        <div class="p-4 rounded-2xl bg-[#071526]/80 border border-[#17375E] md:col-span-2 lg:col-span-2">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-[11px] font-bold text-slate-400 block">• Proporción con mejora, estabilidad o disminución (entre evaluables)</span>
+            <span class="text-[10px] text-[#10B981] font-bold">{{ evaluables_cant }} evaluables con ≥2 sesiones</span>
+          </div>
+          <div class="grid grid-cols-3 gap-2 pt-1 text-center">
+            <div class="p-2.5 rounded-xl bg-[#0B1E36] border-t-2 border-t-[#10B981]">
+              <span class="text-[10px] text-[#10B981] font-extrabold block">Mejora</span>
+              <span class="text-lg font-black text-[#10B981] block mt-0.5">{{ mejora_pct_evaluables }}%</span>
+              <span class="text-[10px] text-slate-400 block">{{ mejora_cant }} consultantes</span>
+            </div>
+            <div class="p-2.5 rounded-xl bg-[#0B1E36] border-t-2 border-t-[#FBBF24]">
+              <span class="text-[10px] text-[#FBBF24] font-extrabold block">Estabilidad</span>
+              <span class="text-lg font-black text-[#FBBF24] block mt-0.5">{{ mantiene_pct_evaluables }}%</span>
+              <span class="text-[10px] text-slate-400 block">{{ mantiene_cant }} consultantes</span>
+            </div>
+            <div class="p-2.5 rounded-xl bg-[#0B1E36] border-t-2 border-t-[#F85B8C]">
+              <span class="text-[10px] text-[#F85B8C] font-extrabold block">Disminución</span>
+              <span class="text-lg font-black text-[#F85B8C] block mt-0.5">{{ disminucion_pct_evaluables }}%</span>
+              <span class="text-[10px] text-slate-400 block">{{ disminucion_cant }} consultantes</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 7. Estatus de Consentimiento Informado (Lámina 13 Auditada) -->
+        <div class="p-4 rounded-2xl bg-[#071526]/80 border border-[#17375E] flex items-start gap-3.5">
+          <div class="w-10 h-10 rounded-xl bg-[#818CF8]/15 border border-[#818CF8]/40 flex items-center justify-center text-[#818CF8] text-lg shrink-0 mt-0.5">
+            <i class="fa-solid fa-file-signature"></i>
+          </div>
+          <div>
+            <span class="text-[11px] font-bold text-slate-400 block">• Consentimiento Informado (Pág. 13)</span>
+            <div class="flex items-baseline gap-2 mt-0.5">
+              <span class="text-2xl font-black text-[#10B981] font-heading">{{ consentimientos_firmados_cant }}</span>
+              <span class="text-xs text-slate-300 font-bold">firmados ({{ consentimientos_firmados_pct }}%)</span>
+            </div>
+            <span class="text-[10px] text-[#FBBF24] block mt-0.5"><i class="fa-solid fa-clock text-[9px]"></i> {{ consentimientos_pendientes_cant }} pendientes de firma</span>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- =========================================================================
+         REGLAS: ORGANIZACIÓN POR ETAPAS TERAPÉUTICAS (LÁMINA 3 DEL PDF)
+         ========================================================================= -->
+    <div id="sec-reglas" class="glass-card-dark p-6 sm:p-7 rounded-3xl border border-[#17375E] space-y-6 animate-fade">
       
       <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div class="flex items-center gap-2">
-            <span class="text-[10px] font-extrabold uppercase tracking-wider text-[#FBBF24] bg-[#FBBF24]/15 px-2.5 py-0.5 rounded-full border border-[#FBBF24]/30">
-              Metodología Lámina 3
+            <span class="text-[10px] font-extrabold uppercase tracking-wider text-[#818CF8] bg-[#818CF8]/15 px-2.5 py-0.5 rounded-full border border-[#818CF8]/30">
+              Reglas Metodológicas (Lámina 3)
             </span>
-            <span class="text-xs text-slate-400">Segmentación por Sesiones</span>
           </div>
           <h3 class="text-xl sm:text-2xl font-black text-white font-heading mt-1">
             Organización por Etapas Terapéuticas
@@ -414,8 +433,8 @@
         </div>
 
         <div class="text-xs text-slate-300 bg-[#071526] px-3.5 py-2 rounded-2xl border border-[#17375E] flex items-center gap-2">
-          <i class="fa-solid fa-users text-[#00D2E0]"></i>
-          <span>Cohorte Total: <strong>{{ total_usuarios }} personas</strong></span>
+          <i class="fa-solid fa-chart-column text-[#00D2E0]"></i>
+          <span>Segmentación de <strong>{{ total_usuarios }} consultantes</strong></span>
         </div>
       </div>
 
@@ -509,249 +528,130 @@
       </div>
 
       <!-- GRÁFICA DE DISTRIBUCIÓN POR ETAPAS -->
-      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 pt-2">
-        <div class="lg:col-span-8 p-5 rounded-2xl bg-[#071526]/60 border border-[#17375E]">
-          <div class="flex items-center justify-between mb-3">
-            <span class="text-xs font-bold text-white">Distribución Poblacional por Etapa Terapéutica</span>
-            <span class="text-[11px] text-slate-400">Histograma de Consultantes</span>
-          </div>
-          <div class="relative w-full h-64">
-            <canvas id="graficaEtapas"></canvas>
-          </div>
+      <div class="p-5 rounded-2xl bg-[#071526]/60 border border-[#17375E]">
+        <div class="flex items-center justify-between mb-3">
+          <span class="text-xs font-bold text-white">Histograma de Distribución por Etapas</span>
+          <span class="text-[11px] text-slate-400">Nivel Poblacional</span>
         </div>
-
-        <div class="lg:col-span-4 p-5 rounded-2xl bg-[#071526]/60 border border-[#17375E] flex flex-col justify-between">
-          <div>
-            <span class="text-xs font-bold text-[#00D2E0] uppercase tracking-wider block">Lectura Clínica</span>
-            <h5 class="text-sm font-bold text-white mt-1">Equilibrio del Embudo Terapéutico</h5>
-            <p class="text-xs text-slate-400 mt-2 leading-relaxed">
-              El <strong>{{ retencion_pct }}%</strong> de los consultantes supera la etapa de ingreso y entra a tratamiento activo o mantenimiento. La mayor concentración se ubica en <strong class="text-white">Ingreso ({{ etapa1_pct }}%)</strong> y <strong class="text-white">Proceso ({{ etapa3_pct }}%)</strong>, lo que demuestra captación constante y solidez en adherencia clínica prolongada.
-            </p>
-          </div>
-          <div class="mt-4 p-3 rounded-xl bg-[#0B1E36] border border-[#17375E] text-xs text-slate-300">
-            <div class="flex items-center justify-between">
-              <span>Sesiones promedio / paciente:</span>
-              <strong class="text-white">3.1 sesiones</strong>
-            </div>
-          </div>
+        <div class="relative w-full h-64">
+          <canvas id="graficaEtapas"></canvas>
         </div>
       </div>
 
     </div>
 
     <!-- =========================================================================
-         SECCIÓN 3: CLASIFICACIÓN DEL CAMBIO & REGLA LONGITUDINAL (SLIDES 4, 5, 6)
+         CLASIFICACIÓN: EFECTIVIDAD CLÍNICA LONGITUDINAL (LÁMINAS 5, 6 Y 8 DEL PDF)
          ========================================================================= -->
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-
-      <!-- Columna Izquierda: Criterio Metodológico de Línea Base (Slide 4 & 5) -->
-      <div class="lg:col-span-5 glass-card-dark p-6 rounded-3xl border border-[#17375E] flex flex-col justify-between">
-        <div>
-          <div class="flex items-center gap-2">
-            <span class="text-[10px] font-extrabold uppercase tracking-wider text-[#F85B8C] bg-[#F85B8C]/15 px-2.5 py-0.5 rounded-full border border-[#F85B8C]/30">
-              Regla de Oro (Láminas 4 y 5)
-            </span>
-          </div>
-
-          <h3 class="text-lg font-black text-white font-heading mt-2">
-            Consultante con 1 Solo Cuestionario
-          </h3>
-
-          <div class="mt-4 p-4 rounded-2xl bg-[#071526]/90 border-l-4 border-l-[#F85B8C] border-y border-r border-[#17375E] space-y-2">
-            <div class="flex items-center gap-2 text-xs font-extrabold text-[#F85B8C]">
-              <i class="fa-solid fa-triangle-exclamation"></i>
-              <span>Criterio Metodológico Estricto</span>
-            </div>
-            <ul class="text-xs text-slate-300 space-y-1.5 list-disc list-inside">
-              <li>Se considera estrictamente <strong class="text-white">Línea base</strong>.</li>
-              <li>No permite determinar cambio longitudinal.</li>
-              <li><strong class="text-[#F85B8C]">NO debe interpretarse como "no mejoró"</strong>.</li>
-              <li>Se reporta formalmente como: <strong class="text-white">No evaluable / Sin evidencia de cambio</strong>.</li>
-            </ul>
-            <p class="text-[11px] text-slate-400 italic pt-1">
-              "Esto evita atribuir resultados que los datos científicos aún no permiten demostrar."
-            </p>
-          </div>
-
-          <!-- Fórmula de Cambio (Slide 5) -->
-          <div class="mt-4 p-3.5 rounded-2xl bg-[#0B1E36] border border-[#17375E]">
-            <span class="text-[10px] font-extrabold uppercase tracking-wider text-[#00D2E0] block">Para ≥2 Sesiones (Lámina 5):</span>
-            <div class="text-sm font-black text-white font-heading mt-1 flex items-center gap-2">
-              <span class="bg-[#071526] px-2.5 py-1 rounded-lg border border-[#17375E]">Δ = Última Medición − Primera Medición</span>
-            </div>
-            <span class="text-[11px] text-slate-400 block mt-1">Aplicado al Índice de Progreso Psicológico y dimensiones.</span>
-          </div>
-        </div>
-
-        <div class="mt-5 grid grid-cols-2 gap-3 pt-3 border-t border-[#17375E]">
-          <div class="p-3 rounded-xl bg-[#071526] border border-[#17375E]">
-            <span class="text-[10px] text-slate-400 block font-bold">Población Evaluable</span>
-            <span class="text-xl font-black text-[#10B981]">{{ evaluables_cant }}</span>
-            <span class="text-[10px] text-slate-400 block">≥ 2 mediciones</span>
-          </div>
-          <div class="p-3 rounded-xl bg-[#071526] border border-[#17375E]">
-            <span class="text-[10px] text-slate-400 block font-bold">Línea Base (N/E)</span>
-            <span class="text-xl font-black text-slate-400">{{ no_evaluables_cant }}</span>
-            <span class="text-[10px] text-slate-400 block">1 medición previa</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Columna Derecha: Gráfica de Clasificación del Cambio (Slide 6) -->
-      <div class="lg:col-span-7 glass-card-dark p-6 rounded-3xl border border-[#17375E] flex flex-col justify-between">
-        <div>
-          <div class="flex items-center justify-between">
-            <div>
-              <span class="text-[10px] font-extrabold uppercase tracking-wider text-[#10B981] bg-[#10B981]/15 px-2.5 py-0.5 rounded-full border border-[#10B981]/30">
-                Clasificación del Cambio (Lámina 6)
-              </span>
-              <h3 class="text-lg font-black text-white font-heading mt-1.5">
-                Efectividad Clínica Longitudinal
-              </h3>
-            </div>
-            <span class="text-xs text-slate-400">Puntos de corte automatizables</span>
-          </div>
-
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4">
-            <div class="p-3 rounded-2xl bg-[#071526]/80 border-t-2 border-t-[#10B981] border-x border-b border-[#17375E]">
-              <span class="text-[10px] text-slate-400 font-bold block">1. Mejora Clínica</span>
-              <span class="text-xl font-black text-[#10B981] font-heading mt-0.5">{{ mejora_cant }} <span class="text-xs font-normal text-slate-400">({{ mejora_pct_evaluables }}%)</span></span>
-              <span class="text-[10px] text-slate-400 block">Δ positivo significativo</span>
-            </div>
-            <div class="p-3 rounded-2xl bg-[#071526]/80 border-t-2 border-t-[#FBBF24] border-x border-b border-[#17375E]">
-              <span class="text-[10px] text-slate-400 font-bold block">2. Se Mantiene</span>
-              <span class="text-xl font-black text-[#FBBF24] font-heading mt-0.5">{{ mantiene_cant }} <span class="text-xs font-normal text-slate-400">({{ mantiene_pct_evaluables }}%)</span></span>
-              <span class="text-[10px] text-slate-400 block">Estabilidad clínica</span>
-            </div>
-            <div class="p-3 rounded-2xl bg-[#071526]/80 border-t-2 border-t-[#F85B8C] border-x border-b border-[#17375E]">
-              <span class="text-[10px] text-slate-400 font-bold block">3. Disminución</span>
-              <span class="text-xl font-black text-[#F85B8C] font-heading mt-0.5">{{ disminucion_cant }} <span class="text-xs font-normal text-slate-400">({{ disminucion_pct_evaluables }}%)</span></span>
-              <span class="text-[10px] text-slate-400 block">Atención prioritaria</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center mt-4">
-          <div class="relative w-full h-60 flex items-center justify-center">
-            <canvas id="graficaClasificacionDona"></canvas>
-          </div>
-          <div class="relative w-full h-60 flex items-center justify-center">
-            <canvas id="graficaEvaluablesBarra"></canvas>
-          </div>
-        </div>
-      </div>
-
-    </div>
-
-    <!-- =========================================================================
-         SECCIÓN 4: EVOLUCIÓN POR DIMENSIÓN CLÍNICA (SLIDE 8 DEL PDF)
-         ========================================================================= -->
-    <div class="glass-card-dark p-6 sm:p-7 rounded-3xl border border-[#17375E] space-y-6">
+    <div id="sec-clasificacion" class="glass-card-dark p-6 sm:p-7 rounded-3xl border border-[#17375E] space-y-6 animate-fade">
       
-      <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#17375E]">
         <div>
           <div class="flex items-center gap-2">
-            <span class="text-[10px] font-extrabold uppercase tracking-wider text-[#818CF8] bg-[#818CF8]/15 px-2.5 py-0.5 rounded-full border border-[#818CF8]/30">
-              Evolución Multidimensional (Lámina 8)
+            <span class="text-[10px] font-extrabold uppercase tracking-wider text-[#10B981] bg-[#10B981]/15 px-2.5 py-0.5 rounded-full border border-[#10B981]/30">
+              Clasificación del Cambio (Láminas 5, 6 y 8)
             </span>
-            <span class="text-xs text-slate-400">Check-In / IPP Psicométrico</span>
           </div>
           <h3 class="text-xl sm:text-2xl font-black text-white font-heading mt-1">
-            Evolución por Dimensión Evaluada
+            Efectividad Clínica Longitudinal & Evolución por Dimensión
           </h3>
           <p class="text-xs text-slate-400 mt-0.5">
-            "Además del indicador global, conviene observar las dimensiones evaluadas: Bienestar emocional, afrontamiento, regulación y metas."
+            Cálculo individual $\Delta = \text{Última Medición} - \text{Primera Medición}$, clasificado en Mejora, Estabilidad o Disminución.
           </p>
         </div>
 
-        <!-- Callout Nota Slide 8 -->
-        <div class="p-3 rounded-2xl bg-[#071526]/80 border border-[#17375E] text-[11px] text-slate-300 max-w-sm">
-          <span class="text-[#00D2E0] font-bold block mb-0.5"><i class="fa-solid fa-lightbulb"></i> Nota Técnica (Pág. 8):</span>
-          <span>"El análisis se concentra en datos específicos de cada etapa, permitiendo identificar dónde se concentra la mejora y dónde hay áreas de oportunidad."</span>
+        <div class="bg-[#071526] px-3.5 py-2 rounded-2xl border border-[#17375E] text-xs font-mono text-[#00D2E0]">
+          Δ = Medición_Final − Medición_Inicial
         </div>
       </div>
 
-      <!-- GRÁFICAS DE DIMENSIONES: RADAR & BARRAS AGRUPADAS POR ETAPA -->
+      <!-- GRÁFICAS DE CLASIFICACIÓN (DONA Y BARRAS) -->
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
         
-        <!-- Gráfica Radar: Comparativa Etapa 1 vs Etapa 4 -->
+        <!-- Dona: Toda la población -->
         <div class="lg:col-span-5 p-5 rounded-2xl bg-[#071526]/60 border border-[#17375E] flex flex-col justify-between">
           <div class="flex items-center justify-between mb-2">
-            <span class="text-xs font-bold text-white">Radar de Crecimiento Terapéutico</span>
-            <span class="text-[10px] text-slate-400">Línea Base vs Mantenimiento</span>
+            <span class="text-xs font-bold text-white">Clasificación General del Cambio</span>
+            <span class="text-[10px] text-slate-400">Total ({{ total_usuarios }})</span>
           </div>
-          <div class="relative w-full h-72 flex items-center justify-center">
-            <canvas id="graficaRadarDimensiones"></canvas>
-          </div>
-          <div class="flex items-center justify-center gap-4 text-xs mt-3">
-            <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-[#00D2E0]/40 border border-[#00D2E0]"></span> Ingreso (Etapa 1)</span>
-            <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-[#10B981]/50 border border-[#10B981]"></span> Resultados (Etapa 4)</span>
+          <div class="relative w-full h-64 flex items-center justify-center">
+            <canvas id="graficaClasificacionDona"></canvas>
           </div>
         </div>
 
-        <!-- Gráfica Barras: Las 5 Dimensiones a través de las 4 Etapas -->
+        <!-- Barras: Evaluables -->
         <div class="lg:col-span-7 p-5 rounded-2xl bg-[#071526]/60 border border-[#17375E] flex flex-col justify-between">
           <div class="flex items-center justify-between mb-2">
-            <span class="text-xs font-bold text-white">Progresión por Dimensión a través de las 4 Etapas</span>
-            <span class="text-[10px] text-slate-400">Escala de 1 a 10</span>
+            <span class="text-xs font-bold text-white">Proporción en Consultantes Evaluables (≥2 Sesiones)</span>
+            <span class="text-[10px] text-[#10B981] font-bold">{{ evaluables_cant }} personas</span>
           </div>
-          <div class="relative w-full h-72">
-            <canvas id="graficaBarrasDimensiones"></canvas>
-          </div>
-          
-          <!-- Hallazgos Clave por Dimensión -->
-          <div class="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-[#17375E] text-center">
-            <div class="p-2 rounded-xl bg-[#0B1E36]">
-              <span class="text-[10px] text-[#10B981] font-bold block">Mayor Crecimiento</span>
-              <span class="text-xs font-bold text-white block mt-0.5">Afrontamiento</span>
-              <span class="text-[10px] text-slate-400 block">+4.3 pts (Δ 93%)</span>
-            </div>
-            <div class="p-2 rounded-xl bg-[#0B1E36]">
-              <span class="text-[10px] text-[#FBBF24] font-bold block">Más Estable</span>
-              <span class="text-xs font-bold text-white block mt-0.5">Vínculos de Apoyo</span>
-              <span class="text-[10px] text-slate-400 block">+3.3 pts basales</span>
-            </div>
-            <div class="p-2 rounded-xl bg-[#0B1E36]">
-              <span class="text-[10px] text-[#00D2E0] font-bold block">Área de Oportunidad</span>
-              <span class="text-xs font-bold text-white block mt-0.5">Regulación Malestar</span>
-              <span class="text-[10px] text-slate-400 block">Consolida en Etapa 3</span>
-            </div>
+          <div class="relative w-full h-64">
+            <canvas id="graficaEvaluablesBarra"></canvas>
           </div>
         </div>
 
+      </div>
+
+      <!-- EVOLUCIÓN POR DIMENSIÓN CLÍNICA (LÁMINA 8) -->
+      <div class="pt-4 border-t border-[#17375E] space-y-4">
+        <div class="flex items-center justify-between">
+          <div>
+            <h4 class="text-base font-bold text-white font-heading">Evolución por Dimensión Evaluada (Pág. 8)</h4>
+            <p class="text-xs text-slate-400">Bienestar emocional, afrontamiento, regulación de malestar, vínculos y metas.</p>
+          </div>
+          <span class="text-xs text-[#818CF8] bg-[#818CF8]/15 px-3 py-1 rounded-xl border border-[#818CF8]/30 font-bold">5 Dimensiones IPP</span>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+          <div class="lg:col-span-5 p-5 rounded-2xl bg-[#071526]/60 border border-[#17375E]">
+            <span class="text-xs font-bold text-white block mb-2">Radar: Ingreso (Etapa 1) vs Resultados (Etapa 4)</span>
+            <div class="relative w-full h-64 flex items-center justify-center">
+              <canvas id="graficaRadarDimensiones"></canvas>
+            </div>
+          </div>
+
+          <div class="lg:col-span-7 p-5 rounded-2xl bg-[#071526]/60 border border-[#17375E]">
+            <span class="text-xs font-bold text-white block mb-2">Progresión de las Dimensiones en las 4 Etapas</span>
+            <div class="relative w-full h-64">
+              <canvas id="graficaBarrasDimensiones"></canvas>
+            </div>
+          </div>
+        </div>
       </div>
 
     </div>
 
     <!-- =========================================================================
-         SECCIÓN 5: DOS NIVELES DE LECTURA (SLIDE 9 DEL PDF)
-         TABLA DE TRAYECTORIAS INDIVIDUALES CON BUSCADOR Y SPARKLINE
+         DOS NIVELES DE LECTURA: TABLA DE TRAYECTORIAS INDIVIDUALES & CONSENTIMIENTO
+         (LÁMINAS 9 Y 13 DEL PDF)
          ========================================================================= -->
-    <div class="glass-card-dark p-6 sm:p-7 rounded-3xl border border-[#17375E] space-y-5">
+    <div id="sec-datos" class="glass-card-dark p-6 sm:p-7 rounded-3xl border border-[#17375E] space-y-5 animate-fade">
       
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div class="flex items-center gap-2">
             <span class="text-[10px] font-extrabold uppercase tracking-wider text-[#00D2E0] bg-[#00D2E0]/15 px-2.5 py-0.5 rounded-full border border-[#00D2E0]/30">
-              Dos Niveles de Lectura (Lámina 9)
+              Nivel Individual (Lámina 9)
             </span>
           </div>
           <h3 class="text-xl sm:text-2xl font-black text-white font-heading mt-1">
-            Nivel Individual: Trayectoria → Cambio → Clasificación
+            Expedientes Clínicos & Estatus de Consentimiento
           </h3>
           <p class="text-xs text-slate-400 mt-0.5">
-            "Así se conserva el sentido clínico de los datos de cada paciente y se obtiene una lectura ejecutiva reproducible."
+            Haz clic en <strong>"Ver Fases PDF"</strong> en cualquier paciente para auditar sus fases completas e individualizadas.
           </p>
         </div>
 
-        <!-- Buscador y Filtro por Etapa -->
-        <div class="flex items-center gap-2">
+        <!-- Filtros Rápidos -->
+        <div class="flex flex-wrap items-center gap-2">
+          <!-- Buscador -->
           <div class="relative">
             <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-xs text-slate-400"></i>
             <input type="text" id="buscadorPaciente" placeholder="Buscar consultante..." onkeyup="filtrarTabla()"
-                   class="bg-[#071526] border border-[#17375E] text-xs text-white rounded-xl pl-8 pr-3 py-1.5 focus:outline-none focus:border-[#00D2E0] w-48 transition" />
+                   class="bg-[#071526] border border-[#17375E] text-xs text-white rounded-xl pl-8 pr-3 py-1.5 focus:outline-none focus:border-[#00D2E0] w-44 transition" />
           </div>
 
+          <!-- Filtro Etapa -->
           <select id="filtroEtapa" onchange="filtrarTabla()" class="bg-[#071526] border border-[#17375E] text-xs text-white rounded-xl px-2.5 py-1.5 focus:outline-none focus:border-[#00D2E0]">
             <option value="todas">Todas las Etapas</option>
             <option value="1">Etapa 1: Ingreso (1-2)</option>
@@ -759,10 +659,17 @@
             <option value="3">Etapa 3: Proceso (5-8)</option>
             <option value="4">Etapa 4: Mantenimiento (9+)</option>
           </select>
+
+          <!-- Filtro Consentimiento -->
+          <select id="filtroConsentimiento" onchange="filtrarTabla()" class="bg-[#071526] border border-[#17375E] text-xs text-white rounded-xl px-2.5 py-1.5 focus:outline-none focus:border-[#00D2E0]">
+            <option value="todos">Consentimiento: Todos</option>
+            <option value="firmado">Solo Firmados ✅</option>
+            <option value="pendiente">Solo Pendientes ⚠️</option>
+          </select>
         </div>
       </div>
 
-      <!-- TABLA DE CONSULTANTES -->
+      <!-- TABLA DE PACIENTES -->
       <div class="overflow-x-auto rounded-2xl border border-[#17375E]">
         <table class="w-full text-left text-xs" id="tablaConsultantes">
           <thead class="bg-[#071526] text-slate-400 uppercase text-[10px] tracking-wider border-b border-[#17375E]">
@@ -772,14 +679,19 @@
               <th class="py-3 px-4 text-center">Sesiones</th>
               <th class="py-3 px-4 text-center">Línea Base (T₁)</th>
               <th class="py-3 px-4 text-center">Actual (Tₙ)</th>
-              <th class="py-3 px-4 text-center">Cambio Individual (Δ)</th>
-              <th class="py-3 px-4">Clasificación Clínica</th>
-              <th class="py-3 px-4 text-center">Trayectoria</th>
+              <th class="py-3 px-4 text-center">Cambio (Δ)</th>
+              <th class="py-3 px-4">Clasificación</th>
+              <th class="py-3 px-4 text-center">Consentimiento</th>
+              <th class="py-3 px-4 text-center">Acción</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-[#17375E]/60 text-slate-200">
             {% for c in consultantes_muestra %}
-            <tr class="hover:bg-[#071526]/50 transition fila-paciente" data-etapa="{{ c.etapa_num }}" data-nombre="{{ c.paciente_anon|lower }} {{ c.codigo|lower }}">
+            <tr class="hover:bg-[#071526]/50 transition fila-paciente" 
+                data-etapa="{{ c.etapa_num }}" 
+                data-consentimiento="{% if c.consentimiento_firmado %}firmado{% else %}pendiente{% endif %}"
+                data-nombre="{{ c.paciente_anon|lower }} {{ c.codigo|lower }}">
+              
               <td class="py-3.5 px-4 font-bold text-white">
                 <div class="flex items-center gap-2">
                   <span class="w-2 h-2 rounded-full {% if c.clasificacion_color == 'green' %}bg-[#10B981]{% elif c.clasificacion_color == 'yellow' %}bg-[#FBBF24]{% elif c.clasificacion_color == 'pink' %}bg-[#F85B8C]{% else %}bg-slate-400{% endif %}"></span>
@@ -787,6 +699,7 @@
                   <span class="text-slate-400 font-normal">({{ c.paciente_anon }})</span>
                 </div>
               </td>
+
               <td class="py-3.5 px-4">
                 <span class="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-md 
                   {% if c.etapa_badge_color == 'cyan' %}bg-[#00D2E0]/15 text-[#00D2E0] border border-[#00D2E0]/30
@@ -796,15 +709,19 @@
                   {{ c.etapa_nombre }}
                 </span>
               </td>
+
               <td class="py-3.5 px-4 text-center font-bold text-white">
                 {{ c.sesiones }}
               </td>
+
               <td class="py-3.5 px-4 text-center text-slate-400 font-semibold">
                 {{ c.linea_base }} pts
               </td>
+
               <td class="py-3.5 px-4 text-center font-bold text-white">
                 {{ c.puntaje_actual }} pts
               </td>
+
               <td class="py-3.5 px-4 text-center font-black">
                 {% if c.delta == 'N/E' %}
                   <span class="text-slate-400 text-[11px] font-semibold bg-[#071526] px-2 py-0.5 rounded border border-[#17375E]">No evaluable</span>
@@ -822,6 +739,7 @@
                   </span>
                 {% endif %}
               </td>
+
               <td class="py-3.5 px-4">
                 <span class="text-[11px] font-bold px-2.5 py-1 rounded-xl inline-block
                   {% if c.clasificacion_color == 'green' %}bg-[#10B981]/15 text-[#10B981] border border-[#10B981]/30
@@ -831,13 +749,31 @@
                   {{ c.clasificacion_badge }}
                 </span>
               </td>
+
+              <!-- Consentimiento (Lámina 13) -->
               <td class="py-3.5 px-4 text-center">
-                <button onclick="verTrayectoriaModal('{{ c.codigo }}')" 
-                        class="px-2.5 py-1 text-[11px] font-bold bg-[#071526] hover:bg-[#17375E] text-[#00D2E0] border border-[#17375E] hover:border-[#00D2E0] rounded-xl transition flex items-center gap-1.5 mx-auto">
-                  <i class="fa-solid fa-chart-line text-[10px]"></i>
-                  <span>Ver Curva</span>
+                {% if c.consentimiento_firmado %}
+                  <span class="inline-flex items-center gap-1 text-[11px] font-bold text-[#10B981] bg-[#10B981]/15 px-2.5 py-0.5 rounded-lg border border-[#10B981]/30" title="Firmado digitalmente: {{ c.consentimiento_fecha }}">
+                    <i class="fa-solid fa-circle-check"></i>
+                    <span>Firmado</span>
+                  </span>
+                {% else %}
+                  <span class="inline-flex items-center gap-1 text-[11px] font-bold text-[#FBBF24] bg-[#FBBF24]/15 px-2.5 py-0.5 rounded-lg border border-[#FBBF24]/30" title="Pendiente de firma">
+                    <i class="fa-solid fa-clock"></i>
+                    <span>Pendiente</span>
+                  </span>
+                {% endif %}
+              </td>
+
+              <!-- Botón Ver Fases PDF -->
+              <td class="py-3.5 px-4 text-center">
+                <button onclick="verExpedienteCompleto('{{ c.codigo }}')" 
+                        class="px-3 py-1 text-xs font-bold bg-[#00D2E0]/15 hover:bg-[#00D2E0] text-[#00D2E0] hover:text-[#071526] border border-[#00D2E0]/40 rounded-xl transition flex items-center gap-1.5 mx-auto shadow-sm">
+                  <i class="fa-solid fa-file-waveform"></i>
+                  <span>Ver Fases PDF</span>
                 </button>
               </td>
+
             </tr>
             {% endfor %}
           </tbody>
@@ -847,119 +783,255 @@
     </div>
 
     <!-- =========================================================================
-         SECCIÓN 6: CONCLUSIÓN EJECUTIVA & REGLAS DE IA (SLIDES 10, 11, 12 DEL PDF)
+         PAPEL DE LA AUTOMATIZACIÓN Y LA IA & CONCLUSIÓN EJECUTIVA (LÁMINAS 10, 11 Y 12)
          ========================================================================= -->
-    <div class="glass-card-dark p-6 sm:p-8 rounded-3xl border border-[#17375E] relative overflow-hidden animate-fade">
-      <div class="absolute right-0 bottom-0 w-80 h-80 bg-gradient-to-tl from-[#818CF8]/10 to-transparent pointer-events-none"></div>
-
+    <div id="sec-conclusion" class="glass-card-dark p-6 sm:p-8 rounded-3xl border border-[#17375E] relative overflow-hidden animate-fade">
+      
       <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-[#17375E]">
         <div>
           <div class="flex items-center gap-2">
-            <span class="text-[10px] font-extrabold uppercase tracking-wider text-[#818CF8] bg-[#818CF8]/15 px-2.5 py-0.5 rounded-full border border-[#818CF8]/30">
-              Automatización & Reglas Metodológicas (Láminas 10, 11 y 12)
+            <span class="text-[10px] font-extrabold uppercase tracking-wider text-[#F85B8C] bg-[#F85B8C]/15 px-2.5 py-0.5 rounded-full border border-[#F85B8C]/30">
+              Láminas 10, 11 y 12 del PDF
             </span>
           </div>
           <h3 class="text-xl sm:text-2xl font-black text-white font-heading mt-1.5">
-            Conclusión Ejecutiva del Mes (Generación Estructurada)
+            Papel de la Automatización y la IA & Conclusión Ejecutiva
           </h3>
+          <p class="text-xs text-slate-400 mt-0.5">
+            "La IA no decide libremente si la población mejoró: sigue reglas previamente definidas y datos reales."
+          </p>
         </div>
 
-        <!-- Regla de Oro para la IA (Slide 12) -->
         <div class="bg-[#071526] px-3.5 py-2 rounded-2xl border border-[#17375E] text-xs font-mono text-slate-300">
-          <span class="text-slate-400 block text-[9px] uppercase font-sans">Orden de Auditoría:</span>
           <span class="text-[#00D2E0]">DATOS</span> → 
           <span class="text-[#818CF8]">REGLAS</span> → 
-          <span class="text-[#FBBF24]">CLASIFICACIÓN</span> → 
-          <span class="text-[#10B981]">INDICADORES</span> → 
+          <span class="text-[#10B981]">CLASIFICACIÓN</span> → 
+          <span class="text-[#FBBF24]">INDICADORES</span> → 
           <span class="text-[#F85B8C]">CONCLUSIÓN</span>
         </div>
       </div>
 
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 mt-6">
         
-        <!-- Texto de la Conclusión Ejecutiva -->
-        <div class="lg:col-span-8 space-y-4 text-xs sm:text-sm text-slate-300 leading-relaxed">
-          <div class="p-4 rounded-2xl bg-[#071526]/80 border border-[#17375E] space-y-3">
-            <div class="flex items-center gap-2 text-xs font-bold text-white">
-              <i class="fa-solid fa-feather-pointed text-[#00D2E0]"></i>
-              <span>Síntesis Ejecutiva Reproducible de {{ nombre_periodo }}</span>
+        <!-- Bloque Lámina 11: Papel de la Automatización -->
+        <div class="lg:col-span-5 p-5 rounded-2xl bg-[#071526]/80 border border-[#17375E] space-y-3">
+          <div class="flex items-center gap-2 text-xs font-bold text-[#00D2E0] uppercase tracking-wider">
+            <i class="fa-solid fa-robot"></i>
+            <span>La automatización se encarga de (Pág. 11):</span>
+          </div>
+
+          <ul class="text-xs text-slate-300 space-y-2">
+            <li class="flex items-start gap-2">
+              <i class="fa-solid fa-check text-[#10B981] mt-0.5"></i>
+              <span><strong>Cálculos y porcentajes:</strong> Procesamiento exacto de $\Delta$, tasas de adherencia y medias por dimensión.</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <i class="fa-solid fa-check text-[#10B981] mt-0.5"></i>
+              <span><strong>Clasificación según reglas:</strong> Separación automática de Línea Base vs Mejora/Estabilidad/Disminución sin sesgos.</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <i class="fa-solid fa-check text-[#10B981] mt-0.5"></i>
+              <span><strong>Tablas y gráficas:</strong> Visualización sincronizada en tiempo real.</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <i class="fa-solid fa-check text-[#10B981] mt-0.5"></i>
+              <span><strong>Integración de resultados:</strong> Cruce multidimensional por etapas.</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <i class="fa-solid fa-check text-[#10B981] mt-0.5"></i>
+              <span><strong>Redacción de la conclusión:</strong> Generación narrativa estricta basada en los números.</span>
+            </li>
+          </ul>
+
+          <div class="p-3 rounded-xl bg-[#0B1E36] border border-[#17375E] text-[11px] text-slate-300 italic">
+            "Las reglas metodológicas están definidas antes de automatizar. La narrativa es consecuencia de los datos, no al revés."
+          </div>
+        </div>
+
+        <!-- Conclusión Ejecutiva Redactada (Lámina 10) -->
+        <div class="lg:col-span-7 p-5 rounded-2xl bg-[#071526]/80 border border-[#17375E] space-y-3">
+          <div class="flex items-center justify-between text-xs font-bold text-white border-b border-[#17375E] pb-2">
+            <span class="flex items-center gap-1.5"><i class="fa-solid fa-feather-pointed text-[#F85B8C]"></i> Síntesis Mensual de {{ nombre_periodo }}</span>
+            <span class="text-[10px] text-slate-400">100% Auditable</span>
+          </div>
+
+          <div class="text-xs text-slate-300 space-y-2.5 leading-relaxed">
+            <p>
+              El servicio clínico de HOPE atendió a un total de <strong class="text-white">{{ total_usuarios }} consultantes</strong> a lo largo de <strong class="text-white">{{ total_sesiones }} sesiones</strong>, alcanzando una cobertura de Check-in del <strong class="text-[#FBBF24]">{{ cobertura_checkin }}%</strong>.
+            </p>
+            <p>
+              Del total atendido, <strong class="text-white">{{ no_evaluables_cant }} personas ({{ etapa1_pct }}%)</strong> corresponden a ingreso (1 sola medición), clasificadas rigurosamente como <em class="text-slate-200">Línea Base</em> para evitar falsos positivos o negativos.
+            </p>
+            <p>
+              Entre los <strong class="text-white">{{ evaluables_cant }} consultantes evaluables</strong> (≥2 sesiones), el <strong class="text-[#10B981]">{{ mejora_pct_evaluables }}% ({{ mejora_cant }} personas)</strong> consolidó una trayectoria de <strong class="text-[#10B981]">Mejora Clínica</strong>, el <strong class="text-[#FBBF24]">{{ mantiene_pct_evaluables }}% ({{ mantiene_cant }})</strong> presentó estabilidad adaptativa y solo el <strong class="text-[#F85B8C]">{{ disminucion_pct_evaluables }}% ({{ disminucion_cant }})</strong> tuvo agudización sintomática atendida oportunamente.
+            </p>
+            <p>
+              La auditoría de consentimiento confirma que el <strong class="text-[#10B981]">{{ consentimientos_firmados_pct }}% ({{ consentimientos_firmados_cant }} consultantes)</strong> ya cuenta con su declaración firmada, restando {{ consentimientos_pendientes_cant }} pacientes para seguimiento administrativo.
+            </p>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2 pt-2 border-t border-[#17375E]">
+            <div class="p-2.5 rounded-xl bg-[#0B1E36] text-center">
+              <span class="text-[10px] text-[#10B981] font-bold block">Mayor Fortaleza</span>
+              <span class="text-xs text-white font-bold block mt-0.5">Afrontamiento (+4.3 pts)</span>
             </div>
-            
-            <p>
-              Durante el periodo analizado, el servicio clínico de HOPE atendió a un total de <strong class="text-white">{{ total_usuarios }} consultantes</strong> distribuidos en <strong class="text-white">{{ total_sesiones }} sesiones</strong> efectivas, alcanzando una cobertura de aplicación de Check-in del <strong class="text-[#FBBF24]">{{ cobertura_checkin }}%</strong>.
-            </p>
-
-            <p>
-              En estricto apego al marco metodológico, la población fue segmentada longitudinalmente: <strong class="text-white">{{ no_evaluables_cant }} personas ({{ etapa1_pct }}%)</strong> corresponden a la etapa de ingreso (1 sola medición), registrándose como <em class="text-slate-200">No evaluables para cambio temporal</em>, lo cual preserva la objetividad del reporte al evitar atribuciones infundadas de mejora o desmejora.
-            </p>
-
-            <p>
-              Entre la <strong class="text-white">población evaluable ({{ evaluables_cant }} consultantes con ≥2 sesiones)</strong>, el <strong class="text-[#10B981]">{{ mejora_pct_evaluables }}% ({{ mejora_cant }} consultantes)</strong> evidenció una trayectoria clínica de <strong class="text-[#10B981]">Mejora Significativa</strong> (Δ promedio de +{{ cambio_delta_promedio }} puntos), mientras que el <strong class="text-[#FBBF24]">{{ mantiene_pct_evaluables }}% ({{ mantiene_cant }})</strong> se mantuvo con estabilidad clínica y solo el <strong class="text-[#F85B8C]">{{ disminucion_pct_evaluables }}% ({{ disminucion_cant }})</strong> presentó agudización de malestar que requirió contención prioritaria.
-            </p>
-
-            <p>
-              En el análisis multidimensional, la fortaleza del programa se concentró en la dimensión de <strong class="text-white">Afrontamiento & Resiliencia</strong> (+4.3 puntos promedio entre etapas 1 y 4), consolidando la autonomía de los consultantes antes del egreso.
-            </p>
+            <div class="p-2.5 rounded-xl bg-[#0B1E36] text-center">
+              <span class="text-[10px] text-[#FBBF24] font-bold block">Acción Preventiva</span>
+              <span class="text-xs text-white font-bold block mt-0.5">Reforzar transición 3-5 ses</span>
+            </div>
           </div>
-        </div>
-
-        <!-- 3 Tarjetas de Recomendaciones Institucionales -->
-        <div class="lg:col-span-4 space-y-3">
-          
-          <div class="p-3.5 rounded-2xl bg-[#071526]/80 border-l-4 border-l-[#10B981] border-y border-r border-[#17375E]">
-            <span class="text-[10px] font-bold text-[#10B981] uppercase block">1. Fortaleza Clínica</span>
-            <p class="text-xs text-slate-300 mt-1">
-              Alta tasa de adherencia: 76% de mejora entre quienes cursan 3 o más sesiones.
-            </p>
-          </div>
-
-          <div class="p-3.5 rounded-2xl bg-[#071526]/80 border-l-4 border-l-[#FBBF24] border-y border-r border-[#17375E]">
-            <span class="text-[10px] font-bold text-[#FBBF24] uppercase block">2. Foco de Oportunidad</span>
-            <p class="text-xs text-slate-300 mt-1">
-              Monitorear la transición entre sesiones 3 y 5 para reducir el riesgo de abandono en la fase de inicio.
-            </p>
-          </div>
-
-          <div class="p-3.5 rounded-2xl bg-[#071526]/80 border-l-4 border-l-[#818CF8] border-y border-r border-[#17375E]">
-            <span class="text-[10px] font-bold text-[#818CF8] uppercase block">3. Regla Metodológica</span>
-            <p class="text-xs text-slate-300 mt-1">
-              "La narrativa debe ser consecuencia de los datos, no al revés."
-            </p>
-          </div>
-
         </div>
 
       </div>
 
-    </div>
-
-    <!-- =========================================================================
-         SECCIÓN 7: CONSENTIMIENTO PARA USO ESTADÍSTICO (SLIDE 13 DEL PDF)
-         ========================================================================= -->
-    <div class="p-4 sm:p-5 rounded-3xl bg-[#0B1E36]/90 border border-[#17375E] flex flex-col sm:flex-row items-center justify-between gap-4 animate-fade">
-      <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-2xl bg-[#10B981]/15 border border-[#10B981]/40 flex items-center justify-center text-[#10B981] text-lg shrink-0">
-          <i class="fa-solid fa-user-shield"></i>
-        </div>
-        <div>
-          <span class="text-[10px] font-extrabold uppercase tracking-wider text-[#10B981] block">Consentimiento para Uso Estadístico (Lámina 13)</span>
-          <p class="text-xs text-slate-300 italic mt-0.5">
-            "☑ Acepto el uso anónimo de mis datos con fines estadísticos y de mejora del servicio, respetando la confidencialidad de mi información."
-          </p>
-        </div>
-      </div>
-      <div class="flex items-center gap-2 text-[11px] text-slate-400 bg-[#071526] px-3 py-1.5 rounded-xl border border-[#17375E] shrink-0">
-        <i class="fa-solid fa-lock text-[#00D2E0]"></i>
-        <span>100% Datos Anonimizados & Auditables</span>
-      </div>
     </div>
 
   </main>
 
   <!-- =========================================================================
+       MODAL EXPEDIENTE INDIVIDUAL: TODAS LAS FASES DEL PDF ENFOCADAS EN EL PACIENTE
+       (Requerimiento Crítico Solicitado)
+       ========================================================================= -->
+  <div id="modalExpediente" class="fixed inset-0 z-50 modal-backdrop hidden flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+    <div class="glass-card-dark w-full max-w-4xl rounded-3xl border border-[#00D2E0]/50 p-5 sm:p-7 shadow-2xl relative animate-fade my-6 max-h-[90vh] overflow-y-auto">
+      
+      <!-- Botón Cerrar -->
+      <button onclick="cerrarExpedienteModal()" class="absolute top-5 right-5 w-8 h-8 rounded-full bg-[#071526] border border-[#17375E] text-slate-400 hover:text-white flex items-center justify-center transition">
+        <i class="fa-solid fa-xmark text-sm"></i>
+      </button>
+
+      <!-- Encabezado del Consultante -->
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-[#17375E]">
+        <div class="flex items-center gap-3">
+          <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#00D2E0]/20 to-[#818CF8]/20 border border-[#00D2E0]/40 flex items-center justify-center text-[#00D2E0] text-xl shrink-0">
+            <i class="fa-solid fa-id-card-clip"></i>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="text-[10px] font-black uppercase text-[#00D2E0] tracking-wider">Expediente Clínico Metodológico</span>
+              <span id="mBadgeEtapa" class="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded bg-[#10B981]/20 text-[#10B981] border border-[#10B981]/30">
+                Etapa 4
+              </span>
+            </div>
+            <h3 id="mTituloPaciente" class="text-xl sm:text-2xl font-black text-white font-heading mt-0.5">
+              HP-2041 — M. Rodríguez V.
+            </h3>
+          </div>
+        </div>
+
+        <div id="mStatusConsentimiento" class="flex items-center gap-2 text-xs bg-[#071526] px-3.5 py-1.5 rounded-xl border border-[#17375E]">
+          <i class="fa-solid fa-circle-check text-[#10B981]"></i>
+          <span>Consentimiento: <strong>Firmado (18/07/2026)</strong></span>
+        </div>
+      </div>
+
+      <!-- DESGLOSE DE TODAS LAS FASES DEL PDF PARA ESTE PACIENTE -->
+      <div class="space-y-5 mt-5">
+        
+        <!-- FASE 1: CHECK-IN & ENTRADA (PDF Pág. 1, 2 y 13) -->
+        <div class="p-4 rounded-2xl bg-[#071526]/80 border border-[#17375E] space-y-3">
+          <div class="flex items-center justify-between text-xs font-bold text-[#00D2E0] uppercase tracking-wider">
+            <span class="flex items-center gap-1.5"><i class="fa-solid fa-door-open"></i> Fase 1: Check-In de Ingreso & Consentimiento</span>
+            <span class="text-slate-400 font-normal">Triage inicial</span>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+            <div class="p-3 rounded-xl bg-[#0B1E36] border border-[#17375E]">
+              <span class="text-[10px] text-slate-400 block">Motivo de Consulta</span>
+              <span id="mMotivoConsulta" class="text-xs font-bold text-white block mt-0.5">Ansiedad generalizada y pánico laboral</span>
+            </div>
+            <div class="p-3 rounded-xl bg-[#0B1E36] border border-[#17375E]">
+              <span class="text-[10px] text-slate-400 block">Estado de Ánimo Inicial</span>
+              <span id="mAnimoIngreso" class="text-xs font-bold text-slate-200 block mt-0.5">Abrumada con tensión física</span>
+            </div>
+            <div class="p-3 rounded-xl bg-[#0B1E36] border border-[#17375E]">
+              <span class="text-[10px] text-slate-400 block">Malestar Declarado al Llegar</span>
+              <span id="mMalestarIngreso" class="text-xs font-black text-[#FB923C] block mt-0.5">8.5 / 10 pts</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- FASE 2, 3, 4 y 5: TRAYECTORIA, ETAPA, CAMBIO Δ Y CLASIFICACIÓN (PDF Pág. 3, 5 y 6) -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div class="p-3.5 rounded-2xl bg-[#071526]/80 border border-[#17375E] text-center">
+            <span class="text-[10px] text-slate-400 uppercase font-bold block">Fase 3: Etapa</span>
+            <span id="mEtapaNombre" class="text-sm font-black text-[#FBBF24] block mt-0.5">Mantenimiento</span>
+            <span id="mSesionesTotal" class="text-[10px] text-slate-400 block">12 sesiones</span>
+          </div>
+          <div class="p-3.5 rounded-2xl bg-[#071526]/80 border border-[#17375E] text-center">
+            <span class="text-[10px] text-slate-400 uppercase font-bold block">Línea Base (T₁)</span>
+            <span id="mLineaBase" class="text-sm font-black text-slate-300 block mt-0.5">38 pts</span>
+            <span class="text-[10px] text-slate-400 block">primer check-in</span>
+          </div>
+          <div class="p-3.5 rounded-2xl bg-[#071526]/80 border border-[#17375E] text-center">
+            <span class="text-[10px] text-slate-400 uppercase font-bold block">Fase 4: Cambio (Δ)</span>
+            <span id="mDelta" class="text-sm font-black text-[#10B981] block mt-0.5">+48%</span>
+            <span id="mPuntajeActual" class="text-[10px] text-slate-400 block">Actual: 86 pts</span>
+          </div>
+          <div class="p-3.5 rounded-2xl bg-[#071526]/80 border border-[#17375E] text-center">
+            <span class="text-[10px] text-slate-400 uppercase font-bold block">Fase 5: Clasificación</span>
+            <span id="mClasificacion" class="text-sm font-black text-[#10B981] block mt-0.5">Mejora</span>
+            <span id="mClasifBadge" class="text-[10px] text-slate-400 block">Significativa</span>
+          </div>
+        </div>
+
+        <!-- FASE 2: GRÁFICO DE TRAYECTORIA INDIVIDUAL (CURVA SESIÓN A SESIÓN) -->
+        <div class="p-4 rounded-2xl bg-[#071526]/80 border border-[#17375E]">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-bold text-white flex items-center gap-1.5">
+              <i class="fa-solid fa-chart-line text-[#00D2E0]"></i>
+              <span>Fase 2: Curva de Trayectoria Individual Longitudinal (Sesión por Sesión)</span>
+            </span>
+            <span class="text-[10px] text-slate-400">Puntaje IPP (0-100)</span>
+          </div>
+          <div class="relative w-full h-56">
+            <canvas id="graficaModalCurva"></canvas>
+          </div>
+        </div>
+
+        <!-- FASE 6: EVOLUCIÓN MULTIDIMENSIONAL DE ESTE PACIENTE (Pág. 8) -->
+        <div class="p-4 rounded-2xl bg-[#071526]/80 border border-[#17375E]">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-bold text-white flex items-center gap-1.5">
+              <i class="fa-solid fa-sliders text-[#818CF8]"></i>
+              <span>Fase 6: Dimensiones Evaluadas del Consultante (Ingreso T₁ vs Actual Tₙ)</span>
+            </span>
+            <span id="mDimFuerte" class="text-[10px] text-[#10B981] font-bold">Dimensión fuerte: Afrontamiento</span>
+          </div>
+          <div class="relative w-full h-48">
+            <canvas id="graficaModalDimensiones"></canvas>
+          </div>
+        </div>
+
+        <!-- FASE 7 & 8: CONCLUSIÓN CLÍNICA INDIVIDUAL ASISTIDA POR IA (Pág. 10, 11 y 12) -->
+        <div class="p-4 rounded-2xl bg-[#0B1E36] border-l-4 border-l-[#00D2E0] border-y border-r border-[#17375E] space-y-2">
+          <div class="flex items-center justify-between text-xs font-bold text-white">
+            <span class="flex items-center gap-1.5"><i class="fa-solid fa-microchip text-[#00D2E0]"></i> Conclusión Clínica Individual Automatizada (IA Basada en Reglas)</span>
+            <span class="text-[10px] text-slate-400">Auditable para Expediente</span>
+          </div>
+          <p id="mConclusionIa" class="text-xs text-slate-300 leading-relaxed italic">
+            Evolución altamente favorable. La consultante transitó exitosamente las 4 etapas terapéuticas. Logró un incremento del 48% en su índice de progreso con máxima consolidación en técnicas de afrontamiento. Se sugiere evaluar cierre de proceso o espaciamiento quincenal.
+          </p>
+        </div>
+
+      </div>
+
+      <!-- Pie del Modal -->
+      <div class="mt-5 pt-3 border-t border-[#17375E] flex items-center justify-between text-xs">
+        <span class="text-slate-400">Última sesión registrada: <strong id="mCitaReciente" class="text-white">22/09/2026</strong></span>
+        <button onclick="cerrarExpedienteModal()" class="px-5 py-2 bg-[#071526] hover:bg-[#17375E] text-white font-bold rounded-xl border border-[#17375E] transition">
+          Cerrar Expediente
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+
+  <!-- =========================================================================
        FOOTER
        ========================================================================= -->
-  <footer class="glass-card-dark border-t border-[#17375E] py-6 mt-12 no-print text-center text-xs text-slate-400">
+  <footer class="glass-card-dark border-t border-[#17375E] py-5 mt-10 no-print text-center text-xs text-slate-400">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-3">
       <div class="flex items-center gap-2">
         <span class="font-black text-white font-heading">HOPE</span>
@@ -969,89 +1041,27 @@
     </div>
   </footer>
 
-  <!-- =========================================================================
-       MODAL DE TRAYECTORIA INDIVIDUAL (POPUP AL HACER CLIC EN "VER CURVA")
-       ========================================================================= -->
-  <div id="modalTrayectoria" class="fixed inset-0 z-50 modal-backdrop hidden flex items-center justify-center p-4">
-    <div class="glass-card-dark w-full max-w-2xl rounded-3xl border border-[#00D2E0]/40 p-6 sm:p-7 shadow-2xl relative animate-fade">
-      
-      <!-- Botón Cerrar -->
-      <button onclick="cerrarTrayectoriaModal()" class="absolute top-5 right-5 w-8 h-8 rounded-full bg-[#071526] border border-[#17375E] text-slate-400 hover:text-white flex items-center justify-center transition">
-        <i class="fa-solid fa-xmark text-sm"></i>
-      </button>
-
-      <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-2xl bg-[#00D2E0]/15 border border-[#00D2E0]/40 flex items-center justify-center text-[#00D2E0] text-lg">
-          <i class="fa-solid fa-chart-line"></i>
-        </div>
-        <div>
-          <span class="text-[10px] font-black uppercase text-[#00D2E0] tracking-wider block">Trayectoria Longitudinal Individual</span>
-          <h3 id="modalPacienteTitulo" class="text-xl font-bold text-white font-heading">Consultante #HP-2041</h3>
-        </div>
-      </div>
-
-      <!-- Resumen rápido del modal -->
-      <div class="grid grid-cols-4 gap-2.5 my-4 pt-3 border-t border-[#17375E]">
-        <div class="p-2.5 rounded-xl bg-[#071526] border border-[#17375E] text-center">
-          <span class="text-[10px] text-slate-400 block">Etapa</span>
-          <span id="modalEtapa" class="text-xs font-bold text-[#FBBF24] block mt-0.5">Etapa 4</span>
-        </div>
-        <div class="p-2.5 rounded-xl bg-[#071526] border border-[#17375E] text-center">
-          <span class="text-[10px] text-slate-400 block">Sesiones</span>
-          <span id="modalSesiones" class="text-xs font-bold text-white block mt-0.5">12</span>
-        </div>
-        <div class="p-2.5 rounded-xl bg-[#071526] border border-[#17375E] text-center">
-          <span class="text-[10px] text-slate-400 block">Cambio (Δ)</span>
-          <span id="modalDelta" class="text-xs font-black text-[#10B981] block mt-0.5">+48%</span>
-        </div>
-        <div class="p-2.5 rounded-xl bg-[#071526] border border-[#17375E] text-center">
-          <span class="text-[10px] text-slate-400 block">Clasificación</span>
-          <span id="modalClasificacion" class="text-xs font-bold text-[#10B981] block mt-0.5">Mejora</span>
-        </div>
-      </div>
-
-      <!-- Canvas de la Curva Individual -->
-      <div class="relative w-full h-64 mt-2">
-        <canvas id="graficaModalCurva"></canvas>
-      </div>
-
-      <div class="mt-4 pt-3 border-t border-[#17375E] flex items-center justify-between text-xs text-slate-400">
-        <span id="modalDimFuerte"><i class="fa-solid fa-star text-[#FBBF24]"></i> Dimensión fuerte: Afrontamiento</span>
-        <button onclick="cerrarTrayectoriaModal()" class="px-4 py-1.5 bg-[#071526] hover:bg-[#17375E] text-white font-bold rounded-xl border border-[#17375E] transition">
-          Cerrar
-        </button>
-      </div>
-
-    </div>
-  </div>
-
 
   <!-- =========================================================================
-       INICIALIZACIÓN DE CHART.JS & LÓGICA INTERACTIVA
+       SCRIPTS: CHART.JS & LÓGICA INTERACTIVA DEL MODAL INDIVIDUAL
        ========================================================================= -->
   <script>
-    // Paleta de colores HOPE
     const COLOR_CYAN = '#00D2E0';
     const COLOR_PINK = '#F85B8C';
     const COLOR_PURPLE = '#818CF8';
     const COLOR_YELLOW = '#FBBF24';
     const COLOR_GREEN = '#10B981';
-    const COLOR_ORANGE = '#FB923C';
-    const COLOR_CARD = '#0D223D';
     const COLOR_BORDER = '#17375E';
 
     // 1. Gráfica de Distribución por Etapas Terapéuticas (Lámina 3)
     const ctxEtapas = document.getElementById('graficaEtapas').getContext('2d');
-    const etapasLabels = {{ etapas_labels_json|safe }};
-    const etapasValues = {{ etapas_values_json|safe }};
-
     new Chart(ctxEtapas, {
       type: 'bar',
       data: {
-        labels: etapasLabels,
+        labels: {{ etapas_labels_json|safe }},
         datasets: [{
           label: 'Consultantes',
-          data: etapasValues,
+          data: {{ etapas_values_json|safe }},
           backgroundColor: [
             'rgba(0, 210, 224, 0.75)',
             'rgba(129, 140, 248, 0.75)',
@@ -1060,7 +1070,7 @@
           ],
           borderColor: [COLOR_CYAN, COLOR_PURPLE, COLOR_YELLOW, COLOR_GREEN],
           borderWidth: 2,
-          borderRadius: 10,
+          borderRadius: 8,
         }]
       },
       options: {
@@ -1072,8 +1082,6 @@
             backgroundColor: '#071526',
             borderColor: COLOR_BORDER,
             borderWidth: 1,
-            titleFont: { family: 'Outfit', size: 12, weight: 'bold' },
-            bodyFont: { family: 'Plus Jakarta Sans', size: 11 },
             callbacks: {
               label: (ctx) => ` ${ctx.parsed.y} consultantes (${((ctx.parsed.y / {{ total_usuarios }}) * 100).toFixed(1)}%)`
             }
@@ -1082,17 +1090,17 @@
         scales: {
           x: {
             grid: { color: 'rgba(23, 55, 94, 0.4)' },
-            ticks: { color: '#94A3B8', font: { family: 'Plus Jakarta Sans', size: 10 } }
+            ticks: { color: '#94A3B8', font: { size: 10 } }
           },
           y: {
             grid: { color: 'rgba(23, 55, 94, 0.4)' },
-            ticks: { color: '#94A3B8', font: { family: 'Plus Jakarta Sans', size: 10 } }
+            ticks: { color: '#94A3B8', font: { size: 10 } }
           }
         }
       }
     });
 
-    // 2. Gráfica de Clasificación del Cambio (Dona General: Evaluables vs No evaluables)
+    // 2. Gráfica Dona Clasificación General (Lámina 6)
     const ctxClasifDona = document.getElementById('graficaClasificacionDona').getContext('2d');
     new Chart(ctxClasifDona, {
       type: 'doughnut',
@@ -1131,12 +1139,12 @@
       }
     });
 
-    // 3. Gráfica de Solo Población Evaluable (Slide 6)
+    // 3. Gráfica Solo Evaluables
     const ctxEvalBarra = document.getElementById('graficaEvaluablesBarra').getContext('2d');
     new Chart(ctxEvalBarra, {
       type: 'bar',
       data: {
-        labels: ['Mejora Clínica', 'Se Mantiene', 'Disminución'],
+        labels: ['Mejora Clínica (Δ > 0)', 'Se Mantiene (Estabilidad)', 'Disminución (Δ < 0)'],
         datasets: [{
           label: '% de Evaluables',
           data: [{{ mejora_pct_evaluables }}, {{ mantiene_pct_evaluables }}, {{ disminucion_pct_evaluables }}],
@@ -1161,7 +1169,7 @@
             borderColor: COLOR_BORDER,
             borderWidth: 1,
             callbacks: {
-              label: (ctx) => ` ${ctx.parsed.x}% de los evaluables`
+              label: (ctx) => ` ${ctx.parsed.x}% de los consultantes evaluables`
             }
           }
         },
@@ -1179,28 +1187,24 @@
       }
     });
 
-    // 4. Gráfica Radar: Dimensiones en Línea Base vs Mantenimiento (Slide 8)
+    // 4. Radar Dimensiones Etapa 1 vs Etapa 4 (Lámina 8)
     const ctxRadar = document.getElementById('graficaRadarDimensiones').getContext('2d');
-    const dimensionesLabels = {{ dimensiones_labels_json|safe }};
-    const dimEtapa1 = {{ dim_etapa1_json|safe }};
-    const dimEtapa4 = {{ dim_etapa4_json|safe }};
-
     new Chart(ctxRadar, {
       type: 'radar',
       data: {
-        labels: dimensionesLabels,
+        labels: {{ dimensiones_labels_json|safe }},
         datasets: [
           {
-            label: 'Ingreso (Etapa 1: Línea Base)',
-            data: dimEtapa1,
+            label: 'Ingreso (Etapa 1)',
+            data: {{ dim_etapa1_json|safe }},
             backgroundColor: 'rgba(0, 210, 224, 0.2)',
             borderColor: COLOR_CYAN,
             pointBackgroundColor: COLOR_CYAN,
             borderWidth: 2,
           },
           {
-            label: 'Mantenimiento (Etapa 4: Resultados)',
-            data: dimEtapa4,
+            label: 'Mantenimiento (Etapa 4)',
+            data: {{ dim_etapa4_json|safe }},
             backgroundColor: 'rgba(16, 185, 129, 0.25)',
             borderColor: COLOR_GREEN,
             pointBackgroundColor: COLOR_GREEN,
@@ -1211,104 +1215,63 @@
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        plugins: {
-          legend: { display: false }
-        },
+        plugins: { legend: { display: false } },
         scales: {
           r: {
             min: 0,
             max: 10,
-            ticks: { display: false, stepSize: 2 },
+            ticks: { display: false },
             grid: { color: 'rgba(23, 55, 94, 0.7)' },
             angleLines: { color: 'rgba(23, 55, 94, 0.7)' },
-            pointLabels: {
-              color: '#CBD5E1',
-              font: { family: 'Plus Jakarta Sans', size: 10, weight: 'bold' }
-            }
+            pointLabels: { color: '#CBD5E1', font: { size: 9, weight: 'bold' } }
           }
         }
       }
     });
 
-    // 5. Gráfica Barras Agrupadas: Dimensiones a través de las 4 Etapas (Slide 8)
+    // 5. Barras Agrupadas Dimensiones por Etapas
     const ctxBarrasDim = document.getElementById('graficaBarrasDimensiones').getContext('2d');
     new Chart(ctxBarrasDim, {
       type: 'bar',
       data: {
-        labels: dimensionesLabels,
+        labels: {{ dimensiones_labels_json|safe }},
         datasets: [
-          {
-            label: 'Etapa 1 (1-2 ses)',
-            data: dimEtapa1,
-            backgroundColor: 'rgba(0, 210, 224, 0.75)',
-            borderRadius: 6
-          },
-          {
-            label: 'Etapa 2 (3-4 ses)',
-            data: {{ dim_etapa2_json|safe }},
-            backgroundColor: 'rgba(129, 140, 248, 0.75)',
-            borderRadius: 6
-          },
-          {
-            label: 'Etapa 3 (5-8 ses)',
-            data: {{ dim_etapa3_json|safe }},
-            backgroundColor: 'rgba(251, 191, 36, 0.75)',
-            borderRadius: 6
-          },
-          {
-            label: 'Etapa 4 (9+ ses)',
-            data: dimEtapa4,
-            backgroundColor: 'rgba(16, 185, 129, 0.75)',
-            borderRadius: 6
-          }
+          { label: 'Etapa 1', data: {{ dim_etapa1_json|safe }}, backgroundColor: 'rgba(0, 210, 224, 0.75)', borderRadius: 4 },
+          { label: 'Etapa 2', data: {{ dim_etapa2_json|safe }}, backgroundColor: 'rgba(129, 140, 248, 0.75)', borderRadius: 4 },
+          { label: 'Etapa 3', data: {{ dim_etapa3_json|safe }}, backgroundColor: 'rgba(251, 191, 36, 0.75)', borderRadius: 4 },
+          { label: 'Etapa 4', data: {{ dim_etapa4_json|safe }}, backgroundColor: 'rgba(16, 185, 129, 0.75)', borderRadius: 4 },
         ]
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
-          legend: {
-            position: 'top',
-            labels: { color: '#94A3B8', font: { size: 10 }, boxWidth: 10 }
-          },
-          tooltip: {
-            backgroundColor: '#071526',
-            borderColor: COLOR_BORDER,
-            borderWidth: 1,
-            callbacks: {
-              label: (ctx) => ` ${ctx.dataset.label}: ${ctx.parsed.y} / 10`
-            }
-          }
+          legend: { position: 'top', labels: { color: '#94A3B8', font: { size: 9 }, boxWidth: 8 } }
         },
         scales: {
-          x: {
-            grid: { display: false },
-            ticks: { color: '#CBD5E1', font: { size: 9, weight: 'bold' } }
-          },
-          y: {
-            min: 0,
-            max: 10,
-            grid: { color: 'rgba(23, 55, 94, 0.4)' },
-            ticks: { color: '#94A3B8', stepSize: 2 }
-          }
+          x: { grid: { display: false }, ticks: { color: '#CBD5E1', font: { size: 9 } } },
+          y: { min: 0, max: 10, grid: { color: 'rgba(23, 55, 94, 0.4)' }, ticks: { color: '#94A3B8', stepSize: 2 } }
         }
       }
     });
 
-    // 6. Lógica de Filtro en Tabla de Consultantes
+    // 6. Filtros de la Tabla (Búsqueda + Etapa + Consentimiento)
     function filtrarTabla() {
       const q = document.getElementById('buscadorPaciente').value.toLowerCase();
       const etapa = document.getElementById('filtroEtapa').value;
+      const consent = document.getElementById('filtroConsentimiento').value;
       const filas = document.querySelectorAll('.fila-paciente');
 
       filas.forEach(fila => {
         const nombre = fila.getAttribute('data-nombre');
         const filaEtapa = fila.getAttribute('data-etapa');
+        const filaConsent = fila.getAttribute('data-consentimiento');
         
         const coincideTexto = nombre.includes(q);
         const coincideEtapa = (etapa === 'todas' || filaEtapa === etapa);
+        const coincideConsent = (consent === 'todos' || filaConsent === consent);
 
-        if (coincideTexto && coincideEtapa) {
+        if (coincideTexto && coincideEtapa && coincideConsent) {
           fila.style.display = '';
         } else {
           fila.style.display = 'none';
@@ -1316,54 +1279,74 @@
       });
     }
 
-    // 7. Modal de Trayectoria Individual
-    const consultantesData = {{ consultantes_muestra_json|safe }};
-    let modalChartInstance = null;
+    // 7. Lógica del Expediente Individual Completo (Fases PDF por Paciente)
+    const pacientesData = {{ consultantes_muestra_json|safe }};
+    let chartCurvaModal = null;
+    let chartDimModal = null;
 
-    function verTrayectoriaModal(codigo) {
-      const paciente = consultantesData.find(c => c.codigo === codigo);
-      if (!paciente) return;
+    function verExpedienteCompleto(codigo) {
+      const p = pacientesData.find(item => item.codigo === codigo);
+      if (!p) return;
 
-      document.getElementById('modalPacienteTitulo').innerText = `${paciente.codigo} — ${paciente.paciente_anon}`;
-      document.getElementById('modalEtapa').innerText = `Etapa ${paciente.etapa_num} (${paciente.etapa_nombre})`;
-      document.getElementById('modalSesiones').innerText = `${paciente.sesiones} sesiones`;
-      document.getElementById('modalDelta').innerText = paciente.delta;
-      document.getElementById('modalClasificacion').innerText = paciente.clasificacion;
-      document.getElementById('modalDimFuerte').innerHTML = `<i class="fa-solid fa-star text-[#FBBF24]"></i> Dimensión fuerte: <strong>${paciente.dimension_fuerte}</strong> • Última cita: ${paciente.cita_reciente}`;
+      // Encabezado
+      document.getElementById('mTituloPaciente').innerText = `${p.codigo} — ${p.paciente_anon}`;
+      document.getElementById('mBadgeEtapa').innerText = `Etapa ${p.etapa_num}: ${p.etapa_nombre}`;
 
-      // Configurar color de delta
-      const deltaEl = document.getElementById('modalDelta');
-      if (paciente.delta_num > 0) deltaEl.className = 'text-xs font-black text-[#10B981] block mt-0.5';
-      else if (paciente.delta_num < 0) deltaEl.className = 'text-xs font-black text-[#F85B8C] block mt-0.5';
-      else deltaEl.className = 'text-xs font-black text-[#FBBF24] block mt-0.5';
-
-      // Gráfica de línea de la trayectoria
-      const canvas = document.getElementById('graficaModalCurva');
-      const ctx = canvas.getContext('2d');
-
-      if (modalChartInstance) {
-        modalChartInstance.destroy();
+      // Consentimiento (Lámina 13)
+      const elConsent = document.getElementById('mStatusConsentimiento');
+      if (p.consentimiento_firmado) {
+        elConsent.innerHTML = `<i class="fa-solid fa-circle-check text-[#10B981]"></i> <span>Consentimiento: <strong class="text-[#10B981]">Firmado (${p.consentimiento_fecha})</strong> • IP: ${p.consentimiento_ip}</span>`;
+      } else {
+        elConsent.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-[#FBBF24]"></i> <span>Consentimiento: <strong class="text-[#FBBF24]">Pendiente de Firma</strong> (Solicitar)</span>`;
       }
 
-      const labelsSesiones = paciente.trayectoria.map((_, i) => i === 0 ? 'T₁ (Línea Base)' : `Sesión ${i + 1}`);
+      // Fase 1: Check-In de Entrada
+      document.getElementById('mMotivoConsulta').innerText = p.motivo_consulta;
+      document.getElementById('mAnimoIngreso').innerText = p.animo_ingreso;
+      document.getElementById('mMalestarIngreso').innerText = `${p.malestar_ingreso} / 10 pts`;
 
-      modalChartInstance = new Chart(ctx, {
+      // Fases 3, 4, 5: Etapa, Línea Base, Cambio, Clasificación
+      document.getElementById('mEtapaNombre').innerText = `Etapa ${p.etapa_num}`;
+      document.getElementById('mSesionesTotal').innerText = `${p.sesiones} sesiones tomadas`;
+      document.getElementById('mLineaBase').innerText = `${p.linea_base} pts`;
+      document.getElementById('mPuntajeActual').innerText = `Actual: ${p.puntaje_actual} pts`;
+      
+      const elDelta = document.getElementById('mDelta');
+      elDelta.innerText = p.delta;
+      if (p.delta_num > 0) elDelta.className = 'text-sm font-black text-[#10B981] block mt-0.5';
+      else if (p.delta_num < 0) elDelta.className = 'text-sm font-black text-[#F85B8C] block mt-0.5';
+      else elDelta.className = 'text-sm font-black text-[#FBBF24] block mt-0.5';
+
+      document.getElementById('mClasificacion').innerText = p.clasificacion;
+      document.getElementById('mClasifBadge').innerText = p.clasificacion_badge;
+
+      // Fase 6: Dimensión fuerte
+      document.getElementById('mDimFuerte').innerText = `Dimensión fuerte: ${p.dimension_fuerte}`;
+
+      // Fase 7 & 8: Conclusión IA
+      document.getElementById('mConclusionIa').innerText = `"${p.conclusion_ia}"`;
+      document.getElementById('mCitaReciente').innerText = p.cita_reciente;
+
+      // Gráfica de Curva de Trayectoria (Fase 2)
+      if (chartCurvaModal) chartCurvaModal.destroy();
+      const ctxCurva = document.getElementById('graficaModalCurva').getContext('2d');
+      const labelsSesiones = p.trayectoria.map((_, i) => i === 0 ? 'T₁ (Línea Base)' : (p.fechas_sesiones && p.fechas_sesiones[i] ? `Ses ${i + 1} (${p.fechas_sesiones[i]})` : `Sesión ${i + 1}`));
+
+      chartCurvaModal = new Chart(ctxCurva, {
         type: 'line',
         data: {
           labels: labelsSesiones,
           datasets: [{
-            label: 'Puntaje de Progreso (IPP / IPT)',
-            data: paciente.trayectoria,
-            borderColor: paciente.delta_num >= 0 ? COLOR_CYAN : COLOR_PINK,
-            backgroundColor: paciente.delta_num >= 0 ? 'rgba(0, 210, 224, 0.15)' : 'rgba(248, 91, 140, 0.15)',
+            label: 'Índice de Progreso Psicológico',
+            data: p.trayectoria,
+            borderColor: p.delta_num >= 0 ? COLOR_CYAN : COLOR_PINK,
+            backgroundColor: p.delta_num >= 0 ? 'rgba(0, 210, 224, 0.15)' : 'rgba(248, 91, 140, 0.15)',
             borderWidth: 3,
             fill: true,
             tension: 0.35,
-            pointBackgroundColor: paciente.delta_num >= 0 ? COLOR_CYAN : COLOR_PINK,
+            pointBackgroundColor: p.delta_num >= 0 ? COLOR_CYAN : COLOR_PINK,
             pointBorderColor: '#FFFFFF',
-            pointBorderWidth: 2,
-            pointRadius: 5,
-            pointHoverRadius: 7
+            pointRadius: 5
           }]
         },
         options: {
@@ -1375,36 +1358,69 @@
               backgroundColor: '#071526',
               borderColor: COLOR_BORDER,
               borderWidth: 1,
-              callbacks: {
-                label: (ctx) => ` Puntaje: ${ctx.parsed.y} pts`
-              }
+              callbacks: { label: (ctx) => ` Progreso: ${ctx.parsed.y} pts` }
             }
           },
           scales: {
-            x: {
-              grid: { color: 'rgba(23, 55, 94, 0.4)' },
-              ticks: { color: '#94A3B8', font: { size: 10 } }
-            },
-            y: {
-              min: 0,
-              max: 100,
-              grid: { color: 'rgba(23, 55, 94, 0.4)' },
-              ticks: { color: '#94A3B8', stepSize: 20 }
-            }
+            x: { grid: { color: 'rgba(23, 55, 94, 0.4)' }, ticks: { color: '#94A3B8', font: { size: 9 } } },
+            y: { min: 0, max: 100, grid: { color: 'rgba(23, 55, 94, 0.4)' }, ticks: { color: '#94A3B8', stepSize: 20 } }
           }
         }
       });
 
-      document.getElementById('modalTrayectoria').classList.remove('hidden');
+      // Gráfica de Dimensiones de este Paciente (Fase 6)
+      if (chartDimModal) chartDimModal.destroy();
+      const ctxDim = document.getElementById('graficaModalDimensiones').getContext('2d');
+      const dimLabels = ['Bienestar Emocional', 'Afrontamiento', 'Regulación Malestar', 'Vínculos de Apoyo', 'Metas de Vida'];
+
+      chartDimModal = new Chart(ctxDim, {
+        type: 'bar',
+        data: {
+          labels: dimLabels,
+          datasets: [
+            {
+              label: 'Puntaje Inicial (T₁)',
+              data: p.dimensiones_iniciales,
+              backgroundColor: 'rgba(148, 163, 184, 0.55)',
+              borderRadius: 4
+            },
+            {
+              label: 'Puntaje Actual (Tₙ)',
+              data: p.dimensiones_actuales,
+              backgroundColor: p.delta_num >= 0 ? 'rgba(16, 185, 129, 0.8)' : 'rgba(248, 91, 140, 0.8)',
+              borderRadius: 4
+            }
+          ]
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'top', labels: { color: '#94A3B8', font: { size: 9 }, boxWidth: 8 } },
+            tooltip: {
+              backgroundColor: '#071526',
+              borderColor: COLOR_BORDER,
+              borderWidth: 1,
+              callbacks: { label: (ctx) => ` ${ctx.dataset.label}: ${ctx.parsed.x} / 10` }
+            }
+          },
+          scales: {
+            x: { min: 0, max: 10, grid: { color: 'rgba(23, 55, 94, 0.4)' }, ticks: { color: '#94A3B8', stepSize: 2 } },
+            y: { grid: { display: false }, ticks: { color: '#CBD5E1', font: { size: 9, weight: 'bold' } } }
+          }
+        }
+      });
+
+      document.getElementById('modalExpediente').classList.remove('hidden');
     }
 
-    function cerrarTrayectoriaModal() {
-      document.getElementById('modalTrayectoria').classList.add('hidden');
+    function cerrarExpedienteModal() {
+      document.getElementById('modalExpediente').classList.add('hidden');
     }
 
-    // Cerrar modal con tecla ESC
     document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') cerrarTrayectoriaModal();
+      if (e.key === 'Escape') cerrarExpedienteModal();
     });
   </script>
 
