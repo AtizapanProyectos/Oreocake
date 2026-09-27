@@ -123,5 +123,13 @@ urlpatterns = [
     path('insights-encuesta/', views.insights_encuesta_view, name='insights_encuesta'),
     path('api/encuestas/stats/', views.api_encuestas_stats, name='api_encuestas_stats'),
     path('api/encuestas/guardar/', views.guardar_encuesta_ajax, name='api_guardar_encuesta'),
+
+    # Rutas para la Encuesta Final y Nube de Palabras en Vivo
+    path('encuesta-final/', views.encuesta_final_view, name='encuesta_final'),
+    path('encuesta-final/guardar/', views.guardar_encuesta_final_ajax, name='guardar_encuesta_final_ajax'),
+    path('insights-final/', views.insights_final_view, name='insights_final'),
+    path('nube-palabras/', views.insights_final_view, name='nube_palabras'),
+    path('api/encuesta-final/stats/', views.api_encuesta_final_stats, name='api_encuesta_final_stats'),
+    path('api/encuesta-final/guardar/', views.guardar_encuesta_final_ajax, name='api_guardar_encuesta_final'),
 ]
 

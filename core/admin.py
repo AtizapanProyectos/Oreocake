@@ -221,4 +221,16 @@ class EncuestaRespuestaAdmin(ImportExportModelAdmin):
     readonly_fields = ('fecha_creacion',)
 
 
+# ==========================================
+# RESPUESTAS ENCUESTA FINAL (NUBE DE PALABRAS)
+# ==========================================
+@admin.register(EncuestaFinalRespuesta)
+class EncuestaFinalRespuestaAdmin(ImportExportModelAdmin):
+    list_display = ('id', 'palabra_label', 'palabra_id', 'ip_origen', 'fecha_creacion')
+    search_fields = ('palabra_label', 'palabra_id', 'ip_origen')
+    list_filter = ('palabra_id', 'fecha_creacion')
+    readonly_fields = ('fecha_creacion',)
+
+
+
 

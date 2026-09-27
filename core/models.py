@@ -1061,4 +1061,32 @@ class EncuestaRespuesta(models.Model):
             }
         }
 
+
+# ==========================================
+# ENCUESTA FINAL - NUBE DE PALABRAS EN VIVO
+# ==========================================
+class EncuestaFinalRespuesta(models.Model):
+    fecha_creacion = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de respuesta")
+    palabra_id = models.CharField(max_length=50, verbose_name="ID de la acción/palabra")
+    palabra_label = models.CharField(max_length=150, verbose_name="Acción concreta elegida")
+    ip_origen = models.GenericIPAddressField(blank=True, null=True, verbose_name="IP del votante")
+
+    class Meta:
+        verbose_name = "Respuesta Encuesta Final (Nube de Palabras)"
+        verbose_name_plural = "Respuestas Encuesta Final (Nube de Palabras)"
+        ordering = ['-fecha_creacion']
+
+    def __str__(self):
+        return f"Acción: {self.palabra_label} ({self.fecha_creacion.strftime('%d/%m/%Y %H:%M')})"
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'word_id': self.palabra_id,
+            'label': self.palabra_label,
+            'ts': int(self.fecha_creacion.timestamp() * 1000) if self.fecha_creacion else 0,
+            'fecha': self.fecha_creacion.strftime('%d/%m/%Y %H:%M') if self.fecha_creacion else '',
+        }
+
+
 

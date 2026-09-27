@@ -1,0 +1,708 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>HOPE · Nube de Palabras en Vivo</title>
+<link rel="icon" href="{% static 'img/favicon.ico' %}" type="image/x-icon">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --teal:#22BFBA; --orange:#F5821F; --pink:#EC4C79; --yellow:#FFC72C; --purple:#5B4B9E; --purple-deep:#3B3168;
+  --bg:#FBF8F2; --card:#FFFFFF; --ink:#2C2542; --muted:#8A82A6; --line:#EDE7F7;
+  --radius-xl:26px; --radius-lg:18px; --radius-pill:999px;
+  color-scheme:light;
+}
+*{box-sizing:border-box;}
+html,body{height:100%;margin:0;}
+body{
+  font-family:'Nunito',system-ui,sans-serif;
+  color:var(--ink);
+  background:
+    radial-gradient(circle at 12% -5%, #FDE9D2 0%, transparent 42%),
+    radial-gradient(circle at 92% 5%, #DBF5F3 0%, transparent 40%),
+    var(--bg);
+  padding:calc(16px + env(safe-area-inset-top,0px)) 16px calc(24px + env(safe-area-inset-bottom,0px));
+  min-height:100%;
+}
+h1,h2,h3{font-family:'Baloo 2',sans-serif;margin:0;}
+.wrap{max-width:1080px;margin:0 auto;}
+
+header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:14px;
+  margin-bottom:18px;
+  flex-wrap:wrap;
+}
+.brand{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  text-decoration:none;
+}
+.brand-logo{
+  height:38px;
+  width:auto;
+  object-fit:contain;
+  display:block;
+}
+.brand-title{
+  font-family:'Baloo 2';
+  font-weight:800;
+  font-size:19px;
+  color:var(--purple-deep);
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+.brand-title span.dot{
+  width:10px;
+  height:10px;
+  border-radius:50%;
+  background:var(--pink);
+  animation:pulse 1.4s infinite;
+}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.4;transform:scale(1.4);}}
+
+.header-controls{
+  display:flex;
+  gap:8px;
+  align-items:center;
+  flex-wrap:wrap;
+}
+.btn-control{
+  border:1.5px solid var(--line);
+  background:var(--card);
+  color:var(--purple-deep);
+  font-family:'Baloo 2';
+  font-weight:700;
+  font-size:13px;
+  padding:8px 14px;
+  border-radius:var(--radius-pill);
+  cursor:pointer;
+  transition:all .15s;
+  box-shadow:0 2px 8px rgba(59,49,104,.04);
+}
+.btn-control:hover{
+  transform:translateY(-1px);
+  border-color:var(--purple);
+}
+.btn-control.on{
+  background:linear-gradient(135deg,var(--orange),var(--yellow));
+  color:#fff;
+  border-color:transparent;
+  box-shadow:0 4px 14px rgba(245,130,31,.25);
+}
+
+.btn-respond{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  background:linear-gradient(135deg,var(--purple),var(--purple-deep));
+  color:#fff;
+  font-family:'Baloo 2';
+  font-weight:700;
+  font-size:13px;
+  padding:8px 16px;
+  border-radius:var(--radius-pill);
+  text-decoration:none;
+  box-shadow:0 4px 14px rgba(59,49,104,.2);
+  transition:all .15s;
+}
+.btn-respond:hover{
+  transform:translateY(-1px);
+  box-shadow:0 8px 20px rgba(59,49,104,.28);
+}
+
+.card{
+  background:var(--card);
+  border-radius:var(--radius-xl);
+  box-shadow:0 10px 30px rgba(59,49,104,.07);
+  border:1px solid var(--line);
+}
+
+.dashboard{
+  display:grid;
+  grid-template-columns:320px 1fr;
+  gap:16px;
+  align-items:stretch;
+}
+@media(max-width:860px){.dashboard{grid-template-columns:1fr;}}
+
+.question-card{
+  padding:24px 22px;
+  display:flex;
+  flex-direction:column;
+  justify-content:space-between;
+}
+.q-eyebrow{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  margin-bottom:12px;
+}
+.q-badge{
+  background:linear-gradient(135deg,#FCE1E9,#FDF0F4);
+  padding:5px 12px;
+  border-radius:var(--radius-pill);
+  font-family:'Baloo 2';
+  font-weight:700;
+  font-size:12px;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  color:var(--pink);
+  border:1px solid rgba(236,76,121,.2);
+}
+.q-title{
+  font-size:20px;
+  font-weight:800;
+  color:var(--purple-deep);
+  line-height:1.3;
+}
+.q-sub{
+  color:var(--muted);
+  font-size:13.5px;
+  margin-top:10px;
+  line-height:1.45;
+}
+.q-divider{
+  height:1px;
+  background:var(--line);
+  margin:18px 0 16px;
+}
+.q-stats{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
+.chip{
+  display:inline-flex;
+  align-items:center;
+  gap:7px;
+  background:var(--bg);
+  border:1px solid var(--line);
+  padding:7px 14px;
+  border-radius:var(--radius-pill);
+  font-size:13px;
+  color:var(--muted);
+  width:fit-content;
+}
+.chip b{color:var(--ink);font-family:'Baloo 2';font-size:14px;}
+.chip-live{
+  background:#f0fdf4;
+  border-color:#bbf7d0;
+  color:#15803d;
+  font-weight:700;
+}
+.live-dot{
+  width:8px;
+  height:8px;
+  border-radius:50%;
+  background:#22c55e;
+  animation:pulseLive 1.4s infinite;
+}
+@keyframes pulseLive{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.4;transform:scale(1.4);}}
+
+/* Contenedor de la Nube de Palabras */
+.cloud-card{
+  position:relative;
+  overflow:hidden;
+  min-height:380px;
+  padding:20px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:
+    radial-gradient(circle at 25% 15%, rgba(34,191,186,.12), transparent 55%),
+    radial-gradient(circle at 82% 80%, rgba(236,76,121,.10), transparent 55%),
+    var(--card);
+}
+.cloud-shape{
+  position:relative;
+  width:240px;
+  height:144px;
+  transition:width .7s cubic-bezier(.22,1,.36,1), height .7s cubic-bezier(.22,1,.36,1);
+}
+.cloud-shape svg{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  overflow:visible;
+  filter:drop-shadow(0 14px 28px rgba(59,49,104,.14));
+}
+.cloud-shape svg path{
+  fill:var(--card);
+  stroke:var(--purple);
+  stroke-opacity:.28;
+  stroke-width:2.2;
+}
+
+.word{
+  position:absolute;
+  transform:translate(-50%,-50%);
+  font-family:'Baloo 2';
+  font-weight:700;
+  color:var(--c);
+  opacity:0;
+  white-space:nowrap;
+  line-height:1;
+  cursor:default;
+  user-select:none;
+  transition:
+    left .65s cubic-bezier(.22,1,.36,1),
+    top .65s cubic-bezier(.22,1,.36,1),
+    font-size .55s cubic-bezier(.22,1,.36,1),
+    opacity .5s ease;
+}
+.word.active{opacity:1;}
+.word.pop{
+  animation:wordpop .5s cubic-bezier(.22,1.6,.4,1);
+}
+@keyframes wordpop{
+  0%{transform:translate(-50%,-50%) scale(1);}
+  45%{transform:translate(-50%,-50%) scale(1.25);}
+  100%{transform:translate(-50%,-50%) scale(1);}
+}
+
+.particle{
+  position:absolute;
+  width:8px;
+  height:8px;
+  border-radius:50%;
+  background:var(--c);
+  top:-4px;
+  left:50%;
+  pointer-events:none;
+  animation:particle-up 1100ms ease-out forwards;
+}
+@keyframes particle-up{
+  0%{transform:translate(-50%,0) scale(.7);opacity:.95;}
+  100%{transform:translate(-50%,-55px) scale(1.15);opacity:0;}
+}
+
+/* Toast flotante para nuevos votos */
+.live-toast{
+  position:fixed;
+  top:20px;
+  left:50%;
+  transform:translateX(-50%) translateY(-100px);
+  background:linear-gradient(135deg, #22BFBA, #1CA7A2);
+  color:#fff;
+  padding:10px 24px;
+  border-radius:var(--radius-pill);
+  font-family:'Baloo 2';
+  font-weight:700;
+  font-size:14px;
+  box-shadow:0 12px 30px rgba(34,191,186,.45);
+  display:flex;
+  align-items:center;
+  gap:8px;
+  z-index:9999;
+  opacity:0;
+  transition:all .4s cubic-bezier(.175,.885,.32,1.275);
+  pointer-events:none;
+}
+.live-toast.show{
+  opacity:1;
+  transform:translateX(-50%) translateY(0);
+}
+
+.tools{
+  display:flex;
+  justify-content:center;
+  gap:10px;
+  margin-top:16px;
+  flex-wrap:wrap;
+}
+.tools button, .tools a{
+  background:none;
+  border:1.5px dashed var(--muted);
+  color:var(--muted);
+  font-size:13px;
+  padding:8px 18px;
+  border-radius:var(--radius-pill);
+  cursor:pointer;
+  font-family:'Nunito',sans-serif;
+  font-weight:700;
+  text-decoration:none;
+  transition:all .15s;
+}
+.tools button:hover, .tools a:hover{
+  color:var(--purple);
+  border-color:var(--purple);
+  background:var(--card);
+}
+
+footer{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  color:var(--muted);
+  font-size:12px;
+  margin-top:24px;
+  opacity:.85;
+}
+footer a{color:var(--purple);text-decoration:none;font-weight:700;}
+</style>
+</head>
+<body>
+
+<!-- Toast para notificar en vivo cuando cae un voto -->
+<div class="live-toast" id="live-toast">
+  <span>✨</span> <span id="toast-text">¡Nueva acción agregada a la nube en vivo!</span>
+</div>
+
+<div class="wrap">
+  <header>
+    <a href="{% url 'inicio' %}" class="brand" title="Inicio de HOPE">
+      <img src="{% static 'img/logo_hope_principal.png' %}" alt="HOPE" class="brand-logo">
+      <div class="brand-title"><span class="dot"></span>Nube en vivo</div>
+    </a>
+
+    <div class="header-controls">
+      <button type="button" class="btn-control on" id="btn-sound" title="Sonido al entrar votos">🔔 Sonido ON</button>
+      <a href="{% url 'encuesta_final' %}" class="btn-respond" target="_blank">
+        ✍️ Responder encuesta
+      </a>
+    </div>
+  </header>
+
+  <main>
+    <div class="dashboard">
+      <div class="card question-card">
+        <div>
+          <div class="q-eyebrow">
+            <span class="q-badge">● ENCUESTA EN VIVO</span>
+          </div>
+          <h1 class="q-title">Después de esta conversación, ¿cuál es una acción concreta que puedes hacer esta semana para cuidar tu salud mental?</h1>
+          <div class="q-sub">Las palabras más votadas crecen automáticamente en tiempo real dentro de la nube.</div>
+        </div>
+
+        <div>
+          <div class="q-divider"></div>
+          <div class="q-stats">
+            <span class="chip"><span class="live-dot"></span><b id="stat-total">{{ total }}</b>&nbsp;respuestas registradas</span>
+            <span class="chip chip-live">⚡ Sincronización en tiempo real</span>
+            <span class="chip" id="chip-top">🏆 Mayor tendencia: <b id="stat-top">-</b></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card cloud-card" id="cloud-card">
+        <div class="cloud-shape" id="cloud-shape">
+          <svg viewBox="0 0 200 120" xmlns="http://www.w3.org/2000/svg">
+            <path d="M40 110 C18 110 0 94 0 74 C0 56 13 41 31 37 C30 36 30 35 30 34 C30 15 46 0 66 0 C79 0 90 7 96 17 C101 9 111 3 122 3 C141 3 157 18 159 37 C176 40 189 55 189 73 C189 93 172 110 151 110 Z"></path>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <div class="tools">
+      <button type="button" id="btn-demo">🎭 Simular respuestas (modo ensayo)</button>
+      <a href="{% url 'encuesta_final' %}">✍️ Abrir formulario de respuesta</a>
+      <a href="{% url 'insights_encuesta' %}">📊 Ver panel de las 8 preguntas</a>
+    </div>
+  </main>
+
+  <footer>
+    Todo lo que sientes importa, tú nos importas · <a href="{% url 'inicio' %}">HOPE</a>
+  </footer>
+</div>
+
+<script>
+const WORDS = [
+  { id:'dormir',    label:'Dormir mejor',           c1:'#22BFBA', c2:'#7FE0DB', weight:18 },
+  { id:'hablar',    label:'Hablar con alguien',     c1:'#F5821F', c2:'#FBB877', weight:24 },
+  { id:'caminar',   label:'Caminar afuera',         c1:'#EC4C79', c2:'#F591AC', weight:14 },
+  { id:'descansar', label:'Descansar sin culpa',    c1:'#FFC72C', c2:'#FFE08A', weight:9 },
+  { id:'ayuda',     label:'Pedir ayuda',            c1:'#5B4B9E', c2:'#9F8FE0', weight:12 },
+  { id:'meditar',   label:'Meditar 5 minutos',      c1:'#22BFBA', c2:'#7FE0DB', weight:10 },
+  { id:'soltar',    label:'Soltar el celular',      c1:'#F5821F', c2:'#FBB877', weight:8 },
+  { id:'escribir',  label:'Escribir lo que siento', c1:'#EC4C79', c2:'#F591AC', weight:5 },
+];
+
+// Inyección inicial desde Django
+let INITIAL_DATA = null;
+try {
+  INITIAL_DATA = JSON.parse('{{ initial_data_json|escapejs }}');
+} catch(e) {
+  INITIAL_DATA = { total: 0, last_id: 0, counts: {} };
+}
+
+let counts = {};
+WORDS.forEach(w => {
+  counts[w.id] = (INITIAL_DATA && INITIAL_DATA.counts && INITIAL_DATA.counts[w.id]) ? Number(INITIAL_DATA.counts[w.id]) : 0;
+});
+let total = (INITIAL_DATA && INITIAL_DATA.total) ? INITIAL_DATA.total : Object.values(counts).reduce((a,b)=>a+b, 0);
+let lastId = (INITIAL_DATA && INITIAL_DATA.last_id) ? INITIAL_DATA.last_id : 0;
+
+let demoTimer = null;
+let soundEnabled = true;
+
+// Web Audio API para chime suave al recibir votos
+let audioCtx = null;
+function playLiveChime(){
+  if(!soundEnabled) return;
+  try{
+    if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if(audioCtx.state === 'suspended') audioCtx.resume();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(659.25, audioCtx.currentTime); // E5
+    osc.frequency.exponentialRampToValueAtTime(987.77, audioCtx.currentTime + 0.16); // B5
+    gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.35);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.36);
+  }catch(e){}
+}
+
+const cloud = document.getElementById('cloud-card');
+const cloudShape = document.getElementById('cloud-shape');
+
+// Crear elementos de palabras
+WORDS.forEach(w => {
+  const el = document.createElement('span');
+  el.className = 'word';
+  el.id = 'word-' + w.id;
+  el.style.setProperty('--c', w.c1);
+  el.textContent = w.label;
+  cloudShape.appendChild(el);
+});
+
+// Medición de texto para colocación exacta
+const measureCanvas = document.createElement('canvas').getContext('2d');
+function measureWidth(text, size){
+  measureCanvas.font = `700 ${size}px 'Baloo 2', sans-serif`;
+  return measureCanvas.measureText(text).width;
+}
+
+const CLOUD_SEGS = [
+  ['M',40,110], ['C',18,110,0,94,0,74], ['C',0,56,13,41,31,37], ['C',30,36,30,35,30,34],
+  ['C',30,15,46,0,66,0], ['C',79,0,90,7,96,17], ['C',101,9,111,3,122,3],
+  ['C',141,3,157,18,159,37], ['C',176,40,189,55,189,73], ['C',189,93,172,110,151,110], ['Z']
+];
+function buildCloudPath(w,h){
+  const sx = w / 200, sy = h / 120;
+  return CLOUD_SEGS.map(s => {
+    if(s[0] === 'Z') return 'Z';
+    const n = s.slice(1).map((v,i) => (i%2===0 ? v*sx : v*sy).toFixed(2));
+    return s[0] + n.join(' ');
+  }).join(' ');
+}
+
+const hitCtx = document.createElement('canvas').getContext('2d');
+function findSpot(w, h, placed, cw, ch, hitPath){
+  const cx = cw / 2, cy = ch / 2, hx = w / 2, hy = h / 2;
+  for(let t = 0; t < 75 * Math.PI; t += 0.16){
+    const r = 2.5 * t;
+    const x = cx + r * Math.cos(t);
+    const y = cy + r * Math.sin(t) * 0.62;
+    
+    // Las 4 esquinas de la caja de la palabra deben estar dentro del contorno de la nube
+    if(!hitCtx.isPointInPath(hitPath, x-hx, y-hy) || !hitCtx.isPointInPath(hitPath, x+hx, y-hy) ||
+       !hitCtx.isPointInPath(hitPath, x-hx, y+hy) || !hitCtx.isPointInPath(hitPath, x+hx, y+hy)) continue;
+       
+    let ok = true;
+    for(const p of placed){
+      if(Math.abs(x - p.x) < (w/2 + p.w/2 + 13) && Math.abs(y - p.y) < (h/2 + p.h/2 + 10)){
+        ok = false;
+        break;
+      }
+    }
+    if(ok) return {x, y};
+  }
+  return null;
+}
+
+function layoutAndRender(hitId){
+  document.getElementById('stat-total').textContent = total;
+
+  // Actualizar palabra líder
+  let topWord = null;
+  let topCount = -1;
+  WORDS.forEach(w => {
+    if(counts[w.id] > topCount){
+      topCount = counts[w.id];
+      topWord = w;
+    }
+  });
+  if(topWord && topCount > 0){
+    document.getElementById('stat-top').textContent = `${topWord.label} (${topCount} votos)`;
+  } else {
+    document.getElementById('stat-top').textContent = 'Esperando respuestas';
+  }
+
+  // Dimensiones dinámicas de la nube
+  const rect = cloud.getBoundingClientRect();
+  const maxW = Math.max(220, (rect.width || 600) - 30);
+  const maxH = Math.max(140, (rect.height || 360) - 30);
+  let shapeW = Math.min(maxW, 220 + 52 * Math.sqrt(total || 1));
+  let shapeH = shapeW * 0.6;
+  if(shapeH > maxH){ shapeH = maxH; shapeW = shapeH / 0.6; }
+
+  cloudShape.style.width = shapeW.toFixed(1) + 'px';
+  cloudShape.style.height = shapeH.toFixed(1) + 'px';
+  const hitPath = new Path2D(buildCloudPath(shapeW, shapeH));
+
+  // Si aún no hay votos, mostrar palabras con tamaño inicial para vista agradable
+  const hasVotes = total > 0;
+  const active = WORDS.filter(w => hasVotes ? counts[w.id] > 0 : true);
+  const max = Math.max(1, ...active.map(w => counts[w.id] || 1));
+  const order = [...active].sort((a,b) => (counts[b.id] || 0) - (counts[a.id] || 0));
+
+  const placed = [];
+  order.forEach(w => {
+    const c = counts[w.id] || 0;
+    // La respuesta más sonada crece más
+    const size = hasVotes ? (14 + (c / max) * 44) : 17;
+    const tw = measureWidth(w.label, size) + 12;
+    const th = size * 1.15;
+    const spot = findSpot(tw, th, placed, shapeW, shapeH, hitPath);
+    if(spot) placed.push({ id: w.id, x: spot.x, y: spot.y, w: tw, h: th, size, c });
+  });
+
+  WORDS.forEach(w => {
+    const el = document.getElementById('word-' + w.id);
+    const p = placed.find(pp => pp.id === w.id);
+    if(!p){
+      el.classList.remove('active');
+      return;
+    }
+    el.style.left = p.x.toFixed(1) + 'px';
+    el.style.top = p.y.toFixed(1) + 'px';
+    el.style.fontSize = p.size.toFixed(1) + 'px';
+    el.classList.add('active');
+
+    if(w.id === hitId){
+      el.classList.remove('pop');
+      void el.offsetWidth;
+      el.classList.add('pop');
+
+      const dot = document.createElement('span');
+      dot.className = 'particle';
+      dot.style.setProperty('--c', w.c1);
+      el.appendChild(dot);
+      setTimeout(() => dot.remove(), 1150);
+    }
+  });
+}
+
+let resizeT = null;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeT);
+  resizeT = setTimeout(() => layoutAndRender(), 180);
+});
+
+// Toast flotante
+function triggerToast(wordLabel){
+  const toast = document.getElementById('live-toast');
+  document.getElementById('toast-text').textContent = `✨ ¡"${wordLabel}" agregado a la nube!`;
+  toast.classList.add('show');
+  playLiveChime();
+  setTimeout(() => toast.classList.remove('show'), 3200);
+}
+
+// =========================================================================
+// ⚡ POLLING EN TIEMPO REAL CON DJANGO BACKEND
+// =========================================================================
+let isPolling = false;
+
+async function checkRealtimeUpdates(){
+  if(isPolling || demoTimer) return;
+  isPolling = true;
+
+  try {
+    const url = `{% url 'api_encuesta_final_stats' %}?since_id=${lastId}`;
+    const res = await fetch(url, {
+      headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    });
+
+    if(res.ok){
+      const data = await res.json();
+      if(data.has_new && data.total > total){
+        counts = data.counts || counts;
+        total = data.total;
+        lastId = data.last_id;
+
+        layoutAndRender(data.last_hit);
+
+        const wObj = WORDS.find(w => w.id === data.last_hit);
+        triggerToast(wObj ? wObj.label : 'Nueva acción');
+      } else if(data.counts) {
+        counts = data.counts;
+        total = data.total;
+        lastId = data.last_id;
+        layoutAndRender();
+      }
+    }
+  } catch(err) {
+    console.warn('Polling nube:', err);
+  } finally {
+    isPolling = false;
+  }
+}
+
+// Toggle Sonido
+document.getElementById('btn-sound').addEventListener('click', () => {
+  soundEnabled = !soundEnabled;
+  const b = document.getElementById('btn-sound');
+  b.classList.toggle('on', soundEnabled);
+  b.textContent = soundEnabled ? '🔔 Sonido ON' : '🔕 Sonido OFF';
+  if(soundEnabled) playLiveChime();
+});
+
+// Simulación de ensayo
+function pickWeighted(){
+  const totalW = WORDS.reduce((s,w) => s + w.weight, 0);
+  let r = Math.random() * totalW;
+  for(const w of WORDS){
+    r -= w.weight;
+    if(r <= 0) return w.id;
+  }
+  return WORDS[WORDS.length - 1].id;
+}
+
+document.getElementById('btn-demo').onclick = (e) => {
+  if(demoTimer){
+    clearInterval(demoTimer);
+    demoTimer = null;
+    e.target.textContent = '🎭 Simular respuestas (modo ensayo)';
+    return;
+  }
+  e.target.textContent = '⏸ Detener simulación';
+  demoTimer = setInterval(() => {
+    const hitId = pickWeighted();
+    counts[hitId] = (counts[hitId] || 0) + 1;
+    total++;
+    layoutAndRender(hitId);
+    if(total >= 60){
+      clearInterval(demoTimer);
+      demoTimer = null;
+      e.target.textContent = '🎭 Simular respuestas (modo ensayo)';
+    }
+  }, 400);
+};
+
+// Render inicial
+layoutAndRender();
+if(document.fonts && document.fonts.ready){
+  document.fonts.ready.then(() => layoutAndRender());
+}
+setTimeout(() => layoutAndRender(), 250);
+
+// Polling cada 2.5 segundos
+setInterval(checkRealtimeUpdates, 2500);
+</script>
+</body>
+</html>

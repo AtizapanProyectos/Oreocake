@@ -8057,4 +8057,163 @@ def api_encuestas_stats(request):
         'responses': respuestas_data
     })
 
+
+# =========================================================================
+# ☁️ MÓDULO DE ENCUESTA FINAL - NUBE DE PALABRAS EN VIVO
+# =========================================================================
+
+WORDS_ENCUESTA_FINAL = [
+    {'id': 'dormir',    'label': 'Dormir mejor',           'c1': '#22BFBA', 'c2': '#7FE0DB'},
+    {'id': 'hablar',    'label': 'Hablar con alguien',     'c1': '#F5821F', 'c2': '#FBB877'},
+    {'id': 'caminar',   'label': 'Caminar afuera',         'c1': '#EC4C79', 'c2': '#F591AC'},
+    {'id': 'descansar', 'label': 'Descansar sin culpa',    'c1': '#FFC72C', 'c2': '#FFE08A'},
+    {'id': 'ayuda',     'label': 'Pedir ayuda',            'c1': '#5B4B9E', 'c2': '#9F8FE0'},
+    {'id': 'meditar',   'label': 'Meditar 5 minutos',      'c1': '#22BFBA', 'c2': '#7FE0DB'},
+    {'id': 'soltar',    'label': 'Soltar el celular',      'c1': '#F5821F', 'c2': '#FBB877'},
+    {'id': 'escribir',  'label': 'Escribir lo que siento', 'c1': '#EC4C79', 'c2': '#F591AC'},
+]
+
+
+def encuesta_final_view(request):
+    """
+    Vista de votación para la encuesta final (audiencia).
+    URL: /encuesta-final/ (https://espaciohope.com/encuesta-final/)
+    """
+    total = EncuestaFinalRespuesta.objects.count()
+    return render(request, 'encuesta_final.html', {
+        'total': total,
+        'words': WORDS_ENCUESTA_FINAL
+    })
+
+
+@csrf_exempt
+def guardar_encuesta_final_ajax(request):
+    """
+    API para guardar el voto de la acción elegida.
+    """
+    if request.method != 'POST':
+        return JsonResponse({'status': 'error', 'message': 'Método no permitido.'}, status=405)
+
+    try:
+        data = {}
+        if request.content_type and 'application/json' in request.content_type:
+            data = json.loads(request.body.decode('utf-8'))
+        else:
+            data = request.POST.dict()
+
+        word_id = str(data.get('word_id') or data.get('id') or '').strip()
+        word_label = str(data.get('label') or '').strip()
+
+        # Si no vino label, buscarlo por id
+        if not word_label and word_id:
+            for w in WORDS_ENCUESTA_FINAL:
+                if w['id'] == word_id:
+                    word_label = w['label']
+                    break
+
+        if not word_id or not word_label:
+            return JsonResponse({'status': 'error', 'message': 'Por favor selecciona una acción válida.'}, status=400)
+
+        ip = _get_client_ip(request)
+
+        nuevo_voto = EncuestaFinalRespuesta.objects.create(
+            palabra_id=word_id,
+            palabra_label=word_label,
+            ip_origen=ip
+        )
+
+        total = EncuestaFinalRespuesta.objects.count()
+        return JsonResponse({
+            'status': 'success',
+            'id': nuevo_voto.id,
+            'word_id': word_id,
+            'total': total,
+            'message': '¡Voto registrado con éxito!'
+        })
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+
+def insights_final_view(request):
+    """
+    Vista de visualización en vivo de la nube de palabras.
+    URL: /insights-final/ (y alias /nube-palabras/)
+    """
+    respuestas_qs = EncuestaFinalRespuesta.objects.all().order_by('-id')
+    total = respuestas_qs.count()
+    last_r = respuestas_qs.first()
+    last_id = last_r.id if last_r else 0
+
+    # Contar votos por palabra
+    counts_dict = {w['id']: 0 for w in WORDS_ENCUESTA_FINAL}
+    for r in respuestas_qs:
+        p_id = r.palabra_id
+        if p_id in counts_dict:
+            counts_dict[p_id] += 1
+        else:
+            counts_dict[p_id] = 1
+
+    initial_payload = {
+        'total': total,
+        'last_id': last_id,
+        'counts': counts_dict,
+        'words': WORDS_ENCUESTA_FINAL
+    }
+
+    return render(request, 'insights_final.html', {
+        'total': total,
+        'words': WORDS_ENCUESTA_FINAL,
+        'initial_data_json': json.dumps(initial_payload)
+    })
+
+
+def api_encuesta_final_stats(request):
+    """
+    Endpoint JSON para polling de la nube de palabras en tiempo real.
+    """
+    respuestas_qs = EncuestaFinalRespuesta.objects.all().order_by('-id')
+    total = respuestas_qs.count()
+    last_r = respuestas_qs.first()
+    last_id = last_r.id if last_r else 0
+
+    since_id = request.GET.get('since_id')
+    counts_dict = {w['id']: 0 for w in WORDS_ENCUESTA_FINAL}
+    for r in respuestas_qs:
+        p_id = r.palabra_id
+        counts_dict[p_id] = counts_dict.get(p_id, 0) + 1
+
+    if since_id:
+        try:
+            since_val = int(since_id)
+            if last_id > since_val:
+                new_votes = list(respuestas_qs.filter(id__gt=since_val).values('id', 'palabra_id', 'palabra_label'))
+                last_hit = new_votes[0]['palabra_id'] if new_votes else ''
+                return JsonResponse({
+                    'has_new': True,
+                    'total': total,
+                    'last_id': last_id,
+                    'new_count': len(new_votes),
+                    'last_hit': last_hit,
+                    'counts': counts_dict
+                })
+            else:
+                return JsonResponse({
+                    'has_new': False,
+                    'total': total,
+                    'last_id': last_id,
+                    'new_count': 0,
+                    'counts': counts_dict
+                })
+        except ValueError:
+            pass
+
+    return JsonResponse({
+        'has_new': False,
+        'total': total,
+        'last_id': last_id,
+        'new_count': 0,
+        'counts': counts_dict
+    })
+
+
 
