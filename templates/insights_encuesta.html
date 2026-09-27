@@ -4,741 +4,730 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>HOPE · Resultados e Insights en Vivo</title>
+<title>HOPE · Resultados de la Encuesta en Vivo</title>
+<meta name="description" content="Visualiza en tiempo real las respuestas de la comunidad en el Cuestionario de Bienestar Emocional de HOPE.">
+
+<!-- Favicon -->
 <link rel="icon" href="{% static 'img/favicon.ico' %}" type="image/x-icon">
+<link rel="shortcut icon" href="{% static 'img/favicon.ico' %}" type="image/x-icon">
+
+<!-- Google Fonts -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+<!-- FontAwesome 6 Icons -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
 <style>
 :root{
-  --teal:#22BFBA; --orange:#F5821F; --pink:#EC4C79; --yellow:#FFC72C; --purple:#5B4B9E; --purple-deep:#3B3168;
-  --bg:#FBF8F2; --card:#FFFFFF; --ink:#2C2542; --muted:#8A82A6; --line:#EDE7F7;
-  --radius-xl:22px; --radius-lg:16px; --radius-pill:999px;
+  --teal:#22BFBA;
+  --orange:#F5821F;
+  --pink:#EC4C79;
+  --yellow:#FFC72C;
+  --purple:#5B4B9E;
+  --purple-deep:#3B3168;
+  --bg:#FBF8F2;
+  --card:#FFFFFF;
+  --ink:#2C2542;
+  --muted:#8A82A6;
+  --line:#EDE7F7;
   color-scheme:light;
 }
-*{box-sizing:border-box;}
-html,body{height:100%;margin:0;}
-body{
-  font-family:'Nunito',system-ui,sans-serif;
-  color:var(--ink);
-  background:radial-gradient(circle at 12% -5%,#FDE9D2 0%,transparent 42%),radial-gradient(circle at 92% 5%,#DBF5F3 0%,transparent 40%),var(--bg);
-  padding:calc(16px + env(safe-area-inset-top,0px)) 16px calc(24px + env(safe-area-inset-bottom,0px));
+
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{
   min-height:100%;
 }
-h1,h2,h3{font-family:'Baloo 2',sans-serif;margin:0;}
-.wrap{max-width:1160px;margin:0 auto;}
-
-/* Header */
-header{
+body{
+  font-family:'Nunito', system-ui, sans-serif;
+  color:var(--ink);
+  background:
+    radial-gradient(circle at 12% -5%, #FDE9D2 0%, transparent 45%),
+    radial-gradient(circle at 88% 8%, #DBF5F3 0%, transparent 45%),
+    radial-gradient(circle at 50% 95%, #EFEBFB 0%, transparent 50%),
+    var(--bg);
+  position:relative;
+  overflow-x:hidden;
+  padding:calc(28px + env(safe-area-inset-top,0px)) 16px calc(42px + env(safe-area-inset-bottom,0px));
   display:flex;
+  flex-direction:column;
   align-items:center;
-  justify-content:space-between;
-  gap:12px;
-  margin-bottom:16px;
-  flex-wrap:wrap;
 }
-.brand{
+
+.wrap{
+  max-width:880px;
+  width:100%;
+  margin:0 auto;
+  position:relative;
+  z-index:1;
   display:flex;
+  flex-direction:column;
   align-items:center;
-  gap:12px;
+  text-align:center;
+}
+
+/* Header al estilo de Redes Sociales HOPE */
+header{
+  margin-bottom:24px;
+}
+.brand-logo-wrap{
+  display:inline-block;
+  margin-bottom:12px;
   text-decoration:none;
+  transition:transform .2s ease;
+}
+.brand-logo-wrap:hover{
+  transform:scale(1.03);
 }
 .brand-logo{
-  height:38px;
+  height:48px;
   width:auto;
   object-fit:contain;
   display:block;
+  margin:0 auto;
 }
-.brand-title{
-  font-family:'Baloo 2';
-  font-weight:800;
-  font-size:20px;
-  color:var(--purple-deep);
-  display:flex;
-  align-items:center;
-  gap:8px;
-}
-.brand-title span.dot{
-  width:10px;
-  height:10px;
-  border-radius:50%;
-  background:var(--pink);
-  animation:pulse 1.4s infinite;
-}
-@keyframes pulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.4;transform:scale(1.4);}}
 
-.header-actions{
-  display:flex;
-  gap:10px;
-  align-items:center;
-}
-.btn-slides{
+.title-container{
   display:inline-flex;
+  flex-direction:column;
   align-items:center;
-  gap:8px;
-  background:linear-gradient(135deg,var(--purple),var(--purple-deep));
-  color:#fff;
-  border:none;
+  position:relative;
+}
+.headline-title{
   font-family:'Baloo 2', sans-serif;
+  font-size:32px;
+  font-weight:800;
+  color:var(--purple-deep);
+  line-height:1.2;
+}
+/* Subrayado orgánico ondulado estilo HOPE */
+.wavy-underline{
+  width:190px;
+  height:12px;
+  margin-top:2px;
+  margin-bottom:8px;
+  overflow:visible;
+}
+.headline-slogan{
+  font-family:'Baloo 2', sans-serif;
+  font-size:16.5px;
   font-weight:700;
-  font-size:13.5px;
-  padding:9px 20px;
-  border-radius:var(--radius-pill);
-  cursor:pointer;
-  box-shadow:0 4px 14px rgba(59,49,104,.22);
-  transition:all .2s ease;
-}
-.btn-slides:hover{
-  transform:translateY(-2px);
-  box-shadow:0 8px 22px rgba(59,49,104,.32);
-}
-.btn-slides:active{
-  transform:scale(0.97);
+  color:var(--orange);
 }
 
-.focus-toggle{
-  border:1.5px dashed var(--purple);
-  background:var(--card);
-  color:var(--purple);
-  font-family:'Baloo 2';
-  font-weight:700;
-  font-size:13px;
-  padding:8px 15px;
-  border-radius:var(--radius-pill);
-  cursor:pointer;
-  transition:all .15s;
-  box-shadow:0 3px 10px rgba(59,49,104,.05);
-}
-.focus-toggle:hover{
-  transform:translateY(-1px);
-}
-.focus-toggle.on{
-  background:linear-gradient(135deg,var(--orange),var(--yellow));
-  color:#fff;
-  border-color:transparent;
-  box-shadow:0 6px 16px rgba(245,130,31,.3);
-}
-
-.btn-sound{
-  border:1px solid var(--line);
-  background:var(--card);
-  color:var(--muted);
-  font-family:'Baloo 2';
-  font-weight:700;
-  font-size:13px;
-  padding:8px 13px;
-  border-radius:var(--radius-pill);
-  cursor:pointer;
-  transition:all .15s;
-}
-.btn-sound.on{
-  color:var(--teal);
-  border-color:var(--teal);
-}
-
-.btn-respond{
-  display:inline-flex;
-  align-items:center;
-  gap:6px;
-  background:linear-gradient(135deg,var(--purple),var(--purple-deep));
-  color:#fff;
-  font-family:'Baloo 2';
-  font-weight:700;
-  font-size:13px;
-  padding:8px 16px;
-  border-radius:var(--radius-pill);
-  text-decoration:none;
-  box-shadow:0 4px 14px rgba(59,49,104,.2);
-  transition:all .15s;
-}
-.btn-respond:hover{
-  transform:translateY(-1px);
-  box-shadow:0 8px 20px rgba(59,49,104,.28);
-}
-
-/* Stats Strip */
-.stats-strip{
+/* Barra de Estado y Selector de Vista */
+.status-strip{
   display:flex;
-  gap:10px;
-  margin-bottom:16px;
-  flex-wrap:wrap;
+  justify-content:space-between;
   align-items:center;
+  width:100%;
+  max-width:780px;
+  margin-bottom:24px;
+  flex-wrap:wrap;
+  gap:12px;
+}
+.chips-group{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex-wrap:wrap;
 }
 .chip{
+  background:var(--card);
+  border:1.5px solid var(--line);
+  padding:6px 14px;
+  border-radius:999px;
+  font-size:13px;
+  font-weight:700;
+  color:var(--muted);
   display:inline-flex;
   align-items:center;
   gap:6px;
-  background:var(--card);
-  border:1px solid var(--line);
-  padding:7px 14px;
-  border-radius:var(--radius-pill);
-  font-size:13px;
-  color:var(--muted);
-  box-shadow:0 2px 8px rgba(59,49,104,.04);
+  box-shadow:0 3px 10px rgba(59,49,104,.03);
 }
 .chip b{
-  color:var(--ink);
-  font-family:'Baloo 2';
-  font-weight:800;
+  color:var(--purple-deep);
 }
 .chip-live{
-  border-color:#bbf7d0;
   background:#f0fdf4;
+  border-color:#bbf7d0;
   color:#15803d;
-  font-weight:700;
 }
-.chip-live .live-dot{
+.live-dot{
   width:8px;
   height:8px;
   border-radius:50%;
   background:#22c55e;
   animation:pulseLive 1.5s infinite;
 }
-@keyframes pulseLive{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.3;transform:scale(1.4);}}
+@keyframes pulseLive{
+  0%,100%{opacity:1;transform:scale(1);}
+  50%{opacity:.3;transform:scale(1.4);}
+}
 
-/* Toast de nueva respuesta */
-.live-toast{
-  position:fixed;
-  top:20px;
-  left:50%;
-  transform:translateX(-50%) translateY(-100px);
-  background:linear-gradient(135deg, #22BFBA, #1CA7A2);
-  color:#fff;
-  padding:10px 22px;
-  border-radius:var(--radius-pill);
-  font-family:'Baloo 2';
+/* Selector de vista: Diapositivas vs Todas */
+.view-tabs{
+  display:inline-flex;
+  background:#EFEBFB;
+  padding:4px;
+  border-radius:999px;
+  gap:4px;
+}
+.tab-btn{
+  border:none;
+  background:transparent;
+  font-family:'Baloo 2', sans-serif;
   font-weight:700;
-  font-size:14px;
-  box-shadow:0 12px 30px rgba(34,191,186,.45);
-  display:flex;
-  align-items:center;
-  gap:8px;
-  z-index:9999;
-  opacity:0;
-  transition:all .4s cubic-bezier(.175,.885,.32,1.275);
-  pointer-events:none;
-}
-.live-toast.show{
-  opacity:1;
-  transform:translateX(-50%) translateY(0);
-}
-
-/* Mosaic */
-.mosaic{
-  display:grid;
-  grid-template-columns:repeat(4,1fr);
-  gap:14px;
-}
-@media(max-width:960px){.mosaic{grid-template-columns:repeat(2,1fr);}}
-@media(max-width:540px){.mosaic{grid-template-columns:1fr;}}
-
-.card{
-  background:var(--card);
-  border-radius:var(--radius-lg);
-  box-shadow:0 8px 22px rgba(59,49,104,.07);
-  padding:18px 16px 16px;
+  font-size:13px;
+  color:var(--muted);
+  padding:7px 16px;
+  border-radius:999px;
   cursor:pointer;
-  transition:transform .18s,box-shadow .18s,border-color .2s;
-  border-top:4px solid var(--c-accent,var(--teal));
-  opacity:0;
-  animation:cardIn .45s ease forwards;
-  display:flex;
-  flex-direction:column;
-  justify-content:space-between;
-  border-left:1px solid var(--line);
-  border-right:1px solid var(--line);
-  border-bottom:1px solid var(--line);
+  transition:all .2s ease;
 }
-.card:hover{
-  transform:translateY(-3px);
-  box-shadow:0 14px 30px rgba(59,49,104,.12);
-}
-.card.spot-active{
-  outline:3px solid var(--orange);
-  transform:scale(1.02);
-}
-.card.highlight-new{
-  animation:cardPulse 1.2s ease;
-}
-@keyframes cardPulse{
-  0%{box-shadow:0 0 0 0 rgba(34,191,186,.7);}
-  70%{box-shadow:0 0 0 14px rgba(34,191,186,0);}
-  100%{box-shadow:0 8px 22px rgba(59,49,104,.07);}
-}
-
-.mosaic .card:nth-child(1){animation-delay:.02s}
-.mosaic .card:nth-child(2){animation-delay:.06s}
-.mosaic .card:nth-child(3){animation-delay:.10s}
-.mosaic .card:nth-child(4){animation-delay:.14s}
-.mosaic .card:nth-child(5){animation-delay:.18s}
-.mosaic .card:nth-child(6){animation-delay:.22s}
-.mosaic .card:nth-child(7){animation-delay:.26s}
-.mosaic .card:nth-child(8){animation-delay:.30s}
-
-@keyframes cardIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
-
-.q-num{
-  font-family:'Baloo 2';
-  font-weight:700;
-  font-size:11px;
-  letter-spacing:.06em;
-  text-transform:uppercase;
-  color:var(--c-accent, var(--teal));
-}
-.q-title-mini{
-  font-family:'Baloo 2';
-  font-weight:700;
-  font-size:14px;
+.tab-btn.active{
+  background:var(--card);
   color:var(--purple-deep);
-  line-height:1.25;
-  margin:4px 0 12px;
-  min-height:36px;
+  box-shadow:0 3px 10px rgba(59,49,104,.08);
 }
 
-/* Gauge for scale question */
-.gauge-wrap{
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  justify-content:center;
-  padding:6px 0;
-}
-.gauge{
-  width:68px;
-  height:68px;
-  border-radius:50%;
-  background:conic-gradient(var(--orange) calc(var(--pct)*1%),var(--line) 0);
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  margin:2px 0 6px;
-  transition:background .7s ease;
-}
-.gauge-inner{
-  width:52px;
-  height:52px;
-  border-radius:50%;
-  background:var(--card);
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  font-family:'Baloo 2';
-  font-weight:800;
-  font-size:16px;
-  color:var(--orange);
-}
-
-/* Mini rows */
-.mini-row{
-  display:flex;
-  align-items:center;
-  gap:6px;
-  margin-bottom:6px;
-}
-.mini-label{
-  font-size:11px;
-  color:var(--muted);
-  flex:0 0 76px;
-  overflow:hidden;
-  text-overflow:ellipsis;
-  white-space:nowrap;
-}
-.mini-track{
-  flex:1;
-  height:11px;
-  border-radius:999px;
-  background:var(--line);
-  position:relative;
-  overflow:hidden;
-}
-.mini-fill{
-  position:absolute;
-  inset:0;
-  width:0%;
-  border-radius:999px;
-  background:linear-gradient(90deg,var(--c1),var(--c2));
-  transition:width .7s cubic-bezier(.22,.9,.3,1);
-}
-.mini-pct{
-  font-size:10.5px;
-  font-weight:700;
-  color:var(--muted);
-  flex:0 0 30px;
-  text-align:right;
-}
-.more-note{
-  font-size:11px;
-  color:var(--muted);
-  margin-top:4px;
-}
-.avg-badge{
-  font-family:'Baloo 2';
-  font-size:28px;
-  font-weight:800;
-  color:var(--orange);
-}
-.n-resp{
-  font-size:11.5px;
-  color:var(--muted);
-  margin-top:10px;
-  border-top:1px dashed var(--line);
-  padding-top:6px;
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-}
-
-/* Spotlight Overlay */
-.overlay{
-  position:fixed;
-  inset:0;
-  background:rgba(30,26,51,.6);
-  backdrop-filter:blur(3px);
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  z-index:9000;
-  padding:20px;
-}
-.overlay.hidden{display:none;}
-.spot-card{
-  background:var(--card);
-  border-radius:28px;
-  max-width:760px;
+/* =========================================================================
+   1. MODO DIAPOSITIVAS (INLINE - NUNCA SE CIERRA NI OCULTA)
+   ========================================================================= */
+.slide-section{
   width:100%;
-  max-height:92vh;
-  overflow-y:auto;
-  padding:32px 30px 26px;
-  box-shadow:0 24px 70px rgba(44,37,66,.35);
-  position:relative;
-  animation:spotIn .25s cubic-bezier(.22,1,.36,1);
-  display:flex;
-  flex-direction:column;
+  max-width:780px;
+  margin-bottom:28px;
 }
-@keyframes spotIn{from{opacity:0;transform:scale(.96) translateY(6px);}to{opacity:1;transform:scale(1) translateY(0);}}
+.slide-card{
+  background:var(--card);
+  border:2.5px solid var(--line);
+  border-radius:36px;
+  padding:36px 32px 30px;
+  text-align:left;
+  box-shadow:0 12px 36px rgba(59,49,104,0.06);
+  position:relative;
+  transition:border-color .2s ease;
+}
+.slide-card:hover{
+  border-color:var(--teal);
+}
 
-.spot-progress-bar{
+/* Barra de progreso de la diapositiva */
+.slide-progress-wrap{
   width:100%;
-  height:5px;
+  height:6px;
+  background:#F2EDFA;
   border-radius:999px;
-  background:var(--line);
-  margin-bottom:16px;
+  margin-bottom:20px;
   overflow:hidden;
 }
-.spot-progress-fill{
+.slide-progress-fill{
   height:100%;
   border-radius:999px;
-  background:linear-gradient(90deg,var(--teal),var(--orange),var(--pink));
+  background:linear-gradient(90deg, var(--teal), var(--orange), var(--pink));
   transition:width .4s ease;
 }
 
-.spot-header-strip{
+.slide-meta-strip{
   display:flex;
   align-items:center;
   justify-content:space-between;
-  margin-bottom:6px;
-  gap:10px;
+  margin-bottom:12px;
   flex-wrap:wrap;
+  gap:8px;
 }
-.spot-eyebrow{
-  font-family:'Baloo 2';
+.slide-badge{
+  font-family:'Baloo 2', sans-serif;
   font-weight:800;
   font-size:12px;
   letter-spacing:.08em;
   text-transform:uppercase;
   color:var(--teal);
-  display:inline-flex;
-  align-items:center;
-  gap:8px;
+  background:#EAF9F9;
+  padding:4px 12px;
+  border-radius:999px;
+  border:1px solid #C4F1EE;
 }
-.spot-slide-badge{
-  background:#EFEBFB;
-  color:var(--purple);
-  padding:3px 10px;
-  border-radius:var(--radius-pill);
-  font-size:11.5px;
-  font-weight:700;
-}
-.spot-close-btn{
+.slide-auto-btn{
   border:1.5px solid var(--line);
   background:var(--card);
   color:var(--muted);
   font-family:'Baloo 2', sans-serif;
   font-weight:700;
-  font-size:12.5px;
-  padding:6px 14px;
-  border-radius:var(--radius-pill);
+  font-size:12px;
+  padding:5px 14px;
+  border-radius:999px;
   cursor:pointer;
-  transition:all .15s ease;
-  display:inline-flex;
-  align-items:center;
-  gap:5px;
+  transition:all .2s;
 }
-.spot-close-btn:hover{
-  background:#F5F2FC;
-  color:var(--ink);
-  border-color:#D8CFED;
+.slide-auto-btn.on{
+  background:linear-gradient(135deg, var(--orange), var(--yellow));
+  color:#fff;
+  border-color:transparent;
 }
 
-.spot-title{
-  font-size:24px;
+.slide-title{
+  font-family:'Baloo 2', sans-serif;
+  font-size:26px;
   font-weight:800;
   color:var(--purple-deep);
-  margin:4px 0 20px;
   line-height:1.25;
+  margin-bottom:6px;
 }
-.spot-gauge{
-  width:130px;
-  height:130px;
-  border-radius:50%;
-  background:conic-gradient(var(--orange) calc(var(--pct)*1%),var(--line) 0);
+.slide-sub{
+  font-size:14px;
+  color:var(--muted);
+  margin-bottom:24px;
+}
+
+/* Filas de opciones y porcentajes */
+.slide-options{
   display:flex;
-  align-items:center;
-  justify-content:center;
-  margin:10px auto 6px;
-  transition:background .7s ease;
+  flex-direction:column;
+  gap:12px;
 }
-.spot-gauge-inner{
-  width:102px;
-  height:102px;
+.option-row{
+  display:flex;
+  flex-direction:column;
+  gap:5px;
+}
+.option-label-bar{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  font-size:14.5px;
+  font-weight:700;
+}
+.option-name{
+  color:var(--ink);
+  font-family:'Baloo 2', sans-serif;
+  font-size:15px;
+}
+.option-stats{
+  color:var(--muted);
+  font-size:13px;
+  font-weight:700;
+}
+.option-stats b{
+  color:var(--purple-deep);
+}
+.option-track{
+  width:100%;
+  height:18px;
+  background:#F5F2FA;
+  border-radius:999px;
+  position:relative;
+  overflow:hidden;
+}
+.option-fill{
+  height:100%;
+  border-radius:999px;
+  background:linear-gradient(90deg, var(--c1, var(--teal)), var(--c2, var(--orange)));
+  transition:width .7s cubic-bezier(.22, .9, .3, 1);
+}
+
+/* Presentación especial para Pregunta 3 (Escala 0 al 10) */
+.scale-box{
+  background:#FAF8FD;
+  border:2px solid var(--line);
+  border-radius:24px;
+  padding:24px 20px;
+  text-align:center;
+  margin-bottom:20px;
+}
+.scale-score-circle{
+  width:96px;
+  height:96px;
   border-radius:50%;
-  background:var(--card);
+  background:linear-gradient(135deg, var(--orange), var(--pink));
+  color:#fff;
   display:flex;
   flex-direction:column;
   align-items:center;
   justify-content:center;
+  margin:0 auto 10px;
+  box-shadow:0 8px 24px rgba(245,130,31,.25);
 }
-.spot-row{
-  display:flex;
-  align-items:center;
-  gap:12px;
-  margin-bottom:11px;
+.scale-score-num{
+  font-family:'Baloo 2', sans-serif;
+  font-size:36px;
+  font-weight:800;
+  line-height:1;
 }
-.spot-label{
+.scale-score-sub{
+  font-size:11px;
   font-weight:700;
-  font-family:'Baloo 2';
-  font-size:14px;
-  flex:0 0 160px;
-  color:var(--ink);
+  opacity:.9;
 }
-.spot-track{
-  flex:1;
-  height:24px;
-  border-radius:999px;
-  background:var(--line);
-  position:relative;
-  overflow:hidden;
+.scale-score-meaning{
+  font-family:'Baloo 2', sans-serif;
+  font-size:19px;
+  font-weight:800;
+  color:var(--purple-deep);
 }
-.spot-fill{
-  position:absolute;
-  inset:0;
-  width:0%;
-  border-radius:999px;
-  background:linear-gradient(90deg,var(--c1),var(--c2));
-  transition:width .7s cubic-bezier(.22,.9,.3,1);
-}
-.spot-num{
-  font-family:'Baloo 2';
-  font-weight:700;
-  color:var(--muted);
+.scale-score-detail{
   font-size:13px;
-  flex:0 0 75px;
-  text-align:right;
+  color:var(--muted);
+  margin-top:2px;
 }
-.spot-nav{
+
+/* Navegación de Diapositiva */
+.slide-nav{
   display:flex;
   justify-content:space-between;
   align-items:center;
-  margin-top:22px;
-  padding-top:16px;
-  border-top:1px solid var(--line);
+  margin-top:24px;
   flex-wrap:wrap;
-  gap:10px;
+  gap:12px;
 }
-.spot-nav-btn{
+.nav-action-btn{
   border:none;
-  background:var(--purple);
+  background:linear-gradient(135deg, var(--purple), var(--purple-deep));
   color:#fff;
   font-family:'Baloo 2', sans-serif;
   font-weight:700;
-  font-size:13.5px;
-  padding:10px 20px;
-  border-radius:var(--radius-pill);
+  font-size:14px;
+  padding:10px 22px;
+  border-radius:999px;
   cursor:pointer;
-  transition:all .15s;
-  box-shadow:0 3px 10px rgba(91,75,158,.2);
+  transition:transform .15s, box-shadow .15s;
+  box-shadow:0 4px 14px rgba(59,49,104,.18);
 }
-.spot-nav-btn:hover{
-  background:var(--purple-deep);
-  transform:translateY(-1px);
+.nav-action-btn:hover{
+  transform:translateY(-2px);
+  box-shadow:0 8px 20px rgba(59,49,104,.28);
 }
-.spot-nav-btn:active{
+.nav-action-btn:active{
   transform:scale(0.97);
 }
-.spot-auto-btn{
-  border:1px solid var(--line);
-  background:var(--card);
-  color:var(--muted);
-  font-family:'Baloo 2', sans-serif;
-  font-weight:700;
-  font-size:12px;
-  padding:8px 14px;
-  border-radius:var(--radius-pill);
-  cursor:pointer;
-  transition:all .15s;
-}
-.spot-auto-btn:hover{
-  color:var(--ink);
-  border-color:#D8CFED;
-}
-.spot-auto-btn.on{
-  background:linear-gradient(135deg,var(--orange),var(--yellow));
-  color:#fff;
-  border-color:transparent;
-}
-.spot-dots{
+
+.slide-dots{
   display:flex;
-  gap:7px;
+  gap:8px;
   align-items:center;
 }
-.spot-dots span{
-  width:10px;
-  height:10px;
+.slide-dot-pill{
+  width:28px;
+  height:28px;
   border-radius:50%;
-  background:var(--line);
+  border:2px solid var(--line);
+  background:var(--card);
+  font-family:'Baloo 2', sans-serif;
+  font-weight:800;
+  font-size:12px;
+  color:var(--muted);
+  display:flex;
+  align-items:center;
+  justify-content:center;
   cursor:pointer;
   transition:all .2s;
 }
-.spot-dots span.on{
-  background:var(--orange);
-  transform:scale(1.35);
-  box-shadow:0 0 8px rgba(245,130,31,.45);
+.slide-dot-pill:hover{
+  border-color:var(--teal);
+  color:var(--teal);
+}
+.slide-dot-pill.active{
+  background:var(--teal);
+  border-color:var(--teal);
+  color:#fff;
+  transform:scale(1.15);
+  box-shadow:0 4px 12px rgba(34,191,186,.35);
 }
 
-footer{
-  text-align:center;
-  color:var(--muted);
-  font-size:12px;
-  margin-top:26px;
-  opacity:.85;
+/* =========================================================================
+   2. MODO MOSAICO (VER LAS 8 PREGUNTAS JUNTAS ESTILO REDES)
+   ========================================================================= */
+.mosaic-section{
+  width:100%;
+  max-width:780px;
+  margin-bottom:28px;
+  display:none; /* Se activa con la pestaña */
 }
-footer a{color:var(--purple);text-decoration:none;font-weight:700;}
+.mosaic-grid{
+  display:grid;
+  grid-template-columns:repeat(2, 1fr);
+  gap:18px;
+  width:100%;
+}
+@media(max-width:620px){
+  .mosaic-grid{
+    grid-template-columns:1fr;
+  }
+}
+
+.bubble-summary-card{
+  background:var(--card);
+  border:2.5px solid var(--line);
+  border-radius:32px;
+  padding:24px 20px 20px;
+  text-align:left;
+  cursor:pointer;
+  box-shadow:0 8px 24px rgba(59,49,104,0.05);
+  transition:transform .22s cubic-bezier(.22, 1, .36, 1), box-shadow .22s cubic-bezier(.22, 1, .36, 1), border-color .22s ease;
+  position:relative;
+  display:flex;
+  flex-direction:column;
+  justify-content:space-between;
+}
+.bubble-summary-card:hover{
+  transform:translateY(-6px);
+  box-shadow:0 16px 36px rgba(59,49,104,0.11);
+  border-color:var(--card-accent, var(--teal));
+}
+.card-header-line{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin-bottom:10px;
+}
+.card-num-circle{
+  width:34px;
+  height:34px;
+  border-radius:50%;
+  background:var(--card-bg, #EAF9F9);
+  color:var(--card-accent, var(--teal));
+  font-family:'Baloo 2', sans-serif;
+  font-weight:800;
+  font-size:15px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.card-pregunta-label{
+  font-family:'Baloo 2', sans-serif;
+  font-weight:800;
+  font-size:12px;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+  color:var(--muted);
+}
+.card-title-text{
+  font-family:'Baloo 2', sans-serif;
+  font-size:16px;
+  font-weight:800;
+  color:var(--purple-deep);
+  line-height:1.25;
+  margin-bottom:12px;
+}
+.card-leader-preview{
+  font-size:13px;
+  color:var(--ink);
+  background:#FAF8FD;
+  border-radius:14px;
+  padding:8px 12px;
+  margin-bottom:12px;
+}
+.card-leader-preview b{
+  color:var(--purple);
+}
+.card-bottom-strip{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  border-top:1px dashed var(--line);
+  padding-top:10px;
+  margin-top:auto;
+  font-size:12px;
+  color:var(--muted);
+}
+.card-bottom-strip span.action-hint{
+  color:var(--teal);
+  font-weight:700;
+}
+
+/* Footer limpio (0 emojis) */
+footer{
+  margin-top:10px;
+  font-size:13px;
+  color:var(--muted);
+  line-height:1.6;
+}
+footer a{
+  color:var(--purple);
+  text-decoration:none;
+  font-weight:700;
+}
+footer a:hover{
+  text-decoration:underline;
+}
+
+/* Toast flotante en vivo */
+.live-toast{
+  position:fixed;
+  top:24px;
+  left:50%;
+  transform:translateX(-50%) translateY(-100px);
+  background:var(--card);
+  border:2px solid var(--teal);
+  border-radius:999px;
+  padding:10px 22px;
+  display:inline-flex;
+  align-items:center;
+  gap:10px;
+  font-family:'Baloo 2', sans-serif;
+  font-weight:700;
+  font-size:14px;
+  color:var(--purple-deep);
+  box-shadow:0 12px 30px rgba(34,191,186,.25);
+  z-index:9999;
+  opacity:0;
+  transition:all .35s cubic-bezier(.22,1,.36,1);
+  pointer-events:none;
+}
+.live-toast.show{
+  transform:translateX(-50%) translateY(0);
+  opacity:1;
+}
 </style>
 </head>
 <body>
 
-<!-- Toast para notificar en vivo cuando cae una encuesta -->
+<!-- Toast en vivo cuando cae una nueva respuesta -->
 <div class="live-toast" id="live-toast">
-  <span class="live-dot" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#22BFBA;box-shadow:0 0 8px #22BFBA;margin-right:6px;"></span>
-  <span>Nueva respuesta recibida en vivo</span>
+  <span class="live-dot"></span>
+  <span>Nueva respuesta registrada en tiempo real</span>
 </div>
 
 <div class="wrap">
+
+  <!-- Header estilo HOPE Redes Sociales -->
   <header>
-    <a href="{% url 'inicio' %}" class="brand" title="Ir al inicio de HOPE">
-      <img src="{% static 'img/logo_hope_principal.png' %}" alt="HOPE · Oportunidad, Prevención, Esperanza" class="brand-logo">
-      <div class="brand-title"><span class="dot"></span>Resultados en vivo</div>
+    <a href="{% url 'inicio' %}" class="brand-logo-wrap" title="Ir a HOPE">
+      <img src="{% static 'img/logo_hope_principal.png' %}" alt="HOPE" class="brand-logo">
     </a>
-    <div class="header-actions">
-      <button type="button" class="btn-slides" id="btn-open-slides" title="Ver resumen pregunta por pregunta en modo presentación">
-        Modo Diapositivas
-      </button>
+    
+    <div class="title-container">
+      <h1 class="headline-title">Resultados de la Encuesta</h1>
+      <!-- Subrayado ondulado estilo HOPE -->
+      <svg class="wavy-underline" viewBox="0 0 190 12" xmlns="http://www.w3.org/2000/svg">
+        <path d="M 4 8 Q 48 1, 95 8 T 186 8" fill="none" stroke="var(--teal)" stroke-width="3.5" stroke-linecap="round"/>
+      </svg>
+      <div class="headline-slogan">Nuestro espacio seguro · Comunidad HOPE</div>
     </div>
   </header>
 
-  <main>
-    <div class="stats-strip">
-      <span class="chip"><b id="stat-total">{{ total_respuestas }}</b> personas respondieron</span>
-      <span class="chip">8 preguntas activas</span>
-      <span class="chip chip-live"><span class="live-dot"></span> Sincronización en vivo activa</span>
-      <span class="chip" id="chip-time" style="font-size:12px;">Actualizado: <b id="last-update-text">ahora mismo</b></span>
+  <!-- Barra de estado y pestañas de vista -->
+  <div class="status-strip">
+    <div class="chips-group">
+      <span class="chip chip-live">
+        <span class="live-dot"></span>
+        Sincronización en vivo activa
+      </span>
+      <span class="chip">
+        <b id="stat-total">{{ total_respuestas }}</b>&nbsp;personas han respondido
+      </span>
     </div>
 
-    <!-- Mosaico de las 8 Preguntas -->
-    <div class="mosaic" id="mosaic"></div>
-  </main>
-
-  <!-- Modal Spotlight -->
-  <div class="overlay hidden" id="overlay" role="dialog" aria-modal="true">
-    <div class="card spot-card" id="spot-card"></div>
+    <!-- Pestañas para cambiar entre vista Diapositivas y vista Mosaico -->
+    <div class="view-tabs">
+      <button type="button" class="tab-btn active" id="tab-slides">Modo Diapositivas</button>
+      <button type="button" class="tab-btn" id="tab-mosaic">Ver las 8 Preguntas</button>
+    </div>
   </div>
 
+  <!-- VISTA 1: MODO DIAPOSITIVAS (INLINE - SIEMPRE VISIBLE, NUNCA SE CIERRA) -->
+  <main class="slide-section" id="view-slides">
+    <div class="slide-card" id="slide-card-container">
+      <!-- Se inyecta dinámicamente con renderSlide() -->
+    </div>
+
+    <!-- Controles de navegación de Diapositiva -->
+    <div class="slide-nav">
+      <button type="button" class="nav-action-btn" id="btn-prev-slide">← Anterior</button>
+      <div class="slide-dots" id="slide-dots-container"></div>
+      <button type="button" class="nav-action-btn" id="btn-next-slide">Siguiente →</button>
+    </div>
+  </main>
+
+  <!-- VISTA 2: VER LAS 8 PREGUNTAS (MOSAICO ORGÁNICO ESTILO REDES) -->
+  <section class="mosaic-section" id="view-mosaic">
+    <div class="mosaic-grid" id="mosaic-grid-container">
+      <!-- Se inyecta dinámicamente con renderMosaic() -->
+    </div>
+  </section>
+
+  <!-- Footer (0 emojis) -->
   <footer>
-    Todo lo que sientes importa, tú nos importas · <a href="{% url 'inicio' %}">HOPE</a>
+    <p>Todo lo que sientes importa, tú nos importas · <a href="{% url 'inicio' %}">HOPE</a></p>
+    <p style="margin-top:4px;font-size:12px;opacity:0.8;">Atizapán de Zaragoza, Estado de México</p>
   </footer>
+
 </div>
 
 <script>
+// Paleta armónica oficial de HOPE
 const PALETTE = [
-  ["#22BFBA","#7FE0DB"],
-  ["#FFC72C","#FFE08A"],
-  ["#F5821F","#FBB877"],
-  ["#EC4C79","#F591AC"],
-  ["#5B4B9E","#9A8FD1"],
-  ["#1CA7A2","#69D6D0"],
-  ["#E0963B","#F3C889"],
-  ["#C23F62","#EE8AA4"]
+  ["#22BFBA", "#7FE0DB"], // Teal
+  ["#FFC72C", "#FFE08A"], // Amarillo
+  ["#F5821F", "#FBB877"], // Naranja
+  ["#EC4C79", "#F591AC"], // Rosa
+  ["#5B4B9E", "#9A8FD1"], // Morado
+  ["#1CA7A2", "#69D6D0"], // Verde azulado
+  ["#E0963B", "#F3C889"], // Ocre
+  ["#C23F62", "#EE8AA4"]  // Frambuesa
 ];
 
 const QUESTIONS = [
   {
     id: 'q1',
-    title: '¿Cómo te sientes HOY en una palabra?',
-    sub: 'Estado de ánimo actual.',
+    title: 'Si tuvieras que describir cómo te sientes HOY en una palabra, ¿cuál sería?',
+    sub: 'Estado de ánimo actual de los participantes.',
     type: 'choice',
     options: ['Bien', 'No tan bien', 'Mal', 'Muy mal']
   },
   {
     id: 'q2',
-    title: 'Esta semana, ¿qué emoción apareció con más fuerza?',
-    sub: 'Emoción predominante.',
+    title: 'En la última semana, ¿qué emoción ha aparecido con más fuerza?',
+    sub: 'Emoción predominante identificada en los últimos días.',
     type: 'choice',
     options: ['Ansiedad', 'Tristeza', 'Enojo', 'Miedo', 'Calma', 'Alegría', 'Frustración', 'Otra']
   },
   {
     id: 'q3',
-    title: 'Del 0 al 10, ¿qué tan saturada/o te has sentido?',
-    sub: 'Escuela, expectativas o vida personal.',
+    title: 'Del 0 al 10, ¿qué tan saturada/o te has sentido por escuela, expectativas o vida personal?',
+    sub: 'Escala de saturación emocional y nivel de estrés general.',
     type: 'scale'
   },
   {
     id: 'q4',
     title: 'Cuando algo te rebasa, ¿qué haces primero?',
-    sub: 'Primera reacción ante el desborde.',
+    sub: 'Primer mecanismo o reacción habitual ante el desborde.',
     type: 'choice',
     options: ['Lo hablo', 'Me aíslo', 'Duermo', 'Redes / videojuegos', 'Como o dejo de comer', 'Ejercicio', 'Consumo algo', 'Busco ayuda profesional', 'Otra']
   },
   {
     id: 'q5',
-    title: '¿Qué tanto te ha costado dormir, concentrarte o disfrutar?',
-    sub: 'Últimas dos semanas.',
+    title: 'En las últimas dos semanas, ¿qué tanto te ha costado dormir, concentrarte o disfrutar cosas que normalmente disfrutas?',
+    sub: 'Frecuencia con la que se han manifestado estas dificultades.',
     type: 'choice',
     options: ['Nada', 'Algunos días', 'Muchos días', 'Casi todos los días']
   },
   {
     id: 'q6',
-    title: '¿Sabrías con quién acudir si necesitaras ayuda emocional?',
-    sub: 'Red de apoyo o profesionales.',
+    title: 'Si mañana necesitaras ayuda emocional, ¿sabrías exactamente con quién acudir?',
+    sub: 'Claridad sobre redes de apoyo familiares, de amistad o profesionales.',
     type: 'choice',
     options: ['Sí', 'Más o menos', 'No', 'No confío en la terapia']
   },
   {
     id: 'q7',
-    title: '¿Has usado IA, redes o internet para entenderte?',
-    sub: 'Intentar "diagnosticarte" o buscar respuestas.',
+    title: '¿Alguna vez has usado IA, redes o internet para entender lo que sientes o intentar “diagnosticarte”?',
+    sub: 'Búsquedas online, tests, chatbots o videos sobre salud mental.',
     type: 'choice',
     options: ['Sí, frecuentemente', 'Algunas veces', 'No']
   },
   {
     id: 'q8',
     title: '¿Qué te frena más para pedir ayuda profesional?',
-    sub: 'El obstáculo principal.',
+    sub: 'Obstáculos, temores o barreras percibidas al buscar terapia.',
     type: 'choice',
     options: ['Costo', 'Tiempo', 'Pena / estigma', 'No sé dónde', 'Creo que puedo solo/a', 'Mala experiencia previa', 'Nada me frena', 'Otra']
   }
 ];
 
-// Inyección de datos iniciales desde Django
+// Inyección inicial desde Django
 let INITIAL_DATA = null;
 try {
   INITIAL_DATA = JSON.parse('{{ initial_data_json|escapejs }}');
@@ -750,84 +739,15 @@ let realResponses = (INITIAL_DATA && INITIAL_DATA.responses) ? INITIAL_DATA.resp
 let lastRecordedId = (INITIAL_DATA && INITIAL_DATA.last_id) ? INITIAL_DATA.last_id : 0;
 let totalRecordedCount = (INITIAL_DATA && INITIAL_DATA.total) ? INITIAL_DATA.total : realResponses.length;
 
-let focusOn = false;
-let focusIdx = 0;
-let focusTimer = null;
-let demoMode = false;
-let soundEnabled = true;
+let currentSlideIdx = 0;
+let autoRotateTimer = null;
+let isAutoRotating = false;
 
-// Sonido sintético suave con Web Audio API (no requiere archivos externos)
-let audioCtx = null;
-function playLiveChime(){
-  if(!soundEnabled) return;
-  try{
-    if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    if(audioCtx.state === 'suspended') audioCtx.resume();
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(587.33, audioCtx.currentTime); // D5
-    osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.18); // A5
-    gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.35);
-    osc.connect(gain);
-    gain.connect(audioCtx.destination);
-    osc.start();
-    osc.stop(audioCtx.currentTime + 0.36);
-  }catch(e){}
-}
-
-// Generador de datos simulados para Vista Previa
-function genDemoResponses(){
-  const weights = {
-    q1: {Bien:34, 'No tan bien':28, Mal:22, 'Muy mal':16},
-    q2: {Ansiedad:30, Tristeza:20, Enojo:12, Miedo:9, Calma:14, Alegría:13, Frustración:11, Otra:4},
-    q4: {'Lo hablo':22, 'Me aíslo':26, Duermo:16, 'Redes / videojuegos':18, 'Como o dejo de comer':12, Ejercicio:10, 'Consumo algo':5, 'Busco ayuda profesional':7, Otra:4},
-    q5: {Nada:14, 'Algunos días':32, 'Muchos días':26, 'Casi todos los días':16},
-    q6: {'Sí':34, 'Más o menos':28, No:18, 'No confío en la terapia':9},
-    q7: {'Sí, frecuentemente':24, 'Algunas veces':38, No:26},
-    q8: {Costo:24, Tiempo:15, 'Pena / estigma':22, 'No sé dónde':14, 'Creo que puedo solo/a':12, 'Mala experiencia previa':7, 'Nada me frena':8, Otra:3}
-  };
-  function pick(w){
-    const e = Object.entries(w);
-    const t = e.reduce((s,x)=>s+x[1],0);
-    let r = Math.random()*t;
-    for(const[k,v] of e){
-      r -= v;
-      if(r <= 0) return k;
-    }
-    return e[0][0];
-  }
-  const out = [];
-  for(let i=0; i<48; i++){
-    out.push({
-      id: i+1,
-      ts: Date.now() - (48 - i) * 60000,
-      answers:{
-        q1: pick(weights.q1),
-        q2: pick(weights.q2),
-        q3: Math.round(2 + Math.random()*8),
-        q4: pick(weights.q4),
-        q5: pick(weights.q5),
-        q6: pick(weights.q6),
-        q7: pick(weights.q7),
-        q8: pick(weights.q8)
-      }
-    });
-  }
-  return out;
-}
-const DEMO_RESPONSES = genDemoResponses();
-
-function activeResponses(){
-  return demoMode ? DEMO_RESPONSES : realResponses;
-}
-
-// Agregación de respuestas por pregunta
+// Cálculo y agregación de respuestas
 function agg(q){
   const counts = {};
   let n = 0, sum = 0;
-  activeResponses().forEach(r => {
+  realResponses.forEach(r => {
     const v = r.answers && r.answers[q.id];
     if(v === undefined || v === null || v === '') return;
     n++;
@@ -837,77 +757,16 @@ function agg(q){
       counts[v] = (counts[v] || 0) + 1;
     }
   });
-  return { counts, n, avg: n ? (sum / n) : 0 };
-}
 
-// Renderizado de tarjeta miniatura
-function miniCard(q, i){
-  const { counts, n, avg } = agg(q);
-  let inner = '';
-
-  if(q.type === 'scale'){
-    const pct = Math.round(avg / 10 * 100);
-    inner = `
-      <div class="gauge-wrap">
-        <div class="gauge" style="--pct:${pct};">
-          <div class="gauge-inner">${avg.toFixed(1)}</div>
-        </div>
-        <div class="more-note" style="text-align:center;font-weight:700;">Promedio / 10</div>
-      </div>
-    `;
-  } else {
-    const entries = Object.entries(counts).sort((a,b) => b[1] - a[1]);
-    const top = entries.slice(0, 3);
-    top.forEach((e, idx) => {
-      const pct = n ? Math.round(e[1] / n * 100) : 0;
-      const c = PALETTE[idx % PALETTE.length];
-      inner += `
-        <div class="mini-row">
-          <span class="mini-label" title="${e[0]}">${e[0]}</span>
-          <div class="mini-track">
-            <div class="mini-fill" style="--c1:${c[0]};--c2:${c[1]};width:${pct}%"></div>
-          </div>
-          <span class="mini-pct">${pct}%</span>
-        </div>
-      `;
-    });
-    if(entries.length > 3){
-      inner += `<div class="more-note">+${entries.length - 3} opción(es) más · clic para ver</div>`;
-    }
-    if(entries.length === 0){
-      inner += `<div class="more-note">Sin respuestas aún</div>`;
-    }
-  }
-
-  const accent = PALETTE[i % PALETTE.length][0];
-  const isSpotActive = focusOn && focusIdx === i;
-
-  return `
-    <div class="card ${isSpotActive ? 'spot-active' : ''}" id="card-q-${i}" style="--c-accent:${accent}" data-i="${i}">
-      <div>
-        <div class="q-num">Pregunta ${i+1} de 8</div>
-        <div class="q-title-mini">${q.title}</div>
-        ${inner}
-      </div>
-      <div class="n-resp">
-        <span><b>${n}</b> respuestas</span>
-        <span style="font-size:11px;color:var(--teal);font-weight:700;">Ver detalle →</span>
-      </div>
-    </div>
-  `;
-}
-
-// Extensión de métricas para preguntas de escala (rangos colectivos)
-function aggExtended(q){
-  const res = agg(q);
   const scaleBands = [
     { label: '0 a 2 · Tranquilidad / Calma', count: 0, c1: '#22BFBA', c2: '#7FE0DB' },
-    { label: '3 a 5 · Moderada', count: 0, c1: '#FFC72C', c2: '#FFE08A' },
+    { label: '3 a 5 · Saturación moderada', count: 0, c1: '#FFC72C', c2: '#FFE08A' },
     { label: '6 a 8 · Alta tensión', count: 0, c1: '#F5821F', c2: '#FBB877' },
     { label: '9 a 10 · Extrema / Rebasado(a)', count: 0, c1: '#EC4C79', c2: '#F591AC' }
   ];
+
   if(q.type === 'scale'){
-    activeResponses().forEach(r => {
+    realResponses.forEach(r => {
       const v = r.answers && r.answers[q.id];
       if(v === undefined || v === null || v === '') return;
       const num = Number(v);
@@ -917,283 +776,257 @@ function aggExtended(q){
       else scaleBands[3].count++;
     });
   }
-  return { ...res, scaleBands };
+
+  return { counts, n, avg: n ? (sum / n) : 0, scaleBands };
 }
 
-function renderMosaic(){
-  const mosaic = document.getElementById('mosaic');
-  mosaic.innerHTML = QUESTIONS.map((q, i) => miniCard(q, i)).join('');
-  const totalEl = document.getElementById('stat-total');
-  if(totalEl) totalEl.textContent = activeResponses().length;
-  
-  mosaic.querySelectorAll('.card').forEach(c => {
-    c.addEventListener('click', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      openSpotlight(Number(c.dataset.i));
-    });
-  });
-}
+// =========================================================================
+// RENDERIZADO DE LA DIAPOSITIVA ACTUAL (INLINE)
+// =========================================================================
+function renderSlide(){
+  const q = QUESTIONS[currentSlideIdx];
+  const { counts, n, avg, scaleBands } = agg(q);
+  const container = document.getElementById('slide-card-container');
+  const progressPct = Math.round(((currentSlideIdx + 1) / QUESTIONS.length) * 100);
 
-// Modal Modo Diapositivas
-function spotlightHTML(i){
-  const q = QUESTIONS[i];
-  const { counts, n, avg, scaleBands } = aggExtended(q);
-  let body = '';
-
-  const progressPct = Math.round(((i + 1) / QUESTIONS.length) * 100);
+  let contentHtml = '';
 
   if(q.type === 'scale'){
-    const pct = Math.round(avg / 10 * 100);
-    let scaleSummary = 'Saturación moderada';
-    if(avg <= 2.5) scaleSummary = 'Muy baja saturación · Tranquilidad';
-    else if(avg <= 5) scaleSummary = 'Saturación moderada';
-    else if(avg <= 7.5) scaleSummary = 'Saturación alta · Tensión';
-    else scaleSummary = 'Saturación extrema · Rebasado/a';
+    let scaleMeaning = 'Saturación moderada';
+    if(avg <= 2.5) scaleMeaning = 'Muy baja saturación · Tranquilidad';
+    else if(avg <= 5) scaleMeaning = 'Saturación moderada';
+    else if(avg <= 7.5) scaleMeaning = 'Saturación alta · Tensión';
+    else scaleMeaning = 'Saturación extrema · Rebasado/a';
 
-    body = `
-      <div style="background:#FAF8FC;border-radius:20px;padding:24px 20px;margin-bottom:18px;border:1px solid var(--line);text-align:center;">
-        <div class="spot-gauge" style="--pct:${pct};">
-          <div class="spot-gauge-inner">
-            <div class="avg-badge" style="font-size:38px;font-family:'Baloo 2';font-weight:800;color:var(--purple-deep);line-height:1;">${avg.toFixed(1)}</div>
-            <span style="font-size:12px;color:var(--muted);font-weight:700;">Promedio / 10</span>
-          </div>
+    contentHtml = `
+      <div class="scale-box">
+        <div class="scale-score-circle">
+          <span class="scale-score-num">${avg.toFixed(1)}</span>
+          <span class="scale-score-sub">de 10</span>
         </div>
-        <div style="font-family:'Baloo 2';font-weight:800;font-size:18px;color:var(--orange);margin-top:8px;">${scaleSummary}</div>
-        <div style="font-size:13px;color:var(--muted);margin-top:2px;">Calculado a partir de <b>${n}</b> respuesta(s) registradas</div>
+        <div class="scale-score-meaning">${scaleMeaning}</div>
+        <div class="scale-score-detail">Promedio general obtenido de <b>${n}</b> respuesta(s)</div>
       </div>
 
-      <div>
-        <div style="font-size:12px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px;">Distribución colectiva por rangos:</div>
+      <div class="slide-options">
+        <div style="font-family:'Baloo 2', sans-serif;font-size:14px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">
+          Distribución de respuestas por rango:
+        </div>
         ${scaleBands.map(b => {
-          const bpct = n ? Math.round(b.count / n * 100) : 0;
+          const pct = n ? Math.round(b.count / n * 100) : 0;
           return `
-            <div class="spot-row">
-              <span class="spot-label" title="${b.label}">${b.label}</span>
-              <div class="spot-track">
-                <div class="spot-fill" style="--c1:${b.c1};--c2:${b.c2};width:${bpct}%"></div>
+            <div class="option-row">
+              <div class="option-label-bar">
+                <span class="option-name">${b.label}</span>
+                <span class="option-stats"><b>${b.count}</b> respuestas (${pct}%)</span>
               </div>
-              <span class="spot-num">${b.count} (${bpct}%)</span>
+              <div class="option-track">
+                <div class="option-fill" style="--c1:${b.c1};--c2:${b.c2};width:${pct}%"></div>
+              </div>
             </div>
           `;
         }).join('')}
       </div>
     `;
   } else {
-    // Ordenar todas las opciones por número de votos
+    // Ordenar opciones por votos descendentes
     const sorted = Object.entries(counts).sort((a,b) => b[1] - a[1]);
     const displayList = sorted.length ? sorted : q.options.map(o => [o, 0]);
 
-    body = displayList.map((e, idx) => {
-      const pct = n ? Math.round(e[1] / n * 100) : 0;
-      const c = PALETTE[idx % PALETTE.length];
-      return `
-        <div class="spot-row">
-          <span class="spot-label" title="${e[0]}">${e[0]}</span>
-          <div class="spot-track">
-            <div class="spot-fill" style="--c1:${c[0]};--c2:${c[1]};width:${pct}%"></div>
-          </div>
-          <span class="spot-num">${e[1]} (${pct}%)</span>
-        </div>
-      `;
-    }).join('');
+    contentHtml = `
+      <div class="slide-options">
+        ${displayList.map((entry, idx) => {
+          const optLabel = entry[0];
+          const count = entry[1];
+          const pct = n ? Math.round(count / n * 100) : 0;
+          const colors = PALETTE[idx % PALETTE.length];
+          return `
+            <div class="option-row">
+              <div class="option-label-bar">
+                <span class="option-name">${optLabel}</span>
+                <span class="option-stats"><b>${count}</b> votos (${pct}%)</span>
+              </div>
+              <div class="option-track">
+                <div class="option-fill" style="--c1:${colors[0]};--c2:${colors[1]};width:${pct}%"></div>
+              </div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    `;
   }
 
-  const dots = QUESTIONS.map((_, idx) => `
-    <span class="${idx === i ? 'on' : ''}" data-idx="${idx}" title="Ir a Pregunta ${idx+1}"></span>
+  container.innerHTML = `
+    <div class="slide-progress-wrap">
+      <div class="slide-progress-fill" style="width:${progressPct}%"></div>
+    </div>
+
+    <div class="slide-meta-strip">
+      <span class="slide-badge">PREGUNTA ${currentSlideIdx + 1} DE 8</span>
+      <button type="button" class="slide-auto-btn ${isAutoRotating ? 'on' : ''}" id="btn-toggle-auto">
+        ${isAutoRotating ? 'Pausar avance automático' : 'Avance automático (7s)'}
+      </button>
+    </div>
+
+    <h2 class="slide-title">${q.title}</h2>
+    <div class="slide-sub">${q.sub}</div>
+
+    ${contentHtml}
+  `;
+
+  // Listener para el botón de auto avance
+  const autoBtn = document.getElementById('btn-toggle-auto');
+  if(autoBtn){
+    autoBtn.addEventListener('click', toggleAutoRotate);
+  }
+
+  renderDots();
+}
+
+// Puntos indicadores inferiores
+function renderDots(){
+  const dotsContainer = document.getElementById('slide-dots-container');
+  dotsContainer.innerHTML = QUESTIONS.map((_, i) => `
+    <button type="button" class="slide-dot-pill ${i === currentSlideIdx ? 'active' : ''}" data-idx="${i}" title="Ir a la pregunta ${i + 1}">
+      ${i + 1}
+    </button>
   `).join('');
 
-  return `
-    <div class="spot-progress-bar">
-      <div class="spot-progress-fill" style="width:${progressPct}%"></div>
-    </div>
-    
-    <div class="spot-header-strip">
-      <div class="spot-eyebrow">
-        <span>PREGUNTA ${i+1} DE 8</span>
-        <span class="spot-slide-badge">Modo Diapositivas</span>
-      </div>
-      <button class="spot-close-btn" id="spot-close" type="button" aria-label="Cerrar presentación">
-        ✕ Salir de diapositivas
-      </button>
-    </div>
-
-    <h2 class="spot-title">${q.title}</h2>
-    
-    <div style="flex:1;">${body}</div>
-
-    <div class="spot-nav">
-      <button type="button" id="spot-prev" class="spot-nav-btn">← Anterior</button>
-      <div class="spot-dots">${dots}</div>
-      <button type="button" id="spot-auto" class="spot-auto-btn ${focusOn ? 'on' : ''}">
-        ${focusOn ? 'Pausar rotación' : 'Reproducir (7s)'}
-      </button>
-      <button type="button" id="spot-next" class="spot-nav-btn">Siguiente →</button>
-    </div>
-  `;
-}
-
-function openSpotlight(i){
-  focusIdx = i;
-  const spotCard = document.getElementById('spot-card');
-  spotCard.innerHTML = spotlightHTML(i);
-  document.getElementById('overlay').classList.remove('hidden');
-
-  document.getElementById('spot-close').onclick = (e) => {
-    e.stopPropagation();
-    closeSpotlight();
-  };
-  document.getElementById('spot-prev').onclick = (e) => {
-    e.stopPropagation();
-    focusIdx = (focusIdx + QUESTIONS.length - 1) % QUESTIONS.length;
-    openSpotlight(focusIdx);
-  };
-  document.getElementById('spot-next').onclick = (e) => {
-    e.stopPropagation();
-    focusIdx = (focusIdx + 1) % QUESTIONS.length;
-    openSpotlight(focusIdx);
-  };
-
-  const autoBtn = document.getElementById('spot-auto');
-  if(autoBtn){
-    autoBtn.onclick = (e) => {
-      e.stopPropagation();
-      if(focusOn) stopFocus();
-      else startFocus();
-      openSpotlight(focusIdx);
-    };
-  }
-
-  spotCard.querySelectorAll('.spot-dots span').forEach(dot => {
-    dot.onclick = (e) => {
-      e.stopPropagation();
-      openSpotlight(Number(dot.dataset.idx));
-    };
-  });
-
-  // Actualizar tarjeta activa en el fondo sin recargar todo el DOM
-  document.querySelectorAll('#mosaic .card').forEach((c, idx) => {
-    c.classList.toggle('spot-active', focusOn && focusIdx === idx);
+  dotsContainer.querySelectorAll('.slide-dot-pill').forEach(btn => {
+    btn.addEventListener('click', () => {
+      currentSlideIdx = Number(btn.dataset.idx);
+      renderSlide();
+    });
   });
 }
 
-function closeSpotlight(){
-  document.getElementById('overlay').classList.add('hidden');
-  stopFocus();
-  document.querySelectorAll('#mosaic .card').forEach(c => c.classList.remove('spot-active'));
+// Navegación
+function nextSlide(){
+  currentSlideIdx = (currentSlideIdx + 1) % QUESTIONS.length;
+  renderSlide();
+}
+function prevSlide(){
+  currentSlideIdx = (currentSlideIdx + QUESTIONS.length - 1) % QUESTIONS.length;
+  renderSlide();
 }
 
-// Control robusto de clic en fondo oscuro:
-// Solo se cierra si el mousedown comenzó en el overlay mismo (evita cierres accidentales al hacer clic en tarjetas)
-let overlayMouseDownOnBackdrop = false;
-const overlayEl = document.getElementById('overlay');
-overlayEl.addEventListener('mousedown', (e) => {
-  overlayMouseDownOnBackdrop = (e.target === overlayEl);
-});
-overlayEl.addEventListener('click', (e) => {
-  if(e.target === overlayEl && overlayMouseDownOnBackdrop){
-    closeSpotlight();
+document.getElementById('btn-next-slide').addEventListener('click', nextSlide);
+document.getElementById('btn-prev-slide').addEventListener('click', prevSlide);
+
+// Rotación automática
+function toggleAutoRotate(){
+  if(isAutoRotating){
+    clearInterval(autoRotateTimer);
+    autoRotateTimer = null;
+    isAutoRotating = false;
+  } else {
+    isAutoRotating = true;
+    autoRotateTimer = setInterval(nextSlide, 7000);
   }
-  overlayMouseDownOnBackdrop = false;
-});
+  renderSlide();
+}
 
-// Evitar que clics dentro de la tarjeta se propaguen al backdrop
-document.getElementById('spot-card').addEventListener('click', (e) => {
-  e.stopPropagation();
-});
-
-// Navegación por teclado en modo diapositivas
+// Control por teclado (Flechas)
 window.addEventListener('keydown', (e) => {
-  if(!document.getElementById('overlay').classList.contains('hidden')){
-    if(e.key === 'Escape'){
-      closeSpotlight();
-    } else if(e.key === 'ArrowRight' || e.key === ' '){
-      e.preventDefault();
-      focusIdx = (focusIdx + 1) % QUESTIONS.length;
-      openSpotlight(focusIdx);
-    } else if(e.key === 'ArrowLeft'){
-      e.preventDefault();
-      focusIdx = (focusIdx + QUESTIONS.length - 1) % QUESTIONS.length;
-      openSpotlight(focusIdx);
-    }
+  if(e.key === 'ArrowRight'){
+    nextSlide();
+  } else if(e.key === 'ArrowLeft'){
+    prevSlide();
   }
 });
 
-// Modo foco (rotación automática opcional)
-function startFocus(){
-  focusOn = true;
-  const btn = document.getElementById('btn-focus');
-  if(btn){
-    btn.classList.add('on');
-    btn.textContent = 'Foco activo (rotando)';
-  }
-  openSpotlight(focusIdx || 0);
-  focusTimer = setInterval(() => {
-    focusIdx = (focusIdx + 1) % QUESTIONS.length;
-    openSpotlight(focusIdx);
-  }, 7000);
-}
+// =========================================================================
+// RENDERIZADO DEL MOSAICO DE LAS 8 PREGUNTAS
+// =========================================================================
+function renderMosaic(){
+  const container = document.getElementById('mosaic-grid-container');
+  const paletteHighlights = ['#22BFBA', '#FFC72C', '#F5821F', '#EC4C79', '#5B4B9E', '#1CA7A2', '#E0963B', '#C23F62'];
 
-function stopFocus(){
-  focusOn = false;
-  clearInterval(focusTimer);
-  const btn = document.getElementById('btn-focus');
-  if(btn){
-    btn.classList.remove('on');
-    btn.textContent = 'Modo foco (rotar)';
-  }
-}
+  container.innerHTML = QUESTIONS.map((q, i) => {
+    const { counts, n, avg } = agg(q);
+    const accent = paletteHighlights[i % paletteHighlights.length];
 
-const btnFocus = document.getElementById('btn-focus');
-if(btnFocus){
-  btnFocus.addEventListener('click', () => {
-    if(focusOn) closeSpotlight();
-    else startFocus();
-  });
-}
-
-// Toggle Demo (opcional)
-const btnDemo = document.getElementById('btn-demo');
-if(btnDemo){
-  btnDemo.addEventListener('click', () => {
-    demoMode = !demoMode;
-    btnDemo.classList.toggle('on', demoMode);
-    btnDemo.textContent = demoMode ? 'Viendo ejemplo — volver a datos reales' : 'Vista previa con ejemplo';
-    renderMosaic();
-    if(!document.getElementById('overlay').classList.contains('hidden')){
-      openSpotlight(focusIdx);
+    let preview = '';
+    if(q.type === 'scale'){
+      preview = `Promedio general: <b>${avg.toFixed(1)} / 10</b>`;
+    } else {
+      const sorted = Object.entries(counts).sort((a,b) => b[1] - a[1]);
+      if(sorted.length > 0 && n > 0){
+        const top1 = sorted[0];
+        const pct1 = Math.round(top1[1] / n * 100);
+        preview = `Más elegida: <b>${top1[0]} (${pct1}%)</b>`;
+      } else {
+        preview = 'Sin respuestas registradas aún';
+      }
     }
+
+    return `
+      <div class="bubble-summary-card" style="--card-accent:${accent};" data-idx="${i}">
+        <div>
+          <div class="card-header-line">
+            <div class="card-num-circle">${i + 1}</div>
+            <span class="card-pregunta-label">Pregunta ${i + 1} de 8</span>
+          </div>
+          <div class="card-title-text">${q.title}</div>
+          <div class="card-leader-preview">${preview}</div>
+        </div>
+        <div class="card-bottom-strip">
+          <span><b>${n}</b> respuestas</span>
+          <span class="action-hint">Ver diapositiva →</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  // Al hacer clic en cualquier tarjeta del mosaico, salta a la diapositiva correspondiente
+  container.querySelectorAll('.bubble-summary-card').forEach(card => {
+    card.addEventListener('click', () => {
+      currentSlideIdx = Number(card.dataset.idx);
+      switchView('slides');
+      renderSlide();
+    });
   });
 }
 
-// Toggle Sonido (opcional)
-const btnSound = document.getElementById('btn-sound');
-if(btnSound){
-  btnSound.addEventListener('click', () => {
-    soundEnabled = !soundEnabled;
-    btnSound.classList.toggle('on', soundEnabled);
-    btnSound.textContent = soundEnabled ? 'Sonido ON' : 'Sonido OFF';
-    if(soundEnabled) playLiveChime();
-  });
+// Selector de pestañas: Diapositivas vs Mosaico
+const tabSlides = document.getElementById('tab-slides');
+const tabMosaic = document.getElementById('tab-mosaic');
+const viewSlides = document.getElementById('view-slides');
+const viewMosaic = document.getElementById('view-mosaic');
+
+function switchView(viewName){
+  if(viewName === 'slides'){
+    tabSlides.classList.add('active');
+    tabMosaic.classList.remove('active');
+    viewSlides.style.display = 'block';
+    viewMosaic.style.display = 'none';
+  } else {
+    tabMosaic.classList.add('active');
+    tabSlides.classList.remove('active');
+    viewSlides.style.display = 'none';
+    viewMosaic.style.display = 'block';
+    renderMosaic();
+  }
 }
 
-// Toast de notificación en vivo
+tabSlides.addEventListener('click', () => switchView('slides'));
+tabMosaic.addEventListener('click', () => switchView('mosaic'));
+
+// =========================================================================
+// POLLING EN TIEMPO REAL CON EL BACKEND DE DJANGO
+// =========================================================================
+let isPolling = false;
+
 function triggerLiveToast(){
   const toast = document.getElementById('live-toast');
   if(toast){
     toast.classList.add('show');
-    playLiveChime();
-    setTimeout(() => toast.classList.remove('show'), 3500);
+    setTimeout(() => toast.classList.remove('show'), 3200);
   }
 }
 
-// =========================================================================
-// POLLING EN TIEMPO REAL CON DJANGO BACKEND
-// =========================================================================
-let isPolling = false;
-
 async function checkRealtimeUpdates(){
-  if(isPolling || demoMode) return;
+  if(isPolling) return;
   isPolling = true;
 
   try {
@@ -1201,65 +1034,47 @@ async function checkRealtimeUpdates(){
     const res = await fetch(url, {
       headers: { 'X-Requested-With': 'XMLHttpRequest' }
     });
-    
+
     if(res.ok){
       const data = await res.json();
-      
       if(data.has_new && data.total > totalRecordedCount){
-        // ¡Ha caído una o más respuestas nuevas!
         realResponses = data.responses || realResponses;
         lastRecordedId = data.last_id;
         totalRecordedCount = data.total;
 
-        // Actualizar UI en vivo
-        renderMosaic();
-        if(!document.getElementById('overlay').classList.contains('hidden')){
-          openSpotlight(focusIdx);
-        }
-
-        // Animar contador y mostrar toast
+        // Actualizar contador superior
         const totalEl = document.getElementById('stat-total');
-        if(totalEl){
-          totalEl.textContent = totalRecordedCount;
-          if(totalEl.parentElement){
-            totalEl.parentElement.classList.add('cardPulse');
-            setTimeout(() => totalEl.parentElement.classList.remove('cardPulse'), 1500);
-          }
-        }
+        if(totalEl) totalEl.textContent = totalRecordedCount;
 
+        // Notificación flotante suave
         triggerLiveToast();
-      } else if(data.responses && data.responses.length !== realResponses.length) {
+
+        // Actualizar vista activa
+        renderSlide();
+        if(viewMosaic.style.display === 'block'){
+          renderMosaic();
+        }
+      } else if(data.responses && data.responses.length !== realResponses.length){
         realResponses = data.responses;
         lastRecordedId = data.last_id;
         totalRecordedCount = data.total;
-        renderMosaic();
-      }
-
-      const lastUpdateEl = document.getElementById('last-update-text');
-      if(lastUpdateEl){
-        lastUpdateEl.textContent = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', second:'2-digit'});
+        const totalEl = document.getElementById('stat-total');
+        if(totalEl) totalEl.textContent = totalRecordedCount;
+        renderSlide();
+        if(viewMosaic.style.display === 'block'){
+          renderMosaic();
+        }
       }
     }
-  } catch(err) {
-    // Error silencioso para no interrumpir al usuario en fallos temporales de red
+  } catch(err){
     console.warn('Polling status:', err);
   } finally {
     isPolling = false;
   }
 }
 
-// Botón para abrir Modo Diapositivas desde el header
-const btnOpenSlides = document.getElementById('btn-open-slides');
-if(btnOpenSlides){
-  btnOpenSlides.addEventListener('click', (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    openSpotlight(0);
-  });
-}
-
-// Iniciar render inicial y loop de sincronización cada 2.5 segundos
-renderMosaic();
+// Inicialización
+renderSlide();
 setInterval(checkRealtimeUpdates, 2500);
 </script>
 </body>
