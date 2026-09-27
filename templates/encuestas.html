@@ -454,11 +454,9 @@ footer a{color:var(--purple);text-decoration:none;font-weight:700;}
   <header>
     <a href="{% url 'inicio' %}" class="brand" title="Volver al inicio de HOPE">
       <img src="{% static 'img/logo_hope_principal.png' %}" alt="HOPE · Oportunidad, Prevención, Esperanza" class="brand-logo">
-      <span class="brand-badge"><span class="dot"></span> Encuesta</span>
+     
     </a>
-    <a href="{% url 'insights_encuesta' %}" class="btn-header-link" id="link-live-insights">
-      📊 Ver resultados en vivo
-    </a>
+
   </header>
 
   <!-- Formulario de Preguntas -->
@@ -490,12 +488,7 @@ footer a{color:var(--purple);text-decoration:none;font-weight:700;}
       <p>Todo lo que sientes importa, tú nos importas. Tu respuesta ha sido guardada y ya forma parte de los resultados en tiempo real.</p>
       
       <div class="thanks-actions">
-        <a href="{% url 'insights_encuesta' %}" class="btn-primary-action">
-          📊 Ver resultados en vivo →
-        </a>
-        <button type="button" id="btn-revote" class="btn-secondary-action">
-          🔄 Responder de nuevo
-        </button>
+
         <a href="{% url 'inicio' %}" style="margin-top:6px;font-size:13px;color:var(--muted);text-decoration:underline;">
           Volver a la página principal de HOPE
         </a>

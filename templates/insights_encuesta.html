@@ -547,23 +547,11 @@ footer a{color:var(--purple);text-decoration:none;font-weight:700;}
       <div class="brand-title"><span class="dot"></span>Resultados en vivo</div>
     </a>
 
-    <div class="header-controls">
-      <button class="focus-toggle" id="btn-focus">▶ Modo foco (rotar)</button>
-      <button class="focus-toggle" id="btn-demo">🎭 Vista previa con ejemplo</button>
-      <button class="btn-sound on" id="btn-sound" title="Notificación sonora al recibir respuestas">🔔 Sonido ON</button>
-      <a href="{% url 'encuestas' %}" class="btn-respond" target="_blank">
-        ✍️ Responder encuesta
-      </a>
-    </div>
+
   </header>
 
   <main>
-    <div class="stats-strip">
-      <span class="chip">🧑‍🤝‍🧑 <b id="stat-total">{{ total_respuestas }}</b> personas respondieron</span>
-      <span class="chip">📊 8 preguntas activas</span>
-      <span class="chip chip-live"><span class="live-dot"></span> Sincronización en vivo activa</span>
-      <span class="chip" id="chip-time" style="font-size:12px;">⏱️ Actualizado: <b id="last-update-text">ahora mismo</b></span>
-    </div>
+
 
     <!-- Mosaico de las 8 Preguntas -->
     <div class="mosaic" id="mosaic"></div>

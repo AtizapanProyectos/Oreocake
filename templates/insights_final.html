@@ -366,12 +366,7 @@ footer a{color:var(--purple);text-decoration:none;font-weight:700;}
       <div class="brand-title"><span class="dot"></span>Nube en vivo</div>
     </a>
 
-    <div class="header-controls">
-      <button type="button" class="btn-control on" id="btn-sound" title="Sonido al entrar votos">🔔 Sonido ON</button>
-      <a href="{% url 'encuesta_final' %}" class="btn-respond" target="_blank">
-        ✍️ Responder encuesta
-      </a>
-    </div>
+
   </header>
 
   <main>
@@ -389,8 +384,8 @@ footer a{color:var(--purple);text-decoration:none;font-weight:700;}
           <div class="q-divider"></div>
           <div class="q-stats">
             <span class="chip"><span class="live-dot"></span><b id="stat-total">{{ total }}</b>&nbsp;respuestas registradas</span>
-            <span class="chip chip-live">⚡ Sincronización en tiempo real</span>
-            <span class="chip" id="chip-top">🏆 Mayor tendencia: <b id="stat-top">-</b></span>
+            
+            <span class="chip" id="chip-top"> Mayor tendencia: <b id="stat-top">-</b></span>
           </div>
         </div>
       </div>
@@ -404,11 +399,7 @@ footer a{color:var(--purple);text-decoration:none;font-weight:700;}
       </div>
     </div>
 
-    <div class="tools">
-      <button type="button" id="btn-demo">🎭 Simular respuestas (modo ensayo)</button>
-      <a href="{% url 'encuesta_final' %}">✍️ Abrir formulario de respuesta</a>
-      <a href="{% url 'insights_encuesta' %}">📊 Ver panel de las 8 preguntas</a>
-    </div>
+
   </main>
 
   <footer>
