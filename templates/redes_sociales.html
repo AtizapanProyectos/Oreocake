@@ -4,8 +4,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>HOPE · Nuestro Espacio Seguro | Redes Sociales y Enlaces Oficiales</title>
-<meta name="description" content="Conecta con HOPE: Nuestro espacio seguro, nuestro espacio HOPE. Acompañamiento psicológico profesional, redes sociales, encuestas en vivo y directorio clínico.">
+<title>HOPE · Nuestro Espacio Seguro | Redes Sociales</title>
+<meta name="description" content="Conecta con HOPE: Nuestro espacio seguro, nuestro espacio HOPE. Acompañamiento psicológico profesional, redes sociales y dinámicas en vivo.">
 
 <!-- Favicon -->
 <link rel="icon" href="{% static 'img/favicon.ico' %}" type="image/x-icon">
@@ -14,561 +14,453 @@
 <!-- Google Fonts -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
 <!-- FontAwesome 6 Icons -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
-<!-- QRCode Library para escaneo instantáneo -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-
 <style>
 :root{
   --teal:#22BFBA;
-  --teal-glow:rgba(34, 191, 186, 0.35);
   --orange:#F5821F;
-  --orange-glow:rgba(245, 130, 31, 0.35);
   --pink:#EC4C79;
-  --pink-glow:rgba(236, 76, 121, 0.35);
   --yellow:#FFC72C;
   --purple:#5B4B9E;
   --purple-deep:#3B3168;
-  --purple-glow:rgba(91, 75, 158, 0.35);
   --bg:#FBF8F2;
-  --card-bg:rgba(255, 255, 255, 0.85);
-  --card-border:rgba(255, 255, 255, 0.95);
   --ink:#2C2542;
-  --muted:#7D749B;
+  --muted:#8A82A6;
   --line:#EDE7F7;
-  --radius-xl:26px;
-  --radius-lg:20px;
-  --radius-pill:999px;
   color-scheme:light;
 }
 
 *{box-sizing:border-box;margin:0;padding:0;}
-html,body{min-height:100%;}
+html,body{
+  min-height:100%;
+}
 body{
   font-family:'Plus Jakarta Sans', system-ui, sans-serif;
   color:var(--ink);
-  background:var(--bg);
+  background:
+    radial-gradient(circle at 15% -5%, #FDE9D2 0%, transparent 45%),
+    radial-gradient(circle at 85% 10%, #DBF5F3 0%, transparent 45%),
+    radial-gradient(circle at 50% 90%, #EFEBFB 0%, transparent 50%),
+    var(--bg);
   position:relative;
   overflow-x:hidden;
-  padding:calc(20px + env(safe-area-inset-top,0px)) 16px calc(36px + env(safe-area-inset-bottom,0px));
+  padding:calc(28px + env(safe-area-inset-top,0px)) 20px calc(40px + env(safe-area-inset-bottom,0px));
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
 }
 
-/* Fondos dinámicos y esferas de luz flotantes (ambient orbs) */
-.ambient-orb{
+/* Esferas de luz ambiental de fondo */
+.ambient-glow{
   position:fixed;
   border-radius:50%;
-  filter:blur(80px);
+  filter:blur(90px);
   pointer-events:none;
   z-index:0;
-  opacity:0.65;
-  animation:floatOrb 18s ease-in-out infinite alternate;
+  opacity:0.55;
+  animation:ambientPulse 14s ease-in-out infinite alternate;
 }
-.orb-1{
-  width:380px;
-  height:380px;
-  background:radial-gradient(circle, #FDE3CE 0%, rgba(253,227,206,0) 70%);
-  top:-80px;
-  left:-80px;
+.glow-1{
+  width:360px;
+  height:360px;
+  background:rgba(245, 130, 31, 0.25);
+  top:5%;
+  left:10%;
 }
-.orb-2{
+.glow-2{
+  width:400px;
+  height:400px;
+  background:rgba(34, 191, 186, 0.22);
+  top:30%;
+  right:10%;
+  animation-duration:18s;
+  animation-delay:-4s;
+}
+.glow-3{
   width:420px;
   height:420px;
-  background:radial-gradient(circle, #D8F6F4 0%, rgba(216,246,244,0) 70%);
-  top:20%;
-  right:-120px;
-  animation-duration:22s;
-  animation-delay:-5s;
-}
-.orb-3{
-  width:460px;
-  height:460px;
-  background:radial-gradient(circle, #EFEBFB 0%, rgba(239,235,251,0) 70%);
-  bottom:5%;
-  left:-100px;
-  animation-duration:25s;
+  background:rgba(91, 75, 158, 0.2);
+  bottom:10%;
+  left:25%;
+  animation-duration:20s;
   animation-delay:-8s;
 }
-@keyframes floatOrb{
-  0%{transform:translate(0, 0) scale(1);}
-  50%{transform:translate(40px, 30px) scale(1.08);}
-  100%{transform:translate(-30px, 50px) scale(0.95);}
+@keyframes ambientPulse{
+  0%{transform:scale(1) translate(0, 0);}
+  100%{transform:scale(1.12) translate(30px, -20px);}
 }
 
 .wrap{
-  max-width:580px;
+  max-width:920px;
+  width:100%;
   margin:0 auto;
   position:relative;
   z-index:1;
-}
-
-/* Barra superior de utilidades */
-.top-bar{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  margin-bottom:22px;
-}
-.live-pill{
-  display:inline-flex;
-  align-items:center;
-  gap:7px;
-  background:rgba(255, 255, 255, 0.85);
-  backdrop-filter:blur(12px);
-  border:1px solid rgba(255, 255, 255, 0.9);
-  padding:6px 14px;
-  border-radius:var(--radius-pill);
-  font-family:'Baloo 2';
-  font-weight:700;
-  font-size:12.5px;
-  color:var(--purple-deep);
-  box-shadow:0 4px 14px rgba(59,49,104,.06);
-}
-.live-pill .dot{
-  width:8px;
-  height:8px;
-  border-radius:50%;
-  background:var(--pink);
-  animation:pulseDot 1.4s infinite;
-}
-@keyframes pulseDot{
-  0%,100%{opacity:1;transform:scale(1);}
-  50%{opacity:0.35;transform:scale(1.4);}
-}
-
-.top-actions{
-  display:flex;
-  gap:8px;
-}
-.action-icon-btn{
-  width:40px;
-  height:40px;
-  border-radius:50%;
-  background:rgba(255, 255, 255, 0.9);
-  backdrop-filter:blur(10px);
-  border:1px solid rgba(255, 255, 255, 0.9);
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  color:var(--purple-deep);
-  font-size:15px;
-  cursor:pointer;
-  box-shadow:0 4px 14px rgba(59,49,104,.07);
-  transition:all .2s cubic-bezier(.22,1,.36,1);
-}
-.action-icon-btn:hover{
-  background:#fff;
-  transform:translateY(-2px);
-  box-shadow:0 8px 20px rgba(59,49,104,.14);
-  color:var(--orange);
-}
-.action-icon-btn:active{
-  transform:scale(0.94);
-}
-
-/* Perfil / Header principal */
-.profile-card{
-  text-align:center;
-  padding:28px 22px 24px;
-  background:rgba(255, 255, 255, 0.82);
-  backdrop-filter:blur(20px);
-  border:1px solid var(--card-border);
-  border-radius:var(--radius-xl);
-  box-shadow:0 18px 45px rgba(59,49,104,.08);
-  margin-bottom:24px;
-  animation:fadeSlideDown .55s ease forwards;
-}
-@keyframes fadeSlideDown{
-  from{opacity:0;transform:translateY(-14px);}
-  to{opacity:1;transform:translateY(0);}
-}
-
-.avatar-wrapper{
-  position:relative;
-  display:inline-block;
-  margin-bottom:16px;
-}
-.avatar-ring{
-  width:108px;
-  height:108px;
-  border-radius:50%;
-  padding:4px;
-  background:linear-gradient(135deg, var(--teal), var(--yellow), var(--orange), var(--pink), var(--purple));
-  background-size:300% 300%;
-  animation:gradientShift 7s ease infinite alternate;
-  box-shadow:0 10px 28px rgba(236,76,121,.3);
-  display:flex;
-  align-items:center;
-  justify-content:center;
-}
-@keyframes gradientShift{
-  0%{background-position:0% 50%;}
-  100%{background-position:100% 50%;}
-}
-.avatar-inner{
-  width:100%;
-  height:100%;
-  border-radius:50%;
-  background:#fff;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  overflow:hidden;
-  padding:10px;
-}
-.avatar-inner img{
-  width:100%;
-  height:100%;
-  object-fit:contain;
-}
-.verified-badge{
-  position:absolute;
-  bottom:4px;
-  right:4px;
-  background:var(--teal);
-  color:#fff;
-  width:28px;
-  height:28px;
-  border-radius:50%;
-  border:3px solid #fff;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  font-size:12px;
-  box-shadow:0 3px 8px rgba(34,191,186,.4);
-}
-
-.profile-title{
-  font-family:'Outfit', sans-serif;
-  font-size:27px;
-  font-weight:900;
-  color:var(--purple-deep);
-  letter-spacing:-0.02em;
-  margin-bottom:4px;
-}
-.profile-slogan{
-  font-family:'Baloo 2', sans-serif;
-  font-size:17.5px;
-  font-weight:800;
-  background:linear-gradient(135deg, var(--purple-deep), var(--orange), var(--pink));
-  -webkit-background-clip:text;
-  -webkit-text-fill-color:transparent;
-  display:inline-block;
-  margin-bottom:10px;
-}
-.profile-bio{
-  font-size:14px;
-  color:var(--muted);
-  line-height:1.55;
-  max-width:440px;
-  margin:0 auto 16px;
-}
-.profile-tags{
-  display:flex;
-  justify-content:center;
-  flex-wrap:wrap;
-  gap:8px;
-}
-.profile-tag{
-  background:rgba(237, 231, 247, 0.65);
-  border:1px solid rgba(91, 75, 158, 0.12);
-  padding:5px 12px;
-  border-radius:var(--radius-pill);
-  font-size:12px;
-  font-weight:600;
-  color:var(--purple-deep);
-  display:inline-flex;
-  align-items:center;
-  gap:5px;
-}
-
-/* Quick Social Icons Row */
-.quick-social-bar{
-  display:flex;
-  justify-content:center;
-  gap:12px;
-  margin-bottom:24px;
-}
-.quick-social-btn{
-  width:50px;
-  height:50px;
-  border-radius:18px;
-  background:rgba(255, 255, 255, 0.9);
-  backdrop-filter:blur(10px);
-  border:1px solid var(--card-border);
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  font-size:20px;
-  text-decoration:none;
-  box-shadow:0 6px 18px rgba(59,49,104,.07);
-  transition:all .22s cubic-bezier(.22,1,.36,1);
-  position:relative;
-}
-.quick-social-btn:hover{
-  transform:translateY(-4px) scale(1.05);
-  box-shadow:0 12px 28px rgba(59,49,104,.16);
-}
-.quick-social-btn:active{
-  transform:scale(0.95);
-}
-.btn-ig{color:#E1306C;}
-.btn-ig:hover{background:linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888);color:#fff;}
-.btn-fb{color:#1877F2;}
-.btn-fb:hover{background:#1877F2;color:#fff;}
-.btn-yt{color:#FF0000;}
-.btn-yt:hover{background:#FF0000;color:#fff;}
-.btn-web{color:var(--teal);}
-.btn-web:hover{background:var(--teal);color:#fff;}
-.btn-share{color:var(--purple);}
-.btn-share:hover{background:var(--purple);color:#fff;}
-
-/* Categorías y Grupos de Enlaces */
-.section-label{
-  display:flex;
-  align-items:center;
-  gap:8px;
-  font-family:'Baloo 2', sans-serif;
-  font-size:13px;
-  font-weight:800;
-  letter-spacing:0.07em;
-  text-transform:uppercase;
-  color:var(--purple);
-  margin:20px 6px 10px;
-}
-.section-label::after{
-  content:'';
-  flex:1;
-  height:1px;
-  background:linear-gradient(90deg, var(--line), transparent);
-}
-
-.links-stack{
   display:flex;
   flex-direction:column;
-  gap:13px;
-  margin-bottom:24px;
-}
-
-/* Tarjeta de Enlace Interactiva */
-.link-card{
-  position:relative;
-  display:flex;
   align-items:center;
-  gap:16px;
-  background:rgba(255, 255, 255, 0.88);
-  backdrop-filter:blur(18px);
-  border:1.5px solid var(--card-border);
-  border-radius:var(--radius-lg);
-  padding:16px 18px;
-  text-decoration:none;
-  color:inherit;
-  box-shadow:0 8px 24px rgba(59,49,104,.06);
-  transition:all .22s cubic-bezier(.22,1,.36,1);
-  overflow:hidden;
-}
-.link-card::before{
-  content:'';
-  position:absolute;
-  left:0;
-  top:0;
-  bottom:0;
-  width:5px;
-  background:var(--card-accent, var(--teal));
-  border-radius:var(--radius-lg) 0 0 var(--radius-lg);
-  transition:width .2s ease;
-}
-.link-card:hover{
-  transform:translateY(-3px);
-  box-shadow:0 16px 36px rgba(59,49,104,.13);
-  border-color:rgba(255, 255, 255, 1);
-  background:rgba(255, 255, 255, 0.98);
-}
-.link-card:hover::before{
-  width:7px;
-}
-.link-card:active{
-  transform:scale(0.985);
-}
-
-/* Tarjeta Especial Destacada (Hero Website) */
-.link-card.hero-card{
-  background:linear-gradient(135deg, rgba(255,255,255,0.95), #FFF9F3);
-  border:2px solid #FBD0A9;
-  box-shadow:0 12px 32px rgba(245,130,31,.18);
-  animation:subtleGlow 4s ease-in-out infinite alternate;
-}
-@keyframes subtleGlow{
-  0%{box-shadow:0 12px 32px rgba(245,130,31,.16);}
-  100%{box-shadow:0 16px 40px rgba(245,130,31,.3);}
-}
-
-.link-icon-box{
-  width:52px;
-  height:52px;
-  border-radius:16px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  font-size:22px;
-  color:#fff;
-  background:var(--card-accent, var(--teal));
-  box-shadow:0 6px 16px var(--card-glow, rgba(34,191,186,.3));
-  flex-shrink:0;
-  transition:transform .2s ease;
-}
-.link-card:hover .link-icon-box{
-  transform:scale(1.08) rotate(3deg);
-}
-
-.link-content{
-  flex:1;
-  min-width:0;
-}
-.link-header-row{
-  display:flex;
-  align-items:center;
-  gap:8px;
-  margin-bottom:3px;
-  flex-wrap:wrap;
-}
-.link-title{
-  font-family:'Outfit', sans-serif;
-  font-size:16.5px;
-  font-weight:800;
-  color:var(--purple-deep);
-  line-height:1.25;
-}
-.link-badge{
-  font-family:'Baloo 2', sans-serif;
-  font-size:11px;
-  font-weight:800;
-  padding:2px 8px;
-  border-radius:var(--radius-pill);
-  background:var(--badge-bg, rgba(34,191,186,.15));
-  color:var(--badge-color, #189B96);
-  letter-spacing:0.02em;
-}
-.link-desc{
-  font-size:13px;
-  color:var(--muted);
-  line-height:1.45;
-}
-.link-arrow{
-  color:var(--purple);
-  font-size:14px;
-  padding-left:4px;
-  transition:transform .2s ease, color .2s ease;
-  flex-shrink:0;
-}
-.link-card:hover .link-arrow{
-  transform:translateX(5px);
-  color:var(--orange);
-}
-
-/* Modal de Código QR */
-.modal-overlay{
-  position:fixed;
-  inset:0;
-  background:rgba(30, 26, 51, 0.65);
-  backdrop-filter:blur(8px);
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  z-index:9999;
-  padding:20px;
-  opacity:0;
-  pointer-events:none;
-  transition:opacity .25s ease;
-}
-.modal-overlay.active{
-  opacity:1;
-  pointer-events:auto;
-}
-.modal-box{
-  background:#fff;
-  border-radius:var(--radius-xl);
-  max-width:380px;
-  width:100%;
-  padding:32px 26px;
   text-align:center;
-  box-shadow:0 24px 60px rgba(0,0,0,.35);
-  transform:scale(0.9) translateY(12px);
-  transition:transform .3s cubic-bezier(.175,.885,.32,1.275);
-  position:relative;
 }
-.modal-overlay.active .modal-box{
-  transform:scale(1) translateY(0);
+
+/* Header de la Organización */
+header{
+  margin-bottom:34px;
 }
-.modal-close{
-  position:absolute;
-  top:16px;
-  right:16px;
-  border:none;
-  background:var(--line);
-  color:var(--ink);
-  width:34px;
-  height:34px;
-  border-radius:50%;
-  cursor:pointer;
-  font-size:15px;
-  font-weight:700;
-  transition:background .15s;
-}
-.modal-close:hover{
-  background:#dfd7f2;
-}
-.qr-container{
-  margin:18px auto;
-  padding:14px;
-  background:#fff;
-  border-radius:18px;
-  border:2px dashed var(--line);
+.brand-logo-wrap{
   display:inline-block;
-  box-shadow:0 8px 24px rgba(59,49,104,.08);
+  margin-bottom:14px;
+  transition:transform .3s ease;
 }
-.qr-container canvas, .qr-container img{
+.brand-logo-wrap:hover{
+  transform:scale(1.03);
+}
+.brand-logo{
+  height:46px;
+  width:auto;
+  object-fit:contain;
   display:block;
   margin:0 auto;
 }
-
-/* Toast de Enlace Copiado */
-.toast-notice{
-  position:fixed;
-  bottom:26px;
-  left:50%;
-  transform:translateX(-50%) translateY(100px);
-  background:linear-gradient(135deg, var(--teal), #1CA7A2);
-  color:#fff;
-  padding:12px 24px;
-  border-radius:var(--radius-pill);
-  font-family:'Baloo 2';
+.headline-eyebrow{
+  font-family:'Baloo 2', sans-serif;
+  font-size:13px;
+  font-weight:800;
+  letter-spacing:0.16em;
+  text-transform:uppercase;
+  color:var(--teal);
+  margin-bottom:6px;
+}
+.headline-title{
+  font-family:'Outfit', sans-serif;
+  font-size:32px;
+  font-weight:900;
+  color:var(--purple-deep);
+  letter-spacing:-0.03em;
+  line-height:1.2;
+}
+.headline-slogan{
+  font-family:'Baloo 2', sans-serif;
+  font-size:18px;
   font-weight:700;
-  font-size:14.5px;
-  box-shadow:0 12px 32px rgba(34,191,186,.45);
+  color:var(--orange);
+  margin-top:4px;
+}
+
+/* =========================================================================
+   SISTEMA DE BURBUJAS FLOTANTES
+   ========================================================================= */
+.bubbles-container{
+  width:100%;
+  max-width:860px;
+  margin:10px auto 26px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:32px;
+}
+
+/* Burbuja Central Protagónica (Sitio Web Oficial HOPE) */
+.hero-bubble-wrapper{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  text-decoration:none;
+  color:inherit;
+  position:relative;
+  animation:floatHero 5.6s ease-in-out infinite alternate;
+}
+@keyframes floatHero{
+  0%{transform:translateY(0);}
+  100%{transform:translateY(-12px);}
+}
+
+.hero-bubble{
+  width:140px;
+  height:140px;
+  border-radius:50%;
+  background:radial-gradient(circle at 32% 28%, #FFFFFF 0%, #FFF5EC 45%, #FDE4CD 100%);
+  border:3px solid rgba(255, 255, 255, 0.95);
+  box-shadow:
+    inset -6px -8px 18px rgba(245, 130, 31, 0.28),
+    inset 4px 6px 12px rgba(255, 255, 255, 0.95),
+    0 18px 45px rgba(245, 130, 31, 0.26),
+    0 0 0 1px rgba(245, 130, 31, 0.18);
   display:flex;
   align-items:center;
-  gap:9px;
-  z-index:99999;
-  opacity:0;
-  transition:all .35s cubic-bezier(.175,.885,.32,1.275);
+  justify-content:center;
+  position:relative;
+  cursor:pointer;
+  transition:all .3s cubic-bezier(.22, 1, .36, 1);
+  padding:16px;
+}
+.hero-bubble-ring{
+  position:absolute;
+  inset:-9px;
+  border-radius:50%;
+  border:2px dashed rgba(245, 130, 31, 0.45);
+  animation:spinRing 22s linear infinite;
   pointer-events:none;
 }
-.toast-notice.show{
-  opacity:1;
-  transform:translateX(-50%) translateY(0);
+@keyframes spinRing{
+  0%{transform:rotate(0deg);}
+  100%{transform:rotate(360deg);}
+}
+.hero-bubble img{
+  width:100%;
+  height:100%;
+  object-fit:contain;
+  filter:drop-shadow(0 4px 8px rgba(59, 49, 104, 0.15));
+  transition:transform .3s ease;
+}
+.hero-bubble-wrapper:hover .hero-bubble{
+  transform:scale(1.08);
+  box-shadow:
+    inset -6px -8px 20px rgba(245, 130, 31, 0.35),
+    inset 4px 6px 14px rgba(255, 255, 255, 1),
+    0 24px 60px rgba(245, 130, 31, 0.42),
+    0 0 0 3px rgba(245, 130, 31, 0.35);
+}
+.hero-bubble-wrapper:hover .hero-bubble img{
+  transform:scale(1.06);
+}
+.hero-bubble-wrapper:active .hero-bubble{
+  transform:scale(0.96);
+}
+.hero-label{
+  margin-top:14px;
+  font-family:'Outfit', sans-serif;
+  font-size:16px;
+  font-weight:800;
+  color:var(--purple-deep);
+  letter-spacing:-0.01em;
+}
+.hero-sublabel{
+  font-size:12.5px;
+  color:var(--muted);
+  font-weight:600;
+  margin-top:2px;
 }
 
-/* Footer Oficial */
+/* Constelación de Burbujas Principales de Redes Sociales */
+.bubbles-grid{
+  display:flex;
+  flex-wrap:wrap;
+  justify-content:center;
+  align-items:center;
+  gap:32px 36px;
+  width:100%;
+}
+
+.bubble-item{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  text-decoration:none;
+  color:inherit;
+  position:relative;
+  transition:all .28s cubic-bezier(.22, 1, .36, 1);
+}
+
+.bubble-sphere{
+  width:106px;
+  height:106px;
+  border-radius:50%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  position:relative;
+  cursor:pointer;
+  transition:all .3s cubic-bezier(.22, 1, .36, 1);
+  border:3px solid rgba(255, 255, 255, 0.95);
+}
+
+/* Reflejo especular brillante (3D Glass Sheen) */
+.bubble-sphere::before{
+  content:'';
+  position:absolute;
+  top:8px;
+  left:14px;
+  width:36px;
+  height:18px;
+  border-radius:50%;
+  background:linear-gradient(180deg, rgba(255,255,255,0.75) 0%, rgba(255,255,255,0) 100%);
+  transform:rotate(-28deg);
+  pointer-events:none;
+}
+
+.bubble-sphere i{
+  font-size:42px;
+  color:#fff;
+  transition:transform .3s ease;
+  filter:drop-shadow(0 4px 10px rgba(0, 0, 0, 0.22));
+}
+
+.bubble-item:hover .bubble-sphere{
+  transform:translateY(-9px) scale(1.1);
+}
+.bubble-item:hover .bubble-sphere i{
+  transform:scale(1.12);
+}
+.bubble-item:active .bubble-sphere{
+  transform:scale(0.95);
+}
+
+.bubble-title{
+  margin-top:12px;
+  font-family:'Outfit', sans-serif;
+  font-size:14.5px;
+  font-weight:800;
+  color:var(--purple-deep);
+  line-height:1.2;
+}
+.bubble-handle{
+  font-size:12px;
+  color:var(--muted);
+  font-weight:600;
+  margin-top:2px;
+}
+
+/* Colores y Luces de Cada Burbuja */
+
+/* 1. Instagram */
+.bubble-instagram .bubble-sphere{
+  background:radial-gradient(circle at 35% 30%, #FFDC80 0%, #F56040 38%, #E1306C 68%, #833AB4 100%);
+  box-shadow:
+    inset -5px -7px 15px rgba(131, 58, 180, 0.4),
+    inset 3px 5px 10px rgba(255, 255, 255, 0.7),
+    0 16px 36px rgba(225, 48, 108, 0.35);
+  animation:floatOrb1 4.8s ease-in-out infinite alternate;
+}
+.bubble-instagram:hover .bubble-sphere{
+  box-shadow:
+    inset -5px -7px 18px rgba(131, 58, 180, 0.5),
+    inset 3px 5px 12px rgba(255, 255, 255, 0.9),
+    0 22px 50px rgba(225, 48, 108, 0.52);
+}
+
+/* 2. Facebook */
+.bubble-facebook .bubble-sphere{
+  background:radial-gradient(circle at 35% 30%, #68A8FF 0%, #1877F2 65%, #0B52B7 100%);
+  box-shadow:
+    inset -5px -7px 15px rgba(11, 82, 183, 0.4),
+    inset 3px 5px 10px rgba(255, 255, 255, 0.7),
+    0 16px 36px rgba(24, 119, 242, 0.35);
+  animation:floatOrb2 5.4s ease-in-out infinite alternate;
+}
+.bubble-facebook:hover .bubble-sphere{
+  box-shadow:
+    inset -5px -7px 18px rgba(11, 82, 183, 0.5),
+    inset 3px 5px 12px rgba(255, 255, 255, 0.9),
+    0 22px 50px rgba(24, 119, 242, 0.52);
+}
+
+/* 3. YouTube */
+.bubble-youtube .bubble-sphere{
+  background:radial-gradient(circle at 35% 30%, #FF7878 0%, #FF0000 65%, #B30000 100%);
+  box-shadow:
+    inset -5px -7px 15px rgba(179, 0, 0, 0.4),
+    inset 3px 5px 10px rgba(255, 255, 255, 0.7),
+    0 16px 36px rgba(255, 0, 0, 0.35);
+  animation:floatOrb3 4.5s ease-in-out infinite alternate;
+}
+.bubble-youtube:hover .bubble-sphere{
+  box-shadow:
+    inset -5px -7px 18px rgba(179, 0, 0, 0.5),
+    inset 3px 5px 12px rgba(255, 255, 255, 0.9),
+    0 22px 50px rgba(255, 0, 0, 0.52);
+}
+
+/* 4. Encuesta en Vivo */
+.bubble-encuesta .bubble-sphere{
+  background:radial-gradient(circle at 35% 30%, #7FE0DB 0%, #22BFBA 65%, #158F8B 100%);
+  box-shadow:
+    inset -5px -7px 15px rgba(21, 143, 139, 0.4),
+    inset 3px 5px 10px rgba(255, 255, 255, 0.7),
+    0 16px 36px rgba(34, 191, 186, 0.35);
+  animation:floatOrb4 5.8s ease-in-out infinite alternate;
+}
+.bubble-encuesta:hover .bubble-sphere{
+  box-shadow:
+    inset -5px -7px 18px rgba(21, 143, 139, 0.5),
+    inset 3px 5px 12px rgba(255, 255, 255, 0.9),
+    0 22px 50px rgba(34, 191, 186, 0.52);
+}
+
+/* 5. Nube de Palabras */
+.bubble-nube .bubble-sphere{
+  background:radial-gradient(circle at 35% 30%, #FFE08A 0%, #F5821F 65%, #C7610B 100%);
+  box-shadow:
+    inset -5px -7px 15px rgba(199, 97, 11, 0.4),
+    inset 3px 5px 10px rgba(255, 255, 255, 0.7),
+    0 16px 36px rgba(245, 130, 31, 0.35);
+  animation:floatOrb1 5.2s ease-in-out infinite alternate;
+}
+.bubble-nube:hover .bubble-sphere{
+  box-shadow:
+    inset -5px -7px 18px rgba(199, 97, 11, 0.5),
+    inset 3px 5px 12px rgba(255, 255, 255, 0.9),
+    0 22px 50px rgba(245, 130, 31, 0.52);
+}
+
+/* 6. Resultados en Vivo */
+.bubble-insights .bubble-sphere{
+  background:radial-gradient(circle at 35% 30%, #F591AC 0%, #EC4C79 65%, #B52851 100%);
+  box-shadow:
+    inset -5px -7px 15px rgba(181, 40, 81, 0.4),
+    inset 3px 5px 10px rgba(255, 255, 255, 0.7),
+    0 16px 36px rgba(236, 76, 121, 0.35);
+  animation:floatOrb2 4.9s ease-in-out infinite alternate;
+}
+.bubble-insights:hover .bubble-sphere{
+  box-shadow:
+    inset -5px -7px 18px rgba(181, 40, 81, 0.5),
+    inset 3px 5px 12px rgba(255, 255, 255, 0.9),
+    0 22px 50px rgba(236, 76, 121, 0.52);
+}
+
+/* 7. Directorio Clínico */
+.bubble-directorio .bubble-sphere{
+  background:radial-gradient(circle at 35% 30%, #9A8FD1 0%, #5B4B9E 65%, #3B3168 100%);
+  box-shadow:
+    inset -5px -7px 15px rgba(59, 49, 104, 0.45),
+    inset 3px 5px 10px rgba(255, 255, 255, 0.7),
+    0 16px 36px rgba(91, 75, 158, 0.35);
+  animation:floatOrb3 5.5s ease-in-out infinite alternate;
+}
+.bubble-directorio:hover .bubble-sphere{
+  box-shadow:
+    inset -5px -7px 18px rgba(59, 49, 104, 0.55),
+    inset 3px 5px 12px rgba(255, 255, 255, 0.9),
+    0 22px 50px rgba(91, 75, 158, 0.52);
+}
+
+/* Animaciones flotantes escalonadas */
+@keyframes floatOrb1{
+  0%{transform:translateY(0);}
+  100%{transform:translateY(-10px);}
+}
+@keyframes floatOrb2{
+  0%{transform:translateY(-4px);}
+  100%{transform:translateY(8px);}
+}
+@keyframes floatOrb3{
+  0%{transform:translateY(6px);}
+  100%{transform:translateY(-7px);}
+}
+@keyframes floatOrb4{
+  0%{transform:translateY(-8px);}
+  100%{transform:translateY(5px);}
+}
+
+/* Footer limpio (0 emojis) */
 footer{
-  text-align:center;
   margin-top:36px;
-  padding-top:20px;
-  border-top:1px solid rgba(237, 231, 247, 0.8);
-  font-size:13px;
+  font-size:12.5px;
   color:var(--muted);
   line-height:1.6;
 }
@@ -580,370 +472,117 @@ footer a{
 footer a:hover{
   text-decoration:underline;
 }
-.footer-heart{
-  color:var(--pink);
-  display:inline-block;
-  animation:heartbeat 1.6s infinite;
-}
-@keyframes heartbeat{
-  0%,100%{transform:scale(1);}
-  50%{transform:scale(1.22);}
-}
 </style>
 </head>
 <body>
 
-<!-- Ambient background light orbs -->
-<div class="ambient-orb orb-1"></div>
-<div class="ambient-orb orb-2"></div>
-<div class="ambient-orb orb-3"></div>
-
-<!-- Toast flotante -->
-<div class="toast-notice" id="toast-notice">
-  <i class="fa-solid fa-circle-check"></i>
-  <span id="toast-text">¡Enlace copiado al portapapeles!</span>
-</div>
+<!-- Fondos dinámicos difuminados -->
+<div class="ambient-glow glow-1"></div>
+<div class="ambient-glow glow-2"></div>
+<div class="ambient-glow glow-3"></div>
 
 <div class="wrap">
-  
-  <!-- Barra superior -->
-  <div class="top-bar">
-    <div class="live-pill">
-      <span class="dot"></span>
-      <span>Nuestro Espacio Seguro</span>
-    </div>
-    <div class="top-actions">
-      <button type="button" class="action-icon-btn" id="btn-open-qr" title="Ver código QR para compartir">
-        <i class="fa-solid fa-qrcode"></i>
-      </button>
-      <button type="button" class="action-icon-btn" id="btn-share-top" title="Compartir perfil">
-        <i class="fa-solid fa-share-nodes"></i>
-      </button>
-    </div>
-  </div>
 
-  <!-- Tarjeta de Perfil HOPE -->
-  <header class="profile-card">
-    <div class="avatar-wrapper">
-      <div class="avatar-ring">
-        <div class="avatar-inner">
-          <img src="{% static 'img/logo_hope_principal.png' %}" alt="HOPE - Nuestro Espacio Seguro">
-        </div>
-      </div>
-      <div class="verified-badge" title="Organización Verificada">
-        <i class="fa-solid fa-check"></i>
-      </div>
-    </div>
-
-    <h1 class="profile-title">Plataforma HOPE</h1>
-    <div class="profile-slogan">Nuestro espacio seguro · Nuestro espacio HOPE</div>
-    <p class="profile-bio">
-      Oportunidad, Prevención y Esperanza en salud mental. Conéctate con nosotros en redes sociales, explora nuestra plataforma web y participa en nuestras dinámicas interactivas en vivo.
-    </p>
-
-    <div class="profile-tags">
-      <span class="profile-tag"><i class="fa-solid fa-shield-heart" style="color:var(--pink);"></i> Espacio Seguro</span>
-      <span class="profile-tag"><i class="fa-solid fa-brain" style="color:var(--purple);"></i> Salud Emocional</span>
-      <span class="profile-tag"><i class="fa-solid fa-location-dot" style="color:var(--orange);"></i> Atizapán & Online</span>
-    </div>
+  <!-- Header -->
+  <header>
+    <a href="{% url 'inicio' %}" class="brand-logo-wrap" title="Ir al Sitio Web Oficial">
+      <img src="{% static 'img/logo_hope_principal.png' %}" alt="HOPE" class="brand-logo">
+    </a>
+    <div class="headline-eyebrow">Nuestro Espacio Seguro</div>
+    <h1 class="headline-title">Nuestro Espacio HOPE</h1>
+    <div class="headline-slogan">Comunidad · Redes Sociales · Experiencias en Vivo</div>
   </header>
 
-  <!-- Botones de Redes Sociales Rápido -->
-  <nav class="quick-social-bar" aria-label="Redes sociales directas">
-    <a href="https://www.instagram.com/hope_espacio?stkn=MWdyb2E5ZXlsZmI3aw==" target="_blank" rel="noopener" class="quick-social-btn btn-ig" title="Instagram @hope_espacio">
-      <i class="fa-brands fa-instagram"></i>
-    </a>
-    <a href="https://www.facebook.com/share/1JDcELVtwP/" target="_blank" rel="noopener" class="quick-social-btn btn-fb" title="Facebook Oficial HOPE">
-      <i class="fa-brands fa-facebook-f"></i>
-    </a>
-    <a href="https://youtube.com/@espaciohope?si=NYS4WimS9bRmNVMU" target="_blank" rel="noopener" class="quick-social-btn btn-yt" title="YouTube @espaciohope">
-      <i class="fa-brands fa-youtube"></i>
-    </a>
-    <a href="{% url 'inicio' %}" class="quick-social-btn btn-web" title="Sitio Web Oficial">
-      <i class="fa-solid fa-globe"></i>
-    </a>
-    <button type="button" class="quick-social-btn btn-share" id="btn-quick-share" title="Copiar enlace">
-      <i class="fa-solid fa-link"></i>
-    </button>
-  </nav>
+  <!-- Constelación de Burbujas -->
+  <main class="bubbles-container">
 
-  <!-- SECCIÓN 1: NUESTRA PLATAFORMA PRINCIPAL -->
-  <div class="section-label">Plataforma Principal</div>
-  <div class="links-stack">
-    
-    <!-- Hero Website Card -->
-    <a href="{% url 'inicio' %}" class="link-card hero-card" style="--card-accent:linear-gradient(135deg, var(--orange), #FF9D42);--card-glow:rgba(245,130,31,.35);--badge-bg:#FFF0E0;--badge-color:var(--orange);">
-      <div class="link-icon-box">
-        <i class="fa-solid fa-shield-heart"></i>
+    <!-- 1. BURBUJA CENTRAL: SITIO WEB PRINCIPAL HOPE -->
+    <a href="{% url 'inicio' %}" class="hero-bubble-wrapper" title="Sitio Web Oficial de HOPE">
+      <div class="hero-bubble">
+        <div class="hero-bubble-ring"></div>
+        <img src="{% static 'img/logo_hope_principal.png' %}" alt="HOPE">
       </div>
-      <div class="link-content">
-        <div class="link-header-row">
-          <span class="link-title">Nuestro Espacio Seguro · Nuestro Espacio HOPE</span>
-          <span class="link-badge">✨ Web Oficial</span>
+      <div class="hero-label">Sitio Web Oficial</div>
+      <div class="hero-sublabel">espaciohope.com</div>
+    </a>
+
+    <!-- RED DE BURBUJAS DE REDES SOCIALES Y HERRAMIENTAS -->
+    <div class="bubbles-grid">
+
+      <!-- INSTAGRAM -->
+      <a href="https://www.instagram.com/hope_espacio?stkn=MWdyb2E5ZXlsZmI3aw==" target="_blank" rel="noopener" class="bubble-item bubble-instagram" title="Instagram @hope_espacio">
+        <div class="bubble-sphere">
+          <i class="fa-brands fa-instagram"></i>
         </div>
-        <div class="link-desc">Descubre nuestra plataforma integral de acompañamiento psicológico, recursos y talleres de bienestar.</div>
-      </div>
-      <div class="link-arrow">
-        <i class="fa-solid fa-arrow-right"></i>
-      </div>
-    </a>
+        <div class="bubble-title">Instagram</div>
+        <div class="bubble-handle">@hope_espacio</div>
+      </a>
 
-    <!-- Agendar Cita y Directorio -->
-    <a href="{% url 'modulo_informativo' %}" class="link-card" style="--card-accent:linear-gradient(135deg, var(--purple), var(--purple-deep));--card-glow:var(--purple-glow);--badge-bg:#EDE7F7;--badge-color:var(--purple);">
-      <div class="link-icon-box">
-        <i class="fa-solid fa-calendar-check"></i>
-      </div>
-      <div class="link-content">
-        <div class="link-header-row">
-          <span class="link-title">Directorio Clínico y Citas</span>
-          <span class="link-badge">🗓️ Agendar Sesión</span>
+      <!-- FACEBOOK -->
+      <a href="https://www.facebook.com/share/1JDcELVtwP/" target="_blank" rel="noopener" class="bubble-item bubble-facebook" title="Facebook Oficial HOPE">
+        <div class="bubble-sphere">
+          <i class="fa-brands fa-facebook-f"></i>
         </div>
-        <div class="link-desc">Conoce a nuestros psicólogos especialistas y agenda tu consulta con enlace privado a Google Meet.</div>
-      </div>
-      <div class="link-arrow">
-        <i class="fa-solid fa-arrow-right"></i>
-      </div>
-    </a>
+        <div class="bubble-title">Facebook</div>
+        <div class="bubble-handle">Espacio HOPE</div>
+      </a>
 
-  </div>
-
-  <!-- SECCIÓN 2: REDES SOCIALES OFICIALES -->
-  <div class="section-label">Redes Sociales Oficiales</div>
-  <div class="links-stack">
-
-    <!-- Instagram -->
-    <a href="https://www.instagram.com/hope_espacio?stkn=MWdyb2E5ZXlsZmI3aw==" target="_blank" rel="noopener" class="link-card" style="--card-accent:linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888);--card-glow:rgba(225,48,108,.35);--badge-bg:#FDF0F4;--badge-color:#E1306C;">
-      <div class="link-icon-box">
-        <i class="fa-brands fa-instagram"></i>
-      </div>
-      <div class="link-content">
-        <div class="link-header-row">
-          <span class="link-title">Instagram @hope_espacio</span>
-          <span class="link-badge">📸 Comunidad</span>
+      <!-- YOUTUBE -->
+      <a href="https://youtube.com/@espaciohope?si=NYS4WimS9bRmNVMU" target="_blank" rel="noopener" class="bubble-item bubble-youtube" title="YouTube @espaciohope">
+        <div class="bubble-sphere">
+          <i class="fa-brands fa-youtube"></i>
         </div>
-        <div class="link-desc">Consejos diarios de autocuidado, infografías de salud mental, reels e historias interactivas.</div>
-      </div>
-      <div class="link-arrow">
-        <i class="fa-solid fa-arrow-right"></i>
-      </div>
-    </a>
+        <div class="bubble-title">YouTube</div>
+        <div class="bubble-handle">@espaciohope</div>
+      </a>
 
-    <!-- Facebook -->
-    <a href="https://www.facebook.com/share/1JDcELVtwP/" target="_blank" rel="noopener" class="link-card" style="--card-accent:#1877F2;--card-glow:rgba(24,119,242,.35);--badge-bg:#EBF3FF;--badge-color:#1877F2;">
-      <div class="link-icon-box">
-        <i class="fa-brands fa-facebook-f"></i>
-      </div>
-      <div class="link-content">
-        <div class="link-header-row">
-          <span class="link-title">Facebook Oficial HOPE</span>
-          <span class="link-badge">👥 Síguenos</span>
+      <!-- ENCUESTA EN VIVO -->
+      <a href="{% url 'encuestas' %}" class="bubble-item bubble-encuesta" title="Encuesta de Bienestar">
+        <div class="bubble-sphere">
+          <i class="fa-solid fa-list-check"></i>
         </div>
-        <div class="link-desc">Transmisiones en vivo, eventos presenciales en Atizapán, artículos y contenido reflexivo.</div>
-      </div>
-      <div class="link-arrow">
-        <i class="fa-solid fa-arrow-right"></i>
-      </div>
-    </a>
+        <div class="bubble-title">Encuesta</div>
+        <div class="bubble-handle">8 Preguntas</div>
+      </a>
 
-    <!-- YouTube -->
-    <a href="https://youtube.com/@espaciohope?si=NYS4WimS9bRmNVMU" target="_blank" rel="noopener" class="link-card" style="--card-accent:#FF0000;--card-glow:rgba(255,0,0,.3);--badge-bg:#FFEBEB;--badge-color:#FF0000;">
-      <div class="link-icon-box">
-        <i class="fa-brands fa-youtube"></i>
-      </div>
-      <div class="link-content">
-        <div class="link-header-row">
-          <span class="link-title">Canal de YouTube @espaciohope</span>
-          <span class="link-badge">▶️ Videos & Podcast</span>
+      <!-- NUBE DE PALABRAS -->
+      <a href="{% url 'insights_final' %}" class="bubble-item bubble-nube" title="Nube de Palabras en Vivo">
+        <div class="bubble-sphere">
+          <i class="fa-solid fa-cloud"></i>
         </div>
-        <div class="link-desc">Conferencias grabadas, talleres psicoeducativos y ejercicios de respiración guiada.</div>
-      </div>
-      <div class="link-arrow">
-        <i class="fa-solid fa-arrow-right"></i>
-      </div>
-    </a>
+        <div class="bubble-title">Nube en Vivo</div>
+        <div class="bubble-handle">Compromisos</div>
+      </a>
 
-  </div>
-
-  <!-- SECCIÓN 3: EXPERIENCIAS Y ENCUESTAS EN TIEMPO REAL -->
-  <div class="section-label">Participa en Vivo</div>
-  <div class="links-stack">
-
-    <!-- Encuesta de Bienestar -->
-    <a href="{% url 'encuestas' %}" class="link-card" style="--card-accent:linear-gradient(135deg, var(--teal), #189893);--card-glow:var(--teal-glow);--badge-bg:#E6FAF9;--badge-color:var(--teal);">
-      <div class="link-icon-box">
-        <i class="fa-solid fa-clipboard-question"></i>
-      </div>
-      <div class="link-content">
-        <div class="link-header-row">
-          <span class="link-title">Encuesta: ¿Cómo te sientes hoy?</span>
-          <span class="link-badge">📝 8 Preguntas</span>
+      <!-- RESULTADOS EN VIVO -->
+      <a href="{% url 'insights_encuesta' %}" class="bubble-item bubble-insights" title="Resultados e Insights">
+        <div class="bubble-sphere">
+          <i class="fa-solid fa-chart-pie"></i>
         </div>
-        <div class="link-desc">Cuestionario anónimo e interactivo de bienestar emocional para la comunidad.</div>
-      </div>
-      <div class="link-arrow">
-        <i class="fa-solid fa-arrow-right"></i>
-      </div>
-    </a>
+        <div class="bubble-title">Resultados</div>
+        <div class="bubble-handle">Tiempo Real</div>
+      </a>
 
-    <!-- Resultados en Vivo -->
-    <a href="{% url 'insights_encuesta' %}" class="link-card" style="--card-accent:linear-gradient(135deg, var(--pink), #D83161);--card-glow:var(--pink-glow);--badge-bg:#FDF0F4;--badge-color:var(--pink);">
-      <div class="link-icon-box">
-        <i class="fa-solid fa-chart-pie"></i>
-      </div>
-      <div class="link-content">
-        <div class="link-header-row">
-          <span class="link-title">Resultados e Insights en Vivo</span>
-          <span class="link-badge">📊 Tiempo Real</span>
+      <!-- DIRECTORIO CLÍNICO -->
+      <a href="{% url 'modulo_informativo' %}" class="bubble-item bubble-directorio" title="Directorio Clínico y Citas">
+        <div class="bubble-sphere">
+          <i class="fa-solid fa-user-doctor"></i>
         </div>
-        <div class="link-desc">Pantalla interactiva con métricas, medidores de saturación y modo foco rotativo.</div>
-      </div>
-      <div class="link-arrow">
-        <i class="fa-solid fa-arrow-right"></i>
-      </div>
-    </a>
+        <div class="bubble-title">Directorio</div>
+        <div class="bubble-handle">Psicólogos y Citas</div>
+      </a>
 
-    <!-- Nube de Palabras -->
-    <a href="{% url 'insights_final' %}" class="link-card" style="--card-accent:linear-gradient(135deg, var(--yellow), var(--orange));--card-glow:var(--orange-glow);--badge-bg:#FFF8E7;--badge-color:#D88B00;">
-      <div class="link-icon-box">
-        <i class="fa-solid fa-cloud"></i>
-      </div>
-      <div class="link-content">
-        <div class="link-header-row">
-          <span class="link-title">Nube de Palabras de Bienestar</span>
-          <span class="link-badge">☁️ Colaborativa</span>
-        </div>
-        <div class="link-desc">Visualiza en tiempo real las acciones de autocuidado más votadas por la comunidad.</div>
-      </div>
-      <div class="link-arrow">
-        <i class="fa-solid fa-arrow-right"></i>
-      </div>
-    </a>
+    </div>
 
-    <!-- Encuesta Final Compromiso -->
-    <a href="{% url 'encuesta_final' %}" class="link-card" style="--card-accent:linear-gradient(135deg, var(--purple), var(--teal));--card-glow:var(--purple-glow);--badge-bg:#EFEBFB;--badge-color:var(--purple);">
-      <div class="link-icon-box">
-        <i class="fa-solid fa-heart-pulse"></i>
-      </div>
-      <div class="link-content">
-        <div class="link-header-row">
-          <span class="link-title">Tu Acción de Cuidado Esta Semana</span>
-          <span class="link-badge">🌱 Encuesta Final</span>
-        </div>
-        <div class="link-desc">Elige la acción concreta con la que cuidarás tu mente estos días y súmala a la nube.</div>
-      </div>
-      <div class="link-arrow">
-        <i class="fa-solid fa-arrow-right"></i>
-      </div>
-    </a>
+  </main>
 
-  </div>
-
-  <!-- Footer -->
+  <!-- Footer (0 emojis) -->
   <footer>
-    <p>Todo lo que sientes importa, tú nos importas <span class="footer-heart">❤️</span></p>
-    <p style="margin-top:4px;">
-      © {% now "Y" %} <a href="{% url 'inicio' %}">HOPE · Oportunidad, Prevención y Esperanza</a>.
-    </p>
-    <p style="margin-top:8px;font-size:11.5px;opacity:0.8;">
-      Atizapán de Zaragoza, Estado de México
-    </p>
+    <p>Todo lo que sientes importa, tú nos importas · <a href="{% url 'inicio' %}">HOPE</a></p>
+    <p style="margin-top:4px;font-size:11.5px;opacity:0.8;">Atizapán de Zaragoza, Estado de México</p>
   </footer>
 
 </div>
 
-<!-- Modal de Código QR -->
-<div class="modal-overlay" id="qr-modal">
-  <div class="modal-box">
-    <button type="button" class="modal-close" id="btn-close-qr" aria-label="Cerrar modal">✕</button>
-    <h3 style="font-family:'Outfit';font-weight:800;font-size:20px;color:var(--purple-deep);margin-bottom:6px;">
-      Escanea para Compartir
-    </h3>
-    <p style="font-size:13.5px;color:var(--muted);">
-      Apunta con la cámara de tu celular para abrir todos nuestros enlaces oficiales.
-    </p>
-
-    <div class="qr-container" id="qr-target"></div>
-
-    <button type="button" id="btn-copy-from-modal" style="width:100%;margin-top:14px;background:linear-gradient(135deg, var(--purple), var(--purple-deep));color:#fff;border:none;padding:12px;border-radius:var(--radius-pill);font-family:'Baloo 2';font-weight:700;font-size:14px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px;">
-      <i class="fa-solid fa-copy"></i> Copiar enlace oficial
-    </button>
-  </div>
-</div>
-
-<script>
-const pageUrl = window.location.href;
-const toast = document.getElementById('toast-notice');
-const toastText = document.getElementById('toast-text');
-
-function showToast(msg){
-  toastText.textContent = msg;
-  toast.classList.add('show');
-  setTimeout(() => toast.classList.remove('show'), 3200);
-}
-
-function copyLink(){
-  navigator.clipboard.writeText(pageUrl).then(() => {
-    showToast('¡Enlace copiado al portapapeles!');
-  }).catch(() => {
-    // Fallback para navegadores antiguos
-    const tempInp = document.createElement('input');
-    tempInp.value = pageUrl;
-    document.body.appendChild(tempInp);
-    tempInp.select();
-    document.execCommand('copy');
-    document.body.removeChild(tempInp);
-    showToast('¡Enlace copiado al portapapeles!');
-  });
-}
-
-function handleShare(){
-  if(navigator.share){
-    navigator.share({
-      title: 'HOPE · Nuestro Espacio Seguro',
-      text: 'Conecta con HOPE: Nuestro espacio seguro, nuestro espacio HOPE. Acompañamiento psicológico profesional y recursos de bienestar.',
-      url: pageUrl
-    }).catch(() => {});
-  } else {
-    copyLink();
-  }
-}
-
-// Botones compartir
-document.getElementById('btn-share-top').addEventListener('click', handleShare);
-document.getElementById('btn-quick-share').addEventListener('click', copyLink);
-
-// Modal Código QR
-const qrModal = document.getElementById('qr-modal');
-const qrTarget = document.getElementById('qr-target');
-let qrGenerated = false;
-
-document.getElementById('btn-open-qr').addEventListener('click', () => {
-  if(!qrGenerated){
-    new QRCode(qrTarget, {
-      text: pageUrl,
-      width: 190,
-      height: 190,
-      colorDark: '#3B3168',
-      colorLight: '#ffffff',
-      correctLevel: QRCode.CorrectLevel.H
-    });
-    qrGenerated = true;
-  }
-  qrModal.classList.add('active');
-});
-
-document.getElementById('btn-close-qr').addEventListener('click', () => qrModal.classList.remove('active'));
-qrModal.addEventListener('click', (e) => {
-  if(e.target === qrModal) qrModal.classList.remove('active');
-});
-window.addEventListener('keydown', (e) => {
-  if(e.key === 'Escape') qrModal.classList.remove('active');
-});
-
-document.getElementById('btn-copy-from-modal').addEventListener('click', () => {
-  copyLink();
-  qrModal.classList.remove('active');
-});
-</script>
 </body>
 </html>
