@@ -67,11 +67,33 @@ header{
 }
 @keyframes pulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.4;transform:scale(1.4);}}
 
-.header-controls{
+.header-actions{
   display:flex;
-  gap:8px;
+  gap:10px;
   align-items:center;
-  flex-wrap:wrap;
+}
+.btn-slides{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  background:linear-gradient(135deg,var(--purple),var(--purple-deep));
+  color:#fff;
+  border:none;
+  font-family:'Baloo 2', sans-serif;
+  font-weight:700;
+  font-size:13.5px;
+  padding:9px 20px;
+  border-radius:var(--radius-pill);
+  cursor:pointer;
+  box-shadow:0 4px 14px rgba(59,49,104,.22);
+  transition:all .2s ease;
+}
+.btn-slides:hover{
+  transform:translateY(-2px);
+  box-shadow:0 8px 22px rgba(59,49,104,.32);
+}
+.btn-slides:active{
+  transform:scale(0.97);
 }
 
 .focus-toggle{
@@ -381,48 +403,88 @@ header{
 .overlay.hidden{display:none;}
 .spot-card{
   background:var(--card);
-  border-radius:var(--radius-xl);
-  max-width:660px;
+  border-radius:28px;
+  max-width:760px;
   width:100%;
-  max-height:90vh;
+  max-height:92vh;
   overflow-y:auto;
-  padding:32px 28px;
-  box-shadow:0 24px 60px rgba(0,0,0,.3);
+  padding:32px 30px 26px;
+  box-shadow:0 24px 70px rgba(44,37,66,.35);
   position:relative;
-  animation:spotIn .3s ease;
+  animation:spotIn .25s cubic-bezier(.22,1,.36,1);
+  display:flex;
+  flex-direction:column;
 }
-@keyframes spotIn{from{opacity:0;transform:scale(.95) translateY(8px);}to{opacity:1;transform:scale(1) translateY(0);}}
+@keyframes spotIn{from{opacity:0;transform:scale(.96) translateY(6px);}to{opacity:1;transform:scale(1) translateY(0);}}
 
-.spot-close{
-  position:absolute;
-  top:16px;
-  right:16px;
-  border:none;
+.spot-progress-bar{
+  width:100%;
+  height:5px;
+  border-radius:999px;
   background:var(--line);
-  color:var(--ink);
-  width:32px;
-  height:32px;
-  border-radius:50%;
-  cursor:pointer;
-  font-weight:800;
-  font-size:14px;
-  transition:background .15s;
+  margin-bottom:16px;
+  overflow:hidden;
 }
-.spot-close:hover{background:#dfd5f2;}
+.spot-progress-fill{
+  height:100%;
+  border-radius:999px;
+  background:linear-gradient(90deg,var(--teal),var(--orange),var(--pink));
+  transition:width .4s ease;
+}
 
+.spot-header-strip{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-bottom:6px;
+  gap:10px;
+  flex-wrap:wrap;
+}
 .spot-eyebrow{
   font-family:'Baloo 2';
-  font-weight:700;
+  font-weight:800;
   font-size:12px;
   letter-spacing:.08em;
   text-transform:uppercase;
   color:var(--teal);
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
 }
+.spot-slide-badge{
+  background:#EFEBFB;
+  color:var(--purple);
+  padding:3px 10px;
+  border-radius:var(--radius-pill);
+  font-size:11.5px;
+  font-weight:700;
+}
+.spot-close-btn{
+  border:1.5px solid var(--line);
+  background:var(--card);
+  color:var(--muted);
+  font-family:'Baloo 2', sans-serif;
+  font-weight:700;
+  font-size:12.5px;
+  padding:6px 14px;
+  border-radius:var(--radius-pill);
+  cursor:pointer;
+  transition:all .15s ease;
+  display:inline-flex;
+  align-items:center;
+  gap:5px;
+}
+.spot-close-btn:hover{
+  background:#F5F2FC;
+  color:var(--ink);
+  border-color:#D8CFED;
+}
+
 .spot-title{
-  font-size:22px;
+  font-size:24px;
   font-weight:800;
   color:var(--purple-deep);
-  margin:6px 0 20px;
+  margin:4px 0 20px;
   line-height:1.25;
 }
 .spot-gauge{
@@ -433,7 +495,7 @@ header{
   display:flex;
   align-items:center;
   justify-content:center;
-  margin:12px auto 8px;
+  margin:10px auto 6px;
   transition:background .7s ease;
 }
 .spot-gauge-inner{
@@ -480,47 +542,77 @@ header{
   font-weight:700;
   color:var(--muted);
   font-size:13px;
-  flex:0 0 70px;
+  flex:0 0 75px;
   text-align:right;
 }
 .spot-nav{
   display:flex;
   justify-content:space-between;
   align-items:center;
-  margin-top:24px;
+  margin-top:22px;
   padding-top:16px;
   border-top:1px solid var(--line);
+  flex-wrap:wrap;
+  gap:10px;
 }
-.spot-nav button{
+.spot-nav-btn{
   border:none;
   background:var(--purple);
   color:#fff;
-  font-family:'Baloo 2';
+  font-family:'Baloo 2', sans-serif;
   font-weight:700;
-  font-size:13px;
-  padding:9px 18px;
+  font-size:13.5px;
+  padding:10px 20px;
+  border-radius:var(--radius-pill);
+  cursor:pointer;
+  transition:all .15s;
+  box-shadow:0 3px 10px rgba(91,75,158,.2);
+}
+.spot-nav-btn:hover{
+  background:var(--purple-deep);
+  transform:translateY(-1px);
+}
+.spot-nav-btn:active{
+  transform:scale(0.97);
+}
+.spot-auto-btn{
+  border:1px solid var(--line);
+  background:var(--card);
+  color:var(--muted);
+  font-family:'Baloo 2', sans-serif;
+  font-weight:700;
+  font-size:12px;
+  padding:8px 14px;
   border-radius:var(--radius-pill);
   cursor:pointer;
   transition:all .15s;
 }
-.spot-nav button:hover{
-  background:var(--purple-deep);
+.spot-auto-btn:hover{
+  color:var(--ink);
+  border-color:#D8CFED;
+}
+.spot-auto-btn.on{
+  background:linear-gradient(135deg,var(--orange),var(--yellow));
+  color:#fff;
+  border-color:transparent;
 }
 .spot-dots{
   display:flex;
-  gap:6px;
+  gap:7px;
+  align-items:center;
 }
 .spot-dots span{
-  width:8px;
-  height:8px;
+  width:10px;
+  height:10px;
   border-radius:50%;
   background:var(--line);
   cursor:pointer;
-  transition:all .15s;
+  transition:all .2s;
 }
 .spot-dots span.on{
   background:var(--orange);
-  transform:scale(1.25);
+  transform:scale(1.35);
+  box-shadow:0 0 8px rgba(245,130,31,.45);
 }
 
 footer{
@@ -547,6 +639,11 @@ footer a{color:var(--purple);text-decoration:none;font-weight:700;}
       <img src="{% static 'img/logo_hope_principal.png' %}" alt="HOPE · Oportunidad, Prevención, Esperanza" class="brand-logo">
       <div class="brand-title"><span class="dot"></span>Resultados en vivo</div>
     </a>
+    <div class="header-actions">
+      <button type="button" class="btn-slides" id="btn-open-slides" title="Ver resumen pregunta por pregunta en modo presentación">
+        Modo Diapositivas
+      </button>
+    </div>
   </header>
 
   <main>
@@ -800,33 +897,86 @@ function miniCard(q, i){
   `;
 }
 
+// Extensión de métricas para preguntas de escala (rangos colectivos)
+function aggExtended(q){
+  const res = agg(q);
+  const scaleBands = [
+    { label: '0 a 2 · Tranquilidad / Calma', count: 0, c1: '#22BFBA', c2: '#7FE0DB' },
+    { label: '3 a 5 · Moderada', count: 0, c1: '#FFC72C', c2: '#FFE08A' },
+    { label: '6 a 8 · Alta tensión', count: 0, c1: '#F5821F', c2: '#FBB877' },
+    { label: '9 a 10 · Extrema / Rebasado(a)', count: 0, c1: '#EC4C79', c2: '#F591AC' }
+  ];
+  if(q.type === 'scale'){
+    activeResponses().forEach(r => {
+      const v = r.answers && r.answers[q.id];
+      if(v === undefined || v === null || v === '') return;
+      const num = Number(v);
+      if(num <= 2) scaleBands[0].count++;
+      else if(num <= 5) scaleBands[1].count++;
+      else if(num <= 8) scaleBands[2].count++;
+      else scaleBands[3].count++;
+    });
+  }
+  return { ...res, scaleBands };
+}
+
 function renderMosaic(){
   const mosaic = document.getElementById('mosaic');
   mosaic.innerHTML = QUESTIONS.map((q, i) => miniCard(q, i)).join('');
-  document.getElementById('stat-total').textContent = activeResponses().length;
+  const totalEl = document.getElementById('stat-total');
+  if(totalEl) totalEl.textContent = activeResponses().length;
   
   mosaic.querySelectorAll('.card').forEach(c => {
-    c.addEventListener('click', () => openSpotlight(Number(c.dataset.i)));
+    c.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      openSpotlight(Number(c.dataset.i));
+    });
   });
 }
 
-// Spotlight Modal
+// Modal Modo Diapositivas
 function spotlightHTML(i){
   const q = QUESTIONS[i];
-  const { counts, n, avg } = agg(q);
+  const { counts, n, avg, scaleBands } = aggExtended(q);
   let body = '';
+
+  const progressPct = Math.round(((i + 1) / QUESTIONS.length) * 100);
 
   if(q.type === 'scale'){
     const pct = Math.round(avg / 10 * 100);
+    let scaleSummary = 'Saturación moderada';
+    if(avg <= 2.5) scaleSummary = 'Muy baja saturación · Tranquilidad';
+    else if(avg <= 5) scaleSummary = 'Saturación moderada';
+    else if(avg <= 7.5) scaleSummary = 'Saturación alta · Tensión';
+    else scaleSummary = 'Saturación extrema · Rebasado/a';
+
     body = `
-      <div class="spot-gauge" style="--pct:${pct};">
-        <div class="spot-gauge-inner">
-          <div class="avg-badge" style="font-size:36px;">${avg.toFixed(1)}</div>
-          <span style="font-size:13px;color:var(--muted);font-weight:700;">de 10</span>
+      <div style="background:#FAF8FC;border-radius:20px;padding:24px 20px;margin-bottom:18px;border:1px solid var(--line);text-align:center;">
+        <div class="spot-gauge" style="--pct:${pct};">
+          <div class="spot-gauge-inner">
+            <div class="avg-badge" style="font-size:38px;font-family:'Baloo 2';font-weight:800;color:var(--purple-deep);line-height:1;">${avg.toFixed(1)}</div>
+            <span style="font-size:12px;color:var(--muted);font-weight:700;">Promedio / 10</span>
+          </div>
         </div>
+        <div style="font-family:'Baloo 2';font-weight:800;font-size:18px;color:var(--orange);margin-top:8px;">${scaleSummary}</div>
+        <div style="font-size:13px;color:var(--muted);margin-top:2px;">Calculado a partir de <b>${n}</b> respuesta(s) registradas</div>
       </div>
-      <div class="more-note" style="text-align:center;font-size:14px;margin-bottom:14px;">
-        Nivel promedio de saturación basado en <b>${n}</b> respuesta(s)
+
+      <div>
+        <div style="font-size:12px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px;">Distribución colectiva por rangos:</div>
+        ${scaleBands.map(b => {
+          const bpct = n ? Math.round(b.count / n * 100) : 0;
+          return `
+            <div class="spot-row">
+              <span class="spot-label" title="${b.label}">${b.label}</span>
+              <div class="spot-track">
+                <div class="spot-fill" style="--c1:${b.c1};--c2:${b.c2};width:${bpct}%"></div>
+              </div>
+              <span class="spot-num">${b.count} (${bpct}%)</span>
+            </div>
+          `;
+        }).join('')}
       </div>
     `;
   } else {
@@ -850,18 +1000,35 @@ function spotlightHTML(i){
   }
 
   const dots = QUESTIONS.map((_, idx) => `
-    <span class="${idx === i ? 'on' : ''}" data-idx="${idx}"></span>
+    <span class="${idx === i ? 'on' : ''}" data-idx="${idx}" title="Ir a Pregunta ${idx+1}"></span>
   `).join('');
 
   return `
-    <button class="spot-close" id="spot-close" aria-label="Cerrar modal">✕</button>
-    <div class="spot-eyebrow">PREGUNTA ${i+1} DE 8 · DETALLE COMPLETO</div>
-    <div class="spot-title">${q.title}</div>
-    <div>${body}</div>
+    <div class="spot-progress-bar">
+      <div class="spot-progress-fill" style="width:${progressPct}%"></div>
+    </div>
+    
+    <div class="spot-header-strip">
+      <div class="spot-eyebrow">
+        <span>PREGUNTA ${i+1} DE 8</span>
+        <span class="spot-slide-badge">Modo Diapositivas</span>
+      </div>
+      <button class="spot-close-btn" id="spot-close" type="button" aria-label="Cerrar presentación">
+        ✕ Salir de diapositivas
+      </button>
+    </div>
+
+    <h2 class="spot-title">${q.title}</h2>
+    
+    <div style="flex:1;">${body}</div>
+
     <div class="spot-nav">
-      <button type="button" id="spot-prev">← Anterior</button>
+      <button type="button" id="spot-prev" class="spot-nav-btn">← Anterior</button>
       <div class="spot-dots">${dots}</div>
-      <button type="button" id="spot-next">Siguiente →</button>
+      <button type="button" id="spot-auto" class="spot-auto-btn ${focusOn ? 'on' : ''}">
+        ${focusOn ? 'Pausar rotación' : 'Reproducir (7s)'}
+      </button>
+      <button type="button" id="spot-next" class="spot-nav-btn">Siguiente →</button>
     </div>
   `;
 }
@@ -872,40 +1039,80 @@ function openSpotlight(i){
   spotCard.innerHTML = spotlightHTML(i);
   document.getElementById('overlay').classList.remove('hidden');
 
-  document.getElementById('spot-close').onclick = closeSpotlight;
-  document.getElementById('spot-prev').onclick = () => {
+  document.getElementById('spot-close').onclick = (e) => {
+    e.stopPropagation();
+    closeSpotlight();
+  };
+  document.getElementById('spot-prev').onclick = (e) => {
+    e.stopPropagation();
     focusIdx = (focusIdx + QUESTIONS.length - 1) % QUESTIONS.length;
     openSpotlight(focusIdx);
   };
-  document.getElementById('spot-next').onclick = () => {
+  document.getElementById('spot-next').onclick = (e) => {
+    e.stopPropagation();
     focusIdx = (focusIdx + 1) % QUESTIONS.length;
     openSpotlight(focusIdx);
   };
 
+  const autoBtn = document.getElementById('spot-auto');
+  if(autoBtn){
+    autoBtn.onclick = (e) => {
+      e.stopPropagation();
+      if(focusOn) stopFocus();
+      else startFocus();
+      openSpotlight(focusIdx);
+    };
+  }
+
   spotCard.querySelectorAll('.spot-dots span').forEach(dot => {
-    dot.onclick = () => openSpotlight(Number(dot.dataset.idx));
+    dot.onclick = (e) => {
+      e.stopPropagation();
+      openSpotlight(Number(dot.dataset.idx));
+    };
   });
 
-  renderMosaic();
+  // Actualizar tarjeta activa en el fondo sin recargar todo el DOM
+  document.querySelectorAll('#mosaic .card').forEach((c, idx) => {
+    c.classList.toggle('spot-active', focusOn && focusIdx === idx);
+  });
 }
 
 function closeSpotlight(){
   document.getElementById('overlay').classList.add('hidden');
   stopFocus();
-  renderMosaic();
+  document.querySelectorAll('#mosaic .card').forEach(c => c.classList.remove('spot-active'));
 }
 
-// Cierre con click fuera del card o tecla ESC
-document.getElementById('overlay').addEventListener('click', (e) => {
-  if(e.target === document.getElementById('overlay')) closeSpotlight();
+// Control robusto de clic en fondo oscuro:
+// Solo se cierra si el mousedown comenzó en el overlay mismo (evita cierres accidentales al hacer clic en tarjetas)
+let overlayMouseDownOnBackdrop = false;
+const overlayEl = document.getElementById('overlay');
+overlayEl.addEventListener('mousedown', (e) => {
+  overlayMouseDownOnBackdrop = (e.target === overlayEl);
 });
+overlayEl.addEventListener('click', (e) => {
+  if(e.target === overlayEl && overlayMouseDownOnBackdrop){
+    closeSpotlight();
+  }
+  overlayMouseDownOnBackdrop = false;
+});
+
+// Evitar que clics dentro de la tarjeta se propaguen al backdrop
+document.getElementById('spot-card').addEventListener('click', (e) => {
+  e.stopPropagation();
+});
+
+// Navegación por teclado en modo diapositivas
 window.addEventListener('keydown', (e) => {
-  if(e.key === 'Escape') closeSpotlight();
   if(!document.getElementById('overlay').classList.contains('hidden')){
-    if(e.key === 'ArrowRight'){
+    if(e.key === 'Escape'){
+      closeSpotlight();
+    } else if(e.key === 'ArrowRight' || e.key === ' '){
+      e.preventDefault();
       focusIdx = (focusIdx + 1) % QUESTIONS.length;
       openSpotlight(focusIdx);
     } else if(e.key === 'ArrowLeft'){
+      e.preventDefault();
       focusIdx = (focusIdx + QUESTIONS.length - 1) % QUESTIONS.length;
       openSpotlight(focusIdx);
     }
@@ -1039,6 +1246,16 @@ async function checkRealtimeUpdates(){
   } finally {
     isPolling = false;
   }
+}
+
+// Botón para abrir Modo Diapositivas desde el header
+const btnOpenSlides = document.getElementById('btn-open-slides');
+if(btnOpenSlides){
+  btnOpenSlides.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    openSpotlight(0);
+  });
 }
 
 // Iniciar render inicial y loop de sincronización cada 2.5 segundos
