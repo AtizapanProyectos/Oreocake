@@ -3,450 +3,730 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
 <title>HOPE · Cuestionario de Bienestar Emocional</title>
 <link rel="icon" href="{% static 'img/favicon.ico' %}" type="image/x-icon">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
-:root{
-  --teal:#22BFBA; --orange:#F5821F; --pink:#EC4C79; --yellow:#FFC72C; --purple:#5B4B9E; --purple-deep:#3B3168;
-  --bg:#FBF8F2; --card:#FFFFFF; --ink:#2C2542; --muted:#8A82A6; --line:#EDE7F7;
-  --radius-xl:24px; --radius-lg:18px; --radius-pill:999px;
-  color-scheme:light;
+:root {
+  --teal: #22BFBA;
+  --teal-dark: #199E9A;
+  --orange: #F5821F;
+  --orange-light: #FFF4EB;
+  --pink: #EC4C79;
+  --yellow: #FFC72C;
+  --purple: #5B4B9E;
+  --purple-deep: #3B3168;
+  --bg: #FBF8F2;
+  --card: #FFFFFF;
+  --ink: #2C2542;
+  --muted: #7E7696;
+  --line: #EFEAF7;
+  --line-focus: #CFC5E6;
+  --radius-xl: 22px;
+  --radius-lg: 16px;
+  --radius-pill: 999px;
+  color-scheme: light;
 }
-*{box-sizing:border-box;}
-html,body{height:100%;margin:0;}
-body{
-  font-family:'Nunito',system-ui,sans-serif;
-  color:var(--ink);
-  background:radial-gradient(circle at 10% -5%,#FDE9D2 0%,transparent 42%),radial-gradient(circle at 90% 5%,#DBF5F3 0%,transparent 40%),var(--bg);
-  padding:calc(16px + env(safe-area-inset-top,0px)) 16px calc(24px + env(safe-area-inset-bottom,0px));
-  min-height:100%;
+
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
 }
-h1,h2,h3{font-family:'Baloo 2',sans-serif;margin:0;}
-.wrap{max-width:560px;margin:0 auto;}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+}
+
+body {
+  font-family: 'Nunito', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  color: var(--ink);
+  background:
+    radial-gradient(circle at 10% -5%, #FDE9D2 0%, transparent 48%),
+    radial-gradient(circle at 90% 5%, #DBF5F3 0%, transparent 45%),
+    var(--bg);
+  background-attachment: fixed;
+  padding: calc(10px + env(safe-area-inset-top, 0px)) 12px calc(24px + env(safe-area-inset-bottom, 0px));
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+}
+
+h1, h2, h3 {
+  font-family: 'Baloo 2', sans-serif;
+  margin: 0;
+}
+
+.wrap {
+  width: 100%;
+  max-width: 520px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
 
 /* Header */
-header{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:12px;
-  margin-bottom:18px;
-  flex-wrap:wrap;
-}
-.brand{
-  display:flex;
-  align-items:center;
-  gap:10px;
-  text-decoration:none;
-}
-.brand-logo{
-  height:38px;
-  width:auto;
-  object-fit:contain;
-  display:block;
-}
-.brand-badge{
-  display:inline-flex;
-  align-items:center;
-  gap:6px;
-  background:#fff;
-  border:1px solid var(--line);
-  padding:5px 12px;
-  border-radius:var(--radius-pill);
-  font-family:'Baloo 2';
-  font-weight:700;
-  font-size:12px;
-  color:var(--purple-deep);
-  box-shadow:0 2px 8px rgba(59,49,104,.04);
-}
-.brand-badge .dot{
-  width:8px;
-  height:8px;
-  border-radius:50%;
-  background:var(--teal);
-  animation:pulse 1.6s infinite;
-}
-@keyframes pulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.4;transform:scale(1.35);}}
-
-.btn-header-link{
-  display:inline-flex;
-  align-items:center;
-  gap:6px;
-  background:var(--card);
-  border:1px solid var(--line);
-  padding:8px 14px;
-  border-radius:var(--radius-pill);
-  font-family:'Baloo 2';
-  font-weight:700;
-  font-size:13px;
-  color:var(--purple);
-  text-decoration:none;
-  box-shadow:0 4px 12px rgba(59,49,104,.06);
-  transition:all .15s ease;
-}
-.btn-header-link:hover{
-  background:var(--purple);
-  color:#fff;
-  transform:translateY(-1px);
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+  width: 100%;
+  padding: 2px 4px;
 }
 
-/* Stepper Card */
-.stepper-card{
-  background:var(--card);
-  border-radius:var(--radius-xl);
-  padding:30px 24px 26px;
-  box-shadow:0 14px 34px rgba(59,49,104,.08);
-  border:1px solid var(--line);
-  animation:cardIn .35s ease forwards;
-}
-@keyframes cardIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
-
-.progress-header{
-  margin-bottom:18px;
-}
-.progress-bar-wrap{
-  height:6px;
-  background:var(--line);
-  border-radius:999px;
-  overflow:hidden;
-  margin-bottom:12px;
-}
-.progress-bar-fill{
-  height:100%;
-  width:12.5%;
-  background:linear-gradient(90deg,var(--teal),var(--orange));
-  border-radius:999px;
-  transition:width .4s cubic-bezier(.22,.9,.3,1);
-}
-.progress-dots{
-  display:flex;
-  justify-content:center;
-  gap:6px;
-}
-.progress-dots span{
-  width:8px;
-  height:8px;
-  border-radius:50%;
-  background:var(--line);
-  transition:all .25s ease;
-}
-.progress-dots span.on{
-  background:var(--teal);
-  transform:scale(1.2);
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
 }
 
-.q-eyebrow{
-  font-family:'Baloo 2';
-  font-weight:700;
-  font-size:12px;
-  letter-spacing:.08em;
-  text-transform:uppercase;
-  color:var(--teal);
-  text-align:center;
+.brand-logo {
+  height: clamp(34px, 8.5vw, 42px);
+  width: auto;
+  object-fit: contain;
+  display: block;
 }
-.q-title{
-  font-size:22px;
-  font-weight:800;
-  color:var(--purple-deep);
-  text-align:center;
-  line-height:1.25;
-  margin:6px 0 6px;
+
+.brand-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #ffffff;
+  border: 1px solid var(--line);
+  padding: 5px 11px;
+  border-radius: var(--radius-pill);
+  font-family: 'Baloo 2', sans-serif;
+  font-weight: 700;
+  font-size: 11.5px;
+  color: var(--purple-deep);
+  box-shadow: 0 2px 8px rgba(59, 49, 104, 0.04);
 }
-.q-sub{
-  color:var(--muted);
-  font-size:13.5px;
-  text-align:center;
-  margin-bottom:20px;
+
+.brand-badge .dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--teal);
+  animation: pulse 1.6s infinite ease-in-out;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.45; transform: scale(1.3); }
+}
+
+/* Main Card */
+main {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.stepper-card {
+  background: var(--card);
+  border-radius: var(--radius-xl);
+  padding: 22px 18px 20px;
+  box-shadow: 0 10px 30px rgba(59, 49, 104, 0.07), 0 1px 4px rgba(59, 49, 104, 0.03);
+  border: 1px solid var(--line);
+  position: relative;
+  overflow: hidden;
+  animation: cardIn 0.28s ease-out forwards;
+}
+
+@media (max-width: 380px) {
+  .stepper-card {
+    padding: 18px 14px 16px;
+    border-radius: 18px;
+  }
+}
+
+@keyframes cardIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Progress Header */
+.progress-header {
+  margin-bottom: 14px;
+}
+
+.progress-bar-wrap {
+  height: 6px;
+  background: var(--line);
+  border-radius: 999px;
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  width: 12.5%;
+  background: linear-gradient(90deg, var(--teal), var(--orange));
+  border-radius: 999px;
+  transition: width 0.35s cubic-bezier(0.22, 0.9, 0.3, 1);
+}
+
+.progress-dots {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+}
+
+.progress-dots span {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--line);
+  transition: all 0.22s ease;
+}
+
+.progress-dots span.on {
+  background: var(--teal);
+  transform: scale(1.25);
+}
+
+/* Question Header */
+.q-eyebrow-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.q-eyebrow {
+  display: inline-block;
+  font-family: 'Baloo 2', sans-serif;
+  font-weight: 700;
+  font-size: 11.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--teal-dark);
+  background: rgba(34, 191, 186, 0.09);
+  padding: 3px 10px;
+  border-radius: var(--radius-pill);
+}
+
+.q-title {
+  font-size: clamp(17px, 4.6vw, 21.5px);
+  font-weight: 800;
+  color: var(--purple-deep);
+  text-align: center;
+  line-height: 1.28;
+  margin: 6px 0 6px;
+  letter-spacing: -0.01em;
+}
+
+.q-sub {
+  color: var(--muted);
+  font-size: clamp(12px, 3.4vw, 13.5px);
+  text-align: center;
+  line-height: 1.4;
+  margin-bottom: 16px;
 }
 
 /* Option List */
-.opt-list{
-  display:flex;
-  flex-direction:column;
-  gap:10px;
+.opt-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
 }
-.opt-btn{
-  border:2px solid var(--line);
-  background:var(--bg);
-  border-radius:15px;
-  padding:14px 18px;
-  font-family:'Baloo 2';
-  font-weight:700;
-  font-size:15px;
-  color:var(--ink);
-  cursor:pointer;
-  text-align:left;
-  transition:transform .12s, border-color .15s, background .15s, box-shadow .15s;
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  width:100%;
+
+.opt-btn {
+  border: 1.5px solid var(--line);
+  background: #FFFFFF;
+  border-radius: 14px;
+  padding: 12px 14px 12px 16px;
+  font-family: 'Baloo 2', system-ui, sans-serif;
+  font-weight: 700;
+  font-size: clamp(14px, 3.8vw, 15.5px);
+  color: var(--ink);
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.16s ease;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  min-height: 48px;
+  box-sizing: border-box;
+  touch-action: manipulation;
+  user-select: none;
+  box-shadow: 0 1px 3px rgba(59, 49, 104, 0.02);
 }
-.opt-btn:hover{
-  border-color:#dbcff2;
-  transform:translateY(-1px);
+
+@media (hover: hover) {
+  .opt-btn:hover {
+    border-color: #D3C9E6;
+    background: #FAF8FD;
+    transform: translateY(-1px);
+  }
 }
-.opt-btn:active{
-  transform:scale(.98);
+
+.opt-btn:active {
+  transform: scale(0.985);
+  background: #F5F1FB;
 }
-.opt-btn.sel{
-  border-color:var(--orange);
-  background:linear-gradient(135deg,#FDEADA,#FFF7F0);
-  box-shadow:0 4px 14px rgba(245,130,31,.15);
+
+.opt-btn.sel {
+  border-color: var(--orange);
+  background: linear-gradient(135deg, #FFF5EB, #FFFFFF);
+  box-shadow: 0 4px 14px rgba(245, 130, 31, 0.18);
+  transform: scale(1.008);
 }
-.opt-btn.sel::after{
-  content:'✓';
-  color:var(--orange);
-  font-weight:800;
-  font-size:18px;
+
+.opt-label-text {
+  flex: 1;
+  line-height: 1.25;
+}
+
+/* Radio Indicator */
+.opt-radio {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid #D6CCE8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: #fff;
+  transition: all 0.16s ease;
+}
+
+.opt-btn.sel .opt-radio {
+  border-color: var(--orange);
+  background: var(--orange);
+  color: #fff;
+  transform: scale(1.05);
+}
+
+.opt-radio-icon {
+  display: none;
+  width: 12px;
+  height: 12px;
+  stroke: #ffffff;
+  stroke-width: 3.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  fill: none;
+}
+
+.opt-btn.sel .opt-radio .opt-radio-icon {
+  display: block;
 }
 
 /* Custom text input for "Otra" */
-.otra-input-wrap{
-  margin-top:12px;
-  animation:fadeIn .25s ease;
+.otra-input-wrap {
+  margin-top: 12px;
+  padding: 12px;
+  background: #FAF8FD;
+  border: 1.5px dashed #D5CAEA;
+  border-radius: 14px;
+  animation: fadeInDown 0.22s ease-out;
 }
-@keyframes fadeIn{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
-.otra-input{
-  width:100%;
-  border:2px solid var(--line);
-  border-radius:14px;
-  padding:12px 16px;
-  font-family:'Nunito',sans-serif;
-  font-size:14px;
-  color:var(--ink);
-  background:#fff;
-  outline:none;
-  transition:border-color .2s;
+
+@keyframes fadeInDown {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
 }
-.otra-input:focus{
-  border-color:var(--purple);
+
+.otra-input-container {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.otra-input {
+  flex: 1;
+  border: 1.5px solid var(--line-focus);
+  border-radius: 12px;
+  padding: 12px 14px;
+  font-family: 'Nunito', sans-serif;
+  font-size: 16px; /* 16px prevents iOS/Android auto-zoom */
+  color: var(--ink);
+  background: #fff;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  box-sizing: border-box;
+}
+
+.otra-input:focus {
+  border-color: var(--purple);
+  box-shadow: 0 0 0 3px rgba(91, 75, 158, 0.15);
+}
+
+.otra-input.shake {
+  animation: shake 0.4s ease-in-out;
+  border-color: var(--pink);
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  50% { transform: translateX(5px); }
+  75% { transform: translateX(-3px); }
+}
+
+.btn-otra-action {
+  border: none;
+  background: linear-gradient(135deg, var(--purple), var(--purple-deep));
+  color: #fff;
+  padding: 0 16px;
+  border-radius: 12px;
+  font-family: 'Baloo 2', sans-serif;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(59, 49, 104, 0.18);
+  transition: transform 0.14s, box-shadow 0.14s;
+  touch-action: manipulation;
+}
+
+.btn-otra-action:active {
+  transform: scale(0.96);
+}
+
+.otra-hint {
+  font-size: 11.5px;
+  color: var(--muted);
+  margin-top: 6px;
+  text-align: left;
 }
 
 /* Scale 0-10 component */
-.scale-wrap{
-  text-align:center;
-  padding:10px 0 16px;
-}
-.scale-val{
-  font-family:'Baloo 2';
-  font-size:46px;
-  font-weight:800;
-  color:var(--orange);
-  line-height:1;
-  margin-bottom:4px;
-}
-.scale-label{
-  font-size:13px;
-  font-weight:700;
-  color:var(--muted);
-  margin-bottom:16px;
-}
-input[type=range]{
-  width:100%;
-  -webkit-appearance:none;
-  height:12px;
-  border-radius:999px;
-  background:linear-gradient(90deg,var(--teal) 0%,var(--yellow) 50%,var(--orange) 80%,var(--pink) 100%);
-  outline:none;
-}
-input[type=range]::-webkit-slider-thumb{
-  -webkit-appearance:none;
-  width:28px;
-  height:28px;
-  border-radius:50%;
-  background:#fff;
-  border:4px solid var(--purple);
-  box-shadow:0 3px 10px rgba(59,49,104,.3);
-  cursor:pointer;
-  transition:transform .1s;
-}
-input[type=range]::-webkit-slider-thumb:active{
-  transform:scale(1.2);
-}
-input[type=range]::-moz-range-thumb{
-  width:28px;
-  height:28px;
-  border-radius:50%;
-  background:#fff;
-  border:4px solid var(--purple);
-  box-shadow:0 3px 10px rgba(59,49,104,.3);
-  cursor:pointer;
-}
-.scale-buttons{
-  display:grid;
-  grid-template-columns:repeat(11,1fr);
-  gap:4px;
-  margin-top:16px;
-}
-.scale-num-btn{
-  border:1px solid var(--line);
-  background:var(--bg);
-  padding:7px 0;
-  border-radius:8px;
-  font-family:'Baloo 2';
-  font-weight:700;
-  font-size:13px;
-  color:var(--muted);
-  cursor:pointer;
-  transition:all .12s;
-}
-.scale-num-btn:hover{
-  background:#fff;
-  border-color:var(--purple);
-  color:var(--ink);
-}
-.scale-num-btn.sel{
-  background:var(--purple);
-  color:#fff;
-  border-color:var(--purple);
-  transform:scale(1.08);
+.scale-wrap {
+  text-align: center;
+  padding: 4px 0 10px;
 }
 
-/* Nav buttons */
-.nav-buttons{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  gap:12px;
-  margin-top:24px;
-  padding-top:16px;
-  border-top:1px solid var(--line);
+.scale-val-badge {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 8px;
 }
-.nav-buttons button{
-  border:none;
-  padding:12px 22px;
-  border-radius:var(--radius-pill);
-  font-family:'Baloo 2';
-  font-weight:700;
-  font-size:15px;
-  cursor:pointer;
-  transition:all .15s;
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  gap:8px;
+
+.scale-val {
+  font-family: 'Baloo 2', sans-serif;
+  font-size: 44px;
+  font-weight: 800;
+  color: var(--orange);
+  line-height: 1;
+  transition: color 0.2s, transform 0.15s;
 }
-#btn-prev{
-  background:var(--line);
-  color:var(--ink);
+
+.scale-label {
+  display: inline-block;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--purple-deep);
+  background: #F4EFFC;
+  padding: 4px 14px;
+  border-radius: var(--radius-pill);
+  margin-top: 4px;
+  line-height: 1.3;
 }
-#btn-prev:hover{
-  background:#e2daf2;
+
+.scale-slider-box {
+  padding: 8px 4px 16px;
 }
-#btn-next{
-  background:linear-gradient(135deg,var(--purple),var(--purple-deep));
-  color:#fff;
-  box-shadow:0 6px 18px rgba(59,49,104,.2);
-  flex:1;
-  max-width:240px;
-  margin-left:auto;
+
+input[type=range] {
+  width: 100%;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 14px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--teal) 0%, var(--yellow) 45%, var(--orange) 75%, var(--pink) 100%);
+  outline: none;
+  touch-action: pan-y;
 }
-#btn-next:hover:not(:disabled){
-  transform:translateY(-1px);
-  box-shadow:0 8px 22px rgba(59,49,104,.28);
+
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 4px solid var(--purple);
+  box-shadow: 0 4px 12px rgba(59, 49, 104, 0.35);
+  cursor: pointer;
+  transition: transform 0.12s;
 }
-#btn-next:disabled{
-  opacity:.4;
-  cursor:not-allowed;
-  box-shadow:none;
+
+input[type=range]::-webkit-slider-thumb:active {
+  transform: scale(1.2);
+}
+
+input[type=range]::-moz-range-thumb {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 4px solid var(--purple);
+  box-shadow: 0 4px 12px rgba(59, 49, 104, 0.35);
+  cursor: pointer;
+}
+
+/* Touch-friendly Scale Buttons Grid */
+.scale-buttons-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.scale-num-btn {
+  flex: 0 0 calc((100% - 32px) / 6);
+  min-width: 40px;
+  height: 44px;
+  border: 1.5px solid var(--line);
+  background: #FFFFFF;
+  border-radius: 12px;
+  font-family: 'Baloo 2', sans-serif;
+  font-weight: 800;
+  font-size: 16px;
+  color: var(--ink);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.14s ease;
+  touch-action: manipulation;
+  user-select: none;
+  box-shadow: 0 1px 3px rgba(59, 49, 104, 0.03);
+}
+
+.scale-num-btn:active {
+  transform: scale(0.92);
+}
+
+.scale-num-btn.sel {
+  background: var(--purple);
+  color: #ffffff;
+  border-color: var(--purple);
+  box-shadow: 0 4px 12px rgba(91, 75, 158, 0.3);
+  transform: scale(1.08);
+}
+
+/* Optional slider confirmation pill */
+.scale-confirm-wrap {
+  margin-top: 14px;
+  display: flex;
+  justify-content: center;
+}
+
+.btn-scale-confirm {
+  border: none;
+  background: linear-gradient(135deg, var(--teal), var(--teal-dark));
+  color: #fff;
+  padding: 10px 22px;
+  border-radius: var(--radius-pill);
+  font-family: 'Baloo 2', sans-serif;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 4px 12px rgba(34, 191, 186, 0.25);
+  transition: transform 0.14s, box-shadow 0.14s;
+  touch-action: manipulation;
+}
+
+.btn-scale-confirm:active {
+  transform: scale(0.96);
+}
+
+/* Nav / Back Button */
+.nav-prev-wrap {
+  display: flex;
+  justify-content: center;
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--line);
+}
+
+.btn-prev {
+  border: none;
+  background: transparent;
+  padding: 8px 16px;
+  border-radius: var(--radius-pill);
+  font-family: 'Baloo 2', sans-serif;
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  touch-action: manipulation;
+}
+
+.btn-prev:hover, .btn-prev:active {
+  color: var(--purple-deep);
+  background: #F4EFFC;
+}
+
+/* Saving Overlay */
+.saving-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(4px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  z-index: 10;
+  border-radius: var(--radius-xl);
+  animation: fadeIn 0.2s ease;
+}
+
+.saving-spinner {
+  width: 36px;
+  height: 36px;
+  border: 3.5px solid var(--line);
+  border-top-color: var(--teal);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.saving-text {
+  font-family: 'Baloo 2', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--purple-deep);
 }
 
 /* Thanks Screen */
-.thanks{
-  background:var(--card);
-  border-radius:var(--radius-xl);
-  padding:42px 24px;
-  text-align:center;
-  box-shadow:0 14px 34px rgba(59,49,104,.08);
-  border:1px solid var(--line);
-  animation:cardIn .35s ease forwards;
-}
-.thanks .check{
-  width:78px;
-  height:78px;
-  border-radius:50%;
-  background:linear-gradient(135deg,var(--teal),#1CA7A2);
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  margin:0 auto 18px;
-  font-size:36px;
-  color:#fff;
-  box-shadow:0 8px 22px rgba(34,191,186,.35);
-  animation:pop .4s cubic-bezier(.175,.885,.32,1.275);
-}
-@keyframes pop{0%{transform:scale(0);}80%{transform:scale(1.15);}100%{transform:scale(1);}}
-.thanks h2{
-  font-size:26px;
-  color:var(--purple-deep);
-  margin-bottom:8px;
-}
-.thanks p{
-  color:var(--muted);
-  font-size:15px;
-  line-height:1.5;
-  margin-bottom:24px;
-}
-.thanks-actions{
-  display:flex;
-  flex-direction:column;
-  gap:10px;
-  max-width:320px;
-  margin:0 auto;
-}
-.btn-primary-action{
-  background:linear-gradient(135deg,var(--purple),var(--purple-deep));
-  color:#fff;
-  padding:13px 20px;
-  border-radius:var(--radius-pill);
-  text-decoration:none;
-  font-family:'Baloo 2';
-  font-weight:700;
-  font-size:15px;
-  box-shadow:0 6px 18px rgba(59,49,104,.22);
-  transition:all .15s;
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  gap:8px;
-  border:none;
-}
-.btn-primary-action:hover{
-  transform:translateY(-2px);
-  box-shadow:0 10px 24px rgba(59,49,104,.3);
-}
-.btn-secondary-action{
-  background:var(--line);
-  color:var(--purple-deep);
-  padding:11px 20px;
-  border-radius:var(--radius-pill);
-  text-decoration:none;
-  font-family:'Baloo 2';
-  font-weight:700;
-  font-size:14px;
-  border:none;
-  cursor:pointer;
-  transition:all .15s;
-}
-.btn-secondary-action:hover{
-  background:#dfd7f2;
+.thanks {
+  background: var(--card);
+  border-radius: var(--radius-xl);
+  padding: 34px 20px 28px;
+  text-align: center;
+  box-shadow: 0 10px 30px rgba(59, 49, 104, 0.07);
+  border: 1px solid var(--line);
+  animation: cardIn 0.32s ease forwards;
 }
 
-.hidden{display:none !important;}
-
-footer{
-  text-align:center;
-  color:var(--muted);
-  font-size:12px;
-  margin-top:24px;
-  opacity:.85;
+.thanks .check {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--teal), var(--teal-dark));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+  font-size: 32px;
+  color: #fff;
+  box-shadow: 0 8px 20px rgba(34, 191, 186, 0.32);
+  animation: pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
-footer a{color:var(--purple);text-decoration:none;font-weight:700;}
+
+@keyframes pop {
+  0% { transform: scale(0); }
+  80% { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+
+.thanks h2 {
+  font-size: 24px;
+  color: var(--purple-deep);
+  margin-bottom: 8px;
+}
+
+.thanks p {
+  color: var(--muted);
+  font-size: 14.5px;
+  line-height: 1.5;
+  margin-bottom: 22px;
+}
+
+.thanks-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 320px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.btn-secondary-action {
+  background: #F4EFFC;
+  color: var(--purple-deep);
+  padding: 12px 20px;
+  border-radius: var(--radius-pill);
+  text-decoration: none;
+  font-family: 'Baloo 2', sans-serif;
+  font-weight: 700;
+  font-size: 14px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  touch-action: manipulation;
+}
+
+.btn-secondary-action:active {
+  background: #EAE1F7;
+  transform: scale(0.98);
+}
+
+.hidden {
+  display: none !important;
+}
+
+footer {
+  text-align: center;
+  color: var(--muted);
+  font-size: 11.5px;
+  margin-top: 18px;
+  opacity: 0.88;
+  padding: 6px 0;
+}
+
+footer a {
+  color: var(--purple);
+  text-decoration: none;
+  font-weight: 700;
+}
 </style>
 </head>
 <body>
@@ -454,14 +734,22 @@ footer a{color:var(--purple);text-decoration:none;font-weight:700;}
   <header>
     <a href="{% url 'inicio' %}" class="brand" title="Volver al inicio de HOPE">
       <img src="{% static 'img/logo_hope_principal.png' %}" alt="HOPE · Oportunidad, Prevención, Esperanza" class="brand-logo">
-     
     </a>
-
+    <div class="brand-badge">
+      <span class="dot"></span>
+      <span>En vivo</span>
+    </div>
   </header>
 
   <!-- Formulario de Preguntas -->
   <main>
     <section class="stepper-card" id="stepper-card">
+      <!-- Loading overlay for auto-submit -->
+      <div class="saving-overlay hidden" id="saving-overlay">
+        <div class="saving-spinner"></div>
+        <div class="saving-text">Guardando tus respuestas...</div>
+      </div>
+
       <div class="progress-header">
         <div class="progress-bar-wrap">
           <div class="progress-bar-fill" id="progress-bar"></div>
@@ -469,15 +757,20 @@ footer a{color:var(--purple);text-decoration:none;font-weight:700;}
         <div class="progress-dots" id="dots"></div>
       </div>
 
-      <div class="q-eyebrow" id="q-eyebrow">PREGUNTA <span id="q-idx">1</span> DE 8</div>
+      <div class="q-eyebrow-wrap">
+        <div class="q-eyebrow" id="q-eyebrow">PREGUNTA <span id="q-idx">1</span> DE 8</div>
+      </div>
       <h1 class="q-title" id="q-title">Cargando pregunta...</h1>
       <div class="q-sub" id="q-sub"></div>
 
       <div id="q-body"></div>
 
-      <div class="nav-buttons">
-        <button type="button" id="btn-prev">← Anterior</button>
-        <button type="button" id="btn-next">Siguiente →</button>
+      <!-- Botón Anterior únicamente (se eliminó el botón de continuar según lo solicitado) -->
+      <div class="nav-prev-wrap" id="nav-prev-wrap">
+        <button type="button" id="btn-prev" class="btn-prev">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+          <span>Pregunta anterior</span>
+        </button>
       </div>
     </section>
 
@@ -508,14 +801,14 @@ const QUESTIONS = [
   {
     id: 'q1',
     title: 'Si tuvieras que describir cómo te sientes HOY en una palabra, ¿cuál sería?',
-    sub: 'Elige la opción que más se acerque a cómo estás ahora.',
+    sub: 'Toca la opción que más se acerque a cómo estás ahora:',
     type: 'choice',
     options: ['Bien', 'No tan bien', 'Mal', 'Muy mal']
   },
   {
     id: 'q2',
     title: 'En la última semana, ¿qué emoción ha aparecido con más fuerza?',
-    sub: 'La emoción predominante que más sentiste.',
+    sub: 'Toca la emoción predominante que más sentiste:',
     type: 'choice',
     hasOther: true,
     options: ['Ansiedad', 'Tristeza', 'Enojo', 'Miedo', 'Calma', 'Alegría', 'Frustración', 'Otra']
@@ -523,13 +816,13 @@ const QUESTIONS = [
   {
     id: 'q3',
     title: 'Del 0 al 10, ¿qué tan saturada/o te has sentido por escuela, expectativas o vida personal?',
-    sub: '0 es completamente en calma y 10 es rebasado/a al máximo.',
+    sub: '0 es en calma y 10 es rebasado/a al máximo. Toca tu número:',
     type: 'scale'
   },
   {
     id: 'q4',
     title: 'Cuando algo te rebasa, ¿qué haces primero?',
-    sub: 'Tu primera reacción o mecanismo habitual.',
+    sub: 'Tu primera reacción o mecanismo habitual:',
     type: 'choice',
     hasOther: true,
     options: ['Lo hablo', 'Me aíslo', 'Duermo', 'Redes / videojuegos', 'Como o dejo de comer', 'Ejercicio', 'Consumo algo', 'Busco ayuda profesional', 'Otra']
@@ -537,28 +830,28 @@ const QUESTIONS = [
   {
     id: 'q5',
     title: 'En las últimas dos semanas, ¿qué tanto te ha costado dormir, concentrarte o disfrutar cosas que normalmente disfrutas?',
-    sub: 'Frecuencia con la que has notado estas dificultades.',
+    sub: 'Frecuencia con la que has notado estas dificultades:',
     type: 'choice',
     options: ['Nada', 'Algunos días', 'Muchos días', 'Casi todos los días']
   },
   {
     id: 'q6',
     title: 'Si mañana necesitaras ayuda emocional, ¿sabrías exactamente con quién acudir?',
-    sub: 'Tus redes de apoyo o profesionales a tu alcance.',
+    sub: 'Tus redes de apoyo o profesionales a tu alcance:',
     type: 'choice',
     options: ['Sí', 'Más o menos', 'No', 'No confío en la terapia']
   },
   {
     id: 'q7',
     title: '¿Alguna vez has usado IA, redes o internet para entender lo que sientes o intentar “diagnosticarte”?',
-    sub: 'Búsquedas, tests en línea, chatbots o videos.',
+    sub: 'Búsquedas, tests en línea, chatbots o videos:',
     type: 'choice',
     options: ['Sí, frecuentemente', 'Algunas veces', 'No']
   },
   {
     id: 'q8',
     title: '¿Qué te frena más para pedir ayuda profesional?',
-    sub: 'El obstáculo o duda más importante.',
+    sub: 'El obstáculo o duda más importante:',
     type: 'choice',
     hasOther: true,
     options: ['Costo', 'Tiempo', 'Pena / estigma', 'No sé dónde', 'Creo que puedo solo/a', 'Mala experiencia previa', 'Nada me frena', 'Otra']
@@ -566,6 +859,7 @@ const QUESTIONS = [
 ];
 
 let step = 0;
+let isBusy = false;
 let answers = {
   q1: '',
   q2: '',
@@ -588,161 +882,29 @@ function getScaleText(val){
   return 'Saturación extrema · Rebasado/a';
 }
 
-function renderStep(){
-  const q = QUESTIONS[step];
-  document.getElementById('q-idx').textContent = step + 1;
-  document.getElementById('q-title').textContent = q.title;
-  document.getElementById('q-sub').textContent = q.sub || '';
-  
-  // Progress indicators
-  const pct = Math.round(((step + 1) / QUESTIONS.length) * 100);
-  document.getElementById('progress-bar').style.width = pct + '%';
-  document.getElementById('dots').innerHTML = QUESTIONS.map((_, i) => `<span class="${i <= step ? 'on' : ''}"></span>`).join('');
-  
-  const body = document.getElementById('q-body');
-
-  if(q.type === 'scale'){
-    const val = (answers[q.id] !== undefined && answers[q.id] !== '') ? answers[q.id] : 5;
-    answers[q.id] = Number(val);
-    
-    body.innerHTML = `
-      <div class="scale-wrap">
-        <div class="scale-val" id="scale-val">${val}</div>
-        <div class="scale-label" id="scale-label">${getScaleText(val)}</div>
-        <input type="range" min="0" max="10" step="1" id="scale-input" value="${val}" aria-label="Escala de saturación del 0 al 10">
-        <div class="scale-buttons">
-          ${[0,1,2,3,4,5,6,7,8,9,10].map(n => `<button type="button" class="scale-num-btn ${val===n?'sel':''}" data-val="${n}">${n}</button>`).join('')}
-        </div>
-      </div>
-    `;
-
-    const range = document.getElementById('scale-input');
-    const updateScale = (v) => {
-      answers[q.id] = Number(v);
-      document.getElementById('scale-val').textContent = v;
-      document.getElementById('scale-label').textContent = getScaleText(v);
-      range.value = v;
-      body.querySelectorAll('.scale-num-btn').forEach(btn => {
-        btn.classList.toggle('sel', Number(btn.dataset.val) === Number(v));
-      });
-      validateNext();
-    };
-
-    range.addEventListener('input', (e) => updateScale(e.target.value));
-    body.querySelectorAll('.scale-num-btn').forEach(btn => {
-      btn.addEventListener('click', () => updateScale(btn.dataset.val));
-    });
-
-  } else {
-    // Choice options
-    const selected = answers[q.id] || '';
-    const hasOtherInput = q.hasOther && selected === 'Otra';
-    const otherVal = answers[q.id + '_otra'] || '';
-
-    let optsHtml = q.options.map(opt => `
-      <button type="button" class="opt-btn ${selected === opt ? 'sel' : ''}" data-opt="${opt}">
-        <span>${opt}</span>
-      </button>
-    `).join('');
-
-    let otherHtml = '';
-    if(q.hasOther){
-      otherHtml = `
-        <div class="otra-input-wrap ${hasOtherInput ? '' : 'hidden'}" id="wrap-otra-${q.id}">
-          <input type="text" class="otra-input" id="input-otra-${q.id}" placeholder="Por favor especifica tu respuesta..." value="${otherVal}">
-        </div>
-      `;
-    }
-
-    body.innerHTML = `<div class="opt-list">${optsHtml}</div>${otherHtml}`;
-
-    body.querySelectorAll('.opt-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const val = btn.dataset.opt;
-        answers[q.id] = val;
-        
-        // Show/hide custom input
-        const otraWrap = document.getElementById(`wrap-otra-${q.id}`);
-        if(otraWrap){
-          if(val === 'Otra'){
-            otraWrap.classList.remove('hidden');
-            const inp = document.getElementById(`input-otra-${q.id}`);
-            inp.focus();
-          } else {
-            otraWrap.classList.add('hidden');
-            answers[q.id + '_otra'] = '';
-          }
-        }
-        
-        renderStep();
-      });
-    });
-
-    const inp = document.getElementById(`input-otra-${q.id}`);
-    if(inp){
-      inp.addEventListener('input', (e) => {
-        answers[q.id + '_otra'] = e.target.value;
-        validateNext();
-      });
-    }
-  }
-
-  // Prev button visibility
-  document.getElementById('btn-prev').style.visibility = step === 0 ? 'hidden' : 'visible';
-
-  // Next / Submit button text
-  const nextBtn = document.getElementById('btn-next');
-  if(step === QUESTIONS.length - 1){
-    nextBtn.innerHTML = 'Enviar respuestas ✓';
-    nextBtn.style.background = 'linear-gradient(135deg, var(--teal), #189893)';
-  } else {
-    nextBtn.innerHTML = 'Siguiente →';
-    nextBtn.style.background = 'linear-gradient(135deg, var(--purple), var(--purple-deep))';
-  }
-
-  validateNext();
+function getScaleColor(val){
+  if(val <= 2) return 'var(--teal)';
+  if(val <= 4) return '#20AFA9';
+  if(val <= 6) return 'var(--yellow)';
+  if(val <= 8) return 'var(--orange)';
+  return 'var(--pink)';
 }
 
-function validateNext(){
-  const q = QUESTIONS[step];
-  const nextBtn = document.getElementById('btn-next');
-  if(q.type === 'scale'){
-    nextBtn.disabled = false;
-  } else {
-    const val = answers[q.id];
-    let ok = !!val;
-    if(q.hasOther && val === 'Otra'){
-      const text = (answers[q.id + '_otra'] || '').trim();
-      ok = text.length > 0;
-    }
-    nextBtn.disabled = !ok;
-  }
-}
+async function advanceNextOrSubmit() {
+  if (isBusy) return;
 
-// Navigation events
-document.getElementById('btn-prev').addEventListener('click', () => {
-  if(step > 0){
-    step--;
-    renderStep();
-  }
-});
-
-document.getElementById('btn-next').addEventListener('click', async () => {
-  const q = QUESTIONS[step];
-  if(q.type !== 'scale' && !answers[q.id]) return;
-
-  if(step < QUESTIONS.length - 1){
+  if (step < QUESTIONS.length - 1) {
     step++;
     renderStep();
     return;
   }
 
-  // Submission step
-  const nextBtn = document.getElementById('btn-next');
-  nextBtn.disabled = true;
-  nextBtn.innerHTML = 'Guardando...';
+  // Última pregunta: Enviar respuestas mediante AJAX
+  isBusy = true;
+  const overlay = document.getElementById('saving-overlay');
+  if (overlay) overlay.classList.remove('hidden');
 
-  try{
+  try {
     const payload = {
       answers: {
         q1: answers.q1,
@@ -769,24 +931,250 @@ document.getElementById('btn-next').addEventListener('click', async () => {
     });
 
     const data = await res.json();
-    if(data.status === 'success'){
+    if (data.status === 'success') {
       document.getElementById('stepper-card').classList.add('hidden');
       document.getElementById('thanks').classList.remove('hidden');
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } else {
       alert(data.message || 'Hubo un inconveniente al guardar. Por favor intenta de nuevo.');
-      nextBtn.disabled = false;
-      nextBtn.innerHTML = 'Enviar respuestas ✓';
+      if (overlay) overlay.classList.add('hidden');
     }
-  }catch(err){
+  } catch (err) {
     console.error(err);
-    alert('Error de conexión al enviar tus respuestas. Por favor verifica tu conexión.');
-    nextBtn.disabled = false;
-    nextBtn.innerHTML = 'Enviar respuestas ✓';
+    alert('Error de conexión al enviar tus respuestas. Por favor verifica tu conexión a internet.');
+    if (overlay) overlay.classList.add('hidden');
+  } finally {
+    isBusy = false;
   }
-});
+}
 
-// Revote
+function renderStep(){
+  const q = QUESTIONS[step];
+  document.getElementById('q-idx').textContent = step + 1;
+  document.getElementById('q-title').textContent = q.title;
+  document.getElementById('q-sub').textContent = q.sub || '';
+  
+  // Progress indicators
+  const pct = Math.round(((step + 1) / QUESTIONS.length) * 100);
+  document.getElementById('progress-bar').style.width = pct + '%';
+  document.getElementById('dots').innerHTML = QUESTIONS.map((_, i) => `<span class="${i <= step ? 'on' : ''}"></span>`).join('');
+  
+  // Back button visibility
+  const prevWrap = document.getElementById('nav-prev-wrap');
+  if (prevWrap) {
+    prevWrap.style.visibility = (step === 0) ? 'hidden' : 'visible';
+    prevWrap.style.opacity = (step === 0) ? '0' : '1';
+  }
+
+  const body = document.getElementById('q-body');
+
+  if(q.type === 'scale'){
+    const val = (answers[q.id] !== undefined && answers[q.id] !== '') ? answers[q.id] : 5;
+    answers[q.id] = Number(val);
+    
+    body.innerHTML = `
+      <div class="scale-wrap">
+        <div class="scale-val-badge">
+          <div class="scale-val" id="scale-val" style="color:${getScaleColor(val)}">${val}</div>
+          <div class="scale-label" id="scale-label">${getScaleText(val)}</div>
+        </div>
+
+        <div class="scale-slider-box">
+          <input type="range" min="0" max="10" step="1" id="scale-input" value="${val}" aria-label="Escala de saturación del 0 al 10">
+        </div>
+
+        <div class="scale-buttons-grid">
+          ${[0,1,2,3,4,5,6,7,8,9,10].map(n => `
+            <button type="button" class="scale-num-btn ${val === n ? 'sel' : ''}" data-val="${n}">
+              ${n}
+            </button>
+          `).join('')}
+        </div>
+
+        <div class="scale-confirm-wrap">
+          <button type="button" class="btn-scale-confirm" id="btn-scale-confirm">
+            <span>Continuar con ${val}</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+          </button>
+        </div>
+      </div>
+    `;
+
+    const range = document.getElementById('scale-input');
+    const scaleValEl = document.getElementById('scale-val');
+    const scaleLabelEl = document.getElementById('scale-label');
+    const scaleConfirmBtn = document.getElementById('btn-scale-confirm');
+
+    const updateScaleDisplay = (v) => {
+      const num = Number(v);
+      answers[q.id] = num;
+      if (scaleValEl) {
+        scaleValEl.textContent = num;
+        scaleValEl.style.color = getScaleColor(num);
+      }
+      if (scaleLabelEl) {
+        scaleLabelEl.textContent = getScaleText(num);
+      }
+      if (range) range.value = num;
+      if (scaleConfirmBtn) {
+        scaleConfirmBtn.innerHTML = `<span>Continuar con ${num}</span> <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>`;
+      }
+      body.querySelectorAll('.scale-num-btn').forEach(btn => {
+        btn.classList.toggle('sel', Number(btn.dataset.val) === num);
+      });
+    };
+
+    range.addEventListener('input', (e) => updateScaleDisplay(e.target.value));
+
+    // Al tocar un número de la escala se selecciona y pasa directamente al siguiente
+    body.querySelectorAll('.scale-num-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (isBusy) return;
+        const selectedVal = Number(btn.dataset.val);
+        updateScaleDisplay(selectedVal);
+        
+        // Bloqueamos clicks repetidos momentáneamente
+        body.querySelectorAll('.scale-num-btn').forEach(b => b.style.pointerEvents = 'none');
+
+        // Pasa automáticamente a la que sigue tras breve confirmación visual
+        setTimeout(() => {
+          advanceNextOrSubmit();
+        }, 260);
+      });
+    });
+
+    if (scaleConfirmBtn) {
+      scaleConfirmBtn.addEventListener('click', () => {
+        advanceNextOrSubmit();
+      });
+    }
+
+  } else {
+    // Preguntas de opción múltiple
+    const selected = answers[q.id] || '';
+    const hasOtherInput = q.hasOther && selected === 'Otra';
+    const otherVal = answers[q.id + '_otra'] || '';
+
+    let optsHtml = q.options.map(opt => `
+      <button type="button" class="opt-btn ${selected === opt ? 'sel' : ''}" data-opt="${opt}">
+        <span class="opt-label-text">${opt}</span>
+        <span class="opt-radio">
+          <svg class="opt-radio-icon" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
+        </span>
+      </button>
+    `).join('');
+
+    let otherHtml = '';
+    if(q.hasOther){
+      const isLastQ = (step === QUESTIONS.length - 1);
+      otherHtml = `
+        <div class="otra-input-wrap ${hasOtherInput ? '' : 'hidden'}" id="wrap-otra-${q.id}">
+          <div class="otra-input-container">
+            <input type="text" class="otra-input" id="input-otra-${q.id}" placeholder="Escribe tu respuesta aquí..." value="${otherVal}" enterkeyhint="done" maxlength="160">
+            <button type="button" class="btn-otra-action" id="btn-otra-send-${q.id}">
+              <span>${isLastQ ? 'Enviar ✓' : 'Siguiente →'}</span>
+            </button>
+          </div>
+          <div class="otra-hint">Presiona enter o el botón al terminar de escribir</div>
+        </div>
+      `;
+    }
+
+    body.innerHTML = `<div class="opt-list">${optsHtml}</div>${otherHtml}`;
+
+    // Eventos en botones de opción
+    body.querySelectorAll('.opt-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (isBusy) return;
+        const val = btn.dataset.opt;
+        answers[q.id] = val;
+
+        // Si la opción es "Otra", no se pasa automáticamente: se muestra el campo de texto
+        if (val === 'Otra') {
+          body.querySelectorAll('.opt-btn').forEach(b => b.classList.toggle('sel', b === btn));
+          const otraWrap = document.getElementById(`wrap-otra-${q.id}`);
+          if (otraWrap) {
+            otraWrap.classList.remove('hidden');
+            const inp = document.getElementById(`input-otra-${q.id}`);
+            if (inp) {
+              inp.focus();
+              setTimeout(() => {
+                inp.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+              }, 120);
+            }
+          }
+          return;
+        }
+
+        // Si es cualquier otra opción normal: marcar visualmente
+        body.querySelectorAll('.opt-btn').forEach(b => {
+          b.classList.toggle('sel', b === btn);
+          b.style.pointerEvents = 'none'; // Evita doble toque
+        });
+
+        // Ocultar campo otra si estaba abierto
+        const otraWrap = document.getElementById(`wrap-otra-${q.id}`);
+        if (otraWrap) {
+          otraWrap.classList.add('hidden');
+          answers[q.id + '_otra'] = '';
+        }
+
+        // ¡Pasa automáticamente a la que sigue!
+        setTimeout(() => {
+          advanceNextOrSubmit();
+        }, 230);
+      });
+    });
+
+    // Manejo del campo "Otra"
+    const inp = document.getElementById(`input-otra-${q.id}`);
+    const btnSendOtra = document.getElementById(`btn-otra-send-${q.id}`);
+
+    const handleOtraSubmit = () => {
+      const val = (inp ? inp.value : '').trim();
+      if (!val) {
+        if (inp) {
+          inp.focus();
+          inp.classList.add('shake');
+          setTimeout(() => inp.classList.remove('shake'), 450);
+        }
+        return;
+      }
+      answers[q.id + '_otra'] = val;
+      advanceNextOrSubmit();
+    };
+
+    if (inp) {
+      inp.addEventListener('input', (e) => {
+        answers[q.id + '_otra'] = e.target.value;
+      });
+      inp.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          handleOtraSubmit();
+        }
+      });
+    }
+
+    if (btnSendOtra) {
+      btnSendOtra.addEventListener('click', handleOtraSubmit);
+    }
+  }
+}
+
+// Botón anterior
+const btnPrev = document.getElementById('btn-prev');
+if (btnPrev) {
+  btnPrev.addEventListener('click', () => {
+    if (isBusy) return;
+    if (step > 0) {
+      step--;
+      renderStep();
+    }
+  });
+}
+
+// Responder de nuevo
 const btnRevote = document.getElementById('btn-revote');
 if(btnRevote){
   btnRevote.addEventListener('click', () => {
@@ -801,7 +1189,7 @@ if(btnRevote){
   });
 }
 
-// Init
+// Inicialización
 renderStep();
 </script>
 </body>

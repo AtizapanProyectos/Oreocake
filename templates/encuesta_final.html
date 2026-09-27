@@ -3,260 +3,381 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
 <title>HOPE · Encuesta Final: Tu Acción de Bienestar</title>
 <link rel="icon" href="{% static 'img/favicon.ico' %}" type="image/x-icon">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
-:root{
-  --teal:#22BFBA; --orange:#F5821F; --pink:#EC4C79; --yellow:#FFC72C; --purple:#5B4B9E; --purple-deep:#3B3168;
-  --bg:#FBF8F2; --card:#FFFFFF; --ink:#2C2542; --muted:#8A82A6; --line:#EDE7F7;
-  --radius-xl:26px; --radius-lg:18px; --radius-pill:999px;
-  color-scheme:light;
-}
-*{box-sizing:border-box;}
-html,body{height:100%;margin:0;}
-body{
-  font-family:'Nunito',system-ui,sans-serif;
-  color:var(--ink);
-  background:radial-gradient(circle at 10% -5%,#FDE9D2 0%,transparent 42%),radial-gradient(circle at 90% 5%,#DBF5F3 0%,transparent 40%),var(--bg);
-  padding:calc(16px + env(safe-area-inset-top,0px)) 16px calc(24px + env(safe-area-inset-bottom,0px));
-  min-height:100%;
-}
-h1,h2,h3{font-family:'Baloo 2',sans-serif;margin:0;}
-.wrap{max-width:620px;margin:0 auto;}
-
-header{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:12px;
-  margin-bottom:20px;
-  flex-wrap:wrap;
-}
-.brand{
-  display:flex;
-  align-items:center;
-  gap:10px;
-  text-decoration:none;
-}
-.brand-logo{
-  height:38px;
-  width:auto;
-  object-fit:contain;
-  display:block;
-}
-.brand-badge{
-  display:inline-flex;
-  align-items:center;
-  gap:6px;
-  background:#fff;
-  border:1px solid var(--line);
-  padding:5px 12px;
-  border-radius:var(--radius-pill);
-  font-family:'Baloo 2';
-  font-weight:700;
-  font-size:12px;
-  color:var(--purple-deep);
-  box-shadow:0 2px 8px rgba(59,49,104,.04);
-}
-.brand-badge .dot{
-  width:8px;
-  height:8px;
-  border-radius:50%;
-  background:var(--pink);
-  animation:pulse 1.4s infinite;
-}
-@keyframes pulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.4;transform:scale(1.4);}}
-
-.btn-view-cloud{
-  display:inline-flex;
-  align-items:center;
-  gap:6px;
-  background:var(--card);
-  border:1.5px solid var(--line);
-  padding:8px 15px;
-  border-radius:var(--radius-pill);
-  font-family:'Baloo 2';
-  font-weight:700;
-  font-size:13px;
-  color:var(--purple);
-  text-decoration:none;
-  box-shadow:0 3px 12px rgba(59,49,104,.06);
-  transition:all .15s;
-}
-.btn-view-cloud:hover{
-  background:var(--purple);
-  color:#fff;
-  transform:translateY(-1px);
+:root {
+  --teal: #22BFBA;
+  --teal-dark: #199E9A;
+  --orange: #F5821F;
+  --pink: #EC4C79;
+  --yellow: #FFC72C;
+  --purple: #5B4B9E;
+  --purple-deep: #3B3168;
+  --bg: #FBF8F2;
+  --card: #FFFFFF;
+  --ink: #2C2542;
+  --muted: #7E7696;
+  --line: #EFEAF7;
+  --radius-xl: 22px;
+  --radius-lg: 16px;
+  --radius-pill: 999px;
+  color-scheme: light;
 }
 
-.card{
-  background:var(--card);
-  border-radius:var(--radius-xl);
-  box-shadow:0 12px 36px rgba(59,49,104,.08);
-  border:1px solid var(--line);
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
 }
 
-.vote-card{
-  padding:32px 24px;
-  text-align:center;
-  animation:cardIn .35s ease forwards;
-}
-@keyframes cardIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
-
-.q-eyebrow{
-  display:inline-flex;
-  align-items:center;
-  gap:8px;
-  font-family:'Baloo 2';
-  font-weight:700;
-  font-size:12px;
-  letter-spacing:.08em;
-  text-transform:uppercase;
-  color:var(--pink);
-  margin-bottom:8px;
-}
-.q-title{
-  font-size:22px;
-  font-weight:800;
-  color:var(--purple-deep);
-  line-height:1.28;
-  margin-bottom:8px;
-}
-.q-sub{
-  color:var(--muted);
-  font-size:14px;
-  margin-bottom:24px;
+html, body {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
 }
 
-.word-grid{
-  display:grid;
-  grid-template-columns:repeat(2,1fr);
-  gap:12px;
-  margin-top:10px;
+body {
+  font-family: 'Nunito', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  color: var(--ink);
+  background:
+    radial-gradient(circle at 10% -5%, #FDE9D2 0%, transparent 48%),
+    radial-gradient(circle at 90% 5%, #DBF5F3 0%, transparent 45%),
+    var(--bg);
+  background-attachment: fixed;
+  padding: calc(10px + env(safe-area-inset-top, 0px)) 12px calc(24px + env(safe-area-inset-bottom, 0px));
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
 }
-@media(max-width:480px){.word-grid{grid-template-columns:1fr;}}
 
-.word-btn{
-  border:none;
-  cursor:pointer;
-  padding:16px 14px;
-  border-radius:var(--radius-lg);
-  color:#fff;
-  font-family:'Baloo 2';
-  font-weight:700;
-  font-size:15px;
-  background:linear-gradient(145deg,var(--c2),var(--c1));
-  box-shadow:0 6px 18px rgba(59,49,104,.12);
-  transition:transform .14s,box-shadow .14s,opacity .14s;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  text-align:center;
-  min-height:56px;
+h1, h2, h3 {
+  font-family: 'Baloo 2', sans-serif;
+  margin: 0;
 }
-.word-btn:hover{
-  transform:translateY(-2px);
-  box-shadow:0 10px 24px rgba(59,49,104,.2);
+
+.wrap {
+  width: 100%;
+  max-width: 520px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
 }
-.word-btn:active{
-  transform:scale(.96);
+
+/* Header */
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+  width: 100%;
+  padding: 2px 4px;
 }
-.word-btn.loading{
-  opacity:.6;
-  pointer-events:none;
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+}
+
+.brand-logo {
+  height: clamp(34px, 8.5vw, 42px);
+  width: auto;
+  object-fit: contain;
+  display: block;
+}
+
+.brand-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #ffffff;
+  border: 1px solid var(--line);
+  padding: 5px 11px;
+  border-radius: var(--radius-pill);
+  font-family: 'Baloo 2', sans-serif;
+  font-weight: 700;
+  font-size: 11.5px;
+  color: var(--purple-deep);
+  box-shadow: 0 2px 8px rgba(59, 49, 104, 0.04);
+}
+
+.brand-badge .dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--pink);
+  animation: pulse 1.4s infinite ease-in-out;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.45; transform: scale(1.3); }
+}
+
+main {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.card {
+  background: var(--card);
+  border-radius: var(--radius-xl);
+  box-shadow: 0 10px 30px rgba(59, 49, 104, 0.07), 0 1px 4px rgba(59, 49, 104, 0.03);
+  border: 1px solid var(--line);
+  position: relative;
+  overflow: hidden;
+}
+
+.vote-card {
+  padding: 22px 18px 22px;
+  text-align: center;
+  animation: cardIn 0.28s ease-out forwards;
+}
+
+@media (max-width: 380px) {
+  .vote-card {
+    padding: 18px 14px 18px;
+    border-radius: 18px;
+  }
+}
+
+@keyframes cardIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.q-eyebrow-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 6px;
+}
+
+.q-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'Baloo 2', sans-serif;
+  font-weight: 700;
+  font-size: 11.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--pink);
+  background: rgba(236, 76, 121, 0.09);
+  padding: 3px 12px;
+  border-radius: var(--radius-pill);
+}
+
+.q-title {
+  font-size: clamp(17px, 4.6vw, 21.5px);
+  font-weight: 800;
+  color: var(--purple-deep);
+  line-height: 1.28;
+  margin: 6px 0 6px;
+  letter-spacing: -0.01em;
+}
+
+.q-sub {
+  color: var(--muted);
+  font-size: clamp(12px, 3.4vw, 13.5px);
+  line-height: 1.4;
+  margin-bottom: 16px;
+}
+
+/* 2-Column Responsive Grid (Optimized for Android / Mobile Thumb Taps) */
+.word-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin-top: 8px;
+}
+
+@media (max-width: 330px) {
+  .word-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+}
+
+.word-btn {
+  border: none;
+  cursor: pointer;
+  padding: 14px 10px;
+  border-radius: var(--radius-lg);
+  color: #ffffff;
+  font-family: 'Baloo 2', system-ui, sans-serif;
+  font-weight: 700;
+  font-size: clamp(13px, 3.8vw, 15px);
+  line-height: 1.22;
+  background: linear-gradient(145deg, var(--c2), var(--c1));
+  box-shadow: 0 4px 14px rgba(59, 49, 104, 0.12);
+  transition: transform 0.14s ease, box-shadow 0.14s ease, opacity 0.14s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  min-height: 52px;
+  touch-action: manipulation;
+  user-select: none;
+  position: relative;
+  overflow: hidden;
+}
+
+@media (hover: hover) {
+  .word-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(59, 49, 104, 0.2);
+  }
+}
+
+.word-btn:active {
+  transform: scale(0.96);
+}
+
+.word-btn.loading {
+  opacity: 0.85;
+  pointer-events: none;
+}
+
+.word-btn.loading::after {
+  content: '';
+  width: 18px;
+  height: 18px;
+  border: 2.5px solid rgba(255, 255, 255, 0.4);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  margin-left: 8px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 /* Pantalla de agradecimiento */
-.thanks{
-  display:none;
-  padding:44px 24px;
-  text-align:center;
-  animation:cardIn .35s ease forwards;
-}
-.thanks .check{
-  width:78px;
-  height:78px;
-  border-radius:50%;
-  background:linear-gradient(135deg,var(--teal),#1CA7A2);
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  margin:0 auto 16px;
-  font-size:36px;
-  color:#fff;
-  box-shadow:0 8px 22px rgba(34,191,186,.35);
-  animation:pop .4s cubic-bezier(.175,.885,.32,1.275);
-}
-@keyframes pop{0%{transform:scale(0);}75%{transform:scale(1.15);}100%{transform:scale(1);}}
-.thanks h2{
-  color:var(--purple-deep);
-  font-size:24px;
-  margin-bottom:8px;
-}
-.thanks p{
-  color:var(--muted);
-  font-size:14.5px;
-  line-height:1.5;
-  max-width:440px;
-  margin:0 auto 22px;
-}
-.thanks-actions{
-  display:flex;
-  flex-direction:column;
-  gap:10px;
-  max-width:320px;
-  margin:0 auto;
-}
-.btn-primary-action{
-  background:linear-gradient(135deg,var(--purple),var(--purple-deep));
-  color:#fff;
-  padding:13px 20px;
-  border-radius:var(--radius-pill);
-  text-decoration:none;
-  font-family:'Baloo 2';
-  font-weight:700;
-  font-size:15px;
-  box-shadow:0 6px 18px rgba(59,49,104,.22);
-  transition:all .15s;
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  gap:8px;
-  border:none;
-}
-.btn-primary-action:hover{
-  transform:translateY(-2px);
-  box-shadow:0 10px 24px rgba(59,49,104,.3);
-}
-.btn-secondary-action{
-  background:var(--line);
-  color:var(--purple-deep);
-  padding:11px 20px;
-  border-radius:var(--radius-pill);
-  text-decoration:none;
-  font-family:'Baloo 2';
-  font-weight:700;
-  font-size:14px;
-  border:none;
-  cursor:pointer;
-  transition:all .15s;
-}
-.btn-secondary-action:hover{
-  background:#dfd7f2;
+.thanks {
+  display: none;
+  padding: 34px 20px 28px;
+  text-align: center;
+  animation: cardIn 0.32s ease forwards;
 }
 
-footer{
-  text-align:center;
-  color:var(--muted);
-  font-size:12px;
-  margin-top:26px;
-  opacity:.85;
+.thanks .check {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--teal), var(--teal-dark));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+  font-size: 32px;
+  color: #ffffff;
+  box-shadow: 0 8px 20px rgba(34, 191, 186, 0.32);
+  animation: pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
-footer a{color:var(--purple);text-decoration:none;font-weight:700;}
+
+@keyframes pop {
+  0% { transform: scale(0); }
+  75% { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+
+.thanks h2 {
+  color: var(--purple-deep);
+  font-size: 24px;
+  margin-bottom: 8px;
+}
+
+.thanks p {
+  color: var(--muted);
+  font-size: 14.5px;
+  line-height: 1.5;
+  max-width: 440px;
+  margin: 0 auto 22px;
+}
+
+.thanks-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 320px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.btn-primary-action {
+  background: linear-gradient(135deg, var(--purple), var(--purple-deep));
+  color: #ffffff;
+  padding: 13px 20px;
+  border-radius: var(--radius-pill);
+  text-decoration: none;
+  font-family: 'Baloo 2', sans-serif;
+  font-weight: 700;
+  font-size: 15px;
+  box-shadow: 0 6px 18px rgba(59, 49, 104, 0.22);
+  transition: all 0.15s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: none;
+  touch-action: manipulation;
+}
+
+.btn-primary-action:active {
+  transform: scale(0.98);
+}
+
+.btn-secondary-action {
+  background: #F4EFFC;
+  color: var(--purple-deep);
+  padding: 12px 20px;
+  border-radius: var(--radius-pill);
+  text-decoration: none;
+  font-family: 'Baloo 2', sans-serif;
+  font-weight: 700;
+  font-size: 14px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  touch-action: manipulation;
+}
+
+.btn-secondary-action:active {
+  background: #EAE1F7;
+  transform: scale(0.98);
+}
+
+footer {
+  text-align: center;
+  color: var(--muted);
+  font-size: 11.5px;
+  margin-top: 18px;
+  opacity: 0.88;
+  padding: 6px 0;
+}
+
+footer a {
+  color: var(--purple);
+  text-decoration: none;
+  font-weight: 700;
+}
 </style>
 </head>
 <body>
@@ -264,15 +385,19 @@ footer a{color:var(--purple);text-decoration:none;font-weight:700;}
   <header>
     <a href="{% url 'inicio' %}" class="brand" title="Inicio de HOPE">
       <img src="{% static 'img/logo_hope_principal.png' %}" alt="HOPE" class="brand-logo">
-      
     </a>
-
+    <div class="brand-badge">
+      <span class="dot"></span>
+      <span>En vivo</span>
+    </div>
   </header>
 
   <main>
     <section class="card vote-card" id="vote-card">
-      <div class="q-eyebrow">
-        <span>● COMPROMISO DE BIENESTAR</span>
+      <div class="q-eyebrow-wrap">
+        <div class="q-eyebrow">
+          <span>● COMPROMISO DE BIENESTAR</span>
+        </div>
       </div>
       <h1 class="q-title">Después de esta conversación, ¿cuál es una acción concreta que puedes hacer esta semana para cuidar tu salud mental?</h1>
       <div class="q-sub">Toca la opción que más represente tu plan para estos días:</div>
@@ -280,7 +405,7 @@ footer a{color:var(--purple);text-decoration:none;font-weight:700;}
       <div class="word-grid" id="word-grid">
         {% for w in words %}
         <button type="button" class="word-btn" style="--c1:{{ w.c1 }};--c2:{{ w.c2 }};" data-id="{{ w.id }}" data-label="{{ w.label }}">
-          {{ w.label }}
+          <span>{{ w.label }}</span>
         </button>
         {% endfor %}
       </div>
@@ -315,6 +440,7 @@ footer a{color:var(--purple);text-decoration:none;font-weight:700;}
 const voteCard = document.getElementById('vote-card');
 const thanksCard = document.getElementById('thanks');
 const revoteBtn = document.getElementById('btn-revote');
+let isVoting = false;
 
 // Si ya había votado en esta sesión, mostramos la pantalla de gracias pero permitimos cambiar
 if(sessionStorage.getItem('hope_cloud_voted_action')){
@@ -324,10 +450,16 @@ if(sessionStorage.getItem('hope_cloud_voted_action')){
 
 document.querySelectorAll('.word-btn').forEach(btn => {
   btn.addEventListener('click', async () => {
+    if (isVoting) return;
+    isVoting = true;
+
     const wordId = btn.dataset.id;
     const wordLabel = btn.dataset.label;
 
     btn.classList.add('loading');
+    document.querySelectorAll('.word-btn').forEach(b => {
+      if (b !== btn) b.style.pointerEvents = 'none';
+    });
 
     try {
       const res = await fetch("{% url 'guardar_encuesta_final_ajax' %}", {
@@ -349,13 +481,17 @@ document.querySelectorAll('.word-btn').forEach(btn => {
         thanksCard.style.display = 'block';
         window.scrollTo({ top: 0, behavior: 'smooth' });
       } else {
-        alert(data.message || 'Hubo un error al guardar tu respuesta. Por favor intenta de nuevo.');
+        alert(data.message || 'Hubo un inconveniente al guardar tu respuesta. Por favor intenta de nuevo.');
+        document.querySelectorAll('.word-btn').forEach(b => b.style.pointerEvents = '');
+        btn.classList.remove('loading');
       }
     } catch(err) {
       console.error(err);
       alert('Error de conexión al enviar tu voto. Por favor verifica tu red.');
-    } finally {
+      document.querySelectorAll('.word-btn').forEach(b => b.style.pointerEvents = '');
       btn.classList.remove('loading');
+    } finally {
+      isVoting = false;
     }
   });
 });
@@ -365,6 +501,10 @@ if(revoteBtn){
     sessionStorage.removeItem('hope_cloud_voted_action');
     thanksCard.style.display = 'none';
     voteCard.style.display = 'block';
+    document.querySelectorAll('.word-btn').forEach(b => {
+      b.style.pointerEvents = '';
+      b.classList.remove('loading');
+    });
   });
 }
 </script>
