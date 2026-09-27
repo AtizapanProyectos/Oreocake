@@ -116,5 +116,12 @@ urlpatterns = [
     # Panel Metodológico de Evolución Clínica (Basado en PDF de 13 Diapositivas)
     path('sentimientos-metodologia/', views.panel_sentimientos_metodologia_view, name='panel_sentimientos_metodologia'),
     path('reporte-metodologico/', views.panel_sentimientos_metodologia_view, name='reporte_metodologico'),
+
+    # Rutas para el Cuestionario e Insights en Vivo
+    path('encuestas/', views.encuestas_view, name='encuestas'),
+    path('encuestas/guardar/', views.guardar_encuesta_ajax, name='guardar_encuesta_ajax'),
+    path('insights-encuesta/', views.insights_encuesta_view, name='insights_encuesta'),
+    path('api/encuestas/stats/', views.api_encuestas_stats, name='api_encuestas_stats'),
+    path('api/encuestas/guardar/', views.guardar_encuesta_ajax, name='api_guardar_encuesta'),
 ]
 

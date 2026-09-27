@@ -209,4 +209,16 @@ class DocumentoRepositorioClinicoAdmin(admin.ModelAdmin):
     readonly_fields = ('fecha_creacion', 'fecha_actualizacion')
     list_per_page = 25
 
+
+# ==========================================
+# RESPUESTAS DE ENCUESTAS (INSIGHTS)
+# ==========================================
+@admin.register(EncuestaRespuesta)
+class EncuestaRespuestaAdmin(ImportExportModelAdmin):
+    list_display = ('id', 'p1_hoy', 'p2_emocion_semana', 'p3_saturacion', 'p4_rebasado_accion', 'p5_dificultad', 'p6_acudir_ayuda', 'fecha_creacion')
+    search_fields = ('p1_hoy', 'p2_emocion_semana', 'p4_rebasado_accion', 'p8_freno_ayuda')
+    list_filter = ('p1_hoy', 'p2_emocion_semana', 'p3_saturacion', 'p5_dificultad', 'p6_acudir_ayuda', 'fecha_creacion')
+    readonly_fields = ('fecha_creacion',)
+
+
 

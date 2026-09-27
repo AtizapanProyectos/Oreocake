@@ -1,0 +1,1037 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>HOPE · Resultados e Insights en Vivo</title>
+<link rel="icon" href="{% static 'img/favicon.ico' %}" type="image/x-icon">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --teal:#22BFBA; --orange:#F5821F; --pink:#EC4C79; --yellow:#FFC72C; --purple:#5B4B9E; --purple-deep:#3B3168;
+  --bg:#FBF8F2; --card:#FFFFFF; --ink:#2C2542; --muted:#8A82A6; --line:#EDE7F7;
+  --radius-xl:22px; --radius-lg:16px; --radius-pill:999px;
+  color-scheme:light;
+}
+*{box-sizing:border-box;}
+html,body{height:100%;margin:0;}
+body{
+  font-family:'Nunito',system-ui,sans-serif;
+  color:var(--ink);
+  background:radial-gradient(circle at 12% -5%,#FDE9D2 0%,transparent 42%),radial-gradient(circle at 92% 5%,#DBF5F3 0%,transparent 40%),var(--bg);
+  padding:calc(16px + env(safe-area-inset-top,0px)) 16px calc(24px + env(safe-area-inset-bottom,0px));
+  min-height:100%;
+}
+h1,h2,h3{font-family:'Baloo 2',sans-serif;margin:0;}
+.wrap{max-width:1160px;margin:0 auto;}
+
+/* Header */
+header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  margin-bottom:16px;
+  flex-wrap:wrap;
+}
+.brand{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  text-decoration:none;
+}
+.brand-logo{
+  height:38px;
+  width:auto;
+  object-fit:contain;
+  display:block;
+}
+.brand-title{
+  font-family:'Baloo 2';
+  font-weight:800;
+  font-size:20px;
+  color:var(--purple-deep);
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+.brand-title span.dot{
+  width:10px;
+  height:10px;
+  border-radius:50%;
+  background:var(--pink);
+  animation:pulse 1.4s infinite;
+}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.4;transform:scale(1.4);}}
+
+.header-controls{
+  display:flex;
+  gap:8px;
+  align-items:center;
+  flex-wrap:wrap;
+}
+
+.focus-toggle{
+  border:1.5px dashed var(--purple);
+  background:var(--card);
+  color:var(--purple);
+  font-family:'Baloo 2';
+  font-weight:700;
+  font-size:13px;
+  padding:8px 15px;
+  border-radius:var(--radius-pill);
+  cursor:pointer;
+  transition:all .15s;
+  box-shadow:0 3px 10px rgba(59,49,104,.05);
+}
+.focus-toggle:hover{
+  transform:translateY(-1px);
+}
+.focus-toggle.on{
+  background:linear-gradient(135deg,var(--orange),var(--yellow));
+  color:#fff;
+  border-color:transparent;
+  box-shadow:0 6px 16px rgba(245,130,31,.3);
+}
+
+.btn-sound{
+  border:1px solid var(--line);
+  background:var(--card);
+  color:var(--muted);
+  font-family:'Baloo 2';
+  font-weight:700;
+  font-size:13px;
+  padding:8px 13px;
+  border-radius:var(--radius-pill);
+  cursor:pointer;
+  transition:all .15s;
+}
+.btn-sound.on{
+  color:var(--teal);
+  border-color:var(--teal);
+}
+
+.btn-respond{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  background:linear-gradient(135deg,var(--purple),var(--purple-deep));
+  color:#fff;
+  font-family:'Baloo 2';
+  font-weight:700;
+  font-size:13px;
+  padding:8px 16px;
+  border-radius:var(--radius-pill);
+  text-decoration:none;
+  box-shadow:0 4px 14px rgba(59,49,104,.2);
+  transition:all .15s;
+}
+.btn-respond:hover{
+  transform:translateY(-1px);
+  box-shadow:0 8px 20px rgba(59,49,104,.28);
+}
+
+/* Stats Strip */
+.stats-strip{
+  display:flex;
+  gap:10px;
+  margin-bottom:16px;
+  flex-wrap:wrap;
+  align-items:center;
+}
+.chip{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  background:var(--card);
+  border:1px solid var(--line);
+  padding:7px 14px;
+  border-radius:var(--radius-pill);
+  font-size:13px;
+  color:var(--muted);
+  box-shadow:0 2px 8px rgba(59,49,104,.04);
+}
+.chip b{
+  color:var(--ink);
+  font-family:'Baloo 2';
+  font-weight:800;
+}
+.chip-live{
+  border-color:#bbf7d0;
+  background:#f0fdf4;
+  color:#15803d;
+  font-weight:700;
+}
+.chip-live .live-dot{
+  width:8px;
+  height:8px;
+  border-radius:50%;
+  background:#22c55e;
+  animation:pulseLive 1.5s infinite;
+}
+@keyframes pulseLive{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.3;transform:scale(1.4);}}
+
+/* Toast de nueva respuesta */
+.live-toast{
+  position:fixed;
+  top:20px;
+  left:50%;
+  transform:translateX(-50%) translateY(-100px);
+  background:linear-gradient(135deg, #22BFBA, #1CA7A2);
+  color:#fff;
+  padding:10px 22px;
+  border-radius:var(--radius-pill);
+  font-family:'Baloo 2';
+  font-weight:700;
+  font-size:14px;
+  box-shadow:0 12px 30px rgba(34,191,186,.45);
+  display:flex;
+  align-items:center;
+  gap:8px;
+  z-index:9999;
+  opacity:0;
+  transition:all .4s cubic-bezier(.175,.885,.32,1.275);
+  pointer-events:none;
+}
+.live-toast.show{
+  opacity:1;
+  transform:translateX(-50%) translateY(0);
+}
+
+/* Mosaic */
+.mosaic{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:14px;
+}
+@media(max-width:960px){.mosaic{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:540px){.mosaic{grid-template-columns:1fr;}}
+
+.card{
+  background:var(--card);
+  border-radius:var(--radius-lg);
+  box-shadow:0 8px 22px rgba(59,49,104,.07);
+  padding:18px 16px 16px;
+  cursor:pointer;
+  transition:transform .18s,box-shadow .18s,border-color .2s;
+  border-top:4px solid var(--c-accent,var(--teal));
+  opacity:0;
+  animation:cardIn .45s ease forwards;
+  display:flex;
+  flex-direction:column;
+  justify-content:space-between;
+  border-left:1px solid var(--line);
+  border-right:1px solid var(--line);
+  border-bottom:1px solid var(--line);
+}
+.card:hover{
+  transform:translateY(-3px);
+  box-shadow:0 14px 30px rgba(59,49,104,.12);
+}
+.card.spot-active{
+  outline:3px solid var(--orange);
+  transform:scale(1.02);
+}
+.card.highlight-new{
+  animation:cardPulse 1.2s ease;
+}
+@keyframes cardPulse{
+  0%{box-shadow:0 0 0 0 rgba(34,191,186,.7);}
+  70%{box-shadow:0 0 0 14px rgba(34,191,186,0);}
+  100%{box-shadow:0 8px 22px rgba(59,49,104,.07);}
+}
+
+.mosaic .card:nth-child(1){animation-delay:.02s}
+.mosaic .card:nth-child(2){animation-delay:.06s}
+.mosaic .card:nth-child(3){animation-delay:.10s}
+.mosaic .card:nth-child(4){animation-delay:.14s}
+.mosaic .card:nth-child(5){animation-delay:.18s}
+.mosaic .card:nth-child(6){animation-delay:.22s}
+.mosaic .card:nth-child(7){animation-delay:.26s}
+.mosaic .card:nth-child(8){animation-delay:.30s}
+
+@keyframes cardIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+
+.q-num{
+  font-family:'Baloo 2';
+  font-weight:700;
+  font-size:11px;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+  color:var(--c-accent, var(--teal));
+}
+.q-title-mini{
+  font-family:'Baloo 2';
+  font-weight:700;
+  font-size:14px;
+  color:var(--purple-deep);
+  line-height:1.25;
+  margin:4px 0 12px;
+  min-height:36px;
+}
+
+/* Gauge for scale question */
+.gauge-wrap{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  padding:6px 0;
+}
+.gauge{
+  width:68px;
+  height:68px;
+  border-radius:50%;
+  background:conic-gradient(var(--orange) calc(var(--pct)*1%),var(--line) 0);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  margin:2px 0 6px;
+  transition:background .7s ease;
+}
+.gauge-inner{
+  width:52px;
+  height:52px;
+  border-radius:50%;
+  background:var(--card);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-family:'Baloo 2';
+  font-weight:800;
+  font-size:16px;
+  color:var(--orange);
+}
+
+/* Mini rows */
+.mini-row{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  margin-bottom:6px;
+}
+.mini-label{
+  font-size:11px;
+  color:var(--muted);
+  flex:0 0 76px;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.mini-track{
+  flex:1;
+  height:11px;
+  border-radius:999px;
+  background:var(--line);
+  position:relative;
+  overflow:hidden;
+}
+.mini-fill{
+  position:absolute;
+  inset:0;
+  width:0%;
+  border-radius:999px;
+  background:linear-gradient(90deg,var(--c1),var(--c2));
+  transition:width .7s cubic-bezier(.22,.9,.3,1);
+}
+.mini-pct{
+  font-size:10.5px;
+  font-weight:700;
+  color:var(--muted);
+  flex:0 0 30px;
+  text-align:right;
+}
+.more-note{
+  font-size:11px;
+  color:var(--muted);
+  margin-top:4px;
+}
+.avg-badge{
+  font-family:'Baloo 2';
+  font-size:28px;
+  font-weight:800;
+  color:var(--orange);
+}
+.n-resp{
+  font-size:11.5px;
+  color:var(--muted);
+  margin-top:10px;
+  border-top:1px dashed var(--line);
+  padding-top:6px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+
+/* Spotlight Overlay */
+.overlay{
+  position:fixed;
+  inset:0;
+  background:rgba(30,26,51,.6);
+  backdrop-filter:blur(3px);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  z-index:9000;
+  padding:20px;
+}
+.overlay.hidden{display:none;}
+.spot-card{
+  background:var(--card);
+  border-radius:var(--radius-xl);
+  max-width:660px;
+  width:100%;
+  max-height:90vh;
+  overflow-y:auto;
+  padding:32px 28px;
+  box-shadow:0 24px 60px rgba(0,0,0,.3);
+  position:relative;
+  animation:spotIn .3s ease;
+}
+@keyframes spotIn{from{opacity:0;transform:scale(.95) translateY(8px);}to{opacity:1;transform:scale(1) translateY(0);}}
+
+.spot-close{
+  position:absolute;
+  top:16px;
+  right:16px;
+  border:none;
+  background:var(--line);
+  color:var(--ink);
+  width:32px;
+  height:32px;
+  border-radius:50%;
+  cursor:pointer;
+  font-weight:800;
+  font-size:14px;
+  transition:background .15s;
+}
+.spot-close:hover{background:#dfd5f2;}
+
+.spot-eyebrow{
+  font-family:'Baloo 2';
+  font-weight:700;
+  font-size:12px;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  color:var(--teal);
+}
+.spot-title{
+  font-size:22px;
+  font-weight:800;
+  color:var(--purple-deep);
+  margin:6px 0 20px;
+  line-height:1.25;
+}
+.spot-gauge{
+  width:130px;
+  height:130px;
+  border-radius:50%;
+  background:conic-gradient(var(--orange) calc(var(--pct)*1%),var(--line) 0);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  margin:12px auto 8px;
+  transition:background .7s ease;
+}
+.spot-gauge-inner{
+  width:102px;
+  height:102px;
+  border-radius:50%;
+  background:var(--card);
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+}
+.spot-row{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  margin-bottom:11px;
+}
+.spot-label{
+  font-weight:700;
+  font-family:'Baloo 2';
+  font-size:14px;
+  flex:0 0 160px;
+  color:var(--ink);
+}
+.spot-track{
+  flex:1;
+  height:24px;
+  border-radius:999px;
+  background:var(--line);
+  position:relative;
+  overflow:hidden;
+}
+.spot-fill{
+  position:absolute;
+  inset:0;
+  width:0%;
+  border-radius:999px;
+  background:linear-gradient(90deg,var(--c1),var(--c2));
+  transition:width .7s cubic-bezier(.22,.9,.3,1);
+}
+.spot-num{
+  font-family:'Baloo 2';
+  font-weight:700;
+  color:var(--muted);
+  font-size:13px;
+  flex:0 0 70px;
+  text-align:right;
+}
+.spot-nav{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-top:24px;
+  padding-top:16px;
+  border-top:1px solid var(--line);
+}
+.spot-nav button{
+  border:none;
+  background:var(--purple);
+  color:#fff;
+  font-family:'Baloo 2';
+  font-weight:700;
+  font-size:13px;
+  padding:9px 18px;
+  border-radius:var(--radius-pill);
+  cursor:pointer;
+  transition:all .15s;
+}
+.spot-nav button:hover{
+  background:var(--purple-deep);
+}
+.spot-dots{
+  display:flex;
+  gap:6px;
+}
+.spot-dots span{
+  width:8px;
+  height:8px;
+  border-radius:50%;
+  background:var(--line);
+  cursor:pointer;
+  transition:all .15s;
+}
+.spot-dots span.on{
+  background:var(--orange);
+  transform:scale(1.25);
+}
+
+footer{
+  text-align:center;
+  color:var(--muted);
+  font-size:12px;
+  margin-top:26px;
+  opacity:.85;
+}
+footer a{color:var(--purple);text-decoration:none;font-weight:700;}
+</style>
+</head>
+<body>
+
+<!-- Toast para notificar en vivo cuando cae una encuesta -->
+<div class="live-toast" id="live-toast">
+  <span>✨</span> <span>¡Nueva respuesta recibida en vivo!</span>
+</div>
+
+<div class="wrap">
+  <header>
+    <a href="{% url 'inicio' %}" class="brand" title="Ir al inicio de HOPE">
+      <img src="{% static 'img/logo_hope_principal.png' %}" alt="HOPE · Oportunidad, Prevención, Esperanza" class="brand-logo">
+      <div class="brand-title"><span class="dot"></span>Resultados en vivo</div>
+    </a>
+
+    <div class="header-controls">
+      <button class="focus-toggle" id="btn-focus">▶ Modo foco (rotar)</button>
+      <button class="focus-toggle" id="btn-demo">🎭 Vista previa con ejemplo</button>
+      <button class="btn-sound on" id="btn-sound" title="Notificación sonora al recibir respuestas">🔔 Sonido ON</button>
+      <a href="{% url 'encuestas' %}" class="btn-respond" target="_blank">
+        ✍️ Responder encuesta
+      </a>
+    </div>
+  </header>
+
+  <main>
+    <div class="stats-strip">
+      <span class="chip">🧑‍🤝‍🧑 <b id="stat-total">{{ total_respuestas }}</b> personas respondieron</span>
+      <span class="chip">📊 8 preguntas activas</span>
+      <span class="chip chip-live"><span class="live-dot"></span> Sincronización en vivo activa</span>
+      <span class="chip" id="chip-time" style="font-size:12px;">⏱️ Actualizado: <b id="last-update-text">ahora mismo</b></span>
+    </div>
+
+    <!-- Mosaico de las 8 Preguntas -->
+    <div class="mosaic" id="mosaic"></div>
+  </main>
+
+  <!-- Modal Spotlight -->
+  <div class="overlay hidden" id="overlay" role="dialog" aria-modal="true">
+    <div class="card spot-card" id="spot-card"></div>
+  </div>
+
+  <footer>
+    Todo lo que sientes importa, tú nos importas · <a href="{% url 'inicio' %}">HOPE</a>
+  </footer>
+</div>
+
+<script>
+const PALETTE = [
+  ["#22BFBA","#7FE0DB"],
+  ["#FFC72C","#FFE08A"],
+  ["#F5821F","#FBB877"],
+  ["#EC4C79","#F591AC"],
+  ["#5B4B9E","#9A8FD1"],
+  ["#1CA7A2","#69D6D0"],
+  ["#E0963B","#F3C889"],
+  ["#C23F62","#EE8AA4"]
+];
+
+const QUESTIONS = [
+  {
+    id: 'q1',
+    title: '¿Cómo te sientes HOY en una palabra?',
+    sub: 'Estado de ánimo actual.',
+    type: 'choice',
+    options: ['Bien', 'No tan bien', 'Mal', 'Muy mal']
+  },
+  {
+    id: 'q2',
+    title: 'Esta semana, ¿qué emoción apareció con más fuerza?',
+    sub: 'Emoción predominante.',
+    type: 'choice',
+    options: ['Ansiedad', 'Tristeza', 'Enojo', 'Miedo', 'Calma', 'Alegría', 'Frustración', 'Otra']
+  },
+  {
+    id: 'q3',
+    title: 'Del 0 al 10, ¿qué tan saturada/o te has sentido?',
+    sub: 'Escuela, expectativas o vida personal.',
+    type: 'scale'
+  },
+  {
+    id: 'q4',
+    title: 'Cuando algo te rebasa, ¿qué haces primero?',
+    sub: 'Primera reacción ante el desborde.',
+    type: 'choice',
+    options: ['Lo hablo', 'Me aíslo', 'Duermo', 'Redes / videojuegos', 'Como o dejo de comer', 'Ejercicio', 'Consumo algo', 'Busco ayuda profesional', 'Otra']
+  },
+  {
+    id: 'q5',
+    title: '¿Qué tanto te ha costado dormir, concentrarte o disfrutar?',
+    sub: 'Últimas dos semanas.',
+    type: 'choice',
+    options: ['Nada', 'Algunos días', 'Muchos días', 'Casi todos los días']
+  },
+  {
+    id: 'q6',
+    title: '¿Sabrías con quién acudir si necesitaras ayuda emocional?',
+    sub: 'Red de apoyo o profesionales.',
+    type: 'choice',
+    options: ['Sí', 'Más o menos', 'No', 'No confío en la terapia']
+  },
+  {
+    id: 'q7',
+    title: '¿Has usado IA, redes o internet para entenderte?',
+    sub: 'Intentar "diagnosticarte" o buscar respuestas.',
+    type: 'choice',
+    options: ['Sí, frecuentemente', 'Algunas veces', 'No']
+  },
+  {
+    id: 'q8',
+    title: '¿Qué te frena más para pedir ayuda profesional?',
+    sub: 'El obstáculo principal.',
+    type: 'choice',
+    options: ['Costo', 'Tiempo', 'Pena / estigma', 'No sé dónde', 'Creo que puedo solo/a', 'Mala experiencia previa', 'Nada me frena', 'Otra']
+  }
+];
+
+// Inyección de datos iniciales desde Django
+let INITIAL_DATA = null;
+try {
+  INITIAL_DATA = JSON.parse('{{ initial_data_json|escapejs }}');
+} catch(e) {
+  INITIAL_DATA = { total: 0, last_id: 0, responses: [] };
+}
+
+let realResponses = (INITIAL_DATA && INITIAL_DATA.responses) ? INITIAL_DATA.responses : [];
+let lastRecordedId = (INITIAL_DATA && INITIAL_DATA.last_id) ? INITIAL_DATA.last_id : 0;
+let totalRecordedCount = (INITIAL_DATA && INITIAL_DATA.total) ? INITIAL_DATA.total : realResponses.length;
+
+let focusOn = false;
+let focusIdx = 0;
+let focusTimer = null;
+let demoMode = false;
+let soundEnabled = true;
+
+// Sonido sintético suave con Web Audio API (no requiere archivos externos)
+let audioCtx = null;
+function playLiveChime(){
+  if(!soundEnabled) return;
+  try{
+    if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if(audioCtx.state === 'suspended') audioCtx.resume();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(587.33, audioCtx.currentTime); // D5
+    osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.18); // A5
+    gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.35);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.36);
+  }catch(e){}
+}
+
+// Generador de datos simulados para Vista Previa
+function genDemoResponses(){
+  const weights = {
+    q1: {Bien:34, 'No tan bien':28, Mal:22, 'Muy mal':16},
+    q2: {Ansiedad:30, Tristeza:20, Enojo:12, Miedo:9, Calma:14, Alegría:13, Frustración:11, Otra:4},
+    q4: {'Lo hablo':22, 'Me aíslo':26, Duermo:16, 'Redes / videojuegos':18, 'Como o dejo de comer':12, Ejercicio:10, 'Consumo algo':5, 'Busco ayuda profesional':7, Otra:4},
+    q5: {Nada:14, 'Algunos días':32, 'Muchos días':26, 'Casi todos los días':16},
+    q6: {'Sí':34, 'Más o menos':28, No:18, 'No confío en la terapia':9},
+    q7: {'Sí, frecuentemente':24, 'Algunas veces':38, No:26},
+    q8: {Costo:24, Tiempo:15, 'Pena / estigma':22, 'No sé dónde':14, 'Creo que puedo solo/a':12, 'Mala experiencia previa':7, 'Nada me frena':8, Otra:3}
+  };
+  function pick(w){
+    const e = Object.entries(w);
+    const t = e.reduce((s,x)=>s+x[1],0);
+    let r = Math.random()*t;
+    for(const[k,v] of e){
+      r -= v;
+      if(r <= 0) return k;
+    }
+    return e[0][0];
+  }
+  const out = [];
+  for(let i=0; i<48; i++){
+    out.push({
+      id: i+1,
+      ts: Date.now() - (48 - i) * 60000,
+      answers:{
+        q1: pick(weights.q1),
+        q2: pick(weights.q2),
+        q3: Math.round(2 + Math.random()*8),
+        q4: pick(weights.q4),
+        q5: pick(weights.q5),
+        q6: pick(weights.q6),
+        q7: pick(weights.q7),
+        q8: pick(weights.q8)
+      }
+    });
+  }
+  return out;
+}
+const DEMO_RESPONSES = genDemoResponses();
+
+function activeResponses(){
+  return demoMode ? DEMO_RESPONSES : realResponses;
+}
+
+// Agregación de respuestas por pregunta
+function agg(q){
+  const counts = {};
+  let n = 0, sum = 0;
+  activeResponses().forEach(r => {
+    const v = r.answers && r.answers[q.id];
+    if(v === undefined || v === null || v === '') return;
+    n++;
+    if(q.type === 'scale'){
+      sum += Number(v);
+    } else {
+      counts[v] = (counts[v] || 0) + 1;
+    }
+  });
+  return { counts, n, avg: n ? (sum / n) : 0 };
+}
+
+// Renderizado de tarjeta miniatura
+function miniCard(q, i){
+  const { counts, n, avg } = agg(q);
+  let inner = '';
+
+  if(q.type === 'scale'){
+    const pct = Math.round(avg / 10 * 100);
+    inner = `
+      <div class="gauge-wrap">
+        <div class="gauge" style="--pct:${pct};">
+          <div class="gauge-inner">${avg.toFixed(1)}</div>
+        </div>
+        <div class="more-note" style="text-align:center;font-weight:700;">Promedio / 10</div>
+      </div>
+    `;
+  } else {
+    const entries = Object.entries(counts).sort((a,b) => b[1] - a[1]);
+    const top = entries.slice(0, 3);
+    top.forEach((e, idx) => {
+      const pct = n ? Math.round(e[1] / n * 100) : 0;
+      const c = PALETTE[idx % PALETTE.length];
+      inner += `
+        <div class="mini-row">
+          <span class="mini-label" title="${e[0]}">${e[0]}</span>
+          <div class="mini-track">
+            <div class="mini-fill" style="--c1:${c[0]};--c2:${c[1]};width:${pct}%"></div>
+          </div>
+          <span class="mini-pct">${pct}%</span>
+        </div>
+      `;
+    });
+    if(entries.length > 3){
+      inner += `<div class="more-note">+${entries.length - 3} opción(es) más · clic para ver</div>`;
+    }
+    if(entries.length === 0){
+      inner += `<div class="more-note">Sin respuestas aún</div>`;
+    }
+  }
+
+  const accent = PALETTE[i % PALETTE.length][0];
+  const isSpotActive = focusOn && focusIdx === i;
+
+  return `
+    <div class="card ${isSpotActive ? 'spot-active' : ''}" id="card-q-${i}" style="--c-accent:${accent}" data-i="${i}">
+      <div>
+        <div class="q-num">Pregunta ${i+1} de 8</div>
+        <div class="q-title-mini">${q.title}</div>
+        ${inner}
+      </div>
+      <div class="n-resp">
+        <span><b>${n}</b> respuestas</span>
+        <span style="font-size:11px;color:var(--teal);font-weight:700;">Ver detalle →</span>
+      </div>
+    </div>
+  `;
+}
+
+function renderMosaic(){
+  const mosaic = document.getElementById('mosaic');
+  mosaic.innerHTML = QUESTIONS.map((q, i) => miniCard(q, i)).join('');
+  document.getElementById('stat-total').textContent = activeResponses().length;
+  
+  mosaic.querySelectorAll('.card').forEach(c => {
+    c.addEventListener('click', () => openSpotlight(Number(c.dataset.i)));
+  });
+}
+
+// Spotlight Modal
+function spotlightHTML(i){
+  const q = QUESTIONS[i];
+  const { counts, n, avg } = agg(q);
+  let body = '';
+
+  if(q.type === 'scale'){
+    const pct = Math.round(avg / 10 * 100);
+    body = `
+      <div class="spot-gauge" style="--pct:${pct};">
+        <div class="spot-gauge-inner">
+          <div class="avg-badge" style="font-size:36px;">${avg.toFixed(1)}</div>
+          <span style="font-size:13px;color:var(--muted);font-weight:700;">de 10</span>
+        </div>
+      </div>
+      <div class="more-note" style="text-align:center;font-size:14px;margin-bottom:14px;">
+        Nivel promedio de saturación basado en <b>${n}</b> respuesta(s)
+      </div>
+    `;
+  } else {
+    // Ordenar todas las opciones por número de votos
+    const sorted = Object.entries(counts).sort((a,b) => b[1] - a[1]);
+    const displayList = sorted.length ? sorted : q.options.map(o => [o, 0]);
+
+    body = displayList.map((e, idx) => {
+      const pct = n ? Math.round(e[1] / n * 100) : 0;
+      const c = PALETTE[idx % PALETTE.length];
+      return `
+        <div class="spot-row">
+          <span class="spot-label" title="${e[0]}">${e[0]}</span>
+          <div class="spot-track">
+            <div class="spot-fill" style="--c1:${c[0]};--c2:${c[1]};width:${pct}%"></div>
+          </div>
+          <span class="spot-num">${e[1]} (${pct}%)</span>
+        </div>
+      `;
+    }).join('');
+  }
+
+  const dots = QUESTIONS.map((_, idx) => `
+    <span class="${idx === i ? 'on' : ''}" data-idx="${idx}"></span>
+  `).join('');
+
+  return `
+    <button class="spot-close" id="spot-close" aria-label="Cerrar modal">✕</button>
+    <div class="spot-eyebrow">PREGUNTA ${i+1} DE 8 · DETALLE COMPLETO</div>
+    <div class="spot-title">${q.title}</div>
+    <div>${body}</div>
+    <div class="spot-nav">
+      <button type="button" id="spot-prev">← Anterior</button>
+      <div class="spot-dots">${dots}</div>
+      <button type="button" id="spot-next">Siguiente →</button>
+    </div>
+  `;
+}
+
+function openSpotlight(i){
+  focusIdx = i;
+  const spotCard = document.getElementById('spot-card');
+  spotCard.innerHTML = spotlightHTML(i);
+  document.getElementById('overlay').classList.remove('hidden');
+
+  document.getElementById('spot-close').onclick = closeSpotlight;
+  document.getElementById('spot-prev').onclick = () => {
+    focusIdx = (focusIdx + QUESTIONS.length - 1) % QUESTIONS.length;
+    openSpotlight(focusIdx);
+  };
+  document.getElementById('spot-next').onclick = () => {
+    focusIdx = (focusIdx + 1) % QUESTIONS.length;
+    openSpotlight(focusIdx);
+  };
+
+  spotCard.querySelectorAll('.spot-dots span').forEach(dot => {
+    dot.onclick = () => openSpotlight(Number(dot.dataset.idx));
+  });
+
+  renderMosaic();
+}
+
+function closeSpotlight(){
+  document.getElementById('overlay').classList.add('hidden');
+  stopFocus();
+  renderMosaic();
+}
+
+// Cierre con click fuera del card o tecla ESC
+document.getElementById('overlay').addEventListener('click', (e) => {
+  if(e.target === document.getElementById('overlay')) closeSpotlight();
+});
+window.addEventListener('keydown', (e) => {
+  if(e.key === 'Escape') closeSpotlight();
+  if(!document.getElementById('overlay').classList.contains('hidden')){
+    if(e.key === 'ArrowRight'){
+      focusIdx = (focusIdx + 1) % QUESTIONS.length;
+      openSpotlight(focusIdx);
+    } else if(e.key === 'ArrowLeft'){
+      focusIdx = (focusIdx + QUESTIONS.length - 1) % QUESTIONS.length;
+      openSpotlight(focusIdx);
+    }
+  }
+});
+
+// Modo foco (rotación automática)
+function startFocus(){
+  focusOn = true;
+  const btn = document.getElementById('btn-focus');
+  btn.classList.add('on');
+  btn.textContent = '⏸ Foco activo (rotando)';
+  openSpotlight(focusIdx || 0);
+  focusTimer = setInterval(() => {
+    focusIdx = (focusIdx + 1) % QUESTIONS.length;
+    openSpotlight(focusIdx);
+  }, 7000);
+}
+
+function stopFocus(){
+  focusOn = false;
+  clearInterval(focusTimer);
+  const btn = document.getElementById('btn-focus');
+  btn.classList.remove('on');
+  btn.textContent = '▶ Modo foco (rotar)';
+}
+
+document.getElementById('btn-focus').addEventListener('click', () => {
+  if(focusOn) closeSpotlight();
+  else startFocus();
+});
+
+// Toggle Demo
+document.getElementById('btn-demo').addEventListener('click', () => {
+  demoMode = !demoMode;
+  const b = document.getElementById('btn-demo');
+  b.classList.toggle('on', demoMode);
+  b.textContent = demoMode ? '🎭 Viendo ejemplo — volver a datos reales' : '🎭 Vista previa con ejemplo';
+  renderMosaic();
+  if(!document.getElementById('overlay').classList.contains('hidden')){
+    openSpotlight(focusIdx);
+  }
+});
+
+// Toggle Sonido
+document.getElementById('btn-sound').addEventListener('click', () => {
+  soundEnabled = !soundEnabled;
+  const b = document.getElementById('btn-sound');
+  b.classList.toggle('on', soundEnabled);
+  b.textContent = soundEnabled ? '🔔 Sonido ON' : '🔕 Sonido OFF';
+  if(soundEnabled) playLiveChime();
+});
+
+// Toast de notificación en vivo
+function triggerLiveToast(){
+  const toast = document.getElementById('live-toast');
+  toast.classList.add('show');
+  playLiveChime();
+  setTimeout(() => toast.classList.remove('show'), 3500);
+}
+
+// =========================================================================
+// ⚡ POLLING EN TIEMPO REAL CON DJANGO BACKEND
+// =========================================================================
+let isPolling = false;
+
+async function checkRealtimeUpdates(){
+  if(isPolling || demoMode) return;
+  isPolling = true;
+
+  try {
+    const url = `{% url 'api_encuestas_stats' %}?since_id=${lastRecordedId}`;
+    const res = await fetch(url, {
+      headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    });
+    
+    if(res.ok){
+      const data = await res.json();
+      
+      if(data.has_new && data.total > totalRecordedCount){
+        // ¡Ha caído una o más respuestas nuevas!
+        realResponses = data.responses || realResponses;
+        lastRecordedId = data.last_id;
+        totalRecordedCount = data.total;
+
+        // Actualizar UI en vivo
+        renderMosaic();
+        if(!document.getElementById('overlay').classList.contains('hidden')){
+          openSpotlight(focusIdx);
+        }
+
+        // Animar contador y mostrar toast
+        const totalEl = document.getElementById('stat-total');
+        totalEl.textContent = totalRecordedCount;
+        totalEl.parentElement.classList.add('cardPulse');
+        setTimeout(() => totalEl.parentElement.classList.remove('cardPulse'), 1500);
+
+        triggerLiveToast();
+      } else if(data.responses && data.responses.length !== realResponses.length) {
+        realResponses = data.responses;
+        lastRecordedId = data.last_id;
+        totalRecordedCount = data.total;
+        renderMosaic();
+      }
+
+      document.getElementById('last-update-text').textContent = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', second:'2-digit'});
+    }
+  } catch(err) {
+    // Error silencioso para no interrumpir al usuario en fallos temporales de red
+    console.warn('Polling status:', err);
+  } finally {
+    isPolling = false;
+  }
+}
+
+// Iniciar render inicial y loop de sincronización cada 2.5 segundos
+renderMosaic();
+setInterval(checkRealtimeUpdates, 2500);
+</script>
+</body>
+</html>

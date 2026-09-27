@@ -7882,4 +7882,179 @@ def eliminar_documento_repositorio_ajax(request, doc_id):
 
     doc.delete()
     return JsonResponse({'status': 'success', 'message': 'Documento eliminado correctamente del repositorio.'})
+
+
+# =========================================================================
+# 📊 MÓDULO DE ENCUESTAS E INSIGHTS EN VIVO
+# =========================================================================
+from django.views.decorators.csrf import csrf_exempt
+
+def _get_client_ip(request):
+    """Obtiene la dirección IP real del visitante."""
+    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+    if x_forwarded_for:
+        ip = x_forwarded_for.split(',')[0].strip()
+    else:
+        ip = request.META.get('REMOTE_ADDR')
+    return ip
+
+
+def encuestas_view(request):
+    """
+    Vista del cuestionario de 8 preguntas para el público/audiencia.
+    URL: /encuestas/
+    """
+    total_respuestas = EncuestaRespuesta.objects.count()
+    return render(request, 'encuestas.html', {'total_respuestas': total_respuestas})
+
+
+@csrf_exempt
+def guardar_encuesta_ajax(request):
+    """
+    API para registrar las respuestas de la encuesta.
+    Acepta tanto JSON (fetch) como POST regular.
+    """
+    if request.method != 'POST':
+        return JsonResponse({'status': 'error', 'message': 'Método no permitido.'}, status=405)
+
+    try:
+        data = {}
+        if request.content_type and 'application/json' in request.content_type:
+            data = json.loads(request.body.decode('utf-8'))
+        else:
+            data = request.POST.dict()
+
+        # Si viene anidado en 'answers' o directo
+        answers = data.get('answers', {}) if isinstance(data.get('answers'), dict) else data
+
+        q1 = str(answers.get('q1', '')).strip()
+        q2 = str(answers.get('q2', '')).strip()
+        q2_otra = str(answers.get('q2_otra', '')).strip()
+        
+        try:
+            q3 = int(answers.get('q3', 5))
+            if q3 < 0: q3 = 0
+            if q3 > 10: q3 = 10
+        except (ValueError, TypeError):
+            q3 = 5
+
+        q4 = str(answers.get('q4', '')).strip()
+        q4_otra = str(answers.get('q4_otra', '')).strip()
+        q5 = str(answers.get('q5', '')).strip()
+        q6 = str(answers.get('q6', '')).strip()
+        q7 = str(answers.get('q7', '')).strip()
+        q8 = str(answers.get('q8', '')).strip()
+        q8_otra = str(answers.get('q8_otra', '')).strip()
+
+        # Validar campos esenciales
+        if not q1 or not q2 or not q4 or not q5 or not q6 or not q7 or not q8:
+            return JsonResponse({
+                'status': 'error', 
+                'message': 'Por favor completa todas las preguntas antes de enviar.'
+            }, status=400)
+
+        ip = _get_client_ip(request)
+
+        nueva_respuesta = EncuestaRespuesta.objects.create(
+            p1_hoy=q1,
+            p2_emocion_semana=q2,
+            p2_otra=q2_otra if q2_otra else None,
+            p3_saturacion=q3,
+            p4_rebasado_accion=q4,
+            p4_otra=q4_otra if q4_otra else None,
+            p5_dificultad=q5,
+            p6_acudir_ayuda=q6,
+            p7_uso_ia_redes=q7,
+            p8_freno_ayuda=q8,
+            p8_otra=q8_otra if q8_otra else None,
+            ip_origen=ip
+        )
+
+        total = EncuestaRespuesta.objects.count()
+
+        return JsonResponse({
+            'status': 'success',
+            'id': nueva_respuesta.id,
+            'total': total,
+            'message': '¡Respuesta registrada con éxito!'
+        })
+
+    except Exception as e:
+        return JsonResponse({
+            'status': 'error',
+            'message': f'Error al procesar la encuesta: {str(e)}'
+        }, status=500)
+
+
+def insights_encuesta_view(request):
+    """
+    Vista del Panel de Resultados en Vivo con gráficas y modo foco.
+    URL: /insights-encuesta/
+    """
+    respuestas_qs = EncuestaRespuesta.objects.all().order_by('-id')
+    total = respuestas_qs.count()
+    last_r = respuestas_qs.first()
+    last_id = last_r.id if last_r else 0
+
+    # Obtenemos las últimas 500 respuestas para hidratar el frontend inmediatamente
+    respuestas_data = [r.to_dict() for r in respuestas_qs[:500]]
+
+    initial_payload = {
+        'total': total,
+        'last_id': last_id,
+        'responses': respuestas_data
+    }
+
+    context = {
+        'total_respuestas': total,
+        'initial_data_json': json.dumps(initial_payload)
+    }
+    return render(request, 'insights_encuesta.html', context)
+
+
+def api_encuestas_stats(request):
+    """
+    Endpoint JSON para polling en tiempo real.
+    Devuelve el total actual, el id más reciente y las respuestas.
+    Soporta ?since_id= para checar si hay nuevas respuestas.
+    """
+    respuestas_qs = EncuestaRespuesta.objects.all().order_by('-id')
+    total = respuestas_qs.count()
+    last_r = respuestas_qs.first()
+    last_id = last_r.id if last_r else 0
+
+    since_id = request.GET.get('since_id')
+    if since_id:
+        try:
+            since_val = int(since_id)
+            if last_id > since_val:
+                # Hay nuevas respuestas
+                nuevas = [r.to_dict() for r in respuestas_qs.filter(id__gt=since_val)]
+                return JsonResponse({
+                    'has_new': True,
+                    'total': total,
+                    'last_id': last_id,
+                    'new_count': len(nuevas),
+                    'responses': [r.to_dict() for r in respuestas_qs[:500]]
+                })
+            else:
+                return JsonResponse({
+                    'has_new': False,
+                    'total': total,
+                    'last_id': last_id,
+                    'new_count': 0
+                })
+        except ValueError:
+            pass
+
+    # Si no se pasó since_id o es la primera carga:
+    respuestas_data = [r.to_dict() for r in respuestas_qs[:500]]
+    return JsonResponse({
+        'has_new': False,
+        'total': total,
+        'last_id': last_id,
+        'new_count': 0,
+        'responses': respuestas_data
+    })
+
 

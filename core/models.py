@@ -996,4 +996,69 @@ class DocumentoRepositorioClinico(models.Model):
             except Exception:
                 return None
         return None
+
+
+# ==========================================
+# ENCUESTAS EN VIVO (INSIGHTS)
+# ==========================================
+class EncuestaRespuesta(models.Model):
+    fecha_creacion = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de respuesta")
+    
+    # P1: Cómo te sientes HOY en una palabra
+    p1_hoy = models.CharField(max_length=80, verbose_name="1. Cómo te sientes hoy")
+    
+    # P2: Emoción con más fuerza en la última semana
+    p2_emocion_semana = models.CharField(max_length=100, verbose_name="2. Emoción última semana")
+    p2_otra = models.CharField(max_length=150, blank=True, null=True, verbose_name="2. Otra emoción")
+    
+    # P3: Nivel de saturación (0 al 10)
+    p3_saturacion = models.IntegerField(verbose_name="3. Nivel de saturación (0-10)")
+    
+    # P4: Qué haces primero al sentirte rebasado/a
+    p4_rebasado_accion = models.CharField(max_length=100, verbose_name="4. Acción al sentirse rebasado/a")
+    p4_otra = models.CharField(max_length=150, blank=True, null=True, verbose_name="4. Otra acción")
+    
+    # P5: Dificultad para dormir, concentrarse o disfrutar
+    p5_dificultad = models.CharField(max_length=100, verbose_name="5. Dificultad dormir/concentrarse/disfrutar")
+    
+    # P6: Si supieras con quién acudir por ayuda emocional
+    p6_acudir_ayuda = models.CharField(max_length=100, verbose_name="6. Sabrías con quién acudir")
+    
+    # P7: Uso de IA, redes o internet para entenderse/diagnosticarse
+    p7_uso_ia_redes = models.CharField(max_length=100, verbose_name="7. Uso de IA / internet para entenderse")
+    
+    # P8: Qué frena más para pedir ayuda profesional
+    p8_freno_ayuda = models.CharField(max_length=100, verbose_name="8. Freno para pedir ayuda profesional")
+    p8_otra = models.CharField(max_length=150, blank=True, null=True, verbose_name="8. Otro freno")
+
+    ip_origen = models.GenericIPAddressField(blank=True, null=True, verbose_name="IP del votante")
+
+    class Meta:
+        verbose_name = "Respuesta de Encuesta"
+        verbose_name_plural = "Respuestas de Encuestas"
+        ordering = ['-fecha_creacion']
+
+    def __str__(self):
+        return f"Encuesta #{self.id} ({self.p1_hoy}) - {self.fecha_creacion.strftime('%d/%m/%Y %H:%M')}"
+
+    def to_dict(self):
+        q2_val = self.p2_otra.strip() if (self.p2_emocion_semana == 'Otra' and self.p2_otra) else self.p2_emocion_semana
+        q4_val = self.p4_otra.strip() if (self.p4_rebasado_accion == 'Otra' and self.p4_otra) else self.p4_rebasado_accion
+        q8_val = self.p8_otra.strip() if (self.p8_freno_ayuda == 'Otra' and self.p8_otra) else self.p8_freno_ayuda
+        return {
+            'id': self.id,
+            'ts': int(self.fecha_creacion.timestamp() * 1000) if self.fecha_creacion else 0,
+            'fecha': self.fecha_creacion.strftime('%d/%m/%Y %H:%M') if self.fecha_creacion else '',
+            'answers': {
+                'q1': self.p1_hoy,
+                'q2': q2_val,
+                'q3': self.p3_saturacion,
+                'q4': q4_val,
+                'q5': self.p5_dificultad,
+                'q6': self.p6_acudir_ayuda,
+                'q7': self.p7_uso_ia_redes,
+                'q8': q8_val,
+            }
+        }
+
 
