@@ -356,7 +356,8 @@ footer a{color:var(--purple);text-decoration:none;font-weight:700;}
 
 <!-- Toast para notificar en vivo cuando cae un voto -->
 <div class="live-toast" id="live-toast">
-  <span>✨</span> <span id="toast-text">¡Nueva acción agregada a la nube en vivo!</span>
+  <span class="live-dot" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#22BFBA;box-shadow:0 0 8px #22BFBA;margin-right:4px;"></span>
+  <span id="toast-text">Nueva acción agregada a la nube en vivo</span>
 </div>
 
 <div class="wrap">
@@ -598,14 +599,17 @@ window.addEventListener('resize', () => {
 // Toast flotante
 function triggerToast(wordLabel){
   const toast = document.getElementById('live-toast');
-  document.getElementById('toast-text').textContent = `✨ ¡"${wordLabel}" agregado a la nube!`;
-  toast.classList.add('show');
-  playLiveChime();
-  setTimeout(() => toast.classList.remove('show'), 3200);
+  const txt = document.getElementById('toast-text');
+  if(txt) txt.textContent = `"${wordLabel}" agregado a la nube en vivo`;
+  if(toast){
+    toast.classList.add('show');
+    playLiveChime();
+    setTimeout(() => toast.classList.remove('show'), 3200);
+  }
 }
 
 // =========================================================================
-// ⚡ POLLING EN TIEMPO REAL CON DJANGO BACKEND
+// POLLING EN TIEMPO REAL CON DJANGO BACKEND
 // =========================================================================
 let isPolling = false;
 
@@ -644,16 +648,18 @@ async function checkRealtimeUpdates(){
   }
 }
 
-// Toggle Sonido
-document.getElementById('btn-sound').addEventListener('click', () => {
-  soundEnabled = !soundEnabled;
-  const b = document.getElementById('btn-sound');
-  b.classList.toggle('on', soundEnabled);
-  b.textContent = soundEnabled ? '🔔 Sonido ON' : '🔕 Sonido OFF';
-  if(soundEnabled) playLiveChime();
-});
+// Toggle Sonido (opcional)
+const btnSound = document.getElementById('btn-sound');
+if(btnSound){
+  btnSound.addEventListener('click', () => {
+    soundEnabled = !soundEnabled;
+    btnSound.classList.toggle('on', soundEnabled);
+    btnSound.textContent = soundEnabled ? 'Sonido ON' : 'Sonido OFF';
+    if(soundEnabled) playLiveChime();
+  });
+}
 
-// Simulación de ensayo
+// Simulación de ensayo (opcional)
 function pickWeighted(){
   const totalW = WORDS.reduce((s,w) => s + w.weight, 0);
   let r = Math.random() * totalW;
@@ -664,26 +670,29 @@ function pickWeighted(){
   return WORDS[WORDS.length - 1].id;
 }
 
-document.getElementById('btn-demo').onclick = (e) => {
-  if(demoTimer){
-    clearInterval(demoTimer);
-    demoTimer = null;
-    e.target.textContent = '🎭 Simular respuestas (modo ensayo)';
-    return;
-  }
-  e.target.textContent = '⏸ Detener simulación';
-  demoTimer = setInterval(() => {
-    const hitId = pickWeighted();
-    counts[hitId] = (counts[hitId] || 0) + 1;
-    total++;
-    layoutAndRender(hitId);
-    if(total >= 60){
+const btnDemo = document.getElementById('btn-demo');
+if(btnDemo){
+  btnDemo.onclick = (e) => {
+    if(demoTimer){
       clearInterval(demoTimer);
       demoTimer = null;
-      e.target.textContent = '🎭 Simular respuestas (modo ensayo)';
+      e.target.textContent = 'Simular respuestas (ensayo)';
+      return;
     }
-  }, 400);
-};
+    e.target.textContent = 'Detener simulación';
+    demoTimer = setInterval(() => {
+      const hitId = pickWeighted();
+      counts[hitId] = (counts[hitId] || 0) + 1;
+      total++;
+      layoutAndRender(hitId);
+      if(total >= 60){
+        clearInterval(demoTimer);
+        demoTimer = null;
+        e.target.textContent = 'Simular respuestas (ensayo)';
+      }
+    }, 400);
+  };
+}
 
 // Render inicial
 layoutAndRender();

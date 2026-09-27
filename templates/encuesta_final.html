@@ -294,10 +294,10 @@ footer a{color:var(--purple);text-decoration:none;font-weight:700;}
       
       <div class="thanks-actions">
         <a href="{% url 'insights_final' %}" class="btn-primary-action">
-          ☁️ Ver nube de palabras en vivo →
+          Ver nube de palabras en vivo →
         </a>
         <button type="button" id="btn-revote" class="btn-secondary-action">
-          🔄 Cambiar mi respuesta
+          Cambiar mi respuesta
         </button>
         <a href="{% url 'inicio' %}" style="margin-top:6px;font-size:13px;color:var(--muted);text-decoration:underline;">
           Volver a la página principal de HOPE
@@ -360,11 +360,13 @@ document.querySelectorAll('.word-btn').forEach(btn => {
   });
 });
 
-revoteBtn.addEventListener('click', () => {
-  sessionStorage.removeItem('hope_cloud_voted_action');
-  thanksCard.style.display = 'none';
-  voteCard.style.display = 'block';
-});
+if(revoteBtn){
+  revoteBtn.addEventListener('click', () => {
+    sessionStorage.removeItem('hope_cloud_voted_action');
+    thanksCard.style.display = 'none';
+    voteCard.style.display = 'block';
+  });
+}
 </script>
 </body>
 </html>

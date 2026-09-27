@@ -537,7 +537,8 @@ footer a{color:var(--purple);text-decoration:none;font-weight:700;}
 
 <!-- Toast para notificar en vivo cuando cae una encuesta -->
 <div class="live-toast" id="live-toast">
-  <span>✨</span> <span>¡Nueva respuesta recibida en vivo!</span>
+  <span class="live-dot" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#22BFBA;box-shadow:0 0 8px #22BFBA;margin-right:6px;"></span>
+  <span>Nueva respuesta recibida en vivo</span>
 </div>
 
 <div class="wrap">
@@ -546,12 +547,15 @@ footer a{color:var(--purple);text-decoration:none;font-weight:700;}
       <img src="{% static 'img/logo_hope_principal.png' %}" alt="HOPE · Oportunidad, Prevención, Esperanza" class="brand-logo">
       <div class="brand-title"><span class="dot"></span>Resultados en vivo</div>
     </a>
-
-
   </header>
 
   <main>
-
+    <div class="stats-strip">
+      <span class="chip"><b id="stat-total">{{ total_respuestas }}</b> personas respondieron</span>
+      <span class="chip">8 preguntas activas</span>
+      <span class="chip chip-live"><span class="live-dot"></span> Sincronización en vivo activa</span>
+      <span class="chip" id="chip-time" style="font-size:12px;">Actualizado: <b id="last-update-text">ahora mismo</b></span>
+    </div>
 
     <!-- Mosaico de las 8 Preguntas -->
     <div class="mosaic" id="mosaic"></div>
@@ -908,12 +912,14 @@ window.addEventListener('keydown', (e) => {
   }
 });
 
-// Modo foco (rotación automática)
+// Modo foco (rotación automática opcional)
 function startFocus(){
   focusOn = true;
   const btn = document.getElementById('btn-focus');
-  btn.classList.add('on');
-  btn.textContent = '⏸ Foco activo (rotando)';
+  if(btn){
+    btn.classList.add('on');
+    btn.textContent = 'Foco activo (rotando)';
+  }
   openSpotlight(focusIdx || 0);
   focusTimer = setInterval(() => {
     focusIdx = (focusIdx + 1) % QUESTIONS.length;
@@ -925,46 +931,57 @@ function stopFocus(){
   focusOn = false;
   clearInterval(focusTimer);
   const btn = document.getElementById('btn-focus');
-  btn.classList.remove('on');
-  btn.textContent = '▶ Modo foco (rotar)';
+  if(btn){
+    btn.classList.remove('on');
+    btn.textContent = 'Modo foco (rotar)';
+  }
 }
 
-document.getElementById('btn-focus').addEventListener('click', () => {
-  if(focusOn) closeSpotlight();
-  else startFocus();
-});
+const btnFocus = document.getElementById('btn-focus');
+if(btnFocus){
+  btnFocus.addEventListener('click', () => {
+    if(focusOn) closeSpotlight();
+    else startFocus();
+  });
+}
 
-// Toggle Demo
-document.getElementById('btn-demo').addEventListener('click', () => {
-  demoMode = !demoMode;
-  const b = document.getElementById('btn-demo');
-  b.classList.toggle('on', demoMode);
-  b.textContent = demoMode ? '🎭 Viendo ejemplo — volver a datos reales' : '🎭 Vista previa con ejemplo';
-  renderMosaic();
-  if(!document.getElementById('overlay').classList.contains('hidden')){
-    openSpotlight(focusIdx);
-  }
-});
+// Toggle Demo (opcional)
+const btnDemo = document.getElementById('btn-demo');
+if(btnDemo){
+  btnDemo.addEventListener('click', () => {
+    demoMode = !demoMode;
+    btnDemo.classList.toggle('on', demoMode);
+    btnDemo.textContent = demoMode ? 'Viendo ejemplo — volver a datos reales' : 'Vista previa con ejemplo';
+    renderMosaic();
+    if(!document.getElementById('overlay').classList.contains('hidden')){
+      openSpotlight(focusIdx);
+    }
+  });
+}
 
-// Toggle Sonido
-document.getElementById('btn-sound').addEventListener('click', () => {
-  soundEnabled = !soundEnabled;
-  const b = document.getElementById('btn-sound');
-  b.classList.toggle('on', soundEnabled);
-  b.textContent = soundEnabled ? '🔔 Sonido ON' : '🔕 Sonido OFF';
-  if(soundEnabled) playLiveChime();
-});
+// Toggle Sonido (opcional)
+const btnSound = document.getElementById('btn-sound');
+if(btnSound){
+  btnSound.addEventListener('click', () => {
+    soundEnabled = !soundEnabled;
+    btnSound.classList.toggle('on', soundEnabled);
+    btnSound.textContent = soundEnabled ? 'Sonido ON' : 'Sonido OFF';
+    if(soundEnabled) playLiveChime();
+  });
+}
 
 // Toast de notificación en vivo
 function triggerLiveToast(){
   const toast = document.getElementById('live-toast');
-  toast.classList.add('show');
-  playLiveChime();
-  setTimeout(() => toast.classList.remove('show'), 3500);
+  if(toast){
+    toast.classList.add('show');
+    playLiveChime();
+    setTimeout(() => toast.classList.remove('show'), 3500);
+  }
 }
 
 // =========================================================================
-// ⚡ POLLING EN TIEMPO REAL CON DJANGO BACKEND
+// POLLING EN TIEMPO REAL CON DJANGO BACKEND
 // =========================================================================
 let isPolling = false;
 
@@ -995,9 +1012,13 @@ async function checkRealtimeUpdates(){
 
         // Animar contador y mostrar toast
         const totalEl = document.getElementById('stat-total');
-        totalEl.textContent = totalRecordedCount;
-        totalEl.parentElement.classList.add('cardPulse');
-        setTimeout(() => totalEl.parentElement.classList.remove('cardPulse'), 1500);
+        if(totalEl){
+          totalEl.textContent = totalRecordedCount;
+          if(totalEl.parentElement){
+            totalEl.parentElement.classList.add('cardPulse');
+            setTimeout(() => totalEl.parentElement.classList.remove('cardPulse'), 1500);
+          }
+        }
 
         triggerLiveToast();
       } else if(data.responses && data.responses.length !== realResponses.length) {
@@ -1007,7 +1028,10 @@ async function checkRealtimeUpdates(){
         renderMosaic();
       }
 
-      document.getElementById('last-update-text').textContent = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', second:'2-digit'});
+      const lastUpdateEl = document.getElementById('last-update-text');
+      if(lastUpdateEl){
+        lastUpdateEl.textContent = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', second:'2-digit'});
+      }
     }
   } catch(err) {
     // Error silencioso para no interrumpir al usuario en fallos temporales de red

@@ -488,7 +488,9 @@ footer a{color:var(--purple);text-decoration:none;font-weight:700;}
       <p>Todo lo que sientes importa, tú nos importas. Tu respuesta ha sido guardada y ya forma parte de los resultados en tiempo real.</p>
       
       <div class="thanks-actions">
-
+        <button type="button" id="btn-revote" class="btn-secondary-action">
+          Responder de nuevo
+        </button>
         <a href="{% url 'inicio' %}" style="margin-top:6px;font-size:13px;color:var(--muted);text-decoration:underline;">
           Volver a la página principal de HOPE
         </a>
@@ -785,16 +787,19 @@ document.getElementById('btn-next').addEventListener('click', async () => {
 });
 
 // Revote
-document.getElementById('btn-revote').addEventListener('click', () => {
-  step = 0;
-  answers = {
-    q1: '', q2: '', q2_otra: '', q3: 5, q4: '', q4_otra: '',
-    q5: '', q6: '', q7: '', q8: '', q8_otra: ''
-  };
-  document.getElementById('thanks').classList.add('hidden');
-  document.getElementById('stepper-card').classList.remove('hidden');
-  renderStep();
-});
+const btnRevote = document.getElementById('btn-revote');
+if(btnRevote){
+  btnRevote.addEventListener('click', () => {
+    step = 0;
+    answers = {
+      q1: '', q2: '', q2_otra: '', q3: 5, q4: '', q4_otra: '',
+      q5: '', q6: '', q7: '', q8: '', q8_otra: ''
+    };
+    document.getElementById('thanks').classList.add('hidden');
+    document.getElementById('stepper-card').classList.remove('hidden');
+    renderStep();
+  });
+}
 
 // Init
 renderStep();
