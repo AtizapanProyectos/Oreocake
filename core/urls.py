@@ -131,5 +131,10 @@ urlpatterns = [
     path('nube-palabras/', views.insights_final_view, name='nube_palabras'),
     path('api/encuesta-final/stats/', views.api_encuesta_final_stats, name='api_encuesta_final_stats'),
     path('api/encuesta-final/guardar/', views.guardar_encuesta_final_ajax, name='api_guardar_encuesta_final'),
+
+    # Landing Page de Redes Sociales y Enlaces Oficiales HOPE
+    path('redes-sociales/', views.redes_sociales_view, name='redes_sociales'),
+    path('redes/', views.redes_sociales_view, name='redes'),
+    path('links/', views.redes_sociales_view, name='links'),
 ]
 

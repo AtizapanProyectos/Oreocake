@@ -8216,4 +8216,18 @@ def api_encuesta_final_stats(request):
     })
 
 
+# =========================================================================
+# 🌐 LANDING PAGE DE REDES SOCIALES Y ENLACES OFICIALES
+# =========================================================================
+
+def redes_sociales_view(request):
+    """
+    Landing page oficial estilo link-in-bio de HOPE con enlaces a redes sociales,
+    página web principal y módulos interactivos.
+    URL: /redes-sociales/ (https://espaciohope.com/redes-sociales/)
+    """
+    return render(request, 'redes_sociales.html')
+
+
+
 
