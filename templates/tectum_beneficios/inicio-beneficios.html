@@ -21,706 +21,1591 @@
       --blue-500: #3b82f6;
       --sky-400: #0ea5e9;
       --sky-300: #38bdf8;
+      --c-purple: #5A3FA3;
+      --c-pink: #F85B8C;
+      --c-teal: #25B8B8;
       --slate-50: #f8fafc;
       --slate-100: #f1f5f9;
       --slate-200: #e2e8f0;
-      --slate-300: #cbd5e1;
       --slate-400: #94a3b8;
       --slate-500: #64748b;
-      --slate-600: #475569;
       --slate-700: #334155;
-      --slate-800: #1e293b;
       --slate-900: #0f172a;
-      --c-purple: #1e3a8a;
-      --c-pink: #0284c7;
-      --c-teal: #0ea5e9;
-      --c-orange: #f59e0b;
-      --c-yellow: #38bdf8;
+      --sidebar-w: 320px;
       --font-h: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
       --font-b: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
-      --radius-sm: 8px;
-      --radius-md: 16px;
-      --radius-lg: 24px;
-      --radius-xl: 32px;
-      --sh-sm: 0 2px 8px rgba(11, 20, 44, 0.04);
-      --sh-md: 0 12px 32px -4px rgba(11, 20, 44, 0.08);
-      --sh-lg: 0 24px 48px -12px rgba(11, 20, 44, 0.14);
-      --tr: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      --sh-sm: 0 4px 12px rgba(11, 20, 44, 0.05);
+      --sh-md: 0 12px 28px -6px rgba(11, 20, 44, 0.08), 0 4px 10px -2px rgba(11, 20, 44, 0.04);
+      --sh-lg: 0 20px 40px -10px rgba(11, 20, 44, 0.12), 0 8px 16px -4px rgba(37, 99, 235, 0.08);
     }
 
-    * { margin:0; padding:0; box-sizing:border-box; }
-    html { scroll-behavior:smooth; font-size:16px; }
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+      overflow-x: hidden;
+      padding-top: env(safe-area-inset-top, 0);
+    }
+
     body {
       font-family: var(--font-b);
-      background-color: var(--slate-50);
-      color: var(--slate-800);
-      line-height: 1.6;
+      color: var(--slate-900);
+      background: #ffffff;
+      display: flex;
+      min-height: 100vh;
       overflow-x: hidden;
       -webkit-font-smoothing: antialiased;
     }
 
-    /* BARRA SUPERIOR */
-    .top-bar {
+    /* ── BARRA LATERAL (SIDEBAR) ── */
+    .sidebar {
+      width: var(--sidebar-w);
+      height: 100vh;
+      position: fixed;
+      inset: 0 auto 0 0;
+      background: #ffffff;
+      border-right: 1px solid var(--slate-200);
+      padding: 38px 24px;
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      z-index: 1000;
+      box-shadow: 4px 0 24px rgba(11, 20, 44, 0.03);
+    }
+
+    .brand-section {
+      text-align: center;
+      margin-bottom: 28px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .brand-logo-wrap {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 6px 12px;
+      border-radius: 16px;
+      background: #ffffff;
+      transition: transform 0.3s ease;
+    }
+
+    .brand-logo-wrap:hover {
+      transform: scale(1.02);
+    }
+
+    .brand-logo {
+      width: 195px;
+      height: auto;
+      display: block;
+    }
+
+    .nav-title {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 1.4px;
+      color: var(--slate-400);
+      font-weight: 800;
+      margin: 20px 0 8px;
+      padding-left: 8px;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 11px 14px;
+      color: var(--slate-500);
+      font-weight: 600;
+      font-size: 0.92rem;
+      text-decoration: none;
+      border-radius: 12px;
+      margin-bottom: 4px;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .nav-item i {
+      width: 20px;
+      font-size: 1rem;
+      text-align: center;
+      color: var(--slate-400);
+      transition: all 0.25s ease;
+    }
+
+    .nav-item:hover, .nav-item.active {
+      background: linear-gradient(135deg, rgba(37, 99, 235, 0.08) 0%, rgba(14, 165, 233, 0.08) 100%);
+      color: var(--blue-600);
+      transform: translateX(4px);
+    }
+
+    .nav-item:hover i, .nav-item.active i {
+      color: var(--blue-600);
+      transform: scale(1.15);
+    }
+
+    .nav-item.active {
+      font-weight: 700;
+      background: linear-gradient(135deg, rgba(37, 99, 235, 0.12) 0%, rgba(14, 165, 233, 0.12) 100%);
+      color: var(--navy-800);
+      border-left: 3px solid var(--blue-600);
+    }
+
+    .btn-login-sidebar {
+      background: linear-gradient(135deg, var(--navy-900) 0%, var(--navy-700) 100%);
+      color: #ffffff !important;
+      justify-content: center;
+      margin: 10px 0 16px;
+      font-weight: 700;
+      font-size: 0.9rem;
+      border-radius: 14px;
+      padding: 12px 16px;
+      box-shadow: 0 8px 20px rgba(11, 20, 44, 0.2);
+    }
+
+    .btn-login-sidebar i {
+      color: #ffffff !important;
+    }
+
+    .btn-login-sidebar:hover {
+      background: linear-gradient(135deg, var(--blue-600) 0%, var(--sky-400) 100%);
+      transform: translateY(-2px) !important;
+      box-shadow: 0 12px 24px rgba(37, 99, 235, 0.35);
+    }
+
+    .btn-login-sidebar.logout {
+      background: #ef4444;
+      box-shadow: 0 8px 20px rgba(239, 68, 68, 0.2);
+    }
+
+    .btn-login-sidebar.logout:hover {
+      background: #dc2626;
+      box-shadow: 0 12px 24px rgba(220, 38, 38, 0.3);
+    }
+
+    /* ── CONTENIDO PRINCIPAL ── */
+    .main {
+      margin-left: var(--sidebar-w);
+      width: calc(100% - var(--sidebar-w));
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    .mobile-nav {
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px;
       background: #ffffff;
       border-bottom: 1px solid var(--slate-200);
-      padding: 16px 28px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
       position: sticky;
       top: 0;
-      z-index: 1000;
-      box-shadow: var(--sh-sm);
+      z-index: 999;
     }
-    .top-bar .brand {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      text-decoration: none;
-    }
-    .top-bar .brand-logo {
-      height: 48px;
-      width: auto;
-      object-fit: contain;
-    }
-    .badge-beneficios {
-      background: #e0f2fe;
-      color: #0284c7;
-      border: 1px solid #bae6fd;
-      padding: 4px 12px;
-      border-radius: 20px;
-      font-weight: 800;
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-    .top-actions {
+
+    .mobile-nav-left {
       display: flex;
       align-items: center;
       gap: 12px;
     }
-    .btn-login {
-      background: white;
-      color: #0284c7;
-      border: 1.5px solid #0284c7;
-      padding: 10px 22px;
-      border-radius: 100px;
-      font-weight: 700;
-      font-size: 14px;
-      cursor: pointer;
-      text-decoration: none;
-      transition: var(--tr);
-      display: inline-flex;
+
+    .btn-toggle-menu {
+      background: #f1f5f9;
+      border: none;
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      display: flex;
       align-items: center;
-      gap: 8px;
-    }
-    .btn-login:hover {
-      background: #0284c7;
-      color: white;
+      justify-content: center;
+      color: var(--navy-900);
+      font-size: 1.2rem;
+      cursor: pointer;
     }
 
-    /* HERO */
-    .hero {
-      background: linear-gradient(135deg, #070d1e 0%, #0b142c 50%, #1e3a8a 100%);
-      color: white;
-      padding: 75px 24px 65px;
-      text-align: center;
-      position: relative;
-      overflow: hidden;
+    .mlogo {
+      height: 38px;
+      width: auto;
     }
-    .hero-container {
-      max-width: 900px;
-      margin: 0 auto;
+
+    .mobile-nav-btn {
+      background: var(--blue-600);
+      color: #ffffff;
+      padding: 8px 16px;
+      border-radius: 10px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      text-decoration: none;
+    }
+
+    /* ── HERO SLIDER ── */
+    .hero {
       position: relative;
+      min-height: 90vh;
+      display: flex;
+      align-items: center;
+      background: var(--navy-950);
+      color: #ffffff;
+      overflow: hidden;
+      padding: 80px 70px;
+    }
+
+    .watermark-shield {
+      position: absolute;
+      right: -80px;
+      bottom: -80px;
+      width: 580px;
+      height: 580px;
+      opacity: 0.04;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .slide {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 1s cubic-bezier(0.16, 1, 0.3, 1), visibility 1s ease;
+      display: flex;
+      align-items: center;
+      padding: 80px 70px;
       z-index: 2;
     }
-    .hero-tag {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      background: rgba(255, 255, 255, 0.1);
-      border: 1px solid rgba(56, 189, 248, 0.3);
-      color: #38bdf8;
-      padding: 7px 18px;
-      border-radius: 100px;
-      font-size: 12px;
-      font-weight: 800;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      margin-bottom: 20px;
+
+    .slide.active {
+      opacity: 1;
+      visibility: visible;
     }
-    .hero-title {
+
+    .slide .bg {
+      position: absolute;
+      inset: 0;
+      background-size: cover;
+      background-position: center;
+      z-index: -2;
+      transform: scale(1.08);
+      transition: transform 9s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .slide.active .bg {
+      transform: scale(1);
+    }
+
+    .slide .ov {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, rgba(7, 13, 30, 0.95) 0%, rgba(7, 13, 30, 0.82) 45%, rgba(7, 13, 30, 0.5) 100%);
+      z-index: -1;
+    }
+
+    .slide.s2 {
+      background: radial-gradient(circle at 80% 20%, rgba(14, 165, 233, 0.18) 0%, transparent 50%),
+                  radial-gradient(circle at 20% 80%, rgba(37, 99, 235, 0.22) 0%, transparent 50%),
+                  var(--navy-950);
+    }
+
+    .slide.s3 {
+      background: radial-gradient(circle at 20% 20%, rgba(37, 99, 235, 0.25) 0%, transparent 50%),
+                  radial-gradient(circle at 80% 80%, rgba(14, 165, 233, 0.18) 0%, transparent 50%),
+                  var(--navy-950);
+    }
+
+    .hero-content {
+      max-width: 680px;
+      position: relative;
+      z-index: 3;
+    }
+
+    .hero h1 {
       font-family: var(--font-h);
-      font-size: clamp(2.2rem, 5vw, 3.4rem);
+      font-size: 3.6rem;
       font-weight: 800;
-      line-height: 1.15;
-      margin-bottom: 18px;
-      letter-spacing: -0.5px;
+      line-height: 1.12;
+      margin-bottom: 24px;
+      letter-spacing: -1.2px;
     }
-    .hero-title span {
-      background: linear-gradient(135deg, #38bdf8, #60a5fa);
+
+    .hero h1 .text-highlight {
+      background: linear-gradient(135deg, #ffffff 0%, var(--sky-300) 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
     }
-    .hero-desc {
-      font-size: 1.15rem;
-      color: var(--slate-300);
-      max-width: 680px;
-      margin: 0 auto 35px;
+
+    .hero p {
+      font-size: 1.25rem;
       line-height: 1.6;
+      color: rgba(255, 255, 255, 0.82);
+      margin-bottom: 38px;
+      font-weight: 400;
     }
-    .hero-cta-group {
+
+    .hero-btns {
       display: flex;
-      justify-content: center;
-      gap: 16px;
+      gap: 18px;
       flex-wrap: wrap;
     }
-    .btn-hero-primary {
-      background: linear-gradient(135deg, #0284c7 0%, #2563eb 100%);
-      color: white;
+
+    .btn-main {
+      background: linear-gradient(135deg, var(--blue-600) 0%, var(--sky-400) 100%);
+      color: #ffffff;
       padding: 16px 36px;
       border-radius: 100px;
-      font-weight: 800;
-      font-size: 1rem;
-      border: none;
-      cursor: pointer;
-      box-shadow: 0 10px 25px rgba(2, 132, 199, 0.4);
-      transition: var(--tr);
+      font-weight: 700;
+      font-size: 1.05rem;
       text-decoration: none;
       display: inline-flex;
       align-items: center;
       gap: 10px;
-    }
-    .btn-hero-primary:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 14px 32px rgba(2, 132, 199, 0.5);
-      color: white;
+      box-shadow: 0 12px 28px rgba(37, 99, 235, 0.4);
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      border: none;
+      cursor: pointer;
     }
 
-    /* SECCIÓN SERVICIOS */
-    .section-wrap {
-      max-width: 1100px;
-      margin: 0 auto;
-      padding: 60px 24px;
+    .btn-main:hover {
+      transform: translateY(-3px) scale(1.02);
+      box-shadow: 0 18px 36px rgba(37, 99, 235, 0.55);
     }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.1);
+      color: #ffffff;
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      padding: 16px 32px;
+      border-radius: 100px;
+      font-weight: 600;
+      font-size: 1.05rem;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      cursor: pointer;
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.2);
+      border-color: rgba(255, 255, 255, 0.45);
+      transform: translateY(-2px);
+    }
+
+    .dots {
+      position: absolute;
+      bottom: 40px;
+      left: 70px;
+      display: flex;
+      gap: 12px;
+      z-index: 10;
+    }
+
+    .dot {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.3);
+      border: none;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .dot.active {
+      background: var(--sky-400);
+      width: 36px;
+      border-radius: 20px;
+    }
+
+    /* ── SECCIONES ── */
+    .section {
+      padding: 90px 60px;
+    }
+
     .section-header {
-      text-align: center;
-      margin-bottom: 45px;
+      margin-bottom: 50px;
     }
-    .section-header h2 {
+
+    .section-header .tag {
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: var(--blue-600);
+      font-weight: 800;
+      margin-bottom: 12px;
+      display: block;
+    }
+
+    .section-header .title {
       font-family: var(--font-h);
-      font-size: 2.3rem;
+      font-size: 2.8rem;
       font-weight: 800;
       color: var(--navy-900);
-      margin-bottom: 10px;
-    }
-    .section-header p {
-      color: var(--slate-500);
-      font-size: 1.05rem;
-      max-width: 600px;
-      margin: 0 auto;
+      line-height: 1.15;
+      letter-spacing: -0.8px;
     }
 
-    .benefits-grid {
+    .section-header .title span {
+      color: var(--blue-600);
+    }
+
+    /* ── TARJETAS CLÍNICAS (TERAPIAS) ── */
+    .grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-      gap: 24px;
+      gap: 32px;
     }
-    .benefit-card {
-      background: white;
-      border-radius: 24px;
-      padding: 34px 28px;
+
+    .card {
+      background: #ffffff;
+      border-radius: 28px;
       border: 1px solid var(--slate-200);
-      box-shadow: var(--sh-sm);
-      transition: var(--tr);
+      overflow: hidden;
       display: flex;
       flex-direction: column;
-      align-items: flex-start;
+      transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
     }
-    .benefit-card:hover {
-      transform: translateY(-5px);
-      box-shadow: var(--sh-md);
-      border-color: #bae6fd;
+
+    .card:hover {
+      transform: translateY(-8px);
+      box-shadow: var(--sh-lg);
+      border-color: transparent;
     }
-    .benefit-icon {
-      width: 58px;
-      height: 58px;
-      border-radius: 18px;
-      background: #e0f2fe;
-      color: #0284c7;
+
+    .card-img {
+      height: 240px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .card-img img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .card:hover .card-img img {
+      transform: scale(1.06);
+    }
+
+    .card-body {
+      padding: 32px 28px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .card-body h3 {
+      font-family: var(--font-h);
+      font-size: 1.7rem;
+      font-weight: 800;
+      margin-bottom: 14px;
+      letter-spacing: -0.5px;
+    }
+
+    .card-body p {
+      color: var(--slate-500);
+      font-size: 1rem;
+      line-height: 1.6;
+      margin-bottom: 28px;
+      flex: 1;
+    }
+
+    .btn-inscribete {
+      color: #ffffff;
+      padding: 14px 28px;
+      border-radius: 100px;
+      font-weight: 700;
+      font-size: 0.95rem;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      width: 100%;
+      font-family: var(--font-h);
+    }
+
+    .btn-inscribete:hover {
+      transform: translateY(-2px);
+      filter: brightness(1.08);
+      box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+    }
+
+    /* ── MODALES ── */
+    .ov-m {
+      position: fixed;
+      inset: 0;
+      background: rgba(7, 13, 30, 0.7);
+      backdrop-filter: blur(8px);
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 26px;
-      margin-bottom: 20px;
+      padding: 20px;
+      z-index: 2000;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     }
-    .benefit-card h3 {
+
+    .ov-m.on {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .modal {
+      background: #ffffff;
+      border-radius: 28px;
+      max-width: 440px;
+      width: 100%;
+      padding: 40px 32px;
+      position: relative;
+      box-shadow: 0 25px 50px -12px rgba(7, 13, 30, 0.25);
+      transform: scale(0.95);
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .ov-m.on .modal {
+      transform: scale(1);
+    }
+
+    .modal .x {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      background: #f1f5f9;
+      border: none;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      font-size: 1.3rem;
+      cursor: pointer;
+      color: var(--slate-400);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+    }
+
+    .modal .x:hover {
+      background: #e2e8f0;
+      color: var(--slate-900);
+    }
+
+    .modal-head {
+      text-align: center;
+      margin-bottom: 28px;
+    }
+
+    .modal-head img {
+      height: 44px;
+      width: auto;
+      margin-bottom: 14px;
+    }
+
+    .modal-head h2 {
       font-family: var(--font-h);
-      font-size: 1.4rem;
+      font-size: 1.8rem;
       font-weight: 800;
       color: var(--navy-900);
-      margin-bottom: 8px;
     }
-    .benefit-card p {
-      color: var(--slate-500);
+
+    .modal-sub {
+      color: var(--slate-400);
       font-size: 0.95rem;
-      line-height: 1.6;
-      margin-bottom: 20px;
-      flex: 1;
+      margin-top: 4px;
     }
-    .benefit-price-tag {
-      background: #f8fafc;
-      border: 1px solid #e2e8f0;
-      border-radius: 12px;
-      padding: 10px 16px;
-      width: 100%;
-      margin-bottom: 18px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    .benefit-price-tag span {
-      font-size: 12px;
+
+    .modal form label {
+      display: block;
+      font-size: 0.85rem;
       font-weight: 700;
-      color: var(--slate-500);
+      color: var(--slate-700);
+      margin-bottom: 8px;
       text-transform: uppercase;
-    }
-    .benefit-price-tag strong {
-      font-size: 16px;
-      font-weight: 800;
-      color: #0284c7;
-      font-family: var(--font-h);
-    }
-    .btn-agendar-card {
-      width: 100%;
-      background: #0284c7;
-      color: white;
-      border: none;
-      padding: 12px;
-      border-radius: 12px;
-      font-weight: 800;
-      font-family: var(--font-h);
-      cursor: pointer;
-      text-align: center;
-      transition: var(--tr);
-      text-decoration: none;
-    }
-    .btn-agendar-card:hover {
-      background: #1e3a8a;
+      letter-spacing: 0.6px;
     }
 
-    /* FOOTER */
-    footer {
-      background: var(--navy-950);
-      color: white;
-      padding: 60px 24px 45px;
-      border-top: 1px solid rgba(255, 255, 255, 0.08);
-      text-align: center;
-    }
-
-    /* MODALES */
-    .ov-m {
-      display:none; position:fixed; inset:0;
-      background:rgba(7,13,30,.75); backdrop-filter:blur(8px);
-      z-index:9999; align-items:center; justify-content:center; padding:18px;
-    }
-    .ov-m.on { display:flex; }
-    .modal {
-      background:#fff; border-radius:28px; width:100%; max-width:440px;
-      padding:40px 32px; box-shadow:var(--sh-lg); position:relative;
-      animation: popIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-    @keyframes popIn {
-      0% { transform: scale(0.9); opacity: 0; }
-      100% { transform: scale(1); opacity: 1; }
-    }
-    .modal-close {
-      position:absolute; top:20px; right:20px; background:#f1f5f9;
-      border:none; width:34px; height:34px; border-radius:50%;
-      cursor:pointer; font-size:16px; color:var(--slate-500);
-      display:flex; align-items:center; justify-content:center;
-    }
-    .modal-input {
+    .modal form input {
       width: 100%;
-      padding: 12px 16px;
+      padding: 14px 16px;
       border: 1.5px solid var(--slate-200);
-      border-radius: 12px;
-      font-size: 14px;
+      border-radius: 14px;
+      font-size: 1rem;
       font-family: var(--font-b);
-      margin-bottom: 14px;
+      margin-bottom: 20px;
       outline: none;
+      transition: border-color 0.2s ease;
     }
-    .modal-input:focus { border-color: #0284c7; }
-    .modal-btn {
+
+    .modal form input:focus {
+      border-color: var(--blue-600);
+    }
+
+    .modal-btn-submit {
       width: 100%;
-      background: linear-gradient(135deg, #1e3a8a 0%, #0284c7 100%);
-      color: white;
-      padding: 14px;
+      background: linear-gradient(135deg, var(--navy-900) 0%, var(--navy-700) 100%);
+      color: #ffffff;
+      padding: 16px;
       border-radius: 100px;
-      font-weight: 800;
-      font-size: 15px;
       border: none;
-      cursor: pointer;
+      font-size: 1rem;
+      font-weight: 800;
       font-family: var(--font-h);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      transition: all 0.3s ease;
+      box-shadow: 0 8px 20px rgba(11, 20, 44, 0.2);
+    }
+
+    .modal-btn-submit:hover {
+      background: linear-gradient(135deg, var(--blue-600) 0%, var(--sky-400) 100%);
+      transform: translateY(-2px);
+      box-shadow: 0 12px 28px rgba(37, 99, 235, 0.4);
+    }
+
+    /* ── MODAL REGISTRO Y CUESTIONARIO CLINICO (TRIAGE) ── */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(7, 13, 30, 0.75);
+      backdrop-filter: blur(8px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      z-index: 2100;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .modal-overlay.on {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .modal-box {
+      background: #ffffff;
+      border-radius: 32px;
+      max-width: 620px;
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+      padding: 42px;
+      position: relative;
+      box-shadow: 0 25px 60px -15px rgba(7, 13, 30, 0.3);
+      transform: scale(0.95);
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .modal-overlay.on .modal-box {
+      transform: scale(1);
+    }
+
+    .modal-close {
+      position: absolute;
+      top: 24px;
+      right: 24px;
+      background: #f1f5f9;
+      border: none;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      font-size: 1.1rem;
+      cursor: pointer;
+      color: var(--slate-400);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+    }
+
+    .modal-close:hover {
+      background: #e2e8f0;
+      color: var(--slate-900);
+    }
+
+    .progress-container {
+      width: 100%;
+      height: 8px;
+      background: #f1f5f9;
+      border-radius: 10px;
+      margin-bottom: 12px;
+      overflow: hidden;
+    }
+
+    #progressBar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--blue-600) 0%, var(--sky-400) 100%);
+      border-radius: 10px;
+      transition: width 0.35s ease;
     }
 
     .triage-option-label {
-      display: flex; align-items: center; gap: 12px;
-      background: #f8fafc; border: 1.5px solid var(--slate-200);
-      padding: 14px 18px; border-radius: 14px; font-weight: 600;
-      font-size: 0.95rem; cursor: pointer; margin-bottom: 10px; transition: var(--tr);
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      background: #f8fafc;
+      border: 1.5px solid #e2e8f0;
+      padding: 16px 20px;
+      border-radius: 16px;
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--slate-700);
+      cursor: pointer;
+      transition: all 0.25s ease;
     }
-    .triage-option-label:hover { border-color: #0284c7; background: #f0f9ff; }
+
+    .triage-option-label:hover {
+      background: #ffffff;
+      border-color: var(--blue-600);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.08);
+    }
+
+    .triage-option-label input[type="radio"],
+    .triage-option-label input[type="checkbox"] {
+      width: 20px;
+      height: 20px;
+      accent-color: var(--blue-600);
+    }
+
+    .custom-input-triage {
+      width: 100%;
+      padding: 16px 20px;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 16px;
+      font-size: 1rem;
+      font-family: var(--font-b);
+      outline: none;
+      transition: 0.25s;
+    }
+
+    .custom-input-triage:focus {
+      border-color: var(--blue-600);
+      box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+    }
+
+    .btn-outline {
+      background: #ffffff;
+      border: 1.5px solid #cbd5e1;
+      color: var(--slate-700);
+      border-radius: 100px;
+      font-weight: 700;
+      font-family: var(--font-h);
+      cursor: pointer;
+      transition: all 0.25s ease;
+    }
+
+    .btn-outline:hover {
+      background: #f1f5f9;
+      border-color: #94a3b8;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--navy-900) 0%, var(--navy-700) 100%);
+      color: #ffffff;
+      border-radius: 100px;
+      border: none;
+      font-weight: 800;
+      font-family: var(--font-h);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      transition: all 0.3s ease;
+      box-shadow: 0 8px 20px rgba(11, 20, 44, 0.2);
+    }
+
+    .btn-primary:hover {
+      background: linear-gradient(135deg, var(--blue-600) 0%, var(--sky-400) 100%);
+      transform: translateY(-2px);
+      box-shadow: 0 12px 24px rgba(37, 99, 235, 0.35);
+    }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 1100px) {
+      .sidebar {
+        transform: translateX(-100%);
+        transition: transform 0.3s ease;
+      }
+      .sidebar.mobile-open {
+        transform: translateX(0);
+      }
+      .main {
+        margin-left: 0;
+        width: 100%;
+      }
+      .mobile-nav {
+        display: flex;
+      }
+      .hero {
+        padding: 60px 40px;
+      }
+      .slide {
+        padding: 60px 40px;
+      }
+      .dots {
+        left: 40px;
+      }
+      .section {
+        padding: 70px 30px;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .hero h1 {
+        font-size: 2.8rem;
+      }
+      .hero p {
+        font-size: 1.1rem;
+      }
+      .hero {
+        padding-left: 28px;
+        padding-right: 28px;
+      }
+      .slide {
+        padding-left: 28px;
+        padding-right: 28px;
+      }
+      .dots {
+        left: 28px;
+      }
+    }
+
+    @media (max-width: 680px) {
+      .hero h1 {
+        font-size: 2.7rem;
+      }
+      .hero p {
+        font-size: 1.1rem;
+      }
+      .btn-main, .btn-secondary {
+        width: 100%;
+        justify-content: center;
+      }
+      .section {
+        padding: 70px 24px;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      * {
+        transition: none !important;
+        animation: none !important;
+      }
+    }
   </style>
 </head>
+
 <body>
 
-  <!-- TOP BAR -->
-  <header class="top-bar">
-    <a href="#" class="brand">
-      <img src="{% static 'img/tectum/logo-completo.png' %}" alt="TECTUM" class="brand-logo">
-      <span class="badge-beneficios">Beneficios Corporativos</span>
+  <!-- BARRA LATERAL (INICIO, ACCESO Y TERAPIAS COMPLETAS) -->
+  <nav class="sidebar" id="sidebarNav" aria-label="Navegación Principal">
+    <div class="brand-section">
+      <a href="#inicio" class="brand-logo-wrap" title="TECTUM">
+        <img src="{% static 'img/tectum/logo-completo.png' %}" alt="TECTUM" class="brand-logo">
+      </a>
+    </div>
+
+    <a href="#inicio" class="nav-item active">
+      <i class="fas fa-home"></i>
+      <span>Inicio</span>
     </a>
-    <div class="top-actions">
-      {% if user.is_authenticated %}
-        <a href="{% url 'panel_beneficios' %}" class="btn-login" style="background:#0284c7; color:white;">
-          <i class="fas fa-user-circle"></i> Mi Panel
-        </a>
+
+    {% if request.user.is_authenticated %}
+    <a href="{% url 'panel_beneficios' %}" class="nav-item btn-login-sidebar">
+      <i class="fas fa-user-circle"></i> Mi Panel
+    </a>
+    <a href="{% url 'logout_usuario' %}" class="nav-item btn-login-sidebar logout">
+      <i class="fas fa-sign-out-alt"></i> Cerrar sesión
+    </a>
+    {% else %}
+    <a href="#" onclick="abrir('login'); return false;" class="nav-item btn-login-sidebar">
+      <i class="fas fa-sign-in-alt"></i> Iniciar sesión
+    </a>
+    {% endif %}
+
+    <!-- TERAPIAS DE HOPE -->
+    <p class="nav-title">Terapias</p>
+    <a href="javascript:void(0)" onclick="abrirRegistroDirecto('individual', 'terapia_individual')" class="nav-item">
+      <i class="fas fa-user"></i>
+      <span>Terapia Individual</span>
+    </a>
+    <a href="javascript:void(0)" onclick="abrirRegistroDirecto('pareja', 'terapia_pareja')" class="nav-item">
+      <i class="fas fa-heart"></i>
+      <span>Terapia de Pareja</span>
+    </a>
+    <a href="javascript:void(0)" onclick="abrirRegistroDirecto('familiar', 'terapia_familiar')" class="nav-item">
+      <i class="fas fa-people-roof"></i>
+      <span>Terapia Familiar</span>
+    </a>
+  </nav>
+
+  <!-- CONTENIDO PRINCIPAL -->
+  <main class="main">
+
+    <!-- MOBILE NAV -->
+    <nav class="mobile-nav">
+      <div class="mobile-nav-left">
+        <button class="btn-toggle-menu" onclick="toggleSidebar()" aria-label="Abrir menú">
+          <i class="fas fa-bars"></i>
+        </button>
+        <img src="{% static 'img/tectum/logo-completo.png' %}" alt="TECTUM" class="mlogo">
+      </div>
+      {% if request.user.is_authenticated %}
+      <a href="{% url 'panel_beneficios' %}" class="mobile-nav-btn">Mi Panel</a>
       {% else %}
-        <button onclick="abrir('login')" class="btn-login">
-          <i class="fas fa-sign-in-alt"></i> Iniciar Sesión
-        </button>
-        <button onclick="abrirRegistroDirecto('individual', 'terapia_individual')" class="btn-hero-primary" style="padding:10px 22px; font-size:14px;">
-          Registrarme
-        </button>
+      <a href="#" onclick="abrir('login'); return false;" class="mobile-nav-btn">Entrar</a>
       {% endif %}
-    </div>
-  </header>
+    </nav>
 
-  <!-- HERO -->
-  <section class="hero">
-    <div class="hero-container">
-      <div class="hero-tag">
-        <i class="fas fa-shield-heart"></i> Beneficios Corporativos de Salud Mental
-      </div>
-      <h1 class="hero-title">
-        Tu bienestar emocional con <span>tarifa preferencial</span>
-      </h1>
-      <p class="hero-desc">
-        Como beneficiario de TECTUM, accede a consultas psicológicas confidenciales con especialistas certificados y tarifas subsidiadas preferenciales.
-      </p>
-      <div class="hero-cta-group">
-        {% if user.is_authenticated %}
-          <a href="{% url 'panel_beneficios' %}" class="btn-hero-primary">
-            Ir a mi Panel <i class="fas fa-arrow-right"></i>
-          </a>
-        {% else %}
-          <button onclick="abrirRegistroDirecto('individual', 'terapia_individual')" class="btn-hero-primary">
-            Comenzar Registro con Beneficio <i class="fas fa-arrow-right"></i>
-          </button>
-          <button onclick="abrir('login')" class="btn-login" style="color:white; border-color:rgba(255,255,255,0.4); background:transparent;">
-            Ya tengo cuenta
-          </button>
-        {% endif %}
-      </div>
-    </div>
-  </section>
+    <!-- HERO SLIDER -->
+    <section id="inicio" class="hero">
+      <img src="{% static 'img/tectum/escudo.png' %}" alt="Escudo TECTUM" class="watermark-shield">
 
-  <!-- SERVICIOS CON BENEFICIO -->
-  <main class="section-wrap">
-    <div class="section-header">
-      <h2>Modalidades Terapéuticas</h2>
-      <p>Selecciona el servicio clínico que deseas iniciar con tu tarifa preferencial corporativa.</p>
-    </div>
-
-    <div class="benefits-grid">
-      <!-- Individual -->
-      <div class="benefit-card">
-        <div class="benefit-icon"><i class="fas fa-user"></i></div>
-        <h3>Terapia Individual</h3>
-        <p>Espacio confidencial para el manejo de estrés, ansiedad, burnout, desarrollo personal y metas emocionales.</p>
-        <div class="benefit-price-tag">
-          <span>Tarifa Beneficio TECTUM</span>
-          <strong>Tarifa Preferencial</strong>
-        </div>
-        {% if user.is_authenticated %}
-          <a href="{% url 'panel_beneficios' %}" class="btn-agendar-card">Agendar Sesión</a>
-        {% else %}
-          <button onclick="abrirRegistroDirecto('individual', 'terapia_individual')" class="btn-agendar-card">Comenzar Ahora</button>
-        {% endif %}
-      </div>
-
-      <!-- Pareja -->
-      <div class="benefit-card">
-        <div class="benefit-icon"><i class="fas fa-heart"></i></div>
-        <h3>Terapia de Pareja</h3>
-        <p>Sesiones conjuntas orientadas al fortalecimiento del vínculo, comunicación afectiva y acuerdos mutuos.</p>
-        <div class="benefit-price-tag">
-          <span>Tarifa Beneficio TECTUM</span>
-          <strong>Tarifa Preferencial</strong>
-        </div>
-        {% if user.is_authenticated %}
-          <a href="{% url 'panel_beneficios' %}" class="btn-agendar-card">Agendar Sesión</a>
-        {% else %}
-          <button onclick="abrirRegistroDirecto('pareja', 'terapia_pareja')" class="btn-agendar-card">Comenzar Ahora</button>
-        {% endif %}
-      </div>
-
-      <!-- Familiar -->
-      <div class="benefit-card">
-        <div class="benefit-icon"><i class="fas fa-users"></i></div>
-        <h3>Terapia Familiar</h3>
-        <p>Acompañamiento especializado para dinámicas familiares, pautas de crianza positiva y bienestar en el hogar.</p>
-        <div class="benefit-price-tag">
-          <span>Tarifa Beneficio TECTUM</span>
-          <strong>Tarifa Preferencial</strong>
-        </div>
-        {% if user.is_authenticated %}
-          <a href="{% url 'panel_beneficios' %}" class="btn-agendar-card">Agendar Sesión</a>
-        {% else %}
-          <button onclick="abrirRegistroDirecto('familiar', 'terapia_familiar')" class="btn-agendar-card">Comenzar Ahora</button>
-        {% endif %}
-      </div>
-    </div>
-  </main>
-
-  <!-- FOOTER LIMPIO (Sin la X) -->
-  <footer>
-    <div style="max-width: 900px; margin: 0 auto; display: flex; flex-direction: column; align-items: center;">
-      <!-- Logos limpios uno al lado del otro -->
-      <div style="display: flex; align-items: center; justify-content: center; gap: 24px; flex-wrap: wrap; margin-bottom: 24px;">
-        <div style="background: rgba(255,255,255,0.06); padding: 10px 22px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.1);">
-          <img src="{% static 'img/tectum/logo-completo.png' %}" alt="TECTUM" style="height: 38px; width: auto; filter: brightness(0) invert(1);">
-        </div>
-        <div style="background: rgba(255,255,255,0.06); padding: 10px 22px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.1);">
-          <img src="{% static 'img/logo_hope_blanco.png' %}" alt="Espacio HOPE" style="height: 38px; width: auto;">
+      <!-- SLIDE 1 -->
+      <div class="slide s1 active">
+        <div class="bg" style="background-image: url('{% static 'img/slider_1.jpg' %}');"></div>
+        <div class="ov"></div>
+        <div class="hero-content">
+          <h1>Protegemos lo que <span class="text-highlight">impulsa</span> a tu empresa.</h1>
+          <p>
+            Beneficios corporativos que cuidan a tu gente y fortalecen tu organización. Estrategia, cercanía y respaldo en cada decisión.
+          </p>
+          <div class="hero-btns">
+            {% if request.user.is_authenticated %}
+            <a class="btn-main" href="{% url 'panel_beneficios' %}">
+              Ir a mi Panel <i class="fas fa-arrow-right"></i>
+            </a>
+            {% else %}
+            <button class="btn-main" onclick="abrirRegistroDirecto('individual', 'terapia_individual')">
+              Agendar Sesión <i class="fas fa-arrow-right"></i>
+            </button>
+            {% endif %}
+            <a class="btn-secondary" href="#terapias">
+              Ver Terapias
+            </a>
+          </div>
         </div>
       </div>
 
-      <h3 style="font-family: var(--font-h); font-size: 1.3rem; font-weight: 800; margin-bottom: 8px;">
-        Convenio de Beneficios Corporativos en Salud Mental
-      </h3>
-      <p style="font-size: 0.95rem; color: var(--slate-400); max-width: 600px; margin-bottom: 20px;">
-        Atención psicológica profesional, confidencial y respaldada por especialistas con cédula profesional para colaboradores y familias.
-      </p>
-
-      <div style="font-size: 0.88rem; color: var(--slate-400); border-top: 1px solid rgba(255,255,255,0.08); padding-top: 18px; width: 100%;">
-        <span>Soporte WhatsApp: <a href="https://wa.me/525521130230" target="_blank" style="color:#38bdf8; text-decoration:none; font-weight:700;">+52 55 2113 0230</a></span>
-      </div>
-    </div>
-  </footer>
-
-  <!-- MODAL LOGIN -->
-  <div class="ov-m" id="m-login">
-    <div class="modal">
-      <button class="modal-close" onclick="cerrar('login')"><i class="fas fa-times"></i></button>
-      <div style="text-align: center; margin-bottom: 24px;">
-        <img src="{% static 'img/tectum/logo-completo.png' %}" alt="TECTUM" style="height: 40px; margin-bottom: 12px;">
-        <h2 style="font-family: var(--font-h); font-size: 1.6rem; font-weight: 800; color: var(--navy-900);">Iniciar Sesión</h2>
-        <p style="color: var(--slate-500); font-size: 0.9rem;">Accede a tu panel de beneficios</p>
+      <!-- SLIDE 2 -->
+      <div class="slide s2">
+        <div class="hero-content">
+          <h1>Tu gente es tu <span class="text-highlight">mayor</span> activo.</h1>
+          <p>
+            Diseñamos paquetes de beneficios que atraen y retienen talento, con la claridad que tu equipo de RH necesita.
+          </p>
+          <div class="hero-btns">
+            <a class="btn-main" href="#terapias">
+              Conocer Terapias <i class="fas fa-arrow-right"></i>
+            </a>
+          </div>
+        </div>
       </div>
 
-      <form id="formLoginBeneficios" onsubmit="procesarLogin(event)">
-        {% csrf_token %}
-        <input type="email" id="loginEmail" class="modal-input" placeholder="correo@ejemplo.com" required>
-        <input type="password" id="loginPassword" class="modal-input" placeholder="••••••••" required>
-        <div id="loginFeedback" style="display:none; color:#ef4444; font-size:0.85rem; margin-bottom:12px; text-align:center;"></div>
-        <button type="submit" class="modal-btn" id="btnSubmitLogin">Entrar al Panel <i class="fas fa-arrow-right"></i></button>
-      </form>
-    </div>
-  </div>
-
-  <!-- MODAL REGISTRO CLÍNICO -->
-  <div class="ov-m" id="modalRegistro">
-    <div class="modal" style="max-width: 580px; padding: 36px 30px;">
-      <button class="modal-close" onclick="cerrar('modalRegistro')"><i class="fas fa-times"></i></button>
-      
-      <div style="text-align: center; margin-bottom: 20px;">
-        <img src="{% static 'img/tectum/logo-completo.png' %}" alt="TECTUM" style="height: 38px; margin-bottom: 8px;">
-        <h2 style="font-family: var(--font-h); font-size: 1.7rem; font-weight: 800; color: var(--navy-900);" id="triageHeader">Registro con Beneficio</h2>
-        <p style="color: var(--slate-500); font-size: 0.92rem;">Completa tu valoración inicial breve.</p>
+      <!-- SLIDE 3 -->
+      <div class="slide s3">
+        <div class="hero-content">
+          <h1>Un aliado <span class="text-highlight">a tu lado</span>, siempre.</h1>
+          <p>
+            Acompañamiento cercano del Área de Beneficios, de la propuesta a la operación diaria.
+          </p>
+          <div class="hero-btns">
+            {% if request.user.is_authenticated %}
+            <a class="btn-main" href="{% url 'panel_beneficios' %}">
+              Ir a mi Panel <i class="fas fa-arrow-right"></i>
+            </a>
+            {% else %}
+            <button class="btn-main" onclick="abrirRegistroDirecto('individual', 'terapia_individual')">
+              Agendar Sesión <i class="fas fa-arrow-right"></i>
+            </button>
+            {% endif %}
+          </div>
+        </div>
       </div>
 
-      <div id="triageContainer">
-        <div id="stepPreguntas" style="display: none;">
-          <h3 id="preguntaTitulo" style="font-family: var(--font-h); font-size: 1.25rem; font-weight: 800; margin-bottom: 16px; color: var(--navy-900);"></h3>
-          <div id="opcionesPregunta"></div>
-          <div style="display: flex; justify-content: space-between; margin-top: 20px;">
-            <button type="button" id="btnAtras" class="btn-login" style="padding: 8px 18px;">Atrás</button>
-            <button type="button" id="btnSiguiente" class="btn-hero-primary" style="padding: 10px 24px; font-size: 14px;">Continuar <i class="fas fa-arrow-right"></i></button>
+      <!-- CONTROLES DEL SLIDER -->
+      <div class="dots">
+        <button class="dot active" aria-label="Diapositiva 1"></button>
+        <button class="dot" aria-label="Diapositiva 2"></button>
+        <button class="dot" aria-label="Diapositiva 3"></button>
+      </div>
+    </section>
+
+    <!-- SECCIÓN: CITAS PSICOLÓGICAS (INDIVIDUAL, PAREJA Y FAMILIAR) -->
+    <section id="terapias" class="section" style="background:#f8fafc">
+      <div class="section-header">
+        <h2 class="title">Citas<br><span>Psicológicas.</span></h2>
+      </div>
+
+      <div class="grid">
+        <!-- TARJETA 1: TERAPIA INDIVIDUAL -->
+        <div class="card">
+          <div class="card-img">
+            <img src="{% static 'img/chino.jpg' %}" alt="Terapia Individual" loading="lazy">
+          </div>
+          <div class="card-body">
+            <h3 style="color:var(--c-purple)">Terapia Individual</h3>
+            <p>
+              Un espacio seguro y confidencial exclusivo para ti. Aborda la ansiedad, depresión, duelo o crecimiento
+              personal con un especialista que te guiará paso a paso hacia tu bienestar.
+            </p>
+            {% if request.user.is_authenticated %}
+            <a href="{% url 'panel_beneficios' %}" class="btn-inscribete" style="background:var(--c-purple); border:none;">
+              Ir a mi Panel <i class="fas fa-arrow-right"></i>
+            </a>
+            {% else %}
+            <button type="button" onclick="abrirRegistroDirecto('individual', 'terapia_individual')" class="btn-inscribete" style="background:var(--c-purple); border:none; cursor:pointer;">
+              Agendar Sesión <i class="fas fa-arrow-right"></i>
+            </button>
+            {% endif %}
           </div>
         </div>
 
-        <div id="stepDatosContacto" style="display: none;">
-          <form id="formRegistroUsuario" onsubmit="finalizarRegistro(event)">
-            {% csrf_token %}
-            <input type="text" id="regNombre" class="modal-input" placeholder="Nombre completo" required>
-            <input type="email" id="regEmail" class="modal-input" placeholder="Correo electrónico" required>
-            <input type="password" id="regPassword" class="modal-input" placeholder="Contraseña segura" required>
-            <input type="tel" id="regTelefono" class="modal-input" placeholder="Teléfono de contacto (10 dígitos)" required>
-            <div id="registroFeedback" style="display:none; color:#ef4444; font-size:0.85rem; margin-bottom:12px; text-align:center;"></div>
-            <button type="submit" class="modal-btn" id="btnSubmitRegistro">Finalizar y Entrar al Panel <i class="fas fa-arrow-right"></i></button>
-          </form>
+        <!-- TARJETA 2: TERAPIA DE PAREJA -->
+        <div class="card">
+          <div class="card-img">
+            <img src="{% static 'img/pareja.jpg' %}" alt="Terapia de Pareja" loading="lazy">
+          </div>
+          <div class="card-body">
+            <h3 style="color:var(--c-pink)">Terapia de Pareja</h3>
+            <p>
+              Reconstruyan su vínculo, mejoren la comunicación y superen obstáculos juntos en un entorno neutral,
+              empático y guiado por expertos en relaciones humanas.
+            </p>
+            {% if request.user.is_authenticated %}
+            <a href="{% url 'panel_beneficios' %}" class="btn-inscribete" style="background:var(--c-pink); border:none;">
+              Ir a mi Panel <i class="fas fa-arrow-right"></i>
+            </a>
+            {% else %}
+            <button type="button" onclick="abrirRegistroDirecto('pareja', 'terapia_pareja')" class="btn-inscribete" style="background:var(--c-pink); border:none; cursor:pointer;">
+              Agendar Sesión <i class="fas fa-arrow-right"></i>
+            </button>
+            {% endif %}
+          </div>
         </div>
+
+        <!-- TARJETA 3: TERAPIA FAMILIAR -->
+        <div class="card">
+          <div class="card-img">
+            <img src="https://images.unsplash.com/photo-1511895426328-dc8714191300?w=800&auto=format&fit=crop&q=60"
+              alt="Terapia Familiar" loading="lazy">
+          </div>
+          <div class="card-body">
+            <h3 style="color:var(--c-teal)">Terapia Familiar</h3>
+            <p>
+              Fortalece los lazos familiares y mejora la comunicación entre todos sus integrantes. Un espacio guiado
+              para resolver conflictos, sanar heridas y construir una dinámica familiar más sana y unida.
+            </p>
+            {% if request.user.is_authenticated %}
+            <a href="{% url 'panel_beneficios' %}" class="btn-inscribete" style="background:var(--c-teal); border:none;">
+              Ir a mi Panel <i class="fas fa-arrow-right"></i>
+            </a>
+            {% else %}
+            <button type="button" onclick="abrirRegistroDirecto('familiar', 'terapia_familiar')" class="btn-inscribete" style="background:var(--c-teal); border:none; cursor:pointer;">
+              Agendar Sesión <i class="fas fa-arrow-right"></i>
+            </button>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FOOTER CORPORATIVO: LOGO BLANCO HOPE + LOGO TECTUM + INFO GENERAL -->
+    <footer style="background: var(--navy-950); padding: 60px 24px 45px; border-top: 1px solid rgba(255, 255, 255, 0.08); color: #ffffff;">
+      <div style="max-width: 1100px; margin: 0 auto; display: flex; flex-direction: column; align-items: center; text-align: center;">
+        
+        <!-- Logos de la Alianza Corporativa -->
+        <div style="display: flex; align-items: center; justify-content: center; gap: 24px; flex-wrap: wrap; margin-bottom: 24px;">
+          <img src="{% static 'img/logo_blanco.png' %}" alt="Espacio HOPE" style="height: 48px; width: auto; object-fit: contain;">
+          <img src="{% static 'img/tectum/logo-completo.png' %}" alt="TECTUM" style="height: 48px; width: auto; object-fit: contain; filter: brightness(0) invert(1);">
+        </div>
+
+        <h3 style="font-family: var(--font-h); font-size: 1.35rem; font-weight: 800; margin-bottom: 8px;">
+          Convenio de Beneficios Corporativos en Salud Mental
+        </h3>
+        <p style="font-size: 0.95rem; color: var(--slate-400); max-width: 600px; margin-bottom: 24px;">
+          Atención psicológica integral, confidencial y profesional para los colaboradores y sus familias. Plataforma respaldada con estándares clínicos de primer nivel.
+        </p>
+
+        <div style="display: flex; gap: 24px; flex-wrap: wrap; justify-content: center; font-size: 0.88rem; color: var(--slate-400); padding-top: 18px; border-top: 1px solid rgba(255,255,255,0.08); width: 100%;">
+          <span><i class="fas fa-shield-alt" style="color: var(--sky-400); margin-right: 6px;"></i> Expediente Clínico 100% Confidencial</span>
+          <span><i class="fas fa-user-md" style="color: var(--sky-400); margin-right: 6px;"></i> Especialistas con Cédula Profesional</span>
+          <span><i class="fas fa-headset" style="color: var(--sky-400); margin-right: 6px;"></i> Soporte Beneficios: <a href="https://wa.me/525521130230" target="_blank" style="color: #38bdf8; text-decoration: none; font-weight: 700;">WhatsApp +52 55 2113 0230</a></span>
+        </div>
+      </div>
+    </footer>
+
+  </main>
+
+  <!-- MODAL DE ACCESO / LOGIN COLABORADOR -->
+  <div class="ov-m" id="m-login" onclick="if(event.target===this) cerrar('login');">
+    <div class="modal">
+      <button class="x" onclick="cerrar('login');" aria-label="Cerrar modal">×</button>
+      <div class="modal-head">
+        <img src="{% static 'img/tectum/logo-completo.png' %}" alt="TECTUM">
+        <h2>Iniciar Sesión</h2>
+        <p class="modal-sub">Accede a tu cuenta con tus credenciales registradas.</p>
+      </div>
+
+      <form id="formLoginColaborador" onsubmit="procesarLogin(event)">
+        {% csrf_token %}
+        <label for="inputEmail">Correo Electrónico</label>
+        <input id="inputEmail" name="email" type="email" autocomplete="email" placeholder="correo@ejemplo.com" required>
+
+        <label for="inputPassword">Contraseña</label>
+        <input id="inputPassword" name="password" type="password" autocomplete="current-password" placeholder="••••••••" required>
+
+        <div id="loginFeedback" style="display:none; font-size:0.85rem; color:#ef4444; margin-bottom:14px; text-align:center;"></div>
+
+        <button type="submit" class="modal-btn-submit" id="btnSubmitLogin">
+          Entrar <i class="fas fa-arrow-right"></i>
+        </button>
+      </form>
+
+      <div style="margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--slate-200); text-align: center;">
+        <p style="font-size: 0.9rem; color: var(--slate-500); margin-bottom: 10px;">¿Aún no tienes cuenta registrada?</p>
+        <button type="button" onclick="cerrar('login'); abrirRegistroDirecto('individual', 'terapia_individual');" style="background: transparent; color: var(--blue-600); border: 2px solid var(--blue-600); padding: 10px 24px; border-radius: 100px; font-weight: 800; font-family: var(--font-h); font-size: 0.88rem; cursor: pointer; transition: all 0.25s ease;">
+          <i class="fas fa-user-plus" style="margin-right: 6px;"></i> Regístrate aquí
+        </button>
       </div>
     </div>
   </div>
 
-  {{ cuestionario_json|json_script:"cuestionario-data" }}
+  <!-- MODAL DE REGISTRO Y CUESTIONARIO CLÍNICO TECTUM BENEFICIOS -->
+  <div class="modal-overlay" id="modalRegistro">
+    <div class="modal-box" id="triageBox" style="text-align: left; padding: 42px; border-radius: 32px; border-top: 8px solid var(--blue-600);">
+      <button class="modal-close" onclick="cerrarModalRegistro()"><i class="fas fa-times"></i></button>
+
+      <div style="display: flex; align-items: center; justify-content: center; margin-bottom: 20px;">
+        <img src="{% static 'img/tectum/logo-completo.png' %}" alt="TECTUM" style="height: 36px; width: auto;">
+      </div>
+
+      <div style="text-align: center; margin-bottom: 25px;" id="triageHeader">
+        <h2 style="font-family: var(--font-h); font-size: 2rem; color: var(--navy-900); font-weight: 800;">Registro Beneficios</h2>
+        <p style="color: var(--slate-500); font-size: 1rem;" id="triageSubtitle">Paso a paso, a tu propio ritmo.</p>
+      </div>
+
+      <div id="triageContainer">
+        <!-- Paso 1: Preguntas del cuestionario clínico -->
+        <div id="stepPreguntas" style="display: none;">
+          <div class="progress-container">
+            <div id="progressBar"></div>
+          </div>
+          <p id="progressText" style="text-align: right; color: var(--blue-600); font-weight: 800; margin-bottom: 20px; font-size: 0.85rem; text-transform: uppercase;">
+          </p>
+          <h3 id="questionText" style="margin-bottom: 25px; font-size: 1.35rem; color: var(--navy-900); font-weight: 800; line-height: 1.4;">
+          </h3>
+          <div id="questionOptionsContainer" style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 30px;"></div>
+          <div style="display: flex; gap: 15px;">
+            <button type="button" id="btnAtras" class="btn-outline" style="display: none; padding: 15px 25px;">
+              <i class="fas fa-arrow-left"></i>
+            </button>
+            <button type="button" id="btnSiguiente" class="btn-primary" style="flex: 1; justify-content: center; padding: 15px 25px;">
+              Continuar <i class="fas fa-arrow-right"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Paso 2: Formulario de credenciales y datos -->
+        <form action="{% url 'registro_usuario' %}" method="POST" id="formRegistro" style="display: none;">
+          {% csrf_token %}
+          <input type="hidden" name="flujo_elegido" id="inputFlujoFinal">
+          <input type="hidden" name="respuestas_json" id="inputRespuestasFinal">
+          <input type="hidden" name="servicio_origen" id="inputServicioOrigen">
+          <input type="hidden" name="convenio" value="tectumbeneficios">
+
+          <div style="background: #f8fafc; padding: 24px; border-radius: 20px; border: 1px solid #e2e8f0; margin-bottom: 22px;">
+            <h4 style="font-family: var(--font-h); font-size: 1.3rem; color: var(--navy-900); margin-bottom: 18px; font-weight: 800;">
+              Tus Datos de Acceso
+            </h4>
+
+            <div style="margin-bottom: 16px;">
+              <label style="font-size: 0.82rem; font-weight: 700; color: var(--slate-500); margin-bottom: 6px; display: block; text-transform: uppercase; letter-spacing: 0.8px;">¿Cómo te llamamos? *</label>
+              <div style="position: relative;">
+                <i class="fas fa-smile" style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 1.1rem;"></i>
+                <input type="text" id="pseudonimoFinal" style="width: 100%; padding: 14px 16px 14px 46px; border-radius: 12px; border: 1.5px solid #cbd5e1; font-size: 0.95rem; font-family: var(--font-b); outline: none; transition: 0.25s;" placeholder="Ej. Alex, Majo..." required>
+              </div>
+            </div>
+
+            <div style="margin-bottom: 16px;">
+              <label style="font-size: 0.82rem; font-weight: 700; color: var(--slate-500); margin-bottom: 6px; display: block; text-transform: uppercase; letter-spacing: 0.8px;">Nombre Completo (Confidencial para Expediente) *</label>
+              <div style="position: relative;">
+                <i class="fas fa-id-card" style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 1.1rem;"></i>
+                <input type="text" name="nombre" style="width: 100%; padding: 14px 16px 14px 46px; border-radius: 12px; border: 1.5px solid #cbd5e1; font-size: 0.95rem; font-family: var(--font-b); outline: none; transition: 0.25s;" placeholder="Nombre y apellidos" required>
+              </div>
+            </div>
+
+            <div style="margin-bottom: 16px;">
+              <label style="font-size: 0.82rem; font-weight: 700; color: var(--slate-500); margin-bottom: 6px; display: block; text-transform: uppercase; letter-spacing: 0.8px;">Correo Corporativo o Personal *</label>
+              <div style="position: relative;">
+                <i class="fas fa-envelope" style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 1.1rem;"></i>
+                <input type="email" name="email" style="width: 100%; padding: 14px 16px 14px 46px; border-radius: 12px; border: 1.5px solid #cbd5e1; font-size: 0.95rem; font-family: var(--font-b); outline: none; transition: 0.25s;" placeholder="correo@ejemplo.com" required>
+              </div>
+            </div>
+
+            <div style="display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 16px;">
+              <div style="flex: 1; min-width: 180px;">
+                <label style="font-size: 0.82rem; font-weight: 700; color: var(--slate-500); margin-bottom: 6px; display: block; text-transform: uppercase; letter-spacing: 0.8px;">Teléfono *</label>
+                <div style="position: relative;">
+                  <i class="fas fa-phone" style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 1.1rem;"></i>
+                  <input type="tel" name="telefono" style="width: 100%; padding: 14px 16px 14px 46px; border-radius: 12px; border: 1.5px solid #cbd5e1; font-size: 0.95rem; font-family: var(--font-b); outline: none;" placeholder="A 10 dígitos" required>
+                </div>
+              </div>
+              <div style="flex: 1; min-width: 180px;">
+                <label style="font-size: 0.82rem; font-weight: 700; color: var(--blue-600); margin-bottom: 6px; display: block; text-transform: uppercase; letter-spacing: 0.8px;">Tel. Emergencia *</label>
+                <div style="position: relative;">
+                  <i class="fas fa-notes-medical" style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: var(--blue-600); font-size: 1.1rem;"></i>
+                  <input type="tel" name="telefono_emergencia" style="width: 100%; padding: 14px 16px 14px 46px; border-radius: 12px; border: 1.5px solid #bfdbfe; font-size: 0.95rem; font-family: var(--font-b); outline: none; background: #eff6ff;" placeholder="Familiar o contacto" required>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <label style="font-size: 0.82rem; font-weight: 700; color: var(--slate-500); margin-bottom: 6px; display: block; text-transform: uppercase; letter-spacing: 0.8px;">Contraseña *</label>
+              <div style="position: relative;">
+                <i class="fas fa-lock" style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 1.1rem;"></i>
+                <input type="password" name="password" id="inputRegisterPassword" style="width: 100%; padding: 14px 46px 14px 46px; border-radius: 12px; border: 1.5px solid #cbd5e1; font-size: 0.95rem; font-family: var(--font-b); outline: none;" placeholder="Mínimo 8 caracteres" required>
+                <button type="button" onclick="togglePass('inputRegisterPassword', 'eyeIconRegister')" style="position: absolute; right: 14px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: #94a3b8; font-size: 1.1rem;">
+                  <i class="fas fa-eye" id="eyeIconRegister"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <label style="display: flex; align-items: flex-start; gap: 12px; margin-bottom: 22px; cursor: pointer; background: #f0fdf4; padding: 16px; border-radius: 14px; border: 1px solid #bbf7d0;">
+            <input type="checkbox" name="acepta_privacidad" required style="min-width: 20px; height: 20px; accent-color: #16a34a; margin-top: 2px; cursor: pointer;">
+            <span style="font-size: 0.88rem; color: #166534; line-height: 1.45; font-weight: 500;">
+              Confirmo que pertenezco a una empresa afiliada a <strong>TECTUM</strong> y acepto las políticas de confidencialidad para la atención clínica de Espacio HOPE.
+            </span>
+          </label>
+
+          <button type="submit" class="btn-primary" id="btnSubmitFinal" style="width: 100%; justify-content: center; padding: 18px; font-size: 1.1rem; border-radius: 100px; font-weight: 900;">
+            Finalizar Registro e Ingresar al Panel <i class="fas fa-arrow-right" style="margin-left: 8px;"></i>
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
 
   <script>
-    function abrir(id) { document.getElementById('m-' + id || id).classList.add('on'); }
-    function cerrar(id) { 
-      const el = document.getElementById('m-' + id) || document.getElementById(id);
-      if (el) el.classList.remove('on'); 
+    // Slider Hero
+    const slides = Array.from(document.querySelectorAll('.slide'));
+    const dots = Array.from(document.querySelectorAll('.dot'));
+    let currentSlide = 0;
+    let slideTimer;
+
+    function goToSlide(n) {
+      if (!slides.length) return;
+      slides[currentSlide].classList.remove('active');
+      dots[currentSlide].classList.remove('active');
+      currentSlide = (n + slides.length) % slides.length;
+      slides[currentSlide].classList.add('active');
+      dots[currentSlide].classList.add('active');
+      clearInterval(slideTimer);
+      slideTimer = setInterval(() => goToSlide(currentSlide + 1), 7500);
     }
 
-    function procesarLogin(e) {
+    dots.forEach((dot, idx) => {
+      dot.addEventListener('click', () => goToSlide(idx));
+    });
+
+    if (slides.length > 1) {
+      slideTimer = setInterval(() => goToSlide(currentSlide + 1), 7500);
+    }
+
+    // Modales generales
+    function abrir(id) {
+      const modal = document.getElementById('m-' + id);
+      if (modal) modal.classList.add('on');
+    }
+
+    function cerrar(id) {
+      const modal = document.getElementById('m-' + id);
+      if (modal) modal.classList.remove('on');
+    }
+
+    function togglePass(inputId, iconId) {
+      const inp = document.getElementById(inputId);
+      const icon = document.getElementById(iconId);
+      if (!inp || !icon) return;
+      if (inp.type === 'password') {
+        inp.type = 'text';
+        icon.className = 'fas fa-eye-slash';
+      } else {
+        inp.type = 'password';
+        icon.className = 'fas fa-eye';
+      }
+    }
+
+    // Toggle Sidebar en móvil
+    function toggleSidebar() {
+      const sidebar = document.getElementById('sidebarNav');
+      if (sidebar) sidebar.classList.toggle('mobile-open');
+    }
+
+    // Login AJAX
+    async function procesarLogin(e) {
       e.preventDefault();
-      const fb = document.getElementById("loginFeedback");
-      const btn = document.getElementById("btnSubmitLogin");
-      fb.style.display = "none";
+      const form = document.getElementById('formLoginColaborador');
+      const feedback = document.getElementById('loginFeedback');
+      const btn = document.getElementById('btnSubmitLogin');
+
+      feedback.style.display = 'none';
       btn.disabled = true;
+      btn.innerHTML = 'Verificando... <i class="fas fa-spinner fa-spin"></i>';
 
-      const fd = new FormData();
-      fd.append("login_email", document.getElementById("loginEmail").value.trim());
-      fd.append("login_password", document.getElementById("loginPassword").value);
-      fd.append("convenio", "tectumbeneficios");
-      fd.append("csrfmiddlewaretoken", document.querySelector('[name=csrfmiddlewaretoken]').value);
+      const formData = new FormData(form);
+      formData.append('convenio', 'tectumbeneficios');
 
-      fetch("{% url 'login_usuario' %}", { method: "POST", body: fd })
-        .then(r => r.json())
-        .then(data => {
-          btn.disabled = false;
-          if (data.status === "success") {
-            window.location.href = "{% url 'panel_beneficios' %}";
-          } else {
-            fb.innerText = data.message || "Credenciales incorrectas.";
-            fb.style.display = "block";
+      try {
+        const response = await fetch("{% url 'login_usuario' %}", {
+          method: 'POST',
+          body: formData,
+          headers: {
+            'X-Requested-With': 'XMLHttpRequest'
           }
-        })
-        .catch(() => {
-          btn.disabled = false;
-          fb.innerText = "Error de conexión.";
-          fb.style.display = "block";
         });
+
+        const data = await response.json();
+
+        if (data.status === 'success' || data.success) {
+          window.location.href = data.redirect_url || "{% url 'panel_beneficios' %}";
+        } else {
+          feedback.textContent = data.message || 'Credenciales incorrectas. Verifica tu correo o contraseña.';
+          feedback.style.display = 'block';
+          btn.disabled = false;
+          btn.innerHTML = 'Entrar <i class="fas fa-arrow-right"></i>';
+        }
+      } catch (err) {
+        feedback.textContent = 'Hubo un error de conexión al procesar el ingreso.';
+        feedback.style.display = 'block';
+        btn.disabled = false;
+        btn.innerHTML = 'Entrar <i class="fas fa-arrow-right"></i>';
+      }
     }
 
-    // FLUJO REGISTRO
-    const bancoPreguntas = JSON.parse(document.getElementById("cuestionario-data").textContent);
-    let preguntasFlujo = [];
+    // ── LÓGICA DE REGISTRO DIRECTO Y CUESTIONARIO CLÍNICO TECTUM BENEFICIOS ──
+    let dataCuestionario = {};
+    try {
+      dataCuestionario = JSON.parse('{{ cuestionario_json|escapejs|default:"{}" }}');
+    } catch (e) {
+      console.error("Error al parsear cuestionario_json:", e);
+    }
+
+    let flujoActual = "";
     let indicePregunta = 0;
     let respuestasGuardadas = {};
-    let flujoActual = "individual";
+    let preguntasFlujo = [];
+    let historialNavegacion = [];
 
-    function abrirRegistroDirecto(flujo, servicio) {
-      flujoActual = flujo || "individual";
-      preguntasFlujo = bancoPreguntas[flujoActual] || bancoPreguntas["individual"] || [];
-      indicePregunta = 0;
-      respuestasGuardadas = { servicio_solicitado: servicio || "terapia_individual" };
-      
-      document.getElementById("stepPreguntas").style.display = "block";
-      document.getElementById("stepDatosContacto").style.display = "none";
-      renderPregunta();
-      document.getElementById("modalRegistro").classList.add("on");
+    function cerrarModalRegistro() {
+      const modal = document.getElementById('modalRegistro');
+      if (modal) modal.classList.remove('on');
     }
 
-    function renderPregunta() {
-      const q = preguntasFlujo[indicePregunta];
-      if (!q) {
-        document.getElementById("stepPreguntas").style.display = "none";
-        document.getElementById("stepDatosContacto").style.display = "block";
+    function abrirRegistroDirecto(flujo, servicioExacto) {
+      document.getElementById('inputServicioOrigen').value = servicioExacto || 'terapia_individual';
+
+      if (!dataCuestionario || Object.keys(dataCuestionario).length === 0) {
+        alert("El sistema de registro se está sincronizando. Intenta de nuevo.");
         return;
       }
-      document.getElementById("preguntaTitulo").innerText = q.pregunta;
-      const optsBox = document.getElementById("opcionesPregunta");
-      optsBox.innerHTML = "";
+
+      const modal = document.getElementById('modalRegistro');
+      if (modal) modal.classList.add('on');
+
+      document.getElementById('stepPreguntas').style.display = 'block';
+      document.getElementById('formRegistro').style.display = 'none';
+
+      iniciarCuestionario(flujo || 'individual');
+    }
+
+    function iniciarCuestionario(flujo) {
+      if (!dataCuestionario[flujo]) {
+        flujo = Object.keys(dataCuestionario)[0] || 'individual';
+      }
+      flujoActual = flujo;
+      preguntasFlujo = dataCuestionario[flujoActual].preguntas;
+
+      document.querySelector("#triageHeader h2").innerText = dataCuestionario[flujoActual].titulo || "Registro Beneficios";
+
+      historialNavegacion = [];
+      respuestasGuardadas = {};
+      indicePregunta = obtenerSiguienteIndiceValido(0);
+      mostrarPregunta();
+    }
+
+    function debeMostrarPregunta(pregunta) {
+      if (!pregunta.mostrar_si) return true;
+      const depId = pregunta.mostrar_si.id;
+      const valoresPermitidos = pregunta.mostrar_si.valores;
+      const respuestaPrevia = respuestasGuardadas[depId];
+      if (!respuestaPrevia) return false;
+      if (Array.isArray(respuestaPrevia)) return respuestaPrevia.some(r => valoresPermitidos.includes(r));
+      return valoresPermitidos.includes(respuestaPrevia);
+    }
+
+    function obtenerSiguienteIndiceValido(inicio) {
+      let nextIndex = inicio;
+      while (nextIndex < preguntasFlujo.length) {
+        if (debeMostrarPregunta(preguntasFlujo[nextIndex])) return nextIndex;
+        nextIndex++;
+      }
+      return nextIndex;
+    }
+
+    function mostrarPregunta() {
+      const optionsContainer = document.getElementById("questionOptionsContainer");
+      optionsContainer.innerHTML = "";
+
+      if (indicePregunta >= preguntasFlujo.length) {
+        finalizarCuestionario();
+        return;
+      }
+
+      document.getElementById("progressBar").style.width = (((indicePregunta) / preguntasFlujo.length) * 100) + "%";
+      document.getElementById("progressText").innerText = `Pregunta ${historialNavegacion.length + 1} de ${preguntasFlujo.length}`;
+
+      const q = preguntasFlujo[indicePregunta];
+      document.getElementById("questionText").innerText = q.pregunta;
+      document.getElementById("btnAtras").style.display = historialNavegacion.length > 0 ? "block" : "none";
 
       const esPreguntaEdad = q.id === 'edad' || q.pregunta.toLowerCase().includes('edad');
 
       if (q.tipo === "single" || q.tipo === "multiple") {
         const inputType = q.tipo === "single" ? "radio" : "checkbox";
-        q.opciones.forEach(opc => {
-          optsBox.innerHTML += `<label class="triage-option-label"><input type="${inputType}" name="${q.id}" value="${opc}"> ${opc}</label>`;
+        q.opciones.forEach((opcion) => {
+          const checked = respuestasGuardadas[q.id] && respuestasGuardadas[q.id].includes(opcion) ? "checked" : "";
+          const html = `<label class="triage-option-label"><input type="${inputType}" name="${q.id}" value="${opcion}" ${checked}> ${opcion}</label>`;
+          optionsContainer.insertAdjacentHTML('beforeend', html);
         });
       } else if (esPreguntaEdad) {
         const val = Math.min(respuestasGuardadas[q.id] || 25, 60);
-        optsBox.innerHTML = `
+        optionsContainer.innerHTML = `
           <div style="text-align: center; margin-bottom: 20px;">
-            <span id="${q.id}_valDisplay" style="font-size: 4rem; font-weight: 800; color: #0284c7; line-height: 1;">${val}</span>
-            <span style="font-size: 1rem; color: #64748b; font-weight: 600; display: block; margin-top: 4px;">años de edad</span>
+            <span id="${q.id}_valDisplay" style="font-size: 5rem; font-weight: 800; color: var(--blue-600); font-family: var(--font-h); line-height: 1;">${val}</span>
+            <span style="font-size: 1.1rem; color: #64748b; font-weight: 600; display: block; margin-top: 6px;">años de edad</span>
           </div>
           <div style="padding: 0 10px;">
-            <input type="range" id="${q.id}" min="14" max="60" value="${val}" style="width: 100%; height: 8px; accent-color: #0284c7; cursor: pointer;" oninput="document.getElementById('${q.id}_valDisplay').innerText = this.value">
-            <div style="display: flex; justify-content: space-between; font-size: 0.85rem; color: #94a3b8; font-weight: 600; margin-top: 8px;">
+            <input type="range" id="${q.id}" min="14" max="60" value="${val}" style="width: 100%; height: 8px; background: #e2e8f0; border-radius: 4px; appearance: none; accent-color: var(--blue-600); cursor: pointer;" oninput="document.getElementById('${q.id}_valDisplay').innerText = this.value">
+            <div style="display: flex; justify-content: space-between; font-size: 0.85rem; color: #94a3b8; font-weight: 600; margin-top: 10px;">
               <span>14 años</span>
               <span>60+ años</span>
             </div>
           </div>
         `;
       } else {
-        optsBox.innerHTML = `<input type="text" id="${q.id}" class="modal-input" placeholder="Tu respuesta...">`;
+        const val = respuestasGuardadas[q.id] || "";
+        const inputType = q.tipo === "numero" ? "number" : "text";
+        optionsContainer.innerHTML = `<input type="${inputType}" id="${q.id}" class="custom-input-triage" placeholder="Escribe tu respuesta aquí..." value="${val}">`;
       }
-      document.getElementById("btnAtras").style.display = indicePregunta > 0 ? "block" : "none";
     }
 
-    document.getElementById("btnSiguiente").onclick = function() {
+    document.getElementById("btnSiguiente").addEventListener("click", function () {
       const q = preguntasFlujo[indicePregunta];
+      let hayRespuesta = false;
       if (q.tipo === "single") {
         const sel = document.querySelector(`input[name="${q.id}"]:checked`);
-        if (sel) respuestasGuardadas[q.id] = sel.value;
+        if (sel) { respuestasGuardadas[q.id] = sel.value; hayRespuesta = true; }
       } else if (q.tipo === "multiple") {
-        const sels = Array.from(document.querySelectorAll(`input[name="${q.id}"]:checked`)).map(e => e.value);
-        if (sels.length) respuestasGuardadas[q.id] = sels;
+        const sels = Array.from(document.querySelectorAll(`input[name="${q.id}"]:checked`)).map(el => el.value);
+        if (sels.length > 0) { respuestasGuardadas[q.id] = sels; hayRespuesta = true; }
       } else {
         const inp = document.getElementById(q.id);
-        if (inp) respuestasGuardadas[q.id] = inp.value;
+        const val = inp ? inp.value.trim() : "";
+        if (val !== "") {
+          respuestasGuardadas[q.id] = val;
+          hayRespuesta = true;
+        }
       }
-      indicePregunta++;
-      renderPregunta();
-    };
 
-    document.getElementById("btnAtras").onclick = function() {
-      if (indicePregunta > 0) {
-        indicePregunta--;
-        renderPregunta();
+      if (!hayRespuesta) {
+        alert("Por favor selecciona o escribe tu respuesta para continuar.");
+        return;
       }
-    };
 
-    function finalizarRegistro(e) {
-      e.preventDefault();
-      const fb = document.getElementById("registroFeedback");
-      const btn = document.getElementById("btnSubmitRegistro");
-      fb.style.display = "none";
-      btn.disabled = true;
+      historialNavegacion.push(indicePregunta);
+      indicePregunta = obtenerSiguienteIndiceValido(indicePregunta + 1);
+      mostrarPregunta();
+    });
 
-      const fd = new FormData();
-      fd.append("nombre", document.getElementById("regNombre").value.trim());
-      fd.append("email", document.getElementById("regEmail").value.trim());
-      fd.append("password", document.getElementById("regPassword").value);
-      fd.append("telefono", document.getElementById("regTelefono").value.trim());
-      fd.append("convenio", "tectumbeneficios");
-      fd.append("flujo_elegido", flujoActual);
-      fd.append("respuestas_json", JSON.stringify(respuestasGuardadas));
-      fd.append("respuestas", JSON.stringify(respuestasGuardadas));
-      fd.append("csrfmiddlewaretoken", document.querySelector('[name=csrfmiddlewaretoken]').value);
+    document.getElementById("btnAtras").addEventListener("click", function () {
+      if (historialNavegacion.length > 0) {
+        indicePregunta = historialNavegacion.pop();
+        mostrarPregunta();
+      }
+    });
 
-      fetch("{% url 'registro_usuario' %}", { method: "POST", body: fd })
-        .then(r => r.json())
-        .then(data => {
-          btn.disabled = false;
-          if (data.status === "success") {
-            window.location.href = "{% url 'panel_beneficios' %}";
-          } else {
-            fb.innerText = data.message || "Error al registrarte.";
-            fb.style.display = "block";
+    function finalizarCuestionario() {
+      document.getElementById("stepPreguntas").style.display = "none";
+      document.getElementById("formRegistro").style.display = "block";
+      document.querySelector("#triageHeader h2").innerText = "Crea tu cuenta corporativa";
+      document.getElementById("inputFlujoFinal").value = flujoActual;
+      document.getElementById("progressBar").style.width = "100%";
+    }
+
+    // ── ENVÍO AJAX DEL REGISTRO FINAL TECTUM BENEFICIOS ──
+    const formReg = document.getElementById("formRegistro");
+    if (formReg) {
+      formReg.addEventListener("submit", function (e) {
+        e.preventDefault();
+        if (formReg.dataset.enviando === "true") return;
+        formReg.dataset.enviando = "true";
+
+        respuestasGuardadas["pseudonimo"] = document.getElementById("pseudonimoFinal").value;
+        const servicioElegido = document.getElementById("inputServicioOrigen").value;
+        if (servicioElegido) {
+          respuestasGuardadas["servicio_solicitado"] = servicioElegido;
+        }
+
+        document.getElementById("inputRespuestasFinal").value = JSON.stringify(respuestasGuardadas);
+
+        const btnSubmitFinal = document.getElementById("btnSubmitFinal");
+        const originalText = btnSubmitFinal.innerHTML;
+        btnSubmitFinal.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Creando expediente seguro...';
+        btnSubmitFinal.disabled = true;
+
+        fetch(formReg.getAttribute("action"), {
+          method: "POST",
+          body: new FormData(formReg),
+          headers: {
+            "X-Requested-With": "XMLHttpRequest",
+            "X-CSRFToken": formReg.querySelector('[name=csrfmiddlewaretoken]').value
           }
         })
-        .catch(() => {
-          btn.disabled = false;
-          fb.innerText = "Error de conexión.";
-          fb.style.display = "block";
-        });
+          .then(r => r.json())
+          .then(data => {
+            btnSubmitFinal.innerHTML = originalText;
+            btnSubmitFinal.disabled = false;
+            formReg.dataset.enviando = "false";
+
+            if (data.status === "success" || data.success) {
+              window.location.href = data.redirect_url || "{% url 'panel_beneficios' %}";
+            } else {
+              alert(data.message || "No se pudo completar el registro. Verifica los datos.");
+            }
+          })
+          .catch(err => {
+            btnSubmitFinal.innerHTML = originalText;
+            btnSubmitFinal.disabled = false;
+            formReg.dataset.enviando = "false";
+            alert("Error de conexión al procesar el registro.");
+          });
+      });
     }
   </script>
 </body>
