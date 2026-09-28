@@ -315,13 +315,10 @@ function mostrarErrorCita(mensaje) {
         <span class="step-tag" style="background: rgba(2, 132, 199, 0.25); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.4); margin: 0;">
             <i class="fas fa-certificate"></i> Tarifa Preferencial Activa
         </span>
-        <span class="step-tag" style="background: rgba(255, 255, 255, 0.1); color: #ffffff; border: 1px solid rgba(255, 255, 255, 0.2); margin: 0;">
-            <i class="fas fa-shield-alt"></i> Espacio HOPE × TECTUM
-        </span>
     </div>
 
     <h1 style="font-family: var(--font-headings); font-size: clamp(2rem, 4vw, 2.8rem); font-weight: 900; margin: 0 0 8px; letter-spacing: -0.5px;">
-        Hola, {{ user.first_name }} 👋
+        Hola, {{ user.first_name }}
     </h1>
     <p style="font-size: 1.1rem; opacity: 0.9; max-width: 600px; margin: 0 auto; font-weight: 400;">
         Bienvenido a tu panel de salud mental corporativa. Agenda tus sesiones con tarifa preferencial para ti o tu familia.
@@ -475,9 +472,6 @@ function mostrarErrorCita(mensaje) {
                         Resumen de Pago
                     </h3>
                 </div>
-                <div style="display: flex; align-items: center; gap: 8px; color: #0284c7; font-weight: 700; font-size: 0.9rem; background: #e0f2fe; padding: 6px 16px; border-radius: 50px;">
-                    <i class="fas fa-tags"></i> Tarifa Preferencial Aplicada
-                </div>
             </div>
 
             <div style="background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 20px; padding: 24px; margin-bottom: 25px;">
@@ -530,13 +524,78 @@ function mostrarErrorCita(mensaje) {
                 </div>
             </div>
 
-            <!-- Botones de Pago -->
+            <!-- Métodos de Pago: PayPal y Transferencia Directa -->
             <div id="seccion-pagos-beneficios" style="display: block;">
-                <div id="paypal-button-container" style="max-width: 480px; margin: 0 auto 15px;"></div>
-                <div style="text-align: center;">
-                    <button type="button" onclick="iniciarPagoClipBeneficios()" class="btn-brutal" style="background: #ff5000; color: white; width: 100%; max-width: 480px; box-shadow: 0 8px 20px rgba(255,80,0,0.25);">
-                        <i class="fas fa-credit-card"></i> Pagar con Tarjeta de Débito / Crédito
-                    </button>
+                <!-- Botón de PayPal -->
+                <div id="paypal-button-container" style="max-width: 480px; margin: 0 auto 20px;"></div>
+
+                <!-- Separador -->
+                <div style="display: flex; align-items: center; gap: 15px; max-width: 520px; margin: 25px auto; text-align: center;">
+                    <div style="flex: 1; height: 1px; background: #e2e8f0;"></div>
+                    <span style="font-size: 12.5px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.6px;">O transferencia bancaria</span>
+                    <div style="flex: 1; height: 1px; background: #e2e8f0;"></div>
+                </div>
+
+                <!-- Caja de Transferencia Directa -->
+                <div style="margin-top: 15px; padding: 26px 22px; border-radius: 22px; background: linear-gradient(135deg, #f8fafc 0%, #eff6ff 100%); border: 2px dashed #93c5fd; text-align: center; max-width: 650px; margin-left: auto; margin-right: auto;">
+                    <p style="font-size: 15px; color: var(--text-main); margin: 0 0 16px; line-height: 1.6; font-weight: 600; font-family: var(--font-body);">
+                        ¿Prefieres transferencia directa? Realiza tu pago a estos números de cuenta y <br>
+                        <span style="display: inline-block; margin-top: 8px;">
+                            <strong style="color: #15803d; font-size: 15.5px; font-weight: 900; background: #dcfce7; padding: 6px 14px; border-radius: 12px; border: 1.5px solid #86efac; display: inline-flex; align-items: center; gap: 6px;">
+                                <i class="fab fa-whatsapp" style="font-size: 18px;"></i> ¡Envíanos tu comprobante por WhatsApp!
+                            </strong>
+                        </span>
+                    </p>
+
+                    <div style="background: white; border: 1px solid #cbd5e1; border-radius: 12px; padding: 12px 18px; margin-bottom: 20px; display: inline-block; box-shadow: 0 2px 8px rgba(0,0,0,0.04); text-align: left;">
+                        <p style="margin: 0; font-size: 13.5px; color: var(--text-main); font-family: var(--font-body); line-height: 1.5;">
+                            <strong>Titular:</strong> Servicios de Atención Emocional Juvenil SAPI de CV<br>
+                            <strong>Banco:</strong> BBVA
+                        </p>
+                    </div>
+
+                    <!-- Contenedor Cuentas MXN y USD -->
+                    <div style="display: flex; flex-wrap: wrap; gap: 16px; justify-content: center;">
+                        <!-- Tarjeta MXN -->
+                        <div style="background: #ffffff; border: 2px solid #e2e8f0; padding: 18px; border-radius: 18px; flex: 1; min-width: 240px; box-shadow: 0 4px 14px rgba(2, 132, 199, 0.08); text-align: left;">
+                            <h4 style="margin: 0 0 12px 0; color: #0284c7; font-family: var(--font-headings); font-size: 16px; display: flex; align-items: center; justify-content: space-between;">
+                                <span>Moneda Nacional</span>
+                                <span style="background: #e0f2fe; color: #0284c7; font-size: 11px; font-weight: 800; padding: 3px 8px; border-radius: 6px;">MXN</span>
+                            </h4>
+                            <p style="margin: 6px 0; font-size: 14px; color: var(--text-main); font-family: var(--font-body);">
+                                <span style="color: var(--text-muted); font-size: 12px; display: block; font-weight: 600;">No. de Cuenta</span>
+                                <strong style="font-size: 15px; letter-spacing: 0.5px;">0127845901</strong>
+                            </p>
+                            <p style="margin: 6px 0; font-size: 14px; color: var(--text-main); font-family: var(--font-body);">
+                                <span style="color: var(--text-muted); font-size: 12px; display: block; font-weight: 600;">CLABE Interbancaria</span>
+                                <strong style="font-size: 15px; letter-spacing: 0.5px;">012180001278459015</strong>
+                            </p>
+                        </div>
+
+                        <!-- Tarjeta USD -->
+                        <div style="background: #ffffff; border: 2px solid #e2e8f0; padding: 18px; border-radius: 18px; flex: 1; min-width: 240px; box-shadow: 0 4px 14px rgba(15, 118, 110, 0.08); text-align: left;">
+                            <h4 style="margin: 0 0 12px 0; color: #0f766e; font-family: var(--font-headings); font-size: 16px; display: flex; align-items: center; justify-content: space-between;">
+                                <span>Dólares Americanos</span>
+                                <span style="background: #ccfbf1; color: #0f766e; font-size: 11px; font-weight: 800; padding: 3px 8px; border-radius: 6px;">USD</span>
+                            </h4>
+                            <p style="margin: 6px 0; font-size: 14px; color: var(--text-main); font-family: var(--font-body);">
+                                <span style="color: var(--text-muted); font-size: 12px; display: block; font-weight: 600;">No. de Cuenta</span>
+                                <strong style="font-size: 15px; letter-spacing: 0.5px;">0127845960</strong>
+                            </p>
+                            <p style="margin: 6px 0; font-size: 14px; color: var(--text-main); font-family: var(--font-body);">
+                                <span style="color: var(--text-muted); font-size: 12px; display: block; font-weight: 600;">CLABE Interbancaria</span>
+                                <strong style="font-size: 15px; letter-spacing: 0.5px;">012180001278459604</strong>
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Botón directo a WhatsApp para enviar comprobante -->
+                    <div style="margin-top: 24px;">
+                        <a href="https://wa.me/525521130230?text=Hola%2C%20adjunto%20mi%20comprobante%20de%20pago%20por%20transferencia%20para%20mi%20sesi%C3%B3n%20en%20TECTUM%20Beneficios" target="_blank" rel="noopener" style="display: inline-flex; align-items: center; gap: 10px; background: #25D366; color: white; padding: 14px 30px; border-radius: 50px; text-decoration: none; font-weight: 800; font-size: 15.5px; font-family: var(--font-headings); box-shadow: 0 8px 20px rgba(37, 211, 102, 0.35); transition: 0.25s;" onmouseover="this.style.transform='translateY(-2px)';" onmouseout="this.style.transform='translateY(0)';">
+                            <i class="fab fa-whatsapp" style="font-size: 20px;"></i>
+                            Enviar Comprobante por WhatsApp
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>
