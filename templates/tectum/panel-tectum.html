@@ -158,8 +158,6 @@ function mostrarErrorCita(mensaje) {
         margin-bottom: 14px;
     }
     .servicio-card.individual .servicio-icon-box { background: #e0f2fe; color: #0284c7; }
-    .servicio-card.pareja .servicio-icon-box { background: #fce7f3; color: #db2777; }
-    .servicio-card.familiar .servicio-icon-box { background: #fef3c7; color: #d97706; }
 
     .servicio-titulo {
         font-family: var(--font-headings);
@@ -413,34 +411,22 @@ function mostrarErrorCita(mensaje) {
         <div class="chic-card" style="margin-bottom: 30px;">
             <div style="text-align: center; margin-bottom: 25px;">
                 <span class="step-tag" style="background: #e0f2fe; color: #0284c7; border: 1px solid #bae6fd;">
-                    Paso 1 · Elige tu Modalidad
+                    Paso 1 · Modalidad de Atención
                 </span>
                 <h3 style="font-family: var(--font-headings); font-size: 1.8rem; font-weight: 800; margin: 0 0 8px; color: var(--text-main);">
-                    ¿Qué tipo de atención necesitas?
+                    Consulta Psicológica Individual
                 </h3>
                 <p style="color: var(--text-muted); font-size: 1rem; margin: 0;">
-                    Selecciona el servicio clínico adaptado a tu momento.
+                    Atención clínica personalizada y confidencial cubierta en su totalidad por tu empresa.
                 </p>
             </div>
 
-            <!-- Grid de Servicios -->
-            <div class="servicios-grid">
-                <div class="servicio-card individual activo" onclick="seleccionarServicio('individual', this)">
+            <!-- Servicio: Individual -->
+            <div style="max-width: 480px; margin: 0 auto 25px;">
+                <div class="servicio-card individual activo" style="cursor: default;">
                     <div class="servicio-icon-box"><i class="fas fa-user"></i></div>
-                    <div class="servicio-titulo">Individual</div>
+                    <div class="servicio-titulo">Terapia Individual</div>
                     <div class="servicio-desc">Espacio confidencial para trabajar ansiedad, estrés laboral, metas y salud emocional personal.</div>
-                </div>
-
-                <div class="servicio-card pareja" onclick="seleccionarServicio('pareja', this)">
-                    <div class="servicio-icon-box"><i class="fas fa-heart"></i></div>
-                    <div class="servicio-titulo">Pareja</div>
-                    <div class="servicio-desc">Sesiones conjuntas orientadas a comunicación asertiva, resolución de conflictos y proyectos en común.</div>
-                </div>
-
-                <div class="servicio-card familiar" onclick="seleccionarServicio('familiar', this)">
-                    <div class="servicio-icon-box"><i class="fas fa-users"></i></div>
-                    <div class="servicio-titulo">Familiar</div>
-                    <div class="servicio-desc">Acompañamiento especializado para dinámicas de familia, crianza y convivencia armónica.</div>
                 </div>
             </div>
 

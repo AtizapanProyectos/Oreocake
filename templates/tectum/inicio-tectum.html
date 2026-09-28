@@ -1013,14 +1013,6 @@
       <i class="fas fa-user"></i>
       <span>Terapia Individual</span>
     </a>
-    <a href="{% url 'sesion_pareja' %}" class="nav-item">
-      <i class="fas fa-heart"></i>
-      <span>Terapia de Pareja</span>
-    </a>
-    <a href="{% url 'sesion_familia' %}" class="nav-item">
-      <i class="fas fa-people-roof"></i>
-      <span>Terapia Familiar</span>
-    </a>
   </nav>
 
   <!-- CONTENIDO PRINCIPAL -->
@@ -1109,9 +1101,9 @@
         <h2 class="title">Citas<br><span>Psicológicas.</span></h2>
       </div>
 
-      <div class="grid">
-        <!-- TARJETA 1: TERAPIA INDIVIDUAL -->
-        <div class="card">
+      <div style="max-width: 500px; margin: 0 auto;">
+        <!-- TARJETA: TERAPIA INDIVIDUAL -->
+        <div class="card" style="box-shadow: var(--sh-md);">
           <div class="card-img">
             <img src="{% static 'img/chino.jpg' %}" alt="Terapia Individual" loading="lazy">
           </div>
@@ -1127,53 +1119,6 @@
             </a>
             {% else %}
             <button type="button" onclick="abrirRegistroDirecto('individual', 'terapia_individual')" class="btn-inscribete" style="background:var(--c-purple); border:none; cursor:pointer;">
-              Agendar Sesión <i class="fas fa-arrow-right"></i>
-            </button>
-            {% endif %}
-          </div>
-        </div>
-
-        <!-- TARJETA 2: TERAPIA DE PAREJA -->
-        <div class="card">
-          <div class="card-img">
-            <img src="{% static 'img/pareja.jpg' %}" alt="Terapia de Pareja" loading="lazy">
-          </div>
-          <div class="card-body">
-            <h3 style="color:var(--c-pink)">Terapia de Pareja</h3>
-            <p>
-              Reconstruyan su vínculo, mejoren la comunicación y superen obstáculos juntos en un entorno neutral,
-              empático y guiado por expertos en relaciones humanas.
-            </p>
-            {% if request.user.is_authenticated %}
-            <a href="{% url 'panel_generico' %}" class="btn-inscribete" style="background:var(--c-pink); border:none;">
-              Ir a mi Panel <i class="fas fa-arrow-right"></i>
-            </a>
-            {% else %}
-            <button type="button" onclick="abrirRegistroDirecto('pareja', 'terapia_pareja')" class="btn-inscribete" style="background:var(--c-pink); border:none; cursor:pointer;">
-              Agendar Sesión <i class="fas fa-arrow-right"></i>
-            </button>
-            {% endif %}
-          </div>
-        </div>
-
-        <!-- TARJETA 3: TERAPIA FAMILIAR -->
-        <div class="card">
-          <div class="card-img">
-            <img src="https://images.unsplash.com/photo-1511895426328-dc8714191300?w=800&auto=format&fit=crop&q=60"
-              alt="Terapia Familiar" loading="lazy">
-          </div>
-          <div class="card-body">
-            <h3 style="color:var(--c-teal)">Terapia Familiar</h3>
-            <p>
-              Fortalece los lazos familiares y mejora la comunicación entre todos sus integrantes. Un espacio guiado
-              para resolver conflictos, sanar heridas y construir una dinámica familiar más sana y unida.
-            </p>
-            {% if request.user.is_authenticated %}
-            <a href="{% url 'panel_generico' %}" class="btn-inscribete" style="background:var(--c-teal); border:none;">
-              Ir a mi Panel <i class="fas fa-arrow-right"></i>
-            </a>
-            {% else %}
-            <button type="button" onclick="abrirRegistroDirecto('familiar', 'terapia_familiar')" class="btn-inscribete" style="background:var(--c-teal); border:none; cursor:pointer;">
               Agendar Sesión <i class="fas fa-arrow-right"></i>
             </button>
             {% endif %}
