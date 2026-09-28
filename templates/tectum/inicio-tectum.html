@@ -1191,7 +1191,6 @@
           <div style="background: rgba(255,255,255,0.06); padding: 10px 22px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center;">
             <img src="{% static 'img/tectum/logo-completo.png' %}" alt="TECTUM In-House" style="height: 38px; width: auto; filter: brightness(0) invert(1);">
           </div>
-          <span style="color: var(--sky-400); font-size: 22px; font-weight: 300;">✕</span>
           <div style="background: rgba(255,255,255,0.06); padding: 10px 22px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center;">
             <img src="{% static 'img/logo_hope_blanco.png' %}" alt="Espacio HOPE" style="height: 38px; width: auto;">
           </div>
@@ -1253,10 +1252,8 @@
     <div class="modal-box" id="triageBox" style="text-align: left; padding: 42px; border-radius: 32px; border-top: 8px solid var(--blue-600);">
       <button class="modal-close" onclick="cerrarModalRegistro()"><i class="fas fa-times"></i></button>
 
-      <div style="display: flex; align-items: center; justify-content: center; gap: 14px; margin-bottom: 20px;">
-        <img src="{% static 'img/tectum/logo-completo.png' %}" alt="TECTUM" style="height: 32px; width: auto;">
-        <span style="color: var(--slate-400); font-weight: 700;">✕</span>
-        <img src="{% static 'img/nlogo.png' %}" alt="HOPE" style="height: 32px; width: auto;">
+      <div style="display: flex; align-items: center; justify-content: center; margin-bottom: 20px;">
+        <img src="{% static 'img/tectum/logo-completo.png' %}" alt="TECTUM" style="height: 36px; width: auto;">
       </div>
 
       <div style="text-align: center; margin-bottom: 25px;" id="triageHeader">
@@ -1559,17 +1556,17 @@
           optionsContainer.insertAdjacentHTML('beforeend', html);
         });
       } else if (esPreguntaEdad) {
-        const val = respuestasGuardadas[q.id] || 25;
+        const val = Math.min(respuestasGuardadas[q.id] || 25, 60);
         optionsContainer.innerHTML = `
           <div style="text-align: center; margin-bottom: 20px;">
             <span id="${q.id}_valDisplay" style="font-size: 5rem; font-weight: 800; color: var(--blue-600); font-family: var(--font-h); line-height: 1;">${val}</span>
             <span style="font-size: 1.1rem; color: #64748b; font-weight: 600; display: block; margin-top: 6px;">años de edad</span>
           </div>
           <div style="padding: 0 10px;">
-            <input type="range" id="${q.id}" min="14" max="75" value="${val}" style="width: 100%; height: 8px; background: #e2e8f0; border-radius: 4px; appearance: none; accent-color: var(--blue-600); cursor: pointer;" oninput="document.getElementById('${q.id}_valDisplay').innerText = this.value">
+            <input type="range" id="${q.id}" min="14" max="60" value="${val}" style="width: 100%; height: 8px; background: #e2e8f0; border-radius: 4px; appearance: none; accent-color: var(--blue-600); cursor: pointer;" oninput="document.getElementById('${q.id}_valDisplay').innerText = this.value">
             <div style="display: flex; justify-content: space-between; font-size: 0.85rem; color: #94a3b8; font-weight: 600; margin-top: 10px;">
               <span>14 años</span>
-              <span>75+ años</span>
+              <span>60+ años</span>
             </div>
           </div>
         `;

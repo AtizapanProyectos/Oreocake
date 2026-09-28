@@ -4053,6 +4053,7 @@ def formulario_previo_meet(request, cita_id):
         'cita': cita,
         'preguntas': FORMULARIO_ORGANICO_PREGUNTAS,
         'escala': ESCALA_IPP,
+        'es_tectum': getattr(cita, 'es_tectum', False) or 'tectuminhause' in request.get_host().lower() or 'tectum' in request.get_host().lower(),
     })
     
 

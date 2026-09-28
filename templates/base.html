@@ -175,15 +175,27 @@
 <body>
 
     <nav class="navbar-cool">
+        {% if es_usuario_tectum or es_tectum or cita.es_tectum or 'tectuminhause' in request.get_host or 'tectum' in request.get_host or 'tectum' in request.path %}
+        <!-- BOTÓN CASITA TECTUM -->
+        <a href="{% url 'inicio_tectum' %}" class="nav-btn" title="Ir al Inicio TECTUM">
+            <i class="fa-solid fa-house"></i>
+        </a>
+
+        <!-- LOGO CENTRAL TECTUM -->
+        <a href="{% url 'inicio_tectum' %}" class="logo-center">
+            <img src="{% static 'img/tectum/logo-completo.png' %}" alt="TECTUM Logo" style="height: 38px; width: auto; object-fit: contain;">
+        </a>
+        {% else %}
         <!-- BOTÓN CASITA (Inicio) -->
         <a href="{% url 'inicio' %}" class="nav-btn" title="Ir al Inicio">
             <i class="fa-solid fa-house"></i>
         </a>
 
-        <!-- LOGO CENTRAL -->
+        <!-- LOGO CENTRAL HOPE -->
         <a href="{% url 'inicio' %}" class="logo-center">
             <img src="{% static 'img/logo_hope_extendido.png' %}" alt="HOPE Logo">
         </a>
+        {% endif %}
 
         <!-- BOTÓN LOGOUT (Mantiene tu lógica condicional) -->
         {% if user.is_authenticated %}
@@ -201,14 +213,14 @@
     {% block content %}
     {% endblock %}
     <div id="modalDespedida" class="modal-despedida">
-        <div class="modal-despedida-box">
-            <i class="fas fa-hand-holding-heart" style="font-size: 65px; color: #F85B8C; margin-bottom: 20px;"></i>
+        <div class="modal-despedida-box" style="{% if es_usuario_tectum or es_tectum or cita.es_tectum or 'tectuminhause' in request.get_host or 'tectum' in request.get_host or 'tectum' in request.path %}border-top-color: #0284c7;{% endif %}">
+            <i class="fas fa-hand-holding-heart" style="font-size: 65px; color: {% if es_usuario_tectum or es_tectum or cita.es_tectum or 'tectuminhause' in request.get_host or 'tectum' in request.get_host or 'tectum' in request.path %}#0284c7{% else %}#F85B8C{% endif %}; margin-bottom: 20px;"></i>
             <h2
                 style="font-family: 'Outfit', sans-serif; font-size: 2.2rem; color: #0f0f0f; margin-bottom: 10px; font-weight: 800;">
                 ¡Hasta pronto!</h2>
             <p
                 style="color: #64748b; font-size: 1.1rem; margin-bottom: 0; font-family: 'Plus Jakarta Sans', sans-serif;">
-                Te esperamos de nuevo con nosotros. 💜</p>
+                Te esperamos de nuevo con nosotros. {% if es_usuario_tectum or es_tectum or cita.es_tectum or 'tectuminhause' in request.get_host or 'tectum' in request.get_host or 'tectum' in request.path %}💙{% else %}💜{% endif %}</p>
         </div>
     </div>
 

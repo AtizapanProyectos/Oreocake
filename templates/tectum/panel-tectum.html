@@ -1,1462 +1,1188 @@
+{% extends 'base.html' %}
 {% load static %}
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <title>Panel Colaborador | TECTUM In-House × HOPE</title>
-    <link rel="icon" href="{% static 'img/tectum/escudo.png' %}" type="image/png">
-    
-    <!-- Google Fonts & FontAwesome -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-    
-    {{ dias_disponibles_json|json_script:"dias-data" }}
-    {% csrf_token %}
 
-    <script>
-        window.tieneConsentimiento = {{ tiene_consentimiento|yesno:"true,false" }};
-        window.consentimientoPdfUrl = "{{ consentimiento_pdf_url|default:'' }}";
-        window.WHATSAPP_SOPORTE = '525521130230';
+{% block title %}Mi Dashboard - TECTUM In-House{% endblock %}
 
-        function getCookie(name) {
-            let cookieValue = null;
-            if (document.cookie && document.cookie !== '') {
-                const cookies = document.cookie.split(';');
-                for (let i = 0; i < cookies.length; i++) {
-                    const cookie = cookies[i].trim();
-                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                        break;
-                    }
-                }
+{% block content %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<link rel="stylesheet" type="text/css" href="https://npmcdn.com/flatpickr/dist/themes/airbnb.css">
+{{ dias_disponibles_json|json_script:"dias-data" }}
+{% csrf_token %}
+
+<script>
+window.tieneConsentimiento = {{ tiene_consentimiento|yesno:"true,false" }};
+window.consentimientoPdfUrl = "{{ consentimiento_pdf_url|default:'' }}";
+window.WHATSAPP_SOPORTE = '525521130230';
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
             }
-            return cookieValue;
         }
-
-        function mostrarErrorCita(mensaje, opts) {
-            opts = opts || {};
-            const cont = document.getElementById('texto-error-cita');
-            const modal = document.getElementById('alerta-error-cita');
-            if (!cont || !modal) {
-                alert(mensaje + '\n\nSi el problema persiste, contáctanos por WhatsApp.');
-                return;
-            }
-            cont.innerHTML = mensaje;
-            modal.style.display = 'flex';
-        }
-    </script>
-
-    <style>
-        :root {
-            --navy-950: #070d1e;
-            --navy-900: #0b142c;
-            --navy-800: #122044;
-            --navy-700: #1b2f63;
-            --blue-600: #2563eb;
-            --blue-500: #3b82f6;
-            --sky-400: #0ea5e9;
-            --sky-300: #38bdf8;
-            --sky-50: #f0f9ff;
-            --slate-50: #f8fafc;
-            --slate-100: #f1f5f9;
-            --slate-200: #e2e8f0;
-            --slate-400: #94a3b8;
-            --slate-500: #64748b;
-            --slate-700: #334155;
-            --slate-800: #1e293b;
-            --slate-900: #0f172a;
-            --emerald-600: #059669;
-            --emerald-500: #10b981;
-            --font-h: 'Outfit', sans-serif;
-            --font-b: 'Plus Jakarta Sans', sans-serif;
-            --sh-sm: 0 4px 12px rgba(11, 20, 44, 0.05);
-            --sh-md: 0 12px 28px -6px rgba(11, 20, 44, 0.08);
-            --sh-lg: 0 20px 40px -10px rgba(11, 20, 44, 0.12);
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: var(--font-b);
-            background: #f8fafc;
-            color: var(--slate-900);
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-        }
-
-        /* ── HEADER CORPORATIVO TECTUM ── */
-        .tectum-header {
-            background: #ffffff;
-            border-bottom: 1px solid var(--slate-200);
-            padding: 16px 32px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            position: sticky;
-            top: 0;
-            z-index: 1000;
-            box-shadow: var(--sh-sm);
-        }
-
-        .header-brand {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-        }
-
-        .header-logo {
-            height: 38px;
-            width: auto;
-        }
-
-        .badge-alianza {
-            background: var(--sky-50);
-            border: 1px solid #bae6fd;
-            color: var(--blue-600);
-            font-weight: 800;
-            font-size: 11px;
-            letter-spacing: 0.5px;
-            padding: 4px 12px;
-            border-radius: 20px;
-            text-transform: uppercase;
-        }
-
-        .header-user {
-            display: flex;
-            align-items: center;
-            gap: 18px;
-        }
-
-        .badge-cobertura {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            background: #ecfdf5;
-            color: var(--emerald-600);
-            border: 1.5px solid #a7f3d0;
-            padding: 6px 14px;
-            border-radius: 50px;
-            font-size: 12px;
-            font-weight: 800;
-            font-family: var(--font-h);
-        }
-
-        .user-greeting {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .user-avatar {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, var(--navy-900), var(--blue-600));
-            color: #ffffff;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 800;
-            font-size: 15px;
-        }
-
-        .btn-logout {
-            color: var(--slate-500);
-            text-decoration: none;
-            font-weight: 600;
-            font-size: 13px;
-            padding: 6px 12px;
-            border-radius: 8px;
-            transition: all 0.2s ease;
-        }
-
-        .btn-logout:hover {
-            color: #ef4444;
-            background: #fef2f2;
-        }
-
-        /* ── HERO DASHBOARD ── */
-        .dashboard-hero {
-            background: linear-gradient(135deg, var(--navy-950) 0%, var(--navy-900) 60%, var(--navy-800) 100%);
-            color: #ffffff;
-            padding: 45px 32px 35px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .hero-watermark {
-            position: absolute;
-            right: 20px;
-            bottom: -30px;
-            width: 220px;
-            opacity: 0.06;
-            pointer-events: none;
-        }
-
-        .hero-container {
-            max-width: 1200px;
-            margin: 0 auto;
-            position: relative;
-            z-index: 2;
-        }
-
-        .hero-top-tag {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            color: var(--sky-400);
-            font-weight: 800;
-            font-size: 12px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 10px;
-        }
-
-        .hero-title {
-            font-family: var(--font-h);
-            font-size: clamp(1.8rem, 4vw, 2.5rem);
-            font-weight: 800;
-            letter-spacing: -0.5px;
-            margin-bottom: 8px;
-        }
-
-        .hero-subtitle {
-            color: var(--slate-400);
-            font-size: 1rem;
-            max-width: 650px;
-            line-height: 1.5;
-        }
-
-        /* ── BARRA DE PESTAÑAS (TABS) ── */
-        .tabs-wrapper {
-            background: #ffffff;
-            border-bottom: 1px solid var(--slate-200);
-            position: sticky;
-            top: 71px;
-            z-index: 900;
-        }
-
-        .tabs-container {
-            max-width: 1200px;
-            margin: 0 auto;
-            display: flex;
-            gap: 8px;
-            padding: 0 32px;
-            overflow-x: auto;
-        }
-
-        .tab-btn {
-            background: none;
-            border: none;
-            padding: 16px 20px;
-            font-family: var(--font-h);
-            font-size: 14px;
-            font-weight: 700;
-            color: var(--slate-500);
-            cursor: pointer;
-            border-bottom: 3px solid transparent;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            transition: all 0.25s ease;
-            white-space: nowrap;
-        }
-
-        .tab-btn:hover {
-            color: var(--blue-600);
-        }
-
-        .tab-btn.active {
-            color: var(--blue-600);
-            border-bottom-color: var(--blue-600);
-        }
-
-        /* ── CONTENIDO PRINCIPAL ── */
-        .main-content {
-            max-width: 1200px;
-            margin: 35px auto;
-            padding: 0 24px;
-            width: 100%;
-            flex: 1;
-        }
-
-        .tab-panel {
-            display: none;
-            animation: fadeInTab 0.3s ease;
-        }
-
-        .tab-panel.active {
-            display: block;
-        }
-
-        @keyframes fadeInTab {
-            from { opacity: 0; transform: translateY(6px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        /* ── TARJETAS Y CONTENEDORES ── */
-        .corporate-card {
-            background: #ffffff;
-            border-radius: 24px;
-            border: 1px solid var(--slate-200);
-            box-shadow: var(--sh-sm);
-            padding: 32px;
-            margin-bottom: 30px;
-            transition: box-shadow 0.3s ease;
-        }
-
-        .corporate-card:hover {
-            box-shadow: var(--sh-md);
-        }
-
-        .card-header-styled {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 24px;
-            flex-wrap: wrap;
-            gap: 12px;
-        }
-
-        .card-header-styled h3 {
-            font-family: var(--font-h);
-            font-size: 1.35rem;
-            font-weight: 800;
-            color: var(--navy-900);
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        /* ── TARJETA CITA PRÓXIMA ── */
-        .next-session-box {
-            background: linear-gradient(135deg, #eff6ff 0%, #f0fdf4 100%);
-            border: 2px solid #bfdbfe;
-            border-radius: 20px;
-            padding: 26px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            flex-wrap: wrap;
-            gap: 20px;
-            margin-bottom: 30px;
-        }
-
-        .session-info-left {
-            display: flex;
-            align-items: center;
-            gap: 18px;
-        }
-
-        .session-calendar-badge {
-            width: 68px;
-            height: 68px;
-            border-radius: 16px;
-            background: #ffffff;
-            border: 2px solid #93c5fd;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 4px 12px rgba(37,99,235,0.08);
-            text-align: center;
-        }
-
-        .badge-month {
-            font-size: 11px;
-            font-weight: 800;
-            text-transform: uppercase;
-            color: var(--blue-600);
-            letter-spacing: 0.5px;
-        }
-
-        .badge-day {
-            font-size: 26px;
-            font-weight: 900;
-            font-family: var(--font-h);
-            color: var(--navy-900);
-            line-height: 1;
-        }
-
-        .btn-meet-join {
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-            color: #ffffff;
-            border: none;
-            padding: 14px 28px;
-            border-radius: 100px;
-            font-family: var(--font-h);
-            font-weight: 800;
-            font-size: 14.5px;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 10px;
-            box-shadow: 0 6px 18px rgba(16, 185, 129, 0.3);
-            transition: all 0.25s ease;
-        }
-
-        .btn-meet-join:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 24px rgba(16, 185, 129, 0.4);
-            color: #ffffff;
-        }
-
-        /* ── SELECTOR DE MODALIDADES ── */
-        .modalidades-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 20px;
-            margin-bottom: 28px;
-        }
-
-        .mod-card-corp {
-            background: #ffffff;
-            border: 2px solid var(--slate-200);
-            border-radius: 20px;
-            padding: 24px;
-            cursor: pointer;
-            transition: all 0.25s ease;
-            position: relative;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .mod-card-corp:hover {
-            border-color: var(--blue-600);
-            transform: translateY(-3px);
-            box-shadow: var(--sh-md);
-        }
-
-        .mod-card-corp.active {
-            border-color: var(--blue-600);
-            background: #f8faff;
-            box-shadow: 0 8px 24px rgba(37, 99, 235, 0.12);
-        }
-
-        .mod-card-corp.active::after {
-            content: '✓ Seleccionada';
-            position: absolute;
-            top: 14px;
-            right: 14px;
-            background: #dbeafe;
-            color: var(--blue-600);
-            font-size: 11px;
-            font-weight: 800;
-            padding: 3px 10px;
-            border-radius: 20px;
-        }
-
-        .mod-icon {
-            width: 52px;
-            height: 52px;
-            border-radius: 14px;
-            background: #eff6ff;
-            color: var(--blue-600);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 22px;
-            margin-bottom: 14px;
-        }
-
-        .mod-title {
-            font-family: var(--font-h);
-            font-size: 1.25rem;
-            font-weight: 800;
-            color: var(--navy-900);
-            margin-bottom: 6px;
-        }
-
-        .mod-price-tag {
-            font-family: var(--font-h);
-            font-weight: 800;
-            font-size: 1.15rem;
-            color: var(--emerald-600);
-            margin-bottom: 8px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .mod-desc {
-            color: var(--slate-500);
-            font-size: 13.5px;
-            line-height: 1.5;
-            flex: 1;
-        }
-
-        /* ── CARRUSEL DE FECHAS ── */
-        .date-carousel-corp {
-            display: flex;
-            gap: 12px;
-            overflow-x: auto;
-            padding: 8px 4px 18px 4px;
-            margin-bottom: 24px;
-        }
-
-        .date-chip-corp {
-            background: #ffffff;
-            border: 2px solid var(--slate-200);
-            border-radius: 16px;
-            padding: 12px 18px;
-            text-align: center;
-            min-width: 90px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        .date-chip-corp:hover {
-            border-color: var(--blue-600);
-        }
-
-        .date-chip-corp.active {
-            border-color: var(--blue-600);
-            background: linear-gradient(135deg, var(--navy-900) 0%, var(--blue-600) 100%);
-            color: #ffffff !important;
-            box-shadow: 0 6px 16px rgba(37, 99, 235, 0.25);
-        }
-
-        .date-chip-corp.active span {
-            color: #ffffff !important;
-        }
-
-        /* ── HORARIOS ── */
-        .slots-container-corp {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-            gap: 12px;
-            margin-bottom: 30px;
-        }
-
-        .slot-btn-corp {
-            background: #ffffff;
-            border: 1.5px solid var(--slate-200);
-            border-radius: 12px;
-            padding: 12px 14px;
-            font-family: var(--font-h);
-            font-weight: 700;
-            font-size: 14px;
-            color: var(--slate-700);
-            cursor: pointer;
-            transition: all 0.2s ease;
-            text-align: center;
-        }
-
-        .slot-btn-corp:hover {
-            border-color: var(--blue-600);
-            color: var(--blue-600);
-            background: #eff6ff;
-        }
-
-        .slot-btn-corp.active {
-            background: var(--blue-600);
-            border-color: var(--blue-600);
-            color: #ffffff;
-            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
-        }
-
-        /* ── RESUMEN CORPORATIVO DE CONFIRMACIÓN ── */
-        .summary-box-corp {
-            background: linear-gradient(135deg, #f0fdf4 0%, #e0f2fe 100%);
-            border: 2px solid #0284c7;
-            border-radius: 24px;
-            padding: 32px 28px;
-            text-align: center;
-            box-shadow: 0 10px 30px rgba(2, 132, 199, 0.12);
-        }
-
-        .btn-confirm-free {
-            background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
-            color: #ffffff;
-            border: none;
-            border-radius: 100px;
-            padding: 18px 42px;
-            font-family: var(--font-h);
-            font-size: 16px;
-            font-weight: 800;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            gap: 12px;
-            box-shadow: 0 8px 24px rgba(2, 132, 199, 0.35);
-            transition: all 0.25s ease;
-        }
-
-        .btn-confirm-free:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 12px 30px rgba(2, 132, 199, 0.45);
-        }
-
-        /* ── CHATBOX DIRECTO ── */
-        .chat-container-corp {
-            height: 480px;
-            display: flex;
-            flex-direction: column;
-            border: 1px solid var(--slate-200);
-            border-radius: 20px;
-            background: #ffffff;
-            overflow: hidden;
-        }
-
-        .chat-messages-box {
-            flex: 1;
-            padding: 20px;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            background: #f8fafc;
-        }
-
-        .msg-bubble {
-            max-width: 75%;
-            padding: 12px 18px;
-            border-radius: 18px;
-            font-size: 14px;
-            line-height: 1.45;
-        }
-
-        .msg-sent {
-            align-self: flex-end;
-            background: var(--blue-600);
-            color: #ffffff;
-            border-bottom-right-radius: 4px;
-        }
-
-        .msg-received {
-            align-self: flex-start;
-            background: #ffffff;
-            color: var(--slate-800);
-            border: 1px solid var(--slate-200);
-            border-bottom-left-radius: 4px;
-        }
-
-        .chat-input-bar {
-            padding: 14px 18px;
-            background: #ffffff;
-            border-top: 1px solid var(--slate-200);
-            display: flex;
-            gap: 10px;
-        }
-
-        .chat-input-bar input {
-            flex: 1;
-            padding: 12px 18px;
-            border: 1.5px solid var(--slate-200);
-            border-radius: 100px;
-            outline: none;
-            font-family: var(--font-b);
-        }
-
-        .chat-input-bar input:focus {
-            border-color: var(--blue-600);
-        }
-
-        /* ── MODAL GENERAL ── */
-        .modal-overlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(7, 13, 30, 0.82);
-            backdrop-filter: blur(10px);
-            z-index: 5000;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-
-        .modal-corp {
-            background: #ffffff;
-            border-radius: 28px;
-            padding: 36px;
-            width: min(560px, 100%);
-            box-shadow: var(--sh-lg);
-            border: 1px solid var(--slate-200);
-            position: relative;
-        }
-
-        @media (max-width: 768px) {
-            .tectum-header { padding: 14px 18px; }
-            .badge-cobertura { display: none; }
-            .dashboard-hero { padding: 30px 18px; }
-            .tabs-container { padding: 0 18px; }
-            .main-content { padding: 0 14px; margin: 20px auto; }
-            .corporate-card { padding: 22px 18px; }
-        }
-    </style>
-</head>
-<body>
-
-    <!-- HEADER SUPERIOR -->
-    <header class="tectum-header">
-        <div class="header-brand">
-            <img src="{% static 'img/tectum/logo-completo.png' %}" alt="TECTUM In-House" class="header-logo">
-            <span class="badge-alianza">In-House × HOPE</span>
-        </div>
-
-        <div class="header-user">
-            <span class="badge-cobertura">
-                <i class="fas fa-shield-alt"></i> Sesiones 100% Cubiertas
-            </span>
-
-            <div class="user-greeting">
-                <div class="user-avatar">
-                    {{ perfil.nombre|slice:":1"|upper|default:"U" }}
+    }
+    return cookieValue;
+}
+
+function mostrarErrorCita(mensaje) {
+    const cont = document.getElementById('texto-error-cita');
+    const modal = document.getElementById('alerta-error-cita');
+    if (!cont || !modal) {
+        alert(mensaje + '\n\nSi el problema persiste, contáctanos por WhatsApp.');
+        return;
+    }
+    cont.innerHTML = mensaje;
+    modal.style.display = 'flex';
+}
+</script>
+
+<!-- Toast de notificaciones y overlay de carga -->
+<div class="loading-overlay-hope" id="loadingOverlayHope">
+    <div class="spinner-hope"></div>
+    <p style="font-weight: 700; color: var(--text-main); font-family: var(--font-body);" id="loadingOverlayTexto">Procesando...</p>
+</div>
+<div class="toast-hope" id="toastHope">
+    <i class="fas fa-check-circle"></i>
+    <span id="toastHopeTexto">Listo</span>
+</div>
+
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700;900&family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap');
+
+    :root {
+        --c-purple: #1e3a8a; /* Azul Marino TECTUM */
+        --c-pink: #0284c7;   /* Azul Real TECTUM */
+        --c-orange: #f59e0b;
+        --c-yellow: #38bdf8;
+        --c-teal: #0ea5e9;
+        
+        --text-main: #0b142c;
+        --text-muted: #64748b;
+        --bg-panel: #f8fafc;
+        
+        --font-headings: 'Outfit', sans-serif;
+        --font-body: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    body { background-color: var(--bg-panel); font-family: var(--font-body); color: var(--text-main); }
+
+    .nav-btn:hover { background: #e0f2fe !important; color: #0284c7 !important; }
+    .nav-btn.logout:hover { background: #fee2e2 !important; color: #ef4444 !important; }
+
+    .dashboard-header {
+        background: linear-gradient(135deg, #070d1e 0%, #0b142c 42%, #1e3a8a 85%, #0284c7 100%);
+        color: white; 
+        padding: 55px 30px 48px; 
+        border-radius: 0 0 44px 44px;
+        margin-bottom: 35px; 
+        text-align: center;
+        box-shadow: 0 16px 40px rgba(7, 13, 30, 0.22);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .chic-card {
+        background: #ffffff; border-radius: 28px; padding: 38px;
+        box-shadow: 0 12px 35px rgba(0, 0, 0, 0.03); border: 1px solid #f1f5f9;
+        transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1); height: 100%;
+    }
+    .chic-card:hover { transform: translateY(-4px); box-shadow: 0 20px 40px rgba(2, 132, 199, 0.08); }
+
+    .step-tag {
+        font-size: 11.5px; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 800; font-family: var(--font-headings);
+        color: #38bdf8; background: rgba(255, 255, 255, 0.12); padding: 7px 16px;
+        border-radius: 20px; display: inline-block; margin-bottom: 20px; border: 1px solid rgba(56, 189, 248, 0.25);
+    }
+
+    .tabs-nav { display: flex; justify-content: center; gap: 15px; margin-bottom: 35px; flex-wrap: wrap; }
+    .tab-btn {
+        padding: 14px 34px; border-radius: 100px; font-weight: 700; font-size: 15px; font-family: var(--font-headings);
+        cursor: pointer; transition: 0.3s; background: white; border: 2px solid #e2e8f0;
+        color: var(--text-muted); display: flex; align-items: center; gap: 10px;
+    }
+    .tab-btn:hover { border-color: var(--c-teal); color: var(--c-teal); transform: translateY(-1px); }
+    .tab-btn.active {
+        background: linear-gradient(135deg, #1e3a8a 0%, #0284c7 100%); 
+        color: white; border-color: #1e3a8a;
+        box-shadow: 0 10px 22px rgba(2, 132, 199, 0.25);
+    }
+    .tab-content { display: none; animation: fadeIn 0.4s ease; }
+    .tab-content.active { display: block; }
+
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* Servicios Grid */
+    .servicios-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        gap: 20px;
+        margin: 20px 0 30px;
+    }
+    .servicio-card {
+        background: white;
+        border-radius: 24px;
+        padding: 26px 22px;
+        border: 2px solid #eef2f6;
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.02);
+        cursor: pointer;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        position: relative;
+    }
+    .servicio-card:hover {
+        transform: translateY(-4px);
+        border-color: #bae6fd;
+        box-shadow: 0 14px 30px rgba(2, 132, 199, 0.08);
+    }
+    .servicio-card.activo {
+        border-color: #0284c7;
+        background: #f0f9ff;
+        box-shadow: 0 12px 28px rgba(2, 132, 199, 0.15);
+    }
+    .servicio-icon-box {
+        width: 60px;
+        height: 60px;
+        border-radius: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 26px;
+        margin-bottom: 14px;
+    }
+    .servicio-card.individual .servicio-icon-box { background: #e0f2fe; color: #0284c7; }
+    .servicio-card.pareja .servicio-icon-box { background: #fce7f3; color: #db2777; }
+    .servicio-card.familiar .servicio-icon-box { background: #fef3c7; color: #d97706; }
+
+    .servicio-titulo {
+        font-family: var(--font-headings);
+        font-size: 1.25rem;
+        font-weight: 800;
+        color: var(--text-main);
+        margin-bottom: 6px;
+    }
+    .servicio-desc {
+        font-size: 0.88rem;
+        color: var(--text-muted);
+        line-height: 1.5;
+    }
+
+    /* Modalidad Pills */
+    .modalidad-row {
+        display: flex;
+        gap: 14px;
+        justify-content: center;
+        margin: 15px 0 25px;
+    }
+    .modalidad-pill {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 12px 26px;
+        border-radius: 100px;
+        border: 2px solid #e2e8f0;
+        background: white;
+        cursor: pointer;
+        font-weight: 700;
+        font-size: 0.95rem;
+        transition: 0.25s;
+        color: var(--text-main);
+    }
+    .modalidad-pill:hover { border-color: #0284c7; }
+    .modalidad-pill.activo {
+        border-color: #0284c7;
+        background: #0284c7;
+        color: white;
+        box-shadow: 0 8px 20px rgba(2, 132, 199, 0.25);
+    }
+
+    /* Date Carousel & Slots */
+    .date-carousel {
+        display: flex;
+        gap: 12px;
+        overflow-x: auto;
+        padding: 10px 4px 18px;
+        scrollbar-width: thin;
+    }
+    .date-chip {
+        flex: 0 0 auto;
+        width: 82px;
+        padding: 14px 8px;
+        background: white;
+        border: 2px solid #e2e8f0;
+        border-radius: 20px;
+        text-align: center;
+        cursor: pointer;
+        transition: 0.25s;
+    }
+    .date-chip:hover { border-color: #0284c7; transform: translateY(-2px); }
+    .date-chip.active {
+        border-color: #1e3a8a;
+        background: linear-gradient(135deg, #1e3a8a 0%, #0284c7 100%);
+        color: white;
+        box-shadow: 0 8px 18px rgba(2, 132, 199, 0.25);
+    }
+
+    .slots-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+        gap: 10px;
+        margin-top: 15px;
+    }
+    .time-slot-btn {
+        padding: 12px 14px;
+        border-radius: 14px;
+        border: 1.5px solid #cbd5e1;
+        background: white;
+        font-weight: 700;
+        font-size: 0.92rem;
+        color: #1e293b;
+        cursor: pointer;
+        transition: 0.2s;
+        text-align: center;
+    }
+    .time-slot-btn:hover { border-color: #0284c7; color: #0284c7; }
+    .time-slot-btn.activo {
+        border-color: #0284c7;
+        background: #0284c7;
+        color: white;
+        box-shadow: 0 6px 14px rgba(2, 132, 199, 0.25);
+    }
+
+    .btn-brutal {
+        padding: 16px 32px;
+        border-radius: 18px;
+        border: none;
+        font-family: var(--font-headings);
+        font-weight: 800;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: 0.25s;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+    }
+    .btn-brutal:hover:not(:disabled) {
+        transform: translateY(-2px);
+    }
+    .btn-brutal:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    /* Toast & Loading */
+    .toast-hope {
+        position: fixed;
+        bottom: 30px;
+        left: 50%;
+        transform: translateX(-50%) translateY(100px);
+        background: #0b142c;
+        color: white;
+        padding: 14px 28px;
+        border-radius: 100px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-weight: 700;
+        font-size: 14px;
+        box-shadow: 0 15px 35px rgba(0,0,0,0.25);
+        z-index: 9999999;
+        transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+        border: 1px solid rgba(255,255,255,0.15);
+    }
+    .toast-hope.show {
+        transform: translateX(-50%) translateY(0);
+    }
+    .toast-hope i { color: #10b981; font-size: 18px; }
+
+    .loading-overlay-hope {
+        position: fixed;
+        inset: 0;
+        background: rgba(11, 20, 44, 0.7);
+        backdrop-filter: blur(6px);
+        display: none;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 16px;
+        z-index: 999999;
+        color: white;
+    }
+    .spinner-hope {
+        width: 48px;
+        height: 48px;
+        border: 4px solid rgba(255,255,255,0.2);
+        border-top-color: #38bdf8;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Alertas Animadas */
+    .alerta-animada { animation: popIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+    @keyframes popIn {
+        0% { transform: scale(0.85); opacity: 0; }
+        100% { transform: scale(1); opacity: 1; }
+    }
+
+    /* Animación firma digital */
+    @keyframes sigDashAnimation {
+        0% { stroke-dashoffset: 320; opacity: 0.2; }
+        18% { opacity: 1; }
+        80% { stroke-dashoffset: 0; opacity: 1; }
+        100% { stroke-dashoffset: 0; opacity: 0.2; }
+    }
+    @keyframes fingerMoveAnimation {
+        0% { transform: translate(18px, 26px) scale(0.92); opacity: 0.2; }
+        18% { opacity: 1; }
+        80% { transform: translate(195px, 23px) scale(0.92); opacity: 1; }
+        100% { transform: translate(195px, 23px) scale(0.92); opacity: 0.2; }
+    }
+    .animated-sig-stroke {
+        stroke-dasharray: 320;
+        stroke-dashoffset: 320;
+        animation: sigDashAnimation 2.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+    }
+    .animated-finger-hand {
+        animation: fingerMoveAnimation 2.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+    }
+
+    /* WhatsApp flotante */
+    .btn-flotante-wa {
+        position: fixed;
+        bottom: 30px;
+        right: 30px;
+        background-color: #25D366;
+        color: white;
+        width: 62px;
+        height: 62px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 32px;
+        box-shadow: 0 10px 25px rgba(37, 211, 102, 0.4);
+        z-index: 99999;
+        text-decoration: none;
+        transition: all 0.3s;
+    }
+    .btn-flotante-wa:hover {
+        transform: translateY(-4px) scale(1.05);
+        color: white;
+    }
+</style>
+
+<div class="dashboard-header">
+    <span class="step-tag">
+        <i class="fas fa-shield-alt" style="margin-right: 5px;"></i> Plataforma Clínica Confidencial
+    </span>
+    <h1 style="font-family: var(--font-headings); font-size: clamp(2rem, 4vw, 2.8rem); font-weight: 800; margin: 0 0 10px; letter-spacing: -0.5px;">
+        ¡Hola, {{ user.first_name|default:user.username }}!
+    </h1>
+    <p style="opacity: 0.9; font-size: 1.1rem; margin: 0 auto; max-width: 600px; font-weight: 500;">
+        Tu espacio de salud mental, acompañamiento y bienestar integral.
+    </p>
+</div>
+
+<div class="tabs-nav">
+    <button class="tab-btn active" onclick="cambiarTab('agendar', this)">
+        <i class="fas fa-calendar-plus"></i> Agendar Sesión
+    </button>
+    <button class="tab-btn" onclick="cambiarTab('citas', this)">
+        <i class="fas fa-calendar-check"></i> Mis Citas {% if cita_proxima %}<span style="background: var(--c-teal); color: white; border-radius: 50%; width: 8px; height: 8px; display: inline-block;"></span>{% endif %}
+    </button>
+    <button class="tab-btn" onclick="cambiarTab('terapeuta', this)">
+        <i class="fas fa-user-doctor"></i> Mi Terapeuta
+    </button>
+</div>
+
+<div style="max-width: 1100px; margin: 0 auto; padding: 0 20px 80px;">
+
+    <!-- =====================================================================
+         TAB 1: AGENDAR SESIÓN
+         ===================================================================== -->
+    <div id="tab-agendar" class="tab-content active">
+        <div class="chic-card" style="margin-bottom: 30px;">
+            <div style="text-align: center; margin-bottom: 25px;">
+                <span class="step-tag" style="background: #e0f2fe; color: #0284c7; border: 1px solid #bae6fd;">
+                    Paso 1 · Elige tu Modalidad
+                </span>
+                <h3 style="font-family: var(--font-headings); font-size: 1.8rem; font-weight: 800; margin: 0 0 8px; color: var(--text-main);">
+                    ¿Qué tipo de atención necesitas?
+                </h3>
+                <p style="color: var(--text-muted); font-size: 1rem; margin: 0;">
+                    Selecciona el servicio clínico adaptado a tu momento.
+                </p>
+            </div>
+
+            <!-- Grid de Servicios -->
+            <div class="servicios-grid">
+                <div class="servicio-card individual activo" onclick="seleccionarServicio('individual', this)">
+                    <div class="servicio-icon-box"><i class="fas fa-user"></i></div>
+                    <div class="servicio-titulo">Individual</div>
+                    <div class="servicio-desc">Espacio confidencial para trabajar ansiedad, estrés laboral, metas y salud emocional personal.</div>
                 </div>
-                <div style="line-height: 1.2;">
-                    <div style="font-weight: 800; font-size: 14px; color: var(--navy-900);">{{ perfil.nombre }}</div>
-                    <div style="font-size: 11px; color: var(--slate-400);">Colaborador TECTUM</div>
+
+                <div class="servicio-card pareja" onclick="seleccionarServicio('pareja', this)">
+                    <div class="servicio-icon-box"><i class="fas fa-heart"></i></div>
+                    <div class="servicio-titulo">Pareja</div>
+                    <div class="servicio-desc">Sesiones conjuntas orientadas a comunicación asertiva, resolución de conflictos y proyectos en común.</div>
+                </div>
+
+                <div class="servicio-card familiar" onclick="seleccionarServicio('familiar', this)">
+                    <div class="servicio-icon-box"><i class="fas fa-users"></i></div>
+                    <div class="servicio-titulo">Familiar</div>
+                    <div class="servicio-desc">Acompañamiento especializado para dinámicas de familia, crianza y convivencia armónica.</div>
                 </div>
             </div>
 
-            <a href="{% url 'logout_usuario' %}" class="btn-logout" title="Cerrar Sesión">
-                <i class="fas fa-sign-out-alt"></i> Salir
-            </a>
-        </div>
-    </header>
-
-    <!-- HERO DASHBOARD -->
-    <section class="dashboard-hero">
-        <img src="{% static 'img/tectum/escudo.png' %}" alt="Escudo" class="hero-watermark">
-        <div class="hero-container">
-            <div class="hero-top-tag">
-                <i class="fas fa-certificate"></i> Alianza Corporativa Activa
+            <!-- Modalidad: Online / Presencial -->
+            <div style="text-align: center; margin-top: 15px;">
+                <span style="font-size: 0.85rem; text-transform: uppercase; font-weight: 800; letter-spacing: 1px; color: var(--text-muted);">
+                    Modalidad de Sesión
+                </span>
+                <div class="modalidad-row">
+                    <div class="modalidad-pill activo" onclick="seleccionarModalidad('En línea', this)">
+                        <i class="fas fa-video"></i> En línea (Google Meet)
+                    </div>
+                    <div class="modalidad-pill" onclick="seleccionarModalidad('Presencial', this)">
+                        <i class="fas fa-building"></i> Presencial (Clínica CDMX)
+                    </div>
+                </div>
             </div>
-            <h1 class="hero-title">
-                Bienvenido(a), {{ perfil.nombre }}
-            </h1>
-            <p class="hero-subtitle">
-                Cuentas con atención psicológica confidencial cubierta en su totalidad por <strong>TECTUM In-House</strong>. Agenda tus sesiones sin ningún costo en cualquier modalidad.
-            </p>
         </div>
-    </section>
 
-    <!-- NAVEGACIÓN DE TABS -->
-    <nav class="tabs-wrapper">
-        <div class="tabs-container">
-            <button class="tab-btn active" onclick="cambiarTab('agendar', this)">
-                <i class="fas fa-calendar-check"></i> Mis Citas & Agendar
-            </button>
-            <button class="tab-btn" onclick="cambiarTab('especialista', this)">
-                <i class="fas fa-user-md"></i> Mi Especialista
-            </button>
-            <button class="tab-btn" onclick="cambiarTab('chat', this)">
-                <i class="fas fa-comments"></i> Mensajes Directos
-            </button>
-            <button class="tab-btn" onclick="cambiarTab('beneficios', this)">
-                <i class="fas fa-shield-alt"></i> Beneficios Corporativos
-            </button>
+        <!-- Paso 2: Calendario y Horario -->
+        <div class="chic-card" style="margin-bottom: 30px;">
+            <div style="text-align: center; margin-bottom: 25px;">
+                <span class="step-tag" style="background: #e0f2fe; color: #0284c7; border: 1px solid #bae6fd;">
+                    Paso 2 · Fecha y Horario
+                </span>
+                <h3 style="font-family: var(--font-headings); font-size: 1.8rem; font-weight: 800; margin: 0 0 8px; color: var(--text-main);">
+                    Selecciona tu día y horario
+                </h3>
+                <p style="color: var(--text-muted); font-size: 1rem; margin: 0;">
+                    Horarios sincronizados en tiempo real con tu terapeuta.
+                </p>
+            </div>
+
+            <!-- Carrusel de Días -->
+            <div class="date-carousel" id="dateCarouselTectum">
+                {% for dia, horas in dias_disponibles.items %}
+                <div class="date-chip {% if forloop.first %}active{% endif %}" onclick="seleccionarDia('{{ dia|date:'Y-m-d' }}', this)">
+                    <span style="font-size: 11px; display: block; text-transform: uppercase; font-weight: 700;">{{ dia|date:"D" }}</span>
+                    <span style="font-size: 26px; font-weight: 800; display: block; line-height: 1.1;">{{ dia|date:"d" }}</span>
+                    <span style="font-size: 11px; display: block; text-transform: uppercase; font-weight: 600;">{{ dia|date:"M" }}</span>
+                </div>
+                {% empty %}
+                <div style="text-align: center; width: 100%; padding: 25px; color: var(--text-muted);">
+                    No hay horarios disponibles por ahora. Comunícate con nosotros por WhatsApp para coordinar tu cita.
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Grilla de Horarios -->
+            <div id="slotsContainerTectum" style="margin-top: 20px;">
+                {% for dia, horas in dias_disponibles.items %}
+                <div class="slots-grid" id="slots-{{ dia|date:'Y-m-d' }}" {% if not forloop.first %}style="display:none;"{% endif %}>
+                    {% for h in horas %}
+                    <button type="button" class="time-slot-btn" onclick="seleccionarHora('{{ h|time:'H:i' }}', '{{ h|time:'h:i A' }}', this)">
+                        {{ h|time:"h:i A" }}
+                    </button>
+                    {% empty %}
+                    <div style="grid-column: 1/-1; text-align: center; padding: 20px; color: var(--text-muted);">
+                        Sin horarios libres para este día.
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endfor %}
+            </div>
         </div>
-    </nav>
 
-    <!-- CONTENIDO PRINCIPAL -->
-    <main class="main-content">
+        <!-- Paso 3: Confirmación y Resumen -->
+        <div class="chic-card" style="border-top: 6px solid #0284c7;">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; margin-bottom: 25px;">
+                <div>
+                    <span class="step-tag" style="background: #e0f2fe; color: #0284c7; border: 1px solid #bae6fd; margin-bottom: 6px;">
+                        Paso 3 · Confirmación
+                    </span>
+                    <h3 style="font-family: var(--font-headings); font-size: 1.7rem; font-weight: 800; margin: 0; color: var(--text-main);">
+                        Resumen de tu Sesión
+                    </h3>
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px; color: #16a34a; font-weight: 700; font-size: 0.9rem; background: #dcfce7; padding: 6px 16px; border-radius: 50px;">
+                    <i class="fas fa-check-circle"></i> Cita protegida y confirmada
+                </div>
+            </div>
 
-        <!-- ==========================================
-             TAB 1: MIS CITAS & AGENDAR
-             ========================================== -->
-        <div class="tab-panel active" id="tab-agendar">
-
-            <!-- CITA PRÓXIMA SI EXISTE -->
-            {% if cita_proxima %}
-            <div class="next-session-box">
-                <div class="session-info-left">
-                    <div class="session-calendar-badge">
-                        <span class="badge-month">{{ cita_proxima.fecha|date:"M" }}</span>
-                        <span class="badge-day">{{ cita_proxima.fecha|date:"d" }}</span>
+            <div style="background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 20px; padding: 24px; margin-bottom: 25px;">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 18px;">
+                    <div>
+                        <span style="font-size: 11px; text-transform: uppercase; font-weight: 800; color: var(--text-muted); display: block; margin-bottom: 3px;">Consultante</span>
+                        <strong style="font-size: 1.1rem; color: var(--text-main); font-family: var(--font-headings);">{{ user.get_full_name|default:user.first_name }}</strong>
                     </div>
                     <div>
-                        <span style="background: #0284c7; color: white; font-size: 11px; font-weight: 800; text-transform: uppercase; padding: 2px 10px; border-radius: 12px; display: inline-block; margin-bottom: 4px;">
-                            {{ cita_proxima.tipo_servicio|title }} Online
-                        </span>
-                        <h3 style="font-family: var(--font-h); font-size: 1.3rem; font-weight: 800; color: var(--navy-900); margin: 0 0 4px;">
-                            Sesión con Psic. {{ cita_proxima.psicologo.usuario.first_name }} {{ cita_proxima.psicologo.usuario.last_name|default:"" }}
-                        </h3>
-                        <p style="margin: 0; font-size: 13.5px; color: var(--slate-500);">
-                            <i class="far fa-clock" style="color: var(--blue-600);"></i> {{ cita_proxima.hora|time:"H:i" }} hrs · <i class="fas fa-video" style="color: var(--emerald-600);"></i> Sala Virtual Google Meet
-                        </p>
+                        <span style="font-size: 11px; text-transform: uppercase; font-weight: 800; color: var(--text-muted); display: block; margin-bottom: 3px;">Servicio</span>
+                        <strong id="resumen-servicio" style="font-size: 1.1rem; color: var(--text-main); font-family: var(--font-headings);">Individual</strong>
+                    </div>
+                    <div>
+                        <span style="font-size: 11px; text-transform: uppercase; font-weight: 800; color: var(--text-muted); display: block; margin-bottom: 3px;">Modalidad</span>
+                        <strong id="resumen-modalidad" style="font-size: 1.1rem; color: var(--text-main); font-family: var(--font-headings);">En línea</strong>
+                    </div>
+                    <div>
+                        <span style="font-size: 11px; text-transform: uppercase; font-weight: 800; color: var(--text-muted); display: block; margin-bottom: 3px;">Horario Elegido</span>
+                        <strong id="resumen-horario" style="font-size: 1.1rem; color: #0284c7; font-family: var(--font-headings);">Elige fecha y hora arriba</strong>
                     </div>
                 </div>
 
-                <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
-                    {% if cita_proxima.enlace_meet %}
-                    <a href="{% url 'formulario_previo_meet' cita_proxima.id %}" class="btn-meet-join">
-                        <i class="fas fa-video"></i> Entrar a Sesión
-                    </a>
-                    {% else %}
-                    <span style="font-size: 13px; color: var(--slate-500); font-weight: 600; background: #ffffff; padding: 10px 18px; border-radius: 50px; border: 1px solid var(--slate-200);">
-                        <i class="fas fa-clock"></i> Enlace disponible en breve
-                    </span>
-                    {% endif %}
-
-                    <button type="button" onclick="toggleReagendar()" style="background: #ffffff; border: 1.5px solid var(--slate-200); padding: 12px 18px; border-radius: 50px; font-weight: 700; font-size: 13px; color: var(--navy-900); cursor: pointer; transition: 0.2s;">
-                        <i class="fas fa-calendar-alt"></i> Reagendar
-                    </button>
+                <div style="margin-top: 18px; padding-top: 16px; border-top: 1px solid #e2e8f0; display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
+                    <label for="select-animo" style="font-size: 0.9rem; font-weight: 700; color: var(--text-muted);">
+                        ¿Cómo te sientes hoy? (opcional):
+                    </label>
+                    <select id="select-animo" style="padding: 8px 16px; border-radius: 12px; border: 1.5px solid #cbd5e1; font-family: var(--font-body); font-weight: 600; outline: none; background: white; color: var(--text-main);">
+                        <option value="No especificó">No especificó</option>
+                        <option value="Tranquilo">Tranquilo</option>
+                        <option value="Bien">Bien</option>
+                        <option value="Ansioso">Ansioso</option>
+                        <option value="Triste">Triste</option>
+                    </select>
                 </div>
             </div>
 
-            <!-- SECCIÓN REAGENDAR INLINE -->
-            <div id="box-reagendar-inline" style="display: none; background: #ffffff; border: 1.5px solid #bfdbfe; border-radius: 20px; padding: 24px; margin-bottom: 30px;">
-                <h4 style="font-family: var(--font-h); font-size: 1.15rem; font-weight: 800; color: var(--navy-900); margin-bottom: 12px;">
-                    Selecciona tu nueva fecha y hora:
-                </h4>
-                <div id="carouselReagendar" class="date-carousel-corp">
-                    <!-- Se llena dinámicamente con fechas disponibles -->
+            <button type="button" id="btn-confirmar-cita-tectum" onclick="confirmarCitaTectum()" class="btn-brutal" style="width: 100%; background: linear-gradient(135deg, #1e3a8a 0%, #0284c7 100%); color: white; box-shadow: 0 10px 25px rgba(2, 132, 199, 0.25);" disabled>
+                Confirmar Cita <i class="fas fa-arrow-right" style="margin-left: 8px;"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- =====================================================================
+         TAB 2: MIS CITAS
+         ===================================================================== -->
+    <div id="tab-citas" class="tab-content">
+        {% if cita_proxima %}
+        <div class="chic-card" style="margin-bottom: 30px; border-top: 6px solid #0284c7;">
+            <div style="text-align: center; margin-bottom: 25px;">
+                <span class="step-tag" style="background: #e0f2fe; color: #0284c7; border: 1px solid #bae6fd;">
+                    Tu Próxima Consulta
+                </span>
+                <h3 style="font-family: var(--font-headings); font-size: 2.2rem; font-weight: 800; margin: 0 0 10px; color: var(--text-main);">
+                    {{ cita_proxima.fecha|date:"l d \d\e F"|title }} a las {{ cita_proxima.hora|time:"h:i A" }}
+                </h3>
+                <p style="font-size: 1.1rem; color: var(--text-muted); margin: 0;">
+                    Modalidad: <strong>{{ cita_proxima.modalidad }}</strong> &middot; Terapeuta: <strong>Dr(a). {{ cita_proxima.psicologo.usuario.first_name }}</strong>
+                </p>
+            </div>
+
+            {% if cita_proxima.modalidad == 'Presencial' %}
+            <div style="background: #ffffff; border: 2px dashed #0284c7; border-radius: 20px; padding: 30px; max-width: 480px; margin: 0 auto; text-align: center;">
+                <i class="fas fa-location-dot" style="font-size: 38px; color: #0284c7; margin-bottom: 12px;"></i>
+                <h4 style="font-family: var(--font-headings); font-size: 1.3rem; font-weight: 800; margin-bottom: 6px;">Clínica de Atención Presencial</h4>
+                <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 18px;">Lago Margarita 47, Col. Granada, CDMX</p>
+                <div style="background: #f8fafc; padding: 14px; border-radius: 14px; font-weight: 700; color: #1e3a8a;">
+                    Pase de Acceso Cita #{{ cita_proxima.id }}
                 </div>
-                <div id="slotsReagendar" class="slots-container-corp"></div>
-                <button type="button" id="btnConfirmarReagendar" onclick="confirmarReagendoTectum()" style="display:none; background: var(--blue-600); color: white; border: none; padding: 12px 28px; border-radius: 100px; font-weight: 800; cursor: pointer;">
-                    Confirmar Cambio de Fecha
-                </button>
+            </div>
+            {% else %}
+            <div style="max-width: 500px; margin: 0 auto; text-align: center;">
+                {% if cita_proxima.enlace_meet %}
+                <a href="{% url 'formulario_previo_meet' cita_proxima.id %}" class="btn-brutal" style="background: linear-gradient(135deg, #1e3a8a 0%, #0284c7 100%); color: white; width: 100%; text-decoration: none; margin-bottom: 12px; box-shadow: 0 10px 25px rgba(2, 132, 199, 0.25);">
+                    Ingresar a mi Consulta Online <i class="fas fa-video"></i>
+                </a>
+                <p style="font-size: 12px; color: var(--text-muted); margin: 0 0 16px;">
+                    <i class="fas fa-info-circle"></i> Responderás una breve valoración previa de 2 minutos.
+                </p>
+                {% else %}
+                <div style="background: #f0f9ff; border: 1.5px solid #bae6fd; padding: 20px; border-radius: 16px; margin-bottom: 15px;">
+                    <i class="fas fa-spinner fa-spin" style="font-size: 26px; color: #0284c7; margin-bottom: 8px;"></i>
+                    <p style="margin: 0; font-size: 0.95rem; font-weight: 700; color: #0369a1;">Tu enlace de Google Meet se está preparando y se enviará a tu correo.</p>
+                </div>
+                {% endif %}
+
+                <a href="https://wa.me/525521130230?text=Hola,%20tengo%20dudas%20sobre%20mi%20sesi%C3%B3n%20en%20TECTUM" target="_blank" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; background: #25D366; color: white; padding: 12px 24px; border-radius: 100px; text-decoration: none; font-weight: 700; font-size: 14px; box-shadow: 0 4px 15px rgba(37, 211, 102, 0.2); width: 100%;">
+                    <i class="fab fa-whatsapp"></i> Soporte de Asistencia WhatsApp
+                </a>
             </div>
             {% endif %}
+        </div>
+        {% else %}
+        <div class="chic-card" style="text-align: center; padding: 50px 30px;">
+            <i class="fas fa-calendar-times" style="font-size: 50px; color: #cbd5e1; margin-bottom: 18px;"></i>
+            <h3 style="font-family: var(--font-headings); font-size: 1.8rem; font-weight: 800; margin-bottom: 8px; color: var(--text-main);">
+                Aún no tienes citas agendadas
+            </h3>
+            <p style="color: var(--text-muted); font-size: 1rem; max-width: 480px; margin: 0 auto 25px;">
+                Programa tu primera sesión fácilmente seleccionando tu modalidad y horario.
+            </p>
+            <button type="button" onclick="cambiarTab('agendar')" class="btn-brutal" style="background: linear-gradient(135deg, #1e3a8a 0%, #0284c7 100%); color: white;">
+                Agendar ahora <i class="fas fa-arrow-right" style="margin-left: 8px;"></i>
+            </button>
+        </div>
+        {% endif %}
+    </div>
 
-            <!-- AGENDADOR MULTISERVICIO CORPORATIVO -->
-            <div class="corporate-card">
-                <div class="card-header-styled">
-                    <div>
-                        <h3><i class="fas fa-calendar-plus" style="color: var(--blue-600);"></i> Agendar Nueva Consulta</h3>
-                        <p style="color: var(--slate-500); font-size: 14px; margin-top: 4px;">
-                            Selecciona la modalidad de tu preferencia. Todas están 100% cubiertas por TECTUM In-House.
-                        </p>
-                    </div>
+    <!-- =====================================================================
+         TAB 3: MI TERAPEUTA
+         ===================================================================== -->
+    <div id="tab-terapeuta" class="tab-content">
+        {% if psicologo_asignado %}
+        <div class="chic-card" style="border-top: 6px solid #0284c7;">
+            <div style="display: flex; align-items: center; gap: 24px; flex-wrap: wrap;">
+                {% if psicologo_asignado.foto %}
+                <img src="{{ psicologo_asignado.foto.url }}" alt="Terapeuta" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 4px solid #bae6fd;">
+                {% else %}
+                <div style="width: 100px; height: 100px; border-radius: 50%; background: #e0f2fe; color: #0284c7; display: flex; align-items: center; justify-content: center; font-size: 38px; border: 4px solid #bae6fd;">
+                    <i class="fas fa-user-md"></i>
                 </div>
-
-                <!-- 1. SELECTOR DE MODALIDAD -->
-                <div class="modalidades-grid">
-                    <!-- Individual -->
-                    <div class="mod-card-corp active" id="card-mod-individual" onclick="elegirModalidad('individual')">
-                        <div class="mod-icon"><i class="fas fa-user"></i></div>
-                        <div class="mod-title">Terapia Individual</div>
-                        <div class="mod-price-tag"><i class="fas fa-shield-alt"></i> $0.00 MXN · 100% Cubierto</div>
-                        <p class="mod-desc">Espacio confidencial para trabajar en ansiedad, estrés laboral, manejo de emociones o metas de vida.</p>
-                    </div>
-
-                    <!-- Pareja -->
-                    <div class="mod-card-corp" id="card-mod-pareja" onclick="elegirModalidad('pareja')">
-                        <div class="mod-icon"><i class="fas fa-heart"></i></div>
-                        <div class="mod-title">Terapia de Pareja</div>
-                        <div class="mod-price-tag"><i class="fas fa-shield-alt"></i> $0.00 MXN · 100% Cubierto</div>
-                        <p class="mod-desc">Para ti y tu pareja. Resuelvan acuerdos, fortalezcan la comunicación y sanen el vínculo mutuo.</p>
-                    </div>
-
-                    <!-- Familiar -->
-                    <div class="mod-card-corp" id="card-mod-familiar" onclick="elegirModalidad('familiar')">
-                        <div class="mod-icon"><i class="fas fa-users"></i></div>
-                        <div class="mod-title">Terapia Familiar</div>
-                        <div class="mod-price-tag"><i class="fas fa-shield-alt"></i> $0.00 MXN · 100% Cubierto</div>
-                        <p class="mod-desc">Armoniza la dinámica del hogar, resolución de conflictos familiares y crianza positiva.</p>
-                    </div>
-                </div>
-
-                <!-- Integrantes familiar (si aplica) -->
-                <div id="box-integrantes-familia" style="display: none; background: var(--sky-50); border: 1.5px solid #bae6fd; border-radius: 16px; padding: 18px; margin-bottom: 24px; text-align: center;">
-                    <p style="font-weight: 700; font-size: 13.5px; color: var(--navy-900); margin-bottom: 10px;">¿Cuántos familiares participarán en la sesión?</p>
-                    <div style="display: flex; align-items: center; justify-content: center; gap: 16px;">
-                        <button type="button" onclick="modificarIntegrantes(-1)" style="width: 36px; height: 36px; border-radius: 50%; border: none; background: var(--blue-600); color: white; font-weight: 800; cursor: pointer;">−</button>
-                        <span id="valor-integrantes" style="font-size: 22px; font-weight: 800; min-width: 36px;">2</span>
-                        <button type="button" onclick="modificarIntegrantes(1)" style="width: 36px; height: 36px; border-radius: 50%; border: none; background: var(--blue-600); color: white; font-weight: 800; cursor: pointer;">+</button>
-                    </div>
-                </div>
-
-                <!-- 2. SELECCIÓN DE FECHA Y HORA -->
-                <div style="margin-bottom: 16px;">
-                    <h4 style="font-family: var(--font-h); font-size: 1.15rem; font-weight: 800; color: var(--navy-900); margin-bottom: 14px;">
-                        1. Elige una fecha disponible:
-                    </h4>
-                    <div id="dateCarousel" class="date-carousel-corp">
-                        <!-- Chips cargados dinámicamente -->
-                    </div>
-                </div>
-
-                <div style="margin-bottom: 30px;">
-                    <h4 style="font-family: var(--font-h); font-size: 1.15rem; font-weight: 800; color: var(--navy-900); margin-bottom: 14px;">
-                        2. Elige tu horario de consulta:
-                    </h4>
-                    <div id="slotsWrapper" class="slots-container-corp">
-                        <!-- Botones de horarios -->
-                    </div>
-                </div>
-
-                <!-- 3. RESUMEN Y CONFIRMACIÓN CORPORATIVA -->
-                <div class="summary-box-corp">
-                    <div style="width: 58px; height: 58px; border-radius: 50%; background: #0284c7; color: white; display: flex; align-items: center; justify-content: center; font-size: 26px; margin: 0 auto 14px auto; box-shadow: 0 6px 18px rgba(2,132,199,0.3);">
-                        <i class="fas fa-shield-alt"></i>
-                    </div>
-
-                    <span style="display: inline-block; background: #0284c7; color: white; font-weight: 800; font-size: 11px; letter-spacing: 1px; text-transform: uppercase; padding: 4px 14px; border-radius: 20px; margin-bottom: 10px;">
-                        Convenio Activo In-House
-                    </span>
-
-                    <h3 style="font-family: var(--font-h); font-size: 1.8rem; font-weight: 800; color: #0c4a6e; margin-bottom: 6px;">
-                        $0.00 MXN · Sesión 100% Cubierta
+                {% endif %}
+                <div>
+                    <span style="font-size: 11px; text-transform: uppercase; font-weight: 800; background: #e0f2fe; color: #0284c7; padding: 4px 12px; border-radius: 12px; letter-spacing: 0.5px;">Especialista Clínico</span>
+                    <h3 style="font-family: var(--font-headings); font-size: 1.8rem; font-weight: 800; margin: 6px 0 4px; color: var(--text-main);">
+                        Dr(a). {{ psicologo_asignado.usuario.first_name }} {{ psicologo_asignado.usuario.last_name|default:"" }}
                     </h3>
-
-                    <p id="texto-resumen-servicio" style="font-size: 14.5px; color: #0369a1; max-width: 540px; margin: 0 auto 20px auto; line-height: 1.5;">
-                        Consulta Psicológica Online Individual. Como colaborador de empresa afiliada a TECTUM, tus consultas no generan ningún costo.
-                    </p>
-
-                    <!-- Estado del Consentimiento Informado -->
-                    <div style="background: white; border-radius: 14px; padding: 14px 20px; max-width: 480px; margin: 0 auto 22px auto; border: 1.5px solid #bae6fd; display: flex; align-items: center; justify-content: space-between; gap: 12px;">
-                        <div style="display: flex; align-items: center; gap: 10px;">
-                            <i class="fas fa-file-signature" style="color: #0284c7; font-size: 18px;"></i>
-                            <span style="font-size: 13px; font-weight: 700; color: #0c4a6e;">Consentimiento Informado</span>
-                        </div>
-                        <span id="badge-estado-consentimiento" style="font-size: 12px; font-weight: 800; color: {% if tiene_consentimiento %}#16a34a; background: #dcfce7;{% else %}#ea580c; background: #ffedd5;{% endif %} padding: 4px 12px; border-radius: 20px;">
-                            {% if tiene_consentimiento %}Aprobado{% else %}Pendiente de Firma{% endif %}
-                        </span>
-                    </div>
-
-                    <button type="button" class="btn-confirm-free" id="btn-confirmar-tectum" onclick="confirmarCitaTectum()">
-                        <i class="fas fa-check-circle" style="font-size: 20px;"></i> Confirmar Cita sin Costo
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <!-- ==========================================
-             TAB 2: MI ESPECIALISTA
-             ========================================== -->
-        <div class="tab-panel" id="tab-especialista">
-            <div class="corporate-card">
-                <div class="card-header-styled">
-                    <h3><i class="fas fa-user-md" style="color: var(--blue-600);"></i> Tus Especialistas Clínicos</h3>
-                </div>
-
-                {% if tratamientos %}
-                    <div style="display: flex; flex-direction: column; gap: 18px;">
-                        {% for t in tratamientos %}
-                            {% if t.psicologo_asignado %}
-                            <div style="display: flex; align-items: center; justify-content: space-between; background: #f8fafc; border: 1.5px solid var(--slate-200); border-radius: 20px; padding: 22px; flex-wrap: wrap; gap: 16px;">
-                                <div style="display: flex; align-items: center; gap: 18px;">
-                                    {% if t.psicologo_asignado.foto %}
-                                    <img src="{{ t.psicologo_asignado.foto.url }}" alt="Foto" style="width: 65px; height: 65px; border-radius: 50%; object-fit: cover; border: 3px solid var(--blue-600);">
-                                    {% else %}
-                                    <div style="width: 65px; height: 65px; border-radius: 50%; background: #e0f2fe; color: var(--blue-600); display: flex; align-items: center; justify-content: center; font-size: 26px;">
-                                        <i class="fas fa-user-md"></i>
-                                    </div>
-                                    {% endif %}
-                                    <div>
-                                        <span style="background: #e0f2fe; color: var(--blue-600); font-weight: 800; font-size: 11px; padding: 3px 10px; border-radius: 12px; text-transform: uppercase;">
-                                            {{ t.get_tipo_servicio_display }}
-                                        </span>
-                                        <h4 style="font-family: var(--font-h); font-size: 1.25rem; font-weight: 800; color: var(--navy-900); margin: 4px 0 2px;">
-                                            Psic. {{ t.psicologo_asignado.usuario.first_name }} {{ t.psicologo_asignado.usuario.last_name|default:"" }}
-                                        </h4>
-                                        <p style="font-size: 13px; color: var(--slate-500); margin: 0;">
-                                            Cédula Profesional: {{ t.psicologo_asignado.cedula_profesional }} · {{ t.psicologo_asignado.especialidad|default:"Psicoterapeuta Clínico" }}
-                                        </p>
-                                    </div>
-                                </div>
-                                <button type="button" onclick="cambiarTab('agendar', document.querySelector('.tab-btn')); elegirModalidad('{{ t.tipo_servicio }}');" style="background: var(--blue-600); color: white; border: none; padding: 10px 22px; border-radius: 100px; font-weight: 800; font-size: 13px; cursor: pointer;">
-                                    Agendar con este Especialista
-                                </button>
-                            </div>
-                            {% endif %}
-                        {% endfor %}
-                    </div>
-                {% elif psicologo_asignado %}
-                    <div style="display: flex; align-items: center; justify-content: space-between; background: #f8fafc; border: 1.5px solid var(--slate-200); border-radius: 20px; padding: 24px; flex-wrap: wrap; gap: 16px;">
-                        <div style="display: flex; align-items: center; gap: 18px;">
-                            {% if psicologo_asignado.foto %}
-                            <img src="{{ psicologo_asignado.foto.url }}" alt="Foto" style="width: 70px; height: 70px; border-radius: 50%; object-fit: cover; border: 3px solid var(--blue-600);">
-                            {% else %}
-                            <div style="width: 70px; height: 70px; border-radius: 50%; background: #e0f2fe; color: var(--blue-600); display: flex; align-items: center; justify-content: center; font-size: 28px;">
-                                <i class="fas fa-user-md"></i>
-                            </div>
-                            {% endif %}
-                            <div>
-                                <span style="background: #e0f2fe; color: var(--blue-600); font-weight: 800; font-size: 11px; padding: 3px 10px; border-radius: 12px; text-transform: uppercase;">
-                                    Especialista Asignado
-                                </span>
-                                <h4 style="font-family: var(--font-h); font-size: 1.3rem; font-weight: 800; color: var(--navy-900); margin: 4px 0 2px;">
-                                    Psic. {{ psicologo_asignado.usuario.first_name }} {{ psicologo_asignado.usuario.last_name|default:"" }}
-                                </h4>
-                                <p style="font-size: 13.5px; color: var(--slate-500); margin: 0;">
-                                    Cédula Profesional: {{ psicologo_asignado.cedula_profesional }} · {{ psicologo_asignado.especialidad|default:"Psicoterapeuta Clínico" }}
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                {% else %}
-                    <div style="background: #f8fafc; border: 2px dashed var(--slate-200); border-radius: 20px; padding: 40px; text-align: center;">
-                        <div style="width: 56px; height: 56px; border-radius: 50%; background: #e2e8f0; color: var(--slate-500); display: flex; align-items: center; justify-content: center; font-size: 24px; margin: 0 auto 14px auto;">
-                            <i class="fas fa-user-clock"></i>
-                        </div>
-                        <h4 style="font-family: var(--font-h); font-size: 1.2rem; color: var(--navy-900); margin-bottom: 6px;">
-                            Aún no tienes un terapeuta asignado
-                        </h4>
-                        <p style="color: var(--slate-500); font-size: 14px; max-width: 480px; margin: 0 auto 20px auto;">
-                            Al confirmar tu primera cita, el sistema asignará automáticamente al profesional certificado más compatible con tu motivo de consulta.
-                        </p>
-                        <button type="button" onclick="cambiarTab('agendar', document.querySelector('.tab-btn'))" style="background: var(--blue-600); color: white; border: none; padding: 12px 26px; border-radius: 100px; font-weight: 800; cursor: pointer;">
-                            Agendar mi Primera Consulta
-                        </button>
-                    </div>
-                {% endif %}
-            </div>
-        </div>
-
-        <!-- ==========================================
-             TAB 3: MENSAJES DIRECTOS
-             ========================================== -->
-        <div class="tab-panel" id="tab-chat">
-            <div class="corporate-card">
-                <div class="card-header-styled">
-                    <h3><i class="fas fa-comments" style="color: var(--blue-600);"></i> Canal Confidencial de Comunicación</h3>
-                    <span style="font-size: 12px; color: var(--slate-500);">Respuestas en horario laboral de clínica</span>
-                </div>
-
-                {% if doctores_chat %}
-                <div class="chat-container-corp">
-                    <div class="chat-messages-box" id="chatBoxMensajes">
-                        <div style="text-align: center; color: var(--slate-400); font-size: 12.5px; margin-bottom: 10px;">
-                            Canal de mensajería cifrado bajo secreto profesional clínico.
-                        </div>
-                    </div>
-                    <form class="chat-input-bar" onsubmit="enviarMensajeChat(event)">
-                        <input type="text" id="inputChatTexto" placeholder="Escribe tu mensaje para tu especialista..." required>
-                        <button type="submit" style="background: var(--blue-600); color: white; border: none; width: 44px; height: 44px; border-radius: 50%; cursor: pointer;">
-                            <i class="fas fa-paper-plane"></i>
-                        </button>
-                    </form>
-                </div>
-                {% else %}
-                <div style="background: #f8fafc; border: 2px dashed var(--slate-200); border-radius: 20px; padding: 45px; text-align: center;">
-                    <i class="fas fa-comment-dots" style="font-size: 38px; color: var(--slate-400); margin-bottom: 14px;"></i>
-                    <h4 style="font-family: var(--font-h); font-size: 1.2rem; color: var(--navy-900); margin-bottom: 6px;">Chat disponible tras tu primera cita</h4>
-                    <p style="color: var(--slate-500); font-size: 14px; max-width: 480px; margin: 0 auto;">
-                        El canal directo de mensajería se habilitará una vez confirmes tu primera consulta con tu especialista asignado.
+                    <p style="color: var(--text-muted); margin: 0; font-size: 0.95rem;">
+                        <i class="fas fa-id-card" style="color: #0284c7; margin-right: 5px;"></i> Cédula Profesional: {{ psicologo_asignado.cedula_profesional }} &middot; {{ psicologo_asignado.especialidad|default:"Psicoterapia y Salud Mental" }}
                     </p>
                 </div>
-                {% endif %}
             </div>
+
+            {% if psicologo_asignado.cv_breve %}
+            <div style="margin-top: 25px; padding-top: 20px; border-top: 1px solid #f1f5f9;">
+                <h4 style="font-family: var(--font-headings); font-size: 1.1rem; font-weight: 800; margin-bottom: 8px;">Semblanza Profesional</h4>
+                <p style="color: var(--text-muted); font-size: 0.95rem; line-height: 1.6; margin: 0;">{{ psicologo_asignado.cv_breve }}</p>
+            </div>
+            {% endif %}
         </div>
-
-        <!-- ==========================================
-             TAB 4: BENEFICIOS CORPORATIVOS
-             ========================================== -->
-        <div class="tab-panel" id="tab-beneficios">
-            <div class="corporate-card">
-                <div class="card-header-styled">
-                    <h3><i class="fas fa-shield-alt" style="color: var(--blue-600);"></i> Convenio de Salud Mental In-House</h3>
-                    <span class="badge-alianza">TECTUM Corporativo</span>
-                </div>
-
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-bottom: 30px;">
-                    <div style="background: #f8fafc; border: 1px solid var(--slate-200); border-radius: 18px; padding: 24px;">
-                        <div style="width: 44px; height: 44px; border-radius: 12px; background: #eff6ff; color: var(--blue-600); display: flex; align-items: center; justify-content: center; font-size: 20px; margin-bottom: 14px;">
-                            <i class="fas fa-calendar-check"></i>
-                        </div>
-                        <h4 style="font-family: var(--font-h); font-size: 1.15rem; font-weight: 800; color: var(--navy-900); margin-bottom: 6px;">
-                            Consultas sin Costo
-                        </h4>
-                        <p style="color: var(--slate-500); font-size: 13.5px; line-height: 1.5;">
-                            Tu empresa cubre el 100% de los honorarios profesionales en sesiones individuales, de pareja y familiares. Sin copagos ni deducibles.
-                        </p>
-                    </div>
-
-                    <div style="background: #f8fafc; border: 1px solid var(--slate-200); border-radius: 18px; padding: 24px;">
-                        <div style="width: 44px; height: 44px; border-radius: 12px; background: #f0fdf4; color: var(--emerald-600); display: flex; align-items: center; justify-content: center; font-size: 20px; margin-bottom: 14px;">
-                            <i class="fas fa-user-shield"></i>
-                        </div>
-                        <h4 style="font-family: var(--font-h); font-size: 1.15rem; font-weight: 800; color: var(--navy-900); margin-bottom: 6px;">
-                            Confidencialidad Médica Total
-                        </h4>
-                        <p style="color: var(--slate-500); font-size: 13.5px; line-height: 1.5;">
-                            Tu empleador o empresa nunca tiene acceso al contenido de tus sesiones ni a tu expediente clínico (protegido por la NOM-004-SSA3).
-                        </p>
-                    </div>
-
-                    <div style="background: #f8fafc; border: 1px solid var(--slate-200); border-radius: 18px; padding: 24px;">
-                        <div style="width: 44px; height: 44px; border-radius: 12px; background: #faf5ff; color: #9333ea; display: flex; align-items: center; justify-content: center; font-size: 20px; margin-bottom: 14px;">
-                            <i class="fas fa-headset"></i>
-                        </div>
-                        <h4 style="font-family: var(--font-h); font-size: 1.15rem; font-weight: 800; color: var(--navy-900); margin-bottom: 6px;">
-                            Soporte Directo
-                        </h4>
-                        <p style="color: var(--slate-500); font-size: 13.5px; line-height: 1.5;">
-                            Para cualquier duda con tus horarios o enlace de Meet, tienes atención prioritaria vía <a href="https://wa.me/525521130230" target="_blank" style="color: #059669; font-weight: 700; text-decoration: none;">WhatsApp al +52 55 2113 0230</a>.
-                        </p>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-    </main>
-
-    <!-- MODAL CONSENTIMIENTO INFORMADO -->
-    <div id="modalConsentimiento" class="modal-overlay">
-        <div class="modal-corp" style="max-width: 650px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px;">
-                <h3 style="font-family: var(--font-h); font-size: 1.3rem; font-weight: 800; color: var(--navy-900);">
-                    Consentimiento Informado para Atención Clínica
-                </h3>
-                <button type="button" onclick="cerrarConsentimiento()" style="background: none; border: none; font-size: 20px; cursor: pointer; color: var(--slate-400);">×</button>
-            </div>
-
-            <div style="background: #f8fafc; border: 1px solid var(--slate-200); border-radius: 14px; padding: 18px; max-height: 220px; overflow-y: auto; font-size: 13px; line-height: 1.6; color: var(--slate-700); margin-bottom: 20px;">
-                <p><strong>Espacio HOPE</strong> y <strong>TECTUM In-House</strong> garantizan un proceso terapéutico ético, confidencial y apegado a la normatividad sanitaria mexicana (NOM-004-SSA3-2012 del Expediente Clínico).</p>
-                <p style="margin-top: 8px;">1. La atención es brindada por profesionales titulados y con Cédula Profesional Federal.<br>
-                2. El consultante participa de forma voluntaria y puede interrumpir el proceso cuando lo desee.<br>
-                3. La confidencialidad es absoluta salvo casos de riesgo inminente para la vida del consultante o terceros.</p>
-            </div>
-
-            <p style="font-weight: 700; font-size: 13.5px; margin-bottom: 8px; color: var(--navy-900);">Firma digital con tu dedo o ratón:</p>
-            <div style="border: 2px dashed var(--slate-400); border-radius: 14px; background: #ffffff; margin-bottom: 16px; position: relative;">
-                <canvas id="canvas-firma" style="width: 100%; height: 130px; display: block; touch-action: none; cursor: crosshair;"></canvas>
-            </div>
-
-            <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px;">
-                <button type="button" onclick="limpiarFirma()" style="background: var(--slate-100); border: none; padding: 10px 18px; border-radius: 10px; font-size: 13px; font-weight: 700; cursor: pointer; color: var(--slate-700);">
-                    <i class="fas fa-eraser"></i> Borrar Firma
-                </button>
-                <button type="button" onclick="guardarFirmaConsentimiento()" style="background: var(--blue-600); color: white; border: none; padding: 12px 28px; border-radius: 100px; font-weight: 800; font-size: 14px; cursor: pointer;">
-                    Firmar y Guardar
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- MODAL DE ÉXITO -->
-    <div id="alerta-exito-cita" class="modal-overlay">
-        <div class="modal-corp" style="text-align: center; border-top: 6px solid var(--emerald-600);">
-            <div style="width: 65px; height: 65px; border-radius: 50%; background: #dcfce7; color: var(--emerald-600); display: flex; align-items: center; justify-content: center; font-size: 32px; margin: 0 auto 16px auto;">
-                <i class="fas fa-check"></i>
-            </div>
-            <h3 style="font-family: var(--font-h); font-size: 1.8rem; font-weight: 800; color: var(--navy-900); margin-bottom: 8px;">
-                ¡Cita Confirmada con Éxito!
+        {% else %}
+        <div class="chic-card" style="text-align: center; padding: 50px 30px;">
+            <i class="fas fa-user-clock" style="font-size: 50px; color: #cbd5e1; margin-bottom: 18px;"></i>
+            <h3 style="font-family: var(--font-headings); font-size: 1.8rem; font-weight: 800; margin-bottom: 8px; color: var(--text-main);">
+                Asignación Clínica en Proceso
             </h3>
-            <p style="color: var(--slate-500); font-size: 14.5px; line-height: 1.5; margin-bottom: 24px;">
-                Tu sesión ha quedado agendada en tu panel corporativo sin ningún costo. Podrás acceder a la videollamada desde aquí a la hora programada.
+            <p style="color: var(--text-muted); font-size: 1rem; max-width: 500px; margin: 0 auto 25px;">
+                Al agendar tu primera sesión, nuestro equipo clínico te asignará al especialista idóneo para tus objetivos terapéuticos.
             </p>
-            <button onclick="location.reload()" style="background: var(--emerald-600); color: white; border: none; padding: 14px 36px; border-radius: 100px; font-weight: 800; font-size: 15px; cursor: pointer;">
-                Entendido <i class="fas fa-arrow-right" style="margin-left: 6px;"></i>
+            <button type="button" onclick="cambiarTab('agendar')" class="btn-brutal" style="background: linear-gradient(135deg, #1e3a8a 0%, #0284c7 100%); color: white;">
+                Agendar mi primera sesión <i class="fas fa-arrow-right" style="margin-left: 8px;"></i>
             </button>
         </div>
+        {% endif %}
     </div>
 
-    <!-- MODAL DE ERROR -->
-    <div id="alerta-error-cita" class="modal-overlay">
-        <div class="modal-corp" style="text-align: center; border-top: 6px solid #ef4444;">
-            <div style="width: 65px; height: 65px; border-radius: 50%; background: #fee2e2; color: #ef4444; display: flex; align-items: center; justify-content: center; font-size: 30px; margin: 0 auto 16px auto;">
-                <i class="fas fa-exclamation-triangle"></i>
-            </div>
-            <h3 style="font-family: var(--font-h); font-size: 1.6rem; font-weight: 800; color: var(--navy-900); margin-bottom: 8px;">
-                Contratiempo al Agendar
-            </h3>
-            <p id="texto-error-cita" style="color: var(--slate-500); font-size: 14px; margin-bottom: 24px;">
-                Ocurrió un problema con el servidor.
-            </p>
-            <a href="https://wa.me/525521130230?text=Hola,%20tuve%20un%20problema%20al%20agendar%20en%20TECTUM%20In-House" target="_blank" style="display: block; background: #25D366; color: white; padding: 12px 20px; border-radius: 50px; font-weight: 800; text-decoration: none; margin-bottom: 12px;">
-                <i class="fab fa-whatsapp"></i> Contactar Soporte por WhatsApp
-            </a>
-            <button onclick="document.getElementById('alerta-error-cita').style.display='none'" style="background: var(--slate-100); color: var(--slate-700); border: none; padding: 10px 24px; border-radius: 50px; font-weight: 700; cursor: pointer;">
-                Cerrar
+</div>
+
+<!-- =====================================================================
+     MODAL DE CONSENTIMIENTO INFORMADO Y FIRMA DIGITAL
+     (Exacto al de HOPE normal: 10 secciones clínicas + canvas interactivo)
+     ===================================================================== -->
+<div id="modalConsentimiento" class="modal-overlay" style="z-index: 6000; display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.75); backdrop-filter: blur(6px); align-items: center; justify-content: center; padding: 16px; overflow-y: auto;">
+  <div class="modal-box" style="width: 100%; max-width: 760px; max-height: 94vh; display: flex; flex-direction: column; text-align: left; padding: 26px 28px; border-radius: 24px; border-top: 6px solid #0284c7; background: #ffffff; position: relative; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); animation: popIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;">
+    
+    <button type="button" class="modal-close" onclick="cerrarModalConsentimiento()" style="position: absolute; top: 18px; right: 18px; background: #f1f5f9; border: none; width: 34px; height: 34px; border-radius: 50%; font-size: 15px; color: #64748b; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+      <i class="fas fa-times"></i>
+    </button>
+    
+    <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid #f1f5f9;">
+      <div style="width: 46px; height: 46px; border-radius: 14px; background: #e0f2fe; color: #0284c7; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0;">
+        <i class="fas fa-file-signature"></i>
+      </div>
+      <div>
+        <span style="font-size: 10.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px; color: #0284c7; background: #f0f9ff; padding: 2px 8px; border-radius: 6px; display: inline-block; margin-bottom: 2px;">Documento Clínico Oficial</span>
+        <h2 style="font-family: var(--font-headings); font-size: 1.3rem; color: #0f172a; margin: 0; font-weight: 800;">Consentimiento Informado para Atención Clínica</h2>
+        <p style="color: #64748b; margin: 0; font-size: 0.85rem; font-family: var(--font-body);">Atención Confidencial &middot; Estándares Profesionales</p>
+      </div>
+    </div>
+    
+    <div style="flex: 1; overflow-y: auto; max-height: 34vh; padding: 16px 18px; background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 14px; font-size: 12px; color: #334155; line-height: 1.55; margin-bottom: 14px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);">
+        <div style="background: white; border: 1px solid #cbd5e1; border-radius: 10px; padding: 10px 14px; margin-bottom: 12px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+            <div><strong>Consultante:</strong> {{ user.get_full_name|default:user.first_name }}</div>
+            <div><strong>Correo:</strong> {{ user.email }}</div>
+            <div><strong>Fecha:</strong> {% now "d/m/Y" %}</div>
+        </div>
+
+        <h4 style="font-size: 12.5px; font-weight: 800; color: #0f172a; margin: 10px 0 3px 0; text-transform: uppercase;">1. Objetivo del Documento</h4>
+        <p style="margin: 0 0 8px 0;">El presente consentimiento informado tiene como finalidad brindar información clara sobre las características, alcances, beneficios, riesgos, derechos y responsabilidades relacionadas con el proceso de atención psicológica. La firma indica que el consultante ha recibido información suficiente y acepta participar de manera voluntaria.</p>
+
+        <h4 style="font-size: 12.5px; font-weight: 800; color: #0f172a; margin: 10px 0 3px 0; text-transform: uppercase;">2. Naturaleza de la Atención Psicológica</h4>
+        <p style="margin: 0 0 8px 0;">Servicio profesional orientado a la evaluación, comprensión y abordaje de dificultades emocionales, cognitivas y conductuales. Constituye un trabajo colaborativo dirigido al logro de objetivos acordados. Los resultados dependen del caso y la participación activa del consultante.</p>
+
+        <h4 style="font-size: 12.5px; font-weight: 800; color: #0f172a; margin: 10px 0 3px 0; text-transform: uppercase;">3. Modelo de Intervención</h4>
+        <p style="margin: 0 0 8px 0;">Atención basada en Terapia Cognitivo-Conductual y Terapia Breve con respaldo científico. Puede incluir entrevista clínica, psicoeducación, registros, entrenamiento en autorregulación y tareas terapéuticas intersesión.</p>
+
+        <h4 style="font-size: 12.5px; font-weight: 800; color: #0f172a; margin: 10px 0 3px 0; text-transform: uppercase;">4. Participación Voluntaria</h4>
+        <p style="margin: 0 0 8px 0;">La atención es voluntaria. El consultante tiene derecho a solicitar información, formular dudas, expresar inconformidades, revocar su consentimiento y suspender o concluir el proceso en cualquier momento.</p>
+
+        <h4 style="font-size: 12.5px; font-weight: 800; color: #0f172a; margin: 10px 0 3px 0; text-transform: uppercase;">5. Confidencialidad y Límites Éticos</h4>
+        <p style="margin: 0 0 4px 0;">Toda información es confidencial. La confidencialidad podrá ser exceptuada únicamente en situaciones de:</p>
+        <ul style="margin: 0 0 8px 18px; padding: 0;">
+            <li>Riesgo inminente para la vida o integridad del consultante o de terceros.</li>
+            <li>Situaciones de abuso, maltrato o violencia que requieran notificación obligatoria legal.</li>
+            <li>Mandato expreso de autoridad judicial o legal competente.</li>
+        </ul>
+
+        <h4 style="font-size: 12.5px; font-weight: 800; color: #0f172a; margin: 10px 0 3px 0; text-transform: uppercase;">6. Registro Clínico</h4>
+        <p style="margin: 0 0 8px 0;">El profesional elaborará notas y registros clínicos necesarios para el seguimiento terapéutico conforme a la legislación de salud y protección de datos aplicable.</p>
+
+        <h4 style="font-size: 12.5px; font-weight: 800; color: #0f172a; margin: 10px 0 3px 0; text-transform: uppercase;">7. Sesiones y Puntualidad</h4>
+        <p style="margin: 0 0 8px 0;">Cada sesión ordinaria tiene una duración de aproximadamente 50 minutos. El consultante se compromete a acudir con puntualidad y a notificar cancelaciones oportunamente.</p>
+
+        <h4 style="font-size: 12.5px; font-weight: 800; color: #0f172a; margin: 10px 0 3px 0; text-transform: uppercase;">8. Comunicación Fuera de Sesión</h4>
+        <p style="margin: 0 0 8px 0;">La comunicación entre sesiones tiene fines exclusivamente de coordinación o administrativos. En caso de crisis o urgencia vital, el consultante debe acudir de inmediato a los centros de urgencias de su localidad o marcar al 911.</p>
+
+        <h4 style="font-size: 12.5px; font-weight: 800; color: #0f172a; margin: 10px 0 3px 0; text-transform: uppercase;">9. Autorización para Telepsicología</h4>
+        <p style="margin: 0 0 8px 0;">Se autoriza la atención mediante videoconferencia y medios digitales seguros, comprometiéndose a contar con un espacio privado y libre de interrupciones.</p>
+
+        <h4 style="font-size: 12.5px; font-weight: 800; color: #0f172a; margin: 10px 0 3px 0; text-transform: uppercase;">10. Declaración de Consentimiento</h4>
+        <p style="margin: 0;">Declaro haber leído y entendido este consentimiento informado, reconociendo mi derecho a resolver dudas y aceptando voluntariamente recibir atención psicológica.</p>
+    </div>
+
+    <!-- Checkbox Telepsicología -->
+    <div style="margin-bottom: 12px;">
+        <label style="display: flex; align-items: center; gap: 10px; font-size: 12px; font-weight: 700; color: #1e293b; cursor: pointer; user-select: none;">
+            <input type="checkbox" id="check-acepta-telepsicologia" checked style="width: 17px; height: 17px; accent-color: #0284c7; cursor: pointer;">
+            <span>Acepto los términos del Consentimiento Informado y autorizo la atención por Telepsicología.</span>
+        </label>
+    </div>
+
+    <!-- Nombre del Firmante -->
+    <div style="margin-bottom: 12px;">
+        <label style="display: block; font-size: 11px; font-weight: 800; text-transform: uppercase; color: #64748b; margin-bottom: 4px; letter-spacing: 0.5px;">Nombre Completo del Firmante:</label>
+        <input type="text" id="nombre-firmante-input" value="{{ user.get_full_name|default:user.first_name }}" placeholder="Ingresa tu nombre completo" style="width: 100%; border: 1.5px solid #cbd5e1; border-radius: 10px; padding: 8px 12px; font-size: 13px; font-family: var(--font-body); font-weight: 600; color: #0f172a; outline: none; box-sizing: border-box;">
+    </div>
+
+    <!-- Canvas para firma en pantalla -->
+    <div style="position: relative; margin-bottom: 14px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+            <span style="font-size: 11px; font-weight: 800; text-transform: uppercase; color: #64748b; letter-spacing: 0.5px;">Firma Digital en Pantalla:</span>
+            <button type="button" onclick="limpiarFirma()" style="background: none; border: none; color: #64748b; font-size: 11px; font-weight: 700; cursor: pointer; padding: 2px 6px; display: inline-flex; align-items: center; gap: 4px;">
+                <i class="fas fa-undo"></i> Borrar trazo
             </button>
+        </div>
+
+        <div id="contenedor-canvas-firma" style="position: relative; width: 100%; height: 140px; background: #ffffff; border: 2px dashed #93c5fd; border-radius: 14px; overflow: hidden; touch-action: none;">
+            <canvas id="canvas-firma" style="width: 100%; height: 100%; display: block; cursor: crosshair; touch-action: none;"></canvas>
+            
+            <div style="position: absolute; bottom: 25px; left: 10%; right: 10%; border-bottom: 1px solid #e2e8f0; pointer-events: none; text-align: center;">
+                <span style="position: relative; top: 16px; font-size: 9.5px; color: #94a3b8; letter-spacing: 0.5px; text-transform: uppercase;">Línea de firma</span>
+            </div>
+
+            <!-- Guía animada vector SVG -->
+            <div id="signature-guide-overlay" style="position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; background: rgba(255,255,255,0.88); transition: opacity 0.3s ease; z-index: 4;">
+                <svg width="230" height="75" viewBox="0 0 230 75" fill="none" xmlns="http://www.w3.org/2000/svg" style="overflow: visible;">
+                    <path class="animated-sig-stroke" d="M 25 45 Q 50 14 70 42 T 105 36 T 140 50 Q 165 20 185 44 T 210 40" stroke="#0284c7" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+                    <g class="animated-finger-hand">
+                        <path d="M 10 26 C 10 18 16 12 22 12 C 26 12 29 14 31 17 L 31 4 C 31 1.8 32.8 0 35 0 C 37.2 0 39 1.8 39 4 L 39 22 C 39 20.5 40.5 19.5 42 19.5 C 43.5 19.5 45 20.5 45 22 L 45 24 C 45 22.5 46.5 21.5 48 21.5 C 49.5 21.5 51 22.5 51 24 L 51 35 C 51 45 43 53 33 53 L 24 53 C 16 53 10 45 10 37 Z" fill="#0369a1" opacity="0.95" />
+                        <circle cx="35" cy="4" r="2.5" fill="#93c5fd" />
+                    </g>
+                </svg>
+                <div style="margin-top: 3px; font-size: 11.5px; font-weight: 700; color: #0369a1; font-family: var(--font-headings);">
+                    Traza tu firma aquí con tu dedo o cursor
+                </div>
+            </div>
         </div>
     </div>
 
-    <!-- SCRIPTS DE FUNCIONAMIENTO -->
-    <script>
-        // Variables globales
-        window.tipoServicioAgendado = 'individual';
-        window.modalidadSeleccionada = 'En línea';
-        window.fechaSeleccionada = '';
-        window.horaSeleccionada = '';
-        window.integrantesFamilia = 2;
+    <!-- Botones de Acción -->
+    <div style="display: flex; gap: 10px; justify-content: flex-end;">
+      <button type="button" onclick="cerrarModalConsentimiento()" style="background: #f1f5f9; color: #475569; border: none; border-radius: 12px; padding: 10px 18px; font-size: 13px; font-weight: 700; cursor: pointer;">
+        Cancelar
+      </button>
+      <button type="button" id="btn-confirmar-firma" onclick="guardarConsentimientoDigital()" style="background: linear-gradient(135deg, #1e3a8a 0%, #0284c7 100%); color: white; border: none; border-radius: 12px; padding: 10px 22px; font-size: 13.5px; font-weight: 800; cursor: pointer; box-shadow: 0 4px 14px rgba(2,132,199,0.35); display: inline-flex; align-items: center; gap: 8px;">
+        <i class="fas fa-check-circle"></i> Confirmar y Guardar Firma
+      </button>
+    </div>
+  </div>
+</div>
 
-        function cambiarTab(tabId, btn) {
-            document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            const target = document.getElementById('tab-' + tabId);
-            if (target) target.classList.add('active');
-            if (btn) btn.classList.add('active');
-        }
+<!-- Alerta Éxito Cita -->
+<div id="alerta-exito-cita" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); backdrop-filter: blur(8px); z-index: 999999; justify-content: center; align-items: center;">
+    <div class="chic-card alerta-animada" style="height: auto; width: 90%; max-width: 500px; text-align: center; padding: 45px 30px; border-top: 6px solid #0284c7;">
+        <i class="fas fa-check-circle" style="font-size: 65px; color: #10b981; margin-bottom: 20px;"></i>
+        <h2 style="font-family: var(--font-headings); font-size: 2.2rem; color: var(--text-main); margin-bottom: 10px; font-weight: 800;">¡Cita Agendada!</h2>
+        <p id="texto-exito-dinamico" style="font-size: 16px; color: var(--text-muted); margin-bottom: 25px;">Tu sesión ha sido confirmada y agendada con éxito.</p>
+        <button onclick="location.reload()" class="btn-brutal" style="width: 100%; background: linear-gradient(135deg, #1e3a8a 0%, #0284c7 100%); color: white;">
+            Ver en mis citas <i class="fas fa-arrow-right" style="margin-left: 8px;"></i>
+        </button>
+    </div>
+</div>
 
-        function elegirModalidad(tipo) {
-            window.tipoServicioAgendado = tipo;
-            document.querySelectorAll('.mod-card-corp').forEach(c => c.classList.remove('active'));
-            const selectedCard = document.getElementById('card-mod-' + tipo);
-            if (selectedCard) selectedCard.classList.add('active');
+<!-- Alerta Error Cita -->
+<div id="alerta-error-cita" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); backdrop-filter: blur(8px); z-index: 999999; justify-content: center; align-items: center;">
+    <div class="chic-card alerta-animada" style="height: auto; width: 90%; max-width: 500px; text-align: center; padding: 45px 30px; border-top: 6px solid #f59e0b;">
+        <i class="fas fa-exclamation-triangle" style="font-size: 60px; color: #f59e0b; margin-bottom: 18px;"></i>
+        <h2 style="font-family: var(--font-headings); font-size: 2rem; color: var(--text-main); margin-bottom: 10px; font-weight: 800;">Atención</h2>
+        <p id="texto-error-cita" style="font-size: 15px; color: var(--text-muted); margin-bottom: 25px;">Ocurrió un contratiempo al procesar la cita.</p>
+        <button onclick="document.getElementById('alerta-error-cita').style.display='none'" class="btn-brutal" style="width: 100%; background: #e2e8f0; color: var(--text-main);">
+            Entendido
+        </button>
+    </div>
+</div>
 
-            const famBox = document.getElementById('box-integrantes-familia');
-            if (famBox) {
-                famBox.style.display = (tipo === 'familiar') ? 'block' : 'none';
-            }
+<!-- Botón WhatsApp Soporte -->
+<a href="https://wa.me/525521130230?text=Hola,%20necesito%20apoyo%20con%20mi%20sesi%C3%B3n%20en%20TECTUM" target="_blank" class="btn-flotante-wa" title="Soporte WhatsApp">
+    <i class="fab fa-whatsapp"></i>
+</a>
 
-            const descText = document.getElementById('texto-resumen-servicio');
-            if (descText) {
-                if (tipo === 'individual') descText.innerText = "Consulta Psicológica Online Individual. Cubierta 100% por TECTUM In-House.";
-                if (tipo === 'pareja') descText.innerText = "Sesión para dos personas (Pareja). Cubierta 100% por TECTUM In-House.";
-                if (tipo === 'familiar') descText.innerText = `Terapia Familiar (${window.integrantesFamilia} integrantes). Cubierta 100% por TECTUM In-House.`;
-            }
+<script>
+let servicioSeleccionado = 'individual';
+let modalidadSeleccionada = 'En línea';
+let fechaSeleccionada = "{{ dias_disponibles.keys.0|date:'Y-m-d'|default:'' }}";
+let horaSeleccionada = null;
+let horaSeleccionadaTexto = null;
 
-            refrescarDisponibilidad(tipo);
-        }
+function cambiarTab(tabName, btn) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    
+    if (btn) btn.classList.add('active');
+    const target = document.getElementById('tab-' + tabName);
+    if (target) target.classList.add('active');
+}
 
-        function modificarIntegrantes(delta) {
-            window.integrantesFamilia = Math.max(2, window.integrantesFamilia + delta);
-            document.getElementById('valor-integrantes').innerText = window.integrantesFamilia;
-            elegirModalidad('familiar');
-        }
+function seleccionarServicio(tipo, el) {
+    servicioSeleccionado = tipo;
+    document.querySelectorAll('.servicio-card').forEach(c => c.classList.remove('activo'));
+    if (el) el.classList.add('activo');
+    
+    const textoServicio = tipo.charAt(0).toUpperCase() + tipo.slice(1);
+    document.getElementById('resumen-servicio').innerText = textoServicio;
+    refrescarDisponibilidad(tipo);
+}
 
-        // Carga de fechas y horarios desde Django
-        function refrescarDisponibilidad(tipo) {
-            const carousel = document.getElementById('dateCarousel');
-            const slotsWrapper = document.getElementById('slotsWrapper');
-            if (!carousel || !slotsWrapper) return;
+function seleccionarModalidad(mod, el) {
+    modalidadSeleccionada = mod;
+    document.querySelectorAll('.modalidad-pill').forEach(p => p.classList.remove('activo'));
+    if (el) el.classList.add('activo');
+    document.getElementById('resumen-modalidad').innerText = mod;
+}
 
-            carousel.style.opacity = '0.5';
-            slotsWrapper.innerHTML = '<p style="color:var(--slate-400); font-style:italic;">Cargando horarios disponibles...</p>';
+function seleccionarDia(fechaStr, el) {
+    fechaSeleccionada = fechaStr;
+    horaSeleccionada = null;
+    horaSeleccionadaTexto = null;
+    actualizarResumenHorario();
 
-            fetch(`{% url 'disponibilidad_por_tipo' %}?tipo_sesion=${encodeURIComponent(tipo)}`)
-                .then(r => r.json())
-                .then(data => {
-                    carousel.style.opacity = '1';
-                    if (data.status !== 'success') return;
+    document.querySelectorAll('.date-chip').forEach(c => c.classList.remove('active'));
+    if (el) el.classList.add('active');
 
-                    carousel.innerHTML = '';
-                    slotsWrapper.innerHTML = '';
+    document.querySelectorAll('.slots-grid').forEach(g => g.style.display = 'none');
+    const targetGrid = document.getElementById('slots-' + fechaStr);
+    if (targetGrid) targetGrid.style.display = 'grid';
+}
 
-                    const fechas = Object.keys(data.dias || {}).sort();
-                    if (fechas.length === 0) {
-                        carousel.innerHTML = '<p style="color:var(--slate-400); font-style:italic;">No hay fechas disponibles por el momento.</p>';
-                        return;
+function seleccionarHora(hora24, horaTexto, el) {
+    horaSeleccionada = hora24;
+    horaSeleccionadaTexto = horaTexto;
+    
+    document.querySelectorAll('.time-slot-btn').forEach(b => b.classList.remove('activo'));
+    if (el) el.classList.add('activo');
+    
+    actualizarResumenHorario();
+}
+
+function actualizarResumenHorario() {
+    const resumen = document.getElementById('resumen-horario');
+    const btn = document.getElementById('btn-confirmar-cita-tectum');
+    
+    if (fechaSeleccionada && horaSeleccionada) {
+        resumen.innerText = fechaSeleccionada + ' a las ' + horaSeleccionadaTexto;
+        btn.disabled = false;
+    } else {
+        resumen.innerText = 'Elige fecha y hora arriba';
+        btn.disabled = true;
+    }
+}
+
+function refrescarDisponibilidad(tipo) {
+    fetch("{% url 'disponibilidad_por_tipo' %}?tipo=" + tipo)
+        .then(r => r.json())
+        .then(data => {
+            if (data.status === 'success') {
+                const carousel = document.getElementById('dateCarouselTectum');
+                const slotsBox = document.getElementById('slotsContainerTectum');
+                
+                carousel.innerHTML = '';
+                slotsBox.innerHTML = '';
+                
+                let primerDia = null;
+                const diasKeys = Object.keys(data.dias);
+                
+                if (diasKeys.length === 0) {
+                    carousel.innerHTML = '<div style="text-align:center;width:100%;padding:20px;color:var(--text-muted);">Sin disponibilidad próxima. Contáctanos por WhatsApp.</div>';
+                    return;
+                }
+
+                diasKeys.forEach((diaStr, idx) => {
+                    if (idx === 0) primerDia = diaStr;
+                    const dateObj = new Date(diaStr + 'T00:00:00');
+                    const dow = dateObj.toLocaleDateString('es-MX', { weekday: 'short' });
+                    const diaNum = dateObj.getDate();
+                    const mes = dateObj.toLocaleDateString('es-MX', { month: 'short' });
+
+                    const chip = document.createElement('div');
+                    chip.className = 'date-chip' + (idx === 0 ? ' active' : '');
+                    chip.onclick = function() { seleccionarDia(diaStr, this); };
+                    chip.innerHTML = `
+                        <span style="font-size:11px;display:block;text-transform:uppercase;font-weight:700;">${dow}</span>
+                        <span style="font-size:26px;font-weight:800;display:block;line-height:1.1;">${diaNum}</span>
+                        <span style="font-size:11px;display:block;text-transform:uppercase;font-weight:600;">${mes}</span>
+                    `;
+                    carousel.appendChild(chip);
+
+                    const grid = document.createElement('div');
+                    grid.className = 'slots-grid';
+                    grid.id = 'slots-' + diaStr;
+                    grid.style.display = idx === 0 ? 'grid' : 'none';
+
+                    const horas = data.dias[diaStr] || [];
+                    if (horas.length === 0) {
+                        grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:20px;color:var(--text-muted);">Sin horarios este día.</div>';
+                    } else {
+                        horas.forEach(h => {
+                            const [hh, mm] = h.split(':');
+                            const hNum = parseInt(hh, 10);
+                            const ampm = hNum >= 12 ? 'PM' : 'AM';
+                            const h12 = (hNum % 12 || 12) + ':' + mm + ' ' + ampm;
+
+                            const btnSlot = document.createElement('button');
+                            btnSlot.type = 'button';
+                            btnSlot.className = 'time-slot-btn';
+                            btnSlot.innerText = h12;
+                            btnSlot.onclick = function() { seleccionarHora(h, h12, this); };
+                            grid.appendChild(btnSlot);
+                        });
                     }
-
-                    fechas.forEach((fechaStr, idx) => {
-                        const partes = fechaStr.split('-');
-                        const fechaObj = new Date(partes[0], partes[1] - 1, partes[2]);
-                        const dia = fechaObj.toLocaleDateString('es-MX', { weekday: 'short' }).toUpperCase();
-                        const num = fechaObj.getDate();
-                        const mes = fechaObj.toLocaleDateString('es-MX', { month: 'short' }).toUpperCase();
-
-                        const chip = document.createElement('div');
-                        chip.className = 'date-chip-corp' + (idx === 0 ? ' active' : '');
-                        chip.innerHTML = `
-                            <span style="font-size:10px; font-weight:800; color:var(--slate-500); display:block;">${dia}</span>
-                            <span style="font-size:24px; font-weight:900; line-height:1.1; color:var(--navy-900); display:block;">${num}</span>
-                            <span style="font-size:10px; font-weight:700; color:var(--slate-400); display:block;">${mes}</span>
-                        `;
-
-                        chip.onclick = function() {
-                            document.querySelectorAll('.date-chip-corp').forEach(c => c.classList.remove('active'));
-                            chip.classList.add('active');
-                            window.fechaSeleccionada = fechaStr;
-                            renderizarSlots(data.dias[fechaStr] || [], fechaStr);
-                        };
-
-                        carousel.appendChild(chip);
-
-                        if (idx === 0) {
-                            window.fechaSeleccionada = fechaStr;
-                            renderizarSlots(data.dias[fechaStr] || [], fechaStr);
-                        }
-                    });
-                })
-                .catch(() => {
-                    carousel.style.opacity = '1';
+                    slotsBox.appendChild(grid);
                 });
-        }
 
-        function renderizarSlots(horasLista, fechaStr) {
-            const wrapper = document.getElementById('slotsWrapper');
-            wrapper.innerHTML = '';
-
-            if (horasLista.length === 0) {
-                wrapper.innerHTML = '<p style="color:var(--slate-400); font-style:italic;">No hay horarios disponibles en este día.</p>';
-                return;
-            }
-
-            horasLista.forEach(horaAmPm => {
-                const btn = document.createElement('button');
-                btn.type = 'button';
-                btn.className = 'slot-btn-corp';
-                btn.innerText = horaAmPm;
-
-                // Convierte "09:00 AM" a "09:00"
-                const [hm, ampm] = horaAmPm.split(' ');
-                let [hh, mm] = hm.split(':').map(Number);
-                if (ampm === 'PM' && hh !== 12) hh += 12;
-                if (ampm === 'AM' && hh === 12) hh = 0;
-                const hora24 = String(hh).padStart(2, '0') + ':' + String(mm).padStart(2, '0');
-
-                btn.onclick = function() {
-                    document.querySelectorAll('.slot-btn-corp').forEach(b => b.classList.remove('active'));
-                    btn.classList.add('active');
-                    window.horaSeleccionada = hora24;
-                };
-
-                wrapper.appendChild(btn);
-            });
-        }
-
-        // Confirmar cita sin costo
-        function confirmarCitaTectum() {
-            if (!window.tieneConsentimiento) {
-                abrirModalConsentimiento();
-                return;
-            }
-
-            if (!window.fechaSeleccionada || !window.horaSeleccionada) {
-                alert("Por favor selecciona un día y un horario disponible en el calendario.");
-                return;
-            }
-
-            guardarCitaSinPago('CONVENIO_TECTUM_INHOUSE');
-        }
-
-        function guardarCitaSinPago(pagoRef) {
-            const btn = document.getElementById('btn-confirmar-tectum');
-            if (btn) {
-                btn.disabled = true;
-                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Confirmando tu cita...';
-            }
-
-            let formData = new FormData();
-            formData.append('fecha', window.fechaSeleccionada);
-            formData.append('hora', window.horaSeleccionada);
-            formData.append('modalidad', window.modalidadSeleccionada);
-            formData.append('tipo_servicio', window.tipoServicioAgendado);
-            if (window.tipoServicioAgendado === 'familiar') {
-                formData.append('integrantes_familia', window.integrantesFamilia);
-            }
-            if (pagoRef) {
-                formData.append('paypal_order_id', pagoRef);
-            }
-
-            fetch("{% url 'guardar_cita' %}", {
-                method: 'POST',
-                headers: { 'X-CSRFToken': getCookie('csrftoken') },
-                body: formData
-            })
-            .then(r => r.json())
-            .then(data => {
-                if (btn) {
-                    btn.disabled = false;
-                    btn.innerHTML = '<i class="fas fa-check-circle"></i> Confirmar Cita sin Costo';
+                if (primerDia) {
+                    fechaSeleccionada = primerDia;
+                    horaSeleccionada = null;
+                    horaSeleccionadaTexto = null;
+                    actualizarResumenHorario();
                 }
-
-                if (data.status === 'success') {
-                    document.getElementById('alerta-exito-cita').style.display = 'flex';
-                } else {
-                    mostrarErrorCita(data.message || 'No se pudo guardar tu cita.');
-                }
-            })
-            .catch(() => {
-                if (btn) {
-                    btn.disabled = false;
-                    btn.innerHTML = '<i class="fas fa-check-circle"></i> Confirmar Cita sin Costo';
-                }
-                mostrarErrorCita('Error de conexión al servidor al agendar.');
-            });
-        }
-
-        // Reagendar
-        function toggleReagendar() {
-            const box = document.getElementById('box-reagendar-inline');
-            if (!box) return;
-            box.style.display = (box.style.display === 'none') ? 'block' : 'none';
-        }
-
-        // Consentimiento digital y firma
-        let canvas, ctx, dibujando = false;
-
-        function abrirModalConsentimiento() {
-            const modal = document.getElementById('modalConsentimiento');
-            if (modal) modal.style.display = 'flex';
-            setTimeout(iniciarCanvas, 200);
-        }
-
-        function cerrarConsentimiento() {
-            const modal = document.getElementById('modalConsentimiento');
-            if (modal) modal.style.display = 'none';
-        }
-
-        function iniciarCanvas() {
-            canvas = document.getElementById('canvas-firma');
-            if (!canvas) return;
-            ctx = canvas.getContext('2d');
-            const rect = canvas.getBoundingClientRect();
-            canvas.width = rect.width;
-            canvas.height = rect.height;
-
-            ctx.lineWidth = 2.5;
-            ctx.lineCap = 'round';
-            ctx.strokeStyle = '#0f172a';
-
-            function getPos(e) {
-                const r = canvas.getBoundingClientRect();
-                return { x: e.clientX - r.left, y: e.clientY - r.top };
             }
-
-            canvas.onpointerdown = (e) => {
-                dibujando = true;
-                const p = getPos(e);
-                ctx.beginPath();
-                ctx.moveTo(p.x, p.y);
-            };
-
-            canvas.onpointermove = (e) => {
-                if (!dibujando) return;
-                const p = getPos(e);
-                ctx.lineTo(p.x, p.y);
-                ctx.stroke();
-            };
-
-            canvas.onpointerup = () => { dibujando = false; };
-        }
-
-        function limpiarFirma() {
-            if (ctx && canvas) ctx.clearRect(0, 0, canvas.width, canvas.height);
-        }
-
-        function guardarFirmaConsentimiento() {
-            if (!canvas) return;
-            const dataUrl = canvas.toDataURL('image/png');
-
-            let fd = new FormData();
-            fd.append('firma_base64', dataUrl);
-
-            fetch("{% url 'guardar_consentimiento_ajax' %}", {
-                method: 'POST',
-                headers: { 'X-CSRFToken': getCookie('csrftoken') },
-                body: fd
-            })
-            .then(r => r.json())
-            .then(data => {
-                if (data.status === 'success') {
-                    window.tieneConsentimiento = true;
-                    cerrarConsentimiento();
-                    const badge = document.getElementById('badge-estado-consentimiento');
-                    if (badge) {
-                        badge.innerText = 'Aprobado';
-                        badge.style.color = '#16a34a';
-                        badge.style.background = '#dcfce7';
-                    }
-                    alert("Consentimiento firmado digitalmente con éxito.");
-                } else {
-                    alert(data.message || "Error al guardar el consentimiento.");
-                }
-            })
-            .catch(() => {
-                alert("Error de conexión al firmar.");
-            });
-        }
-
-        // Inicialización al cargar la página
-        document.addEventListener('DOMContentLoaded', function() {
-            refrescarDisponibilidad('individual');
         });
-    </script>
-</body>
-</html>
+}
+
+function mostrarToast(texto) {
+    const toast = document.getElementById('toastHope');
+    const msg = document.getElementById('toastHopeTexto');
+    if (!toast || !msg) return;
+    msg.innerText = texto;
+    toast.classList.add('show');
+    setTimeout(() => { toast.classList.remove('show'); }, 3500);
+}
+
+function confirmarCitaTectum() {
+    if (!fechaSeleccionada || !horaSeleccionada) {
+        mostrarErrorCita('Por favor selecciona una fecha y un horario disponible.');
+        return;
+    }
+
+    if (!window.tieneConsentimiento) {
+        abrirModalConsentimiento();
+        return;
+    }
+
+    const overlay = document.getElementById('loadingOverlayHope');
+    overlay.style.display = 'flex';
+
+    const formData = new FormData();
+    formData.append('fecha', fechaSeleccionada);
+    formData.append('hora', horaSeleccionada);
+    formData.append('modalidad', modalidadSeleccionada);
+    formData.append('tipo_servicio', servicioSeleccionado);
+    formData.append('animo', document.getElementById('select-animo').value);
+    formData.append('es_tectum', '1');
+    formData.append('paypal_order_id', 'CONVENIO_TECTUM_INHOUSE');
+    formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+
+    fetch("{% url 'guardar_cita' %}", {
+        method: 'POST',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        body: formData
+    })
+    .then(r => r.json())
+    .then(data => {
+        overlay.style.display = 'none';
+        if (data.status === 'success') {
+            document.getElementById('alerta-exito-cita').style.display = 'flex';
+        } else if (data.requiere_consentimiento) {
+            window.tieneConsentimiento = false;
+            abrirModalConsentimiento();
+        } else {
+            mostrarErrorCita(data.message || 'No se pudo agendar la sesión.');
+        }
+    })
+    .catch(() => {
+        overlay.style.display = 'none';
+        mostrarErrorCita('Error de conexión al agendar. Por favor intenta de nuevo.');
+    });
+}
+
+// =========================================================================
+// CANVAS FIRMA DIGITAL Y CONSENTIMIENTO
+// =========================================================================
+let canvasFirma = null;
+let ctxFirma = null;
+let estaDibujando = false;
+let haFirmado = false;
+let ultimoX = 0;
+let ultimoY = 0;
+
+function abrirModalConsentimiento() {
+    const modal = document.getElementById('modalConsentimiento');
+    if (modal) {
+        modal.style.display = 'flex';
+        setTimeout(() => { inicializarCanvasFirma(); }, 120);
+    }
+}
+
+function cerrarModalConsentimiento() {
+    const modal = document.getElementById('modalConsentimiento');
+    if (modal) modal.style.display = 'none';
+}
+
+function inicializarCanvasFirma() {
+    canvasFirma = document.getElementById('canvas-firma');
+    if (!canvasFirma) return;
+
+    ctxFirma = canvasFirma.getContext('2d');
+    const contenedor = document.getElementById('contenedor-canvas-firma');
+    const rect = contenedor.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+
+    canvasFirma.width = rect.width * dpr;
+    canvasFirma.height = rect.height * dpr;
+    ctxFirma.scale(dpr, dpr);
+
+    ctxFirma.strokeStyle = '#0284c7';
+    ctxFirma.lineWidth = 2.5;
+    ctxFirma.lineCap = 'round';
+    ctxFirma.lineJoin = 'round';
+
+    canvasFirma.removeEventListener('pointerdown', empezarTrazo);
+    canvasFirma.removeEventListener('pointermove', moverTrazo);
+    canvasFirma.removeEventListener('pointerup', terminarTrazo);
+    canvasFirma.removeEventListener('pointercancel', terminarTrazo);
+
+    canvasFirma.addEventListener('pointerdown', empezarTrazo, { passive: false });
+    canvasFirma.addEventListener('pointermove', moverTrazo, { passive: false });
+    canvasFirma.addEventListener('pointerup', terminarTrazo, { passive: false });
+    canvasFirma.addEventListener('pointercancel', terminarTrazo, { passive: false });
+}
+
+function obtenerCoordenadas(e) {
+    const rect = canvasFirma.getBoundingClientRect();
+    return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+}
+
+function empezarTrazo(e) {
+    e.preventDefault();
+    estaDibujando = true;
+    haFirmado = true;
+    const guia = document.getElementById('signature-guide-overlay');
+    if (guia) { guia.style.opacity = '0'; guia.style.pointerEvents = 'none'; }
+    const pos = obtenerCoordenadas(e);
+    ultimoX = pos.x; ultimoY = pos.y;
+    ctxFirma.beginPath();
+    ctxFirma.moveTo(ultimoX, ultimoY);
+    ctxFirma.lineTo(ultimoX + 0.2, ultimoY + 0.2);
+    ctxFirma.stroke();
+}
+
+function moverTrazo(e) {
+    if (!estaDibujando) return;
+    e.preventDefault();
+    const pos = obtenerCoordenadas(e);
+    ctxFirma.beginPath();
+    ctxFirma.moveTo(ultimoX, ultimoY);
+    ctxFirma.lineTo(pos.x, pos.y);
+    ctxFirma.stroke();
+    ultimoX = pos.x; ultimoY = pos.y;
+}
+
+function terminarTrazo(e) {
+    if (!estaDibujando) return;
+    e.preventDefault();
+    estaDibujando = false;
+}
+
+function limpiarFirma() {
+    if (!canvasFirma || !ctxFirma) return;
+    const dpr = window.devicePixelRatio || 1;
+    ctxFirma.clearRect(0, 0, canvasFirma.width / dpr, canvasFirma.height / dpr);
+    haFirmado = false;
+    const guia = document.getElementById('signature-guide-overlay');
+    if (guia) { guia.style.opacity = '1'; guia.style.pointerEvents = 'none'; }
+}
+
+function guardarConsentimientoDigital() {
+    if (!haFirmado) {
+        alert("Por favor, traza tu firma con tu dedo o cursor en el recuadro antes de continuar.");
+        return;
+    }
+
+    const chkTele = document.getElementById('check-acepta-telepsicologia');
+    if (chkTele && !chkTele.checked) {
+        alert("Es necesario aceptar los términos del Consentimiento Informado.");
+        return;
+    }
+
+    const nombre = document.getElementById('nombre-firmante-input').value.trim();
+    if (!nombre) {
+        alert("Por favor, ingresa tu nombre completo.");
+        return;
+    }
+
+    const btnConfirmar = document.getElementById('btn-confirmar-firma');
+    const originalContent = btnConfirmar.innerHTML;
+    btnConfirmar.disabled = true;
+    btnConfirmar.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Registrando firma...';
+
+    const formData = new FormData();
+    formData.append('firma_base64', canvasFirma.toDataURL('image/png'));
+    formData.append('nombre_firmante', nombre);
+    formData.append('acepta_telepsicologia', 'true');
+    formData.append('declaracion_consentimiento', 'true');
+    formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+
+    fetch("{% url 'guardar_consentimiento_ajax' %}", {
+        method: 'POST',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        body: formData
+    })
+    .then(r => r.json())
+    .then(data => {
+        btnConfirmar.disabled = false;
+        btnConfirmar.innerHTML = originalContent;
+
+        if (data.status === 'success') {
+            window.tieneConsentimiento = true;
+            cerrarModalConsentimiento();
+            mostrarToast("¡Consentimiento firmado digitalmente con éxito!");
+            
+            // Si ya tenía fecha y hora elegidas, agendamos de inmediato
+            if (fechaSeleccionada && horaSeleccionada) {
+                confirmarCitaTectum();
+            }
+        } else {
+            alert(data.message || 'Error al guardar el consentimiento.');
+        }
+    })
+    .catch(() => {
+        btnConfirmar.disabled = false;
+        btnConfirmar.innerHTML = originalContent;
+        alert('Error de conexión al registrar el consentimiento.');
+    });
+}
+</script>
+{% endblock %}

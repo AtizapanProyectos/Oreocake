@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Antes de tu sesión - HOPE{% endblock %}
+{% block title %}Antes de tu sesión{% if es_tectum or cita.es_tectum %} - TECTUM In-House{% else %} - HOPE{% endif %}{% endblock %}
 
 {% block content %}
 <style>
@@ -20,18 +20,28 @@
         --font-body: 'Plus Jakarta Sans', sans-serif;
     }
 
+    {% if es_tectum or cita.es_tectum %}
+    :root {
+        --c-purple: #1e3a8a;
+        --c-pink: #0284c7;
+        --c-orange: #f59e0b;
+        --c-yellow: #38bdf8;
+        --c-teal: #0ea5e9;
+    }
+    {% endif %}
+
     body { background-color: var(--bg-panel); font-family: var(--font-body); color: var(--text-main); }
 
     .fo-wrapper { max-width: 680px; margin: 0 auto; padding: 40px 20px 100px; }
 
     .fo-header {
-        background: linear-gradient(135deg, var(--c-purple) 0%, #3B2474 100%);
+        background: {% if es_tectum or cita.es_tectum %}linear-gradient(135deg, #070d1e 0%, #0b142c 45%, #1e3a8a 100%){% else %}linear-gradient(135deg, var(--c-purple) 0%, #3B2474 100%){% endif %};
         color: white;
         padding: 45px 35px;
         border-radius: 30px;
         text-align: center;
         margin-bottom: 35px;
-        box-shadow: 0 15px 35px rgba(90, 63, 163, 0.18);
+        box-shadow: {% if es_tectum or cita.es_tectum %}0 15px 35px rgba(11, 20, 44, 0.22){% else %}0 15px 35px rgba(90, 63, 163, 0.18){% endif %};
     }
     .fo-header i { font-size: 46px; margin-bottom: 15px; display: block; color: var(--c-yellow); }
     .fo-header h1 { font-family: var(--font-headings); font-size: 2rem; font-weight: 800; margin: 0 0 10px; }
