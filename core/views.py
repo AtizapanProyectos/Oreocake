@@ -546,13 +546,19 @@ def modulo_informativo(request):
 @transaction.atomic
 def registrar_usuario(request):
     if request.method == 'POST':
-        nombre = request.POST.get('nombre')
-        email = request.POST.get('email')
-        password = request.POST.get('password')
-        telefono = request.POST.get('telefono')
-        telefono_emergencia = request.POST.get('telefono_emergencia', '')
+        nombre = (request.POST.get('nombre') or '').strip()
+        email = (request.POST.get('email') or '').strip()
+        password = request.POST.get('password') or ''
+        telefono = (request.POST.get('telefono') or '').strip()
+        telefono_emergencia = (request.POST.get('telefono_emergencia') or '').strip()
         flujo_elegido = request.POST.get('flujo_elegido', 'individual')
         respuestas_raw = request.POST.get('respuestas_json') or request.POST.get('respuestas') or '{}'
+
+        if not email or not password:
+            return JsonResponse({
+                'status': 'error',
+                'message': 'Por favor completa todos los campos requeridos (correo y contraseña).'
+            })
 
         es_beneficios_bool = False
         if 'tectumbeneficios' in request.get_host().lower() or request.POST.get('convenio') == 'tectumbeneficios' or request.session.get('convenio_tectum_beneficios'):
@@ -568,7 +574,7 @@ def registrar_usuario(request):
         except json.JSONDecodeError:
             respuestas_dict = {}
 
-        user_existente = User.objects.filter(email__iexact=email).first()
+        user_existente = User.objects.filter(Q(username__iexact=email) | Q(email__iexact=email)).first()
         if user_existente:
             # Si el usuario ya está autenticado con esta cuenta
             if request.user.is_authenticated and request.user.email.lower() == email.lower():
@@ -585,9 +591,18 @@ def registrar_usuario(request):
                         'message': 'Este correo ya está registrado en HOPE. Ingresa tu contraseña actual para agregar este servicio a tu cuenta.'
                     })
 
-            if es_tectum_bool and hasattr(user, 'perfil') and not user.perfil.es_tectum:
-                user.perfil.es_tectum = True
-                user.perfil.save(update_fields=['es_tectum'])
+            perfil, _ = UsuarioPerfil.objects.get_or_create(
+                usuario=user,
+                defaults={
+                    'nombre': nombre or user.first_name or user.username,
+                    'telefono': telefono,
+                    'telefono_emergencia': telefono_emergencia,
+                    'es_tectum': es_tectum_bool
+                }
+            )
+            if es_tectum_bool and not perfil.es_tectum:
+                perfil.es_tectum = True
+                perfil.save(update_fields=['es_tectum'])
 
             # Guardamos o actualizamos el cuestionario para este flujo_elegido
             CuestionarioRegistro.objects.update_or_create(
@@ -637,6 +652,8 @@ def registrar_usuario(request):
         redirect_target = 'panel_beneficios' if es_beneficios_bool else ('panel_tectum' if es_tectum_bool else 'panel_generico')
         return JsonResponse({'status': 'success', 'redirect_url': reverse(redirect_target)})
 
+    return JsonResponse({'status': 'error', 'message': 'Método no permitido.'}, status=405)
+
 def activar_cuenta(request, uidb64, token):
     try:
         uid = force_str(urlsafe_base64_decode(uidb64))
@@ -666,17 +683,14 @@ def login_usuario(request):
         })
 
     try:
-        # iexact makes the lookup case-insensitive — works as long as
-        # your registro view saves email as the username field.
-        user = User.objects.get(username__iexact=email)
-    except User.DoesNotExist:
-        return JsonResponse({
-            'status': 'error',
-            'error_type': 'invalid',
-            'message': 'El correo o la contraseña son incorrectos.'
-        })
-    except User.MultipleObjectsReturned:
-        # Defensive: shouldn't happen if username is unique, but just in case
+        user = User.objects.filter(Q(username__iexact=email) | Q(email__iexact=email)).first()
+        if not user:
+            return JsonResponse({
+                'status': 'error',
+                'error_type': 'invalid',
+                'message': 'El correo o la contraseña son incorrectos.'
+            })
+    except Exception:
         return JsonResponse({
             'status': 'error',
             'error_type': 'invalid',
@@ -731,12 +745,21 @@ def panel_generico(request):
     if not request.user.is_authenticated:
         return redirect('modulo_informativo')
 
-    # Perfil del usuario
+    # Perfil del usuario con auto-recuperación si falta
     try:
         perfil_usuario = request.user.perfil
     except Exception:
-        logout(request)
-        return redirect('modulo_informativo')
+        try:
+            perfil_usuario, _ = UsuarioPerfil.objects.get_or_create(
+                usuario=request.user,
+                defaults={
+                    'nombre': request.user.first_name or request.user.username,
+                    'es_tectum': False
+                }
+            )
+        except Exception:
+            logout(request)
+            return redirect('modulo_informativo')
 
     es_beneficios = (
         'tectumbeneficios' in request.get_host().lower()
@@ -1121,14 +1144,21 @@ def guardar_cita_ajax(request):
         if not request.user.is_authenticated:
             return JsonResponse({'status': 'error', 'message': 'Debes iniciar sesión.'})
 
+        es_beneficios = (
+            'tectumbeneficios' in request.get_host().lower()
+            or request.session.get('convenio_tectum_beneficios')
+            or request.POST.get('convenio') == 'tectumbeneficios'
+            or 'panel-beneficios' in (request.META.get('HTTP_REFERER', '') or '')
+        )
         es_tectum_cita = False
-        if hasattr(request.user, 'perfil') and request.user.perfil.es_tectum:
-            es_tectum_cita = True
-        elif 'tectuminhause' in request.get_host().lower() or request.session.get('convenio_tectum') or request.POST.get('paypal_order_id') == 'CONVENIO_TECTUM_INHOUSE':
-            es_tectum_cita = True
-            if hasattr(request.user, 'perfil') and not request.user.perfil.es_tectum:
-                request.user.perfil.es_tectum = True
-                request.user.perfil.save(update_fields=['es_tectum'])
+        if not es_beneficios:
+            if hasattr(request.user, 'perfil') and request.user.perfil.es_tectum:
+                es_tectum_cita = True
+            elif 'tectuminhause' in request.get_host().lower() or request.session.get('convenio_tectum') or request.POST.get('paypal_order_id') == 'CONVENIO_TECTUM_INHOUSE':
+                es_tectum_cita = True
+                if hasattr(request.user, 'perfil') and not request.user.perfil.es_tectum:
+                    request.user.perfil.es_tectum = True
+                    request.user.perfil.save(update_fields=['es_tectum'])
 
         # Verificación de Consentimiento Informado:
         # Retrocompatibilidad: Los usuarios ya registrados con citas previas pasan automáticamente.

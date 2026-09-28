@@ -1380,6 +1380,19 @@
           }
         });
 
+        if (!response.ok) {
+          let errorMsg = 'Error al procesar el ingreso (' + response.status + ').';
+          try {
+            const errData = await response.json();
+            if (errData && errData.message) errorMsg = errData.message;
+          } catch(e) {}
+          feedback.textContent = errorMsg;
+          feedback.style.display = 'block';
+          btn.disabled = false;
+          btn.innerHTML = 'Entrar <i class="fas fa-arrow-right"></i>';
+          return;
+        }
+
         const data = await response.json();
 
         if (data.status === 'success' || data.success) {
@@ -1587,7 +1600,17 @@
             "X-CSRFToken": formReg.querySelector('[name=csrfmiddlewaretoken]').value
           }
         })
-          .then(r => r.json())
+          .then(async r => {
+            if (!r.ok) {
+              let msg = 'Error en el servidor (' + r.status + ').';
+              try {
+                const errData = await r.json();
+                if (errData && errData.message) msg = errData.message;
+              } catch(e) {}
+              throw new Error(msg);
+            }
+            return r.json();
+          })
           .then(data => {
             btnSubmitFinal.innerHTML = originalText;
             btnSubmitFinal.disabled = false;
@@ -1603,7 +1626,7 @@
             btnSubmitFinal.innerHTML = originalText;
             btnSubmitFinal.disabled = false;
             formReg.dataset.enviando = "false";
-            alert("Error de conexión al procesar el registro.");
+            alert(err.message || "Error de conexión al procesar el registro.");
           });
       });
     }

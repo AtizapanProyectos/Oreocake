@@ -170,9 +170,12 @@ CSRF_TRUSTED_ORIGINS = [
     'https://espaciohope.com',
     'https://www.espaciohope.com',
     'https://tectuminhause.espaciohope.com',
+    'https://tectumbeneficios.espaciohope.com',
+    'https://*.espaciohope.com',
     'http://localhost:8000',
     'http://127.0.0.1:8000',
     'http://tectuminhause.localhost:8000',
+    'http://tectumbeneficios.localhost:8000',
     'https://espacio-hope.com',
     'https://www.espacio-hope.com',
     'https://espaciohope.info',
@@ -188,6 +191,7 @@ ALLOWED_HOSTS = [
     'espaciohope.com', 
     'www.espaciohope.com', 
     'tectuminhause.espaciohope.com',
+    'tectumbeneficios.espaciohope.com',
     '.espaciohope.com',
     'localhost',
     '127.0.0.1', 
@@ -203,6 +207,7 @@ ALLOWED_HOSTS = [
     'oreocake.onrender.com',
     '.railway.app',
     'tectuminhause.localhost',
+    'tectumbeneficios.localhost',
 ]
 
 
