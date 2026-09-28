@@ -3374,6 +3374,7 @@ def admin_buscar_pacientes_ajax(request):
         'nombre': p.nombre or (p.usuario.first_name if p.usuario else 'Sin nombre'),
         'email': p.usuario.email if p.usuario else '',
         'psicologo_asignado': p.psicologo_asignado.usuario.first_name if p.psicologo_asignado else None,
+        'es_tectum': getattr(p, 'es_tectum', False),
     } for p in pacientes if p.usuario]
 
     return JsonResponse({'status': 'success', 'resultados': resultados})
@@ -3573,6 +3574,14 @@ def admin_guardar_cita_ajax(request):
                 link_final = datos_meet['link']
                 id_google = datos_meet['id_evento']
 
+        es_tectum_param = request.POST.get('es_tectum')
+        if es_tectum_param in ['1', 'true', 'True', 'tectum']:
+            es_tectum_cita = True
+        elif es_tectum_param in ['0', 'false', 'False', 'hope']:
+            es_tectum_cita = False
+        else:
+            es_tectum_cita = getattr(perfil, 'es_tectum', False)
+
         cita = Cita.objects.create(
             paciente=paciente_user,
             psicologo=psicologo,
@@ -3585,7 +3594,8 @@ def admin_guardar_cita_ajax(request):
             motivo='Agendada por administración',
             estado='Confirmada',
             enlace_meet=link_final,
-            id_evento_google=id_google
+            id_evento_google=id_google,
+            es_tectum=es_tectum_cita
         )
 
         # Mismo correo de confirmación que ya usa el flujo normal

@@ -200,8 +200,22 @@
                     </div>
                 </div>
 
+                <div class="hpa-card hpa-disabled" id="hpa-card-convenio">
+                    <h2>2. Convenio / Plataforma</h2>
+                    <div style="display: flex; gap: 12px; margin-top: 10px;">
+                        <label id="lbl-convenio-hope" style="flex: 1; display: flex; align-items: center; gap: 10px; background: #fdf2f8; border: 2px solid #5a3fa3; padding: 12px 16px; border-radius: 14px; cursor: pointer; font-weight: 700;">
+                            <input type="radio" name="convenio_tipo" value="hope" checked onchange="cambiarConvenioAdmin('hope')">
+                            <span>Espacio HOPE (General)</span>
+                        </label>
+                        <label id="lbl-convenio-tectum" style="flex: 1; display: flex; align-items: center; gap: 10px; background: #ffffff; border: 2px solid #cbd5e1; padding: 12px 16px; border-radius: 14px; cursor: pointer; font-weight: 700;">
+                            <input type="radio" name="convenio_tipo" value="tectum" onchange="cambiarConvenioAdmin('tectum')">
+                            <span>TECTUM In-House</span>
+                        </label>
+                    </div>
+                </div>
+
                 <div class="hpa-card hpa-disabled" id="hpa-card-tipo">
-                    <h2>2. ¿Qué tipo de sesión necesita?</h2>
+                    <h2>3. ¿Qué tipo de sesión necesita?</h2>
                     <div class="hpa-tipo-grid" id="hpa-tipo-grid">
                         <div class="hpa-tipo-btn activo" data-tipo="individual">
                             <i class="fas fa-user"></i><span>Individual</span>
@@ -227,7 +241,7 @@
                 </div>
 
                 <div class="hpa-card hpa-disabled" id="hpa-card-modalidad">
-                    <h2>3. ¿En línea o presencial?</h2>
+                    <h2>4. ¿En línea o presencial?</h2>
                     <div class="hpa-modalidad-row">
                         <div class="hpa-modalidad-btn activo" data-modalidad="En línea">
                             <i class="fas fa-video"></i>En línea
@@ -243,7 +257,7 @@
                 </div>
 
                 <div class="hpa-card hpa-disabled" id="hpa-card-calendario">
-                    <h2>4. Elige día y hora</h2>
+                    <h2>5. Elige día y hora</h2>
                     <div class="hpa-dias-scroll" id="hpa-dias-scroll">
                         <div class="hpa-vacio">Selecciona primero un paciente.</div>
                     </div>
@@ -275,6 +289,7 @@
 
                     <div class="hpa-resumen-detalle">
                         <p>👤 Paciente: <strong id="hpa-resumen-paciente">Sin seleccionar</strong></p>
+                        <p>🏢 Plataforma: <strong id="hpa-resumen-convenio" style="color: #5a3fa3;">Espacio HOPE (General)</strong></p>
                         <p>📅 Día: <strong id="hpa-resumen-fecha">Sin seleccionar</strong></p>
                         <p>🕐 Hora: <strong id="hpa-resumen-hora">Sin seleccionar</strong></p>
                     </div>
@@ -325,10 +340,54 @@ document.addEventListener('DOMContentLoaded', function () {
     const btnConfirmar = document.getElementById('hpa-btn-confirmar');
     const msgBox = document.getElementById('hpa-msg');
 
-    const cardsDependientes = ['hpa-card-tipo', 'hpa-card-modalidad', 'hpa-card-calendario', 'hpa-card-animo', 'hpa-card-resumen'];
+    const cardsDependientes = ['hpa-card-convenio', 'hpa-card-tipo', 'hpa-card-modalidad', 'hpa-card-calendario', 'hpa-card-animo', 'hpa-card-resumen'];
 
     const DOW = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
     const MES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+
+    let esTectumSeleccionado = false;
+
+    window.cambiarConvenioAdmin = function(tipo) {
+        const radioHope = document.querySelector('input[name="convenio_tipo"][value="hope"]');
+        const radioTectum = document.querySelector('input[name="convenio_tipo"][value="tectum"]');
+        const lblHope = document.getElementById('lbl-convenio-hope');
+        const lblTectum = document.getElementById('lbl-convenio-tectum');
+        const resumenConvenio = document.getElementById('hpa-resumen-convenio');
+
+        if (tipo === 'tectum') {
+            esTectumSeleccionado = true;
+            if (radioTectum) radioTectum.checked = true;
+            if (lblTectum) {
+                lblTectum.style.background = '#e0f2fe';
+                lblTectum.style.borderColor = '#0284c7';
+                lblTectum.style.color = '#0369a1';
+            }
+            if (lblHope) {
+                lblHope.style.background = '#ffffff';
+                lblHope.style.borderColor = '#cbd5e1';
+                lblHope.style.color = '#1a1035';
+            }
+            if (resumenConvenio) {
+                resumenConvenio.innerHTML = '<span style="color:#0284c7;">TECTUM In-House</span>';
+            }
+        } else {
+            esTectumSeleccionado = false;
+            if (radioHope) radioHope.checked = true;
+            if (lblHope) {
+                lblHope.style.background = '#fdf2f8';
+                lblHope.style.borderColor = '#5a3fa3';
+                lblHope.style.color = '#5a3fa3';
+            }
+            if (lblTectum) {
+                lblTectum.style.background = '#ffffff';
+                lblTectum.style.borderColor = '#cbd5e1';
+                lblTectum.style.color = '#1a1035';
+            }
+            if (resumenConvenio) {
+                resumenConvenio.innerHTML = '<span style="color:#5a3fa3;">Espacio HOPE (General)</span>';
+            }
+        }
+    };
 
     function formatoMoneda(valor) {
         const n = Number(valor || 0);
@@ -364,7 +423,10 @@ document.addEventListener('DOMContentLoaded', function () {
                         resultados.forEach(function (p) {
                             const item = document.createElement('div');
                             item.className = 'hpa-resultado-item';
-                            item.innerHTML = '<strong>' + p.nombre + '</strong><span>' + (p.email || 'Sin correo') +
+                            const badgeConvenio = p.es_tectum 
+                                ? ' <span style="background:#e0f2fe; color:#0284c7; padding:2px 8px; border-radius:999px; font-size:11px; font-weight:800; margin-left:6px;">TECTUM</span>'
+                                : '';
+                            item.innerHTML = '<strong>' + p.nombre + badgeConvenio + '</strong><span>' + (p.email || 'Sin correo') +
                                 (p.psicologo_asignado ? ' · Terapeuta: ' + p.psicologo_asignado : ' · Sin terapeuta asignado aún') + '</span>';
                             item.addEventListener('click', function () { elegirPaciente(p); });
                             resultadosBox.appendChild(item);
@@ -390,6 +452,12 @@ document.addEventListener('DOMContentLoaded', function () {
         resultadosBox.classList.remove('activo');
         buscarInput.value = '';
 
+        if (p.es_tectum) {
+            cambiarConvenioAdmin('tectum');
+        } else {
+            cambiarConvenioAdmin('hope');
+        }
+
         habilitarSiguientesPasos();
         fetchDisponibilidad();
         fetchPrecio();
@@ -403,6 +471,7 @@ document.addEventListener('DOMContentLoaded', function () {
         horasGrid.innerHTML = '';
         fechaSeleccionada = null;
         horaSeleccionada = null;
+        cambiarConvenioAdmin('hope');
         actualizarResumen();
     });
 
@@ -620,6 +689,7 @@ document.addEventListener('DOMContentLoaded', function () {
         formData.append('animo', document.getElementById('hpa-animo').value);
         formData.append('modalidad', modalidad);
         formData.append('tipo_servicio', tipoSesion);
+        formData.append('es_tectum', esTectumSeleccionado ? '1' : '0');
         if (tipoSesion === 'familiar') {
             formData.append('integrantes_familia', integrantesFamilia);
         }
