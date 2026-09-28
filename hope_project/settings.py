@@ -25,6 +25,8 @@ SECRET_KEY = 'django-insecure-70c)rfvkj57#%*tialyzlfda=h@uqh6n#k(p$#e+mk^upfcv5k
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+USE_X_FORWARDED_HOST = True
 
 DATA_UPLOAD_MAX_NUMBER_FIELDS = 10000
 # Application definition

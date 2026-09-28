@@ -2,7 +2,7 @@ from core import cuestionario_data
 from core import cuestionario_data
 from requests import request
 from django.views.decorators.http import require_POST
-from django.views.decorators.csrf import csrf_protect
+from django.views.decorators.csrf import csrf_protect, csrf_exempt
 # pyrefly: ignore [missing-import]
 from django.db.models import Count, Prefetch
 from decimal import Decimal
@@ -543,6 +543,7 @@ def modulo_informativo(request):
     return render(request, 'informativo.html', context)
 
 
+@csrf_exempt
 @transaction.atomic
 def registrar_usuario(request):
     if request.method == 'POST':
@@ -668,6 +669,7 @@ def activar_cuenta(request, uidb64, token):
     else:
         return render(request, 'verificacion_resultado.html', {'exito': False})
 
+@csrf_exempt
 def login_usuario(request):
     if request.method != 'POST':
         return JsonResponse({'status': 'error', 'message': 'Método no permitido.'}, status=405)
@@ -966,6 +968,7 @@ def inscribir_taller_ajax(request):
     return JsonResponse({'status': 'error', 'message': 'Petición no válida.'})
 
 
+@csrf_exempt
 def guardar_consentimiento_ajax(request):
     """
     Registra la firma digital del consultante, valida telepsicología
@@ -1138,6 +1141,7 @@ def calcular_precio_sesion_ajax(request):
 
 
 from django.db import transaction
+@csrf_exempt
 @transaction.atomic
 def guardar_cita_ajax(request):
     if request.method == 'POST':
