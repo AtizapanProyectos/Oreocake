@@ -1,0 +1,1886 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>TECTUM In-House | Salud Mental y Beneficios Corporativos con Espacio HOPE</title>
+  <meta name="description" content="Alianza estratégica entre TECTUM In-House y Espacio HOPE. Cobertura integral en salud mental corporativa, terapia psicológica individual, de pareja, familiar y programas de bienestar para colaboradores.">
+  <link rel="icon" href="{% static 'img/tectum/escudo.png' %}" type="image/png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+
+  <style>
+    :root {
+      --navy-950: #070d1e;
+      --navy-900: #0b142c;
+      --navy-800: #122044;
+      --navy-700: #1b2f63;
+      --blue-600: #2563eb;
+      --blue-500: #3b82f6;
+      --sky-400: #0ea5e9;
+      --sky-300: #38bdf8;
+      --teal-500: #0d9488;
+      --teal-400: #14b8a6;
+      --indigo-500: #6366f1;
+      --slate-50: #f8fafc;
+      --slate-100: #f1f5f9;
+      --slate-200: #e2e8f0;
+      --slate-300: #cbd5e1;
+      --slate-400: #94a3b8;
+      --slate-500: #64748b;
+      --slate-700: #334155;
+      --slate-800: #1e293b;
+      --slate-900: #0f172a;
+      --sidebar-w: 320px;
+      --font-h: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-b: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      --sh-sm: 0 4px 12px rgba(11, 20, 44, 0.05);
+      --sh-md: 0 12px 28px -6px rgba(11, 20, 44, 0.08), 0 4px 10px -2px rgba(11, 20, 44, 0.04);
+      --sh-lg: 0 20px 40px -10px rgba(11, 20, 44, 0.12), 0 8px 16px -4px rgba(37, 99, 235, 0.08);
+      --sh-glow: 0 0 35px rgba(14, 165, 233, 0.25);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+      overflow-x: hidden;
+      padding-top: env(safe-area-inset-top, 0);
+    }
+
+    body {
+      font-family: var(--font-b);
+      color: var(--slate-900);
+      background: var(--slate-50);
+      display: flex;
+      min-height: 100vh;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── BARRA LATERAL (SIDEBAR) ── */
+    .sidebar {
+      width: var(--sidebar-w);
+      height: 100vh;
+      position: fixed;
+      inset: 0 auto 0 0;
+      background: #ffffff;
+      border-right: 1px solid var(--slate-200);
+      padding: 34px 24px;
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      z-index: 1000;
+      box-shadow: 4px 0 24px rgba(11, 20, 44, 0.03);
+    }
+
+    .sidebar::-webkit-scrollbar {
+      width: 5px;
+    }
+    .sidebar::-webkit-scrollbar-thumb {
+      background: var(--slate-200);
+      border-radius: 10px;
+    }
+
+    .brand-section {
+      text-align: center;
+      margin-bottom: 22px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .brand-logo-wrap {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 8px 14px;
+      border-radius: 16px;
+      background: #ffffff;
+      transition: transform 0.3s ease;
+      margin-bottom: 10px;
+    }
+
+    .brand-logo-wrap:hover {
+      transform: scale(1.02);
+    }
+
+    .brand-logo {
+      width: 195px;
+      height: auto;
+      display: block;
+    }
+
+    .alliance-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 6px 12px;
+      background: linear-gradient(135deg, rgba(37, 99, 235, 0.08) 0%, rgba(14, 165, 233, 0.08) 100%);
+      border: 1px solid rgba(37, 99, 235, 0.16);
+      border-radius: 100px;
+      font-size: 0.73rem;
+      font-weight: 700;
+      color: var(--navy-800);
+      letter-spacing: 0.3px;
+    }
+
+    .alliance-badge img {
+      width: 15px;
+      height: 15px;
+      object-fit: contain;
+    }
+
+    .alliance-badge span b {
+      color: var(--blue-600);
+    }
+
+    .nav-title {
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      letter-spacing: 1.4px;
+      color: var(--slate-400);
+      font-weight: 800;
+      margin: 18px 0 6px;
+      padding-left: 8px;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 14px;
+      color: var(--slate-500);
+      font-weight: 600;
+      font-size: 0.9rem;
+      text-decoration: none;
+      border-radius: 12px;
+      margin-bottom: 3px;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative;
+    }
+
+    .nav-item i, .nav-item svg {
+      width: 18px;
+      height: 18px;
+      flex: none;
+      color: var(--slate-400);
+      transition: all 0.25s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.95rem;
+    }
+
+    .nav-item:hover, .nav-item.active {
+      background: linear-gradient(135deg, rgba(37, 99, 235, 0.08) 0%, rgba(14, 165, 233, 0.08) 100%);
+      color: var(--blue-600);
+      transform: translateX(4px);
+    }
+
+    .nav-item:hover i, .nav-item:hover svg,
+    .nav-item.active i, .nav-item.active svg {
+      color: var(--blue-600);
+      transform: scale(1.12);
+    }
+
+    .nav-item .tag-benefit {
+      margin-left: auto;
+      font-size: 0.62rem;
+      padding: 2px 7px;
+      border-radius: 6px;
+      font-weight: 800;
+      letter-spacing: 0.4px;
+      text-transform: uppercase;
+      background: rgba(14, 165, 233, 0.12);
+      color: var(--sky-400);
+    }
+
+    .nav-item.active {
+      font-weight: 700;
+      background: linear-gradient(135deg, rgba(37, 99, 235, 0.12) 0%, rgba(14, 165, 233, 0.12) 100%);
+      color: var(--navy-800);
+      border-left: 3px solid var(--blue-600);
+    }
+
+    .btn-login-sidebar {
+      background: linear-gradient(135deg, var(--navy-900) 0%, var(--navy-700) 100%);
+      color: #ffffff !important;
+      justify-content: center;
+      margin: 10px 0 14px;
+      font-weight: 700;
+      font-size: 0.88rem;
+      border-radius: 14px;
+      padding: 12px 16px;
+      box-shadow: 0 8px 20px rgba(11, 20, 44, 0.2);
+    }
+
+    .btn-login-sidebar i, .btn-login-sidebar svg {
+      color: #ffffff !important;
+    }
+
+    .btn-login-sidebar:hover {
+      background: linear-gradient(135deg, var(--blue-600) 0%, var(--sky-400) 100%);
+      color: #ffffff !important;
+      transform: translateY(-2px) !important;
+      box-shadow: 0 12px 24px rgba(37, 99, 235, 0.35);
+    }
+
+    .btn-login-sidebar.logout {
+      background: #ef4444;
+      box-shadow: 0 8px 20px rgba(239, 68, 68, 0.2);
+    }
+
+    .btn-login-sidebar.logout:hover {
+      background: #dc2626;
+      box-shadow: 0 12px 24px rgba(220, 38, 38, 0.3);
+    }
+
+    /* Tarjeta inferior de soporte y convenio en sidebar */
+    .sidebar-trust-box {
+      margin-top: auto;
+      padding: 16px;
+      border-radius: 18px;
+      background: linear-gradient(145deg, #f8fafc 0%, #edf2f7 100%);
+      border: 1px solid var(--slate-200);
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .sidebar-trust-box img {
+      width: 38px;
+      height: 38px;
+      object-fit: contain;
+      flex-shrink: 0;
+      filter: drop-shadow(0 4px 6px rgba(0,0,0,0.06));
+    }
+
+    .sidebar-trust-box div h4 {
+      font-family: var(--font-h);
+      font-size: 0.8rem;
+      font-weight: 800;
+      color: var(--navy-900);
+      line-height: 1.2;
+      margin-bottom: 2px;
+    }
+
+    .sidebar-trust-box div p {
+      font-size: 0.72rem;
+      color: var(--slate-500);
+      line-height: 1.35;
+    }
+
+    /* ── CONTENIDO PRINCIPAL ── */
+    .main {
+      margin-left: var(--sidebar-w);
+      width: calc(100% - var(--sidebar-w));
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    .mobile-nav {
+      display: none;
+    }
+
+    /* ── HERO SLIDER ── */
+    .hero {
+      position: relative;
+      min-height: 92vh;
+      overflow: hidden;
+      background: var(--navy-950);
+      display: flex;
+      align-items: center;
+    }
+
+    .slide {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      padding: 0 80px;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.85s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.85s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .slide.active {
+      opacity: 1;
+      visibility: visible;
+      z-index: 2;
+    }
+
+    .slide .bg {
+      position: absolute;
+      inset: 0;
+      background-size: cover;
+      background-position: center;
+      transform: scale(1.05);
+      transition: transform 7s ease-out;
+    }
+
+    .slide.active .bg {
+      transform: scale(1);
+    }
+
+    .slide .ov {
+      position: absolute;
+      inset: 0;
+    }
+
+    .s1 .ov {
+      background: linear-gradient(105deg, rgba(7, 13, 30, 0.94) 20%, rgba(18, 32, 68, 0.82) 58%, rgba(37, 99, 235, 0.45) 100%);
+    }
+
+    .s2 {
+      background: radial-gradient(circle at 85% 30%, rgba(37, 99, 235, 0.28) 0%, transparent 60%), linear-gradient(135deg, var(--navy-950) 0%, var(--navy-900) 50%, #0d1a45 100%);
+    }
+
+    .s3 {
+      background: radial-gradient(circle at 80% 50%, rgba(14, 165, 233, 0.25) 0%, transparent 65%), linear-gradient(135deg, #09132d 0%, var(--navy-800) 60%, var(--blue-600) 140%);
+    }
+
+    .watermark-shield {
+      position: absolute;
+      right: 4%;
+      top: 50%;
+      transform: translateY(-50%);
+      width: min(44vw, 540px);
+      opacity: 0.08;
+      pointer-events: none;
+      filter: drop-shadow(0 0 40px rgba(14, 165, 233, 0.4));
+    }
+
+    .hero-content {
+      position: relative;
+      z-index: 3;
+      max-width: 980px;
+      opacity: 0;
+      transform: translateY(24px);
+      transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .slide.active .hero-content {
+      opacity: 1;
+      transform: translateY(0);
+      transition-delay: 0.15s;
+    }
+
+    .hero-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 7px 18px;
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 100px;
+      color: var(--sky-300);
+      font-size: 0.85rem;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      margin-bottom: 24px;
+    }
+
+    .hero-pill img {
+      width: 16px;
+      height: 16px;
+      object-fit: contain;
+    }
+
+    .hero h1 {
+      font-family: var(--font-h);
+      font-size: clamp(3rem, 6vw, 6.2rem);
+      font-weight: 900;
+      line-height: 0.96;
+      letter-spacing: -2px;
+      text-transform: uppercase;
+      color: #ffffff;
+      margin-bottom: 24px;
+    }
+
+    .hero h1 .text-highlight {
+      background: linear-gradient(135deg, var(--sky-300) 0%, #60a5fa 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .hero p {
+      font-size: 1.3rem;
+      line-height: 1.6;
+      color: rgba(255, 255, 255, 0.88);
+      max-width: 740px;
+      margin-bottom: 42px;
+      font-weight: 400;
+    }
+
+    .hero-btns {
+      display: flex;
+      gap: 18px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .btn-main, .btn-secondary {
+      padding: 18px 40px;
+      border-radius: 100px;
+      font-family: var(--font-h);
+      font-size: 1rem;
+      font-weight: 800;
+      letter-spacing: 0.6px;
+      text-transform: uppercase;
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+      border: 2px solid transparent;
+    }
+
+    .btn-main {
+      background: linear-gradient(135deg, var(--blue-600) 0%, var(--sky-400) 100%);
+      color: #ffffff;
+      box-shadow: 0 12px 28px rgba(37, 99, 235, 0.4);
+    }
+
+    .btn-main:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 16px 36px rgba(14, 165, 233, 0.5);
+      background: linear-gradient(135deg, var(--sky-400) 0%, var(--blue-600) 100%);
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(10px);
+      border-color: rgba(255, 255, 255, 0.3);
+      color: #ffffff;
+    }
+
+    .btn-secondary:hover {
+      background: #ffffff;
+      color: var(--navy-900);
+      transform: translateY(-4px);
+      border-color: #ffffff;
+      box-shadow: 0 12px 28px rgba(255, 255, 255, 0.2);
+    }
+
+    .hero-trust-seal {
+      margin-top: 48px;
+      display: flex;
+      align-items: center;
+      gap: 22px;
+      padding-top: 24px;
+      border-top: 1px solid rgba(255, 255, 255, 0.12);
+    }
+
+    .hero-trust-seal img {
+      width: 44px;
+      height: 44px;
+      object-fit: contain;
+      filter: drop-shadow(0 4px 10px rgba(0,0,0,0.3));
+    }
+
+    .hero-trust-seal-text h5 {
+      color: #ffffff;
+      font-size: 0.95rem;
+      font-weight: 700;
+      margin-bottom: 2px;
+      font-family: var(--font-h);
+    }
+
+    .hero-trust-seal-text p {
+      color: rgba(255, 255, 255, 0.65);
+      font-size: 0.85rem;
+      margin-bottom: 0;
+      line-height: 1.3;
+    }
+
+    .dots {
+      position: absolute;
+      bottom: 40px;
+      left: 80px;
+      z-index: 10;
+      display: flex;
+      gap: 12px;
+    }
+
+    .dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      border: 0;
+      background: rgba(255, 255, 255, 0.35);
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .dot.active {
+      background: var(--sky-300);
+      transform: scale(1.4);
+      box-shadow: 0 0 12px var(--sky-400);
+    }
+
+    /* ── SECCIONES GENERALES ── */
+    .section {
+      padding: 96px 80px;
+      position: relative;
+    }
+
+    .section-header {
+      margin-bottom: 56px;
+    }
+
+    .section-eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.8rem;
+      font-weight: 800;
+      letter-spacing: 1.6px;
+      text-transform: uppercase;
+      color: var(--blue-600);
+      margin-bottom: 12px;
+    }
+
+    .title {
+      font-family: var(--font-h);
+      font-size: clamp(2.6rem, 4.8vw, 4.2rem);
+      font-weight: 900;
+      color: var(--navy-900);
+      line-height: 1.02;
+      letter-spacing: -1.5px;
+    }
+
+    .title span {
+      color: var(--slate-400);
+    }
+
+    .subtitle-lead {
+      color: var(--slate-500);
+      font-size: 1.15rem;
+      line-height: 1.65;
+      max-width: 680px;
+      margin-top: 14px;
+    }
+
+    /* ── TARJETAS Y GRID ── */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(310px, 1fr));
+      gap: 36px;
+    }
+
+    .card {
+      background: #ffffff;
+      border-radius: 26px;
+      overflow: hidden;
+      border: 1px solid var(--slate-200);
+      box-shadow: var(--sh-sm);
+      display: flex;
+      flex-direction: column;
+      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative;
+    }
+
+    .card:hover {
+      transform: translateY(-8px);
+      box-shadow: var(--sh-lg);
+      border-color: rgba(37, 99, 235, 0.3);
+    }
+
+    .cimg {
+      height: 220px;
+      position: relative;
+      overflow: hidden;
+      background: linear-gradient(135deg, var(--navy-900) 0%, var(--navy-700) 100%);
+    }
+
+    .cimg img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.6s ease;
+    }
+
+    .card:hover .cimg img {
+      transform: scale(1.08);
+    }
+
+    .cimg .watermark-card {
+      position: absolute;
+      right: -20px;
+      bottom: -30px;
+      width: 190px;
+      opacity: 0.15;
+    }
+
+    .cimg .badge-floating {
+      position: absolute;
+      top: 18px;
+      left: 18px;
+      background: rgba(11, 20, 44, 0.75);
+      backdrop-filter: blur(8px);
+      color: #ffffff;
+      padding: 6px 14px;
+      border-radius: 100px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+    }
+
+    .cimg .big-label {
+      position: absolute;
+      left: 26px;
+      bottom: 18px;
+      font-family: var(--font-h);
+      font-weight: 900;
+      font-size: 3.2rem;
+      color: #ffffff;
+      letter-spacing: -1.5px;
+      line-height: 1;
+      text-shadow: 0 4px 14px rgba(0,0,0,0.3);
+    }
+
+    .cbody {
+      padding: 30px;
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      align-items: flex-start;
+    }
+
+    .cbody h3 {
+      font-family: var(--font-h);
+      font-weight: 800;
+      font-size: 1.55rem;
+      color: var(--navy-900);
+      margin-bottom: 12px;
+      line-height: 1.2;
+    }
+
+    .cbody p {
+      color: var(--slate-500);
+      font-size: 0.98rem;
+      line-height: 1.6;
+      margin-bottom: 24px;
+      flex: 1;
+    }
+
+    .link-action {
+      background: var(--navy-900);
+      color: #ffffff;
+      padding: 12px 26px;
+      border-radius: 100px;
+      font-family: var(--font-h);
+      font-weight: 800;
+      font-size: 0.88rem;
+      letter-spacing: 0.6px;
+      text-transform: uppercase;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.3s ease;
+    }
+
+    .link-action:hover {
+      background: var(--blue-600);
+      gap: 14px;
+      box-shadow: 0 8px 18px rgba(37, 99, 235, 0.3);
+      color: #ffffff;
+    }
+
+    .link-action.blue {
+      background: var(--blue-600);
+    }
+    .link-action.blue:hover {
+      background: var(--navy-900);
+    }
+
+    /* ── SECCIÓN DE TERAPIAS EN CONVENIO (HIGHLIGHT) ── */
+    .convenio-highlight {
+      background: linear-gradient(180deg, #ffffff 0%, var(--slate-50) 100%);
+      border-bottom: 1px solid var(--slate-200);
+    }
+
+    .alliance-banner {
+      background: linear-gradient(135deg, var(--navy-900) 0%, var(--navy-800) 60%, var(--navy-700) 100%);
+      border-radius: 28px;
+      padding: 38px 46px;
+      margin-bottom: 50px;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 30px;
+      box-shadow: var(--sh-md);
+      position: relative;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .alliance-banner::before {
+      content: '';
+      position: absolute;
+      width: 320px;
+      height: 320px;
+      background: radial-gradient(circle, rgba(14, 165, 233, 0.22) 0%, transparent 70%);
+      right: -60px;
+      top: -80px;
+      pointer-events: none;
+    }
+
+    .alliance-logos {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+
+    .alliance-logos img.logo-t {
+      height: 48px;
+      width: auto;
+      background: #ffffff;
+      padding: 8px 16px;
+      border-radius: 12px;
+    }
+
+    .alliance-logos .plus {
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: var(--sky-300);
+    }
+
+    .alliance-logos img.logo-h {
+      height: 42px;
+      width: auto;
+    }
+
+    .alliance-text h4 {
+      font-family: var(--font-h);
+      font-size: 1.45rem;
+      font-weight: 800;
+      margin-bottom: 6px;
+      letter-spacing: -0.5px;
+    }
+
+    .alliance-text p {
+      color: rgba(255, 255, 255, 0.8);
+      font-size: 0.95rem;
+      max-width: 580px;
+      line-height: 1.5;
+    }
+
+    /* ── CTA BANNER ── */
+    .cta {
+      text-align: center;
+      background: linear-gradient(135deg, var(--navy-950) 0%, var(--navy-900) 50%, var(--blue-600) 140%);
+      color: #ffffff;
+      padding: 100px 80px;
+      position: relative;
+      overflow: hidden;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .cta .watermark-shield {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      width: 480px;
+      opacity: 0.05;
+      pointer-events: none;
+    }
+
+    .cta h2 {
+      font-family: var(--font-h);
+      font-weight: 900;
+      font-size: clamp(2.8rem, 5.5vw, 4.8rem);
+      letter-spacing: -2px;
+      line-height: 1.05;
+      margin-bottom: 20px;
+    }
+
+    .cta p {
+      font-size: 1.25rem;
+      color: rgba(255, 255, 255, 0.85);
+      max-width: 660px;
+      margin: 0 auto 38px;
+      line-height: 1.6;
+    }
+
+    .cta-btns {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    /* ── NOVEDADES (BLOG TRACK) ── */
+    .track-wrapper {
+      position: relative;
+    }
+
+    .track {
+      display: flex;
+      gap: 28px;
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      padding: 8px 4px 28px;
+      scrollbar-width: thin;
+      scrollbar-color: var(--slate-300) transparent;
+    }
+
+    .track .card {
+      min-width: min(360px, 80vw);
+      scroll-snap-align: start;
+    }
+
+    .track-arrows {
+      display: flex;
+      gap: 12px;
+      margin-top: 14px;
+      justify-content: flex-end;
+    }
+
+    .track-arrows button {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      border: 2px solid var(--slate-300);
+      background: #ffffff;
+      color: var(--navy-900);
+      font-size: 1.1rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s ease;
+    }
+
+    .track-arrows button:hover {
+      background: var(--navy-900);
+      color: #ffffff;
+      border-color: var(--navy-900);
+      transform: translateY(-2px);
+    }
+
+    /* ── FOOTER ELEGANTE (SIN CONTACTO PERSONAL) ── */
+    footer {
+      background: var(--navy-950);
+      color: var(--slate-400);
+      padding: 70px 80px 36px;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      position: relative;
+    }
+
+    .fgrid {
+      display: grid;
+      grid-template-columns: 1.5fr 1fr 1fr 1fr;
+      gap: 40px;
+      margin-bottom: 50px;
+    }
+
+    .footer-brand img.flogo-img {
+      width: 190px;
+      background: #ffffff;
+      border-radius: 14px;
+      padding: 10px 16px;
+      display: block;
+      margin-bottom: 18px;
+    }
+
+    .footer-brand p {
+      font-size: 0.9rem;
+      line-height: 1.6;
+      color: rgba(255, 255, 255, 0.7);
+      margin-bottom: 20px;
+      max-width: 320px;
+    }
+
+    .footer-seal {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 14px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      color: #ffffff;
+      font-size: 0.78rem;
+      font-weight: 600;
+    }
+
+    .footer-seal img {
+      width: 20px;
+      height: 20px;
+      object-fit: contain;
+    }
+
+    footer h4 {
+      font-family: var(--font-h);
+      font-size: 0.85rem;
+      font-weight: 800;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: #ffffff;
+      margin-bottom: 20px;
+    }
+
+    footer a {
+      display: block;
+      color: rgba(255, 255, 255, 0.7);
+      text-decoration: none;
+      margin-bottom: 11px;
+      font-size: 0.92rem;
+      transition: all 0.25s ease;
+    }
+
+    footer a:hover {
+      color: var(--sky-300);
+      transform: translateX(4px);
+    }
+
+    .copy-bar {
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      padding-top: 26px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+      font-size: 0.84rem;
+      color: rgba(255, 255, 255, 0.5);
+    }
+
+    .copy-bar a {
+      color: rgba(255, 255, 255, 0.5);
+      display: inline;
+      margin: 0;
+    }
+
+    .copy-bar a:hover {
+      color: var(--sky-300);
+    }
+
+    /* ── MODAL ACCESO / LOGIN ── */
+    .ov-m {
+      position: fixed;
+      inset: 0;
+      background: rgba(7, 13, 30, 0.82);
+      backdrop-filter: blur(12px);
+      z-index: 5000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .ov-m.on {
+      display: flex;
+    }
+
+    .modal {
+      background: #ffffff;
+      border-radius: 28px;
+      padding: 40px;
+      width: min(450px, 100%);
+      position: relative;
+      box-shadow: var(--sh-lg);
+      border: 1px solid var(--slate-200);
+      animation: modalPop 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes modalPop {
+      from { opacity: 0; transform: scale(0.94) translateY(10px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    .modal-head {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    .modal-head img {
+      width: 170px;
+      margin-bottom: 12px;
+    }
+
+    .modal h2 {
+      font-family: var(--font-h);
+      font-size: 1.8rem;
+      font-weight: 800;
+      color: var(--navy-900);
+      margin-bottom: 6px;
+      letter-spacing: -0.5px;
+    }
+
+    .modal p.modal-sub {
+      color: var(--slate-500);
+      font-size: 0.92rem;
+      line-height: 1.45;
+    }
+
+    .modal .x {
+      position: absolute;
+      top: 20px;
+      right: 22px;
+      background: var(--slate-100);
+      border: 0;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      font-size: 1.2rem;
+      cursor: pointer;
+      color: var(--slate-500);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.25s ease;
+    }
+
+    .modal .x:hover {
+      background: var(--slate-200);
+      color: var(--navy-900);
+    }
+
+    .modal label {
+      display: block;
+      font-weight: 700;
+      font-size: 0.88rem;
+      color: var(--slate-700);
+      margin-bottom: 6px;
+    }
+
+    .modal input {
+      width: 100%;
+      padding: 13px 16px;
+      border: 1.5px solid var(--slate-200);
+      border-radius: 12px;
+      font-family: var(--font-b);
+      font-size: 0.95rem;
+      color: var(--slate-900);
+      margin-bottom: 18px;
+      transition: all 0.25s ease;
+      background: var(--slate-50);
+    }
+
+    .modal input:focus {
+      outline: 0;
+      border-color: var(--blue-600);
+      background: #ffffff;
+      box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+    }
+
+    .modal-btn-submit {
+      width: 100%;
+      padding: 15px;
+      border-radius: 100px;
+      background: linear-gradient(135deg, var(--navy-900) 0%, var(--blue-600) 100%);
+      color: #ffffff;
+      font-family: var(--font-h);
+      font-weight: 800;
+      font-size: 0.95rem;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      border: 0;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 8px 20px rgba(37, 99, 235, 0.3);
+    }
+
+    .modal-btn-submit:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 26px rgba(37, 99, 235, 0.4);
+    }
+
+    .modal-footer-note {
+      text-align: center;
+      margin-top: 18px;
+      font-size: 0.82rem;
+      color: var(--slate-400);
+    }
+
+    /* ── RESPONSIVE DESIGN ── */
+    @media (max-width: 1100px) {
+      .sidebar {
+        display: none;
+      }
+      .sidebar.mobile-open {
+        display: flex;
+        width: 300px;
+        box-shadow: 0 0 50px rgba(0,0,0,0.5);
+      }
+      .main {
+        margin: 0;
+        width: 100%;
+      }
+      .mobile-nav {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 24px;
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(12px);
+        position: sticky;
+        top: 0;
+        z-index: 900;
+        border-bottom: 1px solid var(--slate-200);
+      }
+      .mobile-nav-left {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .btn-toggle-menu {
+        background: var(--slate-100);
+        border: 0;
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        font-size: 1.1rem;
+        color: var(--navy-900);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .mobile-nav img.mlogo {
+        height: 38px;
+        width: auto;
+      }
+      .mobile-nav-btn {
+        background: var(--navy-900);
+        color: #ffffff;
+        padding: 9px 18px;
+        border-radius: 100px;
+        font-weight: 800;
+        font-size: 0.82rem;
+        text-decoration: none;
+        letter-spacing: 0.3px;
+      }
+      .slide, .section, .cta, footer {
+        padding-left: 28px;
+        padding-right: 28px;
+      }
+      .dots {
+        left: 28px;
+      }
+      .fgrid {
+        grid-template-columns: 1fr 1fr;
+      }
+      .alliance-banner {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 30px;
+      }
+    }
+
+    @media (max-width: 680px) {
+      .fgrid {
+        grid-template-columns: 1fr;
+        gap: 32px;
+      }
+      .hero h1 {
+        font-size: 2.7rem;
+      }
+      .hero p {
+        font-size: 1.1rem;
+      }
+      .btn-main, .btn-secondary {
+        width: 100%;
+        justify-content: center;
+      }
+      .cta-btns {
+        flex-direction: column;
+      }
+      .section {
+        padding: 70px 24px;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      * {
+        transition: none !important;
+        animation: none !important;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- BARRA LATERAL CON TERAPIAS EN CONVENIO -->
+  <nav class="sidebar" id="sidebarNav" aria-label="Navegación Principal">
+    <div class="brand-section">
+      <a href="#inicio" class="brand-logo-wrap" title="TECTUM In-House">
+        <img src="{% static 'img/tectum/logo-completo.png' %}" alt="TECTUM In-House" class="brand-logo">
+      </a>
+      <div class="alliance-badge">
+        <img src="{% static 'img/tectum/escudo.png' %}" alt="Escudo TECTUM">
+        <span>Convenio In-House <b>× HOPE</b></span>
+      </div>
+    </div>
+
+    <a href="#inicio" class="nav-item active">
+      <i class="fas fa-home"></i>
+      <span>Inicio</span>
+    </a>
+
+    {% if request.user.is_authenticated %}
+    <a href="{% url 'panel_generico' %}" class="nav-item btn-login-sidebar">
+      <i class="fas fa-user-circle"></i> Mi Panel Clínico
+    </a>
+    <a href="{% url 'logout_usuario' %}" class="nav-item btn-login-sidebar logout">
+      <i class="fas fa-sign-out-alt"></i> Cerrar sesión
+    </a>
+    {% else %}
+    <a href="#" onclick="abrir('login'); return false;" class="nav-item btn-login-sidebar">
+      <i class="fas fa-id-badge"></i> Acceso Colaborador
+    </a>
+    {% endif %}
+
+    <!-- TERAPIAS EN CONVENIO (ES ESPACIO HOPE) -->
+    <p class="nav-title">Terapias en Convenio</p>
+    <a href="{% url 'sesion_individual' %}" class="nav-item">
+      <i class="fas fa-user"></i>
+      <span>Terapia Individual</span>
+      <span class="tag-benefit">In-House</span>
+    </a>
+    <a href="{% url 'sesion_pareja' %}" class="nav-item">
+      <i class="fas fa-heart"></i>
+      <span>Terapia de Pareja</span>
+      <span class="tag-benefit">100% Confidencial</span>
+    </a>
+    <a href="{% url 'sesion_familia' %}" class="nav-item">
+      <i class="fas fa-people-roof"></i>
+      <span>Terapia Familiar</span>
+    </a>
+
+    <!-- TALLERES Y FORMACIÓN -->
+    <p class="nav-title">Talleres & Formación</p>
+    <a href="{% url 'taller_detalle_pareja' %}" class="nav-item">
+      <i class="fas fa-hand-holding-heart"></i>
+      <span>Conflictos en Pareja</span>
+    </a>
+    <a href="{% url 'taller_detalle_adolescente' %}" class="nav-item">
+      <i class="fas fa-children"></i>
+      <span>Relación con Adolescentes</span>
+    </a>
+    <a href="{% url 'talleres' %}" class="nav-item">
+      <i class="fas fa-chalkboard-user"></i>
+      <span>Catálogo de Talleres</span>
+    </a>
+
+    <!-- PROFESIONALES -->
+    <p class="nav-title">Profesionales & Co-Visión</p>
+    <a href="{% url 'covision' %}" class="nav-item">
+      <i class="fas fa-stethoscope"></i>
+      <span>Co-Visión Clínica</span>
+    </a>
+
+    <!-- BENEFICIOS TECTUM CORPORATIVO -->
+    <p class="nav-title">Beneficios TECTUM</p>
+    <a href="#beneficios" class="nav-item">
+      <i class="fas fa-shield-halved"></i>
+      <span>Coberturas & Salud</span>
+    </a>
+    <a href="#programas" class="nav-item">
+      <i class="fas fa-chart-line"></i>
+      <span>Retención de Talento</span>
+    </a>
+    <a href="#empresas" class="nav-item">
+      <i class="fas fa-briefcase"></i>
+      <span>Asesoría para RH</span>
+    </a>
+    <a href="#novedades" class="nav-item">
+      <i class="fas fa-newspaper"></i>
+      <span>Novedades & Guías</span>
+    </a>
+
+    <!-- BLOQUE INFERIOR DE CONFIANZA -->
+    <div class="sidebar-trust-box">
+      <img src="{% static 'img/tectum/escudo.png' %}" alt="Garantía TECTUM">
+      <div>
+        <h4>Convenio Activo</h4>
+        <p>Atención psicológica respaldada con tarifa preferencial empresarial.</p>
+      </div>
+    </div>
+  </nav>
+
+  <!-- CONTENIDO PRINCIPAL -->
+  <main class="main">
+
+    <!-- MOBILE NAV -->
+    <nav class="mobile-nav">
+      <div class="mobile-nav-left">
+        <button class="btn-toggle-menu" onclick="toggleSidebar()" aria-label="Abrir menú">
+          <i class="fas fa-bars"></i>
+        </button>
+        <img src="{% static 'img/tectum/logo-completo.png' %}" alt="TECTUM In-House" class="mlogo">
+      </div>
+      {% if request.user.is_authenticated %}
+      <a href="{% url 'panel_generico' %}" class="mobile-nav-btn">Mi Panel</a>
+      {% else %}
+      <a href="#" onclick="abrir('login'); return false;" class="mobile-nav-btn">Entrar</a>
+      {% endif %}
+    </nav>
+
+    <!-- HERO SLIDER -->
+    <section id="inicio" class="hero">
+      <img src="{% static 'img/tectum/escudo.png' %}" alt="Escudo TECTUM" class="watermark-shield">
+
+      <!-- SLIDE 1: INTRODUCCIÓN CONVENIO -->
+      <div class="slide s1 active">
+        <div class="bg" style="background-image: url('{% static 'img/slider_1.jpg' %}');"></div>
+        <div class="ov"></div>
+        <div class="hero-content">
+          <div class="hero-pill">
+            <img src="{% static 'img/tectum/escudo.png' %}" alt="Escudo">
+            <span>Convenio Corporativo Exclusivo • Espacio HOPE & TECTUM</span>
+          </div>
+          <h1>Protegemos lo que <span class="text-highlight">impulsa</span> a tu empresa.</h1>
+          <p>
+            Beneficios corporativos de salud mental que cuidan a tus colaboradores y fortalecen la cultura organizacional. 
+            Sesiones de terapia psicológica individual, de pareja y talleres psicoeducativos con psicólogos clínicos certificados.
+          </p>
+          <div class="hero-btns">
+            <a class="btn-main" href="{% url 'sesion_individual' %}">
+              Agendar Terapia Individual <i class="fas fa-arrow-right"></i>
+            </a>
+            <a class="btn-secondary" href="#servicios-convenio">
+              Explorar Servicios en Convenio <i class="fas fa-heart-pulse"></i>
+            </a>
+          </div>
+
+          <div class="hero-trust-seal">
+            <img src="{% static 'img/tectum/escudo.png' %}" alt="Sello TECTUM">
+            <div class="hero-trust-seal-text">
+              <h5>TECTUM In-House • Salud Mental Garantizada</h5>
+              <p>Cobertura confidencial en apego a la NOM-035 con acompañamiento clínico especializado.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SLIDE 2: TU GENTE ES TU MAYOR ACTIVO -->
+      <div class="slide s2">
+        <div class="hero-content">
+          <div class="hero-pill">
+            <img src="{% static 'img/tectum/escudo.png' %}" alt="Escudo">
+            <span>Gestión Estratégica de Capital Humano</span>
+          </div>
+          <h1>Tu gente es tu <span class="text-highlight">mayor</span> activo.</h1>
+          <p>
+            Diseñamos paquetes de salud mental preventiva y contención emocional que reducen el ausentismo laboral, 
+            previenen el burnout y aumentan el compromiso de los equipos con indicadores medibles.
+          </p>
+          <div class="hero-btns">
+            <a class="btn-main" href="#programas">
+              Conocer Programas de Talento <i class="fas fa-arrow-right"></i>
+            </a>
+            <a class="btn-secondary" href="{% url 'talleres' %}">
+              Ver Talleres Corporativos
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- SLIDE 3: UN ALIADO A TU LADO -->
+      <div class="slide s3">
+        <div class="hero-content">
+          <div class="hero-pill">
+            <img src="{% static 'img/tectum/escudo.png' %}" alt="Escudo">
+            <span>Área de Beneficios & Asesoría Especializada</span>
+          </div>
+          <h1>Un aliado <span class="text-highlight">a tu lado</span>, siempre.</h1>
+          <p>
+            Acompañamiento cercano del Área de Beneficios TECTUM y la dirección clínica de Espacio HOPE: 
+            desde el diagnóstico inicial hasta la operación y seguimiento diario de cada colaborador.
+          </p>
+          <div class="hero-btns">
+            <a class="btn-main" href="#empresas">
+              Asesoría Corporativa para RH <i class="fas fa-arrow-right"></i>
+            </a>
+            <a class="btn-secondary" href="{% url 'sesion_individual' %}">
+              Acceder a Beneficio In-House
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- CONTROLES DEL SLIDER -->
+      <div class="dots">
+        <button class="dot active" aria-label="Diapositiva 1"></button>
+        <button class="dot" aria-label="Diapositiva 2"></button>
+        <button class="dot" aria-label="Diapositiva 3"></button>
+      </div>
+    </section>
+
+    <!-- SECCIÓN: TERAPIAS EN CONVENIO (ES ESPACIO HOPE) -->
+    <section id="servicios-convenio" class="section convenio-highlight">
+      <div class="alliance-banner">
+        <div class="alliance-text">
+          <div class="alliance-logos">
+            <img src="{% static 'img/tectum/logo-completo.png' %}" alt="TECTUM" class="logo-t">
+            <span class="plus">×</span>
+            <img src="{% static 'img/nlogo.png' %}" alt="Espacio HOPE" class="logo-h">
+          </div>
+          <h4 style="margin-top: 14px;">Alianza de Salud Mental In-House</h4>
+          <p>
+            Como colaborador de una empresa afiliada a TECTUM, cuentas con acceso directo a consultas psicológicas,
+            evaluaciones psicométricas y talleres con tarifas y coberturas preferenciales.
+          </p>
+        </div>
+        <a href="{% url 'sesion_individual' %}" class="btn-main" style="flex-shrink:0;">
+          Comenzar Proceso <i class="fas fa-arrow-right"></i>
+        </a>
+      </div>
+
+      <div class="section-header">
+        <span class="section-eyebrow"><i class="fas fa-heart-pulse"></i> Servicios Clínicos In-House</span>
+        <h2 class="title">Atención Psicológica<br><span>para Colaboradores.</span></h2>
+        <p class="subtitle-lead">
+          Plataforma segura, citas virtuales sin desplazamientos y absoluta confidencialidad profesional para ti y tu familia.
+        </p>
+      </div>
+
+      <div class="grid">
+        <!-- TARJETA 1: TERAPIA INDIVIDUAL -->
+        <div class="card">
+          <div class="cimg">
+            <img src="{% static 'img/slider_2.jpg' %}" alt="Terapia Individual">
+            <div class="badge-floating"><i class="fas fa-user-check"></i> 1 a 1 • 50 Min</div>
+          </div>
+          <div class="cbody">
+            <h3>Terapia Individual</h3>
+            <p>
+              Atención psicológica personalizada para el manejo de ansiedad, estrés laboral, depresión, toma de decisiones y fortalecimiento de la autoestima.
+            </p>
+            <a class="link-action blue" href="{% url 'sesion_individual' %}">
+              Agendar Sesión Individual <i class="fas fa-arrow-right"></i>
+            </a>
+          </div>
+        </div>
+
+        <!-- TARJETA 2: TERAPIA DE PAREJA -->
+        <div class="card">
+          <div class="cimg">
+            <img src="{% static 'img/pareja.jpg' %}" alt="Terapia de Pareja">
+            <div class="badge-floating"><i class="fas fa-heart"></i> Vínculo & Comunicación</div>
+          </div>
+          <div class="cbody">
+            <h3>Terapia de Pareja</h3>
+            <p>
+              Espacio profesional para superar crisis, sanar heridas afectivas y construir acuerdos constructivos para la convivencia diaria.
+            </p>
+            <a class="link-action" href="{% url 'sesion_pareja' %}">
+              Agendar Sesión Pareja <i class="fas fa-arrow-right"></i>
+            </a>
+          </div>
+        </div>
+
+        <!-- TARJETA 3: TERAPIA FAMILIAR -->
+        <div class="card">
+          <div class="cimg">
+            <img src="{% static 'img/Taller_para_padres.jpg' %}" alt="Terapia Familiar">
+            <div class="badge-floating"><i class="fas fa-people-roof"></i> Entorno Familiar</div>
+          </div>
+          <div class="cbody">
+            <h3>Terapia Familiar</h3>
+            <p>
+              Intervención orientada a dinámicas de convivencia en el hogar, comunicación intergeneracional y resolución de crisis en familia.
+            </p>
+            <a class="link-action" href="{% url 'sesion_familia' %}">
+              Agendar Sesión Familiar <i class="fas fa-arrow-right"></i>
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECCIÓN: BENEFICIOS CORPORATIVOS TECTUM -->
+    <section id="beneficios" class="section">
+      <div class="section-header">
+        <span class="section-eyebrow"><i class="fas fa-shield-alt"></i> Ecosistema TECTUM</span>
+        <h2 class="title">Beneficios<br><span>Corporativos.</span></h2>
+        <p class="subtitle-lead">
+          Soluciones integrales de protección que combinan salud física, equilibrio mental y certidumbre patrimonial.
+        </p>
+      </div>
+
+      <div class="grid">
+        <div class="card">
+          <div class="cimg">
+            <img src="{% static 'img/slider_4.jpeg' %}" alt="Seguros y Protección">
+            <div class="badge-floating"><i class="fas fa-shield-heart"></i> Cobertura Médica</div>
+          </div>
+          <div class="cbody">
+            <h3>Seguros y Protección</h3>
+            <p>
+              Coberturas de gastos médicos mayores, vida y accidentes para colaboradores y sus dependientes, con respaldo de aseguradoras de primer nivel.
+            </p>
+            <a class="link-action" href="{% url 'sesion_individual' %}">Consultar Coberturas →</a>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="cimg" style="background: linear-gradient(135deg, var(--navy-900) 0%, var(--blue-600) 100%);">
+            <img src="{% static 'img/tectum/escudo.png' %}" alt="Escudo TECTUM" class="watermark-card">
+            <span class="big-label">Salud</span>
+          </div>
+          <div class="cbody">
+            <h3>Bienestar del Colaborador</h3>
+            <p>
+              Programas continuos de salud preventiva, pausas activas y soporte psicoemocional en tiempo real que elevan el compromiso del equipo.
+            </p>
+            <a class="link-action" href="{% url 'talleres' %}">Ver Programas →</a>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="cimg" style="background: linear-gradient(135deg, var(--navy-800) 0%, var(--sky-400) 100%);">
+            <img src="{% static 'img/tectum/escudo.png' %}" alt="Escudo TECTUM" class="watermark-card">
+            <span class="big-label">Futuro</span>
+          </div>
+          <div class="cbody">
+            <h3>Beneficios Patrimoniales</h3>
+            <p>
+              Planes de ahorro para el retiro, fondos previsionales y asesoría financiera que otorgan estabilidad y tranquilidad a largo plazo.
+            </p>
+            <a class="link-action" href="#empresas">Conocer Más →</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECCIÓN: PROGRAMAS DE RETENCIÓN DE TALENTO -->
+    <section id="programas" class="section" style="background: var(--slate-100);">
+      <div class="section-header">
+        <span class="section-eyebrow"><i class="fas fa-users-gear"></i> Recursos Humanos</span>
+        <h2 class="title">Nuestros<br><span>Programas.</span></h2>
+        <p class="subtitle-lead">
+          Estrategias medibles para reducir la rotación y consolidar el salario emocional de tu organización.
+        </p>
+      </div>
+
+      <div class="grid">
+        <div class="card">
+          <div class="cimg" style="background: linear-gradient(135deg, var(--navy-950) 0%, var(--navy-700) 100%);">
+            <img src="{% static 'img/tectum/escudo.png' %}" alt="Escudo" class="watermark-card">
+            <span class="big-label">Talento</span>
+          </div>
+          <div class="cbody">
+            <h3>Retención de Talento Clave</h3>
+            <p>
+              Analizamos la demografía y necesidades de tu plantilla para diseñar esquemas de beneficios altamente valorados y alineados a tu presupuesto.
+            </p>
+            <a class="link-action blue" href="{% url 'talleres' %}">Ver Talleres de Talento →</a>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="cimg" style="background: linear-gradient(135deg, var(--navy-800) 0%, var(--blue-600) 100%);">
+            <img src="{% static 'img/tectum/escudo.png' %}" alt="Escudo" class="watermark-card">
+            <span class="big-label">Total</span>
+          </div>
+          <div class="cbody">
+            <h3>Compensación Emocional</h3>
+            <p>
+              Integra sueldo, prestaciones y salud mental en una propuesta de valor integral para que tu equipo se sienta verdaderamente respaldado.
+            </p>
+            <a class="link-action blue" href="{% url 'sesion_individual' %}">Activar Beneficio →</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECCIÓN: ASESORÍA CORPORATIVA -->
+    <section id="empresas" class="section">
+      <div class="section-header">
+        <span class="section-eyebrow"><i class="fas fa-building"></i> Consultoría In-House</span>
+        <h2 class="title">Asesoría<br><span>Corporativa para RH.</span></h2>
+      </div>
+
+      <div class="grid" style="max-width: 760px;">
+        <div class="card">
+          <div class="cimg">
+            <img src="{% static 'img/slider_1.jpg' %}" alt="Asesoría Corporativa">
+            <div class="badge-floating"><i class="fas fa-handshake"></i> Alianza In-House</div>
+          </div>
+          <div class="cbody">
+            <h3>Para Direcciones y Áreas de Personas</h3>
+            <p>
+              Acompañamos a tu organización en el diagnóstico de factores de riesgo psicosocial (NOM-035), diseño del programa anual de salud mental y reportes de impacto anónimos para la toma de decisiones.
+            </p>
+            <a class="link-action" href="{% url 'covision' %}">Conocer Co-Visión Corporativa →</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- BANNER DE LLAMADO A LA ACCIÓN (CTA) -->
+    <section class="cta">
+      <img src="{% static 'img/tectum/escudo.png' %}" alt="Escudo TECTUM" class="watermark-shield">
+      <h2>Tu equipo importa.<br>Tu empresa también.</h2>
+      <p>
+        Accede hoy a las sesiones terapéuticas de tu beneficio corporativo o consulta cómo integrar TECTUM In-House a tu organización.
+      </p>
+      <div class="cta-btns">
+        <a class="btn-main" href="{% url 'sesion_individual' %}">
+          Iniciar Terapia Individual <i class="fas fa-arrow-right"></i>
+        </a>
+        <a class="btn-secondary" href="{% url 'talleres' %}">
+          Explorar Talleres Grupales <i class="fas fa-chalkboard-user"></i>
+        </a>
+      </div>
+    </section>
+
+    <!-- SECCIÓN: NOVEDADES Y ARTÍCULOS -->
+    <section id="novedades" class="section" style="background: #ffffff;">
+      <div class="section-header">
+        <span class="section-eyebrow"><i class="fas fa-book-open"></i> Contenido Especializado</span>
+        <h2 class="title">Novedades<br><span>TECTUM & HOPE.</span></h2>
+        <p class="subtitle-lead">Artículos, investigaciones y criterios prácticos sobre salud mental en el entorno corporativo.</p>
+      </div>
+
+      <div class="track-wrapper">
+        <div class="track" id="track">
+          <!-- CARD 1 -->
+          <div class="card">
+            <div class="cimg" style="background: linear-gradient(135deg, var(--navy-900), var(--blue-600));">
+              <span class="big-label">Guía</span>
+            </div>
+            <div class="cbody">
+              <h3>Cómo elegir beneficios que sí se usan</h3>
+              <p>Criterios metodológicos para que tu inversión en bienestar impacte directamente en la productividad de tu equipo.</p>
+              <a class="link-action" href="{% url 'talleres' %}">Ver Recomendaciones →</a>
+            </div>
+          </div>
+
+          <!-- CARD 2 -->
+          <div class="card">
+            <div class="cimg" style="background: linear-gradient(135deg, var(--navy-800), var(--sky-400));">
+              <span class="big-label">NOM</span>
+            </div>
+            <div class="cbody">
+              <h3>Salud Mental y Cumplimiento NOM-035</h3>
+              <p>Cómo estructurar canales de atención psicológica confidenciales para proteger el clima organizacional.</p>
+              <a class="link-action" href="{% url 'covision' %}">Leer Enfoque →</a>
+            </div>
+          </div>
+
+          <!-- CARD 3 -->
+          <div class="card">
+            <div class="cimg" style="background: linear-gradient(135deg, var(--navy-950), var(--navy-700));">
+              <span class="big-label">Clima</span>
+            </div>
+            <div class="cbody">
+              <h3>Bienestar y Reducción del Burnout</h3>
+              <p>Datos y casos clínicos sobre cómo la intervención temprana reduce hasta un 40% las incapacidades por estrés.</p>
+              <a class="link-action" href="{% url 'sesion_individual' %}">Consultar Estudio →</a>
+            </div>
+          </div>
+        </div>
+
+        <div class="track-arrows">
+          <button onclick="scrollTrack(-1)" aria-label="Anterior"><i class="fas fa-chevron-left"></i></button>
+          <button onclick="scrollTrack(1)" aria-label="Siguiente"><i class="fas fa-chevron-right"></i></button>
+        </div>
+      </div>
+    </section>
+
+    <!-- FOOTER CORPORATIVO (SIN CAJA DE CONTACTO PERSONAL) -->
+    <footer>
+      <div class="fgrid">
+        <!-- COLUMNA 1: MARCA Y ALIANZA -->
+        <div class="footer-brand">
+          <img src="{% static 'img/tectum/logo-completo.png' %}" alt="TECTUM In-House" class="flogo-img">
+          <p>
+            Alianza estratégica para la gestión de beneficios corporativos y salud mental integral entre <b>TECTUM In-House</b> y <b>Espacio HOPE</b>.
+          </p>
+          <div class="footer-seal">
+            <img src="{% static 'img/tectum/escudo.png' %}" alt="Escudo Oficial">
+            <span>Convenio Certificado In-House</span>
+          </div>
+        </div>
+
+        <!-- COLUMNA 2: TERAPIAS -->
+        <div>
+          <h4>Terapias Clínicas</h4>
+          <a href="{% url 'sesion_individual' %}"><i class="fas fa-angle-right"></i> Terapia Individual</a>
+          <a href="{% url 'sesion_pareja' %}"><i class="fas fa-angle-right"></i> Terapia de Pareja</a>
+          <a href="{% url 'sesion_familia' %}"><i class="fas fa-angle-right"></i> Terapia Familiar</a>
+          <a href="{% url 'covision' %}"><i class="fas fa-angle-right"></i> Co-Visión Profesional</a>
+        </div>
+
+        <!-- COLUMNA 3: BENEFICIOS CORPORATIVOS -->
+        <div>
+          <h4>Beneficios In-House</h4>
+          <a href="#beneficios"><i class="fas fa-angle-right"></i> Coberturas y Pólizas</a>
+          <a href="#programas"><i class="fas fa-angle-right"></i> Retención de Talento</a>
+          <a href="{% url 'talleres' %}"><i class="fas fa-angle-right"></i> Talleres Corporativos</a>
+          <a href="#empresas"><i class="fas fa-angle-right"></i> Asesoría para RH</a>
+        </div>
+
+        <!-- COLUMNA 4: SEGURIDAD Y CUMPLIMIENTO -->
+        <div>
+          <h4>Seguridad y Portal</h4>
+          {% if request.user.is_authenticated %}
+          <a href="{% url 'panel_generico' %}"><i class="fas fa-user"></i> Mi Cuenta de Paciente</a>
+          <a href="{% url 'logout_usuario' %}"><i class="fas fa-arrow-right-from-bracket"></i> Cerrar Sesión</a>
+          {% else %}
+          <a href="#" onclick="abrir('login'); return false;"><i class="fas fa-lock"></i> Acceso Colaborador</a>
+          {% endif %}
+          <a href="#inicio"><i class="fas fa-shield"></i> Confidencialidad NOM-035</a>
+          <a href="{% url 'inicio' %}"><i class="fas fa-external-link"></i> Portal Principal HOPE</a>
+        </div>
+      </div>
+
+      <!-- BARRA DE COPYRIGHT -->
+      <div class="copy-bar">
+        <p>© 2026 TECTUM In-House & Espacio HOPE. Todos los derechos reservados.</p>
+        <p>Atención psicológica en apego a los más altos estándares éticos y de confidencialidad.</p>
+      </div>
+    </footer>
+
+  </main>
+
+  <!-- MODAL DE ACCESO / LOGIN COLABORADOR -->
+  <div class="ov-m" id="m-login" onclick="if(event.target===this) cerrar('login');">
+    <div class="modal">
+      <button class="x" onclick="cerrar('login');" aria-label="Cerrar modal">×</button>
+      <div class="modal-head">
+        <img src="{% static 'img/tectum/logo-completo.png' %}" alt="TECTUM In-House">
+        <h2>Acceso Colaborador</h2>
+        <p class="modal-sub">Ingresa con tu correo institucional o personal registrado en tu beneficio In-House.</p>
+      </div>
+
+      <form id="formLoginColaborador" onsubmit="procesarLogin(event)">
+        {% csrf_token %}
+        <label for="inputEmail">Correo Electrónico</label>
+        <input id="inputEmail" name="email" type="email" autocomplete="email" placeholder="tu.nombre@empresa.com" required>
+
+        <label for="inputPassword">Contraseña</label>
+        <input id="inputPassword" name="password" type="password" autocomplete="current-password" placeholder="••••••••" required>
+
+        <div id="loginFeedback" style="display:none; font-size:0.85rem; color:#ef4444; margin-bottom:14px; text-align:center;"></div>
+
+        <button type="submit" class="modal-btn-submit" id="btnSubmitLogin">
+          Ingresar al Portal <i class="fas fa-arrow-right"></i>
+        </button>
+      </form>
+
+      <div class="modal-footer-note">
+        ¿Primera vez usando tu beneficio? <a href="{% url 'sesion_individual' %}" style="color:var(--blue-600); font-weight:700; text-decoration:none;">Agenda tu primera sesión aquí</a>.
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Slider Hero automático y manual
+    const slides = Array.from(document.querySelectorAll('.slide'));
+    const dots = Array.from(document.querySelectorAll('.dot'));
+    let currentSlide = 0;
+    let slideTimer;
+
+    function goToSlide(n) {
+      if (!slides.length) return;
+      slides[currentSlide].classList.remove('active');
+      dots[currentSlide].classList.remove('active');
+      currentSlide = (n + slides.length) % slides.length;
+      slides[currentSlide].classList.add('active');
+      dots[currentSlide].classList.add('active');
+      clearInterval(slideTimer);
+      slideTimer = setInterval(() => goToSlide(currentSlide + 1), 7500);
+    }
+
+    dots.forEach((dot, idx) => {
+      dot.addEventListener('click', () => goToSlide(idx));
+    });
+
+    if (slides.length > 1) {
+      slideTimer = setInterval(() => goToSlide(currentSlide + 1), 7500);
+    }
+
+    // Modal abrir/cerrar
+    function abrir(id) {
+      const modal = document.getElementById('m-' + id);
+      if (modal) modal.classList.add('on');
+    }
+
+    function cerrar(id) {
+      const modal = document.getElementById('m-' + id);
+      if (modal) modal.classList.remove('on');
+    }
+
+    // Toggle Sidebar en móvil
+    function toggleSidebar() {
+      const sidebar = document.getElementById('sidebarNav');
+      if (sidebar) sidebar.classList.toggle('mobile-open');
+    }
+
+    // Scroll Horizontal de Novedades
+    function scrollTrack(dir) {
+      const track = document.getElementById('track');
+      if (track) {
+        track.scrollBy({ left: dir * 380, behavior: 'smooth' });
+      }
+    }
+
+    // Procesar Login AJAX
+    async function procesarLogin(e) {
+      e.preventDefault();
+      const form = document.getElementById('formLoginColaborador');
+      const feedback = document.getElementById('loginFeedback');
+      const btn = document.getElementById('btnSubmitLogin');
+
+      feedback.style.display = 'none';
+      btn.disabled = true;
+      btn.innerHTML = 'Verificando... <i class="fas fa-spinner fa-spin"></i>';
+
+      const formData = new FormData(form);
+
+      try {
+        const response = await fetch("{% url 'login_usuario' %}", {
+          method: 'POST',
+          body: formData,
+          headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+          }
+        });
+
+        const data = await response.json();
+
+        if (data.status === 'success' || data.success) {
+          window.location.href = data.redirect_url || "{% url 'panel_generico' %}";
+        } else {
+          feedback.textContent = data.message || 'Credenciales incorrectas. Verifica tu correo o contraseña.';
+          feedback.style.display = 'block';
+          btn.disabled = false;
+          btn.innerHTML = 'Ingresar al Portal <i class="fas fa-arrow-right"></i>';
+        }
+      } catch (err) {
+        feedback.textContent = 'Hubo un error de conexión al procesar el ingreso.';
+        feedback.style.display = 'block';
+        btn.disabled = false;
+        btn.innerHTML = 'Ingresar al Portal <i class="fas fa-arrow-right"></i>';
+      }
+    }
+  </script>
+</body>
+</html>

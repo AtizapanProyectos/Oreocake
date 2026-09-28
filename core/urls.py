@@ -4,6 +4,8 @@ from . import views
 
 urlpatterns = [
     path('', views.inicio, name='inicio'),
+    path('tectum/', views.inicio_tectum, name='inicio_tectum'),
+    path('convenio-tectum/', views.inicio_tectum, name='convenio_tectum'),
     path('login/', views.modulo_informativo, name='modulo_informativo'),
     path('informativo/', views.modulo_informativo, name='informativo'),
     path('registro-ajax/', views.registrar_usuario, name='registro_usuario'),

@@ -463,8 +463,10 @@ def generar_link_meet(fecha_obj, hora_obj, paciente_nombre, psicologo_nombre, pa
         return None
 
 # =========================================================================
-# 🏠 NUEVA VISTA: PÁGINA DE INICIO (LANDING PAGE)
 def inicio(request):
+    host = request.get_host().split(':')[0].lower()
+    if 'tectuminhause' in host:
+        return inicio_tectum(request)
 
     articulos = ArticuloPrensa.objects.filter(publicado=True)[:6]
     context = {
@@ -475,6 +477,20 @@ def inicio(request):
     
     # ¡AQUÍ ESTÁ LA MAGIA! Pasamos el 'context' a la plantilla
     return render(request, 'inicio.html', context)
+
+def inicio_tectum(request):
+    """
+    Landing oficial del Convenio TECTUM In-House x Espacio HOPE.
+    Accesible directamente en tectuminhause.espaciohope.com o en la ruta /tectum/
+    """
+    articulos = ArticuloPrensa.objects.filter(publicado=True)[:6]
+    context = {
+        'cuestionario_json': json.dumps(CUESTIONARIO_CLINICO),
+        'paypal_client_id': settings.PAYPAL_CLIENT_ID,
+        'articulos_prensa': articulos,
+        'es_convenio_tectum': True,
+    }
+    return render(request, 'tectum/inicio-tectum.html', context)
 
 def modulo_informativo(request):
     context = {

@@ -169,9 +169,10 @@ STORAGES = {
 CSRF_TRUSTED_ORIGINS = [
     'https://espaciohope.com',
     'https://www.espaciohope.com',
-    'https://espaciohope.com',
-    'https://www.espaciohope.com',   
+    'https://tectuminhause.espaciohope.com',
     'http://localhost:8000',
+    'http://127.0.0.1:8000',
+    'http://tectuminhause.localhost:8000',
     'https://espacio-hope.com',
     'https://www.espacio-hope.com',
     'https://espaciohope.info',
@@ -181,23 +182,28 @@ CSRF_TRUSTED_ORIGINS = [
     'https://espaciohope.org',
     'https://www.espaciohope.org',
     'https://oreocake.onrender.com',
-
 ]
 
-ALLOWED_HOSTS = ['espaciohope.com', 
-'www.espaciohope.com', 'localhost',
- '127.0.0.1', 'testserver', 'espacio-hope.com', 
- 'www.espacio-hope.com',
- 'espacio-hope.com',
- 'www.espacio-hope.com',
- 'espaciohope.info',
- 'www.espaciohope.info',
- 'espaciohope.mx',
- 'www.espaciohope.mx',
- 'espaciohope.org',
- 'www.espaciohope.org',
- 'oreocake.onrender.com',
- ]
+ALLOWED_HOSTS = [
+    'espaciohope.com', 
+    'www.espaciohope.com', 
+    'tectuminhause.espaciohope.com',
+    '.espaciohope.com',
+    'localhost',
+    '127.0.0.1', 
+    'testserver', 
+    'espacio-hope.com', 
+    'www.espacio-hope.com',
+    'espaciohope.info',
+    'www.espaciohope.info',
+    'espaciohope.mx',
+    'www.espaciohope.mx',
+    'espaciohope.org',
+    'www.espaciohope.org',
+    'oreocake.onrender.com',
+    '.railway.app',
+    'tectuminhause.localhost',
+]
 
 
 PAYPAL_CLIENT_ID = os.environ.get('PAYPAL_CLIENT_ID', 'sb')
