@@ -1068,6 +1068,24 @@ function mostrarErrorCita(mensaje, opts) {
 
                         <!-- SECCIÓN PROTEGIDA DE MÉTODOS DE PAGO -->
                         <div id="seccion-metodos-pago" style="{% if not tiene_consentimiento %}display: none;{% endif %}">
+                            {% if es_usuario_tectum or perfil.es_tectum %}
+                            <!-- Beneficio Corporativo Exclusivo TECTUM In-House -->
+                            <div style="background: linear-gradient(135deg, #f0fdf4 0%, #e0f2fe 100%); border: 2.5px solid #0284c7; padding: 32px 24px; border-radius: 24px; text-align: center; margin-top: 15px; box-shadow: 0 12px 32px rgba(2, 132, 199, 0.15);">
+                                <div style="width: 64px; height: 64px; border-radius: 50%; background: #0284c7; color: white; display: flex; align-items: center; justify-content: center; font-size: 28px; margin: 0 auto 16px auto; box-shadow: 0 8px 20px rgba(2,132,199,0.35);">
+                                    <i class="fas fa-shield-alt"></i>
+                                </div>
+                                <span style="display: inline-block; background: #0284c7; color: white; font-weight: 800; font-size: 12px; letter-spacing: 1px; text-transform: uppercase; padding: 5px 16px; border-radius: 20px; margin-bottom: 12px;">Convenio Activo In-House</span>
+                                <h3 style="font-family: var(--font-headings); font-size: 22px; font-weight: 800; color: #0c4a6e; margin: 0 0 10px 0;">
+                                    Sesión 100% Cubierta por TECTUM
+                                </h3>
+                                <p style="font-size: 14.5px; color: #0369a1; line-height: 1.6; margin: 0 auto 24px auto; max-width: 520px; font-family: var(--font-body);">
+                                    Como colaborador con acceso corporate <strong>TECTUM In-House</strong>, tus consultas psicológicas están cubiertas en su totalidad. No requieres realizar ningún pago.
+                                </p>
+                                <button type="button" id="btn-confirmar-cita-tectum" onclick="confirmarCitaTectum()" style="background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color: white; border: none; border-radius: 16px; padding: 18px 40px; font-size: 16px; font-weight: 800; cursor: pointer; box-shadow: 0 10px 28px rgba(2,132,199,0.4); display: inline-flex; align-items: center; gap: 12px; transition: transform 0.2s ease; font-family: var(--font-headings);" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
+                                    <i class="fas fa-check-circle" style="font-size: 20px;"></i> Confirmar Cita sin Costo
+                                </button>
+                            </div>
+                            {% else %}
                             <div id="paypal-button-container" style="margin-top: 15px; min-height: 55px;">
                                 <div id="paypal-loading-placeholder" style="display: flex; align-items: center; justify-content: center; gap: 10px; padding: 14px; color: var(--text-muted); font-family: var(--font-body); font-size: 14px;">
                                     <i class="fas fa-circle-notch fa-spin"></i> Cargando opciones de pago, espera un momento...
@@ -1135,6 +1153,7 @@ function mostrarErrorCita(mensaje, opts) {
                                     </a>
                                 </div>
                             </div>
+                            {% endif %}
                         </div> <!-- Fin #seccion-metodos-pago -->
 
                 <div id="step-3-loading" style="display: none; text-align: center; padding: 60px 0;">
@@ -1769,8 +1788,13 @@ function actualizarResumenPrecio() {
     const tipo = window.tipoServicioAgendado || 'individual';
     const { comision, total } = calcularPrecioFrontend(tipo, window.integrantesFamilia);
 
-    document.getElementById('precio-dinamico').innerHTML = `$${total.toFixed(2)} <span style="font-size: 16px;">MXN</span>`;
-    document.getElementById('desglose-precio').innerHTML = `+ <span style="color: var(--c-orange); font-weight: 600;">$${comision.toFixed(2)} de comisión</span>`;
+    if (PRECIOS_CONFIG.es_tectum || total === 0) {
+        document.getElementById('precio-dinamico').innerHTML = `$0.00 <span style="font-size: 16px;">MXN</span>`;
+        document.getElementById('desglose-precio').innerHTML = `<span style="color: #0284c7; font-weight: 800; background: #e0f2fe; padding: 4px 12px; border-radius: 8px; display: inline-block;"><i class="fas fa-shield-alt"></i> 100% Cubierto por Convenio TECTUM</span>`;
+    } else {
+        document.getElementById('precio-dinamico').innerHTML = `$${total.toFixed(2)} <span style="font-size: 16px;">MXN</span>`;
+        document.getElementById('desglose-precio').innerHTML = `+ <span style="color: var(--c-orange); font-weight: 600;">$${comision.toFixed(2)} de comisión</span>`;
+    }
 
     const descripciones = {
         individual: 'Consulta Psicológica Online Individual',
@@ -1778,6 +1802,18 @@ function actualizarResumenPrecio() {
         familiar: `Terapia Familiar (${window.integrantesFamilia} integrantes)`,
     };
     document.getElementById('desc-dinamica').innerText = descripciones[tipo] || descripciones.individual;
+}
+
+function confirmarCitaTectum() {
+    if (!window.tieneConsentimiento) {
+        abrirModalConsentimiento();
+        return;
+    }
+    if (!window.fechaSeleccionada || !window.horaSeleccionada) {
+        alert("Por favor, selecciona primero una fecha y un horario disponible en el calendario.");
+        return;
+    }
+    guardarCitaSinPago('CONVENIO_TECTUM_INHOUSE');
 }
 
 function cambiarIntegrantesFamilia(delta) {

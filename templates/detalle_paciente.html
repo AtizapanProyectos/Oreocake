@@ -284,7 +284,14 @@
     <div class="header-clinico">
         <div>
             <a href="{% url 'panel_doctor' %}" class="btn-back"><i class="fas fa-arrow-left"></i> Volver a la Agenda</a>
-            <h1 style="font-family: var(--font-headings); font-size: 42px; margin: 10px 0 5px 0; color: var(--c-purple);">{{ paciente.first_name|title }} {{ paciente.last_name|title }}</h1>
+            <h1 style="font-family: var(--font-headings); font-size: 42px; margin: 10px 0 5px 0; color: var(--c-purple);">
+                {{ paciente.first_name|title }} {{ paciente.last_name|title }}
+                {% if paciente.perfil.es_tectum %}
+                <span style="background: #0284c7; color: white; font-size: 14px; font-weight: 800; padding: 4px 12px; border-radius: 8px; vertical-align: middle; margin-left: 10px; display: inline-flex; align-items: center; gap: 6px;">
+                    <i class="fas fa-shield-alt"></i> Paciente TECTUM In-House
+                </span>
+                {% endif %}
+            </h1>
             <p style="margin: 0; color: var(--text-muted); font-size: 15px;"><i class="fas fa-envelope" style="color: var(--c-orange);"></i> {{ paciente.email }}</p>
         </div>
         <div style="display: flex; gap: 10px; flex-wrap: wrap;">

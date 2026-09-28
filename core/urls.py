@@ -12,6 +12,7 @@ urlpatterns = [
     path('activar/<uidb64>/<token>/', views.activar_cuenta, name='activar_cuenta'),
     path('login-ajax/', views.login_usuario, name='login_usuario'),
     path('panel/', views.panel_generico, name='panel_generico'),
+    path('panel-tectum/', views.panel_generico, name='panel_tectum'),
     path('guardar-cita/', views.guardar_cita_ajax, name='guardar_cita'), # <-- AGREGA ESTA LÍNEA
     path('disponibilidad-por-tipo/', views.obtener_disponibilidad_por_tipo_ajax, name='disponibilidad_por_tipo'), # NUEVO: filtra por individual/pareja/familiar
     path('calcular-precio-sesion/', views.calcular_precio_sesion_ajax, name='calcular_precio_sesion'), # NUEVO: precio en tiempo real

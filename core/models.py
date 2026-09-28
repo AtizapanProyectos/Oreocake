@@ -219,6 +219,7 @@ class UsuarioPerfil(models.Model):
     telefono = models.CharField(max_length=20, blank=True, null=True, db_index=True) # 🔥 OPTIMIZADO: search_fields frecuente
     telefono_emergencia = models.CharField(max_length=20, blank=True, null=True, verbose_name="Teléfono de Emergencia")
     es_padre = models.BooleanField(default=False, verbose_name="¿Es padre/madre de familia?")
+    es_tectum = models.BooleanField(default=False, db_index=True, verbose_name="Convenio TECTUM In-House")
     psicologo_asignado = models.ForeignKey(PerfilPsicologo, on_delete=models.SET_NULL, null=True, blank=True, related_name='pacientes_asignados', verbose_name="Psicólogo Asignado")
 
     historia_clinica = models.TextField(blank=True, null=True, verbose_name="1. Cómo llega el paciente (Historia Clínica)")
@@ -295,6 +296,7 @@ class Cita(models.Model):
         ('familiar', 'Terapia Familiar'),
     ])
     integrantes_familia = models.PositiveSmallIntegerField(blank=True, null=True, verbose_name="Número de integrantes (Terapia Familiar)")
+    es_tectum = models.BooleanField(default=False, db_index=True, verbose_name="Cita Convenio TECTUM")
 
     class Meta:
         unique_together = [['psicologo', 'fecha', 'hora']]

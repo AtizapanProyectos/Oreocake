@@ -751,6 +751,142 @@
       box-shadow: 0 12px 26px rgba(37, 99, 235, 0.4);
     }
 
+    /* ── MODAL REGISTRO Y TRIAGE TECTUM ── */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(7, 13, 30, 0.85);
+      backdrop-filter: blur(12px);
+      z-index: 6000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .modal-overlay.on {
+      display: flex;
+    }
+    .modal-box {
+      background: #ffffff;
+      border-radius: 32px;
+      padding: 40px;
+      width: min(620px, 100%);
+      max-height: 90vh;
+      overflow-y: auto;
+      position: relative;
+      box-shadow: var(--sh-lg);
+      border: 1px solid var(--slate-200);
+      animation: modalPop 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .modal-close {
+      position: absolute;
+      top: 20px;
+      right: 22px;
+      background: var(--slate-100);
+      border: 0;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      font-size: 1.1rem;
+      cursor: pointer;
+      color: var(--slate-500);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.25s ease;
+    }
+    .modal-close:hover {
+      background: var(--slate-200);
+      color: var(--navy-900);
+    }
+    .progress-container {
+      width: 100%;
+      height: 8px;
+      background: #e2e8f0;
+      border-radius: 10px;
+      overflow: hidden;
+      margin-bottom: 8px;
+    }
+    #progressBar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #2563eb, #0ea5e9);
+      border-radius: 10px;
+      transition: width 0.35s ease;
+    }
+    .triage-option-label {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      background: #f8fafc;
+      padding: 16px 20px;
+      border-radius: 16px;
+      border: 2px solid #e2e8f0;
+      cursor: pointer;
+      font-size: 0.98rem;
+      color: var(--slate-900);
+      font-weight: 600;
+      transition: all 0.2s ease;
+    }
+    .triage-option-label:hover {
+      border-color: #2563eb;
+      background: #f0f7ff;
+    }
+    .triage-option-label input[type="radio"],
+    .triage-option-label input[type="checkbox"] {
+      width: 20px;
+      height: 20px;
+      accent-color: #2563eb;
+    }
+    .custom-input-triage {
+      width: 100%;
+      padding: 16px 20px;
+      border-radius: 14px;
+      border: 2px solid #cbd5e1;
+      font-size: 1rem;
+      font-family: var(--font-b);
+      outline: none;
+      transition: 0.3s;
+      color: var(--slate-900);
+    }
+    .custom-input-triage:focus {
+      border-color: #2563eb;
+      box-shadow: 0 0 0 4px rgba(37,99,235,0.12);
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--navy-900) 0%, var(--blue-600) 100%);
+      color: #ffffff;
+      border: none;
+      border-radius: 100px;
+      font-family: var(--font-h);
+      font-weight: 800;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.3s ease;
+      box-shadow: 0 8px 20px rgba(37, 99, 235, 0.3);
+    }
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 26px rgba(37, 99, 235, 0.4);
+    }
+    .btn-outline {
+      background: #ffffff;
+      color: var(--slate-700);
+      border: 2px solid #e2e8f0;
+      border-radius: 100px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+    }
+    .btn-outline:hover {
+      background: var(--slate-100);
+      border-color: #cbd5e1;
+    }
+
     /* ── RESPONSIVE DESIGN ── */
     @media (max-width: 1100px) {
       .sidebar {
@@ -985,9 +1121,15 @@
               Un espacio seguro y confidencial exclusivo para ti. Aborda la ansiedad, depresión, duelo o crecimiento
               personal con un especialista que te guiará paso a paso hacia tu bienestar.
             </p>
-            <a href="{% url 'sesion_individual' %}" class="btn-inscribete" style="background:var(--c-purple); border:none;">
-              Agendar Sesión <i class="fas fa-arrow-right"></i>
+            {% if request.user.is_authenticated %}
+            <a href="{% url 'panel_generico' %}" class="btn-inscribete" style="background:var(--c-purple); border:none;">
+              Ir a mi Panel <i class="fas fa-arrow-right"></i>
             </a>
+            {% else %}
+            <button type="button" onclick="abrirRegistroDirecto('individual', 'terapia_individual')" class="btn-inscribete" style="background:var(--c-purple); border:none; cursor:pointer;">
+              Agendar Sesión <i class="fas fa-arrow-right"></i>
+            </button>
+            {% endif %}
           </div>
         </div>
 
@@ -1002,9 +1144,15 @@
               Reconstruyan su vínculo, mejoren la comunicación y superen obstáculos juntos en un entorno neutral,
               empático y guiado por expertos en relaciones humanas.
             </p>
-            <a href="{% url 'sesion_pareja' %}" class="btn-inscribete" style="background:var(--c-pink); border:none;">
-              Agendar Sesión <i class="fas fa-arrow-right"></i>
+            {% if request.user.is_authenticated %}
+            <a href="{% url 'panel_generico' %}" class="btn-inscribete" style="background:var(--c-pink); border:none;">
+              Ir a mi Panel <i class="fas fa-arrow-right"></i>
             </a>
+            {% else %}
+            <button type="button" onclick="abrirRegistroDirecto('pareja', 'terapia_pareja')" class="btn-inscribete" style="background:var(--c-pink); border:none; cursor:pointer;">
+              Agendar Sesión <i class="fas fa-arrow-right"></i>
+            </button>
+            {% endif %}
           </div>
         </div>
 
@@ -1020,68 +1168,48 @@
               Fortalece los lazos familiares y mejora la comunicación entre todos sus integrantes. Un espacio guiado
               para resolver conflictos, sanar heridas y construir una dinámica familiar más sana y unida.
             </p>
-            <a href="{% url 'sesion_familia' %}" class="btn-inscribete" style="background:var(--c-teal); border:none;">
-              Agendar Sesión <i class="fas fa-arrow-right"></i>
+            {% if request.user.is_authenticated %}
+            <a href="{% url 'panel_generico' %}" class="btn-inscribete" style="background:var(--c-teal); border:none;">
+              Ir a mi Panel <i class="fas fa-arrow-right"></i>
             </a>
+            {% else %}
+            <button type="button" onclick="abrirRegistroDirecto('familiar', 'terapia_familiar')" class="btn-inscribete" style="background:var(--c-teal); border:none; cursor:pointer;">
+              Agendar Sesión <i class="fas fa-arrow-right"></i>
+            </button>
+            {% endif %}
           </div>
         </div>
       </div>
     </section>
 
-    <!-- SECCIÓN: BENEFICIOS CORPORATIVOS TECTUM -->
-    <section id="beneficios" class="section">
-      <div class="section-header">
-        <h2 class="title">Beneficios<br><span>Corporativos.</span></h2>
-      </div>
-
-      <div class="grid">
-        <div class="card">
-          <div class="cimg">
-            <img src="{% static 'img/slider_4.jpeg' %}" alt="Seguros y Protección">
-            <div class="badge-floating"><i class="fas fa-shield-heart"></i> Cobertura Médica</div>
+    <!-- FOOTER CORPORATIVO: LOGO BLANCO HOPE + LOGO TECTUM + INFO GENERAL -->
+    <footer style="background: var(--navy-950); padding: 60px 24px 45px; border-top: 1px solid rgba(255, 255, 255, 0.08); color: #ffffff;">
+      <div style="max-width: 1100px; margin: 0 auto; display: flex; flex-direction: column; align-items: center; text-align: center;">
+        
+        <!-- Logos de la Alianza Corporativa -->
+        <div style="display: flex; align-items: center; justify-content: center; gap: 24px; flex-wrap: wrap; margin-bottom: 24px;">
+          <div style="background: rgba(255,255,255,0.06); padding: 10px 22px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center;">
+            <img src="{% static 'img/tectum/logo-completo.png' %}" alt="TECTUM In-House" style="height: 38px; width: auto; filter: brightness(0) invert(1);">
           </div>
-          <div class="cbody">
-            <h3>Seguros y Protección</h3>
-            <p>
-              Coberturas para colaboradores y su familia, con la solidez de aseguradoras de primer nivel y un solo punto de contacto.
-            </p>
-            <a class="link-action" href="{% url 'sesion_individual' %}">Conocer Más →</a>
+          <span style="color: var(--sky-400); font-size: 22px; font-weight: 300;">✕</span>
+          <div style="background: rgba(255,255,255,0.06); padding: 10px 22px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center;">
+            <img src="{% static 'img/logo_hope_blanco.png' %}" alt="Espacio HOPE" style="height: 38px; width: auto;">
           </div>
         </div>
 
-        <div class="card">
-          <div class="cimg" style="background: linear-gradient(135deg, var(--navy-900) 0%, var(--blue-600) 100%);">
-            <img src="{% static 'img/tectum/escudo.png' %}" alt="Escudo TECTUM" class="watermark-card">
-            <span class="big-label">Salud</span>
-          </div>
-          <div class="cbody">
-            <h3>Bienestar del Colaborador</h3>
-            <p>
-              Programas de salud, prevención y apoyo que se sienten en el día a día y elevan el compromiso del equipo.
-            </p>
-            <a class="link-action" href="{% url 'sesion_individual' %}">Conocer Más →</a>
-          </div>
-        </div>
+        <h3 style="font-family: var(--font-h); font-size: 1.35rem; font-weight: 800; color: #ffffff; margin-bottom: 10px; letter-spacing: -0.3px;">
+          Convenio Corporativo In-House de Salud Mental
+        </h3>
+        <p style="font-size: 0.95rem; color: var(--slate-400); line-height: 1.6; max-width: 640px; margin-bottom: 24px;">
+          Atención psicológica integral, confidencial y profesional para los colaboradores y sus familias. Plataforma respaldada con estándares clínicos de primer nivel.
+        </p>
 
-        <div class="card">
-          <div class="cimg" style="background: linear-gradient(135deg, var(--navy-800) 0%, var(--sky-400) 100%);">
-            <img src="{% static 'img/tectum/escudo.png' %}" alt="Escudo TECTUM" class="watermark-card">
-            <span class="big-label">Futuro</span>
-          </div>
-          <div class="cbody">
-            <h3>Beneficios Patrimoniales</h3>
-            <p>
-              Ahorro, retiro y planes de largo plazo que dan tranquilidad a quienes construyen tu empresa.
-            </p>
-            <a class="link-action" href="{% url 'sesion_individual' %}">Conocer Más →</a>
-          </div>
+        <div style="display: flex; gap: 24px; flex-wrap: wrap; justify-content: center; font-size: 0.88rem; color: var(--slate-400); padding-top: 18px; border-top: 1px solid rgba(255,255,255,0.08); width: 100%;">
+          <span><i class="fas fa-shield-alt" style="color: var(--sky-400); margin-right: 6px;"></i> Expediente Clínico 100% Confidencial</span>
+          <span><i class="fas fa-user-md" style="color: var(--sky-400); margin-right: 6px;"></i> Especialistas con Cédula Profesional</span>
+          <span><i class="fas fa-headset" style="color: var(--sky-400); margin-right: 6px;"></i> Soporte In-House: <a href="https://wa.me/525521130230" target="_blank" style="color: #38bdf8; text-decoration: none; font-weight: 700;">WhatsApp +52 55 2113 0230</a></span>
         </div>
       </div>
-    </section>
-
-    <!-- FOOTER: SOLO LOGO DE HOPE EN BLANCO -->
-    <footer>
-      <img src="{% static 'img/logo_hope_blanco.png' %}" alt="Espacio HOPE" class="footer-logo-hope">
     </footer>
 
   </main>
@@ -1110,6 +1238,131 @@
           Entrar <i class="fas fa-arrow-right"></i>
         </button>
       </form>
+
+      <div style="margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--slate-200); text-align: center;">
+        <p style="font-size: 0.9rem; color: var(--slate-500); margin-bottom: 10px;">¿Aún no tienes cuenta registrada?</p>
+        <button type="button" onclick="cerrar('login'); abrirRegistroDirecto('individual', 'terapia_individual');" style="background: transparent; color: var(--blue-600); border: 2px solid var(--blue-600); padding: 10px 24px; border-radius: 100px; font-weight: 800; font-family: var(--font-h); font-size: 0.88rem; cursor: pointer; transition: all 0.25s ease;">
+          <i class="fas fa-user-plus" style="margin-right: 6px;"></i> Regístrate aquí
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL DE REGISTRO Y CUESTIONARIO CLÍNICO TECTUM -->
+  <div class="modal-overlay" id="modalRegistro">
+    <div class="modal-box" id="triageBox" style="text-align: left; padding: 42px; border-radius: 32px; border-top: 8px solid var(--blue-600);">
+      <button class="modal-close" onclick="cerrarModalRegistro()"><i class="fas fa-times"></i></button>
+
+      <div style="display: flex; align-items: center; justify-content: center; gap: 14px; margin-bottom: 20px;">
+        <img src="{% static 'img/tectum/logo-completo.png' %}" alt="TECTUM" style="height: 32px; width: auto;">
+        <span style="color: var(--slate-400); font-weight: 700;">✕</span>
+        <img src="{% static 'img/nlogo.png' %}" alt="HOPE" style="height: 32px; width: auto;">
+      </div>
+
+      <div style="text-align: center; margin-bottom: 25px;" id="triageHeader">
+        <h2 style="font-family: var(--font-h); font-size: 2rem; color: var(--navy-900); font-weight: 800;">Registro In-House</h2>
+        <p style="color: var(--slate-500); font-size: 1rem;" id="triageSubtitle">Paso a paso, a tu propio ritmo.</p>
+      </div>
+
+      <div id="triageContainer">
+        <!-- Paso 1: Preguntas del cuestionario clínico -->
+        <div id="stepPreguntas" style="display: none;">
+          <div class="progress-container">
+            <div id="progressBar"></div>
+          </div>
+          <p id="progressText" style="text-align: right; color: var(--blue-600); font-weight: 800; margin-bottom: 20px; font-size: 0.85rem; text-transform: uppercase;">
+          </p>
+          <h3 id="questionText" style="margin-bottom: 25px; font-size: 1.35rem; color: var(--navy-900); font-weight: 800; line-height: 1.4;">
+          </h3>
+          <div id="questionOptionsContainer" style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 30px;"></div>
+          <div style="display: flex; gap: 15px;">
+            <button type="button" id="btnAtras" class="btn-outline" style="display: none; padding: 15px 25px;">
+              <i class="fas fa-arrow-left"></i>
+            </button>
+            <button type="button" id="btnSiguiente" class="btn-primary" style="flex: 1; justify-content: center; padding: 15px 25px;">
+              Continuar <i class="fas fa-arrow-right"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Paso 2: Formulario de credenciales y datos -->
+        <form action="{% url 'registro_usuario' %}" method="POST" id="formRegistro" style="display: none;">
+          {% csrf_token %}
+          <input type="hidden" name="flujo_elegido" id="inputFlujoFinal">
+          <input type="hidden" name="respuestas_json" id="inputRespuestasFinal">
+          <input type="hidden" name="servicio_origen" id="inputServicioOrigen">
+          <input type="hidden" name="convenio" value="tectum">
+
+          <div style="background: #f8fafc; padding: 24px; border-radius: 20px; border: 1px solid #e2e8f0; margin-bottom: 22px;">
+            <h4 style="font-family: var(--font-h); font-size: 1.3rem; color: var(--navy-900); margin-bottom: 18px; font-weight: 800;">
+              Tus Datos de Acceso
+            </h4>
+
+            <div style="margin-bottom: 16px;">
+              <label style="font-size: 0.82rem; font-weight: 700; color: var(--slate-500); margin-bottom: 6px; display: block; text-transform: uppercase; letter-spacing: 0.8px;">¿Cómo te llamamos? *</label>
+              <div style="position: relative;">
+                <i class="fas fa-smile" style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 1.1rem;"></i>
+                <input type="text" id="pseudonimoFinal" style="width: 100%; padding: 14px 16px 14px 46px; border-radius: 12px; border: 1.5px solid #cbd5e1; font-size: 0.95rem; font-family: var(--font-b); outline: none; transition: 0.25s;" placeholder="Ej. Alex, Majo..." required>
+              </div>
+            </div>
+
+            <div style="margin-bottom: 16px;">
+              <label style="font-size: 0.82rem; font-weight: 700; color: var(--slate-500); margin-bottom: 6px; display: block; text-transform: uppercase; letter-spacing: 0.8px;">Nombre Completo (Confidencial para Expediente) *</label>
+              <div style="position: relative;">
+                <i class="fas fa-id-card" style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 1.1rem;"></i>
+                <input type="text" name="nombre" style="width: 100%; padding: 14px 16px 14px 46px; border-radius: 12px; border: 1.5px solid #cbd5e1; font-size: 0.95rem; font-family: var(--font-b); outline: none; transition: 0.25s;" placeholder="Nombre y apellidos" required>
+              </div>
+            </div>
+
+            <div style="margin-bottom: 16px;">
+              <label style="font-size: 0.82rem; font-weight: 700; color: var(--slate-500); margin-bottom: 6px; display: block; text-transform: uppercase; letter-spacing: 0.8px;">Correo Corporativo o Personal *</label>
+              <div style="position: relative;">
+                <i class="fas fa-envelope" style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 1.1rem;"></i>
+                <input type="email" name="email" style="width: 100%; padding: 14px 16px 14px 46px; border-radius: 12px; border: 1.5px solid #cbd5e1; font-size: 0.95rem; font-family: var(--font-b); outline: none; transition: 0.25s;" placeholder="correo@ejemplo.com" required>
+              </div>
+            </div>
+
+            <div style="display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 16px;">
+              <div style="flex: 1; min-width: 180px;">
+                <label style="font-size: 0.82rem; font-weight: 700; color: var(--slate-500); margin-bottom: 6px; display: block; text-transform: uppercase; letter-spacing: 0.8px;">Teléfono *</label>
+                <div style="position: relative;">
+                  <i class="fas fa-phone" style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 1.1rem;"></i>
+                  <input type="tel" name="telefono" style="width: 100%; padding: 14px 16px 14px 46px; border-radius: 12px; border: 1.5px solid #cbd5e1; font-size: 0.95rem; font-family: var(--font-b); outline: none;" placeholder="A 10 dígitos" required>
+                </div>
+              </div>
+              <div style="flex: 1; min-width: 180px;">
+                <label style="font-size: 0.82rem; font-weight: 700; color: var(--blue-600); margin-bottom: 6px; display: block; text-transform: uppercase; letter-spacing: 0.8px;">Tel. Emergencia *</label>
+                <div style="position: relative;">
+                  <i class="fas fa-notes-medical" style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: var(--blue-600); font-size: 1.1rem;"></i>
+                  <input type="tel" name="telefono_emergencia" style="width: 100%; padding: 14px 16px 14px 46px; border-radius: 12px; border: 1.5px solid #bfdbfe; font-size: 0.95rem; font-family: var(--font-b); outline: none; background: #eff6ff;" placeholder="Familiar o contacto" required>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <label style="font-size: 0.82rem; font-weight: 700; color: var(--slate-500); margin-bottom: 6px; display: block; text-transform: uppercase; letter-spacing: 0.8px;">Contraseña *</label>
+              <div style="position: relative;">
+                <i class="fas fa-lock" style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 1.1rem;"></i>
+                <input type="password" name="password" id="inputRegisterPassword" style="width: 100%; padding: 14px 46px 14px 46px; border-radius: 12px; border: 1.5px solid #cbd5e1; font-size: 0.95rem; font-family: var(--font-b); outline: none;" placeholder="Mínimo 8 caracteres" required>
+                <button type="button" onclick="togglePass('inputRegisterPassword', 'eyeIconRegister')" style="position: absolute; right: 14px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: #94a3b8; font-size: 1.1rem;">
+                  <i class="fas fa-eye" id="eyeIconRegister"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <label style="display: flex; align-items: flex-start; gap: 12px; margin-bottom: 22px; cursor: pointer; background: #f0fdf4; padding: 16px; border-radius: 14px; border: 1px solid #bbf7d0;">
+            <input type="checkbox" name="acepta_privacidad" required style="min-width: 20px; height: 20px; accent-color: #16a34a; margin-top: 2px; cursor: pointer;">
+            <span style="font-size: 0.88rem; color: #166534; line-height: 1.45; font-weight: 500;">
+              Confirmo que pertenezco a una empresa afiliada a <strong>TECTUM</strong> y acepto las políticas de confidencialidad para la atención clínica de Espacio HOPE.
+            </span>
+          </label>
+
+          <button type="submit" class="btn-primary" id="btnSubmitFinal" style="width: 100%; justify-content: center; padding: 18px; font-size: 1.1rem; border-radius: 100px; font-weight: 900;">
+            Finalizar Registro e Ingresar al Panel <i class="fas fa-arrow-right" style="margin-left: 8px;"></i>
+          </button>
+        </form>
+      </div>
     </div>
   </div>
 
@@ -1139,7 +1392,7 @@
       slideTimer = setInterval(() => goToSlide(currentSlide + 1), 7500);
     }
 
-    // Modal
+    // Modales generales
     function abrir(id) {
       const modal = document.getElementById('m-' + id);
       if (modal) modal.classList.add('on');
@@ -1148,6 +1401,19 @@
     function cerrar(id) {
       const modal = document.getElementById('m-' + id);
       if (modal) modal.classList.remove('on');
+    }
+
+    function togglePass(inputId, iconId) {
+      const inp = document.getElementById(inputId);
+      const icon = document.getElementById(iconId);
+      if (!inp || !icon) return;
+      if (inp.type === 'password') {
+        inp.type = 'text';
+        icon.className = 'fas fa-eye-slash';
+      } else {
+        inp.type = 'password';
+        icon.className = 'fas fa-eye';
+      }
     }
 
     // Toggle Sidebar en móvil
@@ -1168,6 +1434,7 @@
       btn.innerHTML = 'Verificando... <i class="fas fa-spinner fa-spin"></i>';
 
       const formData = new FormData(form);
+      formData.append('convenio', 'tectum');
 
       try {
         const response = await fetch("{% url 'login_usuario' %}", {
@@ -1194,6 +1461,216 @@
         btn.disabled = false;
         btn.innerHTML = 'Entrar <i class="fas fa-arrow-right"></i>';
       }
+    }
+
+    // ── LÓGICA DE REGISTRO DIRECTO Y CUESTIONARIO CLÍNICO TECTUM ──
+    let dataCuestionario = {};
+    try {
+      dataCuestionario = JSON.parse('{{ cuestionario_json|escapejs|default:"{}" }}');
+    } catch (e) {
+      console.error("Error al parsear cuestionario_json:", e);
+    }
+
+    let flujoActual = "";
+    let indicePregunta = 0;
+    let respuestasGuardadas = {};
+    let preguntasFlujo = [];
+    let historialNavegacion = [];
+
+    function cerrarModalRegistro() {
+      const modal = document.getElementById('modalRegistro');
+      if (modal) modal.classList.remove('on');
+    }
+
+    function abrirRegistroDirecto(flujo, servicioExacto) {
+      document.getElementById('inputServicioOrigen').value = servicioExacto || 'terapia_individual';
+
+      if (!dataCuestionario || Object.keys(dataCuestionario).length === 0) {
+        alert("El sistema de registro se está sincronizando. Intenta de nuevo.");
+        return;
+      }
+
+      const modal = document.getElementById('modalRegistro');
+      if (modal) modal.classList.add('on');
+
+      document.getElementById('stepPreguntas').style.display = 'block';
+      document.getElementById('formRegistro').style.display = 'none';
+
+      iniciarCuestionario(flujo || 'individual');
+    }
+
+    function iniciarCuestionario(flujo) {
+      if (!dataCuestionario[flujo]) {
+        flujo = Object.keys(dataCuestionario)[0] || 'individual';
+      }
+      flujoActual = flujo;
+      preguntasFlujo = dataCuestionario[flujoActual].preguntas;
+
+      document.querySelector("#triageHeader h2").innerText = dataCuestionario[flujoActual].titulo || "Registro In-House";
+
+      historialNavegacion = [];
+      respuestasGuardadas = {};
+      indicePregunta = obtenerSiguienteIndiceValido(0);
+      mostrarPregunta();
+    }
+
+    function debeMostrarPregunta(pregunta) {
+      if (!pregunta.mostrar_si) return true;
+      const depId = pregunta.mostrar_si.id;
+      const valoresPermitidos = pregunta.mostrar_si.valores;
+      const respuestaPrevia = respuestasGuardadas[depId];
+      if (!respuestaPrevia) return false;
+      if (Array.isArray(respuestaPrevia)) return respuestaPrevia.some(r => valoresPermitidos.includes(r));
+      return valoresPermitidos.includes(respuestaPrevia);
+    }
+
+    function obtenerSiguienteIndiceValido(inicio) {
+      let nextIndex = inicio;
+      while (nextIndex < preguntasFlujo.length) {
+        if (debeMostrarPregunta(preguntasFlujo[nextIndex])) return nextIndex;
+        nextIndex++;
+      }
+      return nextIndex;
+    }
+
+    function mostrarPregunta() {
+      const optionsContainer = document.getElementById("questionOptionsContainer");
+      optionsContainer.innerHTML = "";
+
+      if (indicePregunta >= preguntasFlujo.length) {
+        finalizarCuestionario();
+        return;
+      }
+
+      document.getElementById("progressBar").style.width = (((indicePregunta) / preguntasFlujo.length) * 100) + "%";
+      document.getElementById("progressText").innerText = `Pregunta ${historialNavegacion.length + 1} de ${preguntasFlujo.length}`;
+
+      const q = preguntasFlujo[indicePregunta];
+      document.getElementById("questionText").innerText = q.pregunta;
+      document.getElementById("btnAtras").style.display = historialNavegacion.length > 0 ? "block" : "none";
+
+      const esPreguntaEdad = q.id === 'edad' || q.pregunta.toLowerCase().includes('edad');
+
+      if (q.tipo === "single" || q.tipo === "multiple") {
+        const inputType = q.tipo === "single" ? "radio" : "checkbox";
+        q.opciones.forEach((opcion) => {
+          const checked = respuestasGuardadas[q.id] && respuestasGuardadas[q.id].includes(opcion) ? "checked" : "";
+          const html = `<label class="triage-option-label"><input type="${inputType}" name="${q.id}" value="${opcion}" ${checked}> ${opcion}</label>`;
+          optionsContainer.insertAdjacentHTML('beforeend', html);
+        });
+      } else if (esPreguntaEdad) {
+        const val = respuestasGuardadas[q.id] || 25;
+        optionsContainer.innerHTML = `
+          <div style="text-align: center; margin-bottom: 20px;">
+            <span id="${q.id}_valDisplay" style="font-size: 5rem; font-weight: 800; color: var(--blue-600); font-family: var(--font-h); line-height: 1;">${val}</span>
+            <span style="font-size: 1.1rem; color: #64748b; font-weight: 600; display: block; margin-top: 6px;">años de edad</span>
+          </div>
+          <div style="padding: 0 10px;">
+            <input type="range" id="${q.id}" min="14" max="75" value="${val}" style="width: 100%; height: 8px; background: #e2e8f0; border-radius: 4px; appearance: none; accent-color: var(--blue-600); cursor: pointer;" oninput="document.getElementById('${q.id}_valDisplay').innerText = this.value">
+            <div style="display: flex; justify-content: space-between; font-size: 0.85rem; color: #94a3b8; font-weight: 600; margin-top: 10px;">
+              <span>14 años</span>
+              <span>75+ años</span>
+            </div>
+          </div>
+        `;
+      } else {
+        const val = respuestasGuardadas[q.id] || "";
+        const inputType = q.tipo === "numero" ? "number" : "text";
+        optionsContainer.innerHTML = `<input type="${inputType}" id="${q.id}" class="custom-input-triage" placeholder="Escribe tu respuesta aquí..." value="${val}">`;
+      }
+    }
+
+    document.getElementById("btnSiguiente").addEventListener("click", function () {
+      const q = preguntasFlujo[indicePregunta];
+      let hayRespuesta = false;
+      if (q.tipo === "single") {
+        const sel = document.querySelector(`input[name="${q.id}"]:checked`);
+        if (sel) { respuestasGuardadas[q.id] = sel.value; hayRespuesta = true; }
+      } else if (q.tipo === "multiple") {
+        const sels = Array.from(document.querySelectorAll(`input[name="${q.id}"]:checked`)).map(el => el.value);
+        if (sels.length > 0) { respuestasGuardadas[q.id] = sels; hayRespuesta = true; }
+      } else {
+        const inp = document.getElementById(q.id);
+        const val = inp ? inp.value.trim() : "";
+        if (val !== "") {
+          respuestasGuardadas[q.id] = val;
+          hayRespuesta = true;
+        }
+      }
+
+      if (!hayRespuesta) {
+        alert("Por favor selecciona o escribe tu respuesta para continuar.");
+        return;
+      }
+
+      historialNavegacion.push(indicePregunta);
+      indicePregunta = obtenerSiguienteIndiceValido(indicePregunta + 1);
+      mostrarPregunta();
+    });
+
+    document.getElementById("btnAtras").addEventListener("click", function () {
+      if (historialNavegacion.length > 0) {
+        indicePregunta = historialNavegacion.pop();
+        mostrarPregunta();
+      }
+    });
+
+    function finalizarCuestionario() {
+      document.getElementById("stepPreguntas").style.display = "none";
+      document.getElementById("formRegistro").style.display = "block";
+      document.querySelector("#triageHeader h2").innerText = "Crea tu cuenta corporativa";
+      document.getElementById("inputFlujoFinal").value = flujoActual;
+      document.getElementById("progressBar").style.width = "100%";
+    }
+
+    // ── ENVÍO AJAX DEL REGISTRO FINAL TECTUM ──
+    const formReg = document.getElementById("formRegistro");
+    if (formReg) {
+      formReg.addEventListener("submit", function (e) {
+        e.preventDefault();
+        if (formReg.dataset.enviando === "true") return;
+        formReg.dataset.enviando = "true";
+
+        respuestasGuardadas["pseudonimo"] = document.getElementById("pseudonimoFinal").value;
+        const servicioElegido = document.getElementById("inputServicioOrigen").value;
+        if (servicioElegido) {
+          respuestasGuardadas["servicio_solicitado"] = servicioElegido;
+        }
+
+        document.getElementById("inputRespuestasFinal").value = JSON.stringify(respuestasGuardadas);
+
+        const btnSubmitFinal = document.getElementById("btnSubmitFinal");
+        const originalText = btnSubmitFinal.innerHTML;
+        btnSubmitFinal.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Creando expediente seguro...';
+        btnSubmitFinal.disabled = true;
+
+        fetch(formReg.getAttribute("action"), {
+          method: "POST",
+          body: new FormData(formReg),
+          headers: {
+            "X-Requested-With": "XMLHttpRequest",
+            "X-CSRFToken": formReg.querySelector('[name=csrfmiddlewaretoken]').value
+          }
+        })
+          .then(r => r.json())
+          .then(data => {
+            btnSubmitFinal.innerHTML = originalText;
+            btnSubmitFinal.disabled = false;
+            formReg.dataset.enviando = "false";
+
+            if (data.status === "success" || data.success) {
+              window.location.href = data.redirect_url || "{% url 'panel_generico' %}";
+            } else {
+              alert(data.message || "No se pudo completar el registro. Verifica los datos.");
+            }
+          })
+          .catch(err => {
+            btnSubmitFinal.innerHTML = originalText;
+            btnSubmitFinal.disabled = false;
+            formReg.dataset.enviando = "false";
+            alert("Error de conexión al procesar el registro.");
+          });
+      });
     }
   </script>
 </body>

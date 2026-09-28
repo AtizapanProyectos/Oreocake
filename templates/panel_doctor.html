@@ -1203,6 +1203,9 @@ body {
                 {% else %}
                   <span class="ctag ctag-blue"><i class="fas fa-laptop"></i> En Línea</span>
                 {% endif %}
+                {% if cita.es_tectum or cita.paciente.perfil.es_tectum %}
+                  <span class="ctag" style="background:#0284c7; color:#fff; font-weight:800;"><i class="fas fa-shield-alt"></i> TECTUM</span>
+                {% endif %}
               </div>
               <div class="cita-name">{{ cita.paciente.first_name|title }} {{ cita.paciente.last_name|title }}</div>
               <div class="cita-motivo"><i class="fas fa-stethoscope"></i> {{ cita.motivo }}</div>
@@ -1319,6 +1322,9 @@ body {
           <div class="pac-stats" style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px;">
             <span class="ctag ctag-purple"><i class="fas fa-leaf"></i> {{ data.total_citas }} sesiones</span>
             <span class="ctag ctag-teal"><i class="fas fa-hand-holding-heart"></i> {{ data.modalidades }}</span>
+            {% if data.es_tectum or data.usuario.perfil.es_tectum %}
+            <span class="ctag" style="background:#0284c7; color:#fff; font-weight:800;"><i class="fas fa-shield-alt"></i> TECTUM</span>
+            {% endif %}
           </div>
           <div class="pac-divider">
             <a href="{% url 'detalle_paciente' data.usuario.id %}" class="hbtn hbtn-ghost hbtn-full">

@@ -483,6 +483,7 @@ def inicio_tectum(request):
     Landing oficial del Convenio TECTUM In-House x Espacio HOPE.
     Accesible directamente en tectuminhause.espaciohope.com o en la ruta /tectum/
     """
+    request.session['convenio_tectum'] = True
     articulos = ArticuloPrensa.objects.filter(publicado=True)[:6]
     context = {
         'cuestionario_json': json.dumps(CUESTIONARIO_CLINICO),
@@ -510,6 +511,10 @@ def registrar_usuario(request):
         flujo_elegido = request.POST.get('flujo_elegido', 'individual')
         respuestas_raw = request.POST.get('respuestas_json', '{}')
 
+        es_tectum_bool = False
+        if 'tectuminhause' in request.get_host().lower() or request.POST.get('convenio') == 'tectum' or request.session.get('convenio_tectum'):
+            es_tectum_bool = True
+
         try:
             respuestas_dict = json.loads(respuestas_raw)
         except json.JSONDecodeError:
@@ -531,6 +536,10 @@ def registrar_usuario(request):
                         'status': 'error',
                         'message': 'Este correo ya está registrado en HOPE. Ingresa tu contraseña actual para agregar este servicio a tu cuenta.'
                     })
+
+            if es_tectum_bool and hasattr(user, 'perfil') and not user.perfil.es_tectum:
+                user.perfil.es_tectum = True
+                user.perfil.save(update_fields=['es_tectum'])
 
             # Guardamos o actualizamos el cuestionario para este flujo_elegido
             CuestionarioRegistro.objects.update_or_create(
@@ -562,7 +571,8 @@ def registrar_usuario(request):
             nombre=nombre, 
             telefono=telefono,
             telefono_emergencia=telefono_emergencia,
-            es_padre=es_padre_bool
+            es_padre=es_padre_bool,
+            es_tectum=es_tectum_bool
         )
 
         CuestionarioRegistro.objects.create(
@@ -618,8 +628,8 @@ def login_usuario(request):
     if request.method != 'POST':
         return JsonResponse({'status': 'error', 'message': 'Método no permitido.'}, status=405)
 
-    email = request.POST.get('login_email', '').strip()
-    password = request.POST.get('login_password', '')
+    email = (request.POST.get('login_email') or request.POST.get('email') or '').strip()
+    password = request.POST.get('login_password') or request.POST.get('password') or ''
 
     if not email or not password:
         return JsonResponse({
@@ -662,6 +672,11 @@ def login_usuario(request):
 
     login(request, user)
 
+    if 'tectuminhause' in request.get_host().lower() or request.session.get('convenio_tectum') or request.POST.get('convenio') == 'tectum':
+        if hasattr(user, 'perfil') and not user.perfil.es_tectum:
+            user.perfil.es_tectum = True
+            user.perfil.save(update_fields=['es_tectum'])
+
     if user.is_superuser:
         redirect_url = reverse('panel_admin')
     elif hasattr(user, 'perfil_psicologo'):
@@ -683,6 +698,15 @@ def panel_generico(request):
     except Exception:
         logout(request)
         return redirect('modulo_informativo')
+
+    es_usuario_tectum = False
+    if hasattr(perfil_usuario, 'es_tectum') and perfil_usuario.es_tectum:
+        es_usuario_tectum = True
+    elif 'tectuminhause' in request.get_host().lower() or request.session.get('convenio_tectum'):
+        es_usuario_tectum = True
+        if hasattr(perfil_usuario, 'es_tectum') and not perfil_usuario.es_tectum:
+            perfil_usuario.es_tectum = True
+            perfil_usuario.save(update_fields=['es_tectum'])
 
 # Tipo de servicio y Preferencia desde cuestionario
     tipo_servicio = "individual"
@@ -796,7 +820,8 @@ def panel_generico(request):
     tiene_consentimiento = ConsentimientoInformado.objects.filter(paciente=request.user).exists() or Cita.objects.filter(paciente=request.user).exists()
     ultimo_consentimiento = ConsentimientoInformado.objects.filter(paciente=request.user).first()
 
-    return render(request, 'panel_generico.html', {
+    plantilla_panel = 'tectum/panel-tectum.html' if (es_usuario_tectum or 'panel-tectum' in request.path) else 'panel_generico.html'
+    return render(request, plantilla_panel, {
         'dias_disponibles_json': dias_json,
         'dias_disponibles': dias_html,
         'cita_proxima': cita_proxima,
@@ -816,12 +841,13 @@ def panel_generico(request):
         'mis_talleres': mis_talleres,
         'paypal_client_id': settings.PAYPAL_CLIENT_ID,
         'psicologo_asignado': psicologo_asignado,
+        'es_usuario_tectum': es_usuario_tectum,
         # 🔥 NUEVO: se manda al frontend para que el resumen de costos en
         # tiempo real (JS) use exactamente los mismos números que el backend.
         'precios_config_json': json.dumps({
-            'base': PRECIO_BASE_SESION,
-            'comision_pct': COMISION_PORCENTAJE_SESION,
-            'incremento_integrante_familiar': INCREMENTO_POR_INTEGRANTE_FAMILIAR,
+            'base': {'individual': 0, 'pareja': 0, 'familiar': 0} if es_usuario_tectum else PRECIO_BASE_SESION,
+            'comision_pct': {'individual': 0, 'pareja': 0, 'familiar': 0} if es_usuario_tectum else COMISION_PORCENTAJE_SESION,
+            'incremento_integrante_familiar': 0 if es_usuario_tectum else INCREMENTO_POR_INTEGRANTE_FAMILIAR,
             'min_integrantes_familiar': MIN_INTEGRANTES_FAMILIAR,
         }),
     })
@@ -1012,8 +1038,27 @@ def obtener_disponibilidad_por_tipo_ajax(request):
 
 def calcular_precio_sesion_ajax(request):
     """🔥 NUEVO: fuente de verdad del precio para el resumen en tiempo real del frontend."""
+    es_tectum = False
+    if request.user.is_authenticated and hasattr(request.user, 'perfil') and request.user.perfil.es_tectum:
+        es_tectum = True
+    elif 'tectuminhause' in request.get_host().lower() or request.session.get('convenio_tectum'):
+        es_tectum = True
+
     tipo_sesion = request.GET.get('tipo_sesion', 'individual')
     integrantes_familia = request.GET.get('integrantes_familia')
+
+    if es_tectum:
+        return JsonResponse({
+            'status': 'success',
+            'tipo_sesion': tipo_sesion,
+            'integrantes_familia': integrantes_familia,
+            'subtotal': 0,
+            'comision': 0,
+            'total': 0,
+            'es_tectum': True,
+            'mensaje_convenio': 'Sesión cubierta al 100% por tu convenio TECTUM In-House'
+        })
+
     resultado = calcular_precio_sesion(tipo_sesion, integrantes_familia)
     return JsonResponse({'status': 'success', **resultado})
 
@@ -1025,11 +1070,20 @@ def guardar_cita_ajax(request):
         if not request.user.is_authenticated:
             return JsonResponse({'status': 'error', 'message': 'Debes iniciar sesión.'})
 
+        es_tectum_cita = False
+        if hasattr(request.user, 'perfil') and request.user.perfil.es_tectum:
+            es_tectum_cita = True
+        elif 'tectuminhause' in request.get_host().lower() or request.session.get('convenio_tectum') or request.POST.get('paypal_order_id') == 'CONVENIO_TECTUM_INHOUSE':
+            es_tectum_cita = True
+            if hasattr(request.user, 'perfil') and not request.user.perfil.es_tectum:
+                request.user.perfil.es_tectum = True
+                request.user.perfil.save(update_fields=['es_tectum'])
+
         # Verificación de Consentimiento Informado:
         # Retrocompatibilidad: Los usuarios ya registrados con citas previas pasan automáticamente.
         # Nuevos consultantes deben tener su ConsentimientoInformado firmado.
         tiene_consentimiento = ConsentimientoInformado.objects.filter(paciente=request.user).exists() or Cita.objects.filter(paciente=request.user).exists()
-        if not tiene_consentimiento:
+        if not tiene_consentimiento and not es_tectum_cita:
             return JsonResponse({
                 'status': 'error',
                 'message': 'Es necesario firmar el Consentimiento Informado antes de agendar tu cita.',
@@ -1175,6 +1229,7 @@ def guardar_cita_ajax(request):
                 integrantes_familia=integrantes_familia,
                 motivo='Primera Sesión' if not perfil.psicologo_asignado else 'Sesión de Seguimiento',
                 estado='Confirmada',
+                es_tectum=es_tectum_cita,
                 enlace_meet=link_final,
                 id_evento_google=id_google  
             )
@@ -1349,6 +1404,7 @@ def panel_doctor(request):
             'usuario': p,
             'total_citas': p.total_citas_paciente,
             'modalidades': modalidades_str,
+            'es_tectum': hasattr(p, 'perfil') and p.perfil.es_tectum,
         })
 
     mis_talleres_impartidos = Taller.objects.filter(psicologo=psicologo).order_by('fecha', 'hora')
