@@ -175,7 +175,17 @@
 <body>
 
     <nav class="navbar-cool">
-        {% if es_usuario_tectum or es_tectum or cita.es_tectum or 'tectuminhause' in request.get_host or 'tectum' in request.get_host or 'tectum' in request.path %}
+        {% if 'tectumbeneficios' in request.get_host or 'beneficios' in request.path or es_tectum_beneficios %}
+        <!-- BOTÓN CASITA TECTUM BENEFICIOS -->
+        <a href="{% url 'inicio_tectum_beneficios' %}" class="nav-btn" title="Ir al Inicio TECTUM Beneficios">
+            <i class="fa-solid fa-house"></i>
+        </a>
+
+        <!-- LOGO CENTRAL TECTUM -->
+        <a href="{% url 'inicio_tectum_beneficios' %}" class="logo-center">
+            <img src="{% static 'img/tectum/logo-completo.png' %}" alt="TECTUM Logo" style="height: 56px; max-height: 62px; width: auto; object-fit: contain;">
+        </a>
+        {% elif es_usuario_tectum or es_tectum or cita.es_tectum or 'tectuminhause' in request.get_host or 'tectum' in request.get_host or 'tectum' in request.path %}
         <!-- BOTÓN CASITA TECTUM -->
         <a href="{% url 'inicio_tectum' %}" class="nav-btn" title="Ir al Inicio TECTUM">
             <i class="fa-solid fa-house"></i>
@@ -183,7 +193,7 @@
 
         <!-- LOGO CENTRAL TECTUM -->
         <a href="{% url 'inicio_tectum' %}" class="logo-center">
-            <img src="{% static 'img/tectum/logo-completo.png' %}" alt="TECTUM Logo" style="height: 38px; width: auto; object-fit: contain;">
+            <img src="{% static 'img/tectum/logo-completo.png' %}" alt="TECTUM Logo" style="height: 56px; max-height: 62px; width: auto; object-fit: contain;">
         </a>
         {% else %}
         <!-- BOTÓN CASITA (Inicio) -->

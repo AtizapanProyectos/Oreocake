@@ -1,11 +1,12 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Mi Dashboard - TECTUM In-House{% endblock %}
+{% block title %}Mi Dashboard - TECTUM Beneficios{% endblock %}
 
 {% block content %}
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 <link rel="stylesheet" type="text/css" href="https://npmcdn.com/flatpickr/dist/themes/airbnb.css">
+<script src="https://www.paypal.com/sdk/js?client-id={{ paypal_client_id }}&currency=MXN" defer></script>
 {{ dias_disponibles_json|json_script:"dias-data" }}
 {% csrf_token %}
 
@@ -13,6 +14,7 @@
 window.tieneConsentimiento = {{ tiene_consentimiento|yesno:"true,false" }};
 window.consentimientoPdfUrl = "{{ consentimiento_pdf_url|default:'' }}";
 window.WHATSAPP_SOPORTE = '525521130230';
+const preciosConfig = {{ precios_config_json|safe }};
 
 function getCookie(name) {
     let cookieValue = null;
@@ -55,8 +57,8 @@ function mostrarErrorCita(mensaje) {
     @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700;900&family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap');
 
     :root {
-        --c-purple: #1e3a8a; /* Azul Marino TECTUM */
-        --c-pink: #0284c7;   /* Azul Real TECTUM */
+        --c-purple: #1e3a8a;
+        --c-pink: #0284c7;
         --c-orange: #f59e0b;
         --c-yellow: #38bdf8;
         --c-teal: #0ea5e9;
@@ -270,12 +272,23 @@ function mostrarErrorCita(mensaje) {
         justify-content: center;
         gap: 10px;
     }
-    .btn-brutal:hover:not(:disabled) {
-        transform: translateY(-2px);
+
+    /* Resumen de Costos */
+    .precio-linea {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 8px;
+        font-size: 14px;
+        color: var(--slate-600);
     }
-    .btn-brutal:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
+    .precio-linea.total {
+        margin-top: 14px;
+        padding-top: 14px;
+        border-top: 2px dashed #cbd5e1;
+        font-size: 1.25rem;
+        font-weight: 800;
+        color: var(--text-main);
+        font-family: var(--font-headings);
     }
 
     /* Toast & Loading */
@@ -326,7 +339,6 @@ function mostrarErrorCita(mensaje) {
     }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* Alertas Animadas */
     .alerta-animada { animation: popIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
     @keyframes popIn {
         0% { transform: scale(0.85); opacity: 0; }
@@ -355,7 +367,6 @@ function mostrarErrorCita(mensaje) {
         animation: fingerMoveAnimation 2.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
     }
 
-    /* WhatsApp flotante */
     .btn-flotante-wa {
         position: fixed;
         bottom: 30px;
@@ -374,21 +385,17 @@ function mostrarErrorCita(mensaje) {
         text-decoration: none;
         transition: all 0.3s;
     }
-    .btn-flotante-wa:hover {
-        transform: translateY(-4px) scale(1.05);
-        color: white;
-    }
 </style>
 
 <div class="dashboard-header">
     <span class="step-tag">
-        <i class="fas fa-shield-alt" style="margin-right: 5px;"></i> Plataforma Clínica Confidencial
+        <i class="fas fa-shield-alt" style="margin-right: 5px;"></i> Beneficios Corporativos TECTUM
     </span>
     <h1 style="font-family: var(--font-headings); font-size: clamp(2rem, 4vw, 2.8rem); font-weight: 800; margin: 0 0 10px; letter-spacing: -0.5px;">
         ¡Hola, {{ user.first_name|default:user.username }}!
     </h1>
     <p style="opacity: 0.9; font-size: 1.1rem; margin: 0 auto; max-width: 600px; font-weight: 500;">
-        Tu espacio de salud mental, acompañamiento y bienestar integral.
+        Tu espacio de salud mental con tarifa corporativa preferencial.
     </p>
 </div>
 
@@ -406,9 +413,7 @@ function mostrarErrorCita(mensaje) {
 
 <div style="max-width: 1100px; margin: 0 auto; padding: 0 20px 80px;">
 
-    <!-- =====================================================================
-         TAB 1: AGENDAR SESIÓN
-         ===================================================================== -->
+    <!-- TAB 1: AGENDAR SESIÓN CON PAGO -->
     <div id="tab-agendar" class="tab-content active">
         <div class="chic-card" style="margin-bottom: 30px;">
             <div style="text-align: center; margin-bottom: 25px;">
@@ -434,7 +439,7 @@ function mostrarErrorCita(mensaje) {
                 <div class="servicio-card pareja" onclick="seleccionarServicio('pareja', this)">
                     <div class="servicio-icon-box"><i class="fas fa-heart"></i></div>
                     <div class="servicio-titulo">Pareja</div>
-                    <div class="servicio-desc">Sesiones conjuntas orientadas a comunicación asertiva, resolución de conflictos y proyectos en común.</div>
+                    <div class="servicio-desc">Sesiones conjuntas orientadas a comunicación asertiva, resolución de conflictos y acuerdos en común.</div>
                 </div>
 
                 <div class="servicio-card familiar" onclick="seleccionarServicio('familiar', this)">
@@ -444,16 +449,15 @@ function mostrarErrorCita(mensaje) {
                 </div>
             </div>
 
-            <!-- Modalidad: Online / Presencial -->
+            <!-- Modalidad: Online -->
             <div style="text-align: center; margin-top: 15px;">
                 <span style="font-size: 0.85rem; text-transform: uppercase; font-weight: 800; letter-spacing: 1px; color: var(--text-muted);">
                     Modalidad de Sesión
                 </span>
                 <div class="modalidad-row">
-                    <div class="modalidad-pill activo" onclick="seleccionarModalidad('En línea', this)">
+                    <div class="modalidad-pill activo">
                         <i class="fas fa-video"></i> En línea (Google Meet)
                     </div>
-
                 </div>
             </div>
         </div>
@@ -468,12 +472,12 @@ function mostrarErrorCita(mensaje) {
                     Selecciona tu día y horario
                 </h3>
                 <p style="color: var(--text-muted); font-size: 1rem; margin: 0;">
-                    Horarios sincronizados en tiempo real con tu terapeuta.
+                    Horarios disponibles en tiempo real.
                 </p>
             </div>
 
             <!-- Carrusel de Días -->
-            <div class="date-carousel" id="dateCarouselTectum">
+            <div class="date-carousel" id="dateCarouselBeneficios">
                 {% for dia, horas in dias_disponibles.items %}
                 <div class="date-chip {% if forloop.first %}active{% endif %}" onclick="seleccionarDia('{{ dia|date:'Y-m-d' }}', this)">
                     <span style="font-size: 11px; display: block; text-transform: uppercase; font-weight: 700;">{{ dia|date:"D" }}</span>
@@ -482,13 +486,13 @@ function mostrarErrorCita(mensaje) {
                 </div>
                 {% empty %}
                 <div style="text-align: center; width: 100%; padding: 25px; color: var(--text-muted);">
-                    No hay horarios disponibles por ahora. Comunícate con nosotros por WhatsApp para coordinar tu cita.
+                    No hay horarios disponibles por ahora. Comunícate con nosotros por WhatsApp.
                 </div>
                 {% endfor %}
             </div>
 
             <!-- Grilla de Horarios -->
-            <div id="slotsContainerTectum" style="margin-top: 20px;">
+            <div id="slotsContainerBeneficios" style="margin-top: 20px;">
                 {% for dia, horas in dias_disponibles.items %}
                 <div class="slots-grid" id="slots-{{ dia|date:'Y-m-d' }}" {% if not forloop.first %}style="display:none;"{% endif %}>
                     {% for h in horas %}
@@ -505,24 +509,24 @@ function mostrarErrorCita(mensaje) {
             </div>
         </div>
 
-        <!-- Paso 3: Confirmación y Resumen -->
+        <!-- Paso 3: Resumen y Pago -->
         <div class="chic-card" style="border-top: 6px solid #0284c7;">
             <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; margin-bottom: 25px;">
                 <div>
                     <span class="step-tag" style="background: #e0f2fe; color: #0284c7; border: 1px solid #bae6fd; margin-bottom: 6px;">
-                        Paso 3 · Confirmación
+                        Paso 3 · Inversión y Pago
                     </span>
                     <h3 style="font-family: var(--font-headings); font-size: 1.7rem; font-weight: 800; margin: 0; color: var(--text-main);">
-                        Resumen de tu Sesión
+                        Resumen de Pago
                     </h3>
                 </div>
-                <div style="display: flex; align-items: center; gap: 8px; color: #16a34a; font-weight: 700; font-size: 0.9rem; background: #dcfce7; padding: 6px 16px; border-radius: 50px;">
-                    <i class="fas fa-check-circle"></i> Cita protegida y confirmada
+                <div style="display: flex; align-items: center; gap: 8px; color: #0284c7; font-weight: 700; font-size: 0.9rem; background: #e0f2fe; padding: 6px 16px; border-radius: 50px;">
+                    <i class="fas fa-tags"></i> Tarifa Preferencial Aplicada
                 </div>
             </div>
 
             <div style="background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 20px; padding: 24px; margin-bottom: 25px;">
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 18px;">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 18px; margin-bottom: 20px;">
                     <div>
                         <span style="font-size: 11px; text-transform: uppercase; font-weight: 800; color: var(--text-muted); display: block; margin-bottom: 3px;">Consultante</span>
                         <strong style="font-size: 1.1rem; color: var(--text-main); font-family: var(--font-headings);">{{ user.get_full_name|default:user.first_name }}</strong>
@@ -532,38 +536,41 @@ function mostrarErrorCita(mensaje) {
                         <strong id="resumen-servicio" style="font-size: 1.1rem; color: var(--text-main); font-family: var(--font-headings);">Individual</strong>
                     </div>
                     <div>
-                        <span style="font-size: 11px; text-transform: uppercase; font-weight: 800; color: var(--text-muted); display: block; margin-bottom: 3px;">Modalidad</span>
-                        <strong id="resumen-modalidad" style="font-size: 1.1rem; color: var(--text-main); font-family: var(--font-headings);">En línea</strong>
-                    </div>
-                    <div>
                         <span style="font-size: 11px; text-transform: uppercase; font-weight: 800; color: var(--text-muted); display: block; margin-bottom: 3px;">Horario Elegido</span>
                         <strong id="resumen-horario" style="font-size: 1.1rem; color: #0284c7; font-family: var(--font-headings);">Elige fecha y hora arriba</strong>
                     </div>
                 </div>
 
-                <div style="margin-top: 18px; padding-top: 16px; border-top: 1px solid #e2e8f0; display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
-                    <label for="select-animo" style="font-size: 0.9rem; font-weight: 700; color: var(--text-muted);">
-                        ¿Cómo te sientes hoy? (opcional):
-                    </label>
-                    <select id="select-animo" style="padding: 8px 16px; border-radius: 12px; border: 1.5px solid #cbd5e1; font-family: var(--font-body); font-weight: 600; outline: none; background: white; color: var(--text-main);">
-                        <option value="No especificó">No especificó</option>
-                        <option value="Tranquilo">Tranquilo</option>
-                        <option value="Bien">Bien</option>
-                        <option value="Ansioso">Ansioso</option>
-                        <option value="Triste">Triste</option>
-                    </select>
+                <!-- Detalle de costos -->
+                <div style="background: white; border: 1px solid #cbd5e1; border-radius: 14px; padding: 18px;">
+                    <div class="precio-linea">
+                        <span>Sesión Clínica</span>
+                        <span id="txt-subtotal">$450.00 MXN</span>
+                    </div>
+                    <div class="precio-linea">
+                        <span>Comisión de Plataforma Segura</span>
+                        <span id="txt-comision">$0.00 MXN</span>
+                    </div>
+                    <div class="precio-linea total">
+                        <span>Total a Pagar</span>
+                        <span id="txt-total" style="color:#0284c7;">$450.00 MXN</span>
+                    </div>
                 </div>
             </div>
 
-            <button type="button" id="btn-confirmar-cita-tectum" onclick="confirmarCitaTectum()" class="btn-brutal" style="width: 100%; background: linear-gradient(135deg, #1e3a8a 0%, #0284c7 100%); color: white; box-shadow: 0 10px 25px rgba(2, 132, 199, 0.25);" disabled>
-                Confirmar Cita <i class="fas fa-arrow-right" style="margin-left: 8px;"></i>
-            </button>
+            <!-- Botones de Pago -->
+            <div id="seccion-pagos-beneficios" style="display: block;">
+                <div id="paypal-button-container" style="max-width: 480px; margin: 0 auto 15px;"></div>
+                <div style="text-align: center;">
+                    <button type="button" onclick="iniciarPagoClipBeneficios()" class="btn-brutal" style="background: #ff5000; color: white; width: 100%; max-width: 480px; box-shadow: 0 8px 20px rgba(255,80,0,0.25);">
+                        <i class="fas fa-credit-card"></i> Pagar con Tarjeta de Débito / Crédito
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 
-    <!-- =====================================================================
-         TAB 2: MIS CITAS
-         ===================================================================== -->
+    <!-- TAB 2: MIS CITAS -->
     <div id="tab-citas" class="tab-content">
         {% if cita_proxima %}
         <div class="chic-card" style="margin-bottom: 30px; border-top: 6px solid #0284c7;">
@@ -579,16 +586,6 @@ function mostrarErrorCita(mensaje) {
                 </p>
             </div>
 
-            {% if cita_proxima.modalidad == 'Presencial' %}
-            <div style="background: #ffffff; border: 2px dashed #0284c7; border-radius: 20px; padding: 30px; max-width: 480px; margin: 0 auto; text-align: center;">
-                <i class="fas fa-location-dot" style="font-size: 38px; color: #0284c7; margin-bottom: 12px;"></i>
-                <h4 style="font-family: var(--font-headings); font-size: 1.3rem; font-weight: 800; margin-bottom: 6px;">Clínica de Atención Presencial</h4>
-                <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 18px;">Lago Margarita 47, Col. Granada, CDMX</p>
-                <div style="background: #f8fafc; padding: 14px; border-radius: 14px; font-weight: 700; color: #1e3a8a;">
-                    Pase de Acceso Cita #{{ cita_proxima.id }}
-                </div>
-            </div>
-            {% else %}
             <div style="max-width: 500px; margin: 0 auto; text-align: center;">
                 {% if cita_proxima.enlace_meet %}
                 <a href="{% url 'formulario_previo_meet' cita_proxima.id %}" class="btn-brutal" style="background: linear-gradient(135deg, #1e3a8a 0%, #0284c7 100%); color: white; width: 100%; text-decoration: none; margin-bottom: 12px; box-shadow: 0 10px 25px rgba(2, 132, 199, 0.25);">
@@ -600,15 +597,14 @@ function mostrarErrorCita(mensaje) {
                 {% else %}
                 <div style="background: #f0f9ff; border: 1.5px solid #bae6fd; padding: 20px; border-radius: 16px; margin-bottom: 15px;">
                     <i class="fas fa-spinner fa-spin" style="font-size: 26px; color: #0284c7; margin-bottom: 8px;"></i>
-                    <p style="margin: 0; font-size: 0.95rem; font-weight: 700; color: #0369a1;">Tu enlace de Google Meet se está preparando y se enviará a tu correo.</p>
+                    <p style="margin: 0; font-size: 0.95rem; font-weight: 700; color: #0369a1;">Tu enlace de Google Meet se enviará a tu correo.</p>
                 </div>
                 {% endif %}
 
-                <a href="https://wa.me/525521130230?text=Hola,%20tengo%20dudas%20sobre%20mi%20sesi%C3%B3n%20en%20TECTUM" target="_blank" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; background: #25D366; color: white; padding: 12px 24px; border-radius: 100px; text-decoration: none; font-weight: 700; font-size: 14px; box-shadow: 0 4px 15px rgba(37, 211, 102, 0.2); width: 100%;">
+                <a href="https://wa.me/525521130230?text=Hola,%20tengo%20dudas%20sobre%20mi%20sesi%C3%B3n%20en%20TECTUM%20Beneficios" target="_blank" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; background: #25D366; color: white; padding: 12px 24px; border-radius: 100px; text-decoration: none; font-weight: 700; font-size: 14px; width: 100%;">
                     <i class="fab fa-whatsapp"></i> Soporte de Asistencia WhatsApp
                 </a>
             </div>
-            {% endif %}
         </div>
         {% else %}
         <div class="chic-card" style="text-align: center; padding: 50px 30px;">
@@ -617,7 +613,7 @@ function mostrarErrorCita(mensaje) {
                 Aún no tienes citas agendadas
             </h3>
             <p style="color: var(--text-muted); font-size: 1rem; max-width: 480px; margin: 0 auto 25px;">
-                Programa tu primera sesión fácilmente seleccionando tu modalidad y horario.
+                Programa tu primera sesión fácilmente aprovechando tu tarifa preferencial.
             </p>
             <button type="button" onclick="cambiarTab('agendar')" class="btn-brutal" style="background: linear-gradient(135deg, #1e3a8a 0%, #0284c7 100%); color: white;">
                 Agendar ahora <i class="fas fa-arrow-right" style="margin-left: 8px;"></i>
@@ -626,9 +622,7 @@ function mostrarErrorCita(mensaje) {
         {% endif %}
     </div>
 
-    <!-- =====================================================================
-         TAB 3: MI TERAPEUTA
-         ===================================================================== -->
+    <!-- TAB 3: MI TERAPEUTA -->
     <div id="tab-terapeuta" class="tab-content">
         {% if psicologo_asignado %}
         <div class="chic-card" style="border-top: 6px solid #0284c7;">
@@ -650,13 +644,6 @@ function mostrarErrorCita(mensaje) {
                     </p>
                 </div>
             </div>
-
-            {% if psicologo_asignado.cv_breve %}
-            <div style="margin-top: 25px; padding-top: 20px; border-top: 1px solid #f1f5f9;">
-                <h4 style="font-family: var(--font-headings); font-size: 1.1rem; font-weight: 800; margin-bottom: 8px;">Semblanza Profesional</h4>
-                <p style="color: var(--text-muted); font-size: 0.95rem; line-height: 1.6; margin: 0;">{{ psicologo_asignado.cv_breve }}</p>
-            </div>
-            {% endif %}
         </div>
         {% else %}
         <div class="chic-card" style="text-align: center; padding: 50px 30px;">
@@ -676,10 +663,7 @@ function mostrarErrorCita(mensaje) {
 
 </div>
 
-<!-- =====================================================================
-     MODAL DE CONSENTIMIENTO INFORMADO Y FIRMA DIGITAL
-     (Exacto al de HOPE normal: 10 secciones clínicas + canvas interactivo)
-     ===================================================================== -->
+<!-- MODAL CONSENTIMIENTO INFORMADO COMPLETO (Mismo de HOPE) -->
 <div id="modalConsentimiento" class="modal-overlay" style="z-index: 6000; display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.75); backdrop-filter: blur(6px); align-items: center; justify-content: center; padding: 16px; overflow-y: auto;">
   <div class="modal-box" style="width: 100%; max-width: 760px; max-height: 94vh; display: flex; flex-direction: column; text-align: left; padding: 26px 28px; border-radius: 24px; border-top: 6px solid #0284c7; background: #ffffff; position: relative; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); animation: popIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;">
     
@@ -699,7 +683,7 @@ function mostrarErrorCita(mensaje) {
     </div>
     
     <div style="flex: 1; overflow-y: auto; max-height: 34vh; padding: 16px 18px; background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 14px; font-size: 12px; color: #334155; line-height: 1.55; margin-bottom: 14px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);">
-        <div style="background: white; border: 1px solid #cbd5e1; border-radius: 10px; padding: 10px 14px; margin-bottom: 12px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+        <div style="background: white; border: 1px solid #cbd5e1; border-radius: 10px; padding: 10px 14px; margin-bottom: 12px; display: flex; justify-content: space-between; flex-wrap: gap; gap: 8px;">
             <div><strong>Consultante:</strong> {{ user.get_full_name|default:user.first_name }}</div>
             <div><strong>Correo:</strong> {{ user.email }}</div>
             <div><strong>Fecha:</strong> {% now "d/m/Y" %}</div>
@@ -709,36 +693,21 @@ function mostrarErrorCita(mensaje) {
         <p style="margin: 0 0 8px 0;">El presente consentimiento informado tiene como finalidad brindar información clara sobre las características, alcances, beneficios, riesgos, derechos y responsabilidades relacionadas con el proceso de atención psicológica. La firma indica que el consultante ha recibido información suficiente y acepta participar de manera voluntaria.</p>
 
         <h4 style="font-size: 12.5px; font-weight: 800; color: #0f172a; margin: 10px 0 3px 0; text-transform: uppercase;">2. Naturaleza de la Atención Psicológica</h4>
-        <p style="margin: 0 0 8px 0;">Servicio profesional orientado a la evaluación, comprensión y abordaje de dificultades emocionales, cognitivas y conductuales. Constituye un trabajo colaborativo dirigido al logro de objetivos acordados. Los resultados dependen del caso y la participación activa del consultante.</p>
+        <p style="margin: 0 0 8px 0;">Servicio profesional orientado a la evaluación, comprensión y abordaje de dificultades emocionales, cognitivas y conductuales. Constituye un trabajo colaborativo dirigido al logro de objetivos acordados.</p>
 
-        <h4 style="font-size: 12.5px; font-weight: 800; color: #0f172a; margin: 10px 0 3px 0; text-transform: uppercase;">3. Modelo de Intervención</h4>
-        <p style="margin: 0 0 8px 0;">Atención basada en Terapia Cognitivo-Conductual y Terapia Breve con respaldo científico. Puede incluir entrevista clínica, psicoeducación, registros, entrenamiento en autorregulación y tareas terapéuticas intersesión.</p>
-
-        <h4 style="font-size: 12.5px; font-weight: 800; color: #0f172a; margin: 10px 0 3px 0; text-transform: uppercase;">4. Participación Voluntaria</h4>
-        <p style="margin: 0 0 8px 0;">La atención es voluntaria. El consultante tiene derecho a solicitar información, formular dudas, expresar inconformidades, revocar su consentimiento y suspender o concluir el proceso en cualquier momento.</p>
-
-        <h4 style="font-size: 12.5px; font-weight: 800; color: #0f172a; margin: 10px 0 3px 0; text-transform: uppercase;">5. Confidencialidad y Límites Éticos</h4>
+        <h4 style="font-size: 12.5px; font-weight: 800; color: #0f172a; margin: 10px 0 3px 0; text-transform: uppercase;">3. Confidencialidad y Límites Éticos</h4>
         <p style="margin: 0 0 4px 0;">Toda información es confidencial. La confidencialidad podrá ser exceptuada únicamente en situaciones de:</p>
         <ul style="margin: 0 0 8px 18px; padding: 0;">
             <li>Riesgo inminente para la vida o integridad del consultante o de terceros.</li>
-            <li>Situaciones de abuso, maltrato o violencia que requieran notificación obligatoria legal.</li>
+            <li>Situaciones de abuso, maltrato o violencia que requieran notificación legal.</li>
             <li>Mandato expreso de autoridad judicial o legal competente.</li>
         </ul>
 
-        <h4 style="font-size: 12.5px; font-weight: 800; color: #0f172a; margin: 10px 0 3px 0; text-transform: uppercase;">6. Registro Clínico</h4>
-        <p style="margin: 0 0 8px 0;">El profesional elaborará notas y registros clínicos necesarios para el seguimiento terapéutico conforme a la legislación de salud y protección de datos aplicable.</p>
+        <h4 style="font-size: 12.5px; font-weight: 800; color: #0f172a; margin: 10px 0 3px 0; text-transform: uppercase;">4. Sesiones y Puntualidad</h4>
+        <p style="margin: 0 0 8px 0;">Cada sesión ordinaria tiene una duración de aproximadamente 50 minutos. El consultante se compromete a acudir con puntualidad.</p>
 
-        <h4 style="font-size: 12.5px; font-weight: 800; color: #0f172a; margin: 10px 0 3px 0; text-transform: uppercase;">7. Sesiones y Puntualidad</h4>
-        <p style="margin: 0 0 8px 0;">Cada sesión ordinaria tiene una duración de aproximadamente 50 minutos. El consultante se compromete a acudir con puntualidad y a notificar cancelaciones oportunamente.</p>
-
-        <h4 style="font-size: 12.5px; font-weight: 800; color: #0f172a; margin: 10px 0 3px 0; text-transform: uppercase;">8. Comunicación Fuera de Sesión</h4>
-        <p style="margin: 0 0 8px 0;">La comunicación entre sesiones tiene fines exclusivamente de coordinación o administrativos. En caso de crisis o urgencia vital, el consultante debe acudir de inmediato a los centros de urgencias de su localidad o marcar al 911.</p>
-
-        <h4 style="font-size: 12.5px; font-weight: 800; color: #0f172a; margin: 10px 0 3px 0; text-transform: uppercase;">9. Autorización para Telepsicología</h4>
+        <h4 style="font-size: 12.5px; font-weight: 800; color: #0f172a; margin: 10px 0 3px 0; text-transform: uppercase;">5. Autorización para Telepsicología</h4>
         <p style="margin: 0 0 8px 0;">Se autoriza la atención mediante videoconferencia y medios digitales seguros, comprometiéndose a contar con un espacio privado y libre de interrupciones.</p>
-
-        <h4 style="font-size: 12.5px; font-weight: 800; color: #0f172a; margin: 10px 0 3px 0; text-transform: uppercase;">10. Declaración de Consentimiento</h4>
-        <p style="margin: 0;">Declaro haber leído y entendido este consentimiento informado, reconociendo mi derecho a resolver dudas y aceptando voluntariamente recibir atención psicológica.</p>
     </div>
 
     <!-- Checkbox Telepsicología -->
@@ -804,7 +773,7 @@ function mostrarErrorCita(mensaje) {
     <div class="chic-card alerta-animada" style="height: auto; width: 90%; max-width: 500px; text-align: center; padding: 45px 30px; border-top: 6px solid #0284c7;">
         <i class="fas fa-check-circle" style="font-size: 65px; color: #10b981; margin-bottom: 20px;"></i>
         <h2 style="font-family: var(--font-headings); font-size: 2.2rem; color: var(--text-main); margin-bottom: 10px; font-weight: 800;">¡Cita Agendada!</h2>
-        <p id="texto-exito-dinamico" style="font-size: 16px; color: var(--text-muted); margin-bottom: 25px;">Tu sesión ha sido confirmada y agendada con éxito.</p>
+        <p id="texto-exito-dinamico" style="font-size: 16px; color: var(--text-muted); margin-bottom: 25px;">Tu pago ha sido procesado y tu sesión está confirmada.</p>
         <button onclick="location.reload()" class="btn-brutal" style="width: 100%; background: linear-gradient(135deg, #1e3a8a 0%, #0284c7 100%); color: white;">
             Ver en mis citas <i class="fas fa-arrow-right" style="margin-left: 8px;"></i>
         </button>
@@ -824,13 +793,12 @@ function mostrarErrorCita(mensaje) {
 </div>
 
 <!-- Botón WhatsApp Soporte -->
-<a href="https://wa.me/525521130230?text=Hola,%20necesito%20apoyo%20con%20mi%20sesi%C3%B3n%20en%20TECTUM" target="_blank" class="btn-flotante-wa" title="Soporte WhatsApp">
+<a href="https://wa.me/525521130230?text=Hola,%20necesito%20apoyo%20con%20mi%20sesi%C3%B3n%20en%20TECTUM%20Beneficios" target="_blank" class="btn-flotante-wa" title="Soporte WhatsApp">
     <i class="fab fa-whatsapp"></i>
 </a>
 
 <script>
 let servicioSeleccionado = 'individual';
-let modalidadSeleccionada = 'En línea';
 let fechaSeleccionada = "{{ dias_disponibles.keys.0|date:'Y-m-d'|default:'' }}";
 let horaSeleccionada = null;
 let horaSeleccionadaTexto = null;
@@ -851,14 +819,8 @@ function seleccionarServicio(tipo, el) {
     
     const textoServicio = tipo.charAt(0).toUpperCase() + tipo.slice(1);
     document.getElementById('resumen-servicio').innerText = textoServicio;
+    actualizarCostos();
     refrescarDisponibilidad(tipo);
-}
-
-function seleccionarModalidad(mod, el) {
-    modalidadSeleccionada = mod;
-    document.querySelectorAll('.modalidad-pill').forEach(p => p.classList.remove('activo'));
-    if (el) el.classList.add('activo');
-    document.getElementById('resumen-modalidad').innerText = mod;
 }
 
 function seleccionarDia(fechaStr, el) {
@@ -897,15 +859,27 @@ function seleccionarHora(hora24, horaTexto, el) {
 
 function actualizarResumenHorario() {
     const resumen = document.getElementById('resumen-horario');
-    const btn = document.getElementById('btn-confirmar-cita-tectum');
-    
     if (fechaSeleccionada && horaSeleccionada) {
         resumen.innerText = fechaSeleccionada + ' a las ' + horaSeleccionadaTexto;
-        btn.disabled = false;
     } else {
         resumen.innerText = 'Elige fecha y hora arriba';
-        btn.disabled = true;
     }
+}
+
+function calcularMontoTotal() {
+    const base = (preciosConfig.base && preciosConfig.base[servicioSeleccionado]) || 450;
+    const comisionPct = (preciosConfig.comision_pct && preciosConfig.comision_pct[servicioSeleccionado]) || 0;
+    const subtotal = Number(base);
+    const comision = subtotal * (Number(comisionPct) / 100);
+    const total = subtotal + comision;
+    return { subtotal, comision, total };
+}
+
+function actualizarCostos() {
+    const { subtotal, comision, total } = calcularMontoTotal();
+    document.getElementById('txt-subtotal').innerText = '$' + subtotal.toFixed(2) + ' MXN';
+    document.getElementById('txt-comision').innerText = '$' + comision.toFixed(2) + ' MXN';
+    document.getElementById('txt-total').innerText = '$' + total.toFixed(2) + ' MXN';
 }
 
 function refrescarDisponibilidad(tipo) {
@@ -913,8 +887,8 @@ function refrescarDisponibilidad(tipo) {
         .then(r => r.json())
         .then(data => {
             if (data.status === 'success') {
-                const carousel = document.getElementById('dateCarouselTectum');
-                const slotsBox = document.getElementById('slotsContainerTectum');
+                const carousel = document.getElementById('dateCarouselBeneficios');
+                const slotsBox = document.getElementById('slotsContainerBeneficios');
                 
                 carousel.innerHTML = '';
                 slotsBox.innerHTML = '';
@@ -950,23 +924,19 @@ function refrescarDisponibilidad(tipo) {
                     grid.style.display = idx === 0 ? 'grid' : 'none';
 
                     const horas = data.dias[diaStr] || [];
-                    if (horas.length === 0) {
-                        grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:20px;color:var(--text-muted);">Sin horarios este día.</div>';
-                    } else {
-                        horas.forEach(h => {
-                            const [hh, mm] = h.split(':');
-                            const hNum = parseInt(hh, 10);
-                            const ampm = hNum >= 12 ? 'PM' : 'AM';
-                            const h12 = (hNum % 12 || 12) + ':' + mm + ' ' + ampm;
+                    horas.forEach(h => {
+                        const [hh, mm] = h.split(':');
+                        const hNum = parseInt(hh, 10);
+                        const ampm = hNum >= 12 ? 'PM' : 'AM';
+                        const h12 = (hNum % 12 || 12) + ':' + mm + ' ' + ampm;
 
-                            const btnSlot = document.createElement('button');
-                            btnSlot.type = 'button';
-                            btnSlot.className = 'time-slot-btn';
-                            btnSlot.innerText = h12;
-                            btnSlot.onclick = function() { seleccionarHora(h, h12, this); };
-                            grid.appendChild(btnSlot);
-                        });
-                    }
+                        const btnSlot = document.createElement('button');
+                        btnSlot.type = 'button';
+                        btnSlot.className = 'time-slot-btn';
+                        btnSlot.innerText = h12;
+                        btnSlot.onclick = function() { seleccionarHora(h, h12, this); };
+                        grid.appendChild(btnSlot);
+                    });
                     slotsBox.appendChild(grid);
                 });
 
@@ -989,28 +959,56 @@ function mostrarToast(texto) {
     setTimeout(() => { toast.classList.remove('show'); }, 3500);
 }
 
-function confirmarCitaTectum() {
-    if (!fechaSeleccionada || !horaSeleccionada) {
-        mostrarErrorCita('Por favor selecciona una fecha y un horario disponible.');
-        return;
-    }
+// PAYPAL SMART BUTTONS
+document.addEventListener("DOMContentLoaded", function () {
+    actualizarCostos();
 
-    if (!window.tieneConsentimiento) {
-        abrirModalConsentimiento();
-        return;
+    if (document.getElementById('paypal-button-container')) {
+        paypal.Buttons({
+            onClick: function(data, actions) {
+                if (!fechaSeleccionada || !horaSeleccionada) {
+                    mostrarErrorCita("Por favor, selecciona una fecha y una hora válida antes de pagar.");
+                    return actions.reject();
+                }
+                if (!window.tieneConsentimiento) {
+                    abrirModalConsentimiento();
+                    return actions.reject();
+                }
+                return actions.resolve();
+            },
+            createOrder: function(data, actions) {
+                const { total } = calcularMontoTotal();
+                return actions.order.create({
+                    purchase_units: [{
+                        amount: { value: total.toFixed(2) },
+                        description: "Sesión TECTUM Beneficios - " + servicioSeleccionado
+                    }]
+                });
+            },
+            onApprove: function(data, actions) {
+                return actions.order.capture().then(function(details) {
+                    guardarCitaPagada(details.id || data.orderID);
+                }).catch(function(err) {
+                    console.error("Error capturando PayPal:", err);
+                    mostrarErrorCita("Hubo un contratiempo al procesar tu pago con PayPal.");
+                });
+            }
+        }).render('#paypal-button-container');
     }
+});
 
+function guardarCitaPagada(orderId) {
     const overlay = document.getElementById('loadingOverlayHope');
     overlay.style.display = 'flex';
 
     const formData = new FormData();
     formData.append('fecha', fechaSeleccionada);
     formData.append('hora', horaSeleccionada);
-    formData.append('modalidad', modalidadSeleccionada);
+    formData.append('modalidad', 'En línea');
     formData.append('tipo_servicio', servicioSeleccionado);
-    formData.append('animo', document.getElementById('select-animo').value);
-    formData.append('es_tectum', '1');
-    formData.append('paypal_order_id', 'CONVENIO_TECTUM_INHOUSE');
+    formData.append('es_tectum', '0');
+    formData.append('convenio', 'tectumbeneficios');
+    formData.append('paypal_order_id', orderId || 'TECTUM_BENEFICIOS_PAGADO');
     formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
 
     fetch("{% url 'guardar_cita' %}", {
@@ -1023,22 +1021,59 @@ function confirmarCitaTectum() {
         overlay.style.display = 'none';
         if (data.status === 'success') {
             document.getElementById('alerta-exito-cita').style.display = 'flex';
-        } else if (data.requiere_consentimiento) {
-            window.tieneConsentimiento = false;
-            abrirModalConsentimiento();
         } else {
-            mostrarErrorCita(data.message || 'No se pudo agendar la sesión.');
+            mostrarErrorCita(data.message || 'No se pudo confirmar la cita.');
         }
     })
     .catch(() => {
         overlay.style.display = 'none';
-        mostrarErrorCita('Error de conexión al agendar. Por favor intenta de nuevo.');
+        mostrarErrorCita('Error de conexión al registrar tu cita.');
     });
 }
 
-// =========================================================================
-// CANVAS FIRMA DIGITAL Y CONSENTIMIENTO
-// =========================================================================
+function iniciarPagoClipBeneficios() {
+    if (!fechaSeleccionada || !horaSeleccionada) {
+        mostrarErrorCita("Por favor, selecciona una fecha y una hora válida antes de pagar.");
+        return;
+    }
+    if (!window.tieneConsentimiento) {
+        abrirModalConsentimiento();
+        return;
+    }
+
+    const overlay = document.getElementById('loadingOverlayHope');
+    overlay.style.display = 'flex';
+
+    const { total } = calcularMontoTotal();
+
+    const fd = new FormData();
+    fd.append('fecha', fechaSeleccionada);
+    fd.append('hora', horaSeleccionada);
+    fd.append('modalidad', 'En línea');
+    fd.append('tipo_servicio', servicioSeleccionado);
+    fd.append('total', total.toFixed(2));
+    fd.append('es_tectum', '0');
+    fd.append('convenio', 'tectumbeneficios');
+    fd.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+
+    fetch("{% url 'iniciar_pago_clip' %}", { method: 'POST', body: fd })
+        .then(r => r.json())
+        .then(data => {
+            overlay.style.display = 'none';
+            const payUrl = data.payment_url || data.payment_request_url;
+            if (data.status === 'success' && payUrl) {
+                window.location.href = payUrl;
+            } else {
+                mostrarErrorCita(data.message || 'No se pudo iniciar el cobro con Clip.');
+            }
+        })
+        .catch(() => {
+            overlay.style.display = 'none';
+            mostrarErrorCita('Error de conexión con la pasarela.');
+        });
+}
+
+// CANVAS FIRMA DIGITAL
 let canvasFirma = null;
 let ctxFirma = null;
 let estaDibujando = false;
@@ -1177,11 +1212,6 @@ function guardarConsentimientoDigital() {
             window.tieneConsentimiento = true;
             cerrarModalConsentimiento();
             mostrarToast("¡Consentimiento firmado digitalmente con éxito!");
-            
-            // Si ya tenía fecha y hora elegidas, agendamos de inmediato
-            if (fechaSeleccionada && horaSeleccionada) {
-                confirmarCitaTectum();
-            }
         } else {
             alert(data.message || 'Error al guardar el consentimiento.');
         }

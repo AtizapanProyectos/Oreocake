@@ -104,6 +104,31 @@ def logout_usuario(request):
     logout(request)
     return redirect('inicio')
 
+
+def parsear_hora_flexible(hora_str):
+    """
+    Parsea de manera ultra tolerante cualquier formato de hora:
+    - 24 horas: '14:30', '14:30:00'
+    - 12 horas con AM/PM: '10:00 AM', '10:00:00 PM', '09:30am', etc.
+    """
+    if not hora_str:
+        raise ValueError("Hora no proporcionada")
+    hora_str = str(hora_str).strip()
+    formatos = ['%H:%M', '%I:%M %p', '%H:%M:%S', '%I:%M:%S %p', '%I:%M%p']
+    for fmt in formatos:
+        try:
+            return datetime.strptime(hora_str, fmt).time()
+        except ValueError:
+            continue
+    hora_norm = hora_str.upper().replace('A.M.', 'AM').replace('P.M.', 'PM')
+    for fmt in formatos:
+        try:
+            return datetime.strptime(hora_norm, fmt).time()
+        except ValueError:
+            continue
+    raise ValueError(f"Formato de hora no reconocido: {hora_str}")
+
+
 # =========================================================================
 # 🔥 NUEVO: MODALIDADES DE SESIÓN (Individual / Pareja / Familiar)
 # =========================================================================
@@ -465,6 +490,8 @@ def generar_link_meet(fecha_obj, hora_obj, paciente_nombre, psicologo_nombre, pa
 # =========================================================================
 def inicio(request):
     host = request.get_host().split(':')[0].lower()
+    if 'tectumbeneficios' in host:
+        return inicio_tectum_beneficios(request)
     if 'tectuminhause' in host:
         return inicio_tectum(request)
 
@@ -493,6 +520,22 @@ def inicio_tectum(request):
     }
     return render(request, 'tectum/inicio-tectum.html', context)
 
+def inicio_tectum_beneficios(request):
+    """
+    Landing oficial del Convenio TECTUM Beneficios x Espacio HOPE.
+    Accesible directamente en tectumbeneficios.espaciohope.com o en la ruta /tectum-beneficios/
+    En esta modalidad los colaboradores cuentan con tarifa preferencial y realizan su pago mediante pasarela.
+    """
+    request.session['convenio_tectum_beneficios'] = True
+    articulos = ArticuloPrensa.objects.filter(publicado=True)[:6]
+    context = {
+        'cuestionario_json': json.dumps(CUESTIONARIO_CLINICO),
+        'paypal_client_id': settings.PAYPAL_CLIENT_ID,
+        'articulos_prensa': articulos,
+        'es_convenio_tectum_beneficios': True,
+    }
+    return render(request, 'tectum_beneficios/inicio-beneficios.html', context)
+
 def modulo_informativo(request):
     context = {
         'cuestionario_json': json.dumps(CUESTIONARIO_CLINICO)
@@ -509,10 +552,15 @@ def registrar_usuario(request):
         telefono = request.POST.get('telefono')
         telefono_emergencia = request.POST.get('telefono_emergencia', '')
         flujo_elegido = request.POST.get('flujo_elegido', 'individual')
-        respuestas_raw = request.POST.get('respuestas_json', '{}')
+        respuestas_raw = request.POST.get('respuestas_json') or request.POST.get('respuestas') or '{}'
+
+        es_beneficios_bool = False
+        if 'tectumbeneficios' in request.get_host().lower() or request.POST.get('convenio') == 'tectumbeneficios' or request.session.get('convenio_tectum_beneficios'):
+            es_beneficios_bool = True
+            request.session['convenio_tectum_beneficios'] = True
 
         es_tectum_bool = False
-        if 'tectuminhause' in request.get_host().lower() or request.POST.get('convenio') == 'tectum' or request.session.get('convenio_tectum'):
+        if not es_beneficios_bool and ('tectuminhause' in request.get_host().lower() or request.POST.get('convenio') == 'tectum' or request.session.get('convenio_tectum')):
             es_tectum_bool = True
 
         try:
@@ -548,7 +596,8 @@ def registrar_usuario(request):
                 defaults={'respuestas': respuestas_dict}
             )
 
-            return JsonResponse({'status': 'success', 'redirect_url': reverse('panel_generico')})
+            redirect_target = 'panel_beneficios' if es_beneficios_bool else ('panel_tectum' if es_tectum_bool else 'panel_generico')
+            return JsonResponse({'status': 'success', 'redirect_url': reverse(redirect_target)})
 
         user = User.objects.create_user(
             username=email, 
@@ -581,34 +630,12 @@ def registrar_usuario(request):
             respuestas=respuestas_dict,
         )
 
-        # 🔥 Dejamos el envío de correo desactivado en bloque
-        """
-        uid = urlsafe_base64_encode(force_bytes(user.pk))
-        token = default_token_generator.make_token(user)
-        link_activacion = request.build_absolute_uri(
-            reverse('activar_cuenta', kwargs={'uidb64': uid, 'token': token})
-        )
-
-        asunto = 'Verifica tu cuenta en HOPE - El primer paso a tu bienestar'
-        contexto = {'nombre': nombre, 'link_activacion': link_activacion}
-        mensaje_html = render_to_string('verificacion_email.html', contexto)
-        mensaje_plano = strip_tags(mensaje_html)
-
-        send_mail(
-            subject=asunto,
-            message=mensaje_plano,
-            from_email=None,
-            recipient_list=[email],
-            html_message=mensaje_html,
-            fail_silently=False
-        )
-        """
-
         # 🔥 Iniciamos sesión automáticamente en el servidor
         login(request, user)
         
         # 🔥 Mandamos la URL directa para que el JS del frontend redirija al instante
-        return JsonResponse({'status': 'success', 'redirect_url': reverse('panel_generico')})
+        redirect_target = 'panel_beneficios' if es_beneficios_bool else ('panel_tectum' if es_tectum_bool else 'panel_generico')
+        return JsonResponse({'status': 'success', 'redirect_url': reverse(redirect_target)})
 
 def activar_cuenta(request, uidb64, token):
     try:
@@ -672,7 +699,15 @@ def login_usuario(request):
 
     login(request, user)
 
-    if 'tectuminhause' in request.get_host().lower() or request.session.get('convenio_tectum') or request.POST.get('convenio') == 'tectum':
+    es_beneficios = (
+        'tectumbeneficios' in request.get_host().lower()
+        or request.POST.get('convenio') == 'tectumbeneficios'
+        or request.session.get('convenio_tectum_beneficios')
+    )
+    if es_beneficios:
+        request.session['convenio_tectum_beneficios'] = True
+
+    if not es_beneficios and ('tectuminhause' in request.get_host().lower() or request.session.get('convenio_tectum') or request.POST.get('convenio') == 'tectum'):
         if hasattr(user, 'perfil') and not user.perfil.es_tectum:
             user.perfil.es_tectum = True
             user.perfil.save(update_fields=['es_tectum'])
@@ -681,6 +716,10 @@ def login_usuario(request):
         redirect_url = reverse('panel_admin')
     elif hasattr(user, 'perfil_psicologo'):
         redirect_url = reverse('panel_doctor')
+    elif es_beneficios:
+        redirect_url = reverse('panel_beneficios')
+    elif hasattr(user, 'perfil') and user.perfil.es_tectum:
+        redirect_url = reverse('panel_tectum')
     else:
         redirect_url = reverse('panel_generico')
 
@@ -699,14 +738,21 @@ def panel_generico(request):
         logout(request)
         return redirect('modulo_informativo')
 
+    es_beneficios = (
+        'tectumbeneficios' in request.get_host().lower()
+        or 'panel-beneficios' in request.path
+        or request.session.get('convenio_tectum_beneficios', False)
+    )
+
     es_usuario_tectum = False
-    if hasattr(perfil_usuario, 'es_tectum') and perfil_usuario.es_tectum:
-        es_usuario_tectum = True
-    elif 'tectuminhause' in request.get_host().lower() or request.session.get('convenio_tectum'):
-        es_usuario_tectum = True
-        if hasattr(perfil_usuario, 'es_tectum') and not perfil_usuario.es_tectum:
-            perfil_usuario.es_tectum = True
-            perfil_usuario.save(update_fields=['es_tectum'])
+    if not es_beneficios:
+        if hasattr(perfil_usuario, 'es_tectum') and perfil_usuario.es_tectum:
+            es_usuario_tectum = True
+        elif 'tectuminhause' in request.get_host().lower() or request.session.get('convenio_tectum'):
+            es_usuario_tectum = True
+            if hasattr(perfil_usuario, 'es_tectum') and not perfil_usuario.es_tectum:
+                perfil_usuario.es_tectum = True
+                perfil_usuario.save(update_fields=['es_tectum'])
 
 # Tipo de servicio y Preferencia desde cuestionario
     tipo_servicio = "individual"
@@ -819,8 +865,12 @@ def panel_generico(request):
     # 2. Si es un usuario existente que ya cuenta con citas registradas -> True (retrocompatibilidad automática)
     tiene_consentimiento = ConsentimientoInformado.objects.filter(paciente=request.user).exists() or Cita.objects.filter(paciente=request.user).exists()
     ultimo_consentimiento = ConsentimientoInformado.objects.filter(paciente=request.user).first()
+    plantilla_panel = 'panel_generico.html'
+    if es_beneficios:
+        plantilla_panel = 'tectum_beneficios/panel-beneficios.html'
+    elif es_usuario_tectum or 'panel-tectum' in request.path:
+        plantilla_panel = 'tectum/panel-tectum.html'
 
-    plantilla_panel = 'tectum/panel-tectum.html' if (es_usuario_tectum or 'panel-tectum' in request.path) else 'panel_generico.html'
     return render(request, plantilla_panel, {
         'dias_disponibles_json': dias_json,
         'dias_disponibles': dias_html,
@@ -842,6 +892,7 @@ def panel_generico(request):
         'paypal_client_id': settings.PAYPAL_CLIENT_ID,
         'psicologo_asignado': psicologo_asignado,
         'es_usuario_tectum': es_usuario_tectum,
+        'es_tectum_beneficios': es_beneficios,
         # 🔥 NUEVO: se manda al frontend para que el resumen de costos en
         # tiempo real (JS) use exactamente los mismos números que el backend.
         'precios_config_json': json.dumps({
@@ -1118,7 +1169,7 @@ def guardar_cita_ajax(request):
 
         try:
             fecha_obj = datetime.strptime(fecha_str, '%Y-%m-%d').date()
-            hora_obj = datetime.strptime(hora_str, '%H:%M').time()
+            hora_obj = parsear_hora_flexible(hora_str)
             perfil = request.user.perfil
 
             # 🔥 MULTISERVICIO: Buscamos si ya tiene psicólogo asignado a este servicio específico
@@ -1289,7 +1340,7 @@ def reagendar_cita_ajax(request):
 
     try:
         nueva_fecha = datetime.strptime(nueva_fecha_str, '%Y-%m-%d').date()
-        nueva_hora = datetime.strptime(nueva_hora_str, '%H:%M').time()
+        nueva_hora = parsear_hora_flexible(nueva_hora_str)
     except (TypeError, ValueError):
         return JsonResponse({'status': 'error', 'message': 'Fecha u hora inválida.'})
 
@@ -3091,7 +3142,7 @@ def iniciar_pago_clip(request):
                 monto = precio_info['total']
 
                 fecha_obj = datetime.strptime(fecha_str, '%Y-%m-%d').date()
-                hora_obj = datetime.strptime(hora_str, '%H:%M').time()
+                hora_obj = parsear_hora_flexible(hora_str)
 
                 # Guardamos la cita en estado 'Pendiente' usando tus campos originales
                 cita = Cita.objects.create(
@@ -3483,7 +3534,7 @@ def admin_guardar_cita_ajax(request):
 
     try:
         fecha_obj = datetime.strptime(fecha_str, '%Y-%m-%d').date()
-        hora_obj = datetime.strptime(hora_str, '%H:%M').time()
+        hora_obj = parsear_hora_flexible(hora_str)
 
         # 🔥 MULTISERVICIO: Buscamos psicólogo asignado a este servicio específico
         tratamiento = TratamientoPaciente.objects.filter(

@@ -1,0 +1,727 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>TECTUM Beneficios Corporativos | Salud Mental con Tarifa Preferencial</title>
+  <link rel="icon" href="{% static 'img/tectum/escudo.png' %}" type="image/png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+
+  <style>
+    :root {
+      --navy-950: #070d1e;
+      --navy-900: #0b142c;
+      --navy-800: #122044;
+      --navy-700: #1b2f63;
+      --blue-600: #2563eb;
+      --blue-500: #3b82f6;
+      --sky-400: #0ea5e9;
+      --sky-300: #38bdf8;
+      --slate-50: #f8fafc;
+      --slate-100: #f1f5f9;
+      --slate-200: #e2e8f0;
+      --slate-300: #cbd5e1;
+      --slate-400: #94a3b8;
+      --slate-500: #64748b;
+      --slate-600: #475569;
+      --slate-700: #334155;
+      --slate-800: #1e293b;
+      --slate-900: #0f172a;
+      --c-purple: #1e3a8a;
+      --c-pink: #0284c7;
+      --c-teal: #0ea5e9;
+      --c-orange: #f59e0b;
+      --c-yellow: #38bdf8;
+      --font-h: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-b: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      --radius-sm: 8px;
+      --radius-md: 16px;
+      --radius-lg: 24px;
+      --radius-xl: 32px;
+      --sh-sm: 0 2px 8px rgba(11, 20, 44, 0.04);
+      --sh-md: 0 12px 32px -4px rgba(11, 20, 44, 0.08);
+      --sh-lg: 0 24px 48px -12px rgba(11, 20, 44, 0.14);
+      --tr: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    * { margin:0; padding:0; box-sizing:border-box; }
+    html { scroll-behavior:smooth; font-size:16px; }
+    body {
+      font-family: var(--font-b);
+      background-color: var(--slate-50);
+      color: var(--slate-800);
+      line-height: 1.6;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* BARRA SUPERIOR */
+    .top-bar {
+      background: #ffffff;
+      border-bottom: 1px solid var(--slate-200);
+      padding: 16px 28px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      box-shadow: var(--sh-sm);
+    }
+    .top-bar .brand {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      text-decoration: none;
+    }
+    .top-bar .brand-logo {
+      height: 48px;
+      width: auto;
+      object-fit: contain;
+    }
+    .badge-beneficios {
+      background: #e0f2fe;
+      color: #0284c7;
+      border: 1px solid #bae6fd;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-weight: 800;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .top-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .btn-login {
+      background: white;
+      color: #0284c7;
+      border: 1.5px solid #0284c7;
+      padding: 10px 22px;
+      border-radius: 100px;
+      font-weight: 700;
+      font-size: 14px;
+      cursor: pointer;
+      text-decoration: none;
+      transition: var(--tr);
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .btn-login:hover {
+      background: #0284c7;
+      color: white;
+    }
+
+    /* HERO */
+    .hero {
+      background: linear-gradient(135deg, #070d1e 0%, #0b142c 50%, #1e3a8a 100%);
+      color: white;
+      padding: 75px 24px 65px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero-container {
+      max-width: 900px;
+      margin: 0 auto;
+      position: relative;
+      z-index: 2;
+    }
+    .hero-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      color: #38bdf8;
+      padding: 7px 18px;
+      border-radius: 100px;
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 20px;
+    }
+    .hero-title {
+      font-family: var(--font-h);
+      font-size: clamp(2.2rem, 5vw, 3.4rem);
+      font-weight: 800;
+      line-height: 1.15;
+      margin-bottom: 18px;
+      letter-spacing: -0.5px;
+    }
+    .hero-title span {
+      background: linear-gradient(135deg, #38bdf8, #60a5fa);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .hero-desc {
+      font-size: 1.15rem;
+      color: var(--slate-300);
+      max-width: 680px;
+      margin: 0 auto 35px;
+      line-height: 1.6;
+    }
+    .hero-cta-group {
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .btn-hero-primary {
+      background: linear-gradient(135deg, #0284c7 0%, #2563eb 100%);
+      color: white;
+      padding: 16px 36px;
+      border-radius: 100px;
+      font-weight: 800;
+      font-size: 1rem;
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 10px 25px rgba(2, 132, 199, 0.4);
+      transition: var(--tr);
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .btn-hero-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 14px 32px rgba(2, 132, 199, 0.5);
+      color: white;
+    }
+
+    /* SECCIÓN SERVICIOS */
+    .section-wrap {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 60px 24px;
+    }
+    .section-header {
+      text-align: center;
+      margin-bottom: 45px;
+    }
+    .section-header h2 {
+      font-family: var(--font-h);
+      font-size: 2.3rem;
+      font-weight: 800;
+      color: var(--navy-900);
+      margin-bottom: 10px;
+    }
+    .section-header p {
+      color: var(--slate-500);
+      font-size: 1.05rem;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .benefits-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 24px;
+    }
+    .benefit-card {
+      background: white;
+      border-radius: 24px;
+      padding: 34px 28px;
+      border: 1px solid var(--slate-200);
+      box-shadow: var(--sh-sm);
+      transition: var(--tr);
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+    }
+    .benefit-card:hover {
+      transform: translateY(-5px);
+      box-shadow: var(--sh-md);
+      border-color: #bae6fd;
+    }
+    .benefit-icon {
+      width: 58px;
+      height: 58px;
+      border-radius: 18px;
+      background: #e0f2fe;
+      color: #0284c7;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 26px;
+      margin-bottom: 20px;
+    }
+    .benefit-card h3 {
+      font-family: var(--font-h);
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: var(--navy-900);
+      margin-bottom: 8px;
+    }
+    .benefit-card p {
+      color: var(--slate-500);
+      font-size: 0.95rem;
+      line-height: 1.6;
+      margin-bottom: 20px;
+      flex: 1;
+    }
+    .benefit-price-tag {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 10px 16px;
+      width: 100%;
+      margin-bottom: 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .benefit-price-tag span {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--slate-500);
+      text-transform: uppercase;
+    }
+    .benefit-price-tag strong {
+      font-size: 16px;
+      font-weight: 800;
+      color: #0284c7;
+      font-family: var(--font-h);
+    }
+    .btn-agendar-card {
+      width: 100%;
+      background: #0284c7;
+      color: white;
+      border: none;
+      padding: 12px;
+      border-radius: 12px;
+      font-weight: 800;
+      font-family: var(--font-h);
+      cursor: pointer;
+      text-align: center;
+      transition: var(--tr);
+      text-decoration: none;
+    }
+    .btn-agendar-card:hover {
+      background: #1e3a8a;
+    }
+
+    /* FOOTER */
+    footer {
+      background: var(--navy-950);
+      color: white;
+      padding: 60px 24px 45px;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      text-align: center;
+    }
+
+    /* MODALES */
+    .ov-m {
+      display:none; position:fixed; inset:0;
+      background:rgba(7,13,30,.75); backdrop-filter:blur(8px);
+      z-index:9999; align-items:center; justify-content:center; padding:18px;
+    }
+    .ov-m.on { display:flex; }
+    .modal {
+      background:#fff; border-radius:28px; width:100%; max-width:440px;
+      padding:40px 32px; box-shadow:var(--sh-lg); position:relative;
+      animation: popIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    @keyframes popIn {
+      0% { transform: scale(0.9); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    .modal-close {
+      position:absolute; top:20px; right:20px; background:#f1f5f9;
+      border:none; width:34px; height:34px; border-radius:50%;
+      cursor:pointer; font-size:16px; color:var(--slate-500);
+      display:flex; align-items:center; justify-content:center;
+    }
+    .modal-input {
+      width: 100%;
+      padding: 12px 16px;
+      border: 1.5px solid var(--slate-200);
+      border-radius: 12px;
+      font-size: 14px;
+      font-family: var(--font-b);
+      margin-bottom: 14px;
+      outline: none;
+    }
+    .modal-input:focus { border-color: #0284c7; }
+    .modal-btn {
+      width: 100%;
+      background: linear-gradient(135deg, #1e3a8a 0%, #0284c7 100%);
+      color: white;
+      padding: 14px;
+      border-radius: 100px;
+      font-weight: 800;
+      font-size: 15px;
+      border: none;
+      cursor: pointer;
+      font-family: var(--font-h);
+    }
+
+    .triage-option-label {
+      display: flex; align-items: center; gap: 12px;
+      background: #f8fafc; border: 1.5px solid var(--slate-200);
+      padding: 14px 18px; border-radius: 14px; font-weight: 600;
+      font-size: 0.95rem; cursor: pointer; margin-bottom: 10px; transition: var(--tr);
+    }
+    .triage-option-label:hover { border-color: #0284c7; background: #f0f9ff; }
+  </style>
+</head>
+<body>
+
+  <!-- TOP BAR -->
+  <header class="top-bar">
+    <a href="#" class="brand">
+      <img src="{% static 'img/tectum/logo-completo.png' %}" alt="TECTUM" class="brand-logo">
+      <span class="badge-beneficios">Beneficios Corporativos</span>
+    </a>
+    <div class="top-actions">
+      {% if user.is_authenticated %}
+        <a href="{% url 'panel_beneficios' %}" class="btn-login" style="background:#0284c7; color:white;">
+          <i class="fas fa-user-circle"></i> Mi Panel
+        </a>
+      {% else %}
+        <button onclick="abrir('login')" class="btn-login">
+          <i class="fas fa-sign-in-alt"></i> Iniciar Sesión
+        </button>
+        <button onclick="abrirRegistroDirecto('individual', 'terapia_individual')" class="btn-hero-primary" style="padding:10px 22px; font-size:14px;">
+          Registrarme
+        </button>
+      {% endif %}
+    </div>
+  </header>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-container">
+      <div class="hero-tag">
+        <i class="fas fa-shield-heart"></i> Beneficios Corporativos de Salud Mental
+      </div>
+      <h1 class="hero-title">
+        Tu bienestar emocional con <span>tarifa preferencial</span>
+      </h1>
+      <p class="hero-desc">
+        Como beneficiario de TECTUM, accede a consultas psicológicas confidenciales con especialistas certificados y tarifas subsidiadas preferenciales.
+      </p>
+      <div class="hero-cta-group">
+        {% if user.is_authenticated %}
+          <a href="{% url 'panel_beneficios' %}" class="btn-hero-primary">
+            Ir a mi Panel <i class="fas fa-arrow-right"></i>
+          </a>
+        {% else %}
+          <button onclick="abrirRegistroDirecto('individual', 'terapia_individual')" class="btn-hero-primary">
+            Comenzar Registro con Beneficio <i class="fas fa-arrow-right"></i>
+          </button>
+          <button onclick="abrir('login')" class="btn-login" style="color:white; border-color:rgba(255,255,255,0.4); background:transparent;">
+            Ya tengo cuenta
+          </button>
+        {% endif %}
+      </div>
+    </div>
+  </section>
+
+  <!-- SERVICIOS CON BENEFICIO -->
+  <main class="section-wrap">
+    <div class="section-header">
+      <h2>Modalidades Terapéuticas</h2>
+      <p>Selecciona el servicio clínico que deseas iniciar con tu tarifa preferencial corporativa.</p>
+    </div>
+
+    <div class="benefits-grid">
+      <!-- Individual -->
+      <div class="benefit-card">
+        <div class="benefit-icon"><i class="fas fa-user"></i></div>
+        <h3>Terapia Individual</h3>
+        <p>Espacio confidencial para el manejo de estrés, ansiedad, burnout, desarrollo personal y metas emocionales.</p>
+        <div class="benefit-price-tag">
+          <span>Tarifa Beneficio TECTUM</span>
+          <strong>Tarifa Preferencial</strong>
+        </div>
+        {% if user.is_authenticated %}
+          <a href="{% url 'panel_beneficios' %}" class="btn-agendar-card">Agendar Sesión</a>
+        {% else %}
+          <button onclick="abrirRegistroDirecto('individual', 'terapia_individual')" class="btn-agendar-card">Comenzar Ahora</button>
+        {% endif %}
+      </div>
+
+      <!-- Pareja -->
+      <div class="benefit-card">
+        <div class="benefit-icon"><i class="fas fa-heart"></i></div>
+        <h3>Terapia de Pareja</h3>
+        <p>Sesiones conjuntas orientadas al fortalecimiento del vínculo, comunicación afectiva y acuerdos mutuos.</p>
+        <div class="benefit-price-tag">
+          <span>Tarifa Beneficio TECTUM</span>
+          <strong>Tarifa Preferencial</strong>
+        </div>
+        {% if user.is_authenticated %}
+          <a href="{% url 'panel_beneficios' %}" class="btn-agendar-card">Agendar Sesión</a>
+        {% else %}
+          <button onclick="abrirRegistroDirecto('pareja', 'terapia_pareja')" class="btn-agendar-card">Comenzar Ahora</button>
+        {% endif %}
+      </div>
+
+      <!-- Familiar -->
+      <div class="benefit-card">
+        <div class="benefit-icon"><i class="fas fa-users"></i></div>
+        <h3>Terapia Familiar</h3>
+        <p>Acompañamiento especializado para dinámicas familiares, pautas de crianza positiva y bienestar en el hogar.</p>
+        <div class="benefit-price-tag">
+          <span>Tarifa Beneficio TECTUM</span>
+          <strong>Tarifa Preferencial</strong>
+        </div>
+        {% if user.is_authenticated %}
+          <a href="{% url 'panel_beneficios' %}" class="btn-agendar-card">Agendar Sesión</a>
+        {% else %}
+          <button onclick="abrirRegistroDirecto('familiar', 'terapia_familiar')" class="btn-agendar-card">Comenzar Ahora</button>
+        {% endif %}
+      </div>
+    </div>
+  </main>
+
+  <!-- FOOTER LIMPIO (Sin la X) -->
+  <footer>
+    <div style="max-width: 900px; margin: 0 auto; display: flex; flex-direction: column; align-items: center;">
+      <!-- Logos limpios uno al lado del otro -->
+      <div style="display: flex; align-items: center; justify-content: center; gap: 24px; flex-wrap: wrap; margin-bottom: 24px;">
+        <div style="background: rgba(255,255,255,0.06); padding: 10px 22px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.1);">
+          <img src="{% static 'img/tectum/logo-completo.png' %}" alt="TECTUM" style="height: 38px; width: auto; filter: brightness(0) invert(1);">
+        </div>
+        <div style="background: rgba(255,255,255,0.06); padding: 10px 22px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.1);">
+          <img src="{% static 'img/logo_hope_blanco.png' %}" alt="Espacio HOPE" style="height: 38px; width: auto;">
+        </div>
+      </div>
+
+      <h3 style="font-family: var(--font-h); font-size: 1.3rem; font-weight: 800; margin-bottom: 8px;">
+        Convenio de Beneficios Corporativos en Salud Mental
+      </h3>
+      <p style="font-size: 0.95rem; color: var(--slate-400); max-width: 600px; margin-bottom: 20px;">
+        Atención psicológica profesional, confidencial y respaldada por especialistas con cédula profesional para colaboradores y familias.
+      </p>
+
+      <div style="font-size: 0.88rem; color: var(--slate-400); border-top: 1px solid rgba(255,255,255,0.08); padding-top: 18px; width: 100%;">
+        <span>Soporte WhatsApp: <a href="https://wa.me/525521130230" target="_blank" style="color:#38bdf8; text-decoration:none; font-weight:700;">+52 55 2113 0230</a></span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- MODAL LOGIN -->
+  <div class="ov-m" id="m-login">
+    <div class="modal">
+      <button class="modal-close" onclick="cerrar('login')"><i class="fas fa-times"></i></button>
+      <div style="text-align: center; margin-bottom: 24px;">
+        <img src="{% static 'img/tectum/logo-completo.png' %}" alt="TECTUM" style="height: 40px; margin-bottom: 12px;">
+        <h2 style="font-family: var(--font-h); font-size: 1.6rem; font-weight: 800; color: var(--navy-900);">Iniciar Sesión</h2>
+        <p style="color: var(--slate-500); font-size: 0.9rem;">Accede a tu panel de beneficios</p>
+      </div>
+
+      <form id="formLoginBeneficios" onsubmit="procesarLogin(event)">
+        {% csrf_token %}
+        <input type="email" id="loginEmail" class="modal-input" placeholder="correo@ejemplo.com" required>
+        <input type="password" id="loginPassword" class="modal-input" placeholder="••••••••" required>
+        <div id="loginFeedback" style="display:none; color:#ef4444; font-size:0.85rem; margin-bottom:12px; text-align:center;"></div>
+        <button type="submit" class="modal-btn" id="btnSubmitLogin">Entrar al Panel <i class="fas fa-arrow-right"></i></button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL REGISTRO CLÍNICO -->
+  <div class="ov-m" id="modalRegistro">
+    <div class="modal" style="max-width: 580px; padding: 36px 30px;">
+      <button class="modal-close" onclick="cerrar('modalRegistro')"><i class="fas fa-times"></i></button>
+      
+      <div style="text-align: center; margin-bottom: 20px;">
+        <img src="{% static 'img/tectum/logo-completo.png' %}" alt="TECTUM" style="height: 38px; margin-bottom: 8px;">
+        <h2 style="font-family: var(--font-h); font-size: 1.7rem; font-weight: 800; color: var(--navy-900);" id="triageHeader">Registro con Beneficio</h2>
+        <p style="color: var(--slate-500); font-size: 0.92rem;">Completa tu valoración inicial breve.</p>
+      </div>
+
+      <div id="triageContainer">
+        <div id="stepPreguntas" style="display: none;">
+          <h3 id="preguntaTitulo" style="font-family: var(--font-h); font-size: 1.25rem; font-weight: 800; margin-bottom: 16px; color: var(--navy-900);"></h3>
+          <div id="opcionesPregunta"></div>
+          <div style="display: flex; justify-content: space-between; margin-top: 20px;">
+            <button type="button" id="btnAtras" class="btn-login" style="padding: 8px 18px;">Atrás</button>
+            <button type="button" id="btnSiguiente" class="btn-hero-primary" style="padding: 10px 24px; font-size: 14px;">Continuar <i class="fas fa-arrow-right"></i></button>
+          </div>
+        </div>
+
+        <div id="stepDatosContacto" style="display: none;">
+          <form id="formRegistroUsuario" onsubmit="finalizarRegistro(event)">
+            {% csrf_token %}
+            <input type="text" id="regNombre" class="modal-input" placeholder="Nombre completo" required>
+            <input type="email" id="regEmail" class="modal-input" placeholder="Correo electrónico" required>
+            <input type="password" id="regPassword" class="modal-input" placeholder="Contraseña segura" required>
+            <input type="tel" id="regTelefono" class="modal-input" placeholder="Teléfono de contacto (10 dígitos)" required>
+            <div id="registroFeedback" style="display:none; color:#ef4444; font-size:0.85rem; margin-bottom:12px; text-align:center;"></div>
+            <button type="submit" class="modal-btn" id="btnSubmitRegistro">Finalizar y Entrar al Panel <i class="fas fa-arrow-right"></i></button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {{ cuestionario_json|json_script:"cuestionario-data" }}
+
+  <script>
+    function abrir(id) { document.getElementById('m-' + id || id).classList.add('on'); }
+    function cerrar(id) { 
+      const el = document.getElementById('m-' + id) || document.getElementById(id);
+      if (el) el.classList.remove('on'); 
+    }
+
+    function procesarLogin(e) {
+      e.preventDefault();
+      const fb = document.getElementById("loginFeedback");
+      const btn = document.getElementById("btnSubmitLogin");
+      fb.style.display = "none";
+      btn.disabled = true;
+
+      const fd = new FormData();
+      fd.append("login_email", document.getElementById("loginEmail").value.trim());
+      fd.append("login_password", document.getElementById("loginPassword").value);
+      fd.append("convenio", "tectumbeneficios");
+      fd.append("csrfmiddlewaretoken", document.querySelector('[name=csrfmiddlewaretoken]').value);
+
+      fetch("{% url 'login_usuario' %}", { method: "POST", body: fd })
+        .then(r => r.json())
+        .then(data => {
+          btn.disabled = false;
+          if (data.status === "success") {
+            window.location.href = "{% url 'panel_beneficios' %}";
+          } else {
+            fb.innerText = data.message || "Credenciales incorrectas.";
+            fb.style.display = "block";
+          }
+        })
+        .catch(() => {
+          btn.disabled = false;
+          fb.innerText = "Error de conexión.";
+          fb.style.display = "block";
+        });
+    }
+
+    // FLUJO REGISTRO
+    const bancoPreguntas = JSON.parse(document.getElementById("cuestionario-data").textContent);
+    let preguntasFlujo = [];
+    let indicePregunta = 0;
+    let respuestasGuardadas = {};
+    let flujoActual = "individual";
+
+    function abrirRegistroDirecto(flujo, servicio) {
+      flujoActual = flujo || "individual";
+      preguntasFlujo = bancoPreguntas[flujoActual] || bancoPreguntas["individual"] || [];
+      indicePregunta = 0;
+      respuestasGuardadas = { servicio_solicitado: servicio || "terapia_individual" };
+      
+      document.getElementById("stepPreguntas").style.display = "block";
+      document.getElementById("stepDatosContacto").style.display = "none";
+      renderPregunta();
+      document.getElementById("modalRegistro").classList.add("on");
+    }
+
+    function renderPregunta() {
+      const q = preguntasFlujo[indicePregunta];
+      if (!q) {
+        document.getElementById("stepPreguntas").style.display = "none";
+        document.getElementById("stepDatosContacto").style.display = "block";
+        return;
+      }
+      document.getElementById("preguntaTitulo").innerText = q.pregunta;
+      const optsBox = document.getElementById("opcionesPregunta");
+      optsBox.innerHTML = "";
+
+      const esPreguntaEdad = q.id === 'edad' || q.pregunta.toLowerCase().includes('edad');
+
+      if (q.tipo === "single" || q.tipo === "multiple") {
+        const inputType = q.tipo === "single" ? "radio" : "checkbox";
+        q.opciones.forEach(opc => {
+          optsBox.innerHTML += `<label class="triage-option-label"><input type="${inputType}" name="${q.id}" value="${opc}"> ${opc}</label>`;
+        });
+      } else if (esPreguntaEdad) {
+        const val = Math.min(respuestasGuardadas[q.id] || 25, 60);
+        optsBox.innerHTML = `
+          <div style="text-align: center; margin-bottom: 20px;">
+            <span id="${q.id}_valDisplay" style="font-size: 4rem; font-weight: 800; color: #0284c7; line-height: 1;">${val}</span>
+            <span style="font-size: 1rem; color: #64748b; font-weight: 600; display: block; margin-top: 4px;">años de edad</span>
+          </div>
+          <div style="padding: 0 10px;">
+            <input type="range" id="${q.id}" min="14" max="60" value="${val}" style="width: 100%; height: 8px; accent-color: #0284c7; cursor: pointer;" oninput="document.getElementById('${q.id}_valDisplay').innerText = this.value">
+            <div style="display: flex; justify-content: space-between; font-size: 0.85rem; color: #94a3b8; font-weight: 600; margin-top: 8px;">
+              <span>14 años</span>
+              <span>60+ años</span>
+            </div>
+          </div>
+        `;
+      } else {
+        optsBox.innerHTML = `<input type="text" id="${q.id}" class="modal-input" placeholder="Tu respuesta...">`;
+      }
+      document.getElementById("btnAtras").style.display = indicePregunta > 0 ? "block" : "none";
+    }
+
+    document.getElementById("btnSiguiente").onclick = function() {
+      const q = preguntasFlujo[indicePregunta];
+      if (q.tipo === "single") {
+        const sel = document.querySelector(`input[name="${q.id}"]:checked`);
+        if (sel) respuestasGuardadas[q.id] = sel.value;
+      } else if (q.tipo === "multiple") {
+        const sels = Array.from(document.querySelectorAll(`input[name="${q.id}"]:checked`)).map(e => e.value);
+        if (sels.length) respuestasGuardadas[q.id] = sels;
+      } else {
+        const inp = document.getElementById(q.id);
+        if (inp) respuestasGuardadas[q.id] = inp.value;
+      }
+      indicePregunta++;
+      renderPregunta();
+    };
+
+    document.getElementById("btnAtras").onclick = function() {
+      if (indicePregunta > 0) {
+        indicePregunta--;
+        renderPregunta();
+      }
+    };
+
+    function finalizarRegistro(e) {
+      e.preventDefault();
+      const fb = document.getElementById("registroFeedback");
+      const btn = document.getElementById("btnSubmitRegistro");
+      fb.style.display = "none";
+      btn.disabled = true;
+
+      const fd = new FormData();
+      fd.append("nombre", document.getElementById("regNombre").value.trim());
+      fd.append("email", document.getElementById("regEmail").value.trim());
+      fd.append("password", document.getElementById("regPassword").value);
+      fd.append("telefono", document.getElementById("regTelefono").value.trim());
+      fd.append("convenio", "tectumbeneficios");
+      fd.append("flujo_elegido", flujoActual);
+      fd.append("respuestas_json", JSON.stringify(respuestasGuardadas));
+      fd.append("respuestas", JSON.stringify(respuestasGuardadas));
+      fd.append("csrfmiddlewaretoken", document.querySelector('[name=csrfmiddlewaretoken]').value);
+
+      fetch("{% url 'registro_usuario' %}", { method: "POST", body: fd })
+        .then(r => r.json())
+        .then(data => {
+          btn.disabled = false;
+          if (data.status === "success") {
+            window.location.href = "{% url 'panel_beneficios' %}";
+          } else {
+            fb.innerText = data.message || "Error al registrarte.";
+            fb.style.display = "block";
+          }
+        })
+        .catch(() => {
+          btn.disabled = false;
+          fb.innerText = "Error de conexión.";
+          fb.style.display = "block";
+        });
+    }
+  </script>
+</body>
+</html>
