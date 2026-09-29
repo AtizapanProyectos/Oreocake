@@ -288,12 +288,14 @@
         color: #fff;
         box-shadow: 0 15px 30px rgba(2, 132, 199, .4);
         transition: .35s cubic-bezier(.16, 1, .3, 1);
+        text-decoration: none;
     }
 
     .taller-cta-btn:hover {
         transform: translateY(-4px);
         filter: brightness(1.1);
         box-shadow: 0 20px 40px rgba(2, 132, 199, .55);
+        color: #fff;
     }
 
     /* ==========================================================================
@@ -455,144 +457,113 @@
     }
 
     /* ==========================================================================
-       MODAL DE CUESTIONARIO Y REGISTRO
+       MODAL DE CUESTIONARIO Y REGISTRO (IDENTICO A INICIO-TECTUM)
        ========================================================================== */
     .modal-overlay {
         position: fixed;
         inset: 0;
-        background: rgba(7, 13, 30, .85);
-        backdrop-filter: blur(10px);
-        z-index: 5000;
+        background: rgba(7, 13, 30, 0.85);
+        backdrop-filter: blur(12px);
+        z-index: 6000;
         display: none;
         align-items: center;
         justify-content: center;
         padding: 20px;
     }
-
+    .modal-overlay.on {
+        display: flex;
+    }
     .modal-box {
-        background: #fff;
-        width: 100%;
-        max-width: 580px;
-        padding: 45px 35px;
+        background: #ffffff;
         border-radius: 32px;
-        position: relative;
-        box-shadow: 0 50px 100px rgba(0, 0, 0, .3);
-        max-height: 92vh;
+        padding: 42px;
+        width: min(620px, 100%);
+        max-height: 90vh;
         overflow-y: auto;
-        animation: modalFadeIn .4s cubic-bezier(.16, 1, .3, 1) both;
-        text-align: left;
+        position: relative;
+        box-shadow: 0 20px 40px -10px rgba(11, 20, 44, 0.16), 0 8px 16px -4px rgba(2, 132, 199, 0.1);
+        border: 1px solid var(--slate-200);
         border-top: 8px solid #0284c7;
+        animation: modalPop 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+        text-align: left;
     }
-
-    @keyframes modalFadeIn {
-        from {
-            opacity: 0;
-            transform: translateY(24px) scale(.97);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0) scale(1);
-        }
+    @keyframes modalPop {
+        from { opacity: 0; transform: scale(0.96) translateY(10px); }
+        to { opacity: 1; transform: scale(1) translateY(0); }
     }
-
-    .modal-box::-webkit-scrollbar {
-        width: 6px;
-    }
-
-    .modal-box::-webkit-scrollbar-thumb {
-        background-color: #cbd5e1;
-        border-radius: 10px;
-    }
-
     .modal-close {
         position: absolute;
         top: 20px;
-        right: 20px;
-        font-size: 18px;
-        color: var(--slate-400);
-        background: #f1f5f9;
-        border: none;
-        width: 38px;
-        height: 38px;
+        right: 22px;
+        background: var(--slate-100);
+        border: 0;
+        width: 36px;
+        height: 36px;
         border-radius: 50%;
+        font-size: 1.1rem;
         cursor: pointer;
-        transition: .25s;
+        color: var(--slate-500);
         display: flex;
         align-items: center;
         justify-content: center;
-        z-index: 50;
+        transition: all 0.25s ease;
     }
-
     .modal-close:hover {
-        background: #e2e8f0;
+        background: var(--slate-200);
         color: var(--navy-900);
-        transform: rotate(90deg);
     }
-
     .progress-container {
         width: 100%;
         height: 8px;
         background: #e2e8f0;
         border-radius: 10px;
-        margin-bottom: 8px;
         overflow: hidden;
+        margin-bottom: 8px;
     }
-
     #progressBar {
         height: 100%;
         width: 0%;
         background: linear-gradient(90deg, #1e3a8a, #0284c7);
         transition: width 0.3s ease;
-        border-radius: 10px;
     }
-
     .triage-option-label {
         display: flex;
         align-items: center;
-        gap: 15px;
+        gap: 14px;
         padding: 16px 20px;
-        background: #f8fafc;
         border: 2px solid #e2e8f0;
         border-radius: 16px;
-        font-size: 1rem;
-        font-weight: 600;
-        color: var(--navy-900);
         cursor: pointer;
-        transition: 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+        font-weight: 600;
+        font-size: 0.95rem;
+        transition: all 0.25s ease;
+        background: #f8fafc;
+        color: var(--navy-900);
     }
-
     .triage-option-label:hover {
-        background: #f0f9ff;
         border-color: #0284c7;
-        transform: translateY(-2px);
-        box-shadow: 0 8px 20px rgba(2, 132, 199, 0.1);
+        background: #f0f9ff;
     }
-
     .triage-option-label input[type="radio"],
     .triage-option-label input[type="checkbox"] {
         accent-color: #0284c7;
-        width: 20px;
-        height: 20px;
+        width: 18px;
+        height: 18px;
         cursor: pointer;
     }
-
     .custom-input-triage {
         width: 100%;
         padding: 16px 20px;
-        border-radius: 14px;
-        border: 2px solid #cbd5e1;
-        font-size: 1.05rem;
+        border-radius: 12px;
+        border: 1.5px solid #cbd5e1;
+        font-size: 1rem;
         font-family: var(--font-b);
         outline: none;
-        transition: 0.3s;
-        color: var(--navy-900);
+        transition: border-color 0.25s ease;
     }
-
     .custom-input-triage:focus {
         border-color: #0284c7;
-        box-shadow: 0 0 0 4px rgba(2, 132, 199, 0.15);
     }
-
     .btn-primary {
         background: linear-gradient(135deg, #1e3a8a 0%, #0284c7 100%);
         color: #fff;
@@ -610,14 +581,14 @@
         transition: .35s;
         cursor: pointer;
         border: none;
+        text-decoration: none;
     }
-
     .btn-primary:hover {
         background: #0369a1;
         transform: translateY(-3px);
         box-shadow: 0 15px 30px rgba(2, 132, 199, .45);
+        color: #fff;
     }
-
     .btn-outline {
         background: #fff;
         border: 2px solid #e2e8f0;
@@ -631,7 +602,6 @@
         align-items: center;
         justify-content: center;
     }
-
     .btn-outline:hover {
         border-color: #0284c7;
         color: #0284c7;
@@ -644,17 +614,14 @@
         .taller-breadcrumb {
             padding: 22px 24px 0;
         }
-
         .taller-hero {
             padding: 40px 24px 70px;
             margin-top: 0;
             min-height: auto;
         }
-
         .taller-hero-content {
             margin-top: 100px;
         }
-
         .section-features {
             padding: 60px 24px 30px;
         }
@@ -665,15 +632,12 @@
             padding: 18px 18px 0;
             margin-top: 60px;
         }
-
         .taller-hero {
             padding: 24px 18px 50px;
         }
-
         .taller-hero-content {
             margin-top: 20px;
         }
-
         .taller-tagbox {
             flex-direction: column;
             align-items: flex-start;
@@ -681,30 +645,25 @@
             padding: 18px 20px;
             border-radius: 20px;
         }
-
         .taller-info-cards {
             flex-direction: column;
             gap: 10px;
         }
-
         .taller-info-card {
             width: 100%;
             box-sizing: border-box;
         }
-
         .taller-badge-online {
             width: 100%;
             box-sizing: border-box;
             justify-content: center;
             text-align: center;
         }
-
         .taller-cta-btn {
             width: 100%;
             justify-content: center;
             padding: 18px 24px;
         }
-
         .modal-box {
             padding: 30px 20px;
             border-radius: 28px;
@@ -771,9 +730,15 @@
         </div>
 
         <div class="taller-hero-actions">
-            <button type="button" class="taller-cta-btn" onclick="abrirRegistroIndividual()">
+            {% if request.user.is_authenticated %}
+            <a href="{% url 'panel_tectum' %}" class="taller-cta-btn">
+                Ir a mi Panel <i class="fas fa-arrow-right"></i>
+            </a>
+            {% else %}
+            <button type="button" class="taller-cta-btn" onclick="abrirRegistroDirecto('individual', 'terapia_individual')">
                 Comenzar mi Proceso <i class="fas fa-arrow-right"></i>
             </button>
+            {% endif %}
         </div>
     </div>
 </section>
@@ -841,192 +806,169 @@
     <div class="banner-cta-bottom">
         <h3>Tu bienestar mental es una prioridad</h3>
         <p>Aprovecha tu beneficio corporativo en un entorno de calidez, respeto y total confidencialidad.</p>
+        {% if request.user.is_authenticated %}
+        <a href="{% url 'panel_tectum' %}" class="btn-primary"
+            style="background: #fff; color: #0284c7; padding: 20px 45px; font-size: 1rem;">
+            Ir a mi Panel <i class="fas fa-arrow-right"></i>
+        </a>
+        {% else %}
         <button type="button" class="btn-primary"
             style="background: #fff; color: #0284c7; padding: 20px 45px; font-size: 1rem;"
-            onclick="abrirRegistroIndividual()">
+            onclick="abrirRegistroDirecto('individual', 'terapia_individual')">
             Quiero iniciar mi terapia <i class="fas fa-arrow-right"></i>
         </button>
+        {% endif %}
     </div>
 </section>
 
 <!-- ==========================================
-     MODAL CUESTIONARIO + REGISTRO (WIZARD TECTUM)
+     MODAL DE REGISTRO Y CUESTIONARIO CLÍNICO TECTUM
      ========================================== -->
-<div class="modal-overlay" id="modalRegistro">
+<div class="modal-overlay" id="modalRegistro" onclick="if(event.target===this) cerrarModalRegistro();">
     <div class="modal-box" id="triageBox">
-        <button class="modal-close" onclick="cerrarModal('modalRegistro')"><i class="fas fa-times"></i></button>
+        <button class="modal-close" onclick="cerrarModalRegistro()"><i class="fas fa-times"></i></button>
 
-        <img src="{% static 'img/tectum/logo-completo.png' %}" alt="TECTUM Logo"
-            style="height: 38px; width: auto; margin: 0 auto 18px; display: block; object-fit: contain;">
+        <div style="display: flex; align-items: center; justify-content: center; margin-bottom: 20px;">
+            <img src="{% static 'img/tectum/logo-completo.png' %}" alt="TECTUM" style="height: 36px; width: auto; object-fit: contain;">
+        </div>
 
-        <div style="text-align: center; margin-bottom: 22px;" id="triageHeader">
-            <h2 style="font-family: var(--font-h); font-size: 1.9rem; color: var(--navy-900); font-weight: 800;">Terapia Individual</h2>
-            <p style="color: var(--slate-500); font-size: 0.98rem;" id="triageSubtitle">Paso a paso, a tu propio ritmo.</p>
+        <div style="text-align: center; margin-bottom: 25px;" id="triageHeader">
+            <h2 style="font-family: var(--font-h); font-size: 2rem; color: var(--navy-900); font-weight: 800;">Registro In-House</h2>
+            <p style="color: var(--slate-500); font-size: 1rem;" id="triageSubtitle">Paso a paso, a tu propio ritmo.</p>
         </div>
 
         <div id="triageContainer">
-            <!-- STEP PREGUNTAS CLÍNICAS -->
+            <!-- Paso 1: Preguntas del cuestionario clínico -->
             <div id="stepPreguntas" style="display: none;">
                 <div class="progress-container">
                     <div id="progressBar"></div>
                 </div>
-                <p id="progressText"
-                    style="text-align: right; color: #0284c7; font-weight: 800; margin-bottom: 18px; font-size: 0.82rem; text-transform: uppercase;">
+                <p id="progressText" style="text-align: right; color: var(--blue-600); font-weight: 800; margin-bottom: 20px; font-size: 0.85rem; text-transform: uppercase;">
                 </p>
-                <h3 id="questionText"
-                    style="margin-bottom: 22px; font-size: 1.3rem; color: var(--navy-900); font-weight: 800; line-height: 1.4;">
+                <h3 id="questionText" style="margin-bottom: 25px; font-size: 1.35rem; color: var(--navy-900); font-weight: 800; line-height: 1.4;">
                 </h3>
-                <div id="questionOptionsContainer"
-                    style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 28px;"></div>
-                <div style="display: flex; gap: 12px;">
-                    <button type="button" id="btnAtras" class="btn-outline" style="display: none; padding: 14px 22px;">
+                <div id="questionOptionsContainer" style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 30px;"></div>
+                <div style="display: flex; gap: 15px;">
+                    <button type="button" id="btnAtras" class="btn-outline" style="display: none; padding: 15px 25px;">
                         <i class="fas fa-arrow-left"></i>
                     </button>
-                    <button type="button" id="btnSiguiente" class="btn-primary"
-                        style="flex: 1; justify-content: center; padding: 15px 25px;">
+                    <button type="button" id="btnSiguiente" class="btn-primary" style="flex: 1; justify-content: center; padding: 15px 25px;">
                         Continuar <i class="fas fa-arrow-right"></i>
                     </button>
                 </div>
             </div>
 
-            <!-- STEP CREACIÓN DE CUENTA FINAL -->
+            <!-- Paso 2: Formulario de credenciales y datos -->
             <form action="{% url 'registro_usuario' %}" method="POST" id="formRegistro" style="display: none;">
                 {% csrf_token %}
-                <input type="hidden" name="flujo_elegido" id="inputFlujoFinal" value="individual">
+                <input type="hidden" name="flujo_elegido" id="inputFlujoFinal">
                 <input type="hidden" name="respuestas_json" id="inputRespuestasFinal">
-                <input type="hidden" name="servicio_origen" id="inputServicioOrigen" value="Terapia Individual">
+                <input type="hidden" name="servicio_origen" id="inputServicioOrigen">
                 <input type="hidden" name="convenio" value="tectum">
 
-                <div style="background: #f8fafc; padding: 22px; border-radius: 20px; border: 1px solid #e2e8f0; margin-bottom: 20px;">
+                <div style="background: #f8fafc; padding: 24px; border-radius: 20px; border: 1px solid #e2e8f0; margin-bottom: 22px;">
                     <h4 style="font-family: var(--font-h); font-size: 1.3rem; color: var(--navy-900); margin-bottom: 18px; font-weight: 800;">
-                        Tus Datos Generales
+                        Tus Datos de Acceso
                     </h4>
 
                     <div style="margin-bottom: 16px;">
-                        <label style="font-size: 0.82rem; font-weight: 700; color: var(--slate-500); margin-bottom: 6px; display: block; text-transform: uppercase; letter-spacing: 1px;">
-                            ¿Cómo te llamamos? (Seudónimo) <span style="color: #0284c7;">*</span>
-                        </label>
+                        <label style="font-size: 0.82rem; font-weight: 700; color: var(--slate-500); margin-bottom: 6px; display: block; text-transform: uppercase; letter-spacing: 0.8px;">¿Cómo te llamamos? *</label>
                         <div style="position: relative;">
-                            <i class="fas fa-smile"
-                                style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: #cbd5e1; font-size: 1.1rem;"></i>
-                            <input type="text" id="pseudonimoFinal"
-                                style="width: 100%; padding: 14px 16px 14px 46px; border-radius: 14px; border: 2px solid #cbd5e1; font-size: .95rem; font-family: var(--font-b); outline: none; transition: 0.3s; color: var(--navy-900);"
-                                placeholder="Ej. Alex, Majo..." required>
+                            <i class="fas fa-smile" style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 1.1rem;"></i>
+                            <input type="text" id="pseudonimoFinal" style="width: 100%; padding: 14px 16px 14px 46px; border-radius: 12px; border: 1.5px solid #cbd5e1; font-size: 0.95rem; font-family: var(--font-b); outline: none; transition: 0.25s;" placeholder="Ej. Alex, Majo..." required>
                         </div>
                     </div>
 
                     <div style="margin-bottom: 16px;">
-                        <label style="font-size: 0.82rem; font-weight: 700; color: var(--slate-500); margin-bottom: 6px; display: block; text-transform: uppercase; letter-spacing: 1px;">
-                            Nombre Completo (Confidencial para Expediente) <span style="color: #0284c7;">*</span>
-                        </label>
+                        <label style="font-size: 0.82rem; font-weight: 700; color: var(--slate-500); margin-bottom: 6px; display: block; text-transform: uppercase; letter-spacing: 0.8px;">Nombre Completo (Confidencial para Expediente) *</label>
                         <div style="position: relative;">
-                            <i class="fas fa-id-card"
-                                style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: #cbd5e1; font-size: 1.1rem;"></i>
-                            <input type="text" name="nombre"
-                                style="width: 100%; padding: 14px 16px 14px 46px; border-radius: 14px; border: 2px solid #cbd5e1; font-size: .95rem; font-family: var(--font-b); outline: none; transition: 0.3s; color: var(--navy-900);"
-                                placeholder="Para tu expediente clínico oficial" required>
+                            <i class="fas fa-id-card" style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 1.1rem;"></i>
+                            <input type="text" name="nombre" style="width: 100%; padding: 14px 16px 14px 46px; border-radius: 12px; border: 1.5px solid #cbd5e1; font-size: 0.95rem; font-family: var(--font-b); outline: none; transition: 0.25s;" placeholder="Nombre y apellidos" required>
                         </div>
                     </div>
 
                     <div style="margin-bottom: 16px;">
-                        <label style="font-size: 0.82rem; font-weight: 700; color: var(--slate-500); margin-bottom: 6px; display: block; text-transform: uppercase; letter-spacing: 1px;">
-                            Correo Corporativo o Personal <span style="color: #0284c7;">*</span>
-                        </label>
+                        <label style="font-size: 0.82rem; font-weight: 700; color: var(--slate-500); margin-bottom: 6px; display: block; text-transform: uppercase; letter-spacing: 0.8px;">Correo Corporativo o Personal *</label>
                         <div style="position: relative;">
-                            <i class="fas fa-envelope"
-                                style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: #cbd5e1; font-size: 1.1rem;"></i>
-                            <input type="email" name="email"
-                                style="width: 100%; padding: 14px 16px 14px 46px; border-radius: 14px; border: 2px solid #cbd5e1; font-size: .95rem; font-family: var(--font-b); outline: none; transition: 0.3s; color: var(--navy-900);"
-                                placeholder="tucorreo@empresa.com" required>
+                            <i class="fas fa-envelope" style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 1.1rem;"></i>
+                            <input type="email" name="email" style="width: 100%; padding: 14px 16px 14px 46px; border-radius: 12px; border: 1.5px solid #cbd5e1; font-size: 0.95rem; font-family: var(--font-b); outline: none; transition: 0.25s;" placeholder="correo@ejemplo.com" required>
                         </div>
                     </div>
 
-                    <div style="display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 16px;">
+                    <div style="display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 16px;">
                         <div style="flex: 1; min-width: 180px;">
-                            <label style="font-size: 0.82rem; font-weight: 700; color: var(--slate-500); margin-bottom: 6px; display: block; text-transform: uppercase; letter-spacing: 1px;">
-                                Tu Teléfono (WhatsApp) <span style="color: #0284c7;">*</span>
-                            </label>
+                            <label style="font-size: 0.82rem; font-weight: 700; color: var(--slate-500); margin-bottom: 6px; display: block; text-transform: uppercase; letter-spacing: 0.8px;">Teléfono *</label>
                             <div style="position: relative;">
-                                <i class="fas fa-phone"
-                                    style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: #cbd5e1; font-size: 1.1rem;"></i>
-                                <input type="tel" name="telefono"
-                                    style="width: 100%; padding: 14px 16px 14px 46px; border-radius: 14px; border: 2px solid #cbd5e1; font-size: .95rem; font-family: var(--font-b); outline: none; transition: 0.3s; color: var(--navy-900);"
-                                    placeholder="A 10 dígitos" required>
+                                <i class="fas fa-phone" style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 1.1rem;"></i>
+                                <input type="tel" name="telefono" style="width: 100%; padding: 14px 16px 14px 46px; border-radius: 12px; border: 1.5px solid #cbd5e1; font-size: 0.95rem; font-family: var(--font-b); outline: none;" placeholder="A 10 dígitos" required>
                             </div>
                         </div>
                         <div style="flex: 1; min-width: 180px;">
-                            <label style="font-size: 0.82rem; font-weight: 700; color: #0284c7; margin-bottom: 6px; display: block; text-transform: uppercase; letter-spacing: 1px;">
-                                Tel. Emergencia <span style="color: #0284c7;">*</span>
-                            </label>
+                            <label style="font-size: 0.82rem; font-weight: 700; color: #0284c7; margin-bottom: 6px; display: block; text-transform: uppercase; letter-spacing: 0.8px;">Tel. Emergencia *</label>
                             <div style="position: relative;">
-                                <i class="fas fa-notes-medical"
-                                    style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: #0284c7; font-size: 1.1rem;"></i>
-                                <input type="tel" name="telefono_emergencia"
-                                    style="width: 100%; padding: 14px 16px 14px 46px; border-radius: 14px; border: 2px solid #bae6fd; font-size: .95rem; font-family: var(--font-b); outline: none; transition: 0.3s; background: #f0f9ff; color: var(--navy-900);"
-                                    placeholder="Familiar o amigo" required>
+                                <i class="fas fa-notes-medical" style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: #0284c7; font-size: 1.1rem;"></i>
+                                <input type="tel" name="telefono_emergencia" style="width: 100%; padding: 14px 16px 14px 46px; border-radius: 12px; border: 1.5px solid #bfdbfe; font-size: 0.95rem; font-family: var(--font-b); outline: none; background: #eff6ff;" placeholder="Familiar o contacto" required>
                             </div>
                         </div>
                     </div>
 
                     <div>
-                        <label style="font-size: 0.82rem; font-weight: 700; color: var(--slate-500); margin-bottom: 6px; display: block; text-transform: uppercase; letter-spacing: 1px;">
-                            Crea una Contraseña <span style="color: #0284c7;">*</span>
-                        </label>
+                        <label style="font-size: 0.82rem; font-weight: 700; color: var(--slate-500); margin-bottom: 6px; display: block; text-transform: uppercase; letter-spacing: 0.8px;">Contraseña *</label>
                         <div style="position: relative;">
-                            <i class="fas fa-lock"
-                                style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: #cbd5e1; font-size: 1.1rem;"></i>
-                            <input type="password" name="password"
-                                style="width: 100%; padding: 14px 16px 14px 46px; border-radius: 14px; border: 2px solid #cbd5e1; font-size: .95rem; font-family: var(--font-b); outline: none; transition: 0.3s; color: var(--navy-900);"
-                                placeholder="Mínimo 8 caracteres" required>
+                            <i class="fas fa-lock" style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 1.1rem;"></i>
+                            <input type="password" name="password" id="inputRegisterPassword" style="width: 100%; padding: 14px 46px 14px 46px; border-radius: 12px; border: 1.5px solid #cbd5e1; font-size: 0.95rem; font-family: var(--font-b); outline: none;" placeholder="Mínimo 8 caracteres" required>
+                            <button type="button" onclick="togglePass('inputRegisterPassword', 'eyeIconRegister')" style="position: absolute; right: 14px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: #94a3b8; font-size: 1.1rem;">
+                                <i class="fas fa-eye" id="eyeIconRegister"></i>
+                            </button>
                         </div>
                     </div>
                 </div>
 
-                <label style="display: flex; align-items: flex-start; gap: 12px; margin-bottom: 22px; cursor: pointer; background: #f0fdf4; padding: 16px; border-radius: 16px; border: 1px solid #bbf7d0;">
-                    <input type="checkbox" name="acepta_privacidad" required
-                        style="min-width: 20px; height: 20px; accent-color: #16a34a; margin-top: 2px; cursor: pointer;">
+                <label style="display: flex; align-items: flex-start; gap: 12px; margin-bottom: 22px; cursor: pointer; background: #f0fdf4; padding: 16px; border-radius: 14px; border: 1px solid #bbf7d0;">
+                    <input type="checkbox" name="acepta_privacidad" required style="min-width: 20px; height: 20px; accent-color: #16a34a; margin-top: 2px; cursor: pointer;">
                     <span style="font-size: 0.88rem; color: #166534; line-height: 1.45; font-weight: 500;">
                         Confirmo que pertenezco a una empresa afiliada a <strong>TECTUM</strong> y acepto las políticas de confidencialidad para la atención clínica de Espacio HOPE.
                     </span>
                 </label>
 
-                <button type="submit" class="btn-primary" id="btnSubmitFinal"
-                    style="width: 100%; justify-content: center; padding: 18px; font-size: 1.05rem; border-radius: 16px; font-weight: 900;">
-                    Completar Registro e Ingresar al Panel <i class="fas fa-arrow-right" style="margin-left: 8px;"></i>
+                <button type="submit" class="btn-primary" id="btnSubmitFinal" style="width: 100%; justify-content: center; padding: 18px; font-size: 1.1rem; border-radius: 100px; font-weight: 900;">
+                    Finalizar Registro e Ingresar al Panel <i class="fas fa-arrow-right" style="margin-left: 8px;"></i>
                 </button>
             </form>
         </div>
     </div>
 </div>
 
-<!-- MODAL DE FEEDBACK / ALERTAS -->
-<div class="modal-overlay" id="modalFeedback">
-    <div class="modal-box" style="text-align: center; max-width: 440px;">
-        <button class="modal-close" onclick="cerrarModal('modalFeedback')"><i class="fas fa-times"></i></button>
-        <div id="feedbackIcon" style="font-size: 3rem; margin-bottom: 15px; color: #0284c7;">
-            <i class="fas fa-info-circle"></i>
-        </div>
-        <h3 id="feedbackTitle"
-            style="font-family: var(--font-h); font-size: 1.4rem; color: var(--navy-900); margin-bottom: 10px;">Atención</h3>
-        <p id="feedbackMessage"
-            style="color: var(--slate-500); font-size: 0.98rem; line-height: 1.5; margin-bottom: 25px;"></p>
-        <button class="btn-primary" style="width: 100%; justify-content: center;"
-            onclick="cerrarModal('modalFeedback')">
-            Aceptar
-        </button>
-    </div>
-</div>
-
 <!-- ==========================================
-     SCRIPTS DE CONTROL Y CUESTIONARIO
+     SCRIPTS DE CONTROL Y CUESTIONARIO TECTUM
      ========================================== -->
 <script>
-    // Carga de preguntas desde Django
+    // Toggle Password
+    function togglePass(idInput, idIcon) {
+        const input = document.getElementById(idInput);
+        const icon = document.getElementById(idIcon);
+        if (!input || !icon) return;
+        if (input.type === 'password') {
+            input.type = 'text';
+            icon.className = 'fas fa-eye-slash';
+        } else {
+            input.type = 'password';
+            icon.className = 'fas fa-eye';
+        }
+    }
+
+    // Modal Control
+    function cerrarModalRegistro() {
+        const modal = document.getElementById('modalRegistro');
+        if (modal) modal.classList.remove('on');
+    }
+
+    // ── LÓGICA DE REGISTRO DIRECTO Y CUESTIONARIO CLÍNICO TECTUM ──
     let dataCuestionario = {};
     try {
         dataCuestionario = JSON.parse('{{ cuestionario_json|escapejs|default:"{}" }}');
     } catch (e) {
-        console.error("Error al parsear el cuestionario_json:", e);
+        console.error("Error al parsear cuestionario_json:", e);
     }
 
     let flujoActual = "individual";
@@ -1035,198 +977,125 @@
     let preguntasFlujo = [];
     let historialNavegacion = [];
 
-    function abrirModal(id) {
-        const m = document.getElementById(id);
-        if (m) {
-            m.style.display = 'flex';
-            document.body.style.overflow = 'hidden';
-        }
-    }
-
-    function cerrarModal(id) {
-        const m = document.getElementById(id);
-        if (m) {
-            m.style.display = 'none';
-            document.body.style.overflow = 'auto';
-        }
-    }
-
-    // Cerrar modales al dar clic afuera
-    document.querySelectorAll('.modal-overlay').forEach(modal => {
-        modal.addEventListener('click', function (e) {
-            if (e.target === this) {
-                cerrarModal(this.id);
-            }
-        });
-    });
-
-    function abrirRegistroIndividual() {
-        document.getElementById('inputServicioOrigen').value = "Terapia Individual";
+    function abrirRegistroDirecto(flujo, servicioExacto) {
+        document.getElementById('inputServicioOrigen').value = servicioExacto || 'terapia_individual';
 
         if (!dataCuestionario || Object.keys(dataCuestionario).length === 0) {
-            finalizarCuestionario();
-            abrirModal("modalRegistro");
+            alert("El sistema de registro se está sincronizando. Intenta de nuevo.");
             return;
         }
 
-        flujoActual = "individual";
-        preguntasFlujo = dataCuestionario[flujoActual] || [];
+        const modal = document.getElementById('modalRegistro');
+        if (modal) modal.classList.add('on');
 
-        if (preguntasFlujo.length === 0) {
-            finalizarCuestionario();
-            abrirModal("modalRegistro");
-            return;
+        document.getElementById('stepPreguntas').style.display = 'block';
+        document.getElementById('formRegistro').style.display = 'none';
+
+        iniciarCuestionario(flujo || 'individual');
+    }
+
+    function iniciarCuestionario(flujo) {
+        if (!dataCuestionario[flujo]) {
+            flujo = Object.keys(dataCuestionario)[0] || 'individual';
         }
+        flujoActual = flujo;
+        preguntasFlujo = dataCuestionario[flujoActual].preguntas;
 
-        indicePregunta = 0;
-        respuestasGuardadas = {};
+        document.querySelector("#triageHeader h2").innerText = dataCuestionario[flujoActual].titulo || "Registro In-House";
+
         historialNavegacion = [];
-
-        document.getElementById("stepPreguntas").style.display = "block";
-        document.getElementById("formRegistro").style.display = "none";
-        document.querySelector("#triageHeader h2").innerText = "Terapia Individual";
-        document.getElementById("triageSubtitle").innerText = "Paso a paso, a tu propio ritmo.";
-
+        respuestasGuardadas = {};
+        indicePregunta = obtenerSiguienteIndiceValido(0);
         mostrarPregunta();
-        abrirModal("modalRegistro");
+    }
+
+    function debeMostrarPregunta(pregunta) {
+        if (!pregunta.mostrar_si) return true;
+        const depId = pregunta.mostrar_si.id;
+        const valoresPermitidos = pregunta.mostrar_si.valores;
+        const respuestaPrevia = respuestasGuardadas[depId];
+        if (!respuestaPrevia) return false;
+        if (Array.isArray(respuestaPrevia)) return respuestaPrevia.some(r => valoresPermitidos.includes(r));
+        return valoresPermitidos.includes(respuestaPrevia);
+    }
+
+    function obtenerSiguienteIndiceValido(inicio) {
+        let nextIndex = inicio;
+        while (nextIndex < preguntasFlujo.length) {
+            if (debeMostrarPregunta(preguntasFlujo[nextIndex])) return nextIndex;
+            nextIndex++;
+        }
+        return nextIndex;
     }
 
     function mostrarPregunta() {
+        const optionsContainer = document.getElementById("questionOptionsContainer");
+        optionsContainer.innerHTML = "";
+
         if (indicePregunta >= preguntasFlujo.length) {
             finalizarCuestionario();
             return;
         }
 
+        document.getElementById("progressBar").style.width = (((indicePregunta) / preguntasFlujo.length) * 100) + "%";
+        document.getElementById("progressText").innerText = `Pregunta ${historialNavegacion.length + 1} de ${preguntasFlujo.length}`;
+
         const q = preguntasFlujo[indicePregunta];
-        const pct = Math.round(((indicePregunta + 1) / preguntasFlujo.length) * 100);
-        document.getElementById("progressBar").style.width = pct + "%";
-        document.getElementById("progressText").innerText = `Pregunta ${indicePregunta + 1} de ${preguntasFlujo.length}`;
-        document.getElementById("questionText").innerText = q.texto;
+        document.getElementById("questionText").innerText = q.pregunta;
+        document.getElementById("btnAtras").style.display = historialNavegacion.length > 0 ? "block" : "none";
 
-        const container = document.getElementById("questionOptionsContainer");
-        container.innerHTML = "";
+        const esPreguntaEdad = q.id === 'edad' || q.pregunta.toLowerCase().includes('edad');
 
-        if (q.tipo === "multiple" || q.tipo === "abierta") {
-            const wrap = document.createElement("div");
-            wrap.style.display = "flex";
-            wrap.style.flexDirection = "column";
-            wrap.style.gap = "10px";
-
-            q.opciones.forEach((opt, idx) => {
-                const label = document.createElement("label");
-                label.className = "triage-option-label";
-
-                const radio = document.createElement("input");
-                radio.type = "radio";
-                radio.name = "current_question";
-                radio.value = opt;
-                radio.id = `opt_${idx}`;
-
-                if (respuestasGuardadas[q.id] === opt) {
-                    radio.checked = true;
-                }
-
-                radio.addEventListener("change", function () {
-                    const customTxt = document.getElementById("custom_input_text");
-                    if (customTxt) {
-                        customTxt.style.display = opt.toLowerCase().includes("otro") ? "block" : "none";
-                        if (opt.toLowerCase().includes("otro")) customTxt.focus();
-                    }
-                });
-
-                const span = document.createElement("span");
-                span.innerText = opt;
-
-                label.appendChild(radio);
-                label.appendChild(span);
-                wrap.appendChild(label);
+        if (q.tipo === "single" || q.tipo === "multiple") {
+            const inputType = q.tipo === "single" ? "radio" : "checkbox";
+            q.opciones.forEach((opcion) => {
+                const checked = respuestasGuardadas[q.id] && respuestasGuardadas[q.id].includes(opcion) ? "checked" : "";
+                const html = `<label class="triage-option-label"><input type="${inputType}" name="${q.id}" value="${opcion}" ${checked}> ${opcion}</label>`;
+                optionsContainer.insertAdjacentHTML('beforeend', html);
             });
-
-            if (q.tipo === "abierta") {
-                const inputCustom = document.createElement("input");
-                inputCustom.type = "text";
-                inputCustom.id = "custom_input_text";
-                inputCustom.className = "custom-input-triage";
-                inputCustom.placeholder = "Escribe tu respuesta aquí...";
-                inputCustom.style.display = "none";
-                inputCustom.style.marginTop = "8px";
-                wrap.appendChild(inputCustom);
-            }
-
-            container.appendChild(wrap);
-        } else if (q.tipo === "checkbox") {
-            const wrap = document.createElement("div");
-            wrap.style.display = "flex";
-            wrap.style.flexDirection = "column";
-            wrap.style.gap = "10px";
-
-            q.opciones.forEach((opt, idx) => {
-                const label = document.createElement("label");
-                label.className = "triage-option-label";
-
-                const chk = document.createElement("input");
-                chk.type = "checkbox";
-                chk.name = "current_question";
-                chk.value = opt;
-                chk.id = `opt_${idx}`;
-
-                const guardadas = respuestasGuardadas[q.id];
-                if (Array.isArray(guardadas) && guardadas.includes(opt)) {
-                    chk.checked = true;
-                }
-
-                const span = document.createElement("span");
-                span.innerText = opt;
-
-                label.appendChild(chk);
-                label.appendChild(span);
-                wrap.appendChild(label);
-            });
-
-            container.appendChild(wrap);
+        } else if (esPreguntaEdad) {
+            const val = Math.min(respuestasGuardadas[q.id] || 25, 60);
+            optionsContainer.innerHTML = `
+                <div style="text-align: center; margin-bottom: 20px;">
+                    <span id="${q.id}_valDisplay" style="font-size: 5rem; font-weight: 800; color: var(--blue-600); font-family: var(--font-h); line-height: 1;">${val}</span>
+                    <span style="font-size: 1.1rem; color: #64748b; font-weight: 600; display: block; margin-top: 6px;">años de edad</span>
+                </div>
+                <div style="padding: 0 10px;">
+                    <input type="range" id="${q.id}" min="14" max="60" value="${val}" style="width: 100%; height: 8px; background: #e2e8f0; border-radius: 4px; appearance: none; accent-color: var(--blue-600); cursor: pointer;" oninput="document.getElementById('${q.id}_valDisplay').innerText = this.value">
+                    <div style="display: flex; justify-content: space-between; font-size: 0.85rem; color: #94a3b8; font-weight: 600; margin-top: 10px;">
+                        <span>14 años</span>
+                        <span>60+ años</span>
+                    </div>
+                </div>
+            `;
+        } else {
+            const val = respuestasGuardadas[q.id] || "";
+            const inputType = q.tipo === "numero" ? "number" : "text";
+            optionsContainer.innerHTML = `<input type="${inputType}" id="${q.id}" class="custom-input-triage" placeholder="Escribe tu respuesta aquí..." value="${val}">`;
         }
-
-        document.getElementById("btnAtras").style.display = historialNavegacion.length > 0 ? "inline-flex" : "none";
-    }
-
-    function obtenerSiguienteIndiceValido(desdeIndice) {
-        for (let i = desdeIndice; i < preguntasFlujo.length; i++) {
-            const preg = preguntasFlujo[i];
-            if (!preg.condicion) return i;
-            const depValue = respuestasGuardadas[preg.condicion.depende_de];
-            if (depValue === preg.condicion.valor_esperado) {
-                return i;
-            }
-        }
-        return preguntasFlujo.length;
     }
 
     document.getElementById("btnSiguiente").addEventListener("click", function () {
         const q = preguntasFlujo[indicePregunta];
-
-        if (q.tipo === "multiple" || q.tipo === "abierta") {
-            const seleccionado = document.querySelector('input[name="current_question"]:checked');
-            if (!seleccionado) {
-                mostrarAlertaPersonalizada("Por favor selecciona una respuesta para continuar.");
-                return;
+        let hayRespuesta = false;
+        if (q.tipo === "single") {
+            const sel = document.querySelector(`input[name="${q.id}"]:checked`);
+            if (sel) { respuestasGuardadas[q.id] = sel.value; hayRespuesta = true; }
+        } else if (q.tipo === "multiple") {
+            const sels = Array.from(document.querySelectorAll(`input[name="${q.id}"]:checked`)).map(el => el.value);
+            if (sels.length > 0) { respuestasGuardadas[q.id] = sels; hayRespuesta = true; }
+        } else {
+            const inp = document.getElementById(q.id);
+            const val = inp ? inp.value.trim() : "";
+            if (val !== "") {
+                respuestasGuardadas[q.id] = val;
+                hayRespuesta = true;
             }
+        }
 
-            let val = seleccionado.value;
-            if (q.tipo === "abierta" && val.toLowerCase().includes("otro")) {
-                const customTxt = document.getElementById("custom_input_text");
-                if (customTxt && customTxt.value.trim() !== "") {
-                    val = customTxt.value.trim();
-                }
-            }
-
-            respuestasGuardadas[q.id] = val;
-        } else if (q.tipo === "checkbox") {
-            const checkedBoxes = Array.from(document.querySelectorAll('input[name="current_question"]:checked')).map(cb => cb.value);
-            if (checkedBoxes.length === 0) {
-                mostrarAlertaPersonalizada("Por favor selecciona al menos una opción para continuar.");
-                return;
-            }
-            respuestasGuardadas[q.id] = checkedBoxes;
+        if (!hayRespuesta) {
+            alert("Por favor selecciona o escribe tu respuesta para continuar.");
+            return;
         }
 
         historialNavegacion.push(indicePregunta);
@@ -1249,7 +1118,7 @@
         document.getElementById("progressBar").style.width = "100%";
     }
 
-    // ENVÍO AJAX DEL FORMULARIO FINAL
+    // ── ENVÍO AJAX DEL REGISTRO FINAL TECTUM ──
     const formReg = document.getElementById("formRegistro");
     if (formReg) {
         formReg.addEventListener("submit", function (e) {
@@ -1297,31 +1166,16 @@
                     if (data.status === "success" || data.success) {
                         window.location.href = data.redirect_url || "{% url 'panel_tectum' %}";
                     } else {
-                        mostrarAlertaPersonalizada(data.message || "Ocurrió un error al procesar el registro.", "error");
+                        alert(data.message || "No se pudo completar el registro. Verifica los datos.");
                     }
                 })
                 .catch(err => {
                     btnSubmitFinal.innerHTML = originalText;
                     btnSubmitFinal.disabled = false;
                     formReg.dataset.enviando = "false";
-                    mostrarAlertaPersonalizada(err.message || "Error de conexión. Intenta nuevamente.", "error");
+                    alert(err.message || "Error de conexión al procesar el registro.");
                 });
         });
-    }
-
-    function mostrarAlertaPersonalizada(mensaje, tipo = "info") {
-        const msg = document.getElementById("feedbackMessage");
-        const iconDiv = document.getElementById("feedbackIcon");
-        msg.innerHTML = mensaje;
-
-        if (tipo === "error") {
-            document.getElementById("feedbackTitle").innerText = "Hubo un problema";
-            iconDiv.innerHTML = '<i class="fas fa-exclamation-triangle" style="color: #ef4444;"></i>';
-        } else {
-            document.getElementById("feedbackTitle").innerText = "Atención";
-            iconDiv.innerHTML = '<i class="fas fa-info-circle" style="color: #0284c7;"></i>';
-        }
-        abrirModal("modalFeedback");
     }
 </script>
 {% endblock %}
