@@ -2872,13 +2872,25 @@ def sesion_individual(request):
         horas_obj = [datetime.strptime(h, '%I:%M %p').time() for h in horas_str]
         dias_html[fecha_obj] = horas_obj
 
+    es_tectum = (
+        'tectuminhause' in request.get_host().lower() 
+        or request.session.get('convenio_tectum') 
+        or request.GET.get('convenio') == 'tectum'
+    )
+
     context = {
         'dias_disponibles_json': dias_json,
         'dias_disponibles': dias_html,
         'mostrar_completar_perfil': request.GET.get('completar_perfil') == '1',  
         'cuestionario_json': json.dumps(CUESTIONARIO_CLINICO),
         'paypal_client_id': settings.PAYPAL_CLIENT_ID,
+        'es_tectum': es_tectum,
+        'es_usuario_tectum': es_tectum,
     }
+
+    if es_tectum:
+        return render(request, 'tectum/sesion-individual-tectum.html', context)
+
     return render(request, 'sesion_individual.html', context)
 
 
