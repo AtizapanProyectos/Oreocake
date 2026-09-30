@@ -3,58 +3,83 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Confirmación de Cita - HOPE</title>
+    <title>{% if es_tectum %}Confirmación de Sesión - TECTUM{% else %}Confirmación de Cita - HOPE{% endif %}</title>
     <style>
         /* Importamos las fuentes nuevas para clientes de correo modernos */
-        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@700&family=Plus+Jakarta+Sans:wght@400;600&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;600;700&display=swap');
     </style>
 </head>
-<body style="font-family: 'Plus Jakarta Sans', Helvetica, Arial, sans-serif; background-color: #F9FAFB; margin: 0; padding: 0; -webkit-font-smoothing: antialiased;">
+<body style="font-family: 'Plus Jakarta Sans', Helvetica, Arial, sans-serif; background-color: #F8FAFC; margin: 0; padding: 0; -webkit-font-smoothing: antialiased;">
 
-    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #F9FAFB; padding: 40px 20px;">
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #F8FAFC; padding: 40px 20px;">
         <tr>
             <td align="center">
-                <table width="100%" max-width="600" cellpadding="0" cellspacing="0" border="0" style="background-color: #FFFFFF; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.05); max-width: 600px; width: 100%; border-top: 6px solid #5A3FA3;">
+                <table width="100%" max-width="600" cellpadding="0" cellspacing="0" border="0" style="background-color: #FFFFFF; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.06); max-width: 600px; width: 100%; border-top: 6px solid {% if es_tectum %}#0284c7{% else %}#5A3FA3{% endif %};">
 
+                    <!-- CABECERA CON LOGOTIPO -->
                     <tr>
-                        <td align="center" style="background-color: #ffffff; padding: 40px 20px 10px 20px;">
-                            <img src="https://espaciohope.com/static/img/nlogo.png" alt="HOPE" style="height: 170px; width: auto; display: block; margin: 0 auto;">
+                        <td align="center" style="background-color: #ffffff; padding: {% if es_tectum %}35px 20px 15px 20px{% else %}40px 20px 10px 20px{% endif %};">
+                            {% if es_tectum %}
+                                <!-- LOGO TECTUM -->
+                                <img src="https://espaciohope.com/static/img/tectum/logo-completo.png" alt="TECTUM" style="height: 58px; max-width: 230px; width: auto; display: block; margin: 0 auto; object-fit: contain;">
+                                <div style="display: inline-block; margin-top: 10px; padding: 4px 12px; background-color: #e0f2fe; color: #0369a1; border-radius: 20px; font-size: 11px; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase; font-family: 'Outfit', Helvetica, Arial, sans-serif;">
+                                    Salud Mental Corporativa
+                                </div>
+                            {% else %}
+                                <!-- LOGO ESPACIO HOPE -->
+                                <img src="https://espaciohope.com/static/img/nlogo.png" alt="HOPE" style="height: 170px; width: auto; display: block; margin: 0 auto;">
+                            {% endif %}
                         </td>
                     </tr>
 
                     <tr>
                         <td align="center" style="padding: 10px 40px 50px 40px;">
-                            <div style="height: 4px; width: 40px; background-color: #F8D33D; margin: 0 auto 20px auto; border-radius: 2px;"></div>
+                            <!-- BARRA DECORATIVA -->
+                            <div style="height: 4px; width: 44px; background-color: {% if es_tectum %}#0ea5e9{% else %}#F8D33D{% endif %}; margin: 0 auto 20px auto; border-radius: 2px;"></div>
 
-                            <h2 style="color: #0f0f0f; margin-top: 0; font-size: 26px; font-weight: 700; font-family: 'Outfit', Helvetica, Arial, sans-serif;">¡Hola, {{ nombre }}!</h2>
+                            <h2 style="color: #0f172a; margin-top: 0; font-size: 26px; font-weight: 700; font-family: 'Outfit', Helvetica, Arial, sans-serif;">¡Hola, {{ nombre }}!</h2>
 
-                            <p style="color: #64748b; font-size: 16px; line-height: 1.6; margin-bottom: 25px;">
-                                Tu sesión psicológica ha sido confirmada y agendada con éxito. Este es tu espacio seguro para sanar.
+                            <p style="color: #64748b; font-size: 15.5px; line-height: 1.6; margin-bottom: 25px;">
+                                {% if es_tectum %}
+                                    Tu sesión de bienestar psicológico <strong>TECTUM</strong> ha sido confirmada y agendada con éxito. Este es tu espacio seguro y confidencial para cuidar de tu salud emocional.
+                                {% else %}
+                                    Tu sesión psicológica ha sido confirmada y agendada con éxito. Este es tu espacio seguro para sanar.
+                                {% endif %}
                             </p>
 
-                            <div style="background-color: #F3F4F6; border-radius: 12px; padding: 20px; margin-bottom: 35px; text-align: left;">
-                                <p style="margin: 0 0 10px 0; color: #0f0f0f; font-size: 15px;"><strong>Especialista:</strong> Dr(a). {{ psicologo_nombre }}</p>
-                                <p style="margin: 0 0 10px 0; color: #0f0f0f; font-size: 15px;"><strong>Fecha:</strong> {{ fecha }}</p>
-                                <p style="margin: 0; color: #0f0f0f; font-size: 15px;"><strong>Hora:</strong> {{ hora }} hrs</p>
+                            <!-- TARJETA DE DETALLES DE LA CITA -->
+                            <div style="background-color: {% if es_tectum %}#F0F9FF; border: 1px solid #BAE6FD{% else %}#F3F4F6{% endif %}; border-radius: 12px; padding: 20px; margin-bottom: 35px; text-align: left;">
+                                <p style="margin: 0 0 10px 0; color: #0f172a; font-size: 15px;"><strong>Especialista:</strong> Dr(a). {{ psicologo_nombre }}</p>
+                                <p style="margin: 0 0 10px 0; color: #0f172a; font-size: 15px;"><strong>Fecha:</strong> {{ fecha }}</p>
+                                <p style="margin: {% if es_tectum %}0 0 10px 0{% else %}0{% endif %}; color: #0f172a; font-size: 15px;"><strong>Hora:</strong> {{ hora }} hrs</p>
+                                {% if es_tectum %}
+                                <p style="margin: 0; color: #0369a1; font-size: 13.5px; font-weight: 600;"><strong>Programa:</strong> Convenio Corporativo TECTUM</p>
+                                {% endif %}
                             </div>
 
-                            <a href="{{ link_meet }}" style="display: inline-block; background-color: #5A3FA3; color: #FFFFFF; text-decoration: none; font-size: 18px; font-weight: bold; padding: 18px 45px; border-radius: 40px; box-shadow: 0 6px 15px rgba(90, 63, 163, 0.3); font-family: 'Outfit', Helvetica, Arial, sans-serif;">
+                            <!-- BOTÓN DE ACCIÓN -->
+                            <a href="{{ link_meet }}" style="display: inline-block; background: {% if es_tectum %}linear-gradient(135deg, #1e3a8a 0%, #0284c7 100%){% else %}#5A3FA3{% endif %}; background-color: {% if es_tectum %}#0284c7{% else %}#5A3FA3{% endif %}; color: #FFFFFF; text-decoration: none; font-size: 17px; font-weight: bold; padding: 18px 45px; border-radius: 40px; box-shadow: 0 6px 18px {% if es_tectum %}rgba(2, 132, 199, 0.35){% else %}rgba(90, 63, 163, 0.3){% endif %}; font-family: 'Outfit', Helvetica, Arial, sans-serif;">
                                 Ingresar a mi sesión
                             </a>
 
-                            <p style="color: #64748b; font-size: 14px; line-height: 1.5; margin-top: 30px;">
+                            <p style="color: #64748b; font-size: 14px; line-height: 1.55; margin-top: 30px;">
                                 Para ingresar a tu videollamada, haz clic en el botón de arriba. Responderás un breve cuestionario previo de 2 minutos para que tu especialista conozca tu estado actual y de inmediato accederás a tu sala de sesión.<br><br>
                                 Te recomendamos buscar un lugar tranquilo, privado y con buena conexión a internet.<br><br>
                                 Si el botón no funciona, copia este enlace en tu navegador:<br>
-                                <a href="{{ link_meet }}" style="color: #F27C21; word-break: break-all; text-decoration: underline;">{{ link_meet }}</a>
+                                <a href="{{ link_meet }}" style="color: {% if es_tectum %}#0284c7{% else %}#F27C21{% endif %}; word-break: break-all; text-decoration: underline;">{{ link_meet }}</a>
                             </p>
                         </td>
                     </tr>
 
+                    <!-- FOOTER DEL CORREO -->
                     <tr>
-                        <td align="center" style="background-color: #F3F4F6; padding: 25px 20px; border-top: 1px solid #E5E7EB;">
+                        <td align="center" style="background-color: {% if es_tectum %}#F0F9FF{% else %}#F3F4F6{% endif %}; padding: 22px 20px; border-top: 1px solid {% if es_tectum %}#BAE6FD{% else %}#E5E7EB{% endif %};">
                             <p style="color: #64748b; font-size: 12px; margin: 0; line-height: 1.5;">
-                                <strong style="color: #5A3FA3;">&copy; 2026 Plataforma HOPE.</strong> Todos los derechos reservados.
+                                {% if es_tectum %}
+                                    <strong style="color: #0369a1;">&copy; 2026 TECTUM &bull; Salud Mental Corporativa.</strong> En alianza estratégica con HOPE. Todos los derechos reservados.
+                                {% else %}
+                                    <strong style="color: #5A3FA3;">&copy; 2026 Plataforma HOPE.</strong> Todos los derechos reservados.
+                                {% endif %}
                             </p>
                         </td>
                     </tr>

@@ -1158,7 +1158,7 @@ def guardar_cita_ajax(request):
         if not es_beneficios:
             if hasattr(request.user, 'perfil') and request.user.perfil.es_tectum:
                 es_tectum_cita = True
-            elif 'tectuminhause' in request.get_host().lower() or request.session.get('convenio_tectum') or request.POST.get('paypal_order_id') == 'CONVENIO_TECTUM_INHOUSE':
+            elif 'tectuminhause' in request.get_host().lower() or request.session.get('convenio_tectum') or request.POST.get('paypal_order_id') == 'CONVENIO_TECTUM_INHOUSE' or request.POST.get('es_tectum') in ['1', 'true', 'True']:
                 es_tectum_cita = True
                 if hasattr(request.user, 'perfil') and not request.user.perfil.es_tectum:
                     request.user.perfil.es_tectum = True
@@ -1320,7 +1320,8 @@ def guardar_cita_ajax(request):
             )
 
             # Enviar correo (asumiendo que las funciones render_to_string, strip_tags y send_mail están importadas)
-            asunto = 'Confirmación de tu sesión en HOPE'
+            es_tectum_email = es_tectum_cita or es_beneficios
+            asunto = 'Confirmación de tu sesión en TECTUM' if es_tectum_email else 'Confirmación de tu sesión en HOPE'
             if link_final:
                 link_correo = request.build_absolute_uri(reverse('formulario_previo_meet', args=[cita.id]))
             else:
@@ -1330,11 +1331,13 @@ def guardar_cita_ajax(request):
                 'psicologo_nombre': psicologo.usuario.first_name,
                 'fecha': fecha_obj.strftime('%d/%m/%Y'),
                 'hora': hora_obj.strftime('%H:%M'),
-                'link_meet': link_correo
+                'link_meet': link_correo,
+                'es_tectum': es_tectum_email,
             }
             mensaje_html = render_to_string('correo_cita.html', contexto)
             mensaje_plano = strip_tags(mensaje_html)
-            send_mail(asunto, mensaje_plano, 'Espacio HOPE <no-reply@espaciohope.com>', [request.user.email], html_message=mensaje_html, fail_silently=True)
+            remitente = 'TECTUM <no-reply@espaciohope.com>' if es_tectum_email else 'Espacio HOPE <no-reply@espaciohope.com>'
+            send_mail(asunto, mensaje_plano, remitente, [request.user.email], html_message=mensaje_html, fail_silently=True)
 
             return JsonResponse({'status': 'success'})
         except Exception as e:
@@ -3354,7 +3357,8 @@ def pago_exitoso_clip(request, cita_id):
             cita.save()
 
             # --- CORREO ---
-            asunto = 'Confirmación de tu sesión en HOPE'
+            es_tectum_email = getattr(cita, 'es_tectum', False) or getattr(getattr(paciente, 'perfil', None), 'es_tectum', False) or request.session.get('convenio_tectum_beneficios', False)
+            asunto = 'Confirmación de tu sesión en TECTUM' if es_tectum_email else 'Confirmación de tu sesión en HOPE'
             if link_final:
                 link_correo = request.build_absolute_uri(reverse('formulario_previo_meet', args=[cita.id]))
             else:
@@ -3364,11 +3368,13 @@ def pago_exitoso_clip(request, cita_id):
                 'psicologo_nombre': psicologo.usuario.first_name,
                 'fecha': cita.fecha.strftime('%d/%m/%Y'),
                 'hora': cita.hora.strftime('%H:%M'),
-                'link_meet': link_correo
+                'link_meet': link_correo,
+                'es_tectum': es_tectum_email,
             }
             mensaje_html = render_to_string('correo_cita.html', contexto)
             mensaje_plano = strip_tags(mensaje_html)
-            send_mail(asunto, mensaje_plano, 'Espacio HOPE <no-reply@espaciohope.com>', [paciente.email], html_message=mensaje_html, fail_silently=True)
+            remitente = 'TECTUM <no-reply@espaciohope.com>' if es_tectum_email else 'Espacio HOPE <no-reply@espaciohope.com>'
+            send_mail(asunto, mensaje_plano, remitente, [paciente.email], html_message=mensaje_html, fail_silently=True)
 
             messages.success(request, "¡Todo listo! Tu pago fue procesado con éxito y tu sesión ha sido agendada en tu panel.")
         
@@ -3696,7 +3702,7 @@ def admin_guardar_cita_ajax(request):
         )
 
         # Mismo correo de confirmación que ya usa el flujo normal
-        asunto = 'Confirmación de tu sesión en HOPE'
+        asunto = 'Confirmación de tu sesión en TECTUM' if es_tectum_cita else 'Confirmación de tu sesión en HOPE'
         if link_final:
             link_correo = request.build_absolute_uri(reverse('formulario_previo_meet', args=[cita.id]))
         else:
@@ -3706,11 +3712,13 @@ def admin_guardar_cita_ajax(request):
             'psicologo_nombre': psicologo.usuario.first_name,
             'fecha': fecha_obj.strftime('%d/%m/%Y'),
             'hora': hora_obj.strftime('%H:%M'),
-            'link_meet': link_correo
+            'link_meet': link_correo,
+            'es_tectum': es_tectum_cita,
         }
         mensaje_html = render_to_string('correo_cita.html', contexto)
         mensaje_plano = strip_tags(mensaje_html)
-        send_mail(asunto, mensaje_plano, 'Espacio HOPE <no-reply@espaciohope.com>', [paciente_user.email], html_message=mensaje_html, fail_silently=True)
+        remitente = 'TECTUM <no-reply@espaciohope.com>' if es_tectum_cita else 'Espacio HOPE <no-reply@espaciohope.com>'
+        send_mail(asunto, mensaje_plano, remitente, [paciente_user.email], html_message=mensaje_html, fail_silently=True)
 
         return JsonResponse({'status': 'success'})
     except Exception as e:

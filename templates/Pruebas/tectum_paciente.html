@@ -1,0 +1,1319 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TECTUM In-House · Reporte de Check-In Clínico (Versión Paciente)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+<style>
+  :root {
+    --navy-950: #070d1e;
+    --navy-900: #0b142c;
+    --navy-800: #122044;
+    --navy-700: #1b2f63;
+    --blue-800: #1e3a8a;
+    --blue-600: #2563eb;
+    --blue-500: #0284c7;
+    --sky-400: #0ea5e9;
+    --sky-300: #38bdf8;
+    --sky-100: #e0f2fe;
+    --sky-50: #f0f9ff;
+    
+    --amber-500: #f59e0b;
+    --amber-400: #fbbf24;
+    --emerald-500: #10b981;
+    --emerald-600: #059669;
+    --rose-500: #f43f5e;
+    --violet-500: #6366f1;
+
+    --mood1: #ef4444;
+    --mood2: #f97316;
+    --mood3: #eab308;
+    --mood4: #10b981;
+    --mood5: #0284c7;
+
+    --text-main: #0b142c;
+    --text-muted: #64748b;
+    --text-soft: #94a3b8;
+    --paper: #ffffff;
+    --line: #e2e8f0;
+    --line-subtle: #f1f5f9;
+    --bg-page: #edf2f7;
+
+    --font-heading: 'Outfit', sans-serif;
+    --font-body: 'Plus Jakarta Sans', sans-serif;
+    --radius-lg: 20px;
+    --radius-md: 14px;
+    --radius-sm: 8px;
+    --shadow-sheet: 0 20px 45px -15px rgba(7, 13, 30, 0.22), 0 8px 20px -8px rgba(2, 132, 199, 0.12);
+    --shadow-card: 0 10px 25px -10px rgba(11, 20, 44, 0.08), 0 4px 10px -2px rgba(11, 20, 44, 0.03);
+  }
+
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    background: var(--bg-page);
+    font-family: var(--font-body);
+    color: var(--text-main);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ====================================================
+     TOOLBAR DE CONTROL (Solo en pantalla)
+     ==================================================== */
+  .toolbar {
+    position: sticky; top: 0; z-index: 100;
+    display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+    padding: 12px 24px;
+    background: linear-gradient(135deg, var(--navy-950) 0%, var(--navy-900) 60%, var(--navy-800) 100%);
+    box-shadow: 0 4px 20px rgba(7, 13, 30, 0.3);
+    border-bottom: 1px solid rgba(56, 189, 248, 0.2);
+  }
+  .toolbar-brand {
+    display: flex; align-items: center; gap: 12px;
+  }
+  .toolbar-brand .badge-tectum {
+    background: linear-gradient(135deg, var(--sky-400), var(--blue-600));
+    color: #fff; font-family: var(--font-heading); font-weight: 800; font-size: 11px;
+    padding: 4px 10px; border-radius: 6px; letter-spacing: 1.2px; text-transform: uppercase;
+  }
+  .toolbar-brand .title {
+    color: #fff; font-family: var(--font-heading); font-weight: 700; font-size: 14px; letter-spacing: 0.02em;
+  }
+  .toolbar-actions {
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  }
+  .btn {
+    appearance: none; border: none; cursor: pointer;
+    font-family: var(--font-body); font-weight: 700; font-size: 12.5px;
+    padding: 8px 16px; border-radius: 999px;
+    display: inline-flex; align-items: center; gap: 7px;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    white-space: nowrap;
+  }
+  .btn:hover { transform: translateY(-1px); }
+  .btn:active { transform: translateY(0); }
+  .btn-primary {
+    background: linear-gradient(135deg, var(--sky-400) 0%, var(--blue-500) 100%);
+    color: #ffffff;
+    box-shadow: 0 4px 14px rgba(14, 165, 233, 0.35);
+  }
+  .btn-primary:hover {
+    box-shadow: 0 6px 18px rgba(14, 165, 233, 0.5);
+  }
+  .btn-ghost {
+    background: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+  }
+  .btn-ghost:hover {
+    background: rgba(255, 255, 255, 0.18);
+  }
+  .btn-demo {
+    background: rgba(56, 189, 248, 0.14);
+    color: var(--sky-300);
+    border: 1px solid rgba(56, 189, 248, 0.3);
+  }
+  .btn-demo:hover {
+    background: rgba(56, 189, 248, 0.25);
+    color: #fff;
+  }
+  .upload-label {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: rgba(255, 255, 255, 0.08); color: #e2e8f0;
+    font-size: 12px; font-weight: 600; padding: 8px 14px; border-radius: 999px; cursor: pointer;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    transition: 0.2s;
+  }
+  .upload-label:hover { background: rgba(255, 255, 255, 0.16); color: #fff; }
+  .upload-label input { display: none; }
+
+  /* ====================================================
+     SHEET WRAPPER & HOJA CLINICA
+     ==================================================== */
+  .page-wrap {
+    display: flex; justify-content: center;
+    padding: 30px 16px 60px;
+  }
+  .sheet {
+    width: 816px; max-width: 100%;
+    background: var(--paper);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sheet);
+    overflow: hidden;
+    position: relative;
+    display: flex;
+  }
+
+  /* Rail lateral izquierdo estilo TECTUM */
+  .rail {
+    width: 16px; flex-shrink: 0;
+    background: linear-gradient(180deg, var(--sky-400) 0%, var(--blue-600) 45%, var(--navy-900) 100%);
+    position: relative;
+  }
+  .rail::before {
+    content: ""; position: absolute; inset: 0;
+    background-image: radial-gradient(rgba(255,255,255,0.4) 1px, transparent 1.5px);
+    background-size: 8px 14px; background-position: 4px 6px;
+    opacity: 0.6;
+  }
+
+  .sheet-main {
+    flex: 1; min-width: 0;
+    position: relative; display: flex; flex-direction: column;
+  }
+
+  /* ====================================================
+     HEADER CORPORATIVO TECTUM
+     ==================================================== */
+  .header {
+    background: linear-gradient(135deg, #070d1e 0%, #0b142c 45%, #1e3a8a 85%, #0284c7 100%);
+    padding: 24px 34px 54px;
+    position: relative; overflow: hidden;
+    color: #fff; flex: 0 0 auto;
+  }
+  /* Escudo Tectum como marca de agua en el Header */
+  .header-watermark {
+    position: absolute; right: 280px; top: -25px;
+    width: 220px; height: 220px;
+    opacity: 0.07; pointer-events: none;
+    background-size: contain; background-repeat: no-repeat;
+  }
+  .header-watermark svg { width: 100%; height: 100%; fill: #ffffff; }
+
+  .header-top {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    position: relative; z-index: 2; gap: 20px;
+  }
+  .brand-area {
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .logo-slot {
+    display: flex; align-items: center; gap: 12px;
+    min-height: 52px;
+  }
+  .logo-img {
+    max-height: 48px; max-width: 190px;
+    object-fit: contain; object-position: left center;
+    filter: drop-shadow(0 2px 8px rgba(0,0,0,0.25));
+  }
+  /* Fallback vectorial de Logo TECTUM */
+  .logo-vector {
+    display: inline-flex; align-items: center; gap: 10px;
+  }
+  .shield-icon-vector {
+    width: 38px; height: 38px;
+    background: linear-gradient(135deg, var(--sky-400), var(--blue-600));
+    border-radius: 10px; display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 4px 14px rgba(14, 165, 233, 0.4);
+    color: #ffffff; font-size: 19px;
+  }
+  .logo-text-group {
+    display: flex; flex-direction: column;
+  }
+  .logo-text-title {
+    font-family: var(--font-heading); font-size: 24px; font-weight: 900;
+    letter-spacing: 0.16em; color: #ffffff; line-height: 1;
+  }
+  .logo-text-sub {
+    font-size: 8.5px; font-weight: 700; letter-spacing: 0.22em;
+    color: var(--sky-300); text-transform: uppercase; margin-top: 3px;
+  }
+  .tagline-pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 9px; letter-spacing: 0.14em; font-weight: 700;
+    color: #bae6fd; text-transform: uppercase; margin-top: 6px;
+    background: rgba(255, 255, 255, 0.08); padding: 3px 10px; border-radius: 999px;
+    width: fit-content;
+  }
+  .tagline-pill i { font-size: 8px; color: var(--sky-300); }
+
+  .doc-title { text-align: right; }
+  .doc-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(56, 189, 248, 0.3);
+    border-radius: 999px; padding: 4px 12px 4px 10px;
+    font-size: 9.5px; font-weight: 800; letter-spacing: 0.1em;
+    text-transform: uppercase; margin-bottom: 6px;
+    color: #e0f2fe;
+  }
+  .doc-badge .pulse {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--sky-300);
+    box-shadow: 0 0 10px var(--sky-300);
+    animation: pulseGlow 2s infinite;
+  }
+  @keyframes pulseGlow {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(0.85); }
+  }
+  .doc-title h1 {
+    font-family: var(--font-heading); font-size: 21px; margin: 0; font-weight: 800;
+    letter-spacing: -0.01em; color: #ffffff;
+  }
+  .doc-title p {
+    margin: 3px 0 0; font-size: 11.5px; color: #bae6fd; font-weight: 500;
+  }
+
+  /* Olas y curva de transición del Header */
+  .header-waves {
+    position: absolute; left: 0; right: 0; bottom: -1px; height: 46px; z-index: 1;
+    pointer-events: none;
+  }
+
+  /* ====================================================
+     CUERPO DEL REPORTE
+     ==================================================== */
+  .body {
+    padding: 0 34px 18px;
+    flex: 1 1 auto;
+    background: #ffffff;
+  }
+
+  /* Tarjeta de datos del Colaborador / Paciente */
+  .info-card {
+    background: #ffffff;
+    border: 1.5px solid var(--line);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-card);
+    padding: 16px 22px;
+    margin-top: -24px;
+    position: relative; z-index: 10;
+  }
+  .field-row {
+    display: grid; gap: 18px;
+  }
+  .field-row.cols-3 { grid-template-columns: 2fr 1.2fr 1fr; }
+  .field-row.cols-2 { grid-template-columns: 1.8fr 1.2fr; }
+  .field-row + .field-row {
+    margin-top: 10px; padding-top: 10px;
+    border-top: 1px dashed var(--line);
+  }
+  .field {
+    display: flex; flex-direction: column; gap: 3px;
+  }
+  .field label {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 9.5px; font-weight: 800; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--blue-800);
+  }
+  .field label i { font-size: 11px; color: var(--sky-400); width: 14px; text-align: center; }
+  .field input {
+    border: none; border-bottom: 2px solid var(--line); background: transparent;
+    font-family: var(--font-body); font-size: 13.5px; color: var(--text-main);
+    padding: 4px 2px; font-weight: 600;
+    transition: border-color 0.2s;
+  }
+  .field input:focus {
+    outline: none; border-bottom-color: var(--blue-500);
+  }
+
+  /* Estructura de Secciones */
+  .section { margin-top: 22px; }
+  .section-head {
+    display: flex; align-items: center; gap: 10px; margin-bottom: 10px;
+  }
+  .section-num {
+    font-family: var(--font-heading); font-size: 10px; font-weight: 900; color: #fff;
+    background: linear-gradient(135deg, var(--navy-900), var(--blue-800));
+    width: 22px; height: 22px; border-radius: 7px;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    box-shadow: 0 2px 6px rgba(11, 20, 44, 0.2);
+  }
+  .section-icon {
+    width: 28px; height: 28px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; color: #fff; font-size: 12px;
+  }
+  .section-head h2 {
+    font-family: var(--font-heading); font-size: 13.5px; font-weight: 800;
+    letter-spacing: 0.02em; color: var(--navy-900); margin: 0; white-space: nowrap;
+    text-transform: uppercase;
+  }
+  .section-head .rule {
+    flex: 1; height: 2px;
+    background: linear-gradient(90deg, var(--line), transparent);
+    border-radius: 2px;
+  }
+
+  /* ====================================================
+     SECCIÓN 1: PROGRESO Y GAUGE
+     ==================================================== */
+  .progress-grid {
+    display: grid; grid-template-columns: 240px 1fr; gap: 18px; align-items: center;
+  }
+
+  /* Gauge Card */
+  .gauge-card {
+    background: linear-gradient(160deg, #070d1e 0%, #0b142c 45%, #1e3a8a 90%, #0284c7 100%);
+    border-radius: 18px; padding: 18px 16px 14px;
+    color: #fff; position: relative; overflow: hidden;
+    box-shadow: 0 14px 28px -10px rgba(7, 13, 30, 0.45);
+    border: 1px solid rgba(56, 189, 248, 0.2);
+  }
+  .gauge-card::before {
+    content: ""; position: absolute; width: 160px; height: 160px; border-radius: 50%;
+    border: 1px solid rgba(56, 189, 248, 0.15); top: -60px; right: -50px; pointer-events: none;
+  }
+  .gauge-top { text-align: center; position: relative; z-index: 1; }
+  .gauge-eyebrow {
+    font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--sky-300); font-weight: 800;
+  }
+  .session-big {
+    font-family: var(--font-heading); font-size: 34px; font-weight: 900;
+    text-align: center; margin: 0 0 4px; line-height: 1;
+    color: #ffffff; text-shadow: 0 2px 10px rgba(0,0,0,0.3);
+  }
+  .session-big input {
+    width: 48px; background: transparent; border: none; color: #fff;
+    font-family: var(--font-heading); font-size: 34px; font-weight: 900;
+    text-align: left; padding: 0;
+  }
+  .gauge-wrap {
+    position: relative; width: 170px; height: 170px; margin: 0 auto; z-index: 1;
+  }
+  .gauge-wrap svg {
+    width: 100%; height: 100%; transform: rotate(-90deg);
+  }
+  .gauge-center {
+    position: absolute; inset: 0; display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+  }
+  .gauge-center .val {
+    font-family: var(--font-heading); font-size: 38px; font-weight: 900;
+    display: flex; align-items: baseline; color: #ffffff;
+  }
+  .gauge-center .val input {
+    width: 66px; background: transparent; border: none; color: #fff;
+    font-family: var(--font-heading); font-size: 38px; font-weight: 900;
+    text-align: right; padding: 0;
+  }
+  .gauge-center .lbl {
+    font-size: 9.5px; letter-spacing: 0.16em; text-transform: uppercase;
+    color: var(--sky-300); font-weight: 800; margin-top: 1px;
+  }
+  .gauge-delta {
+    display: flex; align-items: center; justify-content: center; gap: 5px;
+    font-size: 12.5px; font-weight: 800; margin-top: 4px;
+    position: relative; z-index: 1;
+  }
+  .gauge-delta.up { color: #34d399; }
+  .gauge-delta.down { color: #f87171; }
+  .gauge-delta input {
+    width: 36px; background: rgba(255,255,255,0.14); border: none;
+    border-radius: 6px; color: inherit; font-weight: 800; font-size: 12px;
+    text-align: center; padding: 2px 4px;
+  }
+  .gauge-note {
+    font-size: 9px; text-align: center; color: #94a3b8; margin-top: 4px;
+    font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em;
+  }
+
+  /* Dimensiones Desglosadas */
+  .dims {
+    display: flex; flex-direction: column; gap: 12px; justify-content: center;
+  }
+  .dim-row {
+    display: grid; grid-template-columns: 34px 170px 1fr 44px; align-items: center; gap: 10px;
+    background: #ffffff; padding: 6px 10px 6px 6px; border-radius: 12px;
+    border: 1px solid var(--line);
+    box-shadow: 0 2px 6px rgba(11, 20, 44, 0.02);
+    transition: 0.2s;
+  }
+  .dim-row:hover { border-color: #cbd5e1; }
+  .dim-chip {
+    width: 34px; height: 34px; border-radius: 9px;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; flex-shrink: 0; font-size: 13px;
+    box-shadow: 0 4px 10px -3px rgba(0,0,0,0.25);
+  }
+  .dim-name {
+    font-size: 12.5px; font-weight: 700; color: var(--navy-900); line-height: 1.25;
+  }
+  .dim-track {
+    height: 12px; background: #f1f5f9; border-radius: 999px;
+    overflow: hidden; border: 1px solid #e2e8f0;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.06);
+  }
+  .dim-fill {
+    height: 100%; border-radius: 999px; transition: width 0.3s ease;
+  }
+  .dim-pct {
+    display: flex; align-items: center; font-size: 13px; font-weight: 800;
+    color: var(--text-muted); font-family: var(--font-heading);
+  }
+  .dim-pct input {
+    width: 32px; border: none; background: transparent; font-weight: 800;
+    font-size: 13px; color: var(--text-main); text-align: right; padding: 0;
+  }
+
+  /* ====================================================
+     GRAFICA DE EVOLUCIÓN HISTÓRICA
+     ==================================================== */
+  .evol-full {
+    margin-top: 18px; padding-top: 14px; border-top: 1.5px dashed var(--line);
+  }
+  .sub-head {
+    display: flex; align-items: center; gap: 7px; margin: 0 0 8px;
+  }
+  .sub-head i { font-size: 12px; color: var(--blue-600); }
+  .sub-head h3 {
+    font-family: var(--font-heading); font-size: 11px; font-weight: 800;
+    text-transform: uppercase; letter-spacing: 0.06em; color: var(--navy-800); margin: 0;
+  }
+  .evol-box {
+    border: 1.5px solid var(--line); border-radius: var(--radius-md);
+    background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+    padding: 14px 18px 12px; position: relative; overflow: hidden;
+  }
+  .evol-chart-big {
+    display: flex; align-items: flex-end; gap: 20px; height: 128px;
+    padding: 16px 12px 0; position: relative;
+  }
+  .evol-chart-big::before {
+    content: ""; position: absolute; left: 0; right: 0; top: 16px; bottom: 30px;
+    background-image: repeating-linear-gradient(0deg, rgba(30, 58, 138, 0.06) 0, rgba(30, 58, 138, 0.06) 1px, transparent 1px, transparent 25%);
+    pointer-events: none;
+  }
+  .evol-bar-big {
+    flex: 1; display: flex; flex-direction: column; align-items: center;
+    gap: 6px; height: 100%; justify-content: flex-end; position: relative; z-index: 1;
+  }
+  .evol-bar-big .val-chip {
+    background: var(--navy-900); border-radius: 7px;
+    padding: 3px 8px; display: flex; align-items: center;
+    box-shadow: 0 4px 10px -2px rgba(11, 20, 44, 0.35);
+  }
+  .evol-bar-big .val-chip input {
+    width: 32px; border: none; background: transparent;
+    font-family: var(--font-heading); font-weight: 800; font-size: 13px;
+    color: #ffffff; text-align: center; padding: 0;
+  }
+  .evol-bar-big .bar {
+    width: 100%; max-width: 60px; border-radius: 12px 12px 5px 5px;
+    background: linear-gradient(180deg, var(--sky-400) 0%, var(--blue-800) 100%);
+    box-shadow: 0 8px 16px -6px rgba(14, 165, 233, 0.4);
+    transition: height 0.3s ease; position: relative;
+  }
+  .evol-bar-big.is-current .bar {
+    background: linear-gradient(180deg, var(--amber-400) 0%, #ea580c 100%);
+    box-shadow: 0 8px 18px -4px rgba(245, 158, 11, 0.5);
+  }
+  .evol-bar-big.is-current .val-chip {
+    background: var(--amber-500);
+    box-shadow: 0 4px 10px -2px rgba(245, 158, 11, 0.4);
+  }
+  .evol-bar-big .now-pill {
+    position: absolute; top: -24px; left: 50%; transform: translateX(-50%);
+    white-space: nowrap; background: var(--navy-950); color: #fff;
+    font-size: 8.5px; font-weight: 800; letter-spacing: 0.04em;
+    padding: 3px 9px; border-radius: 999px;
+    border: 1px solid var(--amber-400);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.25);
+  }
+  .evol-bar-big .bar-lbl {
+    font-size: 10px; color: var(--text-muted); font-weight: 700; letter-spacing: 0.02em;
+  }
+  .evol-caption {
+    margin-top: 10px; padding-top: 8px; border-top: 1px dashed var(--line);
+    text-align: center; font-size: 11.5px; font-weight: 700; color: var(--navy-800);
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .evol-caption i { color: var(--sky-400); }
+
+  /* ====================================================
+     SECCIÓN 2: ESCALA DE ESTADO DE ÁNIMO (MOOD)
+     ==================================================== */
+  .mood-section { margin-top: 18px; }
+  .mood-box {
+    border: 1.5px solid #bae6fd;
+    background: linear-gradient(180deg, #f0f9ff 0%, #e0f2fe 100%);
+    border-radius: var(--radius-md); padding: 16px 20px 14px; text-align: center;
+    position: relative;
+  }
+  .mood-title {
+    font-family: var(--font-heading); font-weight: 800; font-size: 12.5px;
+    color: var(--navy-900); margin: 0 0 3px; letter-spacing: 0.02em;
+    text-transform: uppercase;
+  }
+  .mood-subtitle {
+    font-size: 10.5px; color: var(--text-muted); margin: 0 0 16px; font-weight: 500;
+  }
+  .mood-widget {
+    position: relative; padding-top: 40px; max-width: 500px; margin: 0 auto;
+  }
+  .mood-indicator {
+    position: absolute; top: 0; transform: translateX(-50%); transition: left 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+  }
+  .mood-indicator .bubble {
+    background: var(--navy-900); color: #fff; font-size: 16px; line-height: 1;
+    width: 32px; height: 32px; border-radius: 50% 50% 50% 6px;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 6px 14px -4px rgba(11, 20, 44, 0.4);
+    border: 1px solid var(--sky-300);
+    animation: moodBounce 1.8s ease-in-out infinite;
+  }
+  @keyframes moodBounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-4px); }
+  }
+  .mood-faces {
+    display: flex; justify-content: space-between; gap: 8px; margin-bottom: 10px;
+  }
+  .mood-face {
+    appearance: none; border: 3px solid transparent; background: none; padding: 0; cursor: pointer;
+    width: 52px; height: 52px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    transition: transform 0.15s ease, border-color 0.15s ease;
+  }
+  .mood-face:hover { transform: translateY(-3px) scale(1.05); }
+  .mood-face.selected {
+    border-color: var(--navy-900); transform: translateY(-4px) scale(1.1);
+    box-shadow: 0 8px 18px -4px rgba(11, 20, 44, 0.25);
+  }
+  .mood-face svg { width: 100%; height: 100%; }
+  .mood-track {
+    display: flex; gap: 4px; height: 10px; border-radius: 999px; overflow: hidden;
+  }
+  .mood-track div { flex: 1; }
+  .mood-caption {
+    margin-top: 8px; font-size: 11.5px; font-weight: 800; color: var(--navy-900);
+    min-height: 16px; font-family: var(--font-heading); letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  /* Divisor punteado elegante */
+  .divider-dots {
+    display: flex; align-items: center; gap: 6px; margin: 16px 0 10px;
+  }
+  .divider-dots .ln { flex: 1; height: 1px; background: var(--line); }
+  .divider-dots span {
+    width: 5px; height: 5px; border-radius: 50%; background: var(--sky-400); opacity: 0.6;
+  }
+
+  /* ====================================================
+     SECCIONES DE TEXTO (OBJETIVOS & RECOMENDACIONES)
+     ==================================================== */
+  .box-edit {
+    border: 1.5px solid var(--line); border-radius: var(--radius-md);
+    background: #f8fafc; padding: 12px 16px 12px 20px;
+    position: relative; transition: border-color 0.2s;
+  }
+  .box-edit::before {
+    content: ""; position: absolute; left: 0; top: 12px; bottom: 12px;
+    width: 4px; border-radius: 0 4px 4px 0; background: var(--accent-bar, var(--sky-400));
+  }
+  .editable {
+    min-height: 48px; font-size: 13px; line-height: 1.6; color: var(--text-main);
+    outline: none; font-weight: 500;
+  }
+  .editable:empty:before {
+    content: attr(data-placeholder); color: var(--text-soft); font-style: italic;
+  }
+  .editable:focus {
+    background: #ffffff; padding: 4px 8px; border-radius: 6px;
+  }
+
+  /* Tarjeta de Próxima Sesión */
+  .proxima-card {
+    background: linear-gradient(135deg, #f0f9ff 0%, #ffffff 100%);
+    border: 1.5px solid #bae6fd; border-radius: var(--radius-md);
+    padding: 14px 20px; margin-top: 16px;
+  }
+
+  /* Aviso Legal / Clínico Confidencial */
+  .footer-note {
+    margin-top: 18px; padding: 10px 14px; border-radius: 8px;
+    background: #f8fafc; font-size: 8.5px; line-height: 1.5; color: var(--text-muted);
+    text-align: justify; border: 1px solid var(--line);
+  }
+
+  /* ====================================================
+     FOOTER CORPORATIVO
+     ==================================================== */
+  .footer {
+    margin-top: 16px; padding: 16px 34px 18px;
+    background: linear-gradient(135deg, #070d1e 0%, #0b142c 50%, #122044 100%);
+    position: relative; overflow: hidden;
+    display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    color: #fff; flex: 0 0 auto;
+  }
+  .footer-left {
+    display: flex; align-items: center; gap: 12px; z-index: 2;
+  }
+  .footer-badge {
+    font-size: 9px; font-weight: 800; letter-spacing: 0.14em;
+    background: rgba(56, 189, 248, 0.16); color: var(--sky-300);
+    padding: 4px 10px; border-radius: 6px; text-transform: uppercase;
+    border: 1px solid rgba(56, 189, 248, 0.25);
+  }
+  .footer-right {
+    text-align: right; color: #94a3b8; font-size: 9px; line-height: 1.5;
+    position: relative; z-index: 2;
+  }
+  .footer-right b {
+    color: #ffffff; font-family: var(--font-heading); letter-spacing: 0.04em;
+  }
+
+  /* ====================================================
+     ESTILOS DE IMPRESIÓN / EXPORTACIÓN PDF (1 Página)
+     ==================================================== */
+  @media print {
+    * {
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+      color-adjust: exact !important;
+    }
+    @page {
+      size: Letter;
+      margin: 0;
+    }
+    body {
+      background: #ffffff !important;
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+    .toolbar, .no-print { display: none !important; }
+    .page-wrap {
+      padding: 0 !important;
+      display: block !important;
+    }
+    .sheet {
+      box-shadow: none !important;
+      border-radius: 0 !important;
+      width: 100% !important;
+      max-width: 100% !important;
+      min-height: 100vh !important;
+    }
+    .header { padding: 18px 30px 42px !important; }
+    .body { padding: 0 30px 12px !important; }
+    .info-card { margin-top: -20px !important; padding: 12px 18px !important; }
+    .section { margin-top: 14px !important; }
+    .progress-grid { gap: 14px !important; }
+    .gauge-card { padding: 12px 10px !important; }
+    .gauge-wrap { width: 145px !important; height: 145px !important; }
+    .gauge-center .val { font-size: 32px !important; }
+    .session-big { font-size: 28px !important; }
+    .evol-full { margin-top: 12px !important; padding-top: 10px !important; }
+    .evol-chart-big { height: 105px !important; }
+    .mood-section { margin-top: 12px !important; }
+    .mood-box { padding: 10px 16px !important; }
+    .mood-faces { margin-bottom: 6px !important; }
+    .mood-face { width: 44px !important; height: 44px !important; }
+    .proxima-card { margin-top: 12px !important; padding: 10px 16px !important; }
+    .footer-note { margin-top: 12px !important; padding: 8px 12px !important; font-size: 8px !important; }
+    .footer { margin-top: 10px !important; padding: 12px 30px !important; }
+
+    .info-card, .gauge-card, .evol-box, .mood-box, .box-edit, .footer {
+      page-break-inside: avoid !important;
+      break-inside: avoid !important;
+    }
+  }
+</style>
+</head>
+<body>
+
+  <!-- ==========================================
+       TOOLBAR DE CONTROL (Solo en Pantalla)
+       ========================================== -->
+  <div class="toolbar no-print">
+    <div class="toolbar-brand">
+      <span class="badge-tectum">TECTUM In-House</span>
+      <span class="title">Reporte Clínico de Bienestar Psicológico</span>
+    </div>
+
+    <div class="toolbar-actions">
+      <!-- Casos Demo para probar la interactividad -->
+      <button class="btn btn-demo" onclick="cargarCasoDemo(1)">
+        <i class="fa-solid fa-user-check"></i> Caso 1: Estrés & Burnout
+      </button>
+      <button class="btn btn-demo" onclick="cargarCasoDemo(2)">
+        <i class="fa-solid fa-chart-line"></i> Caso 2: Alta Resiliencia
+      </button>
+
+      <label class="upload-label" title="Subir logo institucional">
+        <i class="fa-solid fa-upload"></i> Subir Logo
+        <input type="file" id="logoUpload" accept="image/png,image/jpeg,image/svg+xml">
+      </label>
+
+      <button class="btn btn-ghost" onclick="resetForm()">
+        <i class="fa-solid fa-rotate-left"></i> Limpiar
+      </button>
+
+      <button class="btn btn-primary" onclick="window.print()">
+        <i class="fa-solid fa-file-pdf"></i> Imprimir / Exportar PDF
+      </button>
+    </div>
+  </div>
+
+  <!-- ==========================================
+       HOJA DE REPORTE (816px / Letter)
+       ========================================== -->
+  <div class="page-wrap">
+    <div class="sheet" id="sheet">
+      <!-- Riel visual con degradado corporativo Tectum -->
+      <div class="rail"></div>
+
+      <div class="sheet-main">
+
+        <!-- ================= HEADER ================= -->
+        <div class="header">
+          <!-- Marca de agua escudo Tectum -->
+          <div class="header-watermark">
+            <svg viewBox="0 0 24 24"><path d="M12 2L4 5v6.09c0 5.05 3.41 9.76 8 10.91 4.59-1.15 8-5.86 8-10.91V5l-8-3zm0 2.18l6 2.25v4.66c0 4.1-2.6 7.92-6 8.95-3.4-1.03-6-4.85-6-8.95V6.43l6-2.25z"/></svg>
+          </div>
+
+          <div class="header-top">
+            <div class="brand-area">
+              <div class="logo-slot" id="logoSlotHeader">
+                <!-- Imagen oficial Tectum con fallback inmediato -->
+                <img id="logoImgHeader"
+                     src="../../static/img/tectum/logo-completo.png"
+                     onerror="mostrarFallbackVectorLogo()"
+                     alt="TECTUM In-House"
+                     class="logo-img">
+                
+                <!-- Fallback vectorial si la ruta relativa no carga en entorno standalone -->
+                <div id="vectorLogoHeader" class="logo-vector" style="display:none;">
+                  <div class="shield-icon-vector">
+                    <i class="fa-solid fa-shield-halved"></i>
+                  </div>
+                  <div class="logo-text-group">
+                    <div class="logo-text-title">TECTUM</div>
+                    <div class="logo-text-sub">In-House Corporate Wellness</div>
+                  </div>
+                </div>
+              </div>
+              <div class="tagline-pill">
+                <i class="fa-solid fa-shield-heart"></i> Salud Mental &middot; Prevenci&oacute;n NOM-035 &middot; Alto Desempe&ntilde;o
+              </div>
+            </div>
+
+            <div class="doc-title">
+              <div class="doc-badge">
+                <span class="pulse"></span> Expediente Confidencial
+              </div>
+              <h1>Reporte de Check-In Clínico</h1>
+              <p>Monitoreo Periódico de Progreso y Rendimiento Emocional</p>
+            </div>
+          </div>
+
+          <!-- Curva SVG inferior del Header -->
+          <svg class="header-waves" viewBox="0 0 800 46" preserveAspectRatio="none">
+            <path d="M0,46 L0,20 C120,40 240,4 380,24 C520,44 660,10 800,28 L800,46 Z" fill="#0ea5e9" opacity="0.35"/>
+            <path d="M0,46 L0,28 C140,12 280,38 420,20 C560,4 700,32 800,24 L800,46 Z" fill="#ffffff"/>
+          </svg>
+        </div>
+
+        <!-- ================= BODY ================= -->
+        <div class="body">
+
+          <!-- Tarjeta de Datos del Colaborador -->
+          <div class="info-card">
+            <div class="field-row cols-3">
+              <div class="field">
+                <label><i class="fa-solid fa-user"></i> Colaborador / Paciente</label>
+                <input type="text" id="inputNombrePaciente" value="Lic. Juan Carlos Ramos Estrada" placeholder="Nombre completo">
+              </div>
+              <div class="field">
+                <label><i class="fa-solid fa-building"></i> Empresa &bull; &Aacute;rea</label>
+                <input type="text" id="inputEmpresa" value="TECTUM Corp &bull; Operaciones" placeholder="Empresa y departamento">
+              </div>
+              <div class="field">
+                <label><i class="fa-solid fa-id-card"></i> Edad / Expediente</label>
+                <input type="text" id="inputEdad" value="34 a&ntilde;os &bull; TC-4091" placeholder="Ej. 34 a&ntilde;os">
+              </div>
+            </div>
+
+            <div class="field-row cols-2">
+              <div class="field">
+                <label><i class="fa-solid fa-user-doctor"></i> Psic&oacute;logo(a) Tratante &bull; C&eacute;dula Profesional</label>
+                <input type="text" id="inputPsicologo" value="Mtra. Sof&iacute;a Valenzuela R. &mdash; C&eacute;dula No. 12849103" placeholder="Nombre &mdash; C&eacute;dula">
+              </div>
+              <div class="field">
+                <label><i class="fa-solid fa-calendar-check"></i> Fecha de la Sesi&oacute;n</label>
+                <input type="date" id="inputFechaUltimaSesion" value="2026-09-29">
+              </div>
+            </div>
+          </div>
+
+          <!-- SECCIÓN 1: PROGRESO PSICOLÓGICO (IPP) -->
+          <div class="section">
+            <div class="section-head">
+              <div class="section-num">1</div>
+              <div class="section-icon" style="background: linear-gradient(135deg, var(--sky-400), var(--blue-600));">
+                <i class="fa-solid fa-chart-pie"></i>
+              </div>
+              <h2>Progreso Psicol&oacute;gico y Rendimiento Emocional</h2>
+              <div class="rule"></div>
+            </div>
+
+            <div class="progress-grid">
+              <!-- Gauge Card (IPP Circular) -->
+              <div class="gauge-card">
+                <div class="gauge-top">
+                  <div class="gauge-eyebrow">Sesi&oacute;n Cl&iacute;nica</div>
+                  <div class="session-big">#<input type="text" value="3" id="sessionNum"></div>
+                </div>
+
+                <div class="gauge-wrap">
+                  <svg viewBox="0 0 220 220">
+                    <circle cx="110" cy="110" r="88" stroke="rgba(255,255,255,0.12)" stroke-width="18" fill="none"/>
+                    <circle id="gaugeArc" cx="110" cy="110" r="88" stroke="url(#cyanGlow)" stroke-width="18" fill="none" stroke-linecap="round" stroke-dasharray="552.92" stroke-dashoffset="121.6"/>
+                    <defs>
+                      <linearGradient id="cyanGlow" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stop-color="#38bdf8"/>
+                        <stop offset="100%" stop-color="#0284c7"/>
+                      </linearGradient>
+                    </defs>
+                  </svg>
+                  <div class="gauge-center">
+                    <div class="val"><input type="number" id="ippValue" value="78" min="0" max="100">%</div>
+                    <div class="lbl">IPP Actual</div>
+                  </div>
+                </div>
+
+                <div class="gauge-delta up" id="gaugeDelta">
+                  ▲ +<input type="number" id="ippDeltaInput" value="14">% vs. anterior
+                </div>
+                <div class="gauge-note">&Iacute;ndice de Progreso Psicol&oacute;gico</div>
+              </div>
+
+              <!-- Dimensiones Clínicas y Laborales -->
+              <div class="dims">
+                <!-- Dimensión 1 -->
+                <div class="dim-row">
+                  <div class="dim-chip" style="background: linear-gradient(135deg, var(--rose-500), #e11d48);">
+                    <i class="fa-solid fa-heart-pulse"></i>
+                  </div>
+                  <div class="dim-name">Bienestar emocional &amp; estr&eacute;s</div>
+                  <div class="dim-track">
+                    <div class="dim-fill" style="width: 76%; background: linear-gradient(90deg, #fb7185, var(--rose-500));"></div>
+                  </div>
+                  <div class="dim-pct">
+                    <input type="number" id="dimBienestar" value="76" min="0" max="100" oninput="updateDim(this)">%
+                  </div>
+                </div>
+
+                <!-- Dimensión 2 -->
+                <div class="dim-row">
+                  <div class="dim-chip" style="background: linear-gradient(135deg, var(--amber-500), #d97706);">
+                    <i class="fa-solid fa-shield"></i>
+                  </div>
+                  <div class="dim-name">Afrontamiento &amp; resiliencia</div>
+                  <div class="dim-track">
+                    <div class="dim-fill" style="width: 82%; background: linear-gradient(90deg, #fcd34d, var(--amber-500));"></div>
+                  </div>
+                  <div class="dim-pct">
+                    <input type="number" id="dimAfrontamiento" value="82" min="0" max="100" oninput="updateDim(this)">%
+                  </div>
+                </div>
+
+                <!-- Dimensión 3 -->
+                <div class="dim-row">
+                  <div class="dim-chip" style="background: linear-gradient(135deg, var(--sky-400), var(--blue-600));">
+                    <i class="fa-solid fa-toolbox"></i>
+                  </div>
+                  <div class="dim-name">Herramientas &amp; desconexi&oacute;n</div>
+                  <div class="dim-track">
+                    <div class="dim-fill" style="width: 84%; background: linear-gradient(90deg, var(--sky-300), var(--blue-500));"></div>
+                  </div>
+                  <div class="dim-pct">
+                    <input type="number" id="dimHerramientas" value="84" min="0" max="100" oninput="updateDim(this)">%
+                  </div>
+                </div>
+
+                <!-- Dimensión 4 -->
+                <div class="dim-row">
+                  <div class="dim-chip" style="background: linear-gradient(135deg, var(--violet-500), #4338ca);">
+                    <i class="fa-solid fa-bolt"></i>
+                  </div>
+                  <div class="dim-name">Autoeficacia &amp; enfoque mental</div>
+                  <div class="dim-track">
+                    <div class="dim-fill" style="width: 80%; background: linear-gradient(90deg, #a5b4fc, var(--violet-500));"></div>
+                  </div>
+                  <div class="dim-pct">
+                    <input type="number" id="dimEsperanza" value="80" min="0" max="100" oninput="updateDim(this)">%
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Evolución del IPP (Comparativa de Sesiones) -->
+            <div class="evol-full">
+              <div class="sub-head">
+                <i class="fa-solid fa-chart-column"></i>
+                <h3>Evoluci&oacute;n Hist&oacute;rica del IPP</h3>
+              </div>
+              <div class="evol-box">
+                <div class="evol-chart-big" id="evolChart">
+                  <!-- Sesión 1 -->
+                  <div class="evol-bar-big">
+                    <div class="val-chip">
+                      <input type="number" id="evolVal1" value="48" min="0" max="100" oninput="updateEvol()">
+                    </div>
+                    <div class="bar" style="height: 48%;"></div>
+                    <div class="bar-lbl" id="evolLbl1">Sesi&oacute;n 1</div>
+                  </div>
+
+                  <!-- Sesión 2 -->
+                  <div class="evol-bar-big">
+                    <div class="val-chip">
+                      <input type="number" id="evolVal2" value="64" min="0" max="100" oninput="updateEvol()">
+                    </div>
+                    <div class="bar" style="height: 64%;"></div>
+                    <div class="bar-lbl" id="evolLbl2">Sesi&oacute;n 2</div>
+                  </div>
+
+                  <!-- Sesión 3 (Actual) -->
+                  <div class="evol-bar-big is-current">
+                    <div class="now-pill">¡Sesi&oacute;n Actual!</div>
+                    <div class="val-chip">
+                      <input type="number" id="evolVal3" value="78" min="0" max="100" oninput="updateEvol()">
+                    </div>
+                    <div class="bar" style="height: 78%;"></div>
+                    <div class="bar-lbl" id="evolLbl3">Sesi&oacute;n 3</div>
+                  </div>
+                </div>
+
+                <div class="evol-caption" id="evolCaption">
+                  <i class="fa-solid fa-arrow-trend-up"></i>
+                  <span>Constancia ejemplar: la implementaci&oacute;n de t&eacute;cnicas muestra una curva ascendente de bienestar sostenido.</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Escala de Estado de Ánimo TECTUM -->
+            <div class="mood-section">
+              <div class="mood-box">
+                <p class="mood-title">Estado de &Aacute;nimo y Energ&iacute;a en la Sesi&oacute;n</p>
+                <p class="mood-subtitle">Percepci&oacute;n subjetiva del colaborador durante el check-in psicol&oacute;gico</p>
+
+                <div class="mood-widget">
+                  <div class="mood-indicator" id="moodStar" style="left: 75%;">
+                    <div class="bubble">🙂</div>
+                  </div>
+
+                  <div class="mood-faces" id="moodFaces">
+                    <button type="button" class="mood-face" data-value="1" onclick="selectMood(1)" title="Agotado / Muy Difícil">
+                      <svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="30" fill="var(--mood1)"/><circle cx="22" cy="26" r="3.4" fill="#0b142c"/><circle cx="42" cy="26" r="3.4" fill="#0b142c"/><path d="M20 44c4-6 20-6 24 0" stroke="#0b142c" stroke-width="3.2" fill="none" stroke-linecap="round"/></svg>
+                    </button>
+                    <button type="button" class="mood-face" data-value="2" onclick="selectMood(2)" title="Tenso / Abrumado">
+                      <svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="30" fill="var(--mood2)"/><circle cx="22" cy="26" r="3.4" fill="#0b142c"/><circle cx="42" cy="26" r="3.4" fill="#0b142c"/><path d="M21 42c5-4 17-4 22 0" stroke="#0b142c" stroke-width="3.2" fill="none" stroke-linecap="round"/></svg>
+                    </button>
+                    <button type="button" class="mood-face" data-value="3" onclick="selectMood(3)" title="Estable / Regular">
+                      <svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="30" fill="var(--mood3)"/><circle cx="22" cy="26" r="3.4" fill="#0b142c"/><circle cx="42" cy="26" r="3.4" fill="#0b142c"/><line x1="21" y1="40" x2="43" y2="40" stroke="#0b142c" stroke-width="3.2" stroke-linecap="round"/></svg>
+                    </button>
+                    <button type="button" class="mood-face selected" data-value="4" onclick="selectMood(4)" title="Motivado / Favorable">
+                      <svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="30" fill="var(--mood4)"/><circle cx="22" cy="26" r="3.4" fill="#0b142c"/><circle cx="42" cy="26" r="3.4" fill="#0b142c"/><path d="M21 38c5 5 17 5 22 0" stroke="#0b142c" stroke-width="3.2" fill="none" stroke-linecap="round"/></svg>
+                    </button>
+                    <button type="button" class="mood-face" data-value="5" onclick="selectMood(5)" title="Pleno / Excelente">
+                      <svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="30" fill="var(--mood5)"/><circle cx="22" cy="26" r="3.4" fill="#0b142c"/><circle cx="42" cy="26" r="3.4" fill="#0b142c"/><path d="M19 36c4 8 22 8 26 0" stroke="#0b142c" stroke-width="3.2" fill="none" stroke-linecap="round"/></svg>
+                    </button>
+                  </div>
+
+                  <div class="mood-track">
+                    <div style="background: var(--mood1)"></div>
+                    <div style="background: var(--mood2)"></div>
+                    <div style="background: var(--mood3)"></div>
+                    <div style="background: var(--mood4)"></div>
+                    <div style="background: var(--mood5)"></div>
+                  </div>
+                </div>
+
+                <div class="mood-caption" id="moodCaption">Motivado &bull; Buen Manejo del Estr&eacute;s</div>
+                <input type="hidden" id="moodValue" value="4">
+              </div>
+            </div>
+          </div>
+
+          <div class="divider-dots">
+            <div class="ln"></div><span></span><span></span><span></span><div class="ln"></div>
+          </div>
+
+          <!-- SECCIÓN 2: OBJETIVO Y TAREA DE LA SESIÓN -->
+          <div class="section">
+            <div class="section-head">
+              <div class="section-num">2</div>
+              <div class="section-icon" style="background: linear-gradient(135deg, var(--amber-500), #ea580c);">
+                <i class="fa-solid fa-bullseye"></i>
+              </div>
+              <h2>Objetivo Terap&eacute;utico y Plan de Acci&oacute;n</h2>
+              <div class="rule"></div>
+            </div>
+            <div class="box-edit" style="--accent-bar: var(--amber-500)">
+              <div class="editable" id="editableObjetivo" contenteditable="true" data-placeholder="Resumen del objetivo terapéutico acordado...">Se consolidaron t&eacute;cnicas de reestructuraci&oacute;n cognitiva frente a la sobrecarga laboral. Como tarea para esta quincena: aplicar la t&eacute;cnica de los &laquo;Bloques de Foco con Desconexi&oacute;n Digital&raquo; (45 min de trabajo sin notificaciones y 5 min de descanso respiratorio) y registrar en su bit&aacute;cora personal cualquier detonante de frustraci&oacute;n en juntas operativas.</div>
+            </div>
+          </div>
+
+          <!-- SECCIÓN 3: RECOMENDACIONES CLÍNICAS -->
+          <div class="section">
+            <div class="section-head">
+              <div class="section-num">3</div>
+              <div class="section-icon" style="background: linear-gradient(135deg, var(--blue-800), var(--sky-400));">
+                <i class="fa-solid fa-lightbulb"></i>
+              </div>
+              <h2>Recomendaciones Pr&aacute;cticas de Bienestar</h2>
+              <div class="rule"></div>
+            </div>
+            <div class="box-edit" style="--accent-bar: var(--blue-800)">
+              <div class="editable" id="editableRecomendaciones" contenteditable="true" data-placeholder="Recomendaciones y pautas preventivas...">1. Realizar respiraci&oacute;n diafragm&aacute;tica 4-7-8 al inicio y cierre de la jornada de trabajo.
+2. Establecer l&iacute;mites asertivos de comunicaci&oacute;n fuera del horario de oficina para proteger la higiene del sue&ntilde;o.
+3. Hidrataci&oacute;n consciente y pausas de estiramiento muscular cada dos horas durante trabajo frente a pantalla.</div>
+            </div>
+          </div>
+
+          <!-- SECCIÓN 4: PRÓXIMA SESIÓN -->
+          <div class="proxima-card">
+            <div class="field-row cols-2" id="proximaSesionFields">
+              <div class="field">
+                <label><i class="fa-solid fa-calendar-days"></i> Pr&oacute;xima Sesi&oacute;n Programada</label>
+                <input type="date" id="inputProximaFecha" value="2026-10-13">
+              </div>
+              <div class="field">
+                <label><i class="fa-solid fa-clock"></i> Hora Asignada</label>
+                <input type="time" id="inputProximaHora" value="16:00">
+              </div>
+            </div>
+          </div>
+
+          <!-- Nota Legal de Confidencialidad -->
+          <div class="footer-note">
+            <b>Aviso de Confidencialidad Cl&iacute;nica:</b> Este informe forma parte del programa de Bienestar y Salud Mental Corporativa TECTUM In-House en alianza estrat&eacute;gica con HOPE. Sus resultados reflejan el progreso subjetivo y cl&iacute;nico del colaborador con fines estrictamente preventivos, formativos y de acompa&ntilde;amiento, con apego a los est&aacute;ndares de la NOM-035-STPS y confidencialidad profesional m&eacute;dico-psicol&oacute;gica.
+          </div>
+
+        </div>
+
+        <!-- ================= FOOTER ================= -->
+        <div class="footer">
+          <div class="footer-left">
+            <div class="logo-slot">
+              <img id="logoImgFooter"
+                   src="../../static/img/tectum/logo-completo.png"
+                   onerror="this.style.display='none'; document.getElementById('footerVectorLogo').style.display='inline-flex';"
+                   alt="TECTUM"
+                   style="max-height: 26px; width: auto; object-fit: contain;">
+              <div id="footerVectorLogo" style="display:none; align-items:center; gap:8px;">
+                <i class="fa-solid fa-shield-halved" style="color:var(--sky-300); font-size:16px;"></i>
+                <span style="font-family:var(--font-heading); font-weight:800; font-size:14px; letter-spacing:0.12em; color:#fff;">TECTUM</span>
+              </div>
+            </div>
+            <span class="footer-badge">Salud Mental Corporativa</span>
+          </div>
+
+          <div class="footer-right">
+            <b>TECTUM &bull; In-House Wellness</b> &middot; Alianza Integral con HOPE<br>
+            Expediente Cl&iacute;nico Digital &bull; Documento Oficial Confidencial
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================
+       SCRIPTS DE INTERACTIVIDAD Y CÁLCULOS
+       ========================================== -->
+  <script>
+    // Perímetro del círculo del Gauge (radio = 88)
+    const CIRC = 2 * Math.PI * 88; // 552.92
+
+    function updateGauge() {
+      const valInput = document.getElementById('ippValue');
+      const val = Math.max(0, Math.min(100, parseFloat(valInput.value) || 0));
+      const arc = document.getElementById('gaugeArc');
+      const offset = CIRC - (val / 100) * CIRC;
+      arc.style.strokeDasharray = CIRC;
+      arc.style.strokeDashoffset = offset;
+
+      const delta = parseFloat(document.getElementById('ippDeltaInput').value) || 0;
+      const deltaWrap = document.getElementById('gaugeDelta');
+      if (delta < 0) {
+        deltaWrap.classList.remove('up'); deltaWrap.classList.add('down');
+        deltaWrap.childNodes[0].textContent = '▼ ';
+      } else {
+        deltaWrap.classList.remove('down'); deltaWrap.classList.add('up');
+        deltaWrap.childNodes[0].textContent = '▲ +';
+      }
+    }
+
+    function updateDim(input) {
+      const val = Math.max(0, Math.min(100, parseFloat(input.value) || 0));
+      input.value = val;
+      const row = input.closest('.dim-row');
+      row.querySelector('.dim-fill').style.width = val + '%';
+    }
+
+    const evolMessages = {
+      up: [
+        'Constancia ejemplar: la implementación de técnicas muestra una curva ascendente de bienestar sostenido.',
+        'Excelente evolución: se consolida mayor resiliencia y claridad en la toma de decisiones.',
+        'Tendencia positiva y progresiva: los hábitos integrados reflejan un impacto clínico medible.'
+      ],
+      flat: [
+        'Mantenimiento y consolidación: se estabilizan los avances obtenidos en sesiones previas.',
+        'Ritmo continuo y regular: la constancia es la base para profundizar en el bienestar laboral.'
+      ],
+      down: [
+        'Fase de reto o ajuste: los procesos de adaptación presentan fluctuaciones normales en contextos de alta demanda.',
+        'Atención prioritaria a factores de sobrecarga: reprogramando pautas de autocuidado y descanso.'
+      ]
+    };
+
+    function updateEvol() {
+      const bars = document.querySelectorAll('#evolChart .evol-bar-big');
+      const values = Array.from(bars).map(b => parseFloat(b.querySelector('.val-chip input').value) || 0);
+      const max = Math.max(...values, 10);
+      bars.forEach((b, i) => {
+        b.querySelector('.bar').style.height = Math.max((values[i] / max) * 100, 8) + '%';
+      });
+
+      const captionEl = document.getElementById('evolCaption');
+      if (captionEl && values.length > 1) {
+        const diff = values[values.length - 1] - values[0];
+        let pool = evolMessages.flat;
+        let icon = 'fa-arrow-right';
+        if (diff > 2) {
+          pool = evolMessages.up;
+          icon = 'fa-arrow-trend-up';
+        } else if (diff < -2) {
+          pool = evolMessages.down;
+          icon = 'fa-shield-halved';
+        }
+        const msg = pool[Math.floor(Math.random() * pool.length)];
+        captionEl.innerHTML = `<i class="fa-solid ${icon}"></i><span>${msg.trim()}</span>`;
+      }
+    }
+
+    const moodLabels = {
+      1: 'Agotado • Alta Sobrecarga Emocional',
+      2: 'Tenso • Fatiga y Estrés Acumulado',
+      3: 'Estable • Balance Funcional en Progreso',
+      4: 'Motivado • Buen Manejo del Estrés',
+      5: 'Pleno • Alto Desempeño y Calma'
+    };
+    const moodEmojis = { 1: '😞', 2: '😕', 3: '😐', 4: '🙂', 5: '😊' };
+
+    function selectMood(value) {
+      document.getElementById('moodValue').value = value;
+      document.getElementById('moodCaption').textContent = moodLabels[value] || '';
+      document.querySelectorAll('.mood-face').forEach(f => {
+        f.classList.toggle('selected', parseInt(f.dataset.value) === value);
+      });
+      const indicator = document.getElementById('moodStar');
+      const pct = ((value - 1) / 4) * 100;
+      indicator.style.left = pct + '%';
+      indicator.querySelector('.bubble').textContent = moodEmojis[value] || '🙂';
+    }
+
+    // Eventos de entrada reactiva
+    document.getElementById('ippValue').addEventListener('input', updateGauge);
+    document.getElementById('ippDeltaInput').addEventListener('input', updateGauge);
+
+    // Carga dinámica de Logo en vivo
+    document.getElementById('logoUpload').addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(ev) {
+        const dataUrl = ev.target.result;
+        const hImg = document.getElementById('logoImgHeader');
+        const fImg = document.getElementById('logoImgFooter');
+        hImg.src = dataUrl; hImg.style.display = 'block';
+        fImg.src = dataUrl; fImg.style.display = 'block';
+        const vHeader = document.getElementById('vectorLogoHeader');
+        const vFooter = document.getElementById('footerVectorLogo');
+        if (vHeader) vHeader.style.display = 'none';
+        if (vFooter) vFooter.style.display = 'none';
+      };
+      reader.readAsDataURL(file);
+    });
+
+    // Fallback de logo si la ruta local no existe
+    function mostrarFallbackVectorLogo() {
+      const hImg = document.getElementById('logoImgHeader');
+      if (hImg) hImg.style.display = 'none';
+      const vHeader = document.getElementById('vectorLogoHeader');
+      if (vHeader) vHeader.style.display = 'inline-flex';
+    }
+
+    // Resetear formulario a blanco
+    function resetForm() {
+      if (!confirm('¿Deseas restablecer el reporte para un colaborador nuevo?')) return;
+      document.getElementById('inputNombrePaciente').value = '';
+      document.getElementById('inputEmpresa').value = '';
+      document.getElementById('inputEdad').value = '';
+      document.getElementById('editableObjetivo').textContent = '';
+      document.getElementById('editableRecomendaciones').textContent = '';
+      document.getElementById('sessionNum').value = '1';
+      document.getElementById('ippValue').value = 0;
+      document.getElementById('ippDeltaInput').value = 0;
+      document.querySelectorAll('.dim-pct input').forEach(i => { i.value = 0; updateDim(i); });
+      document.querySelectorAll('.val-chip input').forEach(i => i.value = 0);
+      selectMood(3);
+      updateGauge();
+      updateEvol();
+    }
+
+    // Casos Demo Interactivos para visualización ejecutiva
+    function cargarCasoDemo(caso) {
+      if (caso === 1) {
+        document.getElementById('inputNombrePaciente').value = 'Lic. Juan Carlos Ramos Estrada';
+        document.getElementById('inputEmpresa').value = 'TECTUM Corp • Operaciones & Logística';
+        document.getElementById('inputEdad').value = '34 años • EXP-TC-4091';
+        document.getElementById('inputPsicologo').value = 'Mtra. Sofía Valenzuela R. — Cédula No. 12849103';
+        document.getElementById('sessionNum').value = '3';
+        document.getElementById('ippValue').value = 78;
+        document.getElementById('ippDeltaInput').value = 14;
+        
+        document.getElementById('dimBienestar').value = 76; updateDim(document.getElementById('dimBienestar'));
+        document.getElementById('dimAfrontamiento').value = 82; updateDim(document.getElementById('dimAfrontamiento'));
+        document.getElementById('dimHerramientas').value = 84; updateDim(document.getElementById('dimHerramientas'));
+        document.getElementById('dimEsperanza').value = 80; updateDim(document.getElementById('dimEsperanza'));
+
+        document.getElementById('evolVal1').value = 48;
+        document.getElementById('evolVal2').value = 64;
+        document.getElementById('evolVal3').value = 78;
+
+        selectMood(4);
+        document.getElementById('editableObjetivo').textContent = 'Se consolidaron técnicas de reestructuración cognitiva frente a la sobrecarga laboral. Como tarea para esta quincena: aplicar la técnica de los «Bloques de Foco con Desconexión Digital» (45 min de trabajo sin notificaciones y 5 min de descanso respiratorio) y registrar en su bitácora personal cualquier detonante de frustración en juntas operativas.';
+        document.getElementById('editableRecomendaciones').textContent = '1. Realizar respiración diafragmática 4-7-8 al inicio y cierre de la jornada de trabajo.\n2. Establecer límites asertivos de comunicación fuera del horario de oficina para proteger la higiene del sueño.\n3. Hidratación consciente y pausas de estiramiento muscular cada dos horas durante trabajo frente a pantalla.';
+      } else if (caso === 2) {
+        document.getElementById('inputNombrePaciente').value = 'Ing. Mariana Morales Mendoza';
+        document.getElementById('inputEmpresa').value = 'TECTUM In-House • Desarrollo Tecnológico';
+        document.getElementById('inputEdad').value = '29 años • EXP-TC-5520';
+        document.getElementById('inputPsicologo').value = 'Dr. Alejandro Morales C. — Cédula No. 8920114';
+        document.getElementById('sessionNum').value = '5';
+        document.getElementById('ippValue').value = 92;
+        document.getElementById('ippDeltaInput').value = 8;
+        
+        document.getElementById('dimBienestar').value = 90; updateDim(document.getElementById('dimBienestar'));
+        document.getElementById('dimAfrontamiento').value = 94; updateDim(document.getElementById('dimAfrontamiento'));
+        document.getElementById('dimHerramientas').value = 92; updateDim(document.getElementById('dimHerramientas'));
+        document.getElementById('dimEsperanza').value = 95; updateDim(document.getElementById('dimEsperanza'));
+
+        document.getElementById('evolVal1').value = 62;
+        document.getElementById('evolVal2').value = 75;
+        document.getElementById('evolVal3').value = 92;
+
+        selectMood(5);
+        document.getElementById('editableObjetivo').textContent = 'Fase de autonomía y liderazgo emocional alcanzada. Objetivo: consolidar protocolo de autorregulación ante entregables de alta criticidad y mentoría de inteligencia emocional a su equipo de trabajo.';
+        document.getElementById('editableRecomendaciones').textContent = '1. Mantener rutina matutina de mindfulness de 10 minutos.\n2. Preservar fines de semana libres de revisión de correo electrónico corporativo.\n3. Agendar check-in bimestral de mantenimiento preventivo.';
+      }
+      updateGauge();
+      updateEvol();
+    }
+
+    // Inicializar visualizaciones al cargar
+    updateGauge();
+    updateEvol();
+    selectMood(4);
+  </script>
+
+</body>
+</html>
