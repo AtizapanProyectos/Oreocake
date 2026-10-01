@@ -142,5 +142,9 @@ urlpatterns = [
     path('redes-sociales/', views.redes_sociales_view, name='redes_sociales'),
     path('redes/', views.redes_sociales_view, name='redes'),
     path('links/', views.redes_sociales_view, name='links'),
+
+    # Encuesta de Salud Mental TECTUM (In-House)
+    path('encuesta-tectum/', views.encuesta_tectum, name='encuesta_tectum'),
+    path('encuesta/', views.encuesta_tectum, name='encuesta_tectum_alias'),
 ]
 

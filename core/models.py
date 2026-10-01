@@ -1091,4 +1091,36 @@ class EncuestaFinalRespuesta(models.Model):
         }
 
 
+# ==========================================
+# ENCUESTA CLÍNICA DE SALUD GENERAL TECTUM (GHQ-30)
+# ==========================================
+class EncuestaTectum(models.Model):
+    usuario = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='encuestas_tectum', verbose_name="Usuario registrado (opcional)")
+    nombre = models.CharField(max_length=200, verbose_name="Nombre completo del colaborador")
+    correo = models.EmailField(verbose_name="Correo electrónico")
+    empresa = models.CharField(max_length=150, default="TECTUM In-House", verbose_name="Empresa")
+    area_departamento = models.CharField(max_length=150, blank=True, null=True, verbose_name="Área o Departamento")
+    puesto = models.CharField(max_length=150, blank=True, null=True, verbose_name="Puesto")
+    
+    # Respuestas de las 30 preguntas estructuradas en formato JSON
+    respuestas = models.JSONField(default=dict, verbose_name="Respuestas del cuestionario (30 preguntas)")
+    
+    # Evaluación y métricas de salud general (GHQ-30)
+    puntuacion_total = models.IntegerField(default=0, verbose_name="Puntuación total (GHQ)")
+    nivel_riesgo = models.CharField(max_length=50, default="Normal / Favorable", verbose_name="Nivel de riesgo detectado")
+    alerta_critica = models.BooleanField(default=False, verbose_name="Alerta crítica (ideación/riesgo)")
+    
+    ip_origen = models.GenericIPAddressField(blank=True, null=True, verbose_name="IP de origen")
+    fecha_creacion = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de realización")
+
+    class Meta:
+        verbose_name = "Encuesta de Salud Mental TECTUM"
+        verbose_name_plural = "Encuestas de Salud Mental TECTUM"
+        ordering = ['-fecha_creacion']
+
+    def __str__(self):
+        return f"Encuesta TECTUM #{self.id} - {self.nombre} ({self.nivel_riesgo}) - {self.fecha_creacion.strftime('%d/%m/%Y')}"
+
+
+
 

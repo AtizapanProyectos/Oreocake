@@ -8417,5 +8417,376 @@ def redes_sociales_view(request):
     return render(request, 'redes_sociales.html')
 
 
+# =========================================================================
+# 🛡️ ENCUESTA CLÍNICA DE SALUD GENERAL TECTUM (GHQ-30)
+# =========================================================================
+
+PREGUNTAS_ENCUESTA_TECTUM = [
+    {
+        "id": 1,
+        "pregunta": "¿Te has sentido bien y con buena salud en las últimas dos semanas?",
+        "tipo": "positiva",
+        "opciones": ["Mejor que antes", "Igual que antes", "Peor que antes", "Mucho peor que antes"]
+    },
+    {
+        "id": 2,
+        "pregunta": "¿Te has sentido agotado/a y sin fuerzas para nada en las últimas dos semanas?",
+        "tipo": "negativa",
+        "opciones": ["No", "Como antes", "Más que antes", "Mucho más que antes"]
+    },
+    {
+        "id": 3,
+        "pregunta": "¿Has tenido la sensación de estar enfermo/a en las últimas dos semanas?",
+        "tipo": "negativa",
+        "opciones": ["No", "No más que antes", "Más que antes", "Mucho más que antes"]
+    },
+    {
+        "id": 4,
+        "pregunta": "¿Has tenido dolores de cabeza en las últimas dos semanas?",
+        "tipo": "negativa",
+        "opciones": ["No", "Como siempre", "Más que siempre", "Mucho más que siempre"]
+    },
+    {
+        "id": 5,
+        "pregunta": "¿Has tenido pesadez en la cabeza o la sensación de que la cabeza te va a estallar en las últimas dos semanas?",
+        "tipo": "negativa",
+        "opciones": ["No", "Igual que antes", "Más que antes", "Mucho más que antes"]
+    },
+    {
+        "id": 6,
+        "pregunta": "¿Has tenido escalofríos o bochornos en las últimas dos semanas?",
+        "tipo": "negativa",
+        "opciones": ["No", "Igual que antes", "Más que antes", "Mucho más que antes"]
+    },
+    {
+        "id": 7,
+        "pregunta": "¿Te despiertas demasiado temprano y ya no puedes volver a dormir en las últimas dos semanas?",
+        "tipo": "negativa",
+        "opciones": ["No", "No más que antes", "Más que antes", "Mucho más que antes"]
+    },
+    {
+        "id": 8,
+        "pregunta": "¿Te has sentido lleno de vida y energía en las últimas dos semanas?",
+        "tipo": "positiva",
+        "opciones": ["Más que antes", "Igual que antes", "Menos que antes", "Mucho menos que antes"]
+    },
+    {
+        "id": 9,
+        "pregunta": "¿Has tenido dificultad para dormir o conciliar el sueño en las últimas dos semanas?",
+        "tipo": "negativa",
+        "opciones": ["No", "No más que antes", "Más que antes", "Mucho más que antes"]
+    },
+    {
+        "id": 10,
+        "pregunta": "¿Has tenido dificultad para dormir de un jalón toda la noche en las últimas dos semanas?",
+        "tipo": "negativa",
+        "opciones": ["No", "No más que antes", "Más que antes", "Mucho más que antes"]
+    },
+    {
+        "id": 11,
+        "pregunta": "¿Has pasado noches inquietas o intranquilas en las últimas dos semanas?",
+        "tipo": "negativa",
+        "opciones": ["No", "No más que antes", "Más que antes", "Mucho más que antes"]
+    },
+    {
+        "id": 12,
+        "pregunta": "¿Has sentido que por lo general haces las cosas bien en las últimas dos semanas?",
+        "tipo": "positiva",
+        "opciones": ["Mejor que antes", "Igual que antes", "Peor que antes", "Mucho peor que antes"]
+    },
+    {
+        "id": 13,
+        "pregunta": "¿Te has sentido satisfecho/a con tu manera de hacer las cosas en las últimas dos semanas?",
+        "tipo": "positiva",
+        "opciones": ["Más que antes", "Igual que antes", "Menos que antes", "Mucho menos que antes"]
+    },
+    {
+        "id": 14,
+        "pregunta": "¿Sientes cariño y afecto por los que le rodean?",
+        "tipo": "positiva",
+        "opciones": ["Más que antes", "Como que antes", "Menos que antes", "Mucho menos que antes"]
+    },
+    {
+        "id": 15,
+        "pregunta": "¿Te llevas bien con los/as demás?",
+        "tipo": "positiva",
+        "opciones": ["Mejor que antes", "Como antes", "Peor que antes", "Mucho peor que antes"]
+    },
+    {
+        "id": 16,
+        "pregunta": "¿Has sentido que estás jugando un papel útil en la vida?",
+        "tipo": "positiva",
+        "opciones": ["Más que antes", "Igual que antes", "Menos útil que antes", "Mucho menos útil que antes"]
+    },
+    {
+        "id": 17,
+        "pregunta": "¿Te has sentido capaz de tomar decisiones?",
+        "tipo": "positiva",
+        "opciones": ["Más que antes", "Igual que antes", "Menos que antes", "Mucho menos que antes"]
+    },
+    {
+        "id": 18,
+        "pregunta": "¿Te sientes incapaz de resolver sus problemas?",
+        "tipo": "negativa",
+        "opciones": ["No, para nada", "No más que antes", "Más que antes", "Mucho más que antes"]
+    },
+    {
+        "id": 19,
+        "pregunta": "¿Has disfrutado de tus actividades diarias en las últimas dos semanas?",
+        "tipo": "positiva",
+        "opciones": ["Más que antes", "Igual que antes", "Menos que antes", "Mucho menos que antes"]
+    },
+    {
+        "id": 20,
+        "pregunta": "¿Te has sentido irritado/a y de mal humor en las últimas dos semanas?",
+        "tipo": "negativa",
+        "opciones": ["No, para nada", "No más que antes", "Más que antes", "Mucho más que antes"]
+    },
+    {
+        "id": 21,
+        "pregunta": "¿Te has sentido asustado/a y con mucho miedo sin que haya una buena razón en las últimas dos semanas?",
+        "tipo": "negativa",
+        "opciones": ["No", "No más que antes", "Más que antes", "Mucho más que antes"]
+    },
+    {
+        "id": 22,
+        "pregunta": "¿Te has sentido triste y deprimido/a en las últimas dos semanas?",
+        "tipo": "negativa",
+        "opciones": ["No, para nada", "No más que antes", "Más que antes", "Mucho más que antes"]
+    },
+    {
+        "id": 23,
+        "pregunta": "¿Has perdido confianza y fe en sí mismo/a en las últimas dos semanas?",
+        "tipo": "negativa",
+        "opciones": ["No", "No más que antes", "Más que antes", "Mucho más que antes"]
+    },
+    {
+        "id": 24,
+        "pregunta": "¿Has pensado que tú no vales nada?",
+        "tipo": "negativa",
+        "opciones": ["No, para nada", "No más que antes", "Más que antes", "Mucho más que antes"]
+    },
+    {
+        "id": 25,
+        "pregunta": "¿Sientes que no se puede esperar nada de la vida?",
+        "tipo": "negativa",
+        "opciones": ["No", "No más que antes", "Más que antes", "Mucho más que antes"]
+    },
+    {
+        "id": 26,
+        "pregunta": "¿Te ha sentido nervioso/a y \"a punto de estallar\" constantemente en las últimas dos semanas?",
+        "tipo": "negativa",
+        "opciones": ["No", "No más que antes", "Más que antes", "Mucho más que antes"]
+    },
+    {
+        "id": 27,
+        "pregunta": "¿Has pensado en la posibilidad de quitarte la vida?",
+        "tipo": "critica",
+        "opciones": ["No, para nada", "No creo", "Alguna vez", "Si"]
+    },
+    {
+        "id": 28,
+        "pregunta": "¿Has notado que a veces no puedes hacer nada a causa de sus nervios?",
+        "tipo": "negativa",
+        "opciones": ["No", "No más que antes", "Más que antes", "Mucho más que antes"]
+    },
+    {
+        "id": 29,
+        "pregunta": "¿Has deseado estar muerto/a y lejos de todo?",
+        "tipo": "critica",
+        "opciones": ["No", "No más que antes", "Más que antes", "Mucho más que antes"]
+    },
+    {
+        "id": 30,
+        "pregunta": "¿Has notado que la idea de quitarse la vida te viene repetidamente a la cabeza?",
+        "tipo": "critica",
+        "opciones": ["No, para nada", "No creo", "Alguna vez", "Si"]
+    }
+]
+
+
+def encuesta_tectum(request):
+    """
+    Vista de la Encuesta de Salud Mental y Bienestar General TECTUM (GHQ-30).
+    Accesible en:
+      - /encuesta/
+      - /encuesta-tectum/
+      - O a través del subdominio tectuminhause.espaciohope.com/encuesta/
+    """
+    if request.method == 'POST':
+        # Procesar datos (soporta tanto JSON como multipart/form-data)
+        if request.content_type == 'application/json':
+            try:
+                data = json.loads(request.body.decode('utf-8'))
+            except Exception:
+                return JsonResponse({'status': 'error', 'message': 'Datos JSON inválidos.'}, status=400)
+        else:
+            data = request.POST
+
+        nombre = data.get('nombre', '').strip()
+        correo = data.get('correo', '').strip().lower()
+        empresa = data.get('empresa', '').strip() or 'TECTUM In-House'
+        area_departamento = data.get('area_departamento', '').strip()
+        puesto = data.get('puesto', '').strip()
+
+        if not nombre or not correo:
+            return JsonResponse({'status': 'error', 'message': 'El nombre y correo electrónico son obligatorios.'}, status=400)
+
+        # Extraer respuestas
+        respuestas_raw = data.get('respuestas', {})
+        if isinstance(respuestas_raw, str):
+            try:
+                respuestas_raw = json.loads(respuestas_raw)
+            except Exception:
+                respuestas_raw = {}
+
+        # Si vienen campos de formulario tradicionales p1, p2, ..., p30
+        if not respuestas_raw:
+            respuestas_raw = {}
+            for q in PREGUNTAS_ENCUESTA_TECTUM:
+                qid = str(q['id'])
+                val = data.get(f'p_{qid}') or data.get(f'pregunta_{qid}') or data.get(qid)
+                if val is not None:
+                    respuestas_raw[qid] = val
+
+        # Validar que estén las 30 preguntas
+        if len(respuestas_raw) < len(PREGUNTAS_ENCUESTA_TECTUM):
+            return JsonResponse({
+                'status': 'error',
+                'message': f'Por favor responde todas las preguntas del cuestionario ({len(respuestas_raw)}/30 completadas).'
+            }, status=400)
+
+        # Calcular puntuación Likert y alertas críticas
+        puntuacion_total = 0
+        alerta_critica = False
+        respuestas_estructuradas = {}
+
+        for q in PREGUNTAS_ENCUESTA_TECTUM:
+            qid = str(q['id'])
+            ans_val = respuestas_raw.get(qid)
+            opciones = q['opciones']
+
+            # Encontrar índice de opción (0, 1, 2 o 3)
+            idx = 0
+            opcion_texto = ""
+            if isinstance(ans_val, int) or (isinstance(ans_val, str) and ans_val.isdigit()):
+                idx = int(ans_val)
+                if 0 <= idx < len(opciones):
+                    opcion_texto = opciones[idx]
+            else:
+                ans_str = str(ans_val).strip()
+                if ans_str in opciones:
+                    idx = opciones.index(ans_str)
+                    opcion_texto = ans_str
+                else:
+                    # Intento de emparejamiento insensible
+                    matched = False
+                    for i, opc in enumerate(opciones):
+                        if opc.lower() == ans_str.lower():
+                            idx = i
+                            opcion_texto = opc
+                            matched = True
+                            break
+                    if not matched:
+                        opcion_texto = ans_str
+                        idx = 0
+
+            # Sistema de puntos:
+            # Para preguntas positivas (salud, bienestar, satisfacción, energía):
+            # 0: Muy bien / Mejor -> 0 pts
+            # 1: Igual -> 1 pto
+            # 2: Menos / Peor -> 2 pts
+            # 3: Mucho menos / Mucho peor -> 3 pts
+            #
+            # Para preguntas de síntomas / negativas:
+            # 0: No / Para nada -> 0 pts
+            # 1: No más que antes / Como antes -> 1 pto
+            # 2: Más que antes -> 2 pts
+            # 3: Mucho más que antes -> 3 pts
+            puntos = max(0, min(3, idx))
+            puntuacion_total += puntos
+
+            # Verificación de items críticos (27, 29, 30: ideación o deseo de muerte)
+            if q['id'] in [27, 29, 30] and idx >= 2:
+                alerta_critica = True
+
+            respuestas_estructuradas[qid] = {
+                'pregunta': q['pregunta'],
+                'opcion_seleccionada': opcion_texto,
+                'indice': idx,
+                'puntos': puntos,
+                'tipo': q['tipo']
+            }
+
+        # Nivel de riesgo
+        if alerta_critica:
+            nivel_riesgo = "Alerta Crítica (Atención Inmediata)"
+        elif puntuacion_total <= 20:
+            nivel_riesgo = "Bienestar Favorable / Estable"
+        elif puntuacion_total <= 35:
+            nivel_riesgo = "Riesgo Moderado"
+        else:
+            nivel_riesgo = "Riesgo Elevado"
+
+        # IP del colaborador
+        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+        if x_forwarded_for:
+            ip = x_forwarded_for.split(',')[0].strip()
+        else:
+            ip = request.META.get('REMOTE_ADDR')
+
+        # Guardar en base de datos
+        encuesta = EncuestaTectum.objects.create(
+            usuario=request.user if request.user.is_authenticated else None,
+            nombre=nombre,
+            correo=correo,
+            empresa=empresa,
+            area_departamento=area_departamento,
+            puesto=puesto,
+            respuestas=respuestas_estructuradas,
+            puntuacion_total=puntuacion_total,
+            nivel_riesgo=nivel_riesgo,
+            alerta_critica=alerta_critica,
+            ip_origen=ip
+        )
+
+        return JsonResponse({
+            'status': 'success',
+            'encuesta_id': encuesta.id,
+            'nombre': encuesta.nombre,
+            'puntuacion_total': puntuacion_total,
+            'nivel_riesgo': nivel_riesgo,
+            'alerta_critica': alerta_critica,
+            'mensaje': 'Tu cuestionario ha sido registrado exitosamente.'
+        })
+
+    # GET Request: Cargar página del cuestionario
+    usuario_info = {
+        'nombre': '',
+        'correo': '',
+        'empresa': 'TECTUM In-House',
+        'area_departamento': '',
+        'puesto': ''
+    }
+
+    if request.user.is_authenticated:
+        usuario_info['nombre'] = f"{request.user.first_name} {request.user.last_name}".strip() or request.user.username
+        usuario_info['correo'] = request.user.email or ''
+        if hasattr(request.user, 'perfil'):
+            usuario_info['empresa'] = getattr(request.user.perfil, 'empresa', 'TECTUM In-House') or 'TECTUM In-House'
+            usuario_info['area_departamento'] = getattr(request.user.perfil, 'area', '') or ''
+            usuario_info['puesto'] = getattr(request.user.perfil, 'puesto', '') or ''
+
+    context = {
+        'preguntas': PREGUNTAS_ENCUESTA_TECTUM,
+        'preguntas_json': json.dumps(PREGUNTAS_ENCUESTA_TECTUM),
+        'usuario_info': usuario_info,
+        'total_preguntas': len(PREGUNTAS_ENCUESTA_TECTUM),
+    }
+
+    return render(request, 'tectum/encuesta-tectum.html', context)
+
+
+
 
 

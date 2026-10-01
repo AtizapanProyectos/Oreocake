@@ -1,0 +1,1231 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Cuestionario de Salud y Bienestar General | TECTUM In-House</title>
+  
+  <!-- Favicon TECTUM -->
+  <link rel="icon" href="{% static 'img/tectum/escudo.png' %}" type="image/png">
+  <link rel="shortcut icon" href="{% static 'img/tectum/escudo.png' %}" type="image/png">
+  <link rel="apple-touch-icon" href="{% static 'img/tectum/escudo.png' %}">
+
+  <!-- Tipografías Oficiales -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+
+  <style>
+    :root {
+      --navy-950: #070d1e;
+      --navy-900: #0b142c;
+      --navy-800: #122044;
+      --navy-700: #1b2f63;
+      --blue-600: #2563eb;
+      --blue-500: #3b82f6;
+      --sky-500: #0284c7;
+      --sky-400: #0ea5e9;
+      --sky-300: #38bdf8;
+      --slate-50: #f8fafc;
+      --slate-100: #f1f5f9;
+      --slate-200: #e2e8f0;
+      --slate-300: #cbd5e1;
+      --slate-400: #94a3b8;
+      --slate-500: #64748b;
+      --slate-600: #475569;
+      --slate-700: #334155;
+      --slate-800: #1e293b;
+      --slate-900: #0f172a;
+      --success-500: #10b981;
+      --warning-500: #f59e0b;
+      --danger-500: #ef4444;
+      --font-h: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-b: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      --sh-sm: 0 4px 12px rgba(11, 20, 44, 0.05);
+      --sh-md: 0 10px 25px -4px rgba(11, 20, 44, 0.08), 0 4px 10px -2px rgba(11, 20, 44, 0.04);
+      --sh-lg: 0 20px 40px -10px rgba(11, 20, 44, 0.12), 0 8px 16px -4px rgba(37, 99, 235, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--font-b);
+      color: var(--slate-800);
+      background: linear-gradient(180deg, #0b142c 0%, #0f1d3e 340px, #f8fafc 340px, #f1f5f9 100%);
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+      padding-bottom: 90px;
+    }
+
+    /* ── HEADER SUPERIOR BRANDING ── */
+    .top-header {
+      padding: 24px 20px 18px;
+      max-width: 920px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .brand-group {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      text-decoration: none;
+    }
+
+    .brand-logo {
+      height: 44px;
+      width: auto;
+      object-fit: contain;
+      filter: drop-shadow(0 4px 12px rgba(0,0,0,0.25));
+    }
+
+    .brand-divider {
+      width: 1px;
+      height: 32px;
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    .badge-inhouse {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(14, 165, 233, 0.15);
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      color: #7dd3fc;
+      padding: 5px 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      font-family: var(--font-h);
+    }
+
+    .badge-inhouse i {
+      color: var(--sky-300);
+      font-size: 11px;
+    }
+
+    .btn-back-home {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: rgba(255, 255, 255, 0.85);
+      text-decoration: none;
+      font-size: 13.5px;
+      font-weight: 600;
+      padding: 8px 16px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      transition: all 0.25s ease;
+    }
+
+    .btn-back-home:hover {
+      background: rgba(255, 255, 255, 0.16);
+      color: #ffffff;
+      transform: translateX(-2px);
+    }
+
+    /* ── HERO BANNER ── */
+    .hero-container {
+      max-width: 920px;
+      margin: 0 auto;
+      padding: 10px 20px 30px;
+      text-align: center;
+      color: #ffffff;
+    }
+
+    .hero-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: linear-gradient(135deg, rgba(37, 99, 235, 0.25) 0%, rgba(14, 165, 233, 0.25) 100%);
+      border: 1px solid rgba(56, 189, 248, 0.4);
+      padding: 6px 16px;
+      border-radius: 50px;
+      font-size: 12.5px;
+      font-weight: 700;
+      letter-spacing: 0.6px;
+      text-transform: uppercase;
+      color: #bae6fd;
+      margin-bottom: 14px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+    }
+
+    .hero-title {
+      font-family: var(--font-h);
+      font-size: clamp(1.8rem, 4.2vw, 2.5rem);
+      font-weight: 800;
+      line-height: 1.2;
+      margin-bottom: 12px;
+      letter-spacing: -0.5px;
+      background: linear-gradient(180deg, #ffffff 40%, #cbd5e1 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .hero-desc {
+      font-size: 15.5px;
+      line-height: 1.6;
+      color: #cbd5e1;
+      max-width: 720px;
+      margin: 0 auto 18px;
+      font-weight: 400;
+    }
+
+    .confidential-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid rgba(52, 211, 153, 0.3);
+      color: #a7f3d0;
+      padding: 6px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    /* ── BARRA DE PROGRESO FLOTANTE (STICKY) ── */
+    .progress-sticky-bar {
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--slate-200);
+      box-shadow: 0 4px 20px rgba(11, 20, 44, 0.06);
+      transition: all 0.3s ease;
+    }
+
+    .progress-inner {
+      max-width: 920px;
+      margin: 0 auto;
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .progress-info {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 13.5px;
+      font-weight: 700;
+      color: var(--slate-700);
+    }
+
+    .progress-count {
+      color: var(--blue-600);
+      font-family: var(--font-h);
+      font-size: 15px;
+    }
+
+    .progress-bar-track {
+      flex: 1;
+      max-width: 460px;
+      height: 9px;
+      background: var(--slate-200);
+      border-radius: 999px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #2563eb 0%, #0ea5e9 100%);
+      border-radius: 999px;
+      transition: width 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .progress-percent {
+      font-family: var(--font-h);
+      font-size: 14px;
+      font-weight: 800;
+      color: var(--slate-800);
+      min-width: 44px;
+      text-align: right;
+    }
+
+    /* ── CONTENEDOR PRINCIPAL DEL FORMULARIO ── */
+    .form-wrapper {
+      max-width: 920px;
+      margin: 24px auto 0;
+      padding: 0 20px;
+    }
+
+    /* ── TARJETA DE DATOS DEL COLABORADOR ── */
+    .card-colaborador {
+      background: #ffffff;
+      border-radius: 20px;
+      padding: 28px 30px;
+      margin-bottom: 26px;
+      box-shadow: var(--sh-md);
+      border: 1px solid var(--slate-200);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card-colaborador::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, var(--navy-800) 0%, var(--blue-600) 50%, var(--sky-400) 100%);
+    }
+
+    .section-title {
+      font-family: var(--font-h);
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: var(--navy-900);
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .section-subtitle {
+      font-size: 14px;
+      color: var(--slate-500);
+      margin-bottom: 22px;
+    }
+
+    .grid-colaborador {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 18px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+
+    .form-label {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--slate-700);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .form-label .req {
+      color: var(--danger-500);
+    }
+
+    .form-input {
+      width: 100%;
+      height: 46px;
+      padding: 0 16px;
+      background: var(--slate-50);
+      border: 1.5px solid var(--slate-200);
+      border-radius: 12px;
+      font-family: var(--font-b);
+      font-size: 14.5px;
+      color: var(--slate-800);
+      transition: all 0.2s ease;
+      outline: none;
+    }
+
+    .form-input:focus {
+      background: #ffffff;
+      border-color: var(--blue-500);
+      box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+    }
+
+    .form-input::placeholder {
+      color: var(--slate-400);
+      font-size: 13.5px;
+    }
+
+    /* ── TARJETAS DE PREGUNTAS ── */
+    .question-card {
+      background: #ffffff;
+      border-radius: 18px;
+      padding: 24px 26px;
+      margin-bottom: 20px;
+      box-shadow: var(--sh-sm);
+      border: 1.5px solid var(--slate-200);
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative;
+    }
+
+    .question-card:hover {
+      box-shadow: var(--sh-md);
+      border-color: var(--slate-300);
+    }
+
+    .question-card.answered {
+      border-color: #cbd5e1;
+      background: #ffffff;
+    }
+
+    .question-card.has-error {
+      border-color: #f87171 !important;
+      background: #fffbfa;
+      animation: shake 0.4s ease-in-out;
+      box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15);
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20%, 60% { transform: translateX(-6px); }
+      40%, 80% { transform: translateX(6px); }
+    }
+
+    .question-header {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+
+    .question-badge {
+      flex-shrink: 0;
+      width: 38px;
+      height: 38px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, var(--navy-800) 0%, var(--navy-900) 100%);
+      color: #ffffff;
+      font-family: var(--font-h);
+      font-weight: 800;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 10px rgba(11, 20, 44, 0.15);
+      transition: all 0.2s ease;
+    }
+
+    .question-card.answered .question-badge {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      box-shadow: 0 4px 10px rgba(16, 185, 129, 0.25);
+    }
+
+    .question-text {
+      font-family: var(--font-h);
+      font-size: 1.08rem;
+      font-weight: 700;
+      color: var(--navy-950);
+      line-height: 1.45;
+      padding-top: 5px;
+    }
+
+    /* ── OPCIONES DE RESPUESTA (GRID DE BOTONES) ── */
+    .options-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 10px;
+    }
+
+    .option-item {
+      position: relative;
+    }
+
+    .option-item input[type="radio"] {
+      position: absolute;
+      opacity: 0;
+      width: 0;
+      height: 0;
+      pointer-events: none;
+    }
+
+    .option-label {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 13px 16px;
+      background: var(--slate-50);
+      border: 1.5px solid var(--slate-200);
+      border-radius: 12px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--slate-700);
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      user-select: none;
+      height: 100%;
+    }
+
+    .option-radio-dot {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      border: 2px solid var(--slate-300);
+      background: #ffffff;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+    }
+
+    .option-radio-dot::after {
+      content: '';
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #ffffff;
+      transform: scale(0);
+      transition: transform 0.2s ease;
+    }
+
+    .option-item:hover .option-label {
+      background: #ffffff;
+      border-color: var(--blue-500);
+      color: var(--blue-600);
+      transform: translateY(-1px);
+    }
+
+    .option-item input[type="radio"]:checked + .option-label {
+      background: linear-gradient(135deg, rgba(37, 99, 235, 0.08) 0%, rgba(14, 165, 233, 0.08) 100%);
+      border-color: var(--blue-600);
+      color: var(--navy-900);
+      font-weight: 700;
+      box-shadow: 0 4px 14px rgba(37, 99, 235, 0.12);
+    }
+
+    .option-item input[type="radio"]:checked + .option-label .option-radio-dot {
+      border-color: var(--blue-600);
+      background: var(--blue-600);
+    }
+
+    .option-item input[type="radio"]:checked + .option-label .option-radio-dot::after {
+      transform: scale(1);
+    }
+
+    /* ── FOOTER DE ACCIONES Y ENVÍO ── */
+    .submit-container {
+      margin: 36px 0 20px;
+      background: #ffffff;
+      border-radius: 20px;
+      padding: 30px;
+      text-align: center;
+      box-shadow: var(--sh-md);
+      border: 1px solid var(--slate-200);
+    }
+
+    .submit-warning {
+      display: none;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      color: var(--danger-500);
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      border-radius: 12px;
+      padding: 12px 18px;
+      font-size: 14px;
+      font-weight: 700;
+      margin-bottom: 20px;
+    }
+
+    .btn-submit-survey {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      background: linear-gradient(135deg, var(--navy-800) 0%, var(--blue-600) 100%);
+      color: #ffffff;
+      border: none;
+      padding: 17px 42px;
+      border-radius: 999px;
+      font-family: var(--font-h);
+      font-size: 16.5px;
+      font-weight: 800;
+      letter-spacing: 0.3px;
+      cursor: pointer;
+      box-shadow: 0 10px 25px rgba(37, 99, 235, 0.35);
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      width: 100%;
+      max-width: 440px;
+    }
+
+    .btn-submit-survey:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 16px 36px rgba(37, 99, 235, 0.45);
+      background: linear-gradient(135deg, var(--navy-700) 0%, var(--blue-500) 100%);
+    }
+
+    .btn-submit-survey:disabled {
+      opacity: 0.65;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .submit-footnote {
+      margin-top: 14px;
+      font-size: 13px;
+      color: var(--slate-500);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    /* ── MODAL DE CONFIRMACIÓN / ÉXITO ── */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(7, 13, 30, 0.75);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      z-index: 100000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.35s ease;
+    }
+
+    .modal-overlay.active {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .modal-card {
+      background: #ffffff;
+      border-radius: 26px;
+      max-width: 540px;
+      width: 100%;
+      padding: 38px 32px 34px;
+      text-align: center;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.35);
+      transform: scale(0.92) translateY(20px);
+      transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative;
+    }
+
+    .modal-overlay.active .modal-card {
+      transform: scale(1) translateY(0);
+    }
+
+    .modal-icon-circle {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 38px;
+      margin: 0 auto 20px;
+      box-shadow: 0 12px 30px rgba(16, 185, 129, 0.35);
+    }
+
+    .modal-title {
+      font-family: var(--font-h);
+      font-size: 1.6rem;
+      font-weight: 800;
+      color: var(--navy-950);
+      margin-bottom: 12px;
+    }
+
+    .modal-body-text {
+      font-size: 15px;
+      line-height: 1.6;
+      color: var(--slate-600);
+      margin-bottom: 24px;
+    }
+
+    .modal-highlight-box {
+      background: var(--slate-50);
+      border: 1px solid var(--slate-200);
+      border-radius: 16px;
+      padding: 16px 20px;
+      margin-bottom: 26px;
+      text-align: left;
+      font-size: 13.5px;
+    }
+
+    .modal-highlight-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      color: var(--slate-600);
+    }
+
+    .modal-highlight-row:last-child {
+      margin-bottom: 0;
+    }
+
+    .modal-highlight-row strong {
+      color: var(--slate-800);
+    }
+
+    .modal-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .btn-modal-primary {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      background: linear-gradient(135deg, var(--navy-800) 0%, var(--blue-600) 100%);
+      color: #ffffff;
+      padding: 14px 24px;
+      border-radius: 999px;
+      font-family: var(--font-h);
+      font-weight: 700;
+      font-size: 15px;
+      text-decoration: none;
+      box-shadow: 0 8px 20px rgba(37, 99, 235, 0.3);
+      transition: all 0.25s ease;
+    }
+
+    .btn-modal-primary:hover {
+      background: linear-gradient(135deg, var(--navy-700) 0%, var(--blue-500) 100%);
+      transform: translateY(-2px);
+    }
+
+    .btn-modal-secondary {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      background: var(--slate-100);
+      color: var(--slate-700);
+      padding: 13px 24px;
+      border-radius: 999px;
+      font-family: var(--font-b);
+      font-weight: 700;
+      font-size: 14px;
+      text-decoration: none;
+      transition: all 0.25s ease;
+    }
+
+    .btn-modal-secondary:hover {
+      background: var(--slate-200);
+      color: var(--navy-900);
+    }
+
+    /* ── BURBUJA FLOTANTE WHATSAPP SOPORTE ── */
+    .btn-flotante-wa {
+      position: fixed;
+      bottom: 28px;
+      right: 28px;
+      background-color: #25D366;
+      color: #ffffff !important;
+      width: 62px;
+      height: 62px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 34px;
+      box-shadow: 0 10px 25px rgba(37, 211, 102, 0.45);
+      z-index: 999999;
+      text-decoration: none;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      animation: pulse-wa 2.5s infinite;
+    }
+
+    .btn-flotante-wa:hover {
+      transform: translateY(-4px) scale(1.08);
+      box-shadow: 0 16px 36px rgba(37, 211, 102, 0.55);
+      color: #ffffff !important;
+      animation: none;
+    }
+
+    .tooltip-wa {
+      position: absolute;
+      right: 76px;
+      background: #ffffff;
+      color: var(--navy-900);
+      padding: 9px 16px;
+      border-radius: 12px;
+      font-family: var(--font-b);
+      font-size: 13.5px;
+      font-weight: 700;
+      box-shadow: 0 8px 24px rgba(7, 13, 30, 0.15);
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.25s ease;
+      white-space: nowrap;
+      border: 1px solid var(--slate-200);
+      pointer-events: none;
+    }
+
+    .tooltip-wa::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      right: -6px;
+      transform: translateY(-50%);
+      border-width: 6px 0 6px 6px;
+      border-style: solid;
+      border-color: transparent transparent transparent #ffffff;
+    }
+
+    .btn-flotante-wa:hover .tooltip-wa {
+      opacity: 1;
+      visibility: visible;
+      transform: translateX(-4px);
+    }
+
+    @keyframes pulse-wa {
+      0%, 100% {
+        box-shadow: 0 10px 25px rgba(37, 211, 102, 0.45);
+        transform: scale(1);
+      }
+      50% {
+        box-shadow: 0 14px 35px rgba(37, 211, 102, 0.7);
+        transform: scale(1.04);
+      }
+    }
+
+    /* ── RESPONSIVIDAD ── */
+    @media (max-width: 768px) {
+      .top-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+      }
+      .brand-group {
+        width: 100%;
+        justify-content: space-between;
+      }
+      .btn-back-home {
+        align-self: flex-start;
+      }
+      .card-colaborador {
+        padding: 22px 18px;
+      }
+      .question-card {
+        padding: 18px 16px;
+      }
+      .question-header {
+        gap: 10px;
+      }
+      .question-badge {
+        width: 32px;
+        height: 32px;
+        font-size: 13px;
+      }
+      .question-text {
+        font-size: 0.98rem;
+      }
+      .options-grid {
+        grid-template-columns: 1fr;
+      }
+      .progress-inner {
+        padding: 10px 16px;
+      }
+      .progress-bar-track {
+        max-width: 180px;
+      }
+      .btn-flotante-wa {
+        bottom: 20px;
+        right: 20px;
+        width: 56px;
+        height: 56px;
+        font-size: 30px;
+      }
+      .tooltip-wa {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- CABECERA SUPERIOR DE IDENTIDAD -->
+  <header class="top-header">
+    <a href="{% url 'inicio_tectum' %}" class="brand-group" title="Volver al Portal TECTUM In-House">
+      <img src="{% static 'img/tectum/logo-completo.png' %}" alt="TECTUM In-House Logo" class="brand-logo">
+      <div class="brand-divider"></div>
+      <span class="badge-inhouse"><i class="fas fa-shield-alt"></i> In-House</span>
+    </a>
+    <a href="{% url 'inicio_tectum' %}" class="btn-back-home">
+      <i class="fas fa-arrow-left"></i> Volver al Portal
+    </a>
+  </header>
+
+  <!-- SECCIÓN HERO INTRODUCTORIA -->
+  <section class="hero-container">
+    <div class="hero-pill">
+      <i class="fas fa-heartbeat"></i> Programa de Bienestar y Salud Mental
+    </div>
+    <h1 class="hero-title">Cuestionario Clínico de Salud General</h1>
+    <p class="hero-desc">
+      Queremos saber cómo te has sentido en las últimas dos semanas. Esta herramienta clínica estandarizada nos ayuda a identificar áreas de apoyo para brindarte el mejor acompañamiento emocional y psicológico dentro del convenio TECTUM.
+    </p>
+    <div class="confidential-tag">
+      <i class="fas fa-lock"></i> Información estrictamente confidencial y protegida por secreto profesional.
+    </div>
+  </section>
+
+  <!-- BARRA DE PROGRESO FLOTANTE -->
+  <div class="progress-sticky-bar" id="progressStickyBar">
+    <div class="progress-inner">
+      <div class="progress-info">
+        <span>Progreso:</span>
+        <span class="progress-count" id="progressText">0 / {{ total_preguntas }}</span>
+      </div>
+      <div class="progress-bar-track">
+        <div class="progress-bar-fill" id="progressBarFill"></div>
+      </div>
+      <div class="progress-percent" id="progressPercent">0%</div>
+    </div>
+  </div>
+
+  <!-- FORMULARIO DE ENCUESTA -->
+  <main class="form-wrapper">
+    <form id="formEncuestaTectum" autocomplete="off" onsubmit="return false;">
+      {% csrf_token %}
+
+      <!-- 1. IDENTIFICACIÓN DEL COLABORADOR -->
+      <section class="card-colaborador" id="cardColaborador">
+        <h2 class="section-title">
+          <i class="fas fa-user-circle" style="color: var(--blue-600);"></i> Datos de Identificación
+        </h2>
+        <p class="section-subtitle">
+          Por favor confirma tus datos para vincular tus resultados a los beneficios de tu cuenta TECTUM.
+        </p>
+
+        <div class="grid-colaborador">
+          <div class="form-group">
+            <label class="form-label" for="inputNombre">
+              Nombre Completo <span class="req">*</span>
+            </label>
+            <input 
+              type="text" 
+              id="inputNombre" 
+              name="nombre" 
+              class="form-input" 
+              placeholder="Ej. Juan Pérez López" 
+              value="{{ usuario_info.nombre }}" 
+              required
+            >
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="inputCorreo">
+              Correo Electrónico <span class="req">*</span>
+            </label>
+            <input 
+              type="email" 
+              id="inputCorreo" 
+              name="correo" 
+              class="form-input" 
+              placeholder="colaborador@empresa.com" 
+              value="{{ usuario_info.correo }}" 
+              required
+            >
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="inputEmpresa">
+              Empresa / Organización
+            </label>
+            <input 
+              type="text" 
+              id="inputEmpresa" 
+              name="empresa" 
+              class="form-input" 
+              placeholder="TECTUM In-House" 
+              value="{{ usuario_info.empresa|default:'TECTUM In-House' }}"
+            >
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="inputArea">
+              Área o Departamento
+            </label>
+            <input 
+              type="text" 
+              id="inputArea" 
+              name="area_departamento" 
+              class="form-input" 
+              placeholder="Ej. Operaciones, TI, Finanzas" 
+              value="{{ usuario_info.area_departamento }}"
+            >
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="inputPuesto">
+              Puesto de Trabajo
+            </label>
+            <input 
+              type="text" 
+              id="inputPuesto" 
+              name="puesto" 
+              class="form-input" 
+              placeholder="Ej. Coordinador de Proyecto" 
+              value="{{ usuario_info.puesto }}"
+            >
+          </div>
+        </div>
+      </section>
+
+      <!-- 2. LAS 30 PREGUNTAS DEL CUESTIONARIO -->
+      <section id="preguntasContainer">
+        {% for p in preguntas %}
+        <article class="question-card" id="card_pregunta_{{ p.id }}" data-qid="{{ p.id }}">
+          <div class="question-header">
+            <div class="question-badge">
+              {% if p.id < 10 %}0{{ p.id }}{% else %}{{ p.id }}{% endif %}
+            </div>
+            <h3 class="question-text">{{ p.pregunta }}</h3>
+          </div>
+
+          <div class="options-grid">
+            {% for opt in p.opciones %}
+            <div class="option-item">
+              <input 
+                type="radio" 
+                id="q_{{ p.id }}_opt_{{ forloop.counter0 }}" 
+                name="p_{{ p.id }}" 
+                value="{{ forloop.counter0 }}"
+                data-text="{{ opt }}"
+                onchange="handleOptionChange({{ p.id }})"
+              >
+              <label class="option-label" for="q_{{ p.id }}_opt_{{ forloop.counter0 }}">
+                <span class="option-radio-dot"></span>
+                <span>{{ opt }}</span>
+              </label>
+            </div>
+            {% endfor %}
+          </div>
+        </article>
+        {% endfor %}
+      </section>
+
+      <!-- 3. ACCIÓN DE ENVÍO -->
+      <section class="submit-container">
+        <div class="submit-warning" id="submitWarningBox">
+          <i class="fas fa-exclamation-triangle"></i>
+          <span id="submitWarningMsg">Por favor completa todos los campos requeridos y preguntas antes de continuar.</span>
+        </div>
+
+        <button type="button" class="btn-submit-survey" id="btnSubmitSurvey" onclick="enviarEncuesta()">
+          <i class="fas fa-paper-plane"></i> Enviar Encuesta TECTUM
+        </button>
+
+        <p class="submit-footnote">
+          <i class="fas fa-shield-alt" style="color: var(--sky-500);"></i> Tus respuestas serán procesadas confidencialmente por el equipo clínico de Espacio HOPE.
+        </p>
+      </section>
+    </form>
+  </main>
+
+  <!-- MODAL DE ÉXITO TRAS COMPLETAR LA ENCUESTA -->
+  <div class="modal-overlay" id="modalExito">
+    <div class="modal-card">
+      <div class="modal-icon-circle">
+        <i class="fas fa-check"></i>
+      </div>
+      <h2 class="modal-title">¡Encuesta Registrada!</h2>
+      <p class="modal-body-text">
+        Muchas gracias, <strong id="modalColaboradorNombre">colaborador</strong>. Tus respuestas han sido guardadas de forma segura y confidencial bajo tu registro de TECTUM In-House.
+      </p>
+
+      <div class="modal-highlight-box">
+        <div class="modal-highlight-row">
+          <span>Folio de registro:</span>
+          <strong id="modalFolio">#0000</strong>
+        </div>
+        <div class="modal-highlight-row">
+          <span>Fecha y hora:</span>
+          <strong id="modalFecha">Hoy</strong>
+        </div>
+        <div class="modal-highlight-row">
+          <span>Estatus:</span>
+          <strong style="color: var(--success-500);"><i class="fas fa-check-circle"></i> Evaluado exitosamente</strong>
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <a href="{% url 'inicio_tectum' %}" class="btn-modal-primary">
+          <i class="fas fa-calendar-check"></i> Ir al Portal TECTUM In-House
+        </a>
+        <a href="https://wa.me/525521130230?text=Hola,%20acabo%20de%20realizar%20mi%20encuesta%20de%20salud%20en%20TECTUM%20y%20me%20gustar%C3%ADa%20agendar%20una%20sesi%C3%B3n" target="_blank" rel="noopener" class="btn-modal-secondary">
+          <i class="fab fa-whatsapp" style="color: #25D366; font-size: 16px;"></i> Hablar con un especialista por WhatsApp
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- BURBUJA FLOTANTE WHATSAPP SOPORTE TÉCNICO -->
+  <a href="https://wa.me/525521130230?text=Hola,%20necesito%20soporte%20t%C3%A9cnico%20con%20la%20encuesta%20TECTUM" target="_blank" rel="noopener" class="btn-flotante-wa" title="Soporte Técnico WhatsApp">
+    <i class="fab fa-whatsapp"></i>
+    <span class="tooltip-wa">Soporte Técnico WhatsApp</span>
+  </a>
+
+  <!-- SCRIPTS LOGIC -->
+  <script>
+    const TOTAL_PREGUNTAS = {{ total_preguntas }};
+    const RESPUESTAS_SELECCIONADAS = {};
+
+    function handleOptionChange(qid) {
+      const selected = document.querySelector(`input[name="p_${qid}"]:checked`);
+      const card = document.getElementById(`card_pregunta_${qid}`);
+      
+      if (selected) {
+        RESPUESTAS_SELECCIONADAS[qid] = selected.value;
+        if (card) {
+          card.classList.add('answered');
+          card.classList.remove('has-error');
+        }
+      }
+      
+      actualizarProgreso();
+    }
+
+    function actualizarProgreso() {
+      const contestadas = Object.keys(RESPUESTAS_SELECCIONADAS).length;
+      const porcentaje = Math.round((contestadas / TOTAL_PREGUNTAS) * 100);
+
+      document.getElementById('progressText').textContent = `${contestadas} / ${TOTAL_PREGUNTAS}`;
+      document.getElementById('progressBarFill').style.width = `${porcentaje}%`;
+      document.getElementById('progressPercent').textContent = `${porcentaje}%`;
+
+      const warningBox = document.getElementById('submitWarningBox');
+      if (contestadas === TOTAL_PREGUNTAS) {
+        warningBox.style.display = 'none';
+      }
+    }
+
+    async function enviarEncuesta() {
+      const nombreInput = document.getElementById('inputNombre');
+      const correoInput = document.getElementById('inputCorreo');
+      const empresaInput = document.getElementById('inputEmpresa');
+      const areaInput = document.getElementById('inputArea');
+      const puestoInput = document.getElementById('inputPuesto');
+      const warningBox = document.getElementById('submitWarningBox');
+      const warningMsg = document.getElementById('submitWarningMsg');
+      const btnSubmit = document.getElementById('btnSubmitSurvey');
+
+      const nombre = nombreInput.value.trim();
+      const correo = correoInput.value.trim();
+
+      // Validación de datos personales
+      if (!nombre || !correo) {
+        warningBox.style.display = 'flex';
+        warningMsg.textContent = 'Por favor escribe tu nombre completo y correo electrónico.';
+        document.getElementById('cardColaborador').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        if (!nombre) nombreInput.focus();
+        else correoInput.focus();
+        return;
+      }
+
+      // Validación de que todas las 30 preguntas estén respondidas
+      let primeraFaltante = null;
+      for (let i = 1; i <= TOTAL_PREGUNTAS; i++) {
+        if (!RESPUESTAS_SELECCIONADAS[i]) {
+          const card = document.getElementById(`card_pregunta_${i}`);
+          if (card) card.classList.add('has-error');
+          if (!primeraFaltante) primeraFaltante = i;
+        }
+      }
+
+      if (primeraFaltante) {
+        const totalFaltantes = TOTAL_PREGUNTAS - Object.keys(RESPUESTAS_SELECCIONADAS).length;
+        warningBox.style.display = 'flex';
+        warningMsg.textContent = `Aún faltan ${totalFaltantes} pregunta(s) por responder. Hemos resaltado la pregunta #${primeraFaltante}.`;
+        
+        const cardFaltante = document.getElementById(`card_pregunta_${primeraFaltante}`);
+        if (cardFaltante) {
+          cardFaltante.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        return;
+      }
+
+      // Preparar payload
+      warningBox.style.display = 'none';
+      const originalBtnHTML = btnSubmit.innerHTML;
+      btnSubmit.disabled = true;
+      btnSubmit.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando respuestas...';
+
+      const payload = {
+        nombre: nombre,
+        correo: correo,
+        empresa: empresaInput ? empresaInput.value.trim() : 'TECTUM In-House',
+        area_departamento: areaInput ? areaInput.value.trim() : '',
+        puesto: puestoInput ? puestoInput.value.trim() : '',
+        respuestas: RESPUESTAS_SELECCIONADAS
+      };
+
+      // Obtener CSRF token
+      let csrfToken = '';
+      const csrfInput = document.querySelector('input[name="csrfmiddlewaretoken"]');
+      if (csrfInput) {
+        csrfToken = csrfInput.value;
+      } else {
+        const match = document.cookie.match(/csrftoken=([^;]+)/);
+        if (match) csrfToken = match[1];
+      }
+
+      try {
+        const response = await fetch(window.location.href, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
+          },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.status === 'success') {
+          // Mostrar modal de confirmación
+          document.getElementById('modalColaboradorNombre').textContent = data.nombre || nombre;
+          document.getElementById('modalFolio').textContent = `#TEC-${data.encuesta_id || 'OK'}`;
+          
+          const ahora = new Date();
+          document.getElementById('modalFecha').textContent = ahora.toLocaleDateString('es-MX', { 
+            day: '2-digit', 
+            month: 'short', 
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+          });
+
+          document.getElementById('modalExito').classList.add('active');
+        } else {
+          warningBox.style.display = 'flex';
+          warningMsg.textContent = data.message || 'Ocurrió un error al procesar la encuesta. Por favor inténtalo nuevamente.';
+          btnSubmit.disabled = false;
+          btnSubmit.innerHTML = originalBtnHTML;
+        }
+      } catch (err) {
+        console.error('Error enviando encuesta:', err);
+        warningBox.style.display = 'flex';
+        warningMsg.textContent = 'Error de conexión con el servidor. Revisa tu internet e inténtalo de nuevo.';
+        btnSubmit.disabled = false;
+        btnSubmit.innerHTML = originalBtnHTML;
+      }
+    }
+  </script>
+</body>
+</html>
