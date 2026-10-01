@@ -15,7 +15,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}HOPE - Tele-Psicología PWA{% endblock %}</title>
+    {% block favicon %}
+    {% if 'tectumbeneficios' in request.get_host or 'beneficios' in request.path or es_tectum_beneficios or es_usuario_tectum or es_tectum or cita.es_tectum or 'tectuminhause' in request.get_host or 'tectum' in request.get_host or 'tectum' in request.path %}
+    <link rel="icon" href="{% static 'img/tectum/escudo.png' %}" type="image/png">
+    <link rel="shortcut icon" href="{% static 'img/tectum/escudo.png' %}" type="image/png">
+    <link rel="apple-touch-icon" href="{% static 'img/tectum/escudo.png' %}">
+    {% else %}
     <link rel="icon" href="{% static 'img/favicon.ico' %}" type="image/x-icon">
+    {% endif %}
+    {% endblock %}
 
     <!-- Fuentes de marca: se cargan aquí por si style.css todavía no las trae.
          Si ya las tienes en style.css, este @import no hace daño (el navegador

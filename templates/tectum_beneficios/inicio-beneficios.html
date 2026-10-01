@@ -6,6 +6,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>TECTUM Beneficios Corporativos | Salud Mental con Tarifa Preferencial</title>
   <link rel="icon" href="{% static 'img/tectum/escudo.png' %}" type="image/png">
+  <link rel="shortcut icon" href="{% static 'img/tectum/escudo.png' %}" type="image/png">
+  <link rel="apple-touch-icon" href="{% static 'img/tectum/escudo.png' %}">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -906,6 +908,94 @@
         animation: none !important;
       }
     }
+
+    /* ── BURBUJA FLOTANTE WHATSAPP SOPORTE TÉCNICO ── */
+    .btn-flotante-wa {
+      position: fixed;
+      bottom: 28px;
+      right: 28px;
+      background-color: #25D366;
+      color: #ffffff !important;
+      width: 62px;
+      height: 62px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 34px;
+      box-shadow: 0 10px 25px rgba(37, 211, 102, 0.45);
+      z-index: 999999;
+      text-decoration: none;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      animation: pulse-wa 2.5s infinite;
+    }
+
+    .btn-flotante-wa:hover {
+      transform: translateY(-4px) scale(1.08);
+      box-shadow: 0 16px 36px rgba(37, 211, 102, 0.55);
+      color: #ffffff !important;
+      animation: none;
+    }
+
+    .tooltip-wa {
+      position: absolute;
+      right: 76px;
+      background: #ffffff;
+      color: var(--navy-900);
+      padding: 9px 16px;
+      border-radius: 12px;
+      font-family: var(--font-b);
+      font-size: 13.5px;
+      font-weight: 700;
+      box-shadow: 0 8px 24px rgba(7, 13, 30, 0.15);
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.25s ease;
+      white-space: nowrap;
+      border: 1px solid var(--slate-200);
+      pointer-events: none;
+    }
+
+    .tooltip-wa::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      right: -6px;
+      transform: translateY(-50%);
+      border-width: 6px 0 6px 6px;
+      border-style: solid;
+      border-color: transparent transparent transparent #ffffff;
+    }
+
+    .btn-flotante-wa:hover .tooltip-wa {
+      opacity: 1;
+      visibility: visible;
+      transform: translateX(-4px);
+    }
+
+    @keyframes pulse-wa {
+      0%, 100% {
+        box-shadow: 0 10px 25px rgba(37, 211, 102, 0.45);
+        transform: scale(1);
+      }
+      50% {
+        box-shadow: 0 14px 35px rgba(37, 211, 102, 0.7);
+        transform: scale(1.04);
+      }
+    }
+
+    @media (max-width: 768px) {
+      .btn-flotante-wa {
+        bottom: 20px;
+        right: 20px;
+        width: 56px;
+        height: 56px;
+        font-size: 30px;
+      }
+      .tooltip-wa {
+        display: none;
+      }
+    }
   </style>
 </head>
 
@@ -1631,5 +1721,11 @@
       });
     }
   </script>
+
+  <!-- BURBUJA FLOTANTE WHATSAPP SOPORTE TÉCNICO -->
+  <a href="https://wa.me/525521130230?text=Hola,%20necesito%20soporte%20t%C3%A9cnico%20con%20la%20plataforma%20TECTUM%20Beneficios" target="_blank" rel="noopener" class="btn-flotante-wa" title="Soporte Técnico WhatsApp">
+    <i class="fab fa-whatsapp"></i>
+    <span class="tooltip-wa">Soporte Técnico</span>
+  </a>
 </body>
 </html>

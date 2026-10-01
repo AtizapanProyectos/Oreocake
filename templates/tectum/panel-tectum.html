@@ -3,6 +3,12 @@
 
 {% block title %}Mi Dashboard - TECTUM In-House{% endblock %}
 
+{% block favicon %}
+<link rel="icon" href="{% static 'img/tectum/escudo.png' %}" type="image/png">
+<link rel="shortcut icon" href="{% static 'img/tectum/escudo.png' %}" type="image/png">
+<link rel="apple-touch-icon" href="{% static 'img/tectum/escudo.png' %}">
+{% endblock %}
+
 {% block content %}
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 <link rel="stylesheet" type="text/css" href="https://npmcdn.com/flatpickr/dist/themes/airbnb.css">
