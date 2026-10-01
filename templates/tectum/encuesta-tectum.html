@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>Cuestionario de Salud y Bienestar General | TECTUM In-House</title>
+  <title>Encuesta TECTUM | Programa In-House</title>
   
   <!-- Favicon TECTUM -->
   <link rel="icon" href="{% static 'img/tectum/escudo.png' %}" type="image/png">
@@ -14,38 +14,29 @@
   <!-- Tipografías Oficiales -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 
   <style>
     :root {
+      --primary: #0284c7;
+      --primary-dark: #0369a1;
       --navy-950: #070d1e;
       --navy-900: #0b142c;
       --navy-800: #122044;
-      --navy-700: #1b2f63;
-      --blue-600: #2563eb;
-      --blue-500: #3b82f6;
-      --sky-500: #0284c7;
-      --sky-400: #0ea5e9;
-      --sky-300: #38bdf8;
+      --navy-700: #1e3a8a;
       --slate-50: #f8fafc;
       --slate-100: #f1f5f9;
       --slate-200: #e2e8f0;
       --slate-300: #cbd5e1;
       --slate-400: #94a3b8;
       --slate-500: #64748b;
-      --slate-600: #475569;
       --slate-700: #334155;
-      --slate-800: #1e293b;
-      --slate-900: #0f172a;
-      --success-500: #10b981;
-      --warning-500: #f59e0b;
-      --danger-500: #ef4444;
-      --font-h: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
-      --font-b: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
-      --sh-sm: 0 4px 12px rgba(11, 20, 44, 0.05);
-      --sh-md: 0 10px 25px -4px rgba(11, 20, 44, 0.08), 0 4px 10px -2px rgba(11, 20, 44, 0.04);
-      --sh-lg: 0 20px 40px -10px rgba(11, 20, 44, 0.12), 0 8px 16px -4px rgba(37, 99, 235, 0.08);
+      --text-main: #0b142c;
+      --text-muted: #64748b;
+      --bg-panel: #f8fafc;
+      --font-headings: 'Outfit', sans-serif;
+      --font-body: 'Plus Jakarta Sans', sans-serif;
     }
 
     * {
@@ -55,146 +46,97 @@
     }
 
     body {
-      font-family: var(--font-b);
-      color: var(--slate-800);
-      background: linear-gradient(180deg, #0b142c 0%, #0f1d3e 340px, #f8fafc 340px, #f1f5f9 100%);
+      background-color: var(--bg-panel);
+      font-family: var(--font-body);
+      color: var(--text-main);
       min-height: 100vh;
       -webkit-font-smoothing: antialiased;
       overflow-x: hidden;
       padding-bottom: 90px;
     }
 
-    /* ── HEADER SUPERIOR BRANDING ── */
-    .top-header {
-      padding: 24px 20px 18px;
-      max-width: 920px;
+    /* ── BARRA SUPERIOR DE NAVEGACIÓN ── */
+    .top-nav {
+      max-width: 900px;
       margin: 0 auto;
+      padding: 18px 20px;
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 16px;
     }
 
-    .brand-group {
+    .brand-link {
       display: flex;
       align-items: center;
-      gap: 14px;
+      gap: 12px;
       text-decoration: none;
     }
 
     .brand-logo {
-      height: 44px;
+      height: 40px;
       width: auto;
       object-fit: contain;
-      filter: drop-shadow(0 4px 12px rgba(0,0,0,0.25));
     }
 
-    .brand-divider {
-      width: 1px;
-      height: 32px;
-      background: rgba(255, 255, 255, 0.2);
-    }
-
-    .badge-inhouse {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      background: rgba(14, 165, 233, 0.15);
-      border: 1px solid rgba(56, 189, 248, 0.35);
-      color: #7dd3fc;
-      padding: 5px 12px;
-      border-radius: 999px;
-      font-size: 12px;
-      font-weight: 700;
-      letter-spacing: 0.5px;
-      text-transform: uppercase;
-      font-family: var(--font-h);
-    }
-
-    .badge-inhouse i {
-      color: var(--sky-300);
-      font-size: 11px;
-    }
-
-    .btn-back-home {
+    .nav-back-btn {
       display: inline-flex;
       align-items: center;
       gap: 8px;
-      color: rgba(255, 255, 255, 0.85);
+      color: var(--slate-700);
+      background: #ffffff;
+      border: 1.5px solid var(--slate-200);
+      padding: 9px 18px;
+      border-radius: 100px;
       text-decoration: none;
       font-size: 13.5px;
-      font-weight: 600;
-      padding: 8px 16px;
-      border-radius: 999px;
-      background: rgba(255, 255, 255, 0.08);
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      transition: all 0.25s ease;
-    }
-
-    .btn-back-home:hover {
-      background: rgba(255, 255, 255, 0.16);
-      color: #ffffff;
-      transform: translateX(-2px);
-    }
-
-    /* ── HERO BANNER ── */
-    .hero-container {
-      max-width: 920px;
-      margin: 0 auto;
-      padding: 10px 20px 30px;
-      text-align: center;
-      color: #ffffff;
-    }
-
-    .hero-pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      background: linear-gradient(135deg, rgba(37, 99, 235, 0.25) 0%, rgba(14, 165, 233, 0.25) 100%);
-      border: 1px solid rgba(56, 189, 248, 0.4);
-      padding: 6px 16px;
-      border-radius: 50px;
-      font-size: 12.5px;
       font-weight: 700;
-      letter-spacing: 0.6px;
+      font-family: var(--font-headings);
+      transition: all 0.25s ease;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+    }
+
+    .nav-back-btn:hover {
+      background: #e0f2fe;
+      border-color: #bae6fd;
+      color: var(--primary);
+      transform: translateY(-1px);
+    }
+
+    /* ── DASHBOARD HEADER (Estilo Panel TECTUM) ── */
+    .dashboard-header {
+      background: linear-gradient(135deg, #070d1e 0%, #0b142c 42%, #1e3a8a 85%, #0284c7 100%);
+      color: white; 
+      padding: 45px 25px 42px; 
+      border-radius: 0 0 38px 38px;
+      margin-bottom: 26px; 
+      text-align: center;
+      box-shadow: 0 14px 35px rgba(7, 13, 30, 0.18);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .step-tag {
+      font-size: 11.5px;
       text-transform: uppercase;
-      color: #bae6fd;
-      margin-bottom: 14px;
-      box-shadow: 0 8px 20px rgba(0,0,0,0.2);
-    }
-
-    .hero-title {
-      font-family: var(--font-h);
-      font-size: clamp(1.8rem, 4.2vw, 2.5rem);
+      letter-spacing: 1.5px;
       font-weight: 800;
-      line-height: 1.2;
-      margin-bottom: 12px;
+      font-family: var(--font-headings);
+      color: #38bdf8;
+      background: rgba(255, 255, 255, 0.12);
+      padding: 7px 18px;
+      border-radius: 20px;
+      display: inline-block;
+      margin-bottom: 14px;
+      border: 1px solid rgba(56, 189, 248, 0.25);
+    }
+
+    .header-title {
+      font-family: var(--font-headings);
+      font-size: clamp(2rem, 4.2vw, 2.8rem);
+      font-weight: 800;
+      margin: 0;
       letter-spacing: -0.5px;
-      background: linear-gradient(180deg, #ffffff 40%, #cbd5e1 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
-
-    .hero-desc {
-      font-size: 15.5px;
-      line-height: 1.6;
-      color: #cbd5e1;
-      max-width: 720px;
-      margin: 0 auto 18px;
-      font-weight: 400;
-    }
-
-    .confidential-tag {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      background: rgba(16, 185, 129, 0.15);
-      border: 1px solid rgba(52, 211, 153, 0.3);
-      color: #a7f3d0;
-      padding: 6px 14px;
-      border-radius: 8px;
-      font-size: 13px;
-      font-weight: 600;
     }
 
     /* ── BARRA DE PROGRESO FLOTANTE (STICKY) ── */
@@ -202,16 +144,16 @@
       position: sticky;
       top: 0;
       z-index: 1000;
-      background: rgba(255, 255, 255, 0.95);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
+      background: rgba(255, 255, 255, 0.94);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
       border-bottom: 1px solid var(--slate-200);
-      box-shadow: 0 4px 20px rgba(11, 20, 44, 0.06);
-      transition: all 0.3s ease;
+      box-shadow: 0 4px 15px rgba(11, 20, 44, 0.04);
+      margin-bottom: 24px;
     }
 
     .progress-inner {
-      max-width: 920px;
+      max-width: 900px;
       margin: 0 auto;
       padding: 12px 20px;
       display: flex;
@@ -221,217 +163,186 @@
     }
 
     .progress-info {
-      display: flex;
-      align-items: center;
-      gap: 10px;
       font-size: 13.5px;
       font-weight: 700;
-      color: var(--slate-700);
+      color: var(--text-muted);
+      font-family: var(--font-headings);
     }
 
     .progress-count {
-      color: var(--blue-600);
-      font-family: var(--font-h);
-      font-size: 15px;
+      color: var(--primary);
+      font-weight: 800;
     }
 
     .progress-bar-track {
       flex: 1;
-      max-width: 460px;
-      height: 9px;
+      max-width: 480px;
+      height: 8px;
       background: var(--slate-200);
-      border-radius: 999px;
+      border-radius: 100px;
       overflow: hidden;
-      position: relative;
     }
 
     .progress-bar-fill {
       height: 100%;
       width: 0%;
-      background: linear-gradient(90deg, #2563eb 0%, #0ea5e9 100%);
-      border-radius: 999px;
-      transition: width 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+      background: linear-gradient(90deg, #1e3a8a 0%, #0284c7 100%);
+      border-radius: 100px;
+      transition: width 0.3s ease;
     }
 
     .progress-percent {
-      font-family: var(--font-h);
+      font-family: var(--font-headings);
       font-size: 14px;
       font-weight: 800;
-      color: var(--slate-800);
-      min-width: 44px;
+      color: var(--text-main);
+      min-width: 42px;
       text-align: right;
     }
 
-    /* ── CONTENEDOR PRINCIPAL DEL FORMULARIO ── */
-    .form-wrapper {
-      max-width: 920px;
-      margin: 24px auto 0;
+    /* ── CONTENEDOR PRINCIPAL ── */
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
       padding: 0 20px;
     }
 
-    /* ── TARJETA DE DATOS DEL COLABORADOR ── */
-    .card-colaborador {
+    /* ── TARJETA CHIC (Estilo Panel TECTUM) ── */
+    .chic-card {
       background: #ffffff;
-      border-radius: 20px;
+      border-radius: 24px;
       padding: 28px 30px;
-      margin-bottom: 26px;
-      box-shadow: var(--sh-md);
-      border: 1px solid var(--slate-200);
-      position: relative;
-      overflow: hidden;
+      margin-bottom: 22px;
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.03);
+      border: 1.5px solid #f1f5f9;
+      transition: all 0.25s ease;
     }
 
-    .card-colaborador::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 4px;
-      background: linear-gradient(90deg, var(--navy-800) 0%, var(--blue-600) 50%, var(--sky-400) 100%);
-    }
-
-    .section-title {
-      font-family: var(--font-h);
+    .card-title {
+      font-family: var(--font-headings);
       font-size: 1.25rem;
       font-weight: 800;
-      color: var(--navy-900);
-      margin-bottom: 6px;
+      color: var(--text-main);
+      margin-bottom: 20px;
       display: flex;
       align-items: center;
       gap: 10px;
     }
 
-    .section-subtitle {
-      font-size: 14px;
-      color: var(--slate-500);
-      margin-bottom: 22px;
-    }
-
     .grid-colaborador {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-      gap: 18px;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      gap: 16px;
     }
 
     .form-group {
       display: flex;
       flex-direction: column;
-      gap: 7px;
-    }
-
-    .form-label {
-      font-size: 13px;
-      font-weight: 700;
-      color: var(--slate-700);
-      display: flex;
-      align-items: center;
       gap: 6px;
     }
 
+    .form-label {
+      font-size: 12.5px;
+      font-weight: 700;
+      color: var(--slate-700);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      font-family: var(--font-headings);
+    }
+
     .form-label .req {
-      color: var(--danger-500);
+      color: #ef4444;
     }
 
     .form-input {
       width: 100%;
-      height: 46px;
+      height: 44px;
       padding: 0 16px;
-      background: var(--slate-50);
+      background: #ffffff;
       border: 1.5px solid var(--slate-200);
       border-radius: 12px;
-      font-family: var(--font-b);
-      font-size: 14.5px;
-      color: var(--slate-800);
+      font-family: var(--font-body);
+      font-size: 14px;
+      color: var(--text-main);
       transition: all 0.2s ease;
       outline: none;
     }
 
     .form-input:focus {
-      background: #ffffff;
-      border-color: var(--blue-500);
-      box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.12);
     }
 
-    .form-input::placeholder {
-      color: var(--slate-400);
-      font-size: 13.5px;
-    }
-
-    /* ── TARJETAS DE PREGUNTAS ── */
+    /* ── TARJETA DE PREGUNTA ── */
     .question-card {
       background: #ffffff;
-      border-radius: 18px;
-      padding: 24px 26px;
-      margin-bottom: 20px;
-      box-shadow: var(--sh-sm);
-      border: 1.5px solid var(--slate-200);
-      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-      position: relative;
+      border-radius: 20px;
+      padding: 22px 24px;
+      margin-bottom: 16px;
+      box-shadow: 0 4px 18px rgba(0, 0, 0, 0.02);
+      border: 1.5px solid #eef2f6;
+      transition: all 0.25s ease;
     }
 
     .question-card:hover {
-      box-shadow: var(--sh-md);
-      border-color: var(--slate-300);
+      border-color: #cbd5e1;
     }
 
     .question-card.answered {
-      border-color: #cbd5e1;
-      background: #ffffff;
+      border-color: #e2e8f0;
     }
 
     .question-card.has-error {
       border-color: #f87171 !important;
       background: #fffbfa;
       animation: shake 0.4s ease-in-out;
-      box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15);
+      box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.12);
     }
 
     @keyframes shake {
       0%, 100% { transform: translateX(0); }
-      20%, 60% { transform: translateX(-6px); }
-      40%, 80% { transform: translateX(6px); }
+      20%, 60% { transform: translateX(-5px); }
+      40%, 80% { transform: translateX(5px); }
     }
 
     .question-header {
       display: flex;
       align-items: flex-start;
-      gap: 14px;
-      margin-bottom: 18px;
+      gap: 12px;
+      margin-bottom: 16px;
     }
 
     .question-badge {
       flex-shrink: 0;
-      width: 38px;
-      height: 38px;
-      border-radius: 12px;
-      background: linear-gradient(135deg, var(--navy-800) 0%, var(--navy-900) 100%);
-      color: #ffffff;
-      font-family: var(--font-h);
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      background: #f1f5f9;
+      color: var(--text-muted);
+      font-family: var(--font-headings);
       font-weight: 800;
-      font-size: 14px;
+      font-size: 13.5px;
       display: flex;
       align-items: center;
       justify-content: center;
-      box-shadow: 0 4px 10px rgba(11, 20, 44, 0.15);
       transition: all 0.2s ease;
     }
 
     .question-card.answered .question-badge {
-      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-      box-shadow: 0 4px 10px rgba(16, 185, 129, 0.25);
+      background: #e0f2fe;
+      color: var(--primary);
     }
 
     .question-text {
-      font-family: var(--font-h);
-      font-size: 1.08rem;
+      font-family: var(--font-headings);
+      font-size: 1.05rem;
       font-weight: 700;
-      color: var(--navy-950);
+      color: var(--text-main);
       line-height: 1.45;
       padding-top: 5px;
     }
 
-    /* ── OPCIONES DE RESPUESTA (GRID DE BOTONES) ── */
+    /* ── OPCIONES (PILL TILES) ── */
     .options-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -454,15 +365,15 @@
       display: flex;
       align-items: center;
       gap: 10px;
-      padding: 13px 16px;
-      background: var(--slate-50);
+      padding: 12px 16px;
+      background: #ffffff;
       border: 1.5px solid var(--slate-200);
       border-radius: 12px;
       cursor: pointer;
-      font-size: 14px;
+      font-size: 13.5px;
       font-weight: 600;
       color: var(--slate-700);
-      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      transition: all 0.2s ease;
       user-select: none;
       height: 100%;
     }
@@ -491,38 +402,36 @@
     }
 
     .option-item:hover .option-label {
-      background: #ffffff;
-      border-color: var(--blue-500);
-      color: var(--blue-600);
-      transform: translateY(-1px);
+      border-color: #bae6fd;
+      color: var(--primary);
     }
 
     .option-item input[type="radio"]:checked + .option-label {
-      background: linear-gradient(135deg, rgba(37, 99, 235, 0.08) 0%, rgba(14, 165, 233, 0.08) 100%);
-      border-color: var(--blue-600);
-      color: var(--navy-900);
+      background: #f0f9ff;
+      border-color: var(--primary);
+      color: var(--text-main);
       font-weight: 700;
-      box-shadow: 0 4px 14px rgba(37, 99, 235, 0.12);
+      box-shadow: 0 4px 12px rgba(2, 132, 199, 0.12);
     }
 
     .option-item input[type="radio"]:checked + .option-label .option-radio-dot {
-      border-color: var(--blue-600);
-      background: var(--blue-600);
+      border-color: var(--primary);
+      background: var(--primary);
     }
 
     .option-item input[type="radio"]:checked + .option-label .option-radio-dot::after {
       transform: scale(1);
     }
 
-    /* ── FOOTER DE ACCIONES Y ENVÍO ── */
-    .submit-container {
-      margin: 36px 0 20px;
+    /* ── SECCIÓN DE ENVÍO ── */
+    .submit-card {
+      margin: 30px 0 10px;
       background: #ffffff;
-      border-radius: 20px;
-      padding: 30px;
+      border-radius: 24px;
+      padding: 28px;
       text-align: center;
-      box-shadow: var(--sh-md);
-      border: 1px solid var(--slate-200);
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.03);
+      border: 1.5px solid #f1f5f9;
     }
 
     .submit-warning {
@@ -530,12 +439,12 @@
       align-items: center;
       justify-content: center;
       gap: 10px;
-      color: var(--danger-500);
+      color: #ef4444;
       background: #fef2f2;
       border: 1px solid #fecaca;
       border-radius: 12px;
       padding: 12px 18px;
-      font-size: 14px;
+      font-size: 13.5px;
       font-weight: 700;
       margin-bottom: 20px;
     }
@@ -544,27 +453,25 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 12px;
-      background: linear-gradient(135deg, var(--navy-800) 0%, var(--blue-600) 100%);
+      gap: 10px;
+      background: linear-gradient(135deg, #1e3a8a 0%, #0284c7 100%);
       color: #ffffff;
       border: none;
-      padding: 17px 42px;
-      border-radius: 999px;
-      font-family: var(--font-h);
-      font-size: 16.5px;
+      padding: 16px 40px;
+      border-radius: 100px;
+      font-family: var(--font-headings);
+      font-size: 16px;
       font-weight: 800;
-      letter-spacing: 0.3px;
       cursor: pointer;
-      box-shadow: 0 10px 25px rgba(37, 99, 235, 0.35);
-      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: 0 10px 22px rgba(2, 132, 199, 0.25);
+      transition: all 0.25s ease;
       width: 100%;
-      max-width: 440px;
+      max-width: 400px;
     }
 
     .btn-submit-survey:hover {
       transform: translateY(-2px);
-      box-shadow: 0 16px 36px rgba(37, 99, 235, 0.45);
-      background: linear-gradient(135deg, var(--navy-700) 0%, var(--blue-500) 100%);
+      box-shadow: 0 14px 30px rgba(2, 132, 199, 0.35);
     }
 
     .btn-submit-survey:disabled {
@@ -573,17 +480,7 @@
       transform: none;
     }
 
-    .submit-footnote {
-      margin-top: 14px;
-      font-size: 13px;
-      color: var(--slate-500);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-    }
-
-    /* ── MODAL DE CONFIRMACIÓN / ÉXITO ── */
+    /* ── MODAL DE ÉXITO ── */
     .modal-overlay {
       position: fixed;
       top: 0;
@@ -591,8 +488,8 @@
       right: 0;
       bottom: 0;
       background: rgba(7, 13, 30, 0.75);
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
       z-index: 100000;
       display: flex;
       align-items: center;
@@ -600,7 +497,7 @@
       padding: 20px;
       opacity: 0;
       visibility: hidden;
-      transition: all 0.35s ease;
+      transition: all 0.3s ease;
     }
 
     .modal-overlay.active {
@@ -610,73 +507,68 @@
 
     .modal-card {
       background: #ffffff;
-      border-radius: 26px;
-      max-width: 540px;
+      border-radius: 24px;
+      max-width: 500px;
       width: 100%;
-      padding: 38px 32px 34px;
+      padding: 34px 28px;
       text-align: center;
-      box-shadow: 0 25px 60px rgba(0,0,0,0.35);
-      transform: scale(0.92) translateY(20px);
-      transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
-      position: relative;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+      transform: scale(0.95);
+      transition: all 0.3s ease;
     }
 
     .modal-overlay.active .modal-card {
-      transform: scale(1) translateY(0);
+      transform: scale(1);
     }
 
     .modal-icon-circle {
-      width: 80px;
-      height: 80px;
+      width: 70px;
+      height: 70px;
       border-radius: 50%;
       background: linear-gradient(135deg, #10b981 0%, #059669 100%);
       color: #ffffff;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 38px;
-      margin: 0 auto 20px;
-      box-shadow: 0 12px 30px rgba(16, 185, 129, 0.35);
+      font-size: 32px;
+      margin: 0 auto 18px;
+      box-shadow: 0 10px 25px rgba(16, 185, 129, 0.3);
     }
 
     .modal-title {
-      font-family: var(--font-h);
-      font-size: 1.6rem;
+      font-family: var(--font-headings);
+      font-size: 1.5rem;
       font-weight: 800;
-      color: var(--navy-950);
-      margin-bottom: 12px;
+      color: var(--text-main);
+      margin-bottom: 10px;
     }
 
     .modal-body-text {
-      font-size: 15px;
-      line-height: 1.6;
-      color: var(--slate-600);
-      margin-bottom: 24px;
+      font-size: 14.5px;
+      line-height: 1.5;
+      color: var(--text-muted);
+      margin-bottom: 22px;
     }
 
     .modal-highlight-box {
       background: var(--slate-50);
       border: 1px solid var(--slate-200);
-      border-radius: 16px;
-      padding: 16px 20px;
-      margin-bottom: 26px;
+      border-radius: 14px;
+      padding: 14px 18px;
+      margin-bottom: 24px;
       text-align: left;
-      font-size: 13.5px;
+      font-size: 13px;
     }
 
     .modal-highlight-row {
       display: flex;
       justify-content: space-between;
-      margin-bottom: 8px;
+      margin-bottom: 6px;
       color: var(--slate-600);
     }
 
     .modal-highlight-row:last-child {
       margin-bottom: 0;
-    }
-
-    .modal-highlight-row strong {
-      color: var(--slate-800);
     }
 
     .modal-actions {
@@ -690,20 +582,19 @@
       align-items: center;
       justify-content: center;
       gap: 8px;
-      background: linear-gradient(135deg, var(--navy-800) 0%, var(--blue-600) 100%);
+      background: linear-gradient(135deg, #1e3a8a 0%, #0284c7 100%);
       color: #ffffff;
       padding: 14px 24px;
-      border-radius: 999px;
-      font-family: var(--font-h);
+      border-radius: 100px;
+      font-family: var(--font-headings);
       font-weight: 700;
-      font-size: 15px;
+      font-size: 14.5px;
       text-decoration: none;
-      box-shadow: 0 8px 20px rgba(37, 99, 235, 0.3);
+      box-shadow: 0 8px 20px rgba(2, 132, 199, 0.25);
       transition: all 0.25s ease;
     }
 
     .btn-modal-primary:hover {
-      background: linear-gradient(135deg, var(--navy-700) 0%, var(--blue-500) 100%);
       transform: translateY(-2px);
     }
 
@@ -714,21 +605,20 @@
       gap: 8px;
       background: var(--slate-100);
       color: var(--slate-700);
-      padding: 13px 24px;
-      border-radius: 999px;
-      font-family: var(--font-b);
+      padding: 12px 24px;
+      border-radius: 100px;
       font-weight: 700;
-      font-size: 14px;
+      font-size: 13.5px;
       text-decoration: none;
       transition: all 0.25s ease;
     }
 
     .btn-modal-secondary:hover {
       background: var(--slate-200);
-      color: var(--navy-900);
+      color: var(--text-main);
     }
 
-    /* ── BURBUJA FLOTANTE WHATSAPP SOPORTE ── */
+    /* ── BURBUJA FLOTANTE WHATSAPP ── */
     .btn-flotante-wa {
       position: fixed;
       bottom: 28px;
@@ -741,98 +631,31 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 34px;
-      box-shadow: 0 10px 25px rgba(37, 211, 102, 0.45);
-      z-index: 999999;
+      font-size: 32px;
+      box-shadow: 0 10px 25px rgba(37, 211, 102, 0.4);
+      z-index: 99999;
       text-decoration: none;
-      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-      animation: pulse-wa 2.5s infinite;
+      transition: all 0.3s;
     }
 
     .btn-flotante-wa:hover {
-      transform: translateY(-4px) scale(1.08);
-      box-shadow: 0 16px 36px rgba(37, 211, 102, 0.55);
+      transform: translateY(-4px) scale(1.05);
       color: #ffffff !important;
-      animation: none;
     }
 
-    .tooltip-wa {
-      position: absolute;
-      right: 76px;
-      background: #ffffff;
-      color: var(--navy-900);
-      padding: 9px 16px;
-      border-radius: 12px;
-      font-family: var(--font-b);
-      font-size: 13.5px;
-      font-weight: 700;
-      box-shadow: 0 8px 24px rgba(7, 13, 30, 0.15);
-      opacity: 0;
-      visibility: hidden;
-      transition: all 0.25s ease;
-      white-space: nowrap;
-      border: 1px solid var(--slate-200);
-      pointer-events: none;
-    }
-
-    .tooltip-wa::after {
-      content: '';
-      position: absolute;
-      top: 50%;
-      right: -6px;
-      transform: translateY(-50%);
-      border-width: 6px 0 6px 6px;
-      border-style: solid;
-      border-color: transparent transparent transparent #ffffff;
-    }
-
-    .btn-flotante-wa:hover .tooltip-wa {
-      opacity: 1;
-      visibility: visible;
-      transform: translateX(-4px);
-    }
-
-    @keyframes pulse-wa {
-      0%, 100% {
-        box-shadow: 0 10px 25px rgba(37, 211, 102, 0.45);
-        transform: scale(1);
-      }
-      50% {
-        box-shadow: 0 14px 35px rgba(37, 211, 102, 0.7);
-        transform: scale(1.04);
-      }
-    }
-
-    /* ── RESPONSIVIDAD ── */
     @media (max-width: 768px) {
-      .top-header {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 12px;
+      .top-nav {
+        padding: 14px 16px;
       }
-      .brand-group {
-        width: 100%;
-        justify-content: space-between;
+      .dashboard-header {
+        padding: 38px 20px 34px;
+        border-radius: 0 0 30px 30px;
       }
-      .btn-back-home {
-        align-self: flex-start;
-      }
-      .card-colaborador {
-        padding: 22px 18px;
+      .chic-card, .submit-card {
+        padding: 20px 18px;
       }
       .question-card {
         padding: 18px 16px;
-      }
-      .question-header {
-        gap: 10px;
-      }
-      .question-badge {
-        width: 32px;
-        height: 32px;
-        font-size: 13px;
-      }
-      .question-text {
-        font-size: 0.98rem;
       }
       .options-grid {
         grid-template-columns: 1fr;
@@ -848,43 +671,34 @@
         right: 20px;
         width: 56px;
         height: 56px;
-        font-size: 30px;
-      }
-      .tooltip-wa {
-        display: none;
+        font-size: 28px;
       }
     }
   </style>
 </head>
 <body>
 
-  <!-- CABECERA SUPERIOR DE IDENTIDAD -->
-  <header class="top-header">
-    <a href="{% url 'inicio_tectum' %}" class="brand-group" title="Volver al Portal TECTUM In-House">
-      <img src="{% static 'img/tectum/logo-completo.png' %}" alt="TECTUM In-House Logo" class="brand-logo">
-      <div class="brand-divider"></div>
-      <span class="badge-inhouse"><i class="fas fa-shield-alt"></i> In-House</span>
+  <!-- BARRA DE NAVEGACIÓN SUPERIOR -->
+  <header class="top-nav">
+    <a href="{% url 'inicio_tectum' %}" class="brand-link" title="Volver al Portal TECTUM">
+      <img src="{% static 'img/tectum/logo-completo.png' %}" alt="TECTUM Logo" class="brand-logo">
     </a>
-    <a href="{% url 'inicio_tectum' %}" class="btn-back-home">
+    <a href="{% url 'inicio_tectum' %}" class="nav-back-btn">
       <i class="fas fa-arrow-left"></i> Volver al Portal
     </a>
   </header>
 
-  <!-- SECCIÓN HERO INTRODUCTORIA -->
-  <section class="hero-container">
-    <div class="hero-pill">
-      <i class="fas fa-heartbeat"></i> Programa de Bienestar y Salud Mental
-    </div>
-    <h1 class="hero-title">Cuestionario Clínico de Salud General</h1>
-    <p class="hero-desc">
-      Queremos saber cómo te has sentido en las últimas dos semanas. Esta herramienta clínica estandarizada nos ayuda a identificar áreas de apoyo para brindarte el mejor acompañamiento emocional y psicológico dentro del convenio TECTUM.
-    </p>
-    <div class="confidential-tag">
-      <i class="fas fa-lock"></i> Información estrictamente confidencial y protegida por secreto profesional.
-    </div>
-  </section>
+  <!-- DASHBOARD HEADER LIMPIO Y ESTILO PÍLDORA -->
+  <div class="dashboard-header">
+    <span class="step-tag">
+      <i class="fas fa-shield-alt" style="margin-right: 5px;"></i> Plataforma Clínica Confidencial
+    </span>
+    <h1 class="header-title">
+      Encuesta TECTUM
+    </h1>
+  </div>
 
-  <!-- BARRA DE PROGRESO FLOTANTE -->
+  <!-- BARRA DE PROGRESO STICKY -->
   <div class="progress-sticky-bar" id="progressStickyBar">
     <div class="progress-inner">
       <div class="progress-info">
@@ -898,19 +712,16 @@
     </div>
   </div>
 
-  <!-- FORMULARIO DE ENCUESTA -->
-  <main class="form-wrapper">
+  <!-- CONTENEDOR PRINCIPAL DE LA ENCUESTA -->
+  <main class="container">
     <form id="formEncuestaTectum" autocomplete="off" onsubmit="return false;">
       {% csrf_token %}
 
-      <!-- 1. IDENTIFICACIÓN DEL COLABORADOR -->
-      <section class="card-colaborador" id="cardColaborador">
-        <h2 class="section-title">
-          <i class="fas fa-user-circle" style="color: var(--blue-600);"></i> Datos de Identificación
+      <!-- DATOS DE IDENTIFICACIÓN -->
+      <section class="chic-card" id="cardColaborador">
+        <h2 class="card-title">
+          <i class="fas fa-user-circle" style="color: var(--primary);"></i> Datos del Colaborador
         </h2>
-        <p class="section-subtitle">
-          Por favor confirma tus datos para vincular tus resultados a los beneficios de tu cuenta TECTUM.
-        </p>
 
         <div class="grid-colaborador">
           <div class="form-group">
@@ -922,7 +733,7 @@
               id="inputNombre" 
               name="nombre" 
               class="form-input" 
-              placeholder="Ej. Juan Pérez López" 
+              placeholder="Nombre y apellido" 
               value="{{ usuario_info.nombre }}" 
               required
             >
@@ -937,7 +748,7 @@
               id="inputCorreo" 
               name="correo" 
               class="form-input" 
-              placeholder="colaborador@empresa.com" 
+              placeholder="correo@empresa.com" 
               value="{{ usuario_info.correo }}" 
               required
             >
@@ -945,7 +756,7 @@
 
           <div class="form-group">
             <label class="form-label" for="inputEmpresa">
-              Empresa / Organización
+              Empresa
             </label>
             <input 
               type="text" 
@@ -966,28 +777,28 @@
               id="inputArea" 
               name="area_departamento" 
               class="form-input" 
-              placeholder="Ej. Operaciones, TI, Finanzas" 
+              placeholder="Ej. Operaciones, Finanzas" 
               value="{{ usuario_info.area_departamento }}"
             >
           </div>
 
           <div class="form-group">
             <label class="form-label" for="inputPuesto">
-              Puesto de Trabajo
+              Puesto
             </label>
             <input 
               type="text" 
               id="inputPuesto" 
               name="puesto" 
               class="form-input" 
-              placeholder="Ej. Coordinador de Proyecto" 
+              placeholder="Ej. Coordinador" 
               value="{{ usuario_info.puesto }}"
             >
           </div>
         </div>
       </section>
 
-      <!-- 2. LAS 30 PREGUNTAS DEL CUESTIONARIO -->
+      <!-- LAS 30 PREGUNTAS -->
       <section id="preguntasContainer">
         {% for p in preguntas %}
         <article class="question-card" id="card_pregunta_{{ p.id }}" data-qid="{{ p.id }}">
@@ -1020,25 +831,21 @@
         {% endfor %}
       </section>
 
-      <!-- 3. ACCIÓN DE ENVÍO -->
-      <section class="submit-container">
+      <!-- BOTÓN DE ENVÍO -->
+      <section class="submit-card">
         <div class="submit-warning" id="submitWarningBox">
           <i class="fas fa-exclamation-triangle"></i>
-          <span id="submitWarningMsg">Por favor completa todos los campos requeridos y preguntas antes de continuar.</span>
+          <span id="submitWarningMsg">Por favor completa todos los campos requeridos antes de enviar.</span>
         </div>
 
         <button type="button" class="btn-submit-survey" id="btnSubmitSurvey" onclick="enviarEncuesta()">
-          <i class="fas fa-paper-plane"></i> Enviar Encuesta TECTUM
+          <i class="fas fa-paper-plane"></i> Enviar Encuesta
         </button>
-
-        <p class="submit-footnote">
-          <i class="fas fa-shield-alt" style="color: var(--sky-500);"></i> Tus respuestas serán procesadas confidencialmente por el equipo clínico de Espacio HOPE.
-        </p>
       </section>
     </form>
   </main>
 
-  <!-- MODAL DE ÉXITO TRAS COMPLETAR LA ENCUESTA -->
+  <!-- MODAL DE ÉXITO -->
   <div class="modal-overlay" id="modalExito">
     <div class="modal-card">
       <div class="modal-icon-circle">
@@ -1046,7 +853,7 @@
       </div>
       <h2 class="modal-title">¡Encuesta Registrada!</h2>
       <p class="modal-body-text">
-        Muchas gracias, <strong id="modalColaboradorNombre">colaborador</strong>. Tus respuestas han sido guardadas de forma segura y confidencial bajo tu registro de TECTUM In-House.
+        Tus respuestas han sido recibidas con éxito y quedan vinculadas a tu cuenta de TECTUM In-House.
       </p>
 
       <div class="modal-highlight-box">
@@ -1059,29 +866,28 @@
           <strong id="modalFecha">Hoy</strong>
         </div>
         <div class="modal-highlight-row">
-          <span>Estatus:</span>
-          <strong style="color: var(--success-500);"><i class="fas fa-check-circle"></i> Evaluado exitosamente</strong>
+          <span>Estado:</span>
+          <strong style="color: #10b981;"><i class="fas fa-check-circle"></i> Completado</strong>
         </div>
       </div>
 
       <div class="modal-actions">
         <a href="{% url 'inicio_tectum' %}" class="btn-modal-primary">
-          <i class="fas fa-calendar-check"></i> Ir al Portal TECTUM In-House
+          <i class="fas fa-home"></i> Ir al Portal TECTUM
         </a>
-        <a href="https://wa.me/525521130230?text=Hola,%20acabo%20de%20realizar%20mi%20encuesta%20de%20salud%20en%20TECTUM%20y%20me%20gustar%C3%ADa%20agendar%20una%20sesi%C3%B3n" target="_blank" rel="noopener" class="btn-modal-secondary">
-          <i class="fab fa-whatsapp" style="color: #25D366; font-size: 16px;"></i> Hablar con un especialista por WhatsApp
+        <a href="https://wa.me/525521130230?text=Hola,%20acabo%20de%20realizar%20mi%20encuesta%20de%20salud%20en%20TECTUM" target="_blank" rel="noopener" class="btn-modal-secondary">
+          <i class="fab fa-whatsapp" style="color: #25D366;"></i> Contactar por WhatsApp
         </a>
       </div>
     </div>
   </div>
 
-  <!-- BURBUJA FLOTANTE WHATSAPP SOPORTE TÉCNICO -->
-  <a href="https://wa.me/525521130230?text=Hola,%20necesito%20soporte%20t%C3%A9cnico%20con%20la%20encuesta%20TECTUM" target="_blank" rel="noopener" class="btn-flotante-wa" title="Soporte Técnico WhatsApp">
+  <!-- BURBUJA FLOTANTE WHATSAPP -->
+  <a href="https://wa.me/525521130230?text=Hola,%20necesito%20soporte%20t%C3%A9cnico%20con%20la%20encuesta%20TECTUM" target="_blank" rel="noopener" class="btn-flotante-wa" title="Soporte WhatsApp">
     <i class="fab fa-whatsapp"></i>
-    <span class="tooltip-wa">Soporte Técnico WhatsApp</span>
   </a>
 
-  <!-- SCRIPTS LOGIC -->
+  <!-- SCRIPTS -->
   <script>
     const TOTAL_PREGUNTAS = {{ total_preguntas }};
     const RESPUESTAS_SELECCIONADAS = {};
@@ -1138,7 +944,7 @@
         return;
       }
 
-      // Validación de que todas las 30 preguntas estén respondidas
+      // Validación de las 30 preguntas
       let primeraFaltante = null;
       for (let i = 1; i <= TOTAL_PREGUNTAS; i++) {
         if (!RESPUESTAS_SELECCIONADAS[i]) {
@@ -1151,7 +957,7 @@
       if (primeraFaltante) {
         const totalFaltantes = TOTAL_PREGUNTAS - Object.keys(RESPUESTAS_SELECCIONADAS).length;
         warningBox.style.display = 'flex';
-        warningMsg.textContent = `Aún faltan ${totalFaltantes} pregunta(s) por responder. Hemos resaltado la pregunta #${primeraFaltante}.`;
+        warningMsg.textContent = `Faltan ${totalFaltantes} pregunta(s) por responder. Hemos resaltado la pregunta #${primeraFaltante}.`;
         
         const cardFaltante = document.getElementById(`card_pregunta_${primeraFaltante}`);
         if (cardFaltante) {
@@ -1160,11 +966,11 @@
         return;
       }
 
-      // Preparar payload
+      // Preparar envío
       warningBox.style.display = 'none';
       const originalBtnHTML = btnSubmit.innerHTML;
       btnSubmit.disabled = true;
-      btnSubmit.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando respuestas...';
+      btnSubmit.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
 
       const payload = {
         nombre: nombre,
@@ -1175,7 +981,6 @@
         respuestas: RESPUESTAS_SELECCIONADAS
       };
 
-      // Obtener CSRF token
       let csrfToken = '';
       const csrfInput = document.querySelector('input[name="csrfmiddlewaretoken"]');
       if (csrfInput) {
@@ -1198,10 +1003,7 @@
         const data = await response.json();
 
         if (response.ok && data.status === 'success') {
-          // Mostrar modal de confirmación
-          document.getElementById('modalColaboradorNombre').textContent = data.nombre || nombre;
           document.getElementById('modalFolio').textContent = `#TEC-${data.encuesta_id || 'OK'}`;
-          
           const ahora = new Date();
           document.getElementById('modalFecha').textContent = ahora.toLocaleDateString('es-MX', { 
             day: '2-digit', 
@@ -1210,18 +1012,17 @@
             hour: '2-digit',
             minute: '2-digit'
           });
-
           document.getElementById('modalExito').classList.add('active');
         } else {
           warningBox.style.display = 'flex';
-          warningMsg.textContent = data.message || 'Ocurrió un error al procesar la encuesta. Por favor inténtalo nuevamente.';
+          warningMsg.textContent = data.message || 'Error al procesar la encuesta. Por favor inténtalo de nuevo.';
           btnSubmit.disabled = false;
           btnSubmit.innerHTML = originalBtnHTML;
         }
       } catch (err) {
         console.error('Error enviando encuesta:', err);
         warningBox.style.display = 'flex';
-        warningMsg.textContent = 'Error de conexión con el servidor. Revisa tu internet e inténtalo de nuevo.';
+        warningMsg.textContent = 'Error de conexión. Revisa tu internet e inténtalo de nuevo.';
         btnSubmit.disabled = false;
         btnSubmit.innerHTML = originalBtnHTML;
       }
