@@ -880,7 +880,10 @@ body {
       <div style="display:flex; align-items:center; gap:16px;">
         <div id="m-ava" style="width:52px;height:52px;border-radius:16px;background:var(--p-lgt);color:var(--p);display:flex;align-items:center;justify-content:center;font-family:var(--fh);font-size:22px;font-weight:700;flex-shrink:0;border:2px solid rgba(90,63,163,0.15);">A</div>
         <div>
-          <div id="m-pac" style="font-family:var(--fd);font-size:22px;color:var(--ink);line-height:1.1;"></div>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+            <div id="m-pac" style="font-family:var(--fd);font-size:22px;color:var(--ink);line-height:1.1;"></div>
+            <span id="m-tectum-badge" style="display:none;background:#0284c7;color:#fff;font-family:var(--fh);font-size:10px;font-weight:800;padding:3px 10px;border-radius:100px;letter-spacing:0.5px;"><i class="fas fa-shield-alt" style="margin-right:4px;"></i>TECTUM</span>
+          </div>
           <div id="m-est" style="margin-top:5px;font-family:var(--fh);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--teal);display:flex;align-items:center;gap:5px;">
             <i class="fas fa-circle" style="font-size:7px;"></i> Confirmada
           </div>
@@ -986,20 +989,21 @@ document.addEventListener('DOMContentLoaded', function () {
       const view    = arg.view.type;
       const isCan   = (p.estado || '') === 'Cancelada';
       const isPend  = (p.estado || '') === 'Pendiente'; /* <-- Detectamos si falta pago */
+      const isTec   = !!p.es_tectum; /* <-- Distintivo Tectum */
       
       /* Si falta pago, forzamos un tono rojito (#EF4444), de lo contrario usamos el color del doctor */
       const color   = isPend ? '#EF4444' : getDocColor(p.psicologo || 'N/A');
       
       const time    = arg.event.start.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
       const docName = (p.psicologo || 'N/A').split(' ')[0]; /* solo primer nombre */
+      const tectumPill = isTec ? `<span style="background:#0284c7;color:#fff;font-size:9px;font-weight:800;padding:1px 6px;border-radius:100px;margin-left:4px;"><i class="fas fa-shield-alt" style="font-size:8px;"></i> TECTUM</span>` : '';
 
       if (view === 'dayGridMonth') {
         /* Vista mes: pill pequeña */
-        /* Le ponemos un ícono de exclamación en vez de un círculo normal si debe pago */
         return {
           html: `<div class="hev-pill ${isCan ? 'canceled' : ''}"
                       style="background:${color}18; border-left:3px solid ${color}; color:${color};">
-                   <i class="fas fa-${isPend ? 'exclamation-circle' : 'circle'}" style="font-size:8px;"></i> ${time} ${docName}
+                   <i class="fas fa-${isPend ? 'exclamation-circle' : 'circle'}" style="font-size:8px;"></i> ${time} ${docName}${tectumPill}
                  </div>`
         };
       }
@@ -1010,10 +1014,9 @@ document.addEventListener('DOMContentLoaded', function () {
       }
 
       /* Vista semana/día: tarjeta grande */
-      /* Le ponemos un fondo rosado/rojito tenue (#FEF2F2) y pintamos los textos de rojo para que brinque a la vista */
       return {
-        html: `<div class="hev-card ${isCan ? 'canceled' : ''}" style="border-left-color:${color}; ${isPend ? 'background:#FEF2F2;' : ''}">
-                 <div class="hev-time" style="${isPend ? 'color:#EF4444;' : ''}">${time}</div>
+        html: `<div class="hev-card ${isCan ? 'canceled' : ''}" style="border-left-color:${color}; ${isPend ? 'background:#FEF2F2;' : ''}${isTec ? 'border-top: 2px solid #0284c7;' : ''}">
+                 <div class="hev-time" style="${isPend ? 'color:#EF4444;' : ''}">${time}${tectumPill}</div>
                  <div class="hev-doc" style="${isPend ? 'color:#DC2626;' : ''}">
                    <i class="fas fa-${isPend ? 'exclamation-circle' : 'user-md'}" style="margin-right:3px;font-size:10px;"></i>Dr(a). ${docName}
                  </div>
@@ -1025,14 +1028,23 @@ document.addEventListener('DOMContentLoaded', function () {
     eventDidMount: function (info) {
       const p      = info.event.extendedProps;
       const isPend = (p.estado || '') === 'Pendiente';
+      const isTec  = !!p.es_tectum;
       const color  = isPend ? '#EF4444' : getDocColor(p.psicologo || 'N/A');
       
       if (info.view.type === 'listWeek') {
         info.el.style.borderLeft = `4px solid ${color}`;
-        
-        /* Si está en la vista de lista, también le damos el fondito rojo tenue */
-        if(isPend) {
-            info.el.style.backgroundColor = '#FEF2F2';
+        if (isPend) {
+          info.el.style.backgroundColor = '#FEF2F2';
+        }
+        /* En vista lista: añadimos el badge Tectum al título si aplica */
+        if (isTec) {
+          const titleEl = info.el.querySelector('.fc-list-event-title a') || info.el.querySelector('.fc-list-event-title');
+          if (titleEl && !titleEl.querySelector('.tec-badge')) {
+            const badge = document.createElement('span');
+            badge.className = 'tec-badge';
+            badge.innerHTML = ' <span style="background:#0284c7;color:#fff;font-size:9px;font-weight:800;padding:2px 7px;border-radius:100px;margin-left:6px;"><i class="fas fa-shield-alt" style="font-size:8px;"></i> TECTUM</span>';
+            titleEl.appendChild(badge);
+          }
         }
       }
     },
@@ -1068,6 +1080,11 @@ document.addEventListener('DOMContentLoaded', function () {
       
       // Ajuste de colores: si es Pendiente/Falta de pago, lo ponemos naranja
       est.style.color = estado === 'Cancelada' ? '#EF4444' : estado === 'Completada' ? '#10B981' : estado === 'Pendiente' ? '#F59E0B' : '#3B82F6';
+
+      // Badge Tectum en el modal
+      const tectumBadge = document.getElementById('m-tectum-badge');
+      tectumBadge.style.display = p.es_tectum ? 'inline-flex' : 'none';
+      document.getElementById('m-ava').style.borderColor = p.es_tectum ? '#0284c7' : 'rgba(90,63,163,0.15)';
 
       // Lógica del botón de Meet
       const meetContainer = document.getElementById('m-meet-container');

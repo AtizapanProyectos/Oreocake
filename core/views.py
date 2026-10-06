@@ -1941,6 +1941,7 @@ def obtener_citas_calendario_admin():
         'fecha', 'hora', 'estado', 'modalidad', 'enlace_meet',
         'paciente__first_name', 'paciente__last_name', 'paciente__username', 'paciente__email',
         'paciente__perfil__telefono',
+        'paciente__perfil__es_tectum',
         'psicologo__usuario__first_name'
     )
 
@@ -1963,7 +1964,8 @@ def obtener_citas_calendario_admin():
                 'modalidad': c['modalidad'] or 'En línea',
                 'enlace_meet': c['enlace_meet'] or '',
                 'email': c['paciente__email'] or 'Sin registrar',
-                'telefono': c['paciente__perfil__telefono'] or 'Sin registrar'
+                'telefono': c['paciente__perfil__telefono'] or 'Sin registrar',
+                'es_tectum': bool(c['paciente__perfil__es_tectum']),
             }
         })
     return citas_json
