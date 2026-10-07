@@ -1770,6 +1770,69 @@ setInterval(() => {
 const PRECIOS_CONFIG = JSON.parse('{{ precios_config_json|escapejs }}');
 window.integrantesFamilia = PRECIOS_CONFIG.min_integrantes_familiar || 2;
 
+// ============================================================
+// 🔒 CANDADO DE ANTICIPACIÓN MÍNIMA (2 horas) — SOLO FRONTEND
+// Los horarios se comparan en hora CDMX, sin importar la zona del navegador.
+// Ejemplo: si son las 1:00 pm, el primer horario visible es 3:00 pm.
+// ============================================================
+const HORAS_ANTICIPACION_MINIMA = 2;
+
+function ahoraEnCDMX() {
+    const fmt = new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'America/Mexico_City',
+        year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', hour12: false
+    });
+    const p = Object.fromEntries(fmt.formatToParts(new Date()).map(x => [x.type, x.value]));
+    const hh = p.hour === '24' ? '00' : p.hour;
+    return new Date(`${p.year}-${p.month}-${p.day}T${hh}:${p.minute}:00`);
+}
+
+function slotCumpleAnticipacion(fechaStr, horaStr24) {
+    // fechaStr = "2026-10-07", horaStr24 = "15:00"
+    const slot = new Date(`${fechaStr}T${horaStr24}:00`);
+    const limite = new Date(ahoraEnCDMX().getTime() + HORAS_ANTICIPACION_MINIMA * 60 * 60 * 1000);
+    return slot >= limite;
+}
+
+function aplicarCandadoHorarios() {
+    // 1. Quitar los botones de hora que no cumplen la regla
+    document.querySelectorAll('.time-slot-btn[data-fecha][data-hora]').forEach(btn => {
+        // Los horarios rápidos se manejan aparte (se filtran al construirlos)
+        if (btn.closest('#quick-slots')) return;
+        if (!slotCumpleAnticipacion(btn.dataset.fecha, btn.dataset.hora)) {
+            btn.remove();
+        }
+    });
+
+    // 2. Si un día se quedó sin horarios, quitar su contenedor y su chip de fecha
+    document.querySelectorAll('.slots-container').forEach(cont => {
+        if (cont.id === 'quick-slots') return;
+        if (cont.querySelectorAll('.time-slot-btn').length === 0) {
+            const chip = document.querySelector(`.date-chip[data-target="${cont.id}"]`);
+            if (chip) chip.remove();
+            cont.remove();
+        }
+    });
+
+    // 3. Asegurar que el primer día restante quede activo y visible
+    ['#dateCarousel', '#dateCarouselReagendar'].forEach(sel => {
+        const carrusel = document.querySelector(sel);
+        if (!carrusel) return;
+        const chips = carrusel.querySelectorAll('.date-chip');
+        if (chips.length) {
+            if (!carrusel.querySelector('.date-chip.active')) {
+                chips[0].classList.add('active');
+            }
+            const activo = carrusel.querySelector('.date-chip.active');
+            const cont = activo ? document.getElementById(activo.dataset.target) : null;
+            if (cont) cont.style.display = 'grid';
+        } else if (!carrusel.querySelector('p')) {
+            carrusel.innerHTML = '<p style="color: var(--text-muted); font-style: italic;">No hay horarios disponibles con 2 horas de anticipación. Escríbenos por WhatsApp y te ayudamos.</p>';
+        }
+    });
+}
+
 function calcularPrecioFrontend(tipo, integrantes) {
     const base = PRECIOS_CONFIG.base[tipo] ?? PRECIOS_CONFIG.base.individual;
     const pct = PRECIOS_CONFIG.comision_pct[tipo] ?? PRECIOS_CONFIG.comision_pct.individual;
@@ -1811,6 +1874,10 @@ function confirmarCitaTectum() {
     }
     if (!window.fechaSeleccionada || !window.horaSeleccionada) {
         alert("Por favor, selecciona primero una fecha y un horario disponible en el calendario.");
+        return;
+    }
+    if (!slotCumpleAnticipacion(window.fechaSeleccionada, window.horaSeleccionada)) {
+        mostrarToast('Ese horario ya no cumple con las 2 horas de anticipación. Elige otro.', 'error');
         return;
     }
     guardarCitaSinPago('CONVENIO_TECTUM_INHOUSE');
@@ -1997,6 +2064,8 @@ function refrescarDisponibilidadPorTipo(tipo) {
                 });
                 slotsWrapper.appendChild(slotsDiv);
             });
+
+            aplicarCandadoHorarios();   // 🔒 quita los horarios con menos de 2 h de anticipación
         })
         .catch(() => { carousel.style.opacity = '1'; });
 }
@@ -2214,9 +2283,10 @@ function agendarDirectoPrueba() {
             let botonesHtml = '';
             diasData[fechaBusqueda].forEach(horaStr => {
                 let hora24 = convertirHoraA24(horaStr);
+                if (!slotCumpleAnticipacion(fechaBusqueda, hora24)) return;   // 🔒 candado de 2 horas
                 botonesHtml += `<button type="button" class="time-slot-btn" data-fecha="${fechaBusqueda}" data-hora="${hora24}" onclick="seleccionarHoraRapida(this, '${fechaBusqueda}', '${horaStr}')">${horaStr}</button>`;
             });
-            cajaHoras.innerHTML = botonesHtml;
+            cajaHoras.innerHTML = botonesHtml || '<p style="color: var(--c-orange); font-size: 14px;">No hay horarios disponibles ese día. Explora el calendario abajo.</p>';
         } else {
             cajaHoras.innerHTML = '<p style="color: var(--c-orange); font-size: 14px;">El terapeuta no tiene disponibilidad ese día. Explora el calendario abajo.</p>';
         }
@@ -2358,63 +2428,12 @@ function agendarDirectoPrueba() {
             });
         }
 
+        // 🔒 Aplicar el candado de 2 horas a los horarios que ya vienen en la página
+        aplicarCandadoHorarios();
 
-        /*
-        // --- ENVIAR CITA AJAX CON VALIDACIÓN DE CONSENTIMIENTO 
-        const btnPay = document.getElementById('btn-simulate-pay');
-        if (btnPay) {
-            btnPay.addEventListener('click', function() {
-                
-                const checkConsentimiento = document.getElementById('check-consentimiento');
-                if (checkConsentimiento && !checkConsentimiento.checked) {
-                    document.getElementById('alerta-consentimiento').style.display = 'flex';
-                    return; 
-                }
-
-                if (!window.fechaSeleccionada || !window.horaSeleccionada) {
-                    alert("Por favor, selecciona una fecha y una hora válida.");
-                    return;
-                }
-
-                document.getElementById('step-2-payment').style.display = 'none';
-                document.getElementById('step-3-loading').style.display = 'block';
-
-                let formData = new URLSearchParams();
-                formData.append('fecha', window.fechaSeleccionada);
-                formData.append('hora', window.horaSeleccionada);
-                formData.append('animo', window.animoSeleccionado);
-                formData.append('modalidad', window.modalidadSeleccionada);
-                formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
-
-                fetch("{% url 'guardar_cita' %}", {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-Requested-With': 'XMLHttpRequest' },
-                    body: formData.toString()
-                })
-                .then(response => response.json())
-                .then(data => {
-                    document.getElementById('step-3-loading').style.display = 'none';
-
-                    if(data.status === 'success') {
-                        document.getElementById('texto-exito-dinamico').innerText = "Tu sesión ha sido confirmada y agendada con éxito en tu panel.";
-                        document.getElementById('alerta-exito-cita').style.display = 'flex';
-                    } else {
-                        document.getElementById('texto-error-cita').innerText = data.message;
-                        document.getElementById('alerta-error-cita').style.display = 'flex';
-                    }
-                })
-                .catch(error => {
-                    document.getElementById('step-3-loading').style.display = 'none';
-                    console.error(error);
-                    mostrarErrorCita('Error de conexión con el servidor. Por favor, intenta de nuevo.');
-                });
-            });
-        }
-*/
 });
 
 // --- PAYPAL SMART BUTTONS ---
-        // --- PAYPAL SMART BUTTONS ---
 document.addEventListener("DOMContentLoaded", function () {
     if (document.getElementById('paypal-button-container')) {
         paypal.Buttons({
@@ -2427,6 +2446,11 @@ document.addEventListener("DOMContentLoaded", function () {
                 }
                 if (!window.fechaSeleccionada || !window.horaSeleccionada) {
                     alert("Por favor, selecciona una fecha y una hora válida.");
+                    return actions.reject();
+                }
+                // 🔒 Si se quedó mucho rato en esta pantalla, revalidamos las 2 horas antes de cobrar
+                if (!slotCumpleAnticipacion(window.fechaSeleccionada, window.horaSeleccionada)) {
+                    mostrarToast('Ese horario ya no cumple con las 2 horas de anticipación. Elige otro.', 'error');
                     return actions.reject();
                 }
                 return actions.resolve();
