@@ -1833,6 +1833,48 @@ function aplicarCandadoHorarios() {
     });
 }
 
+// ============================================================
+// 🔒 LÍMITE PARA REAGENDAR — SOLO FRONTEND
+// Si falta menos de este tiempo para la sesión, el botón desaparece.
+// ============================================================
+const HORAS_LIMITE_REAGENDAR = 1;
+
+function aplicarLimiteReagendar() {
+    const el = document.getElementById('horaCitaCDMX');
+    const contenedorBtn = document.getElementById('btn-reagendar-container');
+    if (!el || !contenedorBtn) return;
+
+    const fechaStr = el.dataset.fecha;
+    const horaStr = (el.dataset.hora || '').slice(0, 5); // "HH:MM"
+    if (!fechaStr || !horaStr) return;
+
+    const cita = new Date(`${fechaStr}T${horaStr}:00`);
+    const limite = new Date(cita.getTime() - HORAS_LIMITE_REAGENDAR * 60 * 60 * 1000);
+    const yaNoPuede = ahoraEnCDMX() >= limite;
+
+    const seccion = document.getElementById('seccionReagendar');
+    let aviso = document.getElementById('aviso-reagendar-cerrado');
+
+    if (yaNoPuede) {
+        contenedorBtn.style.display = 'none';
+        if (seccion) {
+            seccion.classList.remove('abierta');
+            seccion.style.display = 'none';
+        }
+        if (!aviso) {
+            aviso = document.createElement('p');
+            aviso.id = 'aviso-reagendar-cerrado';
+            aviso.style.cssText = 'font-size:13px;color:var(--text-muted);margin:10px 0 15px;';
+            aviso.innerHTML = '<i class="fas fa-lock" style="margin-right:6px;"></i>Ya no es posible reagendar esta sesión porque está por comenzar.';
+            contenedorBtn.parentNode.insertBefore(aviso, contenedorBtn.nextSibling);
+        }
+    } else {
+        contenedorBtn.style.display = '';
+        if (seccion) seccion.style.display = '';
+        if (aviso) aviso.remove();
+    }
+}
+
 function calcularPrecioFrontend(tipo, integrantes) {
     const base = PRECIOS_CONFIG.base[tipo] ?? PRECIOS_CONFIG.base.individual;
     const pct = PRECIOS_CONFIG.comision_pct[tipo] ?? PRECIOS_CONFIG.comision_pct.individual;
@@ -2431,6 +2473,10 @@ function agendarDirectoPrueba() {
         // 🔒 Aplicar el candado de 2 horas a los horarios que ya vienen en la página
         aplicarCandadoHorarios();
 
+        // 🔒 Ocultar el botón de reagendar si falta poco para la sesión (se revisa cada minuto)
+        aplicarLimiteReagendar();
+        setInterval(aplicarLimiteReagendar, 60000);
+
 });
 
 // --- PAYPAL SMART BUTTONS ---
@@ -2615,6 +2661,12 @@ document.addEventListener("DOMContentLoaded", function () {
 function confirmarReagendo() {
     if (!window.fechaReagendoSeleccionada || !window.horaReagendoSeleccionada) {
         mostrarToast('Primero elige un día y una hora.', 'error');
+        return;
+    }
+
+    aplicarLimiteReagendar();
+    if (document.getElementById('aviso-reagendar-cerrado')) {
+        mostrarToast('Ya no es posible reagendar esta sesión.', 'error');
         return;
     }
 

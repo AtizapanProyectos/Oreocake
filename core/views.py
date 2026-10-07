@@ -669,6 +669,50 @@ def activar_cuenta(request, uidb64, token):
     else:
         return render(request, 'verificacion_resultado.html', {'exito': False})
 
+
+
+# =========================================================================
+# 🛡️ LISTA BLANCA TECTUM IN-HOUSE (fuente: COLABORADORES_TECTUM.xlsx)
+# Pega esta constante arriba de login_usuario en views.py.
+# Para agregar a alguien nuevo (ej. Ana Gabriela en noviembre), añade su
+# correo en minúsculas a este set.
+# =========================================================================
+COLABORADORES_TECTUM = {
+    'bibianazumaya96@gmail.com',
+    'danieladelunapcm@gmail.com',
+    'fco_rdz11@hotmail.com',
+    'gabriel_godinez.h@hotmail.com',
+    'isis.deluna9@gmail.com',
+    'villagomezjennifer912@gmail.com',
+    'alonso_juan@outlook.com',
+    'leijapatricia103@gmail.com',
+    'manoloizaguirre10@gmail.com',
+    'maalfarog897@gmail.com',
+    'martin.cardona130@hotmail.com',
+    'mau.pozas.v@gmail.com',
+    'mauriciopozas@gmail.com',
+    'norma.tovar@gmail.com',
+    'ricardo@consultoresavanzados.com',
+    'roberto_escobedo18@hotmail.com',
+    'espitiayamelin@gmail.com',
+    'sarahi0811cov@gmail.com',
+    'kevinsegundo285@gmail.com',
+    'cmechegaray@gmail.com',
+    'juanrepettot@gmail.com',
+    # 'correo.ana.gabriela@...',  # ← agregar en noviembre
+}
+
+
+def _es_colaborador_tectum(user, email_ingresado=''):
+    """True si el correo del usuario (o el que escribió) está en la lista blanca."""
+    correos = {
+        (user.email or '').strip().lower(),
+        (user.username or '').strip().lower(),
+        (email_ingresado or '').strip().lower(),
+    }
+    return bool(correos & COLABORADORES_TECTUM)
+
+
 @csrf_exempt
 def login_usuario(request):
     if request.method != 'POST':
@@ -684,22 +728,8 @@ def login_usuario(request):
             'message': 'Por favor ingresa tu correo y contraseña.'
         })
 
-    try:
-        user = User.objects.filter(Q(username__iexact=email) | Q(email__iexact=email)).first()
-        if not user:
-            return JsonResponse({
-                'status': 'error',
-                'error_type': 'invalid',
-                'message': 'El correo o la contraseña son incorrectos.'
-            })
-    except Exception:
-        return JsonResponse({
-            'status': 'error',
-            'error_type': 'invalid',
-            'message': 'El correo o la contraseña son incorrectos.'
-        })
-
-    if not user.check_password(password):
+    user = User.objects.filter(Q(username__iexact=email) | Q(email__iexact=email)).first()
+    if not user or not user.check_password(password):
         return JsonResponse({
             'status': 'error',
             'error_type': 'invalid',
@@ -713,17 +743,40 @@ def login_usuario(request):
             'message': 'Aún no verificas tu cuenta. Por favor, revisa tu bandeja de entrada.'
         })
 
-    login(request, user)
+    host = request.get_host().lower()
 
     es_beneficios = (
-        'tectumbeneficios' in request.get_host().lower()
+        'tectumbeneficios' in host
         or request.POST.get('convenio') == 'tectumbeneficios'
         or request.session.get('convenio_tectum_beneficios')
     )
+
+    es_login_tectum_inhouse = (
+        not es_beneficios
+        and (
+            'tectuminhause' in host
+            or request.session.get('convenio_tectum')
+            or request.POST.get('convenio') == 'tectum'
+        )
+    )
+
+    # 🔒 REGLA: en TECTUM In-House solo entran los colaboradores de la lista blanca.
+    # Superusuarios y psicólogos pasan siempre (equipo HOPE).
+    if es_login_tectum_inhouse and not (user.is_superuser or hasattr(user, 'perfil_psicologo')):
+        if not _es_colaborador_tectum(user, email):
+            return JsonResponse({
+                'status': 'error',
+                'error_type': 'not_allowed',
+                'message': 'Este correo no está registrado en el convenio TECTUM In-House.'
+            })
+
+    # ✅ Ya validado: ahora sí iniciamos sesión
+    login(request, user)
+
     if es_beneficios:
         request.session['convenio_tectum_beneficios'] = True
 
-    if not es_beneficios and ('tectuminhause' in request.get_host().lower() or request.session.get('convenio_tectum') or request.POST.get('convenio') == 'tectum'):
+    if es_login_tectum_inhouse:
         if hasattr(user, 'perfil') and not user.perfil.es_tectum:
             user.perfil.es_tectum = True
             user.perfil.save(update_fields=['es_tectum'])
@@ -740,7 +793,6 @@ def login_usuario(request):
         redirect_url = reverse('panel_generico')
 
     return JsonResponse({'status': 'success', 'redirect_url': redirect_url})
-
 
 
 def panel_generico(request):
@@ -8791,4 +8843,4 @@ def encuesta_tectum(request):
 
 
 
-
+

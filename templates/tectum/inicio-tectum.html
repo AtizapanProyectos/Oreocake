@@ -1454,6 +1454,33 @@
       if (sidebar) sidebar.classList.toggle('mobile-open');
     }
 
+    // ── LISTA BLANCA: solo estos colaboradores pueden iniciar sesión ──
+    // (Validación rápida de UX. La regla real vive en login_usuario de views.py)
+    const COLABORADORES_TECTUM = new Set([
+      'bibianazumaya96@gmail.com',
+      'danieladelunapcm@gmail.com',
+      'fco_rdz11@hotmail.com',
+      'gabriel_godinez.h@hotmail.com',
+      'isis.deluna9@gmail.com',
+      'villagomezjennifer912@gmail.com',
+      'alonso_juan@outlook.com',
+      'leijapatricia103@gmail.com',
+      'manoloizaguirre10@gmail.com',
+      'maalfarog897@gmail.com',
+      'martin.cardona130@hotmail.com',
+      'mau.pozas.v@gmail.com',
+      'mauriciopozas@gmail.com',
+      'norma.tovar@gmail.com',
+      'ricardo@consultoresavanzados.com',
+      'roberto_escobedo18@hotmail.com',
+      'espitiayamelin@gmail.com',
+      'sarahi0811cov@gmail.com',
+      'kevinsegundo285@gmail.com',
+      'cmechegaray@gmail.com',
+      'juanrepettot@gmail.com'
+      // 'correo.ana.gabriela@...'  ← agregar en noviembre
+    ]);
+
     // Login AJAX
     async function procesarLogin(e) {
       e.preventDefault();
@@ -1462,6 +1489,16 @@
       const btn = document.getElementById('btnSubmitLogin');
 
       feedback.style.display = 'none';
+
+      // 🔒 Regla: solo colaboradores TECTUM registrados en la lista
+      // (los correos del equipo HOPE no están en la lista; el servidor decide si los deja pasar)
+      const emailIngresado = document.getElementById('inputEmail').value.trim().toLowerCase();
+      if (!COLABORADORES_TECTUM.has(emailIngresado)) {
+        feedback.textContent = 'Este correo no está registrado en el convenio TECTUM In-House.';
+        feedback.style.display = 'block';
+        return;
+      }
+
       btn.disabled = true;
       btn.innerHTML = 'Verificando... <i class="fas fa-spinner fa-spin"></i>';
 
