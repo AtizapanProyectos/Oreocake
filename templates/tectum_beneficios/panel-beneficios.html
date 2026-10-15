@@ -431,7 +431,7 @@ function mostrarErrorCita(mensaje) {
             <!-- Carrusel de Días -->
             <div class="date-chips-wrap" id="dateCarouselTectum">
                 {% for dia, horas in dias_disponibles.items %}
-                <div class="date-chip {% if forloop.first %}active{% endif %}" onclick="seleccionarDia('{{ dia|date:'Y-m-d' }}', this)">
+                <div class="date-chip {% if forloop.first %}active{% endif %}" data-fecha="{{ dia|date:'Y-m-d' }}" onclick="seleccionarDia('{{ dia|date:'Y-m-d' }}', this)">
                     <span style="font-size: 11px; display: block; text-transform: uppercase; font-weight: 700; color: var(--text-muted);">
                         {{ dia|date:"D" }}
                     </span>
@@ -454,7 +454,7 @@ function mostrarErrorCita(mensaje) {
                 {% for dia, horas in dias_disponibles.items %}
                 <div class="slots-grid" id="slots-{{ dia|date:'Y-m-d' }}" {% if not forloop.first %}style="display:none;"{% endif %}>
                     {% for h in horas %}
-                    <button type="button" class="time-slot-btn" onclick="seleccionarHora('{{ h|time:'H:i' }}', '{{ h|time:'h:i A' }}', this)">
+                    <button type="button" class="time-slot-btn" data-fecha="{{ dia|date:'Y-m-d' }}" data-hora="{{ h|time:'H:i' }}" onclick="seleccionarHora('{{ h|time:'H:i' }}', '{{ h|time:'h:i A' }}', this)">
                         {{ h|time:"h:i A" }}
                     </button>
                     {% empty %}
@@ -864,6 +864,69 @@ let horaSeleccionada = null;
 let horaSeleccionadaTexto = null;
 let integrantesFamilia = 3;
 
+// ============================================================
+// 🔒 CANDADO DE ANTICIPACIÓN MÍNIMA (2 horas) — SOLO FRONTEND
+// Los horarios se comparan en hora CDMX, sin importar la zona del navegador.
+// Ejemplo: si son las 1:00 pm, el primer horario visible es 3:00 pm.
+// ============================================================
+const HORAS_ANTICIPACION_MINIMA = 2;
+
+function ahoraEnCDMX() {
+    const fmt = new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'America/Mexico_City',
+        year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', hour12: false
+    });
+    const p = Object.fromEntries(fmt.formatToParts(new Date()).map(x => [x.type, x.value]));
+    const hh = p.hour === '24' ? '00' : p.hour;
+    return new Date(`${p.year}-${p.month}-${p.day}T${hh}:${p.minute}:00`);
+}
+
+function slotCumpleAnticipacion(fechaStr, horaStr24) {
+    // fechaStr = "2026-10-07", horaStr24 = "15:00"
+    const slot = new Date(`${fechaStr}T${horaStr24}:00`);
+    const limite = new Date(ahoraEnCDMX().getTime() + HORAS_ANTICIPACION_MINIMA * 60 * 60 * 1000);
+    return slot >= limite;
+}
+
+function aplicarCandadoHorariosTectum() {
+    // 1. Quitar los botones de hora que no cumplen la regla de 2 horas
+    document.querySelectorAll('.time-slot-btn[data-fecha][data-hora]').forEach(btn => {
+        if (!slotCumpleAnticipacion(btn.dataset.fecha, btn.dataset.hora)) {
+            btn.remove();
+        }
+    });
+
+    // 2. Si un día se quedó sin horarios, quitar su contenedor y su chip de fecha
+    document.querySelectorAll('.slots-grid').forEach(grid => {
+        if (grid.querySelectorAll('.time-slot-btn').length === 0) {
+            const fechaGrid = grid.id.replace('slots-', '');
+            const chip = document.querySelector(`.date-chip[data-fecha="${fechaGrid}"]`);
+            if (chip) chip.remove();
+            grid.remove();
+        }
+    });
+
+    // 3. Asegurar que el primer día restante quede activo y visible
+    const carrusel = document.getElementById('dateCarouselTectum');
+    const chips = carrusel ? carrusel.querySelectorAll('.date-chip') : [];
+
+    if (chips.length) {
+        if (!carrusel.querySelector('.date-chip.active')) {
+            seleccionarDia(chips[0].dataset.fecha, chips[0]);
+        }
+    } else {
+        if (carrusel) {
+            carrusel.innerHTML = '<p style="text-align:center; width:100%; padding:20px; color: var(--text-muted); font-style: italic;">No hay horarios disponibles con 2 horas de anticipación. Escríbenos por WhatsApp y te ayudamos.</p>';
+        }
+        const slotsBox = document.getElementById('slotsContainerTectum');
+        if (slotsBox) slotsBox.innerHTML = '';
+        fechaSeleccionada = null;
+        horaSeleccionada = null;
+        if (typeof actualizarResumenHorario === 'function') actualizarResumenHorario();
+    }
+}
+
 function cambiarTab(tabName, btn) {
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
@@ -1004,6 +1067,7 @@ function refrescarDisponibilidad(tipo) {
 
                     const chip = document.createElement('div');
                     chip.className = 'date-chip' + (idx === 0 ? ' active' : '');
+                    chip.dataset.fecha = diaStr;
                     chip.onclick = function() { seleccionarDia(diaStr, this); };
                     chip.innerHTML = `
                         <span style="font-size:11px;display:block;text-transform:uppercase;font-weight:700;">${dow}</span>
@@ -1030,6 +1094,8 @@ function refrescarDisponibilidad(tipo) {
                             const btnSlot = document.createElement('button');
                             btnSlot.type = 'button';
                             btnSlot.className = 'time-slot-btn';
+                            btnSlot.dataset.fecha = diaStr;
+                            btnSlot.dataset.hora = h;
                             btnSlot.innerText = h12;
                             btnSlot.onclick = function() { seleccionarHora(h, h12, this); };
                             grid.appendChild(btnSlot);
@@ -1044,6 +1110,8 @@ function refrescarDisponibilidad(tipo) {
                     horaSeleccionadaTexto = null;
                     actualizarResumenHorario();
                 }
+
+                aplicarCandadoHorariosTectum();   // 🔒 quita horarios con menos de 2 h de anticipación
             }
         });
 }
@@ -1062,6 +1130,7 @@ function mostrarToast(texto) {
 // =========================================================================
 document.addEventListener("DOMContentLoaded", function () {
     actualizarCostos();
+    aplicarCandadoHorariosTectum();
 
     if (document.getElementById('paypal-button-container')) {
         paypal.Buttons({
