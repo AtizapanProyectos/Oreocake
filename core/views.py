@@ -269,6 +269,45 @@ def obtener_slots_globales(fecha_inicio, fecha_fin, preferencia=None, tipo_sesio
 
     return _buscar_slots_globales_con_filtros(filtros_base, fecha_inicio, fecha_fin, tipo_sesion)
 
+def _calcular_bloqueos_covision(fecha_inicio, fecha_fin):
+    """
+    🔥 NUEVO: Devuelve el conjunto de tuplas (fecha, hora) bloqueadas por las
+    reglas de Co-Visión activas (ReglaCoVision), dentro del rango escaneado.
+
+    Cada ocurrencia de la Co-Visión (1.5 h) bloquea todos los slots de 1 h que
+    se solapen con ella. Este es el ÚNICO punto de bloqueo global: tanto la
+    búsqueda global de slots como la por psicólogo y la por día heredan de aquí.
+    """
+    bloqueos = set()
+    if not fecha_inicio or not fecha_fin or fecha_fin < fecha_inicio:
+        return bloqueos
+
+    from datetime import timedelta
+    reglas = ReglaCoVision.objects.filter(activo=True)
+
+    for regla in reglas:
+        paso = max(1, regla.cada_n_dias)
+        # Saltamos los ciclos que con seguridad quedaron antes del rango
+        # (el margen de 7 días cubre el ajuste al día de semana de la regla).
+        dias_previos = (fecha_inicio - timedelta(days=7) - regla.fecha_ancla).days
+        k = max(0, dias_previos // paso)
+        limite = fecha_fin + timedelta(days=7)
+
+        while True:
+            fecha_ciclo = regla.fecha_ancla + timedelta(days=paso * k)
+            if fecha_ciclo > limite:
+                break
+            fecha_oc = regla._ajustar_a_dia_semana(fecha_ciclo)
+            if fecha_inicio <= fecha_oc <= fecha_fin:
+                for hora in regla.slots_bloqueados(fecha_oc):
+                    bloqueos.add((fecha_oc, hora))
+            k += 1
+            if k > 400:  # ⚠️ Guarda de seguridad (~16 años de ciclos quincenales)
+                break
+
+    return bloqueos
+
+
 def obtener_slots_psicologo(psicologo, fecha_inicio, fecha_fin, tipo_sesion="individual"):
     """
     🔥 BÚSQUEDA POR PSICÓLOGO: usada una vez que el paciente YA tiene un psicólogo asignado.
@@ -317,18 +356,11 @@ def obtener_slots_psicologo(psicologo, fecha_inicio, fecha_fin, tipo_sesion="ind
     dias_procesados = 0
     max_iteraciones = 120
 
-    # 🔥 NUEVO: Definimos los bloqueos globales aquí arriba
-    # Nota: Bloqueamos 13:00 y 14:00 porque cada cita dura 1 hora.
-    # Al bloquear ambos, bloqueamos de 13:00 a 15:00.
-    from datetime import date, time  # Lo importo aquí por si acaso, aunque es mejor al inicio
-    bloqueos_globales = [
-        (date(2026, 8, 20), time(13, 0)),
-        (date(2026, 8, 20), time(14, 0)),
-        (date(2026, 8, 27), time(13, 0)),
-        (date(2026, 8, 27), time(14, 0)),
-        (date(2026, 9, 10), time(13, 0)),
-        (date(2026, 9, 10), time(14, 0)),
-    ]
+    # 🔥 NUEVO: Bloqueos de Co-Visión calculados desde las reglas activas en BD
+    # (antes era una lista hardcodeada de fechas fijas que había que editar a mano).
+    # La Co-Visión es la reunión quincenal de psicólogos: martes 8:00 am y
+    # miércoles 7:00 pm, dura 1.5 h (bloquea los slots de 1 h que se solapen).
+    bloqueos_globales = _calcular_bloqueos_covision(fecha_inicio, fecha_fin)
 
     while dia_actual <= fecha_fin and dias_procesados < max_iteraciones:
         esquema = _esquema_del_dia(dia_actual)
@@ -5113,10 +5145,14 @@ responde únicamente con texto normal.
 
 
 
-def _obtener_logo_base64():
-    """Devuelve el logo en base64 para incrustación directa en el PDF headless."""
+def _obtener_logo_base64(tectum=False):
+    """Devuelve el logo en base64 para incrustación directa en el PDF headless.
+    🔥 NUEVO: con tectum=True devuelve el logo oficial de TECTUM (reportes del convenio)."""
     try:
-        logo_path = os.path.join(settings.BASE_DIR, 'static', 'img', 'nlogo.png')
+        if tectum:
+            logo_path = os.path.join(settings.BASE_DIR, 'static', 'img', 'tectum', 'logo-completo.png')
+        else:
+            logo_path = os.path.join(settings.BASE_DIR, 'static', 'img', 'nlogo.png')
         if os.path.exists(logo_path):
             with open(logo_path, 'rb') as f:
                 encoded = base64.b64encode(f.read()).decode('utf-8')
@@ -5612,8 +5648,10 @@ def generar_reporte_checkin_psicologo_ajax(request):
 
 # ------------------------------------------------------------------------
 # Envío de correos elegantes con archivo PDF adjunto
+# 🔥 MODIFICADO: diseño sobrio (0 emojis) con identidad HOPE / TECTUM,
+# HTML movido a plantillas (correo_reporte_paciente/psicologo.html).
 # ------------------------------------------------------------------------
-def _enviar_email_reporte_paciente_con_pdf(paciente, datos, pdf_bytes, filename):
+def _enviar_email_reporte_paciente_con_pdf(paciente, datos, pdf_bytes, filename, es_tectum=False):
     if not paciente.email:
         return
 
@@ -5621,49 +5659,24 @@ def _enviar_email_reporte_paciente_con_pdf(paciente, datos, pdf_bytes, filename)
     nombre_paciente = datos.get('nombre_paciente', paciente.first_name or paciente.username)
     nombre_psicologo = datos.get('psicologo', '')
 
-    asunto = f"💜 Tu Reporte de Check-In · Sesión #{sesion_num}"
-    doc_txt = f" con Psic. {nombre_psicologo}" if nombre_psicologo else ""
+    marca = 'TECTUM' if es_tectum else 'Espacio HOPE'
+    asunto = f"Tu Reporte de Check-In · Sesión #{sesion_num} · {marca}"
 
-    cuerpo_html = f"""<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"></head>
-<body style="margin:0;padding:30px 15px;background-color:#F4F2FA;font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#2B2545;">
-  <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width:560px;background:#ffffff;border-radius:18px;overflow:hidden;box-shadow:0 8px 30px rgba(78,63,145,0.08);">
-    <tr>
-      <td style="background:linear-gradient(135deg,#4E3F91 0%,#6656B5 100%);padding:28px 32px;text-align:center;">
-        <div style="font-size:32px;margin-bottom:6px;">💜</div>
-        <h1 style="margin:0;color:#ffffff;font-size:21px;font-weight:700;">Tu Reporte de Check-In</h1>
-        <p style="margin:4px 0 0;color:#E4E0F9;font-size:12.5px;">Espacio HOPE · Acompañamiento Psicológico</p>
-      </td>
-    </tr>
-    <tr>
-      <td style="padding:28px 32px;line-height:1.6;font-size:14.5px;">
-        <p style="margin-top:0;">Hola <strong style="color:#4E3F91;">{nombre_paciente}</strong>,</p>
-        <p>Esperamos que te encuentres muy bien. Te compartimos que tu <strong>Reporte de Check-In</strong> de la <strong>sesión #{sesion_num}</strong>{doc_txt} ya se encuentra generado.</p>
-        <div style="background:#F8F6FD;border-left:4px solid #26C6C6;border-radius:8px;padding:14px 18px;margin:20px 0;">
-          <p style="margin:0;font-size:13.5px;color:#2B2545;">
-            📎 <strong>Archivo adjunto:</strong> <em>{filename}</em><br>
-            <span style="font-size:12px;color:#6A6383;">En este documento PDF encontrarás el resumen de tu progreso, tus objetivos terapéuticos y las recomendaciones para tu día a día.</span>
-          </p>
-        </div>
-        <p>Cualquier duda, estamos siempre a tu lado.</p>
-        <p style="margin-bottom:0;">Con cariño,<br><strong style="color:#4E3F91;">El Equipo de Espacio HOPE</strong> 💜</p>
-      </td>
-    </tr>
-    <tr>
-      <td style="background:#F9F8FD;padding:14px 32px;text-align:center;font-size:11px;color:#8B7FD1;border-top:1px solid #ECE7F8;">
-        Documento confidencial · Espacio HOPE 2026
-      </td>
-    </tr>
-  </table>
-</body>
-</html>"""
+    contexto = {
+        'es_tectum': es_tectum,
+        'nombre': nombre_paciente,
+        'psicologo_nombre': nombre_psicologo,
+        'sesion_num': sesion_num,
+        'filename': filename,
+    }
+    cuerpo_html = render_to_string('correo_reporte_paciente.html', contexto)
     cuerpo_plano = strip_tags(cuerpo_html)
 
+    remitente = 'TECTUM <no-reply@espaciohope.com>' if es_tectum else 'Espacio HOPE <no-reply@espaciohope.com>'
     email = EmailMultiAlternatives(
         subject=asunto,
         body=cuerpo_plano,
-        from_email='Espacio HOPE <no-reply@espaciohope.com>',
+        from_email=remitente,
         to=[paciente.email],
     )
     email.attach_alternative(cuerpo_html, 'text/html')
@@ -5671,7 +5684,7 @@ def _enviar_email_reporte_paciente_con_pdf(paciente, datos, pdf_bytes, filename)
     email.send(fail_silently=False)
 
 
-def _enviar_email_reporte_psicologo_con_pdf(psicologo, paciente, datos, pdf_bytes, filename):
+def _enviar_email_reporte_psicologo_con_pdf(psicologo, paciente, datos, pdf_bytes, filename, es_tectum=False):
     email_doc = psicologo.usuario.email if psicologo and psicologo.usuario else None
     if not email_doc:
         return
@@ -5680,48 +5693,24 @@ def _enviar_email_reporte_psicologo_con_pdf(psicologo, paciente, datos, pdf_byte
     nombre_doc = psicologo.usuario.first_name if psicologo.usuario else 'Doctor(a)'
     nombre_paciente = datos.get('nombre_paciente', paciente.first_name or paciente.username)
 
-    asunto = f"📋 Reporte Clínico de Sesión #{sesion_num} · {nombre_paciente}"
+    marca = 'TECTUM' if es_tectum else 'Espacio HOPE'
+    asunto = f"Reporte Clínico de Sesión #{sesion_num} · {nombre_paciente} · {marca}"
 
-    cuerpo_html = f"""<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"></head>
-<body style="margin:0;padding:30px 15px;background-color:#F4F2FA;font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#2B2545;">
-  <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width:560px;background:#ffffff;border-radius:18px;overflow:hidden;box-shadow:0 8px 30px rgba(78,63,145,0.08);">
-    <tr>
-      <td style="background:linear-gradient(135deg,#4E3F91 0%,#6656B5 100%);padding:28px 32px;text-align:center;">
-        <div style="font-size:32px;margin-bottom:6px;">📋</div>
-        <h1 style="margin:0;color:#ffffff;font-size:21px;font-weight:700;">Reporte Clínico de Sesión</h1>
-        <p style="margin:4px 0 0;color:#E4E0F9;font-size:12.5px;">Expediente Clínico · Espacio HOPE</p>
-      </td>
-    </tr>
-    <tr>
-      <td style="padding:28px 32px;line-height:1.6;font-size:14.5px;">
-        <p style="margin-top:0;">Hola Psic. <strong style="color:#4E3F91;">{nombre_doc}</strong>,</p>
-        <p>Se ha generado exitosamente el reporte clínico correspondiente a la <strong>sesión #{sesion_num}</strong> de tu paciente <strong style="color:#4E3F91;">{nombre_paciente}</strong>.</p>
-        <div style="background:#F8F6FD;border-left:4px solid #F4813F;border-radius:8px;padding:14px 18px;margin:20px 0;">
-          <p style="margin:0;font-size:13.5px;color:#2B2545;">
-            📎 <strong>Archivo adjunto:</strong> <em>{filename}</em><br>
-            <span style="font-size:12px;color:#6A6383;">Contiene el desglose de dimensiones IPP, comparativa con sesiones previas y la síntesis clínica de la sesión.</span>
-          </p>
-        </div>
-        <p>El documento también ha sido respaldado en la base de datos de HOPE.</p>
-        <p style="margin-bottom:0;">Atentamente,<br><strong style="color:#4E3F91;">Dirección Clínica · Espacio HOPE</strong></p>
-      </td>
-    </tr>
-    <tr>
-      <td style="background:#F9F8FD;padding:14px 32px;text-align:center;font-size:11px;color:#8B7FD1;border-top:1px solid #ECE7F8;">
-        Documento confidencial · Espacio HOPE 2026
-      </td>
-    </tr>
-  </table>
-</body>
-</html>"""
+    contexto = {
+        'es_tectum': es_tectum,
+        'nombre_doc': nombre_doc,
+        'nombre_paciente': nombre_paciente,
+        'sesion_num': sesion_num,
+        'filename': filename,
+    }
+    cuerpo_html = render_to_string('correo_reporte_psicologo.html', contexto)
     cuerpo_plano = strip_tags(cuerpo_html)
 
+    remitente = 'TECTUM <no-reply@espaciohope.com>' if es_tectum else 'Espacio HOPE <no-reply@espaciohope.com>'
     email = EmailMultiAlternatives(
         subject=asunto,
         body=cuerpo_plano,
-        from_email='Espacio HOPE <no-reply@espaciohope.com>',
+        from_email=remitente,
         to=[email_doc],
     )
     email.attach_alternative(cuerpo_html, 'text/html')
@@ -5794,6 +5783,13 @@ def _procesar_reporte_de_una_cita_detallado(cita_id, log_func=None, forzar=False
         paciente = cita.paciente
         psicologo = cita.psicologo
 
+        # 🔥 NUEVO: Detección de convenio TECTUM (mismo criterio que los correos
+        # de confirmación de citas) para aplicar el branding correcto en los
+        # PDFs y en los correos del reporte.
+        es_tectum_cita = getattr(cita, 'es_tectum', False) or getattr(
+            getattr(paciente, 'perfil', None), 'es_tectum', False
+        )
+
         if not hasattr(cita, 'nota_clinica') or not cita.nota_clinica or not cita.nota_clinica.notas_sesion:
             detalles['etapas'].append({'etapa': 'Validación de Bitácora', 'ok': False, 'detalle': 'Falta la bitácora clínica del psicólogo. El psicólogo tratante aún no ha capturado notas_sesion para esta cita.'})
             return False, "Falta bitácora clínica del psicólogo", detalles
@@ -5802,7 +5798,7 @@ def _procesar_reporte_de_una_cita_detallado(cita_id, log_func=None, forzar=False
         try:
             datos_paciente = _construir_datos_checkin_paciente(paciente, cita=cita)
             datos_psicologo = _construir_datos_checkin_psicologo(paciente, cita=cita)
-            logo_base64 = _obtener_logo_base64()
+            logo_base64 = _obtener_logo_base64(tectum=es_tectum_cita)
             detalles['etapas'].append({'etapa': 'Métricas Clínicas e IA', 'ok': True, 'detalle': f'Datos sintetizados. Sesión #{datos_paciente.get("sesion_numero", 1)}, IPP: {datos_paciente.get("ipp_valor", 0)}%'})
         except Exception as e:
             detalles['etapas'].append({'etapa': 'Métricas Clínicas e IA', 'ok': False, 'detalle': f'Error procesando métricas: {e}'})
@@ -5815,6 +5811,7 @@ def _procesar_reporte_de_una_cita_detallado(cita_id, log_func=None, forzar=False
                 **datos_paciente,
                 'es_exportacion_pdf': True,
                 'logo_base64': logo_base64,
+                'es_tectum': es_tectum_cita,
             }
             html_paciente = render_to_string('Pruebas/claude_pascinete.html', contexto_paciente)
             pdf_bytes_paciente = convertir_html_a_pdf(html_paciente)
@@ -5831,6 +5828,7 @@ def _procesar_reporte_de_una_cita_detallado(cita_id, log_func=None, forzar=False
                 **datos_psicologo,
                 'es_exportacion_pdf': True,
                 'logo_base64': logo_base64,
+                'es_tectum': es_tectum_cita,
             }
             html_psicologo = render_to_string('Pruebas/claude_psioclog.html', contexto_psicologo)
             pdf_bytes_psicologo = convertir_html_a_pdf(html_psicologo)
@@ -5897,7 +5895,7 @@ def _procesar_reporte_de_una_cita_detallado(cita_id, log_func=None, forzar=False
         if paciente.email:
             try:
                 _log(f"   📧 Enviando correo con PDF adjunto a paciente ({paciente.email})...")
-                _enviar_email_reporte_paciente_con_pdf(paciente, datos_paciente, pdf_bytes_paciente, filename_pac)
+                _enviar_email_reporte_paciente_con_pdf(paciente, datos_paciente, pdf_bytes_paciente, filename_pac, es_tectum=es_tectum_cita)
                 reporte_pac_obj.correo_enviado = True
                 reporte_pac_obj.save(update_fields=['correo_enviado'])
                 email_pac_ok = True
@@ -5914,7 +5912,7 @@ def _procesar_reporte_de_una_cita_detallado(cita_id, log_func=None, forzar=False
         if email_doc:
             try:
                 _log(f"   📧 Enviando correo con PDF adjunto a psicólogo ({email_doc})...")
-                _enviar_email_reporte_psicologo_con_pdf(psicologo, paciente, datos_psicologo, pdf_bytes_psicologo, filename_psi)
+                _enviar_email_reporte_psicologo_con_pdf(psicologo, paciente, datos_psicologo, pdf_bytes_psicologo, filename_psi, es_tectum=es_tectum_cita)
                 reporte_psi_obj.correo_enviado = True
                 reporte_psi_obj.save(update_fields=['correo_enviado'])
                 email_psi_ok = True
@@ -6139,17 +6137,19 @@ def api_info_reporte_cita(request, cita_id):
         })
 
     remitente_correo = getattr(settings, 'DEFAULT_FROM_EMAIL', 'Espacio HOPE <no-reply@espaciohope.com>')
+    es_tectum_cita = getattr(cita, 'es_tectum', False) or getattr(getattr(paciente, 'perfil', None), 'es_tectum', False)
+    marca_correo = 'TECTUM' if es_tectum_cita else 'Espacio HOPE'
 
     cuerpo_pac = (
         f"Hola {paciente.first_name or nombre_pac},\n\n"
-        f"Esperamos que te encuentres muy bien. Te compartimos adjunto en formato PDF tu Reporte de Check-In correspondiente a tu sesión #{sesion_num} en Espacio HOPE.\n\n"
+        f"Esperamos que te encuentres muy bien. Te compartimos adjunto en formato PDF tu Reporte de Check-In correspondiente a tu sesión #{sesion_num} en {marca_correo}.\n\n"
         f"En este documento encontrarás:\n"
         f"• Tu progreso psicológico y bienestar general\n"
         f"• El resumen de tus objetivos y tareas acordadas\n"
         f"• Recomendaciones personalizadas de tu terapeuta\n\n"
         f"Estamos contigo en cada paso de tu camino. Si necesitas agendar tu próxima sesión, puedes hacerlo en https://espaciohope.com/\n\n"
-        f"Con cariño,\n"
-        f"Equipo Espacio HOPE 💜"
+        f"Cordialmente,\n"
+        f"Equipo {marca_correo}"
     )
 
     cuerpo_psi = (
@@ -6160,9 +6160,9 @@ def api_info_reporte_cita(request, cita_id):
         f"• Registro de antecedentes y cómo llegó a HOPE\n"
         f"• Apoyo brindado y notas de la última sesión\n"
         f"• Objetivos, tareas y recomendaciones clínicas\n\n"
-        f"Este reporte ha sido archivado en el expediente clínico digital del paciente en Espacio HOPE.\n\n"
+        f"Este reporte ha sido archivado en el expediente clínico digital del paciente en {marca_correo}.\n\n"
         f"Atentamente,\n"
-        f"Dirección Clínica HOPE"
+        f"Dirección Clínica · {marca_correo}"
     )
 
     data = {
@@ -6201,14 +6201,14 @@ def api_info_reporte_cita(request, cita_id):
         'correo_paciente': {
             'de': remitente_correo,
             'para': email_pac or 'Sin correo registrado',
-            'asunto': f'📋 Tu Reporte de Sesión #{sesion_num} · Espacio HOPE 💜',
+            'asunto': f'Tu Reporte de Sesión #{sesion_num} · {marca_correo}',
             'adjunto': filename_pac,
             'cuerpo': cuerpo_pac,
         },
         'correo_psicologo': {
             'de': remitente_correo,
             'para': email_psi or 'Sin correo registrado',
-            'asunto': f'📋 Reporte Clínico y Evolución de {nombre_pac} — Sesión #{sesion_num} · Espacio HOPE',
+            'asunto': f'Reporte Clínico y Evolución de {nombre_pac} — Sesión #{sesion_num} · {marca_correo}',
             'adjunto': filename_psi,
             'cuerpo': cuerpo_psi,
         }
@@ -6245,8 +6245,15 @@ def descargar_reporte_pdf_cita(request, cita_id, tipo):
         response['Content-Disposition'] = f'inline; filename="{filename}"'
         return response
 
-    cita = get_object_or_404(Cita.objects.select_related('paciente', 'psicologo__usuario', 'nota_clinica'), id=cita_id)
-    logo_base64 = _obtener_logo_base64()
+    cita = get_object_or_404(
+        Cita.objects.select_related('paciente', 'paciente__perfil', 'psicologo__usuario', 'nota_clinica'),
+        id=cita_id
+    )
+    # 🔥 NUEVO: Branding HOPE / TECTUM también en el render de respaldo
+    es_tectum_cita = getattr(cita, 'es_tectum', False) or getattr(
+        getattr(cita.paciente, 'perfil', None), 'es_tectum', False
+    )
+    logo_base64 = _obtener_logo_base64(tectum=es_tectum_cita)
     if tipo == 'paciente':
         datos = _construir_datos_checkin_paciente(cita.paciente, cita=cita)
         template_name = 'Pruebas/claude_pascinete.html'
@@ -6254,7 +6261,12 @@ def descargar_reporte_pdf_cita(request, cita_id, tipo):
         datos = _construir_datos_checkin_psicologo(cita.paciente, cita=cita)
         template_name = 'Pruebas/claude_psioclog.html'
 
-    html = render_to_string(template_name, {**datos, 'es_exportacion_pdf': True, 'logo_base64': logo_base64})
+    html = render_to_string(template_name, {
+        **datos,
+        'es_exportacion_pdf': True,
+        'logo_base64': logo_base64,
+        'es_tectum': es_tectum_cita,
+    })
     pdf_bytes = convertir_html_a_pdf(html)
     nombre_slug = slugify(cita.paciente.first_name or cita.paciente.username)
     filename = f"reporte_cita_{cita.id}_{tipo}_{nombre_slug}.pdf"

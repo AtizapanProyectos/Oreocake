@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>HOPE · Reporte de Check-In (Paciente)</title>
+<title>{% if es_tectum %}TECTUM · Reporte de Check-In (Paciente){% else %}HOPE · Reporte de Check-In (Paciente){% endif %}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -414,12 +414,28 @@
     margin: 0 !important;
   }
   {% endif %}
+  /* 🔥 NUEVO: Identidad TECTUM para pacientes del convenio — re-mapea la paleta
+     de la marca (azules TECTUM) sin alterar la estructura del documento. */
+  {% if es_tectum %}
+  :root{
+    --purple-deep:#1E3A8A;
+    --purple-mid:#0284C7;
+    --purple-light:#38BDF8;
+    --purple-wash:#F0F9FF;
+    --teal:#0EA5E9;
+    --teal-dark:#0369A1;
+    --ink:#0F172A;
+    --ink-soft:#475569;
+    --line:#BAE6FD;
+  }
+  html,body{ background:#EFF6FF; }
+  {% endif %}
 </style>
 </head>
 <body>
 
   <div class="toolbar no-print">
-    <span class="title">HOPE · Reporte de Check-In (Versión Paciente)</span>
+    <span class="title">{% if es_tectum %}TECTUM · Reporte de Check-In (Versión Paciente){% else %}HOPE · Reporte de Check-In (Versión Paciente){% endif %}</span>
     <label class="upload-label">
       Cargar logo PNG
       <input type="file" id="logoUpload" accept="image/png,image/*">
@@ -443,7 +459,7 @@
                     <img src="{{ logo_base64|default:'/static/img/nlogo.png' }}" alt="HOPE Logo" style="max-height: 48px; max-width: 180px; width: auto; height: auto; object-fit: contain;" width="180" height="48">
                 </div>
             </div>
-            <div class="logo-tagline">Oportunidad · Prevención · Esperanza</div>
+            <div class="logo-tagline">{% if es_tectum %}Convenio TECTUM In-House x Espacio HOPE{% else %}Oportunidad · Prevención · Esperanza{% endif %}</div>
           </div>
 
           <div class="doc-title">
@@ -453,7 +469,7 @@
           </div>
         </div>
         <svg class="header-waves" viewBox="0 0 816 64" preserveAspectRatio="none">
-          <path d="M0,64 L0,36 C60,6 120,6 180,36 C240,66 300,66 360,36 C420,6 480,6 540,36 C600,66 660,66 720,36 C750,21 780,16 816,22 L816,64 Z" fill="#26C6C6" opacity="0.9"/>
+          <path d="M0,64 L0,36 C60,6 120,6 180,36 C240,66 300,66 360,36 C420,6 480,6 540,36 C600,66 660,66 720,36 C750,21 780,16 816,22 L816,64 Z" fill="{% if es_tectum %}#0EA5E9{% else %}#26C6C6{% endif %}" opacity="0.9"/>
           <path d="M0,64 L0,48 C90,22 180,22 270,48 C360,74 450,74 540,48 C630,22 720,22 816,46 L816,64 Z" fill="#ffffff"/>
         </svg>
       </div>
@@ -675,7 +691,7 @@
       <!-- FOOTER -->
       <div class="footer">
         <svg class="footer-waves" viewBox="0 0 816 26" preserveAspectRatio="none">
-          <path d="M0,0 C90,26 180,26 270,0 C360,-24 450,-24 540,0 C630,26 720,26 816,4 L816,0 Z" fill="#26C6C6" opacity="0.5"/>
+          <path d="M0,0 C90,26 180,26 270,0 C360,-24 450,-24 540,0 C630,26 720,26 816,4 L816,0 Z" fill="{% if es_tectum %}#0EA5E9{% else %}#26C6C6{% endif %}" opacity="0.5"/>
         </svg>
         <div class="footer-logo-slot" id="logoSlotFooter">
           <img id="logoImgFooter" style="display:none;" alt="Logo HOPE">
@@ -684,7 +700,7 @@
                 </div>
         </div>
         <div class="footer-right">
-          <b>HOPE</b> · Oportunidad, Prevención, Esperanza<br>
+          <b>{% if es_tectum %}TECTUM{% else %}HOPE{% endif %}</b> · {% if es_tectum %}Convenio TECTUM In-House x Espacio HOPE{% else %}Oportunidad, Prevención, Esperanza{% endif %}<br>
           Reporte generado automáticamente · Documento confidencial
         </div>
       </div>

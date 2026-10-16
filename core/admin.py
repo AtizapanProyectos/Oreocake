@@ -232,5 +232,16 @@ class EncuestaFinalRespuestaAdmin(ImportExportModelAdmin):
     readonly_fields = ('fecha_creacion',)
 
 
+# ==========================================
+# 🔥 NUEVO: REGLAS DE CO-VISIÓN (bloqueo quincenal)
+# ==========================================
+@admin.register(ReglaCoVision)
+class ReglaCoVisionAdmin(admin.ModelAdmin):
+    list_display = ('nombre', 'get_dia_semana_display', 'hora_inicio', 'duracion_minutos', 'fecha_ancla', 'cada_n_dias', 'activo')
+    list_filter = ('activo', 'dia_semana')
+    search_fields = ('nombre',)
+    list_editable = ('activo',)
+
+
 
 

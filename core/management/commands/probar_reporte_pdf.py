@@ -78,6 +78,11 @@ class Command(BaseCommand):
         psic_name = cita.psicologo.usuario.get_full_name() if cita.psicologo else 'N/A'
         self.safe_write(f"   🩺 Psicólogo: {psic_name}")
         self.safe_write(f"   📅 Fecha:     {cita.fecha}")
+        # 🔥 NUEVO: Branding HOPE / TECTUM según el convenio de la cita
+        es_tectum = getattr(cita, 'es_tectum', False) or getattr(
+            getattr(cita.paciente, 'perfil', None), 'es_tectum', False
+        )
+        self.safe_write(f"   🏷️  Marca:     {'TECTUM' if es_tectum else 'Espacio HOPE'}")
         self.safe_write("=" * 80)
 
         # 1. Verificar motor de renderizado disponible
@@ -91,7 +96,7 @@ class Command(BaseCommand):
         self.safe_write("🤖 Extrayendo métricas clínicas y calculando dimensiones...")
         datos_paciente = _construir_datos_checkin_paciente(cita.paciente, cita=cita)
         datos_psicologo = _construir_datos_checkin_psicologo(cita.paciente, cita=cita)
-        logo_base64 = _obtener_logo_base64()
+        logo_base64 = _obtener_logo_base64(tectum=es_tectum)
 
         os.makedirs(dir_salida, exist_ok=True)
         archivos_generados = []
@@ -102,6 +107,7 @@ class Command(BaseCommand):
             **datos_paciente,
             'es_exportacion_pdf': True,
             'logo_base64': logo_base64,
+            'es_tectum': es_tectum,
         }
         html_pac = render_to_string('Pruebas/claude_pascinete.html', ctx_pac)
         self.safe_write("🖨️ Convirtiendo a PDF (Paciente)...")
@@ -120,6 +126,7 @@ class Command(BaseCommand):
             **datos_psicologo,
             'es_exportacion_pdf': True,
             'logo_base64': logo_base64,
+            'es_tectum': es_tectum,
         }
         html_psi = render_to_string('Pruebas/claude_psioclog.html', ctx_psi)
         self.safe_write("🖨️ Convirtiendo a PDF (Psicólogo)...")

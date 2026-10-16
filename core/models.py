@@ -469,6 +469,91 @@ class DiaLibrePsicologo(models.Model):
     def __str__(self):
         return f"{self.psicologo} - {self.fecha.strftime('%d/%m/%Y')}"
 
+class ReglaCoVision(models.Model):
+    """
+    🔥 NUEVO: Regla de bloqueo quincenal para las sesiones de Co-Visión
+    (reunión entre psicólogos). Cada regla representa UNA de las dos sesiones
+    del ciclo quincenal: martes 8:00 am y miércoles 7:00 pm, con duración de
+    hora y media.
+
+    La ocurrencia se calcula desde 'fecha_ancla' avanzando de 'cada_n_dias' en
+    'cada_n_dias' días; la fecha resultante se ajusta SIEMPRE al 'dia_semana'
+    de la regla (el martes/miércoles de esa semana). Así, aunque el ciclo
+    quincenal recorra los días de la semana, las sesiones caen siempre en
+    martes y miércoles.
+    """
+    DIAS_SEMANA = [
+        (0, 'Lunes'), (1, 'Martes'), (2, 'Miércoles'),
+        (3, 'Jueves'), (4, 'Viernes'), (5, 'Sábado'), (6, 'Domingo'),
+    ]
+
+    nombre = models.CharField(max_length=100, default='Co-Visión')
+    dia_semana = models.PositiveSmallIntegerField(
+        choices=DIAS_SEMANA, verbose_name="Día de la semana de la sesión"
+    )
+    hora_inicio = models.TimeField(verbose_name="Hora de inicio")
+    duracion_minutos = models.PositiveSmallIntegerField(
+        default=90,
+        verbose_name="Duración en minutos",
+        help_text="Dura 1.5 horas: se bloquean todos los slots de 1 h que se solapen con la sesión."
+    )
+    fecha_ancla = models.DateField(
+        verbose_name="Fecha ancla",
+        help_text="Primera ocurrencia real de esta sesión (ej. martes 27/10/2026 a las 8:00 am)."
+    )
+    cada_n_dias = models.PositiveSmallIntegerField(
+        default=15,
+        verbose_name="Repetir cada N días",
+        help_text="Ciclo quincenal: 15 días desde la fecha ancla."
+    )
+    activo = models.BooleanField(default=True, db_index=True)
+
+    class Meta:
+        verbose_name = "Regla de Co-Visión"
+        verbose_name_plural = "Reglas de Co-Visión"
+        ordering = ['dia_semana', 'hora_inicio']
+
+    def __str__(self):
+        return (
+            f"{self.nombre} · {self.get_dia_semana_display()} "
+            f"{self.hora_inicio.strftime('%H:%M')} (cada {self.cada_n_dias} días)"
+        )
+
+    def _ajustar_a_dia_semana(self, fecha):
+        """
+        Retrocede hasta 6 días sobre 'fecha' hasta caer en el día de semana de
+        la regla. Con esto el ciclo quincenal (que recorre los días de la
+        semana) siempre aterriza en el martes/miércoles correspondiente.
+        """
+        from datetime import timedelta
+        for i in range(7):
+            candidata = fecha - timedelta(days=i)
+            if candidata.weekday() == self.dia_semana:
+                return candidata
+        return fecha
+
+    def fecha_ocurrencia(self, numero=0):
+        """Fecha de la ocurrencia 'numero' de la regla (0 = la fecha ancla)."""
+        from datetime import timedelta
+        paso = max(1, self.cada_n_dias)
+        return self._ajustar_a_dia_semana(self.fecha_ancla + timedelta(days=paso * numero))
+
+    def slots_bloqueados(self, fecha):
+        """
+        Lista de horas (datetime.time) de slots de 1 h que esta regla bloquea
+        en 'fecha': todas las que se solapen con la sesión de 1.5 h.
+        """
+        from datetime import datetime, timedelta
+        inicio = datetime.combine(fecha, self.hora_inicio)
+        fin = inicio + timedelta(minutes=self.duracion_minutos)
+        horas = []
+        slot = inicio
+        while slot < fin:
+            horas.append(slot.time())
+            slot += timedelta(hours=1)
+        return horas
+
+
 class HorarioFijoPsicologo(models.Model):
     """
     Horario de trabajo de un psicólogo, vigente durante un periodo de tiempo
