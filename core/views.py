@@ -579,11 +579,13 @@ def modulo_informativo(request):
 @transaction.atomic
 def registrar_usuario(request):
     if request.method == 'POST':
-        nombre = (request.POST.get('nombre') or '').strip()
+        nombre = (request.POST.get('nombre') or '').strip()[:100]
         email = (request.POST.get('email') or '').strip()
         password = request.POST.get('password') or ''
-        telefono = (request.POST.get('telefono') or '').strip()
-        telefono_emergencia = (request.POST.get('telefono_emergencia') or '').strip()
+        # 🔒 Los teléfonos son varchar(20) en MySQL; sin truncar, un contacto
+        # escrito con nombre en lugar de número revienta el INSERT con 500.
+        telefono = (request.POST.get('telefono') or '').strip()[:20]
+        telefono_emergencia = (request.POST.get('telefono_emergencia') or '').strip()[:20]
         flujo_elegido = request.POST.get('flujo_elegido', 'individual')
         respuestas_raw = request.POST.get('respuestas_json') or request.POST.get('respuestas') or '{}'
 
@@ -731,6 +733,7 @@ COLABORADORES_TECTUM = {
     'kevinsegundo285@gmail.com',
     'cmechegaray@gmail.com',
     'juanrepettot@gmail.com',
+    'lic.jm.garay@gmail.com',
     # 'correo.ana.gabriela@...',  # ← agregar en noviembre
 }
 
