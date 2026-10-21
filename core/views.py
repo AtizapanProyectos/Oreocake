@@ -1042,7 +1042,7 @@ def inscribir_taller_ajax(request):
                 mensaje_plano = strip_tags(mensaje_html)
                 
                 try:
-                    send_mail(asunto, mensaje_plano, 'Espacio HOPE <no-reply@espaciohope.com>', [request.user.email], html_message=mensaje_html, fail_silently=True)
+                    send_mail(asunto, mensaje_plano, 'Espacio HOPE <contacto@espaciohope.com>', [request.user.email], html_message=mensaje_html, fail_silently=True)
                 except Exception as e:
                     print(f"Error al enviar correo del taller: {e}")
                 # =========================================================
@@ -1423,7 +1423,7 @@ def guardar_cita_ajax(request):
             }
             mensaje_html = render_to_string('correo_cita.html', contexto)
             mensaje_plano = strip_tags(mensaje_html)
-            remitente = 'TECTUM <no-reply@espaciohope.com>' if es_tectum_email else 'Espacio HOPE <no-reply@espaciohope.com>'
+            remitente = 'TECTUM <contacto@espaciohope.com>' if es_tectum_email else 'Espacio HOPE <contacto@espaciohope.com>'
             send_mail(asunto, mensaje_plano, remitente, [request.user.email], html_message=mensaje_html, fail_silently=True)
 
             return JsonResponse({'status': 'success'})
@@ -2187,7 +2187,7 @@ def enviar_mood_ajax(request):
         email = EmailMultiAlternatives(
             subject=subject,
             body=text_content,
-            from_email='Espacio HOPE <no-reply@espaciohope.com>',                          # usa DEFAULT_FROM_EMAIL del settings
+            from_email='Espacio HOPE <contacto@espaciohope.com>',                          # usa DEFAULT_FROM_EMAIL del settings
             to=['contacto@espaciohope.com'],
         )
         email.attach_alternative(html_content, 'text/html')
@@ -2915,7 +2915,7 @@ def solicitar_recuperacion(request):
             email_msg = EmailMultiAlternatives(
                 subject=asunto,
                 body=texto_plano,
-                from_email='Espacio HOPE <no-reply@espaciohope.com>',
+                from_email='Espacio HOPE <contacto@espaciohope.com>',
                 to=[user.email]
             )
             email_msg.attach_alternative(html_correo, "text/html")
@@ -3462,7 +3462,7 @@ def pago_exitoso_clip(request, cita_id):
             }
             mensaje_html = render_to_string('correo_cita.html', contexto)
             mensaje_plano = strip_tags(mensaje_html)
-            remitente = 'TECTUM <no-reply@espaciohope.com>' if es_tectum_email else 'Espacio HOPE <no-reply@espaciohope.com>'
+            remitente = 'TECTUM <contacto@espaciohope.com>' if es_tectum_email else 'Espacio HOPE <contacto@espaciohope.com>'
             send_mail(asunto, mensaje_plano, remitente, [paciente.email], html_message=mensaje_html, fail_silently=True)
 
             messages.success(request, "¡Todo listo! Tu pago fue procesado con éxito y tu sesión ha sido agendada en tu panel.")
@@ -3806,7 +3806,7 @@ def admin_guardar_cita_ajax(request):
         }
         mensaje_html = render_to_string('correo_cita.html', contexto)
         mensaje_plano = strip_tags(mensaje_html)
-        remitente = 'TECTUM <no-reply@espaciohope.com>' if es_tectum_cita else 'Espacio HOPE <no-reply@espaciohope.com>'
+        remitente = 'TECTUM <contacto@espaciohope.com>' if es_tectum_cita else 'Espacio HOPE <contacto@espaciohope.com>'
         send_mail(asunto, mensaje_plano, remitente, [paciente_user.email], html_message=mensaje_html, fail_silently=True)
 
         return JsonResponse({'status': 'success'})
@@ -3858,7 +3858,7 @@ def formulario_venezuela(request):
             send_mail(
                 subject=f'🇻🇪 Nuevo contacto: {nombre}',
                 message=texto_plano,
-                from_email='Espacio HOPE <no-reply@espaciohope.com>',
+                from_email='Espacio HOPE <contacto@espaciohope.com>',
                 recipient_list=['contacto@espaciohope.com'],
                 fail_silently=True,
             )
@@ -3962,7 +3962,7 @@ def formulario_colombia(request):
             send_mail(
                 subject=f'🇨🇴 Nuevo contacto: {nombre}',
                 message=texto_plano,
-                from_email='Espacio HOPE <no-reply@espaciohope.com>',
+                from_email='Espacio HOPE <contacto@espaciohope.com>',
                 recipient_list=['contacto@espaciohope.com'],
                 fail_silently=True,
             )
@@ -4120,7 +4120,7 @@ def _enviar_correo_ipp_async(psicologo_email, paciente_nombre, ipt_actual, ipt_a
         email = EmailMultiAlternatives(
             subject=asunto,
             body=mensaje_plano,
-            from_email='Espacio HOPE <no-reply@espaciohope.com>',
+            from_email='Espacio HOPE <contacto@espaciohope.com>',
             to=[psicologo_email]
         )
         email.attach_alternative(mensaje_html, "text/html")
@@ -5675,7 +5675,7 @@ def _enviar_email_reporte_paciente_con_pdf(paciente, datos, pdf_bytes, filename,
     cuerpo_html = render_to_string('correo_reporte_paciente.html', contexto)
     cuerpo_plano = strip_tags(cuerpo_html)
 
-    remitente = 'TECTUM <no-reply@espaciohope.com>' if es_tectum else 'Espacio HOPE <no-reply@espaciohope.com>'
+    remitente = 'TECTUM <contacto@espaciohope.com>' if es_tectum else 'Espacio HOPE <contacto@espaciohope.com>'
     email = EmailMultiAlternatives(
         subject=asunto,
         body=cuerpo_plano,
@@ -5709,7 +5709,7 @@ def _enviar_email_reporte_psicologo_con_pdf(psicologo, paciente, datos, pdf_byte
     cuerpo_html = render_to_string('correo_reporte_psicologo.html', contexto)
     cuerpo_plano = strip_tags(cuerpo_html)
 
-    remitente = 'TECTUM <no-reply@espaciohope.com>' if es_tectum else 'Espacio HOPE <no-reply@espaciohope.com>'
+    remitente = 'TECTUM <contacto@espaciohope.com>' if es_tectum else 'Espacio HOPE <contacto@espaciohope.com>'
     email = EmailMultiAlternatives(
         subject=asunto,
         body=cuerpo_plano,
@@ -6139,7 +6139,7 @@ def api_info_reporte_cita(request, cita_id):
             'fecha': r.fecha_generacion.strftime('%d/%m/%Y %H:%M') if r.fecha_generacion else '',
         })
 
-    remitente_correo = getattr(settings, 'DEFAULT_FROM_EMAIL', 'Espacio HOPE <no-reply@espaciohope.com>')
+    remitente_correo = getattr(settings, 'DEFAULT_FROM_EMAIL', 'Espacio HOPE <contacto@espaciohope.com>')
     es_tectum_cita = getattr(cita, 'es_tectum', False) or getattr(getattr(paciente, 'perfil', None), 'es_tectum', False)
     marca_correo = 'TECTUM' if es_tectum_cita else 'Espacio HOPE'
 
