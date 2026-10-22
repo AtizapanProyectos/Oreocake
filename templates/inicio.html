@@ -201,6 +201,66 @@
       background: radial-gradient(circle at top right, rgba(242, 124, 33, .08), #fff 60%)
     }
 
+    /* ── 🎃 DECORACIÓN TEMPORADA HALLOWEEN (sutil, se activa por fecha en el script) ── */
+    .he-decor {
+      display: none;
+      position: absolute;
+      inset: 0;
+      z-index: 3;
+      pointer-events: none
+    }
+
+    body.he-fest .he-decor { display: block }
+
+    .he-decor span {
+      position: absolute;
+      display: inline-block;
+      will-change: transform;
+      filter: drop-shadow(0 4px 8px rgba(0, 0, 0, .15))
+    }
+
+    .he-web { top: 3%; left: 2%; font-size: 3rem; opacity: .16 }
+    .he-pumpkin-1 { top: 10%; left: 6%; font-size: 2.5rem; opacity: .5; animation: he-bob 4.5s ease-in-out infinite }
+    .he-pumpkin-2 { top: 17%; left: 11%; font-size: 1.6rem; opacity: .38; animation: he-bob 4.5s ease-in-out .9s infinite }
+    .he-ghost { bottom: 14%; right: 4%; font-size: 2.3rem; opacity: .5; animation: he-float 6s ease-in-out .5s infinite }
+    .he-spider-wrap {
+      top: 0;
+      right: 9%;
+      transform-origin: top center;
+      animation: he-swing 5.5s ease-in-out infinite
+    }
+    .he-spider {
+      display: block;
+      font-size: 1.9rem;
+      opacity: .6;
+      animation: he-dangle 3.6s ease-in-out infinite
+    }
+
+    @keyframes he-bob {
+      0%, 100% { transform: translateY(0) rotate(-6deg) }
+      50% { transform: translateY(-7px) rotate(6deg) }
+    }
+    @keyframes he-float {
+      0%, 100% { transform: translateY(0) rotate(-4deg) }
+      50% { transform: translateY(-10px) rotate(8deg) }
+    }
+    @keyframes he-swing {
+      0%, 100% { transform: rotate(-14deg) }
+      50% { transform: rotate(14deg) }
+    }
+    @keyframes he-dangle {
+      0%, 100% { transform: translateY(0) }
+      50% { transform: translateY(14px) }
+    }
+
+    @media (max-width: 768px) {
+      .he-web { font-size: 2rem }
+      .he-pumpkin-1 { font-size: 1.7rem; left: 5% }
+      .he-pumpkin-2 { display: none }
+      .he-ghost { font-size: 1.6rem }
+      .he-spider { font-size: 1.4rem }
+    }
+
     .slide-content {
       max-width: 1100px;
       z-index: 10;
@@ -1698,6 +1758,14 @@
     </nav>
     <!-- HERO -->
     <section id="inicio" class="hero-slider">
+      <!-- 🎃 Decoración de temporada: se muestra sola del 20 oct al 3 nov (ver script al final) -->
+      <div class="he-decor" aria-hidden="true">
+        <span class="he-web">🕸️</span>
+        <span class="he-pumpkin-1">🎃</span>
+        <span class="he-pumpkin-2">🎃</span>
+        <div class="he-spider-wrap"><span class="he-spider">🕷️</span></div>
+        <span class="he-ghost">👻</span>
+      </div>
       <div class="slide slide-1 active" style="background:none;">
 
         <div
@@ -2993,6 +3061,19 @@
   </div>
 
   <script>
+
+    // 🎃 Decoración de Halloween: solo del 20 de octubre al 3 de noviembre (hora CDMX).
+    // Fuera de temporada no se muestra nada; el código puede quedarse todo el año.
+    (function () {
+      const partes = new Intl.DateTimeFormat('es-MX', {
+        timeZone: 'America/Mexico_City', month: 'numeric', day: 'numeric'
+      }).formatToParts(new Date());
+      const valor = tipo => Number(partes.find(p => p.type === tipo).value);
+      const mes = valor('month');
+      const dia = valor('day');
+      const enTemporada = (mes === 10 && dia >= 20) || (mes === 11 && dia <= 3);
+      if (enTemporada) document.body.classList.add('he-fest');
+    })();
 
     function abrirModalRecuperar() {
       document.getElementById('email-recuperar').value = "";
