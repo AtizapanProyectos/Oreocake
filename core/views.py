@@ -595,6 +595,37 @@ def registrar_usuario(request):
                 'message': 'Por favor completa todos los campos requeridos (correo y contraseña).'
             })
 
+        # 🛡️ Anti-bots 1/3: honeypot invisible (los bots lo rellenan, las personas no)
+        if (request.POST.get('website') or request.POST.get('empresa_sitio') or '').strip():
+            logging.getLogger(__name__).warning(
+                '🤖 Registro bot bloqueado (honeypot) ip=%s email=%s',
+                _ip_cliente(request), email[:60]
+            )
+            return JsonResponse({
+                'status': 'error',
+                'message': 'No pudimos completar el registro. Inténtalo más tarde.'
+            })
+
+        # 🛡️ Anti-bots 2/3: correos desechables o usuarios aleatorios (ej. maxxspace.com)
+        if _correo_sospechoso(email):
+            logging.getLogger(__name__).warning(
+                '🤖 Registro bloqueado por correo desechable/sospechoso ip=%s email=%s',
+                _ip_cliente(request), email[:60]
+            )
+            return JsonResponse({
+                'status': 'error',
+                'message': 'Ese correo no es válido para crear una cuenta. Usa un correo personal o corporativo real.'
+            })
+
+        # 🛡️ Anti-bots 3/3: máx. 8 registros por IP por hora
+        clave_registros_ip = f'registro:intentos:{_ip_cliente(request)}'
+        if _limite_excedido(clave_registros_ip, 8):
+            return JsonResponse({
+                'status': 'error',
+                'message': 'Se alcanzó el límite de registros desde esta conexión. Inténtalo más tarde.'
+            }, status=429)
+        _sumar_intento(clave_registros_ip, 3600)
+
         es_beneficios_bool = False
         if 'tectumbeneficios' in request.get_host().lower() or request.POST.get('convenio') == 'tectumbeneficios' or request.session.get('convenio_tectum_beneficios'):
             es_beneficios_bool = True
@@ -748,6 +779,58 @@ def _es_colaborador_tectum(user, email_ingresado=''):
     return bool(correos & COLABORADORES_TECTUM)
 
 
+# =========================================================================
+# 🛡️ PROTECCIÓN ANTI-BOTS / ANTI-FUERZA-BRUTA (registro y login)
+# =========================================================================
+# Correos desechables que usan los bots para registrarse en masa.
+DOMINIOS_CORREO_DESECHABLE = {
+    'maxxspace.com', 'mailinator.com', 'guerrillamail.com', 'guerrillamail.net',
+    '10minutemail.com', 'temp-mail.org', 'tempmail.com', 'tempmail.net',
+    'yopmail.com', 'sharklasers.com', 'trashmail.com', 'dispostable.com',
+    'getnada.com', 'maildrop.cc', 'mailnesia.com', 'emailondeck.com',
+    'minuteinbox.com', 'mohmal.com', 'dropmail.me', 'fakeinbox.com',
+}
+
+# Bots: usuario aleatorio tipo "2svw3wyscc6lnv" (12+ alfanuméricos, sin separadores)
+PATRON_CORREO_BOT = re.compile(r'^[a-z0-9]{12,}$')
+
+
+def _ip_cliente(request):
+    """IP real del visitante (Railway/Cloudflare mandan X-Forwarded-For)."""
+    xff = request.META.get('HTTP_X_FORWARDED_FOR', '')
+    if xff:
+        return xff.split(',')[0].strip()
+    return request.META.get('REMOTE_ADDR', '') or '0.0.0.0'
+
+
+def _correo_sospechoso(email):
+    """True si el correo es de un dominio desechable o tiene pinta de bot."""
+    email = (email or '').strip().lower()
+    if '@' not in email:
+        return True
+    local, dominio = email.rsplit('@', 1)
+    if any(dominio == d or dominio.endswith('.' + d) for d in DOMINIOS_CORREO_DESECHABLE):
+        return True
+    # Local aleatorio: 12+ caracteres, solo letras/números y al menos 2 dígitos
+    if PATRON_CORREO_BOT.match(local) and sum(c.isdigit() for c in local) >= 2:
+        return True
+    return False
+
+
+def _sumar_intento(clave, ventana):
+    """Suma 1 al contador de la clave; crea la entrada si no existe."""
+    if cache.add(clave, 1, ventana):
+        return
+    try:
+        cache.incr(clave)
+    except ValueError:
+        cache.set(clave, 1, ventana)
+
+
+def _limite_excedido(clave, maximo):
+    return (cache.get(clave, 0) or 0) >= maximo
+
+
 @csrf_exempt
 def login_usuario(request):
     if request.method != 'POST':
@@ -755,6 +838,15 @@ def login_usuario(request):
 
     email = (request.POST.get('login_email') or request.POST.get('email') or '').strip()
     password = request.POST.get('login_password') or request.POST.get('password') or ''
+
+    # 🛡️ Freno anti-fuerza-bruta: máx. 15 intentos fallidos por IP cada 15 minutos
+    clave_intentos_login = f'login:intentos:{_ip_cliente(request)}'
+    if _limite_excedido(clave_intentos_login, 15):
+        return JsonResponse({
+            'status': 'error',
+            'error_type': 'rate_limit',
+            'message': 'Demasiados intentos de inicio de sesión. Espera unos minutos e inténtalo de nuevo.'
+        }, status=429)
 
     if not email or not password:
         return JsonResponse({
@@ -765,6 +857,7 @@ def login_usuario(request):
 
     user = User.objects.filter(Q(username__iexact=email) | Q(email__iexact=email)).first()
     if not user or not user.check_password(password):
+        _sumar_intento(clave_intentos_login, 900)
         return JsonResponse({
             'status': 'error',
             'error_type': 'invalid',
@@ -807,6 +900,7 @@ def login_usuario(request):
 
     # ✅ Ya validado: ahora sí iniciamos sesión
     login(request, user)
+    cache.delete(clave_intentos_login)
 
     if es_beneficios:
         request.session['convenio_tectum_beneficios'] = True

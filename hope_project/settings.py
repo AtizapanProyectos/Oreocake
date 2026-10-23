@@ -129,6 +129,16 @@ TIME_ZONE = 'America/Mexico_City' # Pon tu zona horaria
 USE_I18N = True
 USE_TZ = True
 
+# 🛡️ Caché local (frena bots y fuerza bruta: límites de registro/login)
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'hope-proteccion',
+        'TIMEOUT': 3600,
+        'OPTIONS': {'MAX_ENTRIES': 10000},
+    }
+}
+
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 

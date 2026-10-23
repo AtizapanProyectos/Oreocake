@@ -883,6 +883,7 @@
             <!-- STEP CREACIÓN DE CUENTA FINAL -->
             <form action="{% url 'registro_usuario' %}" method="POST" id="formRegistro" style="display: none;">
                 {% csrf_token %}
+                <input type="text" name="website" value="" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0;">{% comment %} 🛡️ honeypot anti-bots (no llenar) {% endcomment %}
                 <input type="hidden" name="flujo_elegido" id="inputFlujoFinal" value="familiar">
                 <input type="hidden" name="respuestas_json" id="inputRespuestasFinal">
                 <input type="hidden" name="servicio_origen" id="inputServicioOrigen" value="Terapia Familiar">
