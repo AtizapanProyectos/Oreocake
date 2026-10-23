@@ -157,12 +157,16 @@ MEDIA_ROOT = BASE_DIR / 'media'
 # CONFIGURACIÓN DE CORREO ELECTRÓNICO (SMTP)
 # ==========================================
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-# Cuando tengas correo empresarial, cambiarás esto (ej. smtp.hostinger.com o smtp.office365.com)
-EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
-EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER')  # Pon tu Gmail actual
-# OJO: Usa una "Contraseña de Aplicación" de Google, no tu contraseña normal.
+# 🔥 Servidor SMTP: Zoho (dominio espaciohope.com) para que SPF/DKIM autentiquen
+# el remitente contacto@espaciohope.com. Todo se puede sobreescribir por variables
+# de entorno en Railway (EMAIL_HOST, EMAIL_PORT, EMAIL_HOST_USER, EMAIL_HOST_PASSWORD).
+EMAIL_HOST = os.environ.get('EMAIL_HOST', 'smtp.zoho.com')
+EMAIL_PORT = int(os.environ.get('EMAIL_PORT', '465'))
+# Zoho usa SSL en 465; si algún día se vuelve a 587, se usa TLS automáticamente.
+EMAIL_USE_SSL = EMAIL_PORT == 465
+EMAIL_USE_TLS = EMAIL_PORT == 587
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER')  # contacto@espaciohope.com
+# OJO: En Zoho es una "Contraseña de aplicación", no la contraseña normal.
 EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD')
 DEFAULT_FROM_EMAIL = 'Espacio HOPE <contacto@espaciohope.com>'
 
