@@ -663,12 +663,16 @@ def registrar_usuario(request):
                     'nombre': nombre or user.first_name or user.username,
                     'telefono': telefono,
                     'telefono_emergencia': telefono_emergencia,
-                    'es_tectum': es_tectum_bool
+                    'es_tectum': es_tectum_bool,
+                    'es_beneficios': es_beneficios_bool  # 28/10/2026: separación de organizaciones (monitoreo automatización)
                 }
             )
             if es_tectum_bool and not perfil.es_tectum:
                 perfil.es_tectum = True
                 perfil.save(update_fields=['es_tectum'])
+            if es_beneficios_bool and not perfil.es_beneficios:
+                perfil.es_beneficios = True
+                perfil.save(update_fields=['es_beneficios'])
 
             # Guardamos o actualizamos el cuestionario para este flujo_elegido
             CuestionarioRegistro.objects.update_or_create(
@@ -702,7 +706,8 @@ def registrar_usuario(request):
             telefono=telefono,
             telefono_emergencia=telefono_emergencia,
             es_padre=es_padre_bool,
-            es_tectum=es_tectum_bool
+            es_tectum=es_tectum_bool,
+            es_beneficios=es_beneficios_bool  # 28/10/2026: separación de organizaciones
         )
 
         CuestionarioRegistro.objects.create(
@@ -904,6 +909,10 @@ def login_usuario(request):
 
     if es_beneficios:
         request.session['convenio_tectum_beneficios'] = True
+        # 28/10/2026: persistimos la organización Beneficios para métricas separadas
+        if hasattr(user, 'perfil') and not user.perfil.es_beneficios:
+            user.perfil.es_beneficios = True
+            user.perfil.save(update_fields=['es_beneficios'])
 
     if es_login_tectum_inhouse:
         if hasattr(user, 'perfil') and not user.perfil.es_tectum:
@@ -1496,6 +1505,7 @@ def guardar_cita_ajax(request):
                 motivo='Primera Sesión' if not perfil.psicologo_asignado else 'Sesión de Seguimiento',
                 estado='Confirmada',
                 es_tectum=es_tectum_cita,
+                es_beneficios=es_beneficios,  # 28/10/2026: separación de organizaciones
                 enlace_meet=link_final,
                 id_evento_google=id_google  
             )
@@ -2564,9 +2574,11 @@ def _extraer_texto_de_google_doc(file_url, creds=None):
     return ""
 
 
-def _generar_bitacora_con_ia_de_texto(texto_notas, paciente_nombre=""):
+def _generar_bitacora_con_ia_de_texto(texto_notas, paciente_nombre="", telemetria=None):
     """
     Llama a Groq para estructurar las notas/resumen de Google Meet en los 5 campos clínicos.
+    28/10/2026: parámetro opcional `telemetria` (dict) para el monitoreo de automatización;
+    si se provee, se llena con modelo, tokens y no cambia el comportamiento.
     """
     from groq import Groq
     client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
@@ -2600,6 +2612,13 @@ def _generar_bitacora_con_ia_de_texto(texto_notas, paciente_nombre=""):
             temperature=0.1,
         )
         texto_respuesta = response.choices[0].message.content.strip()
+        if telemetria is not None:
+            telemetria['modelo'] = "openai/gpt-oss-120b"
+            try:
+                telemetria['tokens_prompt'] = getattr(response.usage, 'prompt_tokens', None)
+                telemetria['tokens_respuesta'] = getattr(response.usage, 'completion_tokens', None)
+            except Exception:
+                pass
         return _extraer_json_groq(texto_respuesta)
     except Exception as e_groq:
         err_str = str(e_groq)
@@ -2618,6 +2637,13 @@ def _generar_bitacora_con_ia_de_texto(texto_notas, paciente_nombre=""):
                     temperature=0.1,
                 )
                 texto_respuesta = response.choices[0].message.content.strip()
+                if telemetria is not None:
+                    telemetria['modelo'] = "llama-3.3-70b-versatile"
+                    try:
+                        telemetria['tokens_prompt'] = getattr(response.usage, 'prompt_tokens', None)
+                        telemetria['tokens_respuesta'] = getattr(response.usage, 'completion_tokens', None)
+                    except Exception:
+                        pass
                 return _extraer_json_groq(texto_respuesta)
             except Exception as e_fallback:
                 raise Exception(f"Fallo en Groq (120b y 70b): {str(e_fallback)}")
@@ -2625,12 +2651,62 @@ def _generar_bitacora_con_ia_de_texto(texto_notas, paciente_nombre=""):
             raise e_groq
 
 
-def generar_bitacora_automatica_meet(cita_id, log_func=None):
+def _reg_log_auto(cita=None, etapa='completo', estado='exitoso', servicio='sistema',
+                  accion='Generación automática de bitácora (Google Meet + Groq)',
+                  origen='automatico', detalle=None, error_tecnico=None,
+                  stack_trace=None, accion_sugerida=None, fuente_datos=None,
+                  duracion_ms=None, telemetria=None, usuario=None, ip=None):
+    """
+    Escribe un registro en LogAutomatizacionNotas de forma fail-safe (28/10/2026).
+    Puremente observacional: si el log falla, el flujo de automatización sigue igual.
+    """
+    try:
+        organizacion = 'hope'
+        if cita is not None:
+            if getattr(cita, 'es_beneficios', False):
+                organizacion = 'tectum_beneficios'
+            elif getattr(cita, 'es_tectum', False):
+                organizacion = 'tectum_inhouse'
+        intento = 1
+        if cita is not None and cita.pk:
+            intento = LogAutomatizacionNotas.objects.filter(cita=cita, etapa=etapa).count() + 1
+        kwargs = {
+            'cita': cita,
+            'usuario': usuario,
+            'etapa': etapa,
+            'estado': estado,
+            'servicio': servicio,
+            'organizacion': organizacion,
+            'origen': origen,
+            'intento': intento,
+            'detalle': (detalle or '')[:1900],
+            'error_tecnico': (str(error_tecnico) if error_tecnico else '')[:1900] or None,
+            'stack_trace': (stack_trace or '')[:3500] or None,
+            'accion_sugerida': (accion_sugerida or '')[:240] or None,
+            'fuente_datos': (fuente_datos or '')[:240] or None,
+            'duracion_ms': duracion_ms,
+            'ip': (ip or '')[:45] or None,
+        }
+        if telemetria:
+            kwargs['modelo_ia'] = (telemetria.get('modelo') or '')[:60] or None
+            kwargs['tokens_prompt'] = telemetria.get('tokens_prompt')
+            kwargs['tokens_respuesta'] = telemetria.get('tokens_respuesta')
+        else:
+            kwargs['modelo_ia'] = None
+        LogAutomatizacionNotas.objects.create(**kwargs)
+    except Exception as e:
+        logging.getLogger(__name__).warning('⚠️ [AUTO-LOG] No se pudo registrar LogAutomatizacionNotas: %s', e)
+
+
+def generar_bitacora_automatica_meet(cita_id, log_func=None, origen='automatico', usuario=None):
     """
     Recupera los attachments de Google Meet de la cita dada,
     extrae el texto de las notas de Google Docs, procesa con Groq y
     crea o actualiza el HistorialClinico automáticamente.
     Retorna (exito: bool, mensaje: str).
+
+    28/10/2026: instrumentado con LogAutomatizacionNotas (fail-safe, additive);
+    el comportamiento y los retornos son EXACTAMENTE los mismos que antes.
     """
     def _log(msg):
         if log_func:
@@ -2641,6 +2717,11 @@ def generar_bitacora_automatica_meet(cita_id, log_func=None):
         else:
             logging.getLogger(__name__).info(msg)
 
+    import traceback
+    import time as _time
+
+    cita = None
+    _t_lectura_ini = _time.monotonic()
     try:
         cita = Cita.objects.filter(id=cita_id).select_related('paciente', 'psicologo__usuario').first()
         if not cita:
@@ -2648,29 +2729,60 @@ def generar_bitacora_automatica_meet(cita_id, log_func=None):
 
         # Verificar si ya tiene bitácora con notas
         if hasattr(cita, 'nota_clinica') and cita.nota_clinica and bool(cita.nota_clinica.notas_sesion):
+            _reg_log_auto(cita, 'lectura', 'ignorado', 'sistema', origen=origen,
+                          detalle='Bitácora ya existente con notas_sesion: la generación automática no procesa '
+                                  'de nuevo la sesión (protección de contenido clínico).',
+                          accion_sugerida='Nada que hacer: la bitácora ya existe.', usuario=usuario)
             return True, f"Cita #{cita_id} ya cuenta con bitácora clínica previamente guardada."
 
         if not cita.id_evento_google:
+            _reg_log_auto(cita, 'lectura', 'ignorado', 'google_meet', origen=origen,
+                          detalle='Cita sin id_evento_google (presencial o sin Meet). No hay notas de Meet que leer.',
+                          accion_sugerida='Nada que hacer: la sesión no usa Meet.', usuario=usuario)
             return False, f"Cita #{cita_id} no tiene id_evento_google (posiblemente presencial o sin Meet)."
 
         token_json_str = os.environ.get('GOOGLE_TOKEN_JSON')
         if not token_json_str:
+            _reg_log_auto(cita, 'lectura', 'sin_permisos', 'sistema', origen=origen,
+                          detalle='Variable GOOGLE_TOKEN_JSON no disponible: no se puede autenticar con Google.',
+                          accion_sugerida='Configurar GOOGLE_TOKEN_JSON en Railway y reintentar la lectura.', usuario=usuario)
             return False, "Variable GOOGLE_TOKEN_JSON no configurada en el entorno."
 
         from google.oauth2.credentials import Credentials
         from googleapiclient.discovery import build
 
-        creds = Credentials.from_authorized_user_info(
-            json.loads(token_json_str),
-            ['https://www.googleapis.com/auth/calendar.events']
-        )
-        service = build('calendar', 'v3', credentials=creds)
+        # Títulos de attachments (fuente de datos) para la bitácora de diagnóstico
+        _titulo_fuentes = []
+        try:
+            _log("   🔗 Conectando con Google Calendar...")
+            creds = Credentials.from_authorized_user_info(
+                json.loads(token_json_str),
+                ['https://www.googleapis.com/auth/calendar.events']
+            )
+            service = build('calendar', 'v3', credentials=creds)
 
-        event = service.events().get(calendarId='primary', eventId=cita.id_evento_google).execute()
-        attachments = event.get('attachments', [])
+            event = service.events().get(calendarId='primary', eventId=cita.id_evento_google).execute()
+            attachments = event.get('attachments', [])
+            for _a in attachments:
+                _titulo_fuentes.append(_a.get('title', 'Documento de Google'))
+        except Exception as e_lectura:
+            _reg_log_auto(cita, 'lectura', 'error', 'google_meet', origen=origen,
+                          detalle=f'Error leyendo el evento de Google Calendar de la cita #{cita.id} (id_evento={cita.id_evento_google}).',
+                          error_tecnico=str(e_lectura), stack_trace=traceback.format_exc(),
+                          accion_sugerida='Si el token de Google expiró, actualizar GOOGLE_TOKEN_JSON; si no, ejecutar reintento de lectura.',
+                          usuario=usuario)
+            raise
 
         if not attachments:
+            _reg_log_auto(cita, 'lectura', 'pendiente', 'google_meet', origen=origen,
+                          detalle='Google aún no ha vinculado documentos (attachments) al evento de Meet. '
+                                  'Las notas suelen aparecer minutos después de la sesión.',
+                          accion_sugerida='Reintentar la lectura más tarde (Google genera las notas tras la reunión).',
+                          usuario=usuario)
             return False, f"Google aún no ha vinculado documentos en los attachments del evento para la Cita #{cita_id}."
+
+        fuentes_str = ' | '.join(_titulo_fuentes) if _titulo_fuentes else 'Sin títulos'
+        _ms_lectura = int((_time.monotonic() - _t_lectura_ini) * 1000)
 
         # Buscar el archivo de notas o transcripción de Google Doc
         texto_acumulado = ""
@@ -2682,14 +2794,39 @@ def generar_bitacora_automatica_meet(cita_id, log_func=None):
                     texto_acumulado += f"\n\n--- DOCUMENTO: {a.get('title', 'Notas Meet')} ---\n" + texto_extraido
 
         if not texto_acumulado.strip():
+            _reg_log_auto(cita, 'lectura', 'error', 'google_meet', origen=origen,
+                          detalle='Los attachments existen pero no se pudo extraer texto legible de los Google Docs.',
+                          error_tecnico='Texto extraído vacío de todos los attachments.',
+                          accion_sugerida='Ejecutar reintento de lectura; si persiste, verificar que el documento de Meet no esté vacío.',
+                          fuente_datos=fuentes_str, duracion_ms=_ms_lectura, usuario=usuario)
             return False, f"No se pudo extraer texto legible de los attachments de Google Meet para la Cita #{cita_id}."
+
+        _reg_log_auto(cita, 'lectura', 'exitoso', 'google_meet', origen=origen,
+                      detalle=f'Notas/transcripción leídas correctamente desde Google Meet ({len(texto_acumulado)} caracteres).',
+                      fuente_datos=fuentes_str, duracion_ms=_ms_lectura, usuario=usuario)
 
         paciente_nom = cita.paciente.first_name if cita.paciente else "Paciente"
         _log(f"   🤖 [IA GROQ] Procesando notas clínicas de Google Docs ({len(texto_acumulado)} caracteres)...")
 
-        datos_ia = _generar_bitacora_con_ia_de_texto(texto_acumulado, paciente_nombre=paciente_nom)
+        _telemetria = {}
+        _t_ia_ini = _time.monotonic()
+        _reg_log_auto(cita, 'ia', 'en_proceso', 'groq', origen=origen,
+                      detalle=f'Enviando notas a Groq para estructurar la bitácora ({len(texto_acumulado)} caracteres, recorte a 8000).',
+                      fuente_datos=fuentes_str, usuario=usuario)
+        datos_ia = _generar_bitacora_con_ia_de_texto(texto_acumulado, paciente_nombre=paciente_nom, telemetria=_telemetria)
+        _ms_ia = int((_time.monotonic() - _t_ia_ini) * 1000)
         if not datos_ia or not isinstance(datos_ia, dict):
+            _reg_log_auto(cita, 'ia', 'error', 'groq', origen=origen,
+                          detalle='La IA no devolvió una estructura JSON válida para la bitácora.',
+                          error_tecnico=f'Contenido recibido: {str(datos_ia)[:500]}',
+                          accion_sugerida='Ejecutar reintento de procesamiento de IA.',
+                          fuente_datos=fuentes_str, duracion_ms=_ms_ia, telemetria=_telemetria, usuario=usuario)
             return False, "La IA no devolvió una estructura JSON válida para la bitácora."
+
+        _reg_log_auto(cita, 'ia', 'exitoso', 'groq', origen=origen,
+                      detalle='Groq estructuró la bitácora en los 5 campos clínicos (como_llega, notas_sesion, '
+                              'aprendizaje_paciente, como_se_va, recomendaciones).',
+                      fuente_datos=fuentes_str, duracion_ms=_ms_ia, telemetria=_telemetria, usuario=usuario)
 
         notas_sesion = datos_ia.get('notas_sesion', '').strip()
         if not notas_sesion:
@@ -2718,14 +2855,33 @@ def generar_bitacora_automatica_meet(cita_id, log_func=None):
             historial.recomendaciones = datos_ia.get('recomendaciones', historial.recomendaciones or '')
             historial.save()
 
+        if creado:
+            _reg_log_auto(cita, 'escritura', 'exitoso', 'base_datos', origen=origen,
+                          detalle='Nota clínica CREADA automáticamente y vinculada a la Cita (HistorialClinico).',
+                          fuente_datos=fuentes_str, telemetria=_telemetria, usuario=usuario)
+        else:
+            _reg_log_auto(cita, 'escritura', 'exitoso', 'base_datos', origen=origen,
+                          detalle='Nota clínica existente (sin notas / borrador) COMPLETADA por IA: los campos '
+                                  'vacíos se actualizaron conservando los valores previos.',
+                          fuente_datos=fuentes_str, telemetria=_telemetria, usuario=usuario)
+
         # Marcar la cita como completada
         if cita.estado != 'Completada':
             cita.estado = 'Completada'
             cita.save()
 
+        _reg_log_auto(cita, 'completo', 'exitoso', 'sistema', origen=origen,
+                      detalle='Sincronización completa exitosa: lectura Meet → IA Groq → nota clínica escrita '
+                              f'{"(creada)" if creado else "(completada)"} → cita marcada como Completada.',
+                      fuente_datos=fuentes_str, telemetria=_telemetria, usuario=usuario)
         return True, f"Bitácora creada y vinculada exitosamente con IA para la Cita #{cita_id}."
 
     except Exception as e:
+        _reg_log_auto(cita, 'completo', 'error', 'sistema', origen=origen,
+                      detalle=f'Error generando bitácora automática para Cita #{cita_id}.',
+                      error_tecnico=str(e), stack_trace=traceback.format_exc(),
+                      accion_sugerida='Ver el detalle del error; típicamente reintentar la lectura o actualizar el token de Google.',
+                      usuario=usuario)
         return False, f"Error generando bitácora automática para Cita #{cita_id}: {str(e)}"
 
 
@@ -2735,7 +2891,11 @@ def api_generar_bitacora_automatica_meet(request, cita_id):
     Endpoint manual para que el psicólogo pueda solicitar generar la bitácora
     con IA a partir de las notas de Google Meet en cualquier momento.
     """
-    exito, mensaje = generar_bitacora_automatica_meet(cita_id)
+    exito, mensaje = generar_bitacora_automatica_meet(
+        cita_id,
+        origen='manual',
+        usuario=request.user if request.user.is_authenticated else None,
+    )
     if exito:
         return JsonResponse({'status': 'success', 'message': mensaje})
     return JsonResponse({'status': 'error', 'message': mensaje})
@@ -2798,7 +2958,7 @@ def procesar_bitacoras_historicas_meet(log_func=None, limite=None):
 
         _log(f"🔍 [Cita #{cita.id}] {pac_nom} con {doc_nom} ({f_str} {h_str}) -> Evaluando notas en Google Meet...")
 
-        exito, msg = generar_bitacora_automatica_meet(cita.id, log_func=_log)
+        exito, msg = generar_bitacora_automatica_meet(cita.id, log_func=_log, origen='batch')
         if exito:
             creadas_con_exito += 1
             _log(f"   🎉 [BITÁCORA CREADA: SÍ] Cita #{cita.id}: {msg}")
@@ -3376,6 +3536,13 @@ def iniciar_pago_clip(request):
                 fecha_obj = datetime.strptime(fecha_str, '%Y-%m-%d').date()
                 hora_obj = parsear_hora_flexible(hora_str)
 
+                # 28/10/2026: detectamos la organización (Beneficios) para separación de métricas
+                es_beneficios_clip = (
+                    'tectumbeneficios' in request.get_host().lower()
+                    or request.session.get('convenio_tectum_beneficios', False)
+                    or request.POST.get('convenio') == 'tectumbeneficios'
+                )
+
                 # Guardamos la cita en estado 'Pendiente' usando tus campos originales
                 cita = Cita.objects.create(
                     paciente=request.user if request.user.is_authenticated else None,
@@ -3386,6 +3553,7 @@ def iniciar_pago_clip(request):
                     integrantes_familia=integrantes_familia,
                     estado_animo=animo,
                     modalidad=modalidad,
+                    es_beneficios=es_beneficios_clip,  # 28/10/2026: separación de organizaciones
                     motivo='Primera Sesión' if not getattr(request.user.perfil, 'psicologo_asignado', None) else 'Sesión de Seguimiento'
                 )
                 cita_id = cita.id
@@ -3868,6 +4036,15 @@ def admin_guardar_cita_ajax(request):
         else:
             es_tectum_cita = getattr(perfil, 'es_tectum', False)
 
+        # 28/10/2026: organización Beneficios (POST explícito o perfil del paciente)
+        es_beneficios_param = request.POST.get('es_beneficios')
+        if es_beneficios_param in ['1', 'true', 'True', 'tectumbeneficios']:
+            es_beneficios_cita = True
+        elif es_beneficios_param in ['0', 'false', 'False', 'hope']:
+            es_beneficios_cita = False
+        else:
+            es_beneficios_cita = getattr(perfil, 'es_beneficios', False)
+
         cita = Cita.objects.create(
             paciente=paciente_user,
             psicologo=psicologo,
@@ -3879,6 +4056,7 @@ def admin_guardar_cita_ajax(request):
             integrantes_familia=integrantes_familia,
             motivo='Agendada por administración',
             estado='Confirmada',
+            es_beneficios=es_beneficios_cita,  # 28/10/2026: separación de organizaciones
             enlace_meet=link_final,
             id_evento_google=id_google,
             es_tectum=es_tectum_cita
@@ -9417,6 +9595,601 @@ def api_reintentar_envio_ipp(request, cita_id):
     return JsonResponse({
         'status': 'success' if exito_global else 'error',
         'mensaje': texto,
+        'resultados': resultados,
+    })
+
+
+# ============================================================
+# PANEL: MONITOREO DE AUTOMATIZACIÓN DE NOTAS CLÍNICAS (28/10/2026)
+# Monitoreo, diagnóstico y reintentos del flujo automático
+# Google Meet → Groq → HistorialClinico → Reporte → Correo.
+# Solo observación + reintentos manuales; NO altera las lógicas existentes.
+# ============================================================
+
+AMN_ETAPAS_ORDEN = ['lectura', 'ia', 'escritura', 'reporte', 'correo']
+AMN_ETIQUETAS_ETAPA = {
+    'lectura': 'Lectura Meet', 'ia': 'IA (Groq)', 'escritura': 'Nota escrita',
+    'reporte': 'Reporte', 'correo': 'Correos', 'completo': 'Completo',
+}
+AMN_CLASES_ESTADO = {
+    'exitoso': 'ok', 'error': 'fallo', 'pendiente': 'pendiente', 'en_proceso': 'proceso',
+    'ignorado': 'ignorado', 'reintentando': 'proceso', 'conflicto': 'aviso',
+    'sin_permisos': 'fallo', 'historico': 'historico',
+}
+AMN_ETIQUETAS_ESTADO = {
+    'exitoso': 'Exitoso', 'error': 'Error', 'pendiente': 'Pendiente',
+    'en_proceso': 'En proceso', 'ignorado': 'Ignorado', 'reintentando': 'Reintentando',
+    'conflicto': 'Conflicto', 'sin_permisos': 'Sin permisos', 'historico': 'Previo al monitoreo',
+}
+AMN_ORGS = [
+    ('hope', 'HOPE'),
+    ('tectum_inhouse', 'TECTUM In-House'),
+    ('tectum_beneficios', 'TECTUM Beneficios'),
+]
+
+
+def _amn_organizacion_de_cita(cita):
+    """Clasifica la organización de una cita (no mezcla métricas entre organizaciones)."""
+    if getattr(cita, 'es_beneficios', False):
+        return 'tectum_beneficios'
+    if getattr(cita, 'es_tectum', False):
+        return 'tectum_inhouse'
+    perfil_pac = getattr(cita.paciente, 'perfil', None)
+    if getattr(perfil_pac, 'es_beneficios', False):
+        return 'tectum_beneficios'
+    if getattr(perfil_pac, 'es_tectum', False):
+        return 'tectum_inhouse'
+    return 'hope'
+
+
+def _amn_obtener_nota(cita):
+    try:
+        return cita.nota_clinica
+    except Exception:
+        return None
+
+
+def _amn_related_prefetch(cita, nombre):
+    """Devuelve la lista prefetcheada de una relación, o None si NO aplica prefetch."""
+    cache = getattr(cita, '_prefetched_objects_cache', None) or {}
+    if nombre in cache:
+        try:
+            return list(cache[nombre])
+        except Exception:
+            return None
+    return None
+
+
+def _amn_evaluar_cita(cita):
+    """
+    Evalúa las 5 etapas del flujo para una cita (lectura, IA, escritura, reporte, correo)
+    y un estado global. Solo lectura: NO escribe en BD.
+    Usa los prefetches del panel si existen (rendimiento); si no, consulta directo.
+    """
+    logs_auto = _amn_related_prefetch(cita, 'logs_automatizacion')
+    if logs_auto is None:
+        logs_auto = list(LogAutomatizacionNotas.objects.filter(cita=cita).order_by('fecha'))
+    else:
+        logs_auto.sort(key=lambda l: l.fecha)
+
+    logs_ipp = _amn_related_prefetch(cita, 'logs_envio_ipp')
+    if logs_ipp is None:
+        logs_ipp = list(LogEnvioReporteIPP.objects.filter(cita=cita).order_by('fecha'))
+    else:
+        logs_ipp.sort(key=lambda l: l.fecha)
+
+    reportes = _amn_related_prefetch(cita, 'reportes_pdf')
+    if reportes is None:
+        reportes = list(ReporteClinicoPDF.objects.filter(cita=cita))
+
+    nota = _amn_obtener_nota(cita)
+
+    def _ultimo_log(etapa):
+        for l in reversed(logs_auto):  # logs sorted asc → reversed devuelve el último primero
+            if l.etapa == etapa:
+                return l
+        return None
+
+    row_pac = next((r for r in reportes if r.tipo_destinatario == 'paciente'), None)
+    row_psi = next((r for r in reportes if r.tipo_destinatario == 'psicologo'), None)
+    tiene_bitacora = bool(nota and nota.notas_sesion and nota.notas_sesion.strip())
+
+    pasos = []  # (no esencial; los pasos se calculan directo abajo)
+
+    def _paso_auto(etapa):
+        log_u = _ultimo_log(etapa)
+        if log_u:
+            return {'estado': log_u.estado, 'detalle': log_u.detalle or '', 'log': log_u, 'historico': False}
+        return None
+
+    def _paso_lectura():
+        p = _paso_auto('lectura')
+        if p:
+            return p
+        if tiene_bitacora:
+            return {'estado': 'historico', 'detalle': 'Nota existente generada antes del monitoreo (sin registro de lectura).', 'log': None, 'historico': True}
+        return {'estado': 'pendiente', 'detalle': 'Sin intento de lectura registrado para la sesión.', 'log': None, 'historico': False}
+
+    def _paso_ia():
+        p = _paso_auto('ia')
+        if p:
+            return p
+        if tiene_bitacora:
+            return {'estado': 'historico', 'detalle': 'La bitácora existe, pero fue creada antes del monitoreo (sin telemetría de IA).', 'log': None, 'historico': True}
+        return {'estado': 'pendiente', 'detalle': 'Sin procesamiento de IA registrado (se ejecuta cuando hay notas de Meet).', 'log': None, 'historico': False}
+
+    def _paso_escritura():
+        p = _paso_auto('escritura')
+        if p:
+            return p
+        if tiene_bitacora:
+            return {'estado': 'historico', 'detalle': 'Nota clínica existente previa al monitoreo (escrita manualmente por el psicólogo o generada con IA antes de la implantación).', 'log': None, 'historico': True}
+        return {'estado': 'pendiente', 'detalle': 'Nota clínica aún no creada para esta cita.', 'log': None, 'historico': False}
+
+    def _paso_reporte():
+        # La generación de reportes es posterior a la implantación: se deduce de ReporteClinicoPDF
+        if row_pac and row_psi:
+            return {'estado': 'exitoso', 'detalle': f'Reportes generados para paciente y psicólogo (último: {max(r.fecha_generacion for r in (row_pac, row_psi)).strftime("%d/%m/%Y %H:%M")}).', 'log': None, 'historico': False}
+        if row_pac or row_psi:
+            faltante = 'psicólogo' if not row_psi else 'paciente'
+            return {'estado': 'pendiente', 'detalle': f'Solo hay reporte de uno de los destinatarios (falta {faltante}).', 'log': None, 'historico': False}
+        if not tiene_bitacora:
+            return {'estado': 'pendiente', 'detalle': 'En espera de bitácora: el pipeline genera el reporte ~2 h después de la sesión con bitácora.', 'log': None, 'historico': False}
+        return {'estado': 'pendiente', 'detalle': 'Con bitácora y fuera de la ventana de 2 h: el pipeline aún no la procesa (ejecutar enviar_reportes_citas o procesar reportes).', 'log': None, 'historico': False}
+
+    def _paso_correo():
+        def _vivo(row):
+            try:
+                return bool(row and row.archivo_pdf and row.archivo_pdf.path and os.path.exists(row.archivo_pdf.path))
+            except Exception:
+                return False
+
+        pac_sent = bool(row_pac and row_pac.correo_enviado)
+        psi_sent = bool(row_psi and row_psi.correo_enviado)
+        if pac_sent and psi_sent:
+            return {'estado': 'exitoso', 'detalle': 'Correo enviado correctamente a ambos destinatarios (evidencia: ReporteClinicoPDF.correo_enviado).', 'log': None, 'historico': False}
+        # Intentos con error conocido
+        err_ipp = next((l for l in reversed(logs_ipp) if l.resultado == 'Error'), None)
+        if row_pac or row_psi:
+            detalles = []
+            for l in reversed(logs_ipp):
+                if l.resultado in ('Error', 'Advertencia'):
+                    detalles.append((l.tipo_destinatario or 'general') + ': ' + (l.detalle or l.error_tecnico or ''))
+            if err_ipp:
+                return {'estado': 'error', 'detalle': (detalles[0] if detalles else err_ipp.detalle), 'log': None, 'historico': False}
+            if not (pac_sent or psi_sent):
+                if not _vivo(row_pac) and not _vivo(row_psi):
+                    return {'estado': 'pendiente', 'detalle': 'Reportes archivados pero sin PDF accesible en disco; reintentar envío regenera vía pipeline.', 'log': None, 'historico': False}
+                return {'estado': 'pendiente', 'detalle': 'Reportes generados sin registro de despacho exitoso (quizá modo «solo generar» o error previo al monitoreo).', 'log': None, 'historico': False}
+            servidos = [n for n, p in (('paciente', pac_sent), ('psicólogo', psi_sent)) if p]
+            no_servidos = [n for n, p in (('paciente', pac_sent), ('psicólogo', psi_sent)) if not p]
+            return {'estado': 'pendiente',
+                    'detalle': f'Solo se entregó a {", ".join(servidos)}; "pendiente" para {", ".join(no_servidos)}.',
+                    'log': None, 'historico': False}
+        return {'estado': 'pendiente', 'detalle': 'Sin reportes: el envío de correos ocurre después de generar el PDF.', 'log': None, 'historico': False}
+
+    pasos_eval = {
+        'lectura': _paso_lectura(),
+        'ia': _paso_ia(),
+        'escritura': _paso_escritura(),
+        'reporte': _paso_reporte(),
+        'correo': _paso_correo(),
+    }
+
+    # Log global de la cita (último 'completo')
+    p_global = next((l for l in reversed(logs_auto) if l.etapa == 'completo'), None)
+
+    # ── Estado global ──
+    hay_log_auto = bool(logs_auto)
+    estados = [p['estado'] for p in pasos_eval.values()]
+    if any(e in ('error', 'sin_permisos') for e in estados):
+        global_estado, global_detalle = 'error', 'Hubo errores en el flujo de automatización de esta sesión (ver detalle por etapa).'
+    elif any(e == 'pendiente' for e in estados):
+        global_estado, global_detalle = 'pendiente', 'Partes del flujo están pendientes de ejecutarse.'
+    elif not hay_log_auto and all(e in ('historico', 'pendiente') for e in estados) and not tiene_bitacora:
+        global_estado, global_detalle = 'pendiente', 'Sesión sin actividad de automatización registrada.'
+    elif not hay_log_auto:
+        global_estado, global_detalle = 'historico', 'Sesión procesada antes de implantar el monitoreo (sin telemetría por etapa).'
+    else:
+        global_estado, global_detalle = 'exitoso', 'Flujo de automatización completado con éxito.'
+
+    # ── Línea de tiempo unificada (logs de automatización + logs IPP) ──
+    eventos = []
+    for l in logs_auto:
+        eventos.append({
+            'fecha': l.fecha, 'etapa_label': AMN_ETIQUETAS_ETAPA.get(l.etapa, l.etapa),
+            'estado': l.estado, 'origen': l.origen, 'intento': l.intento,
+            'servicio': l.servicio, 'detalle': l.detalle or '', 'error': l.error_tecnico or '',
+            'stack': l.stack_trace or '', 'sugerida': l.accion_sugerida or '',
+            'duracion_ms': l.duracion_ms, 'modelo': l.modelo_ia or '', 'tokens': (l.tokens_prompt or 0) + (l.tokens_respuesta or 0),
+            'fuente': l.fuente_datos or '', 'usuario': l.usuario.username if l.usuario_id and l.usuario else 'Sistema',
+            'ip': l.ip or '',
+        })
+    for l in logs_ipp:
+        eventos.append({
+            'fecha': l.fecha, 'etapa_label': ('Correos (reporte IPP)' if l.accion == 'Reintentar envío IPP' else 'Correos (pipeline reportes)'),
+            'estado': {'Exitoso': 'exitoso', 'Error': 'error', 'Advertencia': 'conflicto', 'Omitido': 'ignorado'}.get(l.resultado, 'pendiente'),
+            'origen': 'manual' if l.accion == 'Reintentar envío IPP' else 'automatico', 'intento': None,
+            'servicio': 'smtp', 'detalle': f'[{l.tipo_destinatario}] {l.detalle or ""}', 'error': '', 'stack': '',
+            'sugerida': '', 'duracion_ms': None, 'modelo': '', 'tokens': 0, 'fuente': '',
+            'usuario': l.usuario.username if l.usuario_id and l.usuario else 'Sistema', 'ip': '',
+        })
+    eventos.sort(key=lambda e: e['fecha'])
+
+    return {
+        'pasos': pasos_eval,
+        'global_estado': global_estado,
+        'global_detalle': global_detalle,
+        'eventos': eventos,
+        'logs_auto': logs_auto,
+        'p_global': p_global,
+        'tiene_bitacora': tiene_bitacora,
+    }
+
+
+def _amn_salud():
+    """Indicadores tipo semáforo de los servicios del flujo (lecturas rápidas y seguras)."""
+    ahora = timezone.now()
+    desde24 = ahora - timedelta(hours=24)
+    desde8 = ahora - timedelta(hours=8)
+    items = []
+
+    def _sem(check_ok, err_24):
+        if not check_ok:
+            return 'error'
+        if err_24 >= 5:
+            return 'error'
+        if err_24 > 0:
+            return 'advertencia'
+        return 'ok'
+
+    # 1. Google Meet/Calendar
+    token_g = bool(os.environ.get('GOOGLE_TOKEN_JSON'))
+    err_lect = LogAutomatizacionNotas.objects.filter(etapa='lectura', estado__in=['error'], fecha__gte=desde24).count()
+    items.append({
+        'nombre': 'Google Meet / Calendar',
+        'estado': _sem(token_g, err_lect),
+        'detalle': f'Token Google {"presente" if token_g else "AUSENTE (GOOGLE_TOKEN_JSON)"} · errores de lectura en 24 h: {err_lect}',
+    })
+
+    # 2. Groq (IA)
+    key_g = bool(os.environ.get('GROQ_API_KEY'))
+    err_ia = LogAutomatizacionNotas.objects.filter(etapa='ia', estado='error', fecha__gte=desde24).count()
+    total_ia = LogAutomatizacionNotas.objects.filter(etapa='ia', fecha__gte=desde24).count()
+    estado_groq = 'error' if (not key_g or (total_ia >= 3 and err_ia == total_ia)) else ('advertencia' if err_ia > 0 else 'ok')
+    if not key_g:
+        estado_groq = 'error'
+    items.append({
+        'nombre': 'Groq (IA)',
+        'estado': estado_groq,
+        'detalle': f'Clave {"presente" if key_g else "AUSENTE (GROQ_API_KEY)"} · peticiones IA en 24 h: {total_ia} (errores: {err_ia})',
+    })
+
+    # 3. Base de datos
+    items.append({'nombre': 'Base de datos', 'estado': 'ok', 'detalle': 'Conexión activa (este panel consultó la BD con éxito).'})
+
+    # 4. SMTP
+    smtp_ok = bool(getattr(settings, 'EMAIL_HOST_USER', None) and getattr(settings, 'EMAIL_HOST_PASSWORD', None))
+    err_smtp = LogEnvioReporteIPP.objects.filter(resultado='Error', fecha__gte=desde24).count()
+    items.append({
+        'nombre': 'Envío de correos (SMTP)',
+        'estado': _sem(smtp_ok, err_smtp),
+        'detalle': f'Config SMTP {"completa" if smtp_ok else "INCOMPLETA"} · errores de envío en 24 h: {err_smtp}',
+    })
+
+    # 5. Motor PDF
+    try:
+        diagnostico = obtener_diagnostico_motor_pdf()
+        motor_ok = bool(diagnostico.get('disponible'))
+        motor_opt = bool(diagnostico.get('es_optimo'))
+        items.append({
+            'nombre': 'Generación de reportes (PDF)',
+            'estado': 'ok' if motor_ok and motor_opt else ('advertencia' if motor_ok else 'error'),
+            'detalle': f'{diagnostico.get("motor")} — {diagnostico.get("mensaje")}',
+        })
+    except Exception as e:
+        items.append({'nombre': 'Generación de reportes (PDF)', 'estado': 'error', 'detalle': f'No se pudo diag-nosticar el motor PDF: {e}'})
+
+    # 6. Pipeline de reportes (citas pasadas sin reporte ya en ventana)
+    hoy = timezone.localdate()
+    pendientes_pipeline = Cita.objects.filter(
+        fecha__lte=hoy - timedelta(days=1),
+        reporte_enviado=False,
+    ).exclude(estado__in=['Cancelada']).count()
+    items.append({
+        'nombre': 'Pipeline de reportes',
+        'estado': 'ok' if pendientes_pipeline <= 25 else ('advertencia' if pendientes_pipeline <= 200 else 'error'),
+        'detalle': f'{pendientes_pipeline} sesiones pasadas aún sin reporte (se atenúan al correr enviar_reportes_citas).',
+    })
+
+    # 7. Automatización de notas (errores en 8 h de CUALQUIER etapa)
+    err_auto = LogAutomatizacionNotas.objects.filter(estado__in=['error', 'sin_permisos'], fecha__gte=desde8).count()
+    items.append({
+        'nombre': 'Automatización de notas clínicas',
+        'estado': 'error' if err_auto >= 5 else ('advertencia' if err_auto > 0 else 'ok'),
+        'detalle': f'Errores de automatización en las últimas 8 h: {err_auto}',
+    })
+    return items
+
+
+def _amn_kpis():
+    """KPIs del dashboard, completamente separados por organización."""
+    from django.db.models import Sum, Avg
+    kpis = {}
+    for org_key, org_label in AMN_ORGS:
+        kpis[org_key] = {
+            'label': org_label,
+            'lecturas': {'total': 0, 'exitosas': 0, 'errores': 0, 'pendientes': 0, 'ignoradas': 0},
+            'escrituras': {'total': 0, 'exitosas': 0, 'errores': 0},
+            'ia': {'peticiones': 0, 'errores': 0, 'tokens': 0, 'prom_ms': 0},
+            'correos': {'enviados': 0, 'fallos': 0, 'reintentos': 0},
+        }
+    # ── Logs de automatización (etapas: lectura / ia / escritura) ──
+    agg = (LogAutomatizacionNotas.objects
+           .values('organizacion', 'etapa', 'estado')
+           .annotate(n=Count('id'), dur=Avg('duracion_ms'), tp=Sum('tokens_prompt'), tr=Sum('tokens_respuesta')))
+    for r in agg:
+        org = r['organizacion'] if r['organizacion'] in kpis else 'hope'
+        etapa, estado, n = r['etapa'], r['estado'], r['n']
+        if etapa == 'lectura':
+            k = kpis[org]['lecturas']
+            k['total'] += n
+            if estado == 'exitoso':
+                k['exitosas'] += n
+            elif estado in ('error', 'sin_permisos'):
+                k['errores'] += n
+            elif estado == 'pendiente':
+                k['pendientes'] += n
+            elif estado == 'ignorado':
+                k['ignoradas'] += n
+        elif etapa == 'escritura':
+            k = kpis[org]['escrituras']
+            k['total'] += n
+            if estado == 'exitoso':
+                k['exitosas'] += n
+            elif estado in ('error', 'sin_permisos', 'conflicto'):
+                k['errores'] += n
+        elif etapa == 'ia':
+            k = kpis[org]['ia']
+            k['peticiones'] += n
+            if estado in ('error', 'sin_permisos'):
+                k['errores'] += n
+            k['tokens'] += (r['tp'] or 0) + (r['tr'] or 0)
+            k['prom_ms'] = max(k['prom_ms'], int(r['dur'] or 0) if r['dur'] else 0)
+    # ── Correos: LogEnvioReporteIPP (pipeline + reintentos), separado por org de la cita ──
+    correo_base = (LogEnvioReporteIPP.objects
+                   .values('cita__es_tectum', 'cita__es_beneficios', 'resultado', 'accion')
+                   .annotate(n=Count('id')))
+    for r in correo_base:
+        if r['cita__es_beneficios']:
+            org = 'tectum_beneficios'
+        elif r['cita__es_tectum']:
+            org = 'tectum_inhouse'
+        else:
+            org = 'hope'
+        k = kpis[org]['correos']
+        if r['resultado'] == 'Exitoso':
+            k['enviados'] += r['n']
+        elif r['resultado'] in ('Error',):
+            k['fallos'] += r['n']
+        if r['accion'] == 'Reintentar envío IPP':
+            k['reintentos'] += r['n']
+    return kpis
+
+
+@user_passes_test(es_admin)
+def panel_admin_automatizacion_notas(request):
+    """Panel de monitoreo/diagnóstico/reintentos del flujo automático de notas clínicas."""
+    ahora = timezone.now()
+    hoy = timezone.localdate()
+
+    f_estado = (request.GET.get('estado') or 'todos').strip()
+    f_org = (request.GET.get('org') or 'todas').strip()
+    f_paciente = (request.GET.get('paciente') or '').strip()
+    f_psicologo = (request.GET.get('psicologo') or '').strip()
+    f_correo = (request.GET.get('correo') or '').strip()
+    f_fecha = (request.GET.get('fecha') or '').strip()
+    f_idcita = (request.GET.get('id_cita') or '').strip()
+
+    base = (Cita.objects
+            .select_related('paciente', 'paciente__perfil', 'psicologo__usuario', 'nota_clinica')
+            .prefetch_related('logs_automatizacion', 'logs_envio_ipp', 'reportes_pdf'))
+
+    if f_idcita.isdigit():
+        base = base.filter(id=int(f_idcita))
+    else:
+        base = base.filter(fecha__lte=hoy)
+
+    if f_org in ('hope', 'tectum_inhouse', 'tectum_beneficios'):
+        if f_org == 'hope':
+            base = base.exclude(es_tectum=True).exclude(es_beneficios=True).exclude(paciente__perfil__es_tectum=True).exclude(paciente__perfil__es_beneficios=True)
+        elif f_org == 'tectum_inhouse':
+            base = base.filter(Q(es_tectum=True) | Q(paciente__perfil__es_tectum=True))
+        else:
+            base = base.filter(Q(es_beneficios=True) | Q(paciente__perfil__es_beneficios=True))
+
+    if f_fecha:
+        try:
+            base = base.filter(fecha=datetime.strptime(f_fecha, '%Y-%m-%d').date())
+        except ValueError:
+            pass
+    if f_paciente:
+        base = base.filter(
+            Q(paciente__first_name__icontains=f_paciente) |
+            Q(paciente__last_name__icontains=f_paciente) |
+            Q(paciente__username__icontains=f_paciente) |
+            Q(paciente__email__icontains=f_paciente) |
+            Q(paciente__perfil__nombre__icontains=f_paciente)
+        )
+    if f_psicologo:
+        base = base.filter(
+            Q(psicologo__usuario__first_name__icontains=f_psicologo) |
+            Q(psicologo__usuario__last_name__icontains=f_psicologo) |
+            Q(psicologo__usuario__username__icontains=f_psicologo)
+        )
+    if f_correo:
+        base = base.filter(
+            Q(paciente__email__icontains=f_correo) |
+            Q(psicologo__usuario__email__icontains=f_correo)
+        )
+
+    filas = []
+    conteos_globales = {'todos': 0, 'exitoso': 0, 'error': 0, 'pendiente': 0, 'historico': 0}
+    total_evaluadas = 0
+    for cita in base.order_by('-fecha', '-hora', '-id')[:1200]:
+        total_evaluadas += 1
+        ev = _amn_evaluar_cita(cita)
+        conteos_globales['todos'] += 1
+        if ev['global_estado'] in conteos_globales:
+            conteos_globales[ev['global_estado']] += 1
+        if f_estado in ('exitoso', 'error', 'pendiente', 'historico') and ev['global_estado'] != f_estado:
+            continue
+        nota = _amn_obtener_nota(cita)
+        org = _amn_organizacion_de_cita(cita)
+        org_label = dict(AMN_ORGS).get(org, org)
+        pasos_salida = []
+        for etapa in AMN_ETAPAS_ORDEN:
+            p = ev['pasos'][etapa]
+            pasos_salida.append({
+                'etapa': etapa,
+                'etiqueta': AMN_ETIQUETAS_ETAPA[etapa],
+                'estado': p['estado'],
+                'estado_label': AMN_ETIQUETAS_ESTADO.get(p['estado'], p['estado']),
+                'clase': AMN_CLASES_ESTADO.get(p['estado'], ''),
+                'detalle': p['detalle'],
+            })
+        filas.append({
+            'cita': cita,
+            'org': org,
+            'org_label': org_label,
+            'pasos': pasos_salida,
+            'global_estado': ev['global_estado'],
+            'global_label': AMN_ETIQUETAS_ESTADO.get(ev['global_estado'], ev['global_estado']),
+            'global_clase': AMN_CLASES_ESTADO.get(ev['global_estado'], ''),
+            'global_detalle': ev['global_detalle'],
+            'eventos': ev['eventos'],
+            'nota': nota,
+        })
+
+    # ── Conteo de los estados del filtro (para los botones de conteo) ──
+    conteos = conteos_globales
+
+    paginator = Paginator(filas, 25)
+    page_num = request.GET.get('page') or 1
+    try:
+        page_obj = paginator.page(page_num)
+    except Exception:
+        page_obj = paginator.page(1)
+
+    context = {
+        'filas': page_obj,
+        'page_obj': page_obj,
+        'conteos': conteos,
+        'kpis': _amn_kpis(),
+        'salud': _amn_salud(),
+        'filtros': {
+            'estado': f_estado, 'org': f_org, 'paciente': f_paciente, 'psicologo': f_psicologo,
+            'correo': f_correo, 'fecha': f_fecha, 'id_cita': f_idcita,
+        },
+        'etiquetas_etapa': AMN_ETIQUETAS_ETAPA,
+        'querystring': '&'.join(
+            f"{k}={quote(str(v))}" for k, v in request.GET.items() if k != 'page'
+        ),
+    }
+    return render(request, 'panel_admin_automatizacion_notas.html', context)
+
+
+def _amn_ip_del_request(request):
+    forwarded = request.META.get('HTTP_X_FORWARDED_FOR', '')
+    if forwarded:
+        return forwarded.split(',')[0].strip()
+    return request.META.get('REMOTE_ADDR', '') or ''
+
+
+@user_passes_test(es_admin)
+@require_POST
+def api_reintento_automatizacion(request, cita_id):
+    """
+    Reintentos manuales desde el panel (28/10/2026). Tipos POST:
+      - 'bitacora' : lectura Meet + IA Groq + escritura de nota (generar_bitacora_automatica_meet)
+      - 'correo'   : reenvío de correos con PDF (reutiliza el módulo ya probado de reintentar envío IPP)
+      - 'reporte'  : regeneración de 2 PDFs + despacho vía pipeline (forzado)
+      - 'completo' : bitácora + reporte
+    Cada intento queda auditado (usuario, IP, resultado) en LogAutomatizacionNotas.
+    """
+    cita = Cita.objects.filter(id=cita_id).select_related('paciente', 'psicologo__usuario').first()
+    if not cita:
+        return JsonResponse({'status': 'error', 'mensaje': f'Cita #{cita_id} no encontrada.'}, status=404)
+
+    tipo = (request.POST.get('tipo') or '').strip()
+    if tipo not in ('bitacora', 'correo', 'reporte', 'completo'):
+        return JsonResponse({'status': 'error', 'mensaje': 'Tipo de reintento no válido.'}, status=400)
+
+    usuario = request.user if request.user.is_authenticated else None
+    ip = _amn_ip_del_request(request)
+    resultados = []
+
+    if tipo in ('bitacora', 'completo'):
+        ok, msg = generar_bitacora_automatica_meet(cita.id, origen='manual', usuario=usuario)
+        _reg_log_auto(
+            cita, 'completo',
+            'exitoso' if ok else 'error',
+            'sistema',
+            accion='Reintento manual desde panel (automatización de notas: lectura + IA + escritura)',
+            origen='manual',
+            detalle=msg,
+            usuario=usuario, ip=ip,
+        )
+        resultados.append({'paso': 'Bitácora (lectura Meet + IA Groq + escritura de nota)', 'ok': ok, 'detalle': msg})
+
+    if tipo == 'correo':
+        # Reutiliza el módulo validado de reenvío (escribe su propia bitácora en LogEnvioReporteIPP)
+        resp = api_reintentar_envio_ipp(request, cita_id)
+        try:
+            data = json.loads(resp.content)
+            ok = resp.status_code == 200 and data.get('status') == 'success'
+            detalles_r = ' · '.join(
+                f"{r.get('tipo')}: {r.get('detalle')}" for r in data.get('resultados', [])
+            ) or data.get('mensaje', '')
+        except Exception as e:
+            ok = False
+            detalles_r = f'Respuesta no parseable del módulo de reenvío: {e}'
+        _reg_log_auto(
+            cita, 'correo',
+            'exitoso' if ok else 'error',
+            'smtp',
+            accion='Reintento manual desde panel (envío de correos con PDF)',
+            origen='manual',
+            detalle='Reintento de envío ejecutado: ' + detalles_r[:1500],
+            usuario=usuario, ip=ip,
+        )
+        resultados.append({'paso': 'Reenvío de correos (paciente / psicólogo)', 'ok': ok, 'detalle': detalles_r})
+
+    if tipo in ('reporte', 'completo'):
+        ok, msg, det = _procesar_reporte_de_una_cita_detallado(
+            cita.id, log_func=lambda m: None, forzar=True, solo_generar=False
+        )
+        correos_ok = [e['etapa'] for e in det.get('etapas', []) if e['etapa'].startswith('Envío Correo') and e['ok']]
+        _reg_log_auto(
+            cita, 'reporte',
+            'exitoso' if ok else 'error',
+            'pipeline',
+            accion='Reintento manual desde panel (generación de reportes + despacho)',
+            origen='manual',
+            detalle=(f'{msg}. Etapas de correo exitosas: {", ".join(correos_ok) or "ninguna"}'),
+            usuario=usuario, ip=ip,
+        )
+        resultados.append({
+            'paso': 'Reportes + correos (pipeline forzado)',
+            'ok': ok,
+            'detalle': msg,
+            'aviso': 'El pipeline regenera y reenvía a AMBOS destinatarios; un destinatario ya servido puede recibir un correo duplicado.',
+        })
+
+    exito_global = all(r.get('ok') for r in resultados)
+    return JsonResponse({
+        'status': 'success' if exito_global else 'error',
+        'mensaje': 'Reintento registrado.' if exito_global else 'Reintento ejecutado con errores (ver detalle).',
         'resultados': resultados,
     })
 

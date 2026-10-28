@@ -220,6 +220,7 @@ class UsuarioPerfil(models.Model):
     telefono_emergencia = models.CharField(max_length=20, blank=True, null=True, verbose_name="Teléfono de Emergencia")
     es_padre = models.BooleanField(default=False, verbose_name="¿Es padre/madre de familia?")
     es_tectum = models.BooleanField(default=False, db_index=True, verbose_name="Convenio TECTUM In-House")
+    es_beneficios = models.BooleanField(default=False, db_index=True, verbose_name="Convenio TECTUM Beneficios")  # añadido 28/10/2026 (monitoreo automatización)
     psicologo_asignado = models.ForeignKey(PerfilPsicologo, on_delete=models.SET_NULL, null=True, blank=True, related_name='pacientes_asignados', verbose_name="Psicólogo Asignado")
 
     historia_clinica = models.TextField(blank=True, null=True, verbose_name="1. Cómo llega el paciente (Historia Clínica)")
@@ -297,6 +298,7 @@ class Cita(models.Model):
     ])
     integrantes_familia = models.PositiveSmallIntegerField(blank=True, null=True, verbose_name="Número de integrantes (Terapia Familiar)")
     es_tectum = models.BooleanField(default=False, db_index=True, verbose_name="Cita Convenio TECTUM")
+    es_beneficios = models.BooleanField(default=False, db_index=True, verbose_name="Cita Convenio TECTUM Beneficios")  # añadido 28/10/2026 (monitoreo automatización)
 
     class Meta:
         unique_together = [['psicologo', 'fecha', 'hora']]
@@ -1269,6 +1271,99 @@ class LogEnvioReporteIPP(models.Model):
 
     def __str__(self):
         return f"[{self.fecha.strftime('%d/%m/%Y %H:%M')}] Cita #{self.cita_id} · {self.accion} · {self.resultado}"
+
+
+class LogAutomatizacionNotas(models.Model):
+    """Bitácora detallada del flujo automático de notas clínicas (28/10/2026).
+
+    Registra, por Cita, cada paso de la automatización de notas clínicas:
+    lectura de notas/transcripciones de Google Meet, procesamiento Groq,
+    escritura del HistorialClinico, generación de reportes y envío de correos.
+    Solo observación y diagnósticos: NO reemplaza la evidencia de éxito
+    (HistorialClinico.notas_sesion, ReporteClinicoPDF.correo_enviado).
+    """
+
+    ETAPA_CHOICES = [
+        ('lectura', 'Lectura de notas (Google Meet)'),
+        ('ia', 'Procesamiento IA (Groq)'),
+        ('escritura', 'Escritura de nota clínica'),
+        ('reporte', 'Generación de reporte'),
+        ('correo', 'Envío de correo'),
+        ('completo', 'Sincronización completa'),
+    ]
+    ESTADO_CHOICES = [
+        ('pendiente', 'Pendiente'),
+        ('en_proceso', 'En proceso'),
+        ('exitoso', 'Exitoso'),
+        ('error', 'Error'),
+        ('reintentando', 'Reintentando'),
+        ('ignorado', 'Ignorado'),
+        ('conflicto', 'Conflicto detectado'),
+        ('sin_permisos', 'Permisos insuficientes'),
+    ]
+    SERVICIO_CHOICES = [
+        ('google_meet', 'Google Meet / Calendar'),
+        ('groq', 'Groq (IA)'),
+        ('base_datos', 'Base de datos'),
+        ('smtp', 'SMTP (correo)'),
+        ('pipeline', 'Pipeline de reportes'),
+        ('sistema', 'Sistema interno'),
+    ]
+    ORG_CHOICES = [
+        ('hope', 'HOPE'),
+        ('tectum_inhouse', 'TECTUM In-House'),
+        ('tectum_beneficios', 'TECTUM Beneficios'),
+    ]
+    ORIGEN_CHOICES = [
+        ('automatico', 'Automático (pipeline / comando)'),
+        ('manual', 'Reintento manual (panel)'),
+        ('batch', 'Barrido histórico'),
+    ]
+
+    cita = models.ForeignKey(
+        'Cita',
+        on_delete=models.CASCADE,
+        related_name='logs_automatizacion',
+        verbose_name="Sesión (Cita)",
+    )
+    usuario = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='acciones_automatizacion_notas',
+        verbose_name="Usuario responsable (None = sistema)",
+    )
+    etapa = models.CharField(max_length=20, choices=ETAPA_CHOICES, db_index=True, verbose_name="Etapa del flujo")
+    estado = models.CharField(max_length=20, choices=ESTADO_CHOICES, default='pendiente', verbose_name="Estado")
+    servicio = models.CharField(max_length=20, choices=SERVICIO_CHOICES, default='sistema', verbose_name="Servicio participante")
+    organizacion = models.CharField(max_length=25, choices=ORG_CHOICES, default='hope', db_index=True, verbose_name="Organización")
+    origen = models.CharField(max_length=25, choices=ORIGEN_CHOICES, default='automatico', verbose_name="Origen de la ejecución")
+    intento = models.PositiveSmallIntegerField(default=1, verbose_name="Número de intento")
+    detalle = models.TextField(blank=True, null=True, verbose_name="Qué intentó hacer / resultado legible")
+    error_tecnico = models.TextField(blank=True, null=True, verbose_name="Error técnico")
+    stack_trace = models.TextField(blank=True, null=True, verbose_name="Stack trace")
+    accion_sugerida = models.CharField(max_length=250, blank=True, null=True, verbose_name="Acción sugerida")
+    fuente_datos = models.CharField(max_length=250, blank=True, null=True, verbose_name="Fuente de datos (títulos de attachments)")
+    duracion_ms = models.PositiveIntegerField(blank=True, null=True, verbose_name="Tiempo de procesamiento (ms)")
+    modelo_ia = models.CharField(max_length=60, blank=True, null=True, verbose_name="Modelo IA usado")
+    tokens_prompt = models.PositiveIntegerField(blank=True, null=True, verbose_name="Tokens prompt")
+    tokens_respuesta = models.PositiveIntegerField(blank=True, null=True, verbose_name="Tokens respuesta")
+    ip = models.CharField(max_length=45, blank=True, null=True, verbose_name="IP (auditoría de reintentos manuales)")
+    fecha = models.DateTimeField(auto_now_add=True, db_index=True, verbose_name="Fecha/Hora del evento")
+
+    class Meta:
+        verbose_name = "Log de Automatización de Notas Clínicas"
+        verbose_name_plural = "Logs de Automatización de Notas Clínicas"
+        ordering = ['-fecha']
+        indexes = [
+            models.Index(fields=['cita', 'fecha']),
+            models.Index(fields=['etapa', 'estado']),
+            models.Index(fields=['estado', 'fecha']),
+            models.Index(fields=['organizacion', 'fecha']),
+        ]
+
+    def __str__(self):
+        return f"[{self.fecha.strftime('%d/%m/%Y %H:%M')}] Cita #{self.cita_id} · {self.etapa} · {self.estado}"
 
 
 

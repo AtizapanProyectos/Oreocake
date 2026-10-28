@@ -265,5 +265,26 @@ class LogEnvioReporteIPPAdmin(admin.ModelAdmin):
         return False
 
 
+# ==========================================
+# BITÁCORA DE AUTOMATIZACIÓN DE NOTAS CLÍNICAS (SOLO LECTURA, 28/10/2026)
+# ==========================================
+@admin.register(LogAutomatizacionNotas)
+class LogAutomatizacionNotasAdmin(admin.ModelAdmin):
+    list_display = ('id', 'fecha', 'cita', 'etapa', 'estado', 'servicio', 'organizacion', 'origen', 'intento', 'usuario')
+    list_filter = ('etapa', 'estado', 'servicio', 'organizacion', 'origen', 'fecha')
+    search_fields = ('detalle', 'error_tecnico', 'cita__id', 'cita__paciente__email')
+    list_select_related = ('cita', 'usuario')
+    readonly_fields = ('cita', 'usuario', 'etapa', 'estado', 'servicio', 'organizacion', 'origen',
+                       'intento', 'detalle', 'error_tecnico', 'stack_trace', 'accion_sugerida',
+                       'fuente_datos', 'duracion_ms', 'modelo_ia', 'tokens_prompt', 'tokens_respuesta',
+                       'ip', 'fecha')
+    list_per_page = 50
 
-
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False

@@ -113,6 +113,10 @@ urlpatterns = [
     path('panel-admin/ipp-email-monitor/', views.panel_admin_ipp_email_monitor_view, name='panel_admin_ipp_email_monitor'),
     path('panel-admin/api/reintentar-envio-ipp/<int:cita_id>/', views.api_reintentar_envio_ipp, name='api_reintentar_envio_ipp'),
 
+    # URLs para el Panel de Monitoreo de Automatización de Notas Clínicas (28/10/2026)
+    path('panel-admin/automatizacion-notas/', views.panel_admin_automatizacion_notas, name='panel_admin_automatizacion_notas'),
+    path('panel-admin/api/reintento-automatizacion/<int:cita_id>/', views.api_reintento_automatizacion, name='api_reintento_automatizacion'),
+
     # Repositorio Clínico Global para Psicólogos
     path('repositorio-clinico/', views.repositorio_clinico_view, name='repositorio_clinico'),
     path('api/repositorio-clinico/subir/', views.subir_documento_repositorio_ajax, name='subir_documento_repositorio'),

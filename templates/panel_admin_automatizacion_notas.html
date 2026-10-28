@@ -1,0 +1,370 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Monitor de Automatización de Notas Clínicas · HOPE{% endblock %}
+
+{% block content %}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+<style>
+/* ==========================================================================
+   HOPE · MONITOR DE AUTOMATIZACIÓN DE NOTAS CLÍNICAS
+   (Google Meet → Groq → HistorialClinico → Reporte → Correo)
+   Solo observación, diagnóstico y reintentos manuales.
+   ========================================================================== */
+:root {
+  --hope-p:       #5A3FA3;
+  --hope-p-dark:  #3b2575;
+  --hope-p-light: #EDE9FF;
+  --hope-teal:    #25B8B8;
+  --hope-teal-l:  #E6FAFA;
+  --hope-orange:  #F27C21;
+  --hope-orange-l:#FFF5ED;
+  --hope-yellow:  #F8D33D;
+  --hope-yellow-l:#FFFAEA;
+  --hope-green:   #10B981;
+  --hope-green-l: #ECFDF5;
+  --hope-red:     #EF4444;
+  --hope-red-l:   #FEF2F2;
+  --ink-primary:  #0F172A;
+  --ink-secondary:#475569;
+  --ink-muted:    #64748B;
+  --border-card:  rgba(90, 63, 163, 0.12);
+  --border-light: rgba(148, 163, 184, 0.2);
+  --bg-app:       #F8F9FD;
+  --card-bg:      #FFFFFF;
+  --shadow-subtle:0 4px 20px -2px rgba(90, 63, 163, 0.06), 0 2px 6px -1px rgba(0, 0, 0, 0.04);
+}
+body { background: var(--bg-app); color: var(--ink-primary); font-family: 'Plus Jakarta Sans', sans-serif; }
+
+.amn-wrap { max-width: 1460px; margin: 120px auto 70px; padding: 0 24px; }
+
+/* Header */
+.amn-header {
+  background: linear-gradient(135deg, #25B8B8 0%, #3B8FB3 55%, #5A3FA3 130%);
+  border-radius: 24px; padding: 34px 40px; color: #fff;
+  box-shadow: 0 18px 36px -10px rgba(37, 184, 184, 0.35);
+  position: relative; overflow: hidden; margin-bottom: 22px;
+}
+.amn-header h1 { font-family: 'Outfit', sans-serif; font-size: 29px; font-weight: 800; margin: 8px 0 8px; }
+.amn-header p { font-size: 14.5px; color: rgba(255,255,255,0.9); max-width: 850px; line-height: 1.55; margin: 0; }
+.amn-badge-hd {
+  display: inline-flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.2);
+  padding: 6px 14px; border-radius: 999px; font-size: 12.5px; font-weight: 700;
+}
+.amn-links a { color: rgba(255,255,255,0.85); font-size: 13px; margin-left: 18px; }
+
+/* Salud del sistema */
+.amn-salud { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 22px; }
+@media (max-width: 1100px) { .amn-salud { grid-template-columns: repeat(2, 1fr); } }
+.amn-sal { background: var(--card-bg); border: 1px solid var(--border-card); border-radius: 14px; padding: 14px 16px; box-shadow: var(--shadow-subtle); display: flex; gap: 12px; align-items: flex-start; }
+.amn-dot { width: 16px; height: 16px; border-radius: 50%; flex: 0 0 16px; margin-top: 2px; box-shadow: 0 0 0 4px rgba(0,0,0,0.03); }
+.amn-dot.ok { background: var(--hope-green); box-shadow: 0 0 0 4px rgba(16,185,129,.16); }
+.amn-dot.advertencia { background: #F5A623; box-shadow: 0 0 0 4px rgba(245,166,35,.16); }
+.amn-dot.error { background: var(--hope-red); box-shadow: 0 0 0 4px rgba(239,68,68,.16); }
+.amn-sal h4 { margin: 0 0 3px; font-size: 13.5px; font-weight: 800; }
+.amn-sal .d { font-size: 12px; color: var(--ink-muted); line-height: 1.45; }
+
+/* Tabs de organización (KPIs separados) */
+.amn-orgs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 22px; }
+@media (max-width: 1100px) { .amn-orgs { grid-template-columns: 1fr; } }
+.amn-org { background: var(--card-bg); border: 1px solid var(--border-card); border-radius: 16px; padding: 16px 18px; box-shadow: var(--shadow-subtle); }
+.amn-org h3 { font-family: 'Outfit', sans-serif; font-size: 15.5px; font-weight: 800; margin: 0 0 12px; display: flex; align-items: center; gap: 8px; }
+.amn-org .tag { font-size: 11px; padding: 3px 10px; border-radius: 999px; font-weight: 700; }
+.tag-hope { background: var(--hope-p-light); color: var(--hope-p); }
+.tag-inh { background: var(--hope-teal-l); color: #0e7f7f; }
+.tag-ben { background: var(--hope-orange-l); color: #c05a11; }
+.amn-kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.amn-kpi { background: #FBFAFF; border: 1px solid var(--border-light); border-radius: 10px; padding: 8px 10px; }
+.amn-kpi .n { font-family: 'Outfit', sans-serif; font-size: 19px; font-weight: 800; line-height: 1.1; }
+.amn-kpi .l { font-size: 10.5px; color: var(--ink-muted); font-weight: 700; margin-top: 2px; text-transform: uppercase; letter-spacing: .04em; }
+.amn-kpi .n.verde { color: var(--hope-green); } .amn-kpi .n.rojo { color: var(--hope-red); }
+.amn-kpi .n.vio { color: var(--hope-p); } .amn-kpi .n.ambar { color: #b98a00; }
+.amn-kpi-sub { grid-column: 1 / -1; font-size: 11px; color: var(--ink-secondary); margin-top: 4px; }
+.amn-kpi-sub b { color: var(--ink-primary); }
+
+/* Controles */
+.amn-filtros { background: var(--card-bg); border: 1px solid var(--border-card); border-radius: 18px; box-shadow: var(--shadow-subtle); padding: 16px 20px; margin-bottom: 16px; }
+.amn-contadores { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+.amn-cont-btn { padding: 8px 14px; border-radius: 999px; border: 1px solid var(--border-light); background: #fff; color: var(--ink-secondary); font-weight: 700; font-size: 12.5px; cursor: pointer; text-decoration: none; }
+.amn-cont-btn.active { background: var(--hope-p); color: #fff; border-color: var(--hope-p); }
+.amn-cont-btn .c { opacity: .8; font-weight: 800; }
+.amn-fgrid { display: grid; grid-template-columns: 130px 170px 1fr 1fr 1fr 150px 110px auto; gap: 9px; align-items: end; }
+@media (max-width: 1250px) { .amn-fgrid { grid-template-columns: repeat(3, 1fr); } }
+.amn-f label { display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--ink-muted); margin-bottom: 4px; }
+.amn-f input, .amn-f select { width: 100%; padding: 9px 11px; border: 1px solid var(--border-light); border-radius: 9px; font-size: 13.5px; font-family: inherit; outline: none; background: #fff; }
+.amn-f input:focus, .amn-f select:focus { border-color: var(--hope-p); box-shadow: 0 0 0 3px rgba(90,63,163,.12); }
+.amn-btn-p { padding: 10px 18px; border: none; border-radius: 9px; cursor: pointer; font-weight: 700; color: #fff; background: var(--hope-p); font-family: inherit; }
+.amn-btn-sec { padding: 10px 14px; border: 1px solid var(--border-light); border-radius: 9px; cursor: pointer; font-weight: 600; background: #fff; color: var(--ink-secondary); text-decoration: none; }
+
+/* Tabla */
+.amn-tabla-card { background: var(--card-bg); border: 1px solid var(--border-card); border-radius: 18px; box-shadow: var(--shadow-subtle); overflow: hidden; }
+.amn-tabla { width: 100%; border-collapse: collapse; font-size: 13px; }
+.amn-tabla th { background: var(--hope-p-light); color: var(--hope-p-dark); font-size: 11px; text-transform: uppercase; letter-spacing: .05em; padding: 11px 10px; text-align: left; white-space: nowrap; }
+.amn-tabla td { padding: 11px 10px; border-top: 1px solid var(--border-light); vertical-align: top; }
+.amn-tabla tr:hover td { background: #FBFAFF; }
+.amn-id { font-weight: 800; color: var(--hope-p); white-space: nowrap; }
+.amn-nombre { font-weight: 700; }
+.amn-mail { font-size: 11.5px; color: var(--ink-muted); }
+.amn-org-pill { font-size: 10.5px; padding: 2px 8px; border-radius: 999px; font-weight: 800; white-space: nowrap; }
+.badge { display: inline-block; padding: 4px 10px; border-radius: 999px; font-size: 11px; font-weight: 800; white-space: nowrap; }
+.badge.ok { background: var(--hope-green-l); color: #047857; }
+.badge.fallo { background: var(--hope-red-l); color: #b91c1c; }
+.badge.pendiente { background: var(--hope-yellow-l); color: #b98a00; }
+.badge.proceso { background: #EFF6FF; color: #1d4ed8; }
+.badge.ignorado { background: #F1F5F9; color: #64748B; }
+.badge.aviso { background: var(--hope-orange-l); color: #c05a11; }
+.badge.historico { background: #F3EFFF; color: #6d28d9; }
+.badge.futuro { background: #ECFEFF; color: #0e7490; }
+.pasos { display: flex; flex-direction: column; gap: 4px; }
+.paso { display: flex; align-items: center; gap: 6px; font-size: 11px; }
+.paso .pl { font-weight: 700; color: var(--ink-muted); width: 88px; }
+
+/* Timeline */
+.amn-ver-mas { cursor: pointer; color: var(--hope-p); font-weight: 800; font-size: 12.5px; text-decoration: none; border-bottom: 1px dashed var(--hope-p); }
+.amn-tl { border-left: 3px solid var(--hope-p-light); margin: 6px 0 6px 4px; padding-left: 14px; }
+.amn-tl-item { position: relative; padding: 7px 0; }
+.amn-tl-item::before { content: ''; position: absolute; left: -20px; top: 12px; width: 11px; height: 11px; border-radius: 50%; background: var(--hope-p); box-shadow: 0 0 0 3px var(--hope-p-light); }
+.amn-tl-meta { font-size: 11.5px; color: var(--ink-muted); margin-bottom: 2px; }
+.amn-tl-meta b { color: var(--ink-primary); }
+.amn-tl-det { font-size: 12.5px; color: var(--ink-secondary); line-height: 1.5; }
+.amn-tl-err { font-size: 12px; color: #b91c1c; background: var(--hope-red-l); border-radius: 8px; padding: 6px 9px; margin-top: 4px; white-space: pre-wrap; }
+.amn-tl-sug { font-size: 12px; color: #c05a11; background: var(--hope-orange-l); border-radius: 8px; padding: 6px 9px; margin-top: 4px; }
+.stack { max-height: 180px; overflow: auto; font-size: 10.8px; font-family: ui-monospace, monospace; white-space: pre-wrap; }
+
+/* Botones reintento */
+.btn-reint { border: 1px solid var(--border-light); background: #fff; border-radius: 8px; padding: 6px 10px; font-size: 11.5px; font-weight: 700; cursor: pointer; color: var(--ink-secondary); display: block; width: 100%; margin-bottom: 5px; font-family: inherit; }
+.btn-reint:hover { border-color: var(--hope-p); color: var(--hope-p); }
+.btn-reint:disabled { opacity: .55; cursor: wait; }
+.btn-reint.primario { background: var(--hope-p); border-color: var(--hope-p); color: #fff; }
+
+/* Paginación + toast */
+.pag { display: flex; gap: 8px; align-items: center; justify-content: center; margin: 18px 0 0; }
+.pag a { text-decoration: none; padding: 8px 15px; border-radius: 9px; border: 1px solid var(--border-light); background: #fff; color: var(--ink-secondary); font-weight: 700; }
+.pag a.act { background: var(--hope-p); color: #fff; border-color: var(--hope-p); }
+#amn-toast { position: fixed; right: 22px; bottom: 22px; max-width: 430px; background: #0F172A; color: #fff; border-radius: 14px; padding: 14px 18px; font-size: 13px; line-height: 1.5; box-shadow: 0 18px 40px -8px rgba(0,0,0,.4); display: none; z-index: 9999; }
+#amn-toast.ok { background: #065f46; } #amn-toast.err { background: #7f1d1d; }
+</style>
+
+<div class="amn-wrap">
+  <!-- HEADER -->
+  <div class="amn-header">
+    <span class="amn-badge-hd">⚙️ OKR de Automatizaciones · Notas Clínicas</span>
+    <h1>Monitoreo de Automatización de Notas Clínicas</h1>
+    <p>Flujo automático: <b>Cita → Google Meet (notas) → Groq (IA) → Nota clínica escrita → Reporte PDF → Correo</b>.
+       Panel de observación, diagnóstico y reintentos manuales: no altera ninguna lógica existente.</p>
+    <div class="amn-links">
+      <a href="{% url 'panel_admin_ipp_email_monitor' %}">↗ Monitor de Envío IPP</a>
+      <a href="{% url 'gestor_envio_reporte_cita' %}">↗ Gestor de reportes</a>
+    </div>
+  </div>
+
+  <!-- SALUD DEL SISTEMA -->
+  <h2 style="font-family:'Outfit',sans-serif;font-size:17px;font-weight:800;margin:0 0 10px;">🩺 Salud general del sistema</h2>
+  <div class="amn-salud">
+    {% for s in salud %}
+    <div class="amn-sal">
+      <span class="amn-dot {{ s.estado }}"></span>
+      <div><h4>{{ s.nombre }}</h4><div class="d">{{ s.detalle }}</div></div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- KPIs POR ORGANIZACIÓN -->
+  <h2 style="font-family:'Outfit',sans-serif;font-size:17px;font-weight:800;margin:0 0 10px;">📊 Métricas por organización <span style="font-size:12px;color:var(--ink-muted);font-weight:600;">(desde la implantación del monitoreo · sin mezclar organizaciones)</span></h2>
+  <div class="amn-orgs">
+    {% for org, o in kpis.items %}
+    <div class="amn-org">
+      <h3>
+        {% if org == 'hope' %}<span class="tag tag-hope">HOPE</span><span>Publico general</span>{% endif %}
+        {% if org == 'tectum_inhouse' %}<span class="tag tag-inh">TECTUM</span><span>In-House</span>{% endif %}
+        {% if org == 'tectum_beneficios' %}<span class="tag tag-ben">TECTUM</span><span>Beneficios</span>{% endif %}
+      </h3>
+      <div class="amn-kpi-row">
+        <div class="amn-kpi"><div class="n vio">{{ o.lecturas.total }}</div><div class="l">Lecturas</div></div>
+        <div class="amn-kpi"><div class="n verde">{{ o.lecturas.exitosas }}</div><div class="l">Lect. ok</div></div>
+        <div class="amn-kpi"><div class="n rojo">{{ o.lecturas.errores }}</div><div class="l">Lect. error</div></div>
+        <div class="amn-kpi"><div class="n ambar">{{ o.lecturas.pendientes }}</div><div class="l">Lect. pend</div></div>
+
+        <div class="amn-kpi"><div class="n vio">{{ o.escrituras.total }}</div><div class="l">Escrituras</div></div>
+        <div class="amn-kpi"><div class="n verde">{{ o.escrituras.exitosas }}</div><div class="l">Escr. ok</div></div>
+        <div class="amn-kpi"><div class="n rojo">{{ o.escrituras.errores }}</div><div class="l">Escr. error</div></div>
+        <div class="amn-kpi"><div class="n ambar">{{ o.lecturas.ignoradas }}</div><div class="l">Ignoradas</div></div>
+
+        <div class="amn-kpi"><div class="n vio">{{ o.ia.peticiones }}</div><div class="l">IA peticiones</div></div>
+        <div class="amn-kpi"><div class="n rojo">{{ o.ia.errores }}</div><div class="l">IA errores</div></div>
+        <div class="amn-kpi"><div class="n verde">{{ o.ia.tokens }}</div><div class="l">Tokens</div></div>
+        <div class="amn-kpi"><div class="n ambar">{% if o.ia.prom_ms %}{{ o.ia.prom_ms }}{% else %}0{% endif %} ms</div><div class="l">T. prom</div></div>
+
+        <div class="amn-kpi-sub"><b>Correos:</b> {{ o.correos.enviados }} enviados · {{ o.correos.fallos }} fallidos · {{ o.correos.reintentos }} reintentados (evidencia verificable en ReporteClinicoPDF)</div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- FILTROS -->
+  <form class="amn-filtros" method="get">
+    <div class="amn-contadores">
+      <a class="amn-cont-btn {% if filtros.estado == 'todos' %}active{% endif %}" href="?estado=todos&org={{ filtros.org }}&paciente={{ filtros.paciente|urlencode }}&psicologo={{ filtros.psicologo|urlencode }}&correo={{ filtros.correo|urlencode }}&fecha={{ filtros.fecha }}&id_cita={{ filtros.id_cita }}">Todas <span class="c">{{ conteos.todos }}</span></a>
+      <a class="amn-cont-btn {% if filtros.estado == 'exitoso' %}active{% endif %}" href="?estado=exitoso&org={{ filtros.org }}&paciente={{ filtros.paciente|urlencode }}&psicologo={{ filtros.psicologo|urlencode }}&correo={{ filtros.correo|urlencode }}&fecha={{ filtros.fecha }}&id_cita={{ filtros.id_cita }}">🟢 Exitosas <span class="c">{{ conteos.exitoso }}</span></a>
+      <a class="amn-cont-btn {% if filtros.estado == 'error' %}active{% endif %}" href="?estado=error&org={{ filtros.org }}&paciente={{ filtros.paciente|urlencode }}&psicologo={{ filtros.psicologo|urlencode }}&correo={{ filtros.correo|urlencode }}&fecha={{ filtros.fecha }}&id_cita={{ filtros.id_cita }}">🔴 Con errores <span class="c">{{ conteos.error }}</span></a>
+      <a class="amn-cont-btn {% if filtros.estado == 'pendiente' %}active{% endif %}" href="?estado=pendiente&org={{ filtros.org }}&paciente={{ filtros.paciente|urlencode }}&psicologo={{ filtros.psicologo|urlencode }}&correo={{ filtros.correo|urlencode }}&fecha={{ filtros.fecha }}&id_cita={{ filtros.id_cita }}">🟡 Pendientes <span class="c">{{ conteos.pendiente }}</span></a>
+      <a class="amn-cont-btn {% if filtros.estado == 'historico' %}active{% endif %}" href="?estado=historico&org={{ filtros.org }}&paciente={{ filtros.paciente|urlencode }}&psicologo={{ filtros.psicologo|urlencode }}&correo={{ filtros.correo|urlencode }}&fecha={{ filtros.fecha }}&id_cita={{ filtros.id_cita }}">🟣 Previas al monitoreo <span class="c">{{ conteos.historico }}</span></a>
+    </div>
+    <div class="amn-fgrid">
+      <div class="amn-f"><label>Organización</label>
+        <select name="org">
+          <option value="todas">Todas</option>
+          <option value="hope" {% if filtros.org == 'hope' %}selected{% endif %}>HOPE</option>
+          <option value="tectum_inhouse" {% if filtros.org == 'tectum_inhouse' %}selected{% endif %}>TECTUM In-House</option>
+          <option value="tectum_beneficios" {% if filtros.org == 'tectum_beneficios' %}selected{% endif %}>TECTUM Beneficios</option>
+        </select>
+      </div>
+      <div class="amn-f"><label>Paciente</label><input type="text" name="paciente" value="{{ filtros.paciente }}" placeholder="Nombre o correo"></div>
+      <div class="amn-f"><label>Psicólogo</label><input type="text" name="psicologo" value="{{ filtros.psicologo }}" placeholder="Nombre"></div>
+      <div class="amn-f"><label>Correo</label><input type="text" name="correo" value="{{ filtros.correo }}" placeholder="Búsqueda por correo"></div>
+      <div class="amn-f"><label>Fecha sesión</label><input type="date" name="fecha" value="{{ filtros.fecha }}"></div>
+      <div class="amn-f"><label>ID cita</label><input type="number" name="id_cita" value="{{ filtros.id_cita }}" placeholder="#"></div>
+      <div class="amn-f"><label>&nbsp;</label><button class="amn-btn-p" type="submit">Aplicar</button></div>
+      <div class="amn-f"><label>&nbsp;</label><a class="amn-btn-sec" href="?">Limpiar</a></div>
+    </div>
+    <input type="hidden" name="estado" value="{{ filtros.estado }}">
+  </form>
+
+  <!-- TABLA -->
+  <div class="amn-tabla-card">
+    <table class="amn-tabla">
+      <thead>
+        <tr>
+          <th>Cita</th><th>Paciente / Psicólogo</th><th>Fecha</th><th>Org</th>
+          <th>Estado</th><th>Etapas</th><th>Acciones / Timeline</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for fila in filas %}
+        <tr>
+          <td><div class="amn-id">#{{ fila.cita.id }}</div><div class="amn-mail">{{ fila.cita.get_tipo_sesion_display }}</div></td>
+          <td>
+            <div class="amn-nombre">{{ fila.cita.paciente.first_name|default:fila.cita.paciente.username }}</div>
+            <div class="amn-mail">{{ fila.cita.paciente.email }}</div>
+            <div class="amn-mail">🧠 {{ fila.cita.psicologo.usuario.first_name|default:'—' }}</div>
+          </td>
+          <td style="white-space:nowrap;">
+            <div style="font-weight:700;">{{ fila.cita.fecha|date:"d/m/Y" }}</div>
+            <div class="amn-mail">{{ fila.cita.hora|time:"H:i" }}</div>
+          </td>
+          <td>
+            {% if fila.org == 'hope' %}<span class="amn-org-pill tag-hope">HOPE</span>{% endif %}
+            {% if fila.org == 'tectum_inhouse' %}<span class="amn-org-pill tag-inh">IN-HOUSE</span>{% endif %}
+            {% if fila.org == 'tectum_beneficios' %}<span class="amn-org-pill tag-ben">BENEFICIOS</span>{% endif %}
+          </td>
+          <td>
+            <span class="badge {{ fila.global_clase }}">{{ fila.global_label }}</span>
+            <div class="amn-mail" style="margin-top:4px;max-width:210px;">{{ fila.global_detalle }}</div>
+          </td>
+          <td>
+            <div class="pasos">
+              {% for p in fila.pasos %}
+              <div class="paso"><span class="pl">{{ p.etiqueta }}:</span><span class="badge {{ p.clase }}">{{ p.estado_label }}</span></div>
+              {% endfor %}
+            </div>
+          </td>
+          <td style="min-width:190px;">
+            <details>
+              <summary class="amn-ver-mas">Ver línea de tiempo ({{ fila.eventos|length }})</summary>
+              <div class="amn-tl">
+                {% if fila.eventos %}
+                  {% for e in fila.eventos %}
+                  <div class="amn-tl-item">
+                    <div class="amn-tl-meta"><b>{{ e.fecha|date:"d/m/Y H:i:s" }}</b> · {{ e.etapa_label }} ·
+                      <span class="badge {{ e.estado }}" style="font-size:10px;">{{ e.estado }}</span>
+                      {% if e.intento %} · intento #{{ e.intento }}{% endif %}
+                      · origen: {{ e.origen }} · usuario: {{ e.usuario }}{% if e.ip %} ({{ e.ip }}){% endif %}
+                    </div>
+                    {% if e.duracion_ms %}<div class="amn-tl-meta">⏱ {{ e.duracion_ms }} ms{% if e.modelo %} · {{ e.modelo }} · {{ e.tokens }} tokens{% endif %}</div>{% endif %}
+                    {% if e.fuente %}<div class="amn-tl-meta">📄 {{ e.fuente }}</div>{% endif %}
+                    <div class="amn-tl-det">{{ e.detalle }}</div>
+                    {% if e.error %}<div class="amn-tl-err">❌ {{ e.error }}</div>{% endif %}
+                    {% if e.sugerida %}<div class="amn-tl-sug">💡 Acción sugerida: {{ e.sugerida }}</div>{% endif %}
+                  </div>
+                  {% endfor %}
+                {% else %}
+                  <div class="amn-tl-meta">Sin eventos registrados (procesada antes de la implantación del monitoreo).</div>
+                {% endif %}
+              </div>
+            </details>
+            <div style="margin-top:6px;">
+              <button class="btn-reint primario" data-cita="{{ fila.cita.id }}" data-tipo="bitacora">🔁 Reintentar bitácora (lectura+IA+escritura)</button>
+              <button class="btn-reint" data-cita="{{ fila.cita.id }}" data-tipo="reporte">🖨 Reintentar reporte + correos</button>
+              <button class="btn-reint" data-cita="{{ fila.cita.id }}" data-tipo="correo">✉️ Reintentar solo correos</button>
+              <button class="btn-reint" data-cita="{{ fila.cita.id }}" data-tipo="completo">⚡ Sincronización completa</button>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7" style="text-align:center;padding:30px;color:var(--ink-muted);">No hay sesiones que coincidan con los filtros aplicados.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- PAGINACIÓN -->
+  {% if page_obj.paginator.num_pages > 1 %}
+  <div class="pag">
+    {% if page_obj.has_previous %}<a href="?estado={{ filtros.estado }}&org={{ filtros.org }}&paciente={{ filtros.paciente|urlencode }}&psicologo={{ filtros.psicologo|urlencode }}&correo={{ filtros.correo|urlencode }}&fecha={{ filtros.fecha }}&id_cita={{ filtros.id_cita }}&page={{ page_obj.previous_page_number }}">‹ Anterior</a>{% endif %}
+    <span class="amn-mail">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }} ({{ conteos.todos }} evaluadas)</span>
+    {% if page_obj.has_next %}<a href="?estado={{ filtros.estado }}&org={{ filtros.org }}&paciente={{ filtros.paciente|urlencode }}&psicologo={{ filtros.psicologo|urlencode }}&correo={{ filtros.correo|urlencode }}&fecha={{ filtros.fecha }}&id_cita={{ filtros.id_cita }}&page={{ page_obj.next_page_number }}">Siguiente ›</a>{% endif %}
+  </div>
+  {% endif %}
+</div>
+
+<div id="amn-toast"></div>
+
+<script>
+function amnGetCookie(name) {
+  let v = null;
+  document.cookie.split(';').forEach(c => {
+    const p = c.trim().split('=');
+    if (p[0] === name) v = decodeURIComponent(p[1]);
+  });
+  return v;
+}
+function amnToast(msg, cls, ms) {
+  const t = document.getElementById('amn-toast');
+  t.className = cls || '';
+  t.innerHTML = msg;
+  t.style.display = 'block';
+  clearTimeout(t._h);
+  t._h = setTimeout(() => { t.style.display = 'none'; }, ms || 9000);
+}
+
+document.querySelectorAll('.btn-reint').forEach(btn => {
+  btn.addEventListener('click', async () => {
+    const cita = btn.dataset.cita, tipo = btn.dataset.tipo;
+    if (!confirm('¿Ejecutar reintento "' + tipo + '" para la cita #' + cita + '?')) return;
+    btn.disabled = true; const txt = btn.textContent; btn.textContent = '⏳ Ejecutando…';
+    try {
+      const resp = await fetch(`/panel-admin/api/reintento-automatizacion/${cita}/`, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': amnGetCookie('csrftoken'), 'Content-Type': 'application/x-www-form-urlencoded', 'X-Requested-With': 'XMLHttpRequest' },
+        body: 'tipo=' + encodeURIComponent(tipo),
+      });
+      const data = await resp.json();
+      if (data.status === 'success' || data.mensaje) {
+        const det = (data.resultados || []).map(r => '<div><b>' + r.paso + ':</b> ' + (r.ok ? '✅' : '❌') + ' ' + (r.detalle || '') + (r.aviso ? ' <i>(' + r.aviso + ')</i>' : '') + '</div>').join('');
+        amnToast('<b>Cita #' + cita + '</b><br>' + det, data.status === 'success' ? 'ok' : 'err', 14000);
+        if (data.status === 'success') setTimeout(() => location.reload(), 2200);
+      } else {
+        amnToast('❌ ' + (data.mensaje || 'Error desconocido'), 'err');
+      }
+    } catch (e) {
+      amnToast('❌ Error de red: ' + e, 'err');
+    } finally {
+      btn.disabled = false; btn.textContent = txt;
+    }
+  });
+});
+</script>
+{% endblock %}

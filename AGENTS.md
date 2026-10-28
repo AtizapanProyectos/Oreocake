@@ -11,6 +11,16 @@
 > `LogEnvioReporteIPP`, añadida el 28/10/2026 para el monitor de envío IPP) ·
 > `core/urls.py` = 155 líneas · `hope_project/settings.py` = 230 líneas.
 >
+> ✅ **Cambio del 28/10/2026 (#2) — Panel "Monitoreo de Automatización de Notas Clínicas"**
+> (`/panel-admin/automatizacion-notas/`). Modelo `LogAutomatizacionNotas` (migración 0061, que
+> también añade `Cita.es_beneficios` y `UsuarioPerfil.es_beneficios` para separar organizaciones),
+> template `panel_admin_automatizacion_notas.html`, endpoint POST
+> `/panel-admin/api/reintento-automatizacion/<id>/` y registro de solo lectura en Django admin.
+> Instrumentación fail-safe (`_reg_log_auto`, v≈2654) en
+> `generar_bitacora_automatica_meet` (28/10/2026) y telemetría Groq opcional en
+> `_generar_bitacora_con_ia_de_texto`. NO modifica el pipeline de bitácoras ni de reportes.
+> Ver §4.2.25 y §11.4 (monitor de notas).
+>
 > ✅ **Cambio del 28/10/2026 — Módulo "Monitor de Envío de Reportes IPP"** (solo observación,
 > auditoría y reenvío manual): modelo `LogEnvioReporteIPP` (migración 0060), vista
 > `/panel-admin/ipp-email-monitor/`, endpoint POST `/panel-admin/api/reintentar-envio-ipp/<id>/`,
@@ -318,7 +328,8 @@ PayPal (pagos) · Railway (hosting+BD) · jsdelivr/cdnjs (assets).
 | 21 | `ReporteClinicoPDF` | trazabilidad de PDFs y correos de sesión | FK Cita, User, PerfilPsicologo, TratamientoPaciente |
 | 22 | `DocumentoRepositorioClinico` | repositorio global de documentos | FK PerfilPsicologo (nullable), FK User (nullable) |
 | 23 | `EncuestaRespuesta` · `EncuestaFinalRespuesta` · `EncuestaTectum` | encuestas en vivo y GHQ-30 | optional FK User (solo TECTUM) |
-| 24 | `LogEnvioReporteIPP` | bitácora de intentos de envío del reporte IPP (módulo monitor admin) | FK `Cita`, FK User nullable |
+| 24 | `LogEnvioReporteIPP` | bitácora de intentos de envío del reporte IPP (módulo monitor admin + pipeline) | FK `Cita`, FK User nullable |
+| 25 | `LogAutomatizacionNotas` | bitácora de pasos del flujo automático de notas clínicas (Meet→Groq→escritura; panel monitor notas) | FK `Cita`, FK User nullable |
 
 ## 4.2 Diccionario de datos completo
 
@@ -373,6 +384,9 @@ PayPal (pagos) · Railway (hosting+BD) · jsdelivr/cdnjs (assets).
 - `nombre` CharField(100, index)
 - `es_psicologo` BooleanField default False (index); `es_padre` BooleanField default False
 - `es_tectum` BooleanField default False (index) — convenio TECTUM In-House
+- `es_beneficios` BooleanField default False (index) — convenio TECTUM Beneficios (28/10/2026;
+  migración 0061). Se marca en registro (host/`convenio`/sesión), en login Beneficios y en las
+  citas nuevas; las citas/usuarios anteriores a esa fecha NO se distinguen retroactivamente.
 - `telefono` CharField(20, blank/null, index); `telefono_emergencia` CharField(20, blank/null)
 - `psicologo_asignado` **FK(PerfilPsicologo, SET_NULL, null/blank, related_name='pacientes_asignados')**
 - Campos de **expediente global** (cada uno TextField blank/null):
@@ -410,6 +424,9 @@ PayPal (pagos) · Railway (hosting+BD) · jsdelivr/cdnjs (assets).
 - `tipo_sesion` CharField choices individual / pareja ("En Pareja") / familiar (default 'individual')
 - `integrantes_familia` PositiveSmallIntegerField (null, docs: "solo se si familiar")
 - `es_tectum` BooleanField default False (index)
+- `es_beneficios` BooleanField default False (index) — 28/10/2026 (migración 0061): separación de
+  organizaciones para el panel de automatización. Escrita por `guardar_cita_ajax`, `iniciar_pago_clip`
+  (detección host/sesión/POST) y `admin_guardar_cita_ajax` (POST `es_beneficios` o perfil).
 - **Restricciones:** `unique_together = [['psicologo','fecha','hora']]` — misma hora, mismo
   psicólogo (hola/ anunció "misma hora)" es la fila de single-slot).
 - **Índices:** (`fecha`,`estado`), (`psicologo`,`fecha`,`estado`), (`paciente`,`estado`).
@@ -590,6 +607,34 @@ PayPal (pagos) · Railway (hosting+BD) · jsdelivr/cdnjs (assets).
   Omitido en modo `solo_generar`, Advertencia si el reporte ya estaba enviado; y (b) el módulo
   monitor en cada reintento manual. En Django admin (`/error-59/`) está como solo lectura.
 
+### 4.2.25 `LogAutomatizacionNotas` — bitácora del flujo automático de notas clínicas (nuevo, 28/10/2026)
+- Bitácora del flujo Google Meet → Groq → `HistorialClinico` → reporte → correo (migración 0061,
+  que también añade `Cita.es_beneficios` y `UsuarioPerfil.es_beneficios`). Solo observación:
+  **NO reemplaza la evidencia de éxito** (`HistorialClinico.notas_sesion`,
+  `ReporteClinicoPDF.correo_enviado`).
+- `cita` FK(Cita, CASCADE, related_name='logs_automatizacion'); `usuario` FK(User, SET_NULL,
+  null/blank, related_name='acciones_automatizacion_notas') — None = sistema.
+- `etapa` CharField(20, index): `lectura` (notas de Meet) / `ia` (Groq) / `escritura` (nota
+  clínica) / `reporte` / `correo` / `completo` (sincronización).
+- `estado` CharField(20): `pendiente` / `en_proceso` / `exitoso` / `error` / `reintentando` /
+  `ignorado` / `conflicto` / `sin_permisos`.
+- `servicio` CharField(20): `google_meet` / `groq` / `base_datos` / `smtp` / `pipeline` /
+  `sistema` · `organizacion` CharField(25, index): `hope` / `tectum_inhouse` /
+  `tectum_beneficios` (derivada de `Cita.es_beneficios` > `Cita.es_tectum` > perfil del paciente).
+- `origen` CharField(25): `automatico` / `manual` / `batch`; `intento` PosSmall (consecutivo por
+  cita+etapa, lo calcula `_reg_log_auto`).
+- Diagnóstico: `detalle` (qué intentó / resultado legible), `error_tecnico`, `stack_trace`
+  (≤3500), `accion_sugerida`, `fuente_datos` (títulos de attachments de Meet), `duracion_ms`
+  (tiempo de procesamiento por etapa), `ip` (auditoría de reintentos manuales).
+- Telemetría IA: `modelo_ia`, `tokens_prompt`, `tokens_respuesta` (las llena
+  `_generar_bitacora_con_ia_de_texto` vía dict `telemetria` opcional).
+- `fecha` auto_now_add (index). Índices: (`cita`,`fecha`), (`etapa`,`estado`),
+  (`estado`,`fecha`), (`organizacion`,`fecha`). Ordering `-fecha`.
+- Quién escribe: `_reg_log_auto` (fail-safe; si el log falla el flujo continúa) desde
+  `generar_bitacora_automatica_meet` (lectura/ia/escritura/completo, incluido el barrido
+  histórico `batch` y los reintentos manuales `manual`), y `api_reintento_automatizacion`
+  (auditoría de reintentos con usuario+IP). En Django admin es solo lectura.
+
 ## 4.3 Diagrama Entidad–Relación (Mermaid)
 
 ```mermaid
@@ -634,6 +679,8 @@ erDiagram
     TRATAMIENTO_PACIENTE ||--o{ EVALUACIONES : "por tratamiento"
     TALLER ||--o{ INSCRIPCIONTALLER : "inscripciones"
     CITA ||--o{ LOGENVIOREPORTEIPP : "logs_envio_ipp"
+    CITA ||--o{ LOGAUTOMATIZACIONNOTAS : "logs_automatizacion"
+    AUTH_USER ||--o{ LOGAUTOMATIZACIONNOTAS : "acciones_automatizacion_notas"
 ```
 
 ## 4.4 Dependencias cruzadas (relaciones que ES OBLIGACIONES NO ROMPER)
@@ -1268,6 +1315,8 @@ Formato: `MÉTODO → ruta` · auth · parámetros · respuesta · errores · us
 | `/admin/procesar-bitacoras-historicas-meet/` | GET | backfill IA `?limite=N` (default 3) |
 | `/panel-admin/ipp-email-monitor/` | GET | **nuevo 28/10/2026**: monitor de envío de reportes IPP por sesión. Filtros (estado/paciente/psicólogo/fecha/correo), badges ENVIADO (verde, evidencia en `ReporteClinicoPDF.correo_enviado`), NO ENVIADO (rojo) y PENDIENTE (amarillo), columna Motivo, sección expandible "Ver Logs" (`LogEnvioReporteIPP`) y botones de reenvío manual. Paginación 25/página. Estado evaluado por `_ipp_evaluar_cita`. Gate `es_admin` (superuser). |
 | `/panel-admin/api/reintentar-envio-ipp/<int:cita_id>/` | POST | **nuevo 28/10/2026**: reenvío manual. POST `tipo` = `''` (pendientes ambos) / `paciente` / `psicologo`. Valida reporte (`ReporteClinicoPDF`), destinatario, SMTP y archivo PDF; si falta reporte o PDF delega al pipeline `_procesar_reporte_de_una_cita_detallado` (puede duplicar correo ya servido); si existe PDF reenvía con las mismas funciones de correo del pipeline, actualiza `correo_enviado` y `cita.reporte_enviado` cuando ambos están servidos. Registra cada intento en `LogEnvioReporteIPP`. `@require_POST`, CSRF por header `X-CSRFToken` |
+| `/panel-admin/automatizacion-notas/` | GET | **nuevo 28/10/2026**: monitor del flujo automático de notas clínicas (Meet → Groq → escritura → reporte → correo). Evaluación por cita de las 5 etapas con estado global (`_amn_evaluar_cita`); KPIs separados por organización (HOPE / In-House / Beneficios, `_amn_kpis`); indicadores de salud tipo semáforo de 7 servicios (`_amn_salud`); línea de tiempo por cita unificada con `LogAutomatizacionNotas` + `LogEnvioReporteIPP` (fecha/hora, duración ms, tokens, stack trace, acción sugerida); buscador avanzado (estado, organización, paciente, psicólogo, correo, fecha, ID de cita); paginación 25/página. Botones de reintento por fila. Gate `@user_passes_test(es_admin)` (superuser). Rendimiento: evaluación en memoria sobre `prefetch_related` de logs/perfil (≈19 consultas por render) |
+| `/panel-admin/api/reintento-automatizacion/<int:cita_id>/` | POST | **nuevo 28/10/2026**: reintentos manuales del monitor de notas. POST `tipo` = `bitacora` (lectura Meet + IA Groq + escritura de nota vía `generar_bitacora_automatica_meet`) / `reporte` (regeneración de 2 PDFs + despacho forzado vía pipeline) / `correo` (reenvío de correos con PDF, reutiliza `api_reintentar_envio_ipp`) / `completo` (bitácora + reporte). Cada intento queda auditado en `LogAutomatizacionNotas` con usuario e IP. `@user_passes_test(es_admin)` + `@require_POST`, CSRF por header `X-CSRFToken`. Errores: 404 cita inexistente, 400 tipo inválido |
 | `/panel-admin/reporte-crecimiento-sesiones/` | GET | dashboard ejecutivo (periodo/mes/historico; satisfacción por psicólogo) |
 | `/panel-admin/reporte-crecimiento-sesiones/exportar/` | GET | CSV `utf-8-sig` tipos activos/inactivos/todos |
 | `/panel-admin/reporte-crecimiento-sesiones/api-usuarios/` | GET | JSON (recorte a 350 más recientes) |
