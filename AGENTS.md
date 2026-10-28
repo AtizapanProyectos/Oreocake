@@ -6,10 +6,10 @@
 > que cualquier cambio incorrecto afecta operación en producción (la BD de desarrollo ES la BD de
 > producción: MySQL de Railway, db `hope`).
 >
-> Verificado contra el código en disco: `core/views.py` = 9,392 líneas · `core/models.py` = 1,275
-> líneas · 62 migraciones (0001–0060, con dos 0026/0036/0039 duplicadas por rename; 0060 = 
-> `LogEnvioReporteIPP`, añadida el 28/10/2026 para el monitor de envío IPP) ·
-> `core/urls.py` = 155 líneas · `hope_project/settings.py` = 230 líneas.
+> Verificado contra el código en disco: `core/views.py` = 10,199 líneas · `core/models.py` = 1,370
+> líneas · 63 migraciones (0001–0061, con dos 0026/0036/0039 duplicadas por rename; 0060 = 
+> `LogEnvioReporteIPP`, 0061 = `LogAutomatizacionNotas` + `es_beneficios`, ambas 28/10/2026) ·
+> `core/urls.py` = 158 líneas · `hope_project/settings.py` = 230 líneas.
 >
 > ✅ **Cambio del 28/10/2026 (#2) — Panel "Monitoreo de Automatización de Notas Clínicas"**
 > (`/panel-admin/automatizacion-notas/`). Modelo `LogAutomatizacionNotas` (migración 0061, que
@@ -818,6 +818,8 @@ El helper `_es_colaborador_tectum(user, email_ingresado)` (765) compara un set d
 | `consultar/subir/eliminar repositorio` | `is_superuser` \| `is_staff` \| `perfil_psicologo` |
 | `api_chat_ia_ask` | `@csrf_exempt` + `es_admin` |
 | `panel_admin_ipp_email_monitor_view` | `@user_passes_test(es_admin)` — GET, solo lectura |
+| `panel_admin_automatizacion_notas` | `@user_passes_test(es_admin)` — GET, evaluación 100% en memoria (no escribe) |
+| `api_reintento_automatizacion` | `@user_passes_test(es_admin)` + `@require_POST` (CSRF por header `X-CSRFToken`) |
 | `api_reintentar_envio_ipp` | `@user_passes_test(es_admin)` + `@require_POST` (CSRF activo por header `X-CSRFToken`) |
 | `iniciar_pago_clip` | `@csrf_exempt` público (requiere `request.user` SLETE — el paciente) |
 | `pago_exitoso/cancelado_clip` | públicos (la cita ya depende del id en la URL) |
@@ -1541,6 +1543,10 @@ guardar_encuesta_final_ajax.
 - `EvaluacionSesionPaciente` `OneToOne` con Cita (una evaluación por sesión);
   `RespuestaFormularioOrganica` `unique_together(paciente, cita)` (protección para concurrencia).
 - Bitácora automática no sobreescribe bitácora manual ya existente con `notas_sesion` no vacía.
+- **Instrumentación (28/10/2026):** `generar_bitacora_automatica_meet` escribe en
+  `LogAutomatizacionNotas` cada paso (lectura Meet / IA Groq / escritura de nota / completo)
+  vía `_reg_log_auto` — fail-safe, no cambia su comportamiento ni retornos. El barrido histórico
+  registra `origen='batch'`; el endpoint manual del psicólogo y los reintentos del panel, `manual`.
 - El pipeline de reportes se protege con `cita.reporte_enviado` y `select_for_update`.
 
 ## 13.7 Comunicación
