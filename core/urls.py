@@ -109,6 +109,10 @@ urlpatterns = [
     path('panel-admin/api/ejecutar-envio-reporte/<int:cita_id>/', views.api_ejecutar_envio_reporte, name='api_ejecutar_envio_reporte'),
     path('panel-admin/descargar-reporte-pdf/<int:cita_id>/<str:tipo>/', views.descargar_reporte_pdf_cita, name='descargar_reporte_pdf_cita'),
 
+    # URLs para el Monitor de Envío de Reportes IPP (solo observación + reenvío manual)
+    path('panel-admin/ipp-email-monitor/', views.panel_admin_ipp_email_monitor_view, name='panel_admin_ipp_email_monitor'),
+    path('panel-admin/api/reintentar-envio-ipp/<int:cita_id>/', views.api_reintentar_envio_ipp, name='api_reintentar_envio_ipp'),
+
     # Repositorio Clínico Global para Psicólogos
     path('repositorio-clinico/', views.repositorio_clinico_view, name='repositorio_clinico'),
     path('api/repositorio-clinico/subir/', views.subir_documento_repositorio_ajax, name='subir_documento_repositorio'),

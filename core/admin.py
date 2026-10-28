@@ -243,5 +243,27 @@ class ReglaCoVisionAdmin(admin.ModelAdmin):
     list_editable = ('activo',)
 
 
+# ==========================================
+# BITÁCORA DE ENVÍOS DE REPORTE IPP (SOLO LECTURA)
+# ==========================================
+@admin.register(LogEnvioReporteIPP)
+class LogEnvioReporteIPPAdmin(admin.ModelAdmin):
+    list_display = ('id', 'fecha', 'cita', 'tipo_destinatario', 'accion', 'resultado', 'usuario')
+    list_filter = ('resultado', 'tipo_destinatario', 'fecha')
+    search_fields = ('detalle', 'cita__id', 'cita__paciente__email')
+    list_select_related = ('cita', 'usuario')
+    readonly_fields = ('cita', 'usuario', 'tipo_destinatario', 'accion', 'resultado', 'detalle', 'fecha')
+    list_per_page = 50
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
 
 

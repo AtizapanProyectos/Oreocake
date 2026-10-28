@@ -1207,5 +1207,69 @@ class EncuestaTectum(models.Model):
         return f"Encuesta TECTUM #{self.id} - {self.nombre} ({self.nivel_riesgo}) - {self.fecha_creacion.strftime('%d/%m/%Y')}"
 
 
+# ==========================================
+# BITÁCORA DE ENVÍOS DE REPORTE IPP (MONITOREO ADMIN)
+# Módulo exclusivamente de observación, auditoría y reenvío manual.
+# NO modifica la lógica del pipeline de reportes (_procesar_reporte_de_una_cita_detallado):
+# solo anota intentos de envío para trazabilidad.
+# ==========================================
+class LogEnvioReporteIPP(models.Model):
+    """Bitácora de intentos de envío del reporte IPP por sesión.
+
+    Cada fila corresponde a un intento (o evento relevante) del despacho
+    del correo con PDF adjunto a un destinatario (paciente o psicólogo)
+    para una Cita. La evidencia de éxito verificable vive siempre en
+    ReporteClinicoPDF.correo_enviado, no en esta tabla.
+    """
+
+    TIPO_DESTINATARIO_CHOICES = [
+        ('paciente', 'Paciente (Check-In)'),
+        ('psicologo', 'Psicólogo (Clínico / Evolución)'),
+        ('general', 'General de la sesión (ambos destinatarios)'),
+    ]
+    RESULTADO_CHOICES = [
+        ('Exitoso', 'Exitoso'),
+        ('Error', 'Error'),
+        ('Advertencia', 'Advertencia'),
+        ('Omitido', 'Omitido'),
+    ]
+
+    cita = models.ForeignKey(
+        'Cita',
+        on_delete=models.CASCADE,
+        related_name='logs_envio_ipp',
+        verbose_name="Sesión (Cita)",
+    )
+    usuario = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='acciones_envio_ipp',
+        verbose_name="Usuario que ejecutó la acción",
+    )
+    tipo_destinatario = models.CharField(
+        max_length=20,
+        choices=TIPO_DESTINATARIO_CHOICES,
+        default='general',
+        verbose_name="Destinatario",
+    )
+    accion = models.CharField(max_length=100, verbose_name="Acción realizada")
+    resultado = models.CharField(max_length=50, choices=RESULTADO_CHOICES, default='Exitoso', verbose_name="Resultado")
+    detalle = models.TextField(blank=True, null=True, verbose_name="Detalle técnico")
+    fecha = models.DateTimeField(auto_now_add=True, db_index=True, verbose_name="Fecha/Hora del intento")
+
+    class Meta:
+        verbose_name = "Log de Envío de Reporte IPP"
+        verbose_name_plural = "Logs de Envío de Reporte IPP"
+        ordering = ['-fecha']
+        indexes = [
+            models.Index(fields=['cita', 'fecha']),
+            models.Index(fields=['resultado', 'fecha']),
+        ]
+
+    def __str__(self):
+        return f"[{self.fecha.strftime('%d/%m/%Y %H:%M')}] Cita #{self.cita_id} · {self.accion} · {self.resultado}"
+
+
 
 

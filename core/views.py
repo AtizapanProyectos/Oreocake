@@ -5840,6 +5840,26 @@ def _procesar_reporte_de_una_cita(cita_id, log_func=None):
         else:
             logging.getLogger(__name__).info(msg)
 
+
+def _log_envio_ipp_seguro(cita, tipo, accion, resultado, detalle, usuario=None):
+    """
+    Escribe un registro en LogEnvioReporteIPP sin Based jamais romper el llamador.
+    Instrumentación puramente aditiva del pipeline de reportes: si el log falla
+    (BD inaccesible, etc.) solo se imprime un warning y el envío sigue su curso.
+    """
+    try:
+        LogEnvioReporteIPP.objects.create(
+            cita=cita,
+            usuario=usuario,
+            tipo_destinatario=tipo,
+            accion=accion,
+            resultado=resultado,
+            detalle=(detalle or '')[:1900],
+        )
+    except Exception as e:
+        logging.getLogger(__name__).warning('⚠️ [IPP LOG] No se pudo registrar LogEnvioReporteIPP: %s', e)
+
+
 def _procesar_reporte_de_una_cita_detallado(cita_id, log_func=None, forzar=False, solo_generar=False):
     """
     Versión con reporte minucioso de cada fase (extracción, renderizado paciente/psicólogo,
@@ -5875,6 +5895,7 @@ def _procesar_reporte_de_una_cita_detallado(cita_id, log_func=None, forzar=False
 
         if cita.reporte_enviado and not forzar:
             detalles['etapas'].append({'etapa': 'Validación de Envío', 'ok': False, 'detalle': 'El reporte ya había sido enviado previamente para esta cita (activa la casilla "Forzar" para regenerar y reenviar).'})
+            _log_envio_ipp_seguro(cita, 'general', 'Envío automático (pipeline)', 'Advertencia', 'El reporte ya había sido enviado previamente; no se regeneró ni reenvió.')
             return False, "Reporte ya enviado previamente", detalles
 
         paciente = cita.paciente
@@ -5889,6 +5910,7 @@ def _procesar_reporte_de_una_cita_detallado(cita_id, log_func=None, forzar=False
 
         if not hasattr(cita, 'nota_clinica') or not cita.nota_clinica or not cita.nota_clinica.notas_sesion:
             detalles['etapas'].append({'etapa': 'Validación de Bitácora', 'ok': False, 'detalle': 'Falta la bitácora clínica del psicólogo. El psicólogo tratante aún no ha capturado notas_sesion para esta cita.'})
+            _log_envio_ipp_seguro(cita, 'general', 'Envío automático (pipeline)', 'Error', 'Falta la bitácora clínica (notas_sesion vacía): no se genera reporte sin bitácora para evitar documentos vacíos.')
             return False, "Falta bitácora clínica del psicólogo", detalles
 
         _log(f"   🤖 Extrayendo métricas y generando síntesis con IA...")
@@ -5899,6 +5921,7 @@ def _procesar_reporte_de_una_cita_detallado(cita_id, log_func=None, forzar=False
             detalles['etapas'].append({'etapa': 'Métricas Clínicas e IA', 'ok': True, 'detalle': f'Datos sintetizados. Sesión #{datos_paciente.get("sesion_numero", 1)}, IPP: {datos_paciente.get("ipp_valor", 0)}%'})
         except Exception as e:
             detalles['etapas'].append({'etapa': 'Métricas Clínicas e IA', 'ok': False, 'detalle': f'Error procesando métricas: {e}'})
+            _log_envio_ipp_seguro(cita, 'general', 'Envío automático (pipeline)', 'Error', f'Error procesando métricas clínicas/IA: {e}')
             return False, f"Error en métricas: {e}", detalles
 
         # 1. Renderizar y generar PDF del Paciente
@@ -5916,6 +5939,7 @@ def _procesar_reporte_de_una_cita_detallado(cita_id, log_func=None, forzar=False
             detalles['etapas'].append({'etapa': 'Generación PDF Paciente', 'ok': True, 'detalle': f'Generado exitosamente ({kb_pac} KB)'})
         except Exception as e:
             detalles['etapas'].append({'etapa': 'Generación PDF Paciente', 'ok': False, 'detalle': f'Error generando PDF: {e}'})
+            _log_envio_ipp_seguro(cita, 'paciente', 'Envío automático (pipeline)', 'Error', f'No se generó el PDF del paciente: {e}')
             return False, f"Error generando PDF paciente: {e}", detalles
 
         # 2. Renderizar y generar PDF del Psicólogo
@@ -5933,6 +5957,7 @@ def _procesar_reporte_de_una_cita_detallado(cita_id, log_func=None, forzar=False
             detalles['etapas'].append({'etapa': 'Generación PDF Psicólogo', 'ok': True, 'detalle': f'Generado exitosamente ({kb_psi} KB)'})
         except Exception as e:
             detalles['etapas'].append({'etapa': 'Generación PDF Psicólogo', 'ok': False, 'detalle': f'Error generando PDF: {e}'})
+            _log_envio_ipp_seguro(cita, 'psicologo', 'Envío automático (pipeline)', 'Error', f'No se generó el PDF del psicólogo: {e}')
             return False, f"Error generando PDF psicólogo: {e}", detalles
 
         # 3. Guardar en Base de Datos y Disco (ReporteClinicoPDF)
@@ -5982,6 +6007,7 @@ def _procesar_reporte_de_una_cita_detallado(cita_id, log_func=None, forzar=False
         if solo_generar:
             _log("   ℹ️ Modo simulación / solo generar activo. Se omitió el despacho de correos.")
             detalles['etapas'].append({'etapa': 'Despacho de Correos', 'ok': True, 'detalle': 'Omitido intencionalmente (modo solo generar PDF activado).'})
+            _log_envio_ipp_seguro(cita, 'general', 'Envío automático (pipeline)', 'Omitido', 'Modo "solo generar": PDFs archivados según lo esperado, correos omitidos intencionalmente.')
             cita.reporte_enviado = True
             cita.save(update_fields=['reporte_enviado'])
             return True, "PDFs generados y guardados con éxito en base de datos (sin enviar correo)", detalles
@@ -5997,13 +6023,16 @@ def _procesar_reporte_de_una_cita_detallado(cita_id, log_func=None, forzar=False
                 reporte_pac_obj.save(update_fields=['correo_enviado'])
                 email_pac_ok = True
                 detalles['etapas'].append({'etapa': 'Envío Correo Paciente', 'ok': True, 'detalle': f'Correo enviado con PDF adjunto a {paciente.email}'})
+                _log_envio_ipp_seguro(cita, 'paciente', 'Envío automático (pipeline)', 'Exitoso', f'Correo enviado con PDF adjunto a {paciente.email}.')
                 _log(f"   ✅ Correo enviado a {paciente.email}.")
             except Exception as e:
                 detalles['etapas'].append({'etapa': 'Envío Correo Paciente', 'ok': False, 'detalle': f'Fallo al enviar correo a {paciente.email}: {e}'})
                 detalles['errores'].append(f'Correo paciente: {e}')
+                _log_envio_ipp_seguro(cita, 'paciente', 'Envío automático (pipeline)', 'Error', f'Falló el envío a {paciente.email}: {_ipp_clasificar_error_envio(e)}')
                 _log(f"   ⚠️ Error enviando correo a paciente: {e}")
         else:
             detalles['etapas'].append({'etapa': 'Envío Correo Paciente', 'ok': False, 'detalle': 'El paciente no tiene dirección de correo electrónico registrada.'})
+            _log_envio_ipp_seguro(cita, 'paciente', 'Envío automático (pipeline)', 'Advertencia', 'Correo del paciente vacío: no hay destinatario al cual enviar.')
 
         email_doc = psicologo.usuario.email if psicologo and psicologo.usuario else None
         if email_doc:
@@ -6014,22 +6043,28 @@ def _procesar_reporte_de_una_cita_detallado(cita_id, log_func=None, forzar=False
                 reporte_psi_obj.save(update_fields=['correo_enviado'])
                 email_psi_ok = True
                 detalles['etapas'].append({'etapa': 'Envío Correo Psicólogo', 'ok': True, 'detalle': f'Correo enviado con PDF adjunto a {email_doc}'})
+                _log_envio_ipp_seguro(cita, 'psicologo', 'Envío automático (pipeline)', 'Exitoso', f'Correo enviado con PDF adjunto a {email_doc}.')
                 _log(f"   ✅ Correo enviado a {email_doc}.")
             except Exception as e:
                 detalles['etapas'].append({'etapa': 'Envío Correo Psicólogo', 'ok': False, 'detalle': f'Fallo al enviar correo a {email_doc}: {e}'})
                 detalles['errores'].append(f'Correo psicólogo: {e}')
+                _log_envio_ipp_seguro(cita, 'psicologo', 'Envío automático (pipeline)', 'Error', f'Falló el envío a {email_doc}: {_ipp_clasificar_error_envio(e)}')
                 _log(f"   ⚠️ Error enviando correo a psicólogo: {e}")
         else:
             detalles['etapas'].append({'etapa': 'Envío Correo Psicólogo', 'ok': False, 'detalle': 'El psicólogo tratante no tiene correo registrado.'})
+            _log_envio_ipp_seguro(cita, 'psicologo', 'Envío automático (pipeline)', 'Advertencia', 'Correo del psicólogo vacío: no hay destinatario al cual enviar.')
 
         cita.reporte_enviado = True
         cita.save(update_fields=['reporte_enviado'])
 
         if email_pac_ok and email_psi_ok:
+            _log_envio_ipp_seguro(cita, 'general', 'Envío automático (pipeline)', 'Exitoso', 'Sesión procesada: PDFs generados y ambos correos enviados con éxito.')
             return True, "Reporte generado, guardado y enviado con éxito a ambos destinatarios", detalles
         elif email_pac_ok or email_psi_ok:
+            _log_envio_ipp_seguro(cita, 'general', 'Envío automático (pipeline)', 'Advertencia', 'Sesión procesada: PDFs generados y archivados, pero solo se entregó a uno de los destinatarios (ver logs por destinatario).')
             return True, "Reporte generado y guardado, pero solo se entregó a uno de los destinatarios", detalles
         else:
+            _log_envio_ipp_seguro(cita, 'general', 'Envío automático (pipeline)', 'Error', 'Sesión procesada: PDFs generados y archivados, pero falló el despacho SMTP de ambos correos (ver logs por destinatario).')
             return True, "Reporte generado y guardado exitosamente en base de datos, pero falló el despacho SMTP de correos", detalles
 
 
@@ -8948,6 +8983,442 @@ def encuesta_tectum(request):
     }
 
     return render(request, 'tectum/encuesta-tectum.html', context)
+
+
+# ========================================================================
+# 📊 MONITOR DE ENVÍO DE REPORTES IPP · SOLO OBSERVACIÓN, AUDITORÍA Y
+#    REENVÍO MANUAL (/panel-admin/ipp-email-monitor/)
+#
+#    NO modifica la lógica del pipeline de reportes existente
+#    (_procesar_reporte_de_una_cita_detallado). Solo LEE:
+#      - ReporteClinicoPDF (evidencia persistida: correo_enviado, archivo_pdf)
+#      - Cita (reporte_enviado, estado, bitácora)
+#      - LogEnvioReporteIPP (bitácora de intentos de este módulo)
+#    y agrega un reenvío manual que reutiliza las mismas funciones de
+#    correo del pipeline (_enviar_email_reporte_*_con_pdf) o, si el reporte
+#    aún no existe, delega al pipeline completo sin alterarlo.
+#
+#    Evidencia de éxito: un destinatario se considera ENVIADO solo cuando
+#    la fila ReporteClinicoPDF correspondiente tiene correo_enviado=True
+#    (se persiste SOLO si el servidor SMTP aceptó el envío, i.e. send()
+#    no lanzó excepción con fail_silently=False).
+# ========================================================================
+
+def _ipp_clasificar_error_envio(e):
+    """Clasifica un error de envío para la columna Motivo (legible para operación)."""
+    detalle = str(e) or e.__class__.__name__
+    low = detalle.lower()
+    if 'timeout' in low or 'timed out' in low:
+        return f"Timeout del servicio de correo: {detalle}"
+    if 'authentication' in low or '535735' in low or 'callback credentials' in low or 'login failed' in low:
+        return f"Error de autenticación: {detalle}"
+    if 'connection' in low or 'conexión' in low or 'refused' in low or 'failed to establish' in low:
+        return f"Error de conexión SMTP: {detalle}"
+    return f"Error SMTP: {detalle}"
+
+
+def _ipp_evaluar_cita(cita, rows, logs, ahora):
+    """
+    Evalúa el estado de envío de los 2 destinatarios de una sesión.
+    `rows` = ReporteClinicoPDF de la cita, `logs` = LogEnvioReporteIPP de la cita.
+
+    Devuelve dict con:
+      estado: 'enviado' | 'no_enviado' | 'pendiente'
+      motivo: texto legible
+      destinatarios: [{'tipo','email','corre_enviado','tiene_pdf','badge'...}]
+    """
+    DURACIÓN = DURACION_SESION_MINUTOS + ESPERA_MINIMA_MINUTOS  # ventana mínima del pipeline: 2 h
+
+    row_pac = next((r for r in rows if r.tipo_destinatario == 'paciente'), None)
+    row_psi = next((r for r in rows if r.tipo_destinatario == 'psicologo'), None)
+
+    def _pdf_vivo(row):
+        try:
+            return bool(row and row.archivo_pdf and row.archivo_pdf.path and os.path.exists(row.archivo_pdf.path))
+        except Exception:
+            # El archivo no es accesible vía storage local (media efímero, redeploy, etc.)
+            return False
+
+    def _detalle_log(tipo):
+        # Último intento registrado (del módulo de monitoreo) para ese destinatario.
+        for l in logs:
+            if l.tipo_destinatario == tipo and l.resultado in ('Error', 'Advertencia'):
+                return l.detalle or 'Sin detalle'
+        return None
+
+    email_pac = cita.paciente.email if cita.paciente else None
+    email_psi = cita.psicologo.usuario.email if cita.psicologo and cita.psicologo.usuario else None
+
+    pac_sent = bool(row_pac and row_pac.correo_enviado)
+    psi_sent = bool(row_psi and row_psi.correo_enviado)
+
+    def _sub_estado(tipo, row, sent, email):
+        if sent:
+            return {'tipo': tipo, 'email': email or '', 'estado': 'enviado', 'flag': 'ENVIADO', 'tiene_pdf': _pdf_vivo(row)}
+        # Sin envío exitoso verificable
+        if row is None:
+            return {'tipo': tipo, 'email': email or '', 'estado': 'pendiente', 'flag': 'SIN REPORTE', 'tiene_pdf': False}
+        if not email:
+            return {'tipo': tipo, 'email': email or '', 'estado': 'no_enviado', 'flag': 'SIN CORREO', 'tiene_pdf': _pdf_vivo(row)}
+        if not _pdf_vivo(row):
+            return {'tipo': tipo, 'email': email or '', 'estado': 'no_enviado', 'flag': 'SIN ADJUNTO', 'tiene_pdf': False}
+        if _detalle_log(tipo):
+            return {'tipo': tipo, 'email': email, 'estado': 'no_enviado', 'flag': 'ERROR', 'tiene_pdf': True}
+        if cita.reporte_enviado:
+            # El pipeline terminó y marcó la cita, pero este destinatario no tiene evidencia de éxito.
+            return {'tipo': tipo, 'email': email, 'estado': 'no_enviado', 'flag': 'SIN ÉXITO', 'tiene_pdf': True}
+        return {'tipo': tipo, 'email': email, 'estado': 'pendiente', 'flag': 'PENDIENTE', 'tiene_pdf': True}
+
+    sub_pac = _sub_estado('paciente', row_pac, pac_sent, email_pac)
+    sub_psi = _sub_estado('psicologo', row_psi, psi_sent, email_psi)
+
+    fecha_reporte = max(
+        (r.fecha_generacion for r in (row_pac, row_psi) if r and r.fecha_generacion),
+        default=None,
+    )
+
+    def _razon_pendiente_sin_reporte():
+        inicio = timezone.make_aware(datetime.combine(cita.fecha, cita.hora))
+        minutos = (ahora - timezone.localtime(inicio)).total_seconds() / 60
+        tiene_bitacora = bool(getattr(cita, 'nota_clinica', None) and cita.nota_clinica.notas_sesion)
+        if minutos < 0:
+            return ("pendiente",
+                    "Sesión futura: aún no inicia. El pipeline la procesará ~2 h después de la hora de la sesión.")
+        if minutos < DURACIÓN:
+            return ("pendiente",
+                    f"El proceso de envío aún no se ejecuta: la sesión cumple su ventana mínima de 2 h en "
+                    f"{int(DURACIÓN - minutos)} min (60 min de sesión + 60 min de espera del pipeline).")
+        if not tiene_bitacora:
+            return ("pendiente",
+                    "En espera de bitácora clínica (notas_sesion vacía). El pipeline intenta la bitácora "
+                    "automática de Meet; tras 24 h genera el reporte aunque falte bitácora.")
+        return ("no_enviado",
+                "Reporte PDF inexistente: la sesión ya cumple la ventana y tiene bitácora, pero el pipeline "
+                "aún no la procesa (se ejecuta con el comando enviar_reportes_citas o el botón de procesar reportes).")
+
+    if sub_pac['estado'] == 'enviado' and sub_psi['estado'] == 'enviado':
+        estado = 'enviado'
+        motivo = "Correo enviado correctamente a ambos destinatarios."
+    else:
+        pendientes = []
+        aspectos = []
+        if sub_pac['estado'] != 'enviado':
+            if not row_pac:
+                razon = _razon_pendiente_sin_reporte()
+                sub_pac['estado'] = razon[0]
+                pendientes.append(f"Paciente: {razon[1]}")
+            else:
+                if not sub_pac['email']:
+                    pendientes.append("Paciente: correo del paciente vacío; no hay destinatario al cual enviar.")
+                elif not sub_pac['tiene_pdf']:
+                    pendientes.append("Paciente: adjunto no encontrado (el archivo PDF del reporte no está en disco).")
+                elif _detalle_log('paciente'):
+                    pendientes.append(f"Paciente: {_detalle_log('paciente')}")
+                else:
+                    pendientes.append("Paciente: reporte generado pero sin registro de envío exitoso "
+                                      "(despacho fallido o generado en modo 'solo generar'; sin bitácora de detalle "
+                                      "previa a la implantación del monitoreo).")
+        if sub_psi['estado'] != 'enviado':
+            if not row_psi:
+                razon = _razon_pendiente_sin_reporte()
+                sub_psi['estado'] = razon[0]
+                pendientes.append(f"Psicólogo: {razon[1]}")
+            else:
+                if not sub_psi['email']:
+                    pendientes.append("Psicólogo: correo del psicólogo vacío; no hay destinatario al cual enviar.")
+                elif not sub_psi['tiene_pdf']:
+                    pendientes.append("Psicólogo: adjunto no encontrado (el archivo PDF del reporte no está en disco).")
+                elif _detalle_log('psicologo'):
+                    pendientes.append(f"Psicólogo: {_detalle_log('psicologo')}")
+                else:
+                    pendientes.append("Psicólogo: reporte generado pero sin registro de envío exitoso "
+                                      "(despacho fallido o generado en modo 'solo generar'; sin bitácora de detalle "
+                                      "previa a la implantación del monitoreo).")
+
+        # Estado global: pendiente solo si ningún destinatario está en estado fallido;
+        # en cuanto uno falla, la sesión se reporta como no_enviado.
+        estados = {sub_pac['estado'], sub_psi['estado']}
+        if 'no_enviado' not in estados:
+            estado = 'pendiente'
+        else:
+            estado = 'no_enviado'
+        motivo = ' / '.join(pendientes)
+
+    return {'estado': estado, 'motivo': motivo, 'destinatarios': [sub_pac, sub_psi],
+            'fecha_reporte': fecha_reporte}
+
+
+@user_passes_test(es_admin, login_url='/')
+def panel_admin_ipp_email_monitor_view(request):
+    """
+    /panel-admin/ipp-email-monitor/
+    Monitor de envío de reportes IPP por sesión: estado, motivo, bitácora de
+    intentos y reenvío manual. Únicamente lectura + acciones explícitas de
+    reenvío; NO altera el pipeline de reportes.
+    """
+    ahora = timezone.localtime()
+
+    estado_filtro = request.GET.get('estado', 'todos').strip().lower()
+    q = request.GET.get('q', '').strip()
+    psicologo_filtro = request.GET.get('psicologo', '').strip()
+    correo_filtro = request.GET.get('correo', '').strip()
+    fecha_filtro = request.GET.get('fecha', '').strip()
+
+    citas_qs = Cita.objects.filter(
+        psicologo__isnull=False,
+        estado__in=['Confirmada', 'Completada'],
+    ).select_related('paciente', 'paciente__perfil', 'psicologo__usuario', 'nota_clinica').order_by('-fecha', '-hora', '-id')
+
+    if q:
+        citas_qs = citas_qs.filter(
+            Q(paciente__first_name__icontains=q) |
+            Q(paciente__last_name__icontains=q) |
+            Q(paciente__username__icontains=q) |
+            Q(paciente__email__icontains=q)
+        )
+    if psicologo_filtro.isdigit():
+        citas_qs = citas_qs.filter(psicologo_id=int(psicologo_filtro))
+    if correo_filtro:
+        citas_qs = citas_qs.filter(
+            Q(paciente__email__icontains=correo_filtro) |
+            Q(psicologo__usuario__email__icontains=correo_filtro)
+        )
+    if fecha_filtro:
+        try:
+            d = datetime.strptime(fecha_filtro, '%Y-%m-%d').date()
+            citas_qs = citas_qs.filter(fecha=d)
+        except (ValueError, TypeError):
+            pass
+
+    citas_lista = list(citas_qs[:2000])
+    citas_ids = [c.id for c in citas_lista]
+
+    rows_dict = {}
+    for r in ReporteClinicoPDF.objects.filter(cita_id__in=citas_ids).order_by('-id'):
+        rows_dict.setdefault(r.cita_id, []).append(r)
+
+    logs_dict = {}
+    for l in LogEnvioReporteIPP.objects.filter(cita_id__in=citas_ids).select_related('usuario')[:2000]:
+        logs_dict.setdefault(l.cita_id, []).append(l)
+
+    filas = []
+    conteo = {'enviado': 0, 'no_enviado': 0, 'pendiente': 0, 'total': len(citas_lista)}
+    for cita in citas_lista:
+        eval_data = _ipp_evaluar_cita(cita, rows_dict.get(cita.id, []), logs_dict.get(cita.id, []), ahora)
+        conteo[eval_data['estado']] += 1
+        filas.append({
+            'cita': cita,
+            **eval_data,
+        })
+
+    if estado_filtro in ('enviados', 'enviado'):
+        filas = [f for f in filas if f['estado'] == 'enviado']
+    elif estado_filtro in ('no_enviados', 'no_enviado', 'fallidos'):
+        filas = [f for f in filas if f['estado'] == 'no_enviado']
+    elif estado_filtro in ('pendientes', 'pendiente'):
+        filas = [f for f in filas if f['estado'] == 'pendiente']
+
+    # Logs embebidos (máx 30 por sesión) para la sección expandible "Ver Logs"
+    for f_item in filas:
+        f_item['logs'] = logs_dict.get(f_item['cita'].id, [])[:30]
+
+    pagina = Paginator(filas, 25).get_page(request.GET.get('page'))
+
+    smtp_ok = bool(getattr(settings, 'EMAIL_HOST_USER', None) and getattr(settings, 'EMAIL_HOST_PASSWORD', None))
+    smtp_info = {
+        'configurado': smtp_ok,
+        'host': getattr(settings, 'EMAIL_HOST', ''),
+        'user': getattr(settings, 'EMAIL_HOST_USER', '') or 'No configurado',
+    }
+
+    psicologos_opciones = PerfilPsicologo.objects.select_related('usuario').order_by('usuario__first_name')
+
+    contexto = {
+        'filas': pagina,
+        'filtro_estado': estado_filtro,
+        'filtro_q': q,
+        'filtro_psicologo': psicologo_filtro,
+        'filtro_correo': correo_filtro,
+        'filtro_fecha': fecha_filtro,
+        'conteo': conteo,
+        'smtp_info': smtp_info,
+        'psicologos_opciones': psicologos_opciones,
+    }
+    return render(request, 'panel_admin_ipp_monitor.html', contexto)
+
+
+@user_passes_test(es_admin, login_url='/')
+@require_POST
+def api_reintentar_envio_ipp(request, cita_id):
+    """
+    POST /panel-admin/api/reintentar-envio-ipp/<cita_id>/
+    Body: tipo = '' (ambos pendientes por defecto) | 'paciente' | 'psicologo'
+
+    Comportamiento (validaciones del módulo, sin alterar lógica del pipeline):
+      1. Valida que exista la sesión.
+      2. Por cada destinatario pendiente:
+         - Si NO existe ReporteClinicoPDF → delega al pipeline existente
+           (_procesar_reporte_de_una_cita_detallado), que valida bitácora,
+           regenera los PDFs, envía y registra como siempre lo hace.
+         - Si existe → valida destinatario, configuración SMTP y archivo PDF,
+           y reenvía con las MISMAS funciones de correo del pipeline.
+      3. Registra cada intento en LogEnvioReporteIPP.
+      4. Devuelve ✅/❌ por destinatario con detalle técnico.
+    """
+    cita = Cita.objects.select_related(
+        'paciente', 'paciente__perfil', 'psicologo__usuario', 'nota_clinica'
+    ).filter(id=cita_id).first()
+    if not cita:
+        return JsonResponse({'status': 'error', 'mensaje': f'No existe ninguna sesión con ID #{cita_id}'}, status=404)
+
+    tipo = (request.POST.get('tipo') or '').strip().lower()
+
+    # Determinar a quién reintentar
+    if tipo in ('paciente', 'psicologo'):
+        tipos = [tipo]
+    else:
+        enviados = set(
+            ReporteClinicoPDF.objects.filter(cita=cita, correo_enviado=True)
+            .values_list('tipo_destinatario', flat=True)
+        )
+        tipos = [t for t in ('paciente', 'psicologo') if t not in enviados]
+        if not tipos:
+            return JsonResponse({
+                'status': 'success',
+                'mensaje': 'Ambos destinatarios ya tienen envío exitoso registrado; nada que reintentar (usa el gestor de reportes con "Forzar" si necesitas regenerar).',
+            })
+
+    es_tectum_cita = getattr(cita, 'es_tectum', False) or getattr(
+        getattr(cita.paciente, 'perfil', None), 'es_tectum', False
+    )
+    smtp_config_ok = bool(getattr(settings, 'EMAIL_HOST_USER', None) and getattr(settings, 'EMAIL_HOST_PASSWORD', None))
+
+    resultados = []
+    exito_global = True
+
+    for t in tipos:
+        def _log_para(resultado, detalle):
+            LogEnvioReporteIPP.objects.create(
+                cita=cita,
+                usuario=request.user,
+                tipo_destinatario=t,
+                accion='Reintentar envío IPP',
+                resultado=resultado,
+                detalle=(detalle or '')[:1900],
+            )
+
+        email = cita.paciente.email if t == 'paciente' and cita.paciente else (
+            cita.psicologo.usuario.email if t == 'psicologo' and cita.psicologo and cita.psicologo.usuario else None
+        )
+
+        row = ReporteClinicoPDF.objects.filter(cita=cita, tipo_destinatario=t).order_by('-id').first()
+
+        # 1) Validación: reporte existente (si falta → delegar al pipeline completo)
+        if row is None:
+            detalle = ("Reporte IPP inexistente: se delegó al pipeline completo de reportes (regeneración + envío). "
+                       "Nota: el pipeline reenvía a AMBOS destinatarios; si uno ya estaba servido puede recibir un correo duplicado.")
+            _log_para('Omitido', detalle)
+            ok, mensaje, detalles_tbl = _procesar_reporte_de_una_cita_detallado(
+                cita.id, log_func=lambda m: None, forzar=True, solo_generar=False
+            )
+            if ok:
+                enviados_ok = [e for e in detalles_tbl['etapas'] if e['etapa'].startswith('Envío Correo') and e['ok']]
+                resultados.append({
+                    'tipo': t, 'ok': True,
+                    'detalle': f"Pipeline de reportes ejecutado: {mensaje} ({('y ').join(e['etapa'] + ' OK' for e in enviados_ok) or 'sin correos exitosos'})",
+                })
+            else:
+                exito_global = False
+                resultados.append({'tipo': t, 'ok': False, 'detalle': f"{mensaje} · {detalle}"})
+                _log_para('Error', f"Delegación al pipeline falló: {mensaje}")
+            continue
+
+        # 2) Validación: destinatario
+        if not email:
+            detalle = "Correo del destinatario vacío; no hay destinatario al cual enviar."
+            exito_global = False
+            _log_para('Error', detalle)
+            resultados.append({'tipo': t, 'ok': False, 'detalle': detalle})
+            continue
+
+        # 3) Validación: configuración SMTP
+        if not smtp_config_ok:
+            detalle = "Error de autenticación: configuración SMTP incompleta (EMAIL_HOST_USER / EMAIL_HOST_PASSWORD)."
+            exito_global = False
+            _log_para('Error', detalle)
+            resultados.append({'tipo': t, 'ok': False, 'detalle': detalle})
+            continue
+
+        # 4) Validación: archivo PDF disponible
+        try:
+            existe_archivo = bool(row.archivo_pdf and row.archivo_pdf.path and os.path.exists(row.archivo_pdf.path))
+            ruta_pdf = row.archivo_pdf.path if existe_archivo else None
+        except Exception:
+            existe_archivo = False
+            ruta_pdf = None
+        if not existe_archivo:
+            detalle = ("No se encontró el archivo PDF (el media del contenedor es efímero). Se regenerará vía pipeline; "
+                       "el pipeline reenvía a AMBOS destinatarios, por lo que uno ya servido puede recibir correo duplicado.")
+            _log_para('Omitido', detalle)
+            ok, mensaje, _ = _procesar_reporte_de_una_cita_detallado(
+                cita.id, log_func=lambda m: None, forzar=True, solo_generar=False
+            )
+            if ok:
+                resultados.append({'tipo': t, 'ok': True, 'detalle': f"El PDF no estaba en disco; pipeline completo reejecutado: {mensaje}"})
+            else:
+                exito_global = False
+                resultados.append({'tipo': t, 'ok': False, 'detalle': f"{detalle} Pipeline respondió: {mensaje}"})
+                _log_para('Error', f"PDF ausente y falló el pipeline: {mensaje}")
+            continue
+
+        # 5) Reintento de envío con las mismas funciones de correo del pipeline
+        try:
+            with open(ruta_pdf, 'rb') as fh:
+                pdf_bytes = fh.read()
+        except Exception as e:
+            detalle = f"No se pudo leer el archivo PDF: {e}"
+            exito_global = False
+            _log_para('Error', detalle)
+            resultados.append({'tipo': t, 'ok': False, 'detalle': detalle})
+            continue
+
+        datos = row.datos_ia_snapshot or {}
+        filename = os.path.basename(row.archivo_pdf.name) or f"reporte_sesion_{row.numero_sesion}_{t}.pdf"
+
+        try:
+            if t == 'paciente':
+                _enviar_email_reporte_paciente_con_pdf(cita.paciente, datos, pdf_bytes, filename, es_tectum=es_tectum_cita)
+            else:
+                _enviar_email_reporte_psicologo_con_pdf(cita.psicologo, cita.paciente, datos, pdf_bytes, filename, es_tectum=es_tectum_cita)
+        except Exception as e:
+            detalle = _ipp_clasificar_error_envio(e)
+            exito_global = False
+            _log_para('Error', f"Envío a {email} falló: {detalle}")
+            resultados.append({'tipo': t, 'ok': False, 'detalle': f"Error al enviar correo a {email}: {detalle}"})
+            continue
+
+        # 6) Evidencia persistida en BD (solo aquí, porque el envío no lanzó excepción)
+        row.correo_enviado = True
+        row.save(update_fields=['correo_enviado'])
+        _log_para('Exitoso', f"Correo reenviado (evidencia persistida) con PDF adjunto a {email}.")
+
+        # Estado persistido en la cita cuando AMBOS destinatarios están servidos
+        enviados_ahora = set(
+            ReporteClinicoPDF.objects.filter(cita=cita, correo_enviado=True)
+            .values_list('tipo_destinatario', flat=True)
+        )
+        if {'paciente', 'psicologo'}.issubset(enviados_ahora) and cita.psicologo:
+            Cita.objects.filter(id=cita.id).update(reporte_enviado=True)
+
+        resultados.append({'tipo': t, 'ok': True, 'detalle': f"Correo enviado correctamente a {email}"})
+
+    texto = ("✅ Correo enviado correctamente" if exito_global
+             else "❌ Error al enviar correo (ver detalle)")
+    return JsonResponse({
+        'status': 'success' if exito_global else 'error',
+        'mensaje': texto,
+        'resultados': resultados,
+    })
 
 
 

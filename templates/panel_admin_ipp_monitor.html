@@ -1,0 +1,474 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Monitor de Envío de Reportes IPP · HOPE{% endblock %}
+
+{% block content %}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+<style>
+/* ==========================================================================
+   HOPE · MONITOR DE ENVÍO DE REPORTES IPP (SOLO OBSERVACIÓN + REENVÍO MANUAL)
+   Paleta institucional idéntica al gestor de reportes.
+   ========================================================================== */
+:root {
+  --hope-p:       #5A3FA3;
+  --hope-p-dark:  #3b2575;
+  --hope-p-light: #EDE9FF;
+  --hope-p-subtle:#F8F6FF;
+  --hope-teal:    #25B8B8;
+  --hope-teal-l:  #E6FAFA;
+  --hope-pink:    #F85B8C;
+  --hope-pink-l:  #FFF0F5;
+  --hope-orange:  #F27C21;
+  --hope-orange-l:#FFF5ED;
+  --hope-yellow:  #F8D33D;
+  --hope-yellow-l:#FFFAEA;
+  --hope-green:   #10B981;
+  --hope-green-l: #ECFDF5;
+  --hope-red:     #EF4444;
+  --hope-red-l:   #FEF2F2;
+  --ink-primary:  #0F172A;
+  --ink-secondary:#475569;
+  --ink-muted:    #64748B;
+  --ink-faint:    #94A3B8;
+  --border-card:  rgba(90, 63, 163, 0.12);
+  --border-light: rgba(148, 163, 184, 0.2);
+  --bg-app:       #F8F9FD;
+  --card-bg:      #FFFFFF;
+  --shadow-subtle:0 4px 20px -2px rgba(90, 63, 163, 0.06), 0 2px 6px -1px rgba(0, 0, 0, 0.04);
+  --shadow-hover: 0 12px 30px -4px rgba(90, 63, 163, 0.14), 0 4px 10px -2px rgba(0, 0, 0, 0.05);
+}
+
+body { background: var(--bg-app); color: var(--ink-primary); font-family: 'Plus Jakarta Sans', sans-serif; min-height: 100vh; }
+
+.ipp-monitor-wrap { max-width: 1400px; margin: 120px auto 70px; padding: 0 24px; }
+
+/* Header */
+.ipp-header {
+  background: linear-gradient(135deg, #5A3FA3 0%, #432b82 60%, #25B8B8 140%);
+  border-radius: 24px; padding: 36px 40px; color: #fff;
+  box-shadow: 0 18px 36px -10px rgba(90, 63, 163, 0.35);
+  position: relative; overflow: hidden; margin-bottom: 24px;
+}
+.ipp-header::before {
+  content: ''; position: absolute; top: -50px; right: -50px;
+  width: 260px; height: 260px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0) 70%);
+}
+.ipp-badge {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: rgba(255, 255, 255, 0.18); backdrop-filter: blur(10px);
+  padding: 6px 14px; border-radius: 999px; font-size: 12.5px; font-weight: 600;
+  letter-spacing: 0.03em; margin-bottom: 12px;
+}
+.ipp-header h1 { font-family: 'Outfit', sans-serif; font-size: 30px; font-weight: 800; margin: 0 0 8px; letter-spacing: -0.01em; }
+.ipp-header p { font-size: 15px; color: rgba(255, 255, 255, 0.88); max-width: 780px; line-height: 1.55; margin: 0; }
+
+/* Stats */
+.ipp-stats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; margin-bottom: 22px; }
+.ipp-stat {
+  background: var(--card-bg); border: 1px solid var(--border-card); border-radius: 16px;
+  padding: 16px 18px; box-shadow: var(--shadow-subtle);
+}
+.ipp-stat .n { font-family: 'Outfit', sans-serif; font-size: 26px; font-weight: 800; line-height: 1; }
+.ipp-stat .l { font-size: 12.5px; color: var(--ink-muted); font-weight: 600; margin-top: 6px; letter-spacing: 0.02em; }
+.ipp-stat.total .n { color: var(--hope-p); }
+.ipp-stat.enviado .n { color: var(--hope-green); }
+.ipp-stat.fallo .n { color: var(--hope-red); }
+.ipp-stat.pendiente .n { color: #b98a00; }
+@media (max-width: 900px) { .ipp-stats { grid-template-columns: repeat(2, 1fr); } }
+
+/* ABM estado SMTP */
+.ipp-sysinfo {
+  display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 22px; align-items: center;
+}
+.ipp-chip {
+  display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px;
+  border-radius: 999px; font-size: 13px; font-weight: 600; border: 1px solid var(--border-light);
+  background: var(--card-bg); color: var(--ink-secondary); box-shadow: var(--shadow-subtle);
+}
+.ipp-chip.ok { color: #047857; background: var(--hope-green-l); border-color: rgba(16,185,129,.25); }
+.ipp-chip.bad { color: #b91c1c; background: var(--hope-red-l); border-color: rgba(239,68,68,.25); }
+
+/* Filtros */
+.ipp-filters {
+  background: var(--card-bg); border: 1px solid var(--border-card); border-radius: 18px;
+  box-shadow: var(--shadow-subtle); padding: 18px 20px; margin-bottom: 22px;
+}
+.ipp-filters-grid { display: grid; grid-template-columns: 150px 1fr 220px 220px 160px auto auto; gap: 10px; align-items: end; }
+@media (max-width: 1100px) { .ipp-filters-grid { grid-template-columns: repeat(2, 1fr); } }
+.ipp-field label { display: block; font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-muted); margin-bottom: 5px; }
+.ipp-field input, .ipp-field select {
+  width: 100%; padding: 10px 12px; border: 1px solid var(--border-light); border-radius: 10px;
+  font-size: 14px; font-family: inherit; background: #fff; color: var(--ink-primary); outline: none;
+}
+.ipp-field input:focus, .ipp-field select:focus { border-color: var(--hope-p); box-shadow: 0 0 0 3px rgba(90,63,163,.12); }
+.btn-apply {
+  padding: 11px 20px; border: none; border-radius: 10px; cursor: pointer; font-weight: 700;
+  font-family: inherit; font-size: 14px; color: #fff; background: var(--hope-p);
+  transition: transform .12s ease, box-shadow .12s ease;
+}
+.btn-apply:hover { transform: translateY(-1px); box-shadow: 0 8px 18px -6px rgba(90,63,163,.5); }
+.btn-reset {
+  padding: 11px 16px; border: 1px solid var(--border-light); border-radius: 10px; cursor: pointer;
+  font-weight: 600; font-family: inherit; font-size: 14px; background: #fff; color: var(--ink-secondary);
+  text-decoration: none;
+}
+
+/* Filas de sesión */
+.ipp-row {
+  background: var(--card-bg); border: 1px solid var(--border-card); border-radius: 16px;
+  box-shadow: var(--shadow-subtle); margin-bottom: 14px; padding: 18px 22px;
+  position: relative; transition: box-shadow .15s ease;
+}
+.ipp-row:hover { box-shadow: var(--shadow-hover); }
+.ipp-row.state-enviado { border-left: 5px solid var(--hope-green); }
+.ipp-row.state-no_enviado { border-left: 5px solid var(--hope-red); }
+.ipp-row.state-pendiente { border-left: 5px solid var(--hope-yellow); }
+
+.ipp-row-head { display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: flex-start; }
+.ipp-row-id {
+  font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 16px; color: var(--hope-p);
+  background: var(--hope-p-light); border-radius: 10px; padding: 6px 12px; white-space: nowrap;
+}
+.ipp-row-title { flex: 1 1 320px; }
+.ipp-row-title .pac-name { font-weight: 700; font-size: 15.5px; }
+.ipp-row-title .psi-name { font-size: 13.5px; color: var(--ink-secondary); margin-top: 2px; }
+.ipp-row-title .mails { font-size: 12.5px; color: var(--ink-muted); margin-top: 3px; word-break: break-all; }
+.ipp-row-meta { font-size: 12.5px; color: var(--ink-secondary); white-space: nowrap; }
+.ipp-row-meta b { color: var(--ink-primary); }
+
+.badge {
+  display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 999px;
+  font-size: 11.5px; font-weight: 800; letter-spacing: .05em; white-space: nowrap;
+}
+.badge .dot { width: 8px; height: 8px; border-radius: 50%; }
+.badge.enviado { background: var(--hope-green-l); color: #047857; }
+.badge.enviado .dot { background: var(--hope-green); }
+.badge.no_enviado { background: var(--hope-red-l); color: #b91c1c; }
+.badge.no_enviado .dot { background: var(--hope-red); }
+.badge.pendiente { background: var(--hope-yellow-l); color: #a16207; }
+.badge.pendiente .dot { background: var(--hope-yellow); }
+
+.dest-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.tag { font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 6px; letter-spacing: .03em; }
+.tag.docs { background: var(--hope-p-subtle); color: var(--hope-p-dark); }
+.tag.tag-enviado { background: var(--hope-green-l); color: #047857; }
+.tag.tag-no_enviado { background: var(--hope-red-l); color: #b91c1c; }
+.tag.tag-pendiente { background: var(--hope-yellow-l); color: #a16207; }
+
+.ipp-motivo {
+  margin-top: 10px; background: var(--hope-p-subtle); border: 1px dashed rgba(90,63,163,.25);
+  border-radius: 10px; padding: 10px 14px; font-size: 13px; color: var(--ink-secondary); line-height: 1.5;
+}
+.ipp-motivo b { color: var(--hope-p-dark); }
+
+/* Logs expandibles */
+details.ipp-logs { margin-top: 10px; }
+details.ipp-logs summary {
+  cursor: pointer; font-size: 12.5px; font-weight: 700; color: var(--hope-p);
+  user-select: none; display: inline-flex; align-items: center; gap: 6px;
+}
+details.ipp-logs[open] summary { margin-bottom: 8px; }
+table.logs-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+table.logs-table th { text-align: left; color: var(--ink-muted); font-size: 11px; text-transform: uppercase; letter-spacing: .05em; padding: 6px 8px; border-bottom: 1px solid var(--border-light); }
+table.logs-table td { padding: 6px 8px; border-bottom: 1px solid rgba(148,163,184,.12); color: var(--ink-secondary); }
+table.logs-table td.res-ok { color: #047857; font-weight: 700; }
+table.logs-table td.res-err { color: #b91c1c; font-weight: 700; }
+table.logs-table td.res-warn { color: #a16207; font-weight: 700; }
+
+/* Acciones */
+.ipp-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; align-items: center; }
+.btn-retry {
+  padding: 9px 16px; border: none; border-radius: 10px; cursor: pointer; font-weight: 700;
+  font-family: inherit; font-size: 13px; color: #fff; background: var(--hope-p);
+  transition: transform .12s ease, box-shadow .12s ease; display: inline-flex; gap: 7px; align-items: center;
+}
+.btn-retry:hover { transform: translateY(-1px); box-shadow: 0 8px 18px -8px rgba(90,63,163,.6); }
+.btn-retry.mini { background: var(--hope-teal); }
+.btn-retry:disabled { opacity: .55; cursor: not-allowed; transform: none; box-shadow: none; }
+.btn-retry.loading { opacity: .7; pointer-events: none; }
+
+/* Resultado inline */
+.ipp-result {
+  display: none; margin-top: 10px; border-radius: 10px; padding: 10px 14px; font-size: 13px;
+  font-weight: 600; line-height: 1.5; white-space: pre-line;
+}
+.ipp-result.ok { display: block; background: var(--hope-green-l); color: #045d50; border: 1px solid rgba(16,185,129,.3); }
+.ipp-result.err { display: block; background: var(--hope-red-l); color: #991b1b; border: 1px solid rgba(239,68,68,.3); }
+
+/* Botón global de reintento en fila vacía */
+.ipp-empty {
+  text-align: center; padding: 50px 20px; background: var(--card-bg);
+  border: 1px dashed var(--border-light); border-radius: 16px; color: var(--ink-muted);
+}
+
+/* Paginación */
+.ipp-pagination { display: flex; gap: 8px; justify-content: center; margin-top: 26px; align-items: center; flex-wrap: wrap; }
+.ipp-pagination button {
+  padding: 8px 14px; border: 1px solid var(--border-light); border-radius: 999px; background: #fff;
+  font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer; color: var(--ink-secondary);
+}
+.ipp-pagination button.actual { background: var(--hope-p); color: #fff; border-color: var(--hope-p); }
+.ipp-pagination button:disabled { opacity: .4; cursor: not-allowed; }
+
+@media (max-width: 640px) {
+  .ipp-header { padding: 26px 22px; }
+  .ipp-header h1 { font-size: 24px; }
+}
+</style>
+
+<div class="ipp-monitor-wrap">
+  <!-- HEADER -->
+  <div class="ipp-header">
+    <span class="ipp-badge"><i class="fa-solid fa-shield-halved"></i> Módulo de observación · no altera el pipeline de reportes</span>
+    <h1>Monitor de Envío de Reportes IPP</h1>
+    <p>Diagnóstico del despacho por correo del Reporte de Check-In (paciente) y del Reporte Clínico (psicólogo) por sesión.
+       Un destinatario se marca <b>ENVIADO</b> únicamente cuando existe evidencia persistida en base de datos
+       (ReporteClinicoPDF · correo_enviado). El reenvío manual registra cada intento en bitácora.</p>
+  </div>
+
+  <!-- STATS -->
+  <div class="ipp-stats">
+    <div class="ipp-stat total"><div class="n">{{ conteo.total }}</div><div class="l">Sesiones listadas</div></div>
+    <div class="ipp-stat enviado"><div class="n">{{ conteo.enviado }}</div><div class="l">Enviados (evidencia en BD)</div></div>
+    <div class="ipp-stat fallo"><div class="n">{{ conteo.no_enviado }}</div><div class="l">No enviados</div></div>
+    <div class="ipp-stat pendiente"><div class="n">{{ conteo.pendiente }}</div><div class="l">Pendientes</div></div>
+    <div class="ipp-stat"><div class="n" style="font-size:16px; line-height:1.4;">
+      <span style="display:block;">Check-In → paciente</span><span style="display:block;">Clínico → psicólogo</span>
+    </div><div class="l">Destinatarios vigilados</div></div>
+  </div>
+
+  <!-- SYSINFO -->
+  <div class="ipp-sysinfo">
+    <span class="ipp-chip {{ smtp_info.configurado|yesno:'ok,bad' }}">
+      <i class="fa-solid fa-envelope"></i>
+      SMTP {{ smtp_info.host|default:'—' }} {% if smtp_info.configurado %}· credenciales configuradas{% else %}· credenciales incompletas{% endif %}
+    </span>
+    <span class="ipp-chip"><i class="fa-brands fa-weebly"></i> Envíos bajo demanda — la ventana automática del pipeline es de ~2 h post-sesión</span>
+  </div>
+
+  <!-- FILTROS -->
+  <form class="ipp-filters" id="formFiltros" method="get" action="{% url 'panel_admin_ipp_email_monitor' %}">
+    <div class="ipp-filters-grid">
+      <div class="ipp-field">
+        <label for="fEstado">Estado</label>
+        <select id="fEstado" name="estado">
+          <option value="todos" {% if filtro_estado == 'todos' %}selected{% endif %}>Todos</option>
+          <option value="enviados" {% if filtro_estado == 'enviados' %}selected{% endif %}>Enviados</option>
+          <option value="no_enviados" {% if filtro_estado == 'no_enviados' %}selected{% endif %}>No enviados</option>
+          <option value="pendientes" {% if filtro_estado == 'pendientes' %}selected{% endif %}>Pendientes</option>
+        </select>
+      </div>
+      <div class="ipp-field">
+        <label for="fQ">Paciente</label>
+        <input type="text" id="fQ" name="q" placeholder="Nombre o correo del paciente…" value="{{ filtro_q }}">
+      </div>
+      <div class="ipp-field">
+        <label for="fPsi">Psicólogo</label>
+        <select id="fPsi" name="psicologo">
+          <option value="">Todos</option>
+          {% for p in psicologos_opciones %}
+            <option value="{{ p.id }}" {% if filtro_psicologo == p.id|stringformat:'s' %}selected{% endif %}>
+              {{ p.usuario.first_name|default:p.usuario.username }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="ipp-field">
+        <label for="fCorreo">Correo</label>
+        <input type="text" id="fCorreo" name="correo" placeholder="Buscar por correo…" value="{{ filtro_correo }}">
+      </div>
+      <div class="ipp-field">
+        <label for="fFecha">Fecha de sesión</label>
+        <input type="date" id="fFecha" name="fecha" value="{{ filtro_fecha }}">
+      </div>
+      <button type="submit" class="btn-apply"><i class="fa-solid fa-filter"></i> Aplicar</button>
+      <a class="btn-reset" href="{% url 'panel_admin_ipp_email_monitor' %}"><i class="fa-solid fa-rotate-left"></i></a>
+    </div>
+    <input type="hidden" name="page" id="fPage" value="{{ filas.number }}">
+  </form>
+
+  <!-- LISTADO -->
+  {% if filas.object_list %}
+    {% for fila in filas %}
+    <div class="ipp-row state-{{ fila.estado }}">
+      <div class="ipp-row-head">
+        <div class="ipp-row-id">Sesión #{{ fila.cita.id }}</div>
+        <div class="ipp-row-title">
+          <div class="pac-name">
+            <i class="fa-solid fa-user" style="color:var(--hope-p); margin-right:4px;"></i>
+            {{ fila.cita.paciente.first_name|default:fila.cita.paciente.username }} {{ fila.cita.paciente.last_name|default:'' }}
+            {% if fila.cita.es_tectum %}<span class="tag docs" style="margin-left:6px;">TECTUM</span>{% endif %}
+          </div>
+          <div class="psi-name"><i class="fa-solid fa-user-doctor" style="color:var(--hope-teal); margin-right:4px;"></i>
+            {{ fila.cita.psicologo.usuario.first_name|default:fila.cita.psicologo.usuario.username }}
+            · {{ fila.cita.tipo_sesion|capfirst }} · {{ fila.cita.modalidad }}
+          </div>
+          <div class="mails">
+            <i class="fa-solid fa-at"></i> {{ fila.destinatarios.0.email|default:'(sin correo del paciente)' }}
+            &nbsp;·&nbsp;
+            <i class="fa-solid fa-at"></i> {{ fila.destinatarios.1.email|default:'(sin correo del psicólogo)' }}
+          </div>
+        </div>
+        <div class="ipp-row-meta">
+          <b>Fecha:</b> {{ fila.cita.fecha|date:'d/m/Y' }} · {{ fila.cita.hora|time:'H:i' }}<br>
+          <b>Reporte generado:</b> {% if fila.fecha_reporte %}{{ fila.fecha_reporte|date:'d/m/Y H:i' }}{% else %}—{% endif %}<br>
+          {% if fila.destinatarios.0.email %}<b>Dest. paciente:</b> {{ fila.destinatarios.0.email }}{% endif %}<br>
+          {% if fila.destinatarios.1.email %}<b>Dest. psicólogo:</b> {{ fila.destinatarios.1.email }}{% endif %}
+        </div>
+        <div>
+          <span class="badge {{ fila.estado }}"><span class="dot"></span>
+            {% if fila.estado == 'enviado' %}ENVIADO{% elif fila.estado == 'no_enviado' %}NO ENVIADO{% else %}PENDIENTE{% endif %}
+          </span>
+          <div class="dest-tags">
+            {% for d in fila.destinatarios %}
+              <span class="tag tag-{{ d.estado }}">
+                {% if d.tipo == 'paciente' %}Paciente{% else %}Psicólogo{% endif %}: {{ d.flag }}
+              </span>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+
+      <div class="ipp-motivo">
+        <b>Motivo:</b> {{ fila.motivo }}
+      </div>
+
+      {% if fila.logs %}
+      <details class="ipp-logs">
+        <summary><i class="fa-solid fa-clock-rotate-left"></i> Ver Logs ({{ fila.logs|length }} intentos registrados)</summary>
+        <table class="logs-table">
+          <thead>
+            <tr><th>Fecha/Hora</th><th>Acción</th><th>Destinatario</th><th>Resultado</th><th>Detalle</th><th>Usuario</th></tr>
+          </thead>
+          <tbody>
+            {% for log in fila.logs %}
+            <tr>
+              <td>{{ log.fecha|date:'d/m/Y h:i A' }}</td>
+              <td>{{ log.accion }}</td>
+              <td>{{ log.get_tipo_destinatario_display }}</td>
+              <td class="{% if log.resultado == 'Exitoso' %}res-ok{% elif log.resultado == 'Error' %}res-err{% else %}res-warn{% endif %}">{{ log.resultado }}</td>
+              <td>{{ log.detalle|default:'—' }}</td>
+              <td>{{ log.usuario.username|default:'sistema' }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </details>
+      {% elif fila.estado != 'enviado' %}
+      <details class="ipp-logs">
+        <summary><i class="fa-solid fa-clock-rotate-left"></i> Ver Logs (sin intentos registrados por el monitor)</summary>
+        <table class="logs-table">
+          <tbody><tr><td>No hay intentos registrados por el módulo de monitoreo. Los envíos automáticos previos a la
+          implantación de este monitor no dejaron bitácora de detalle; su evidencia es el flag persistido
+          ReporteClinicoPDF.correo_enviado y el estado de la cita.</td></tr></tbody>
+        </table>
+      </details>
+      {% endif %}
+
+      <div class="ipp-actions">
+        {% if fila.estado != 'enviado' %}
+          <button class="btn-retry" onclick="reintentarEnvio({{ fila.cita.id }}, '', this)">
+            <i class="fa-solid fa-paper-plane"></i> Reintentar envío (pendientes)
+          </button>
+          <button class="btn-retry mini" onclick="reintentarEnvio({{ fila.cita.id }}, 'paciente', this)" {% if not fila.destinatarios.0.email %}disabled{% endif %}>
+            <i class="fa-solid fa-user"></i> Reintentar paciente
+          </button>
+          <button class="btn-retry mini" onclick="reintentarEnvio({{ fila.cita.id }}, 'psicologo', this)" {% if not fila.destinatarios.1.email %}disabled{% endif %}>
+            <i class="fa-solid fa-user-doctor"></i> Reintentar psicólogo
+          </button>
+          <a href="/panel-admin/enviar-reporte-cita/?cita_id={{ fila.cita.id }}" class="tag docs" style="padding:9px 14px; border-radius:10px; text-decoration:none;">
+            <i class="fa-solid fa-file-pdf"></i> Abrir gestor de reportes
+          </a>
+        {% else %}
+          <span class="tag tag-enviado" style="padding:8px 12px;"><i class="fa-solid fa-circle-check"></i> Envío completo verificado</span>
+        {% endif %}
+      </div>
+
+      <div class="ipp-result" id="reintentar-resultado-{{ fila.cita.id }}"></div>
+    </div>
+    {% endfor %}
+  {% else %}
+    <div class="ipp-empty">
+      <i class="fa-solid fa-inbox" style="font-size:30px; margin-bottom:12px; display:block;"></i>
+      No hay sesiones que coincidan con los filtros aplicados.
+    </div>
+  {% endif %}
+
+  <!-- PAGINACIÓN -->
+  {% if filas.paginator.num_pages > 1 %}
+  <div class="ipp-pagination">
+    <button {% if not filas.has_previous %}disabled{% endif %} onclick="irAPagina({% if filas.has_previous %}{{ filas.previous_page_number }}{% else %}1{% endif %})"><i class="fa-solid fa-chevron-left"></i> Anterior</button>
+    <span style="font-size:13px; color:var(--ink-muted);">Página {{ filas.number }} de {{ filas.paginator.num_pages }} ({{ filas.paginator.count }} sesiones)</span>
+    <button {% if not filas.has_next %}disabled{% endif %} onclick="irAPagina({% if filas.has_next %}{{ filas.next_page_number }}{% else %}{{ filas.number }}{% endif %})">Siguiente <i class="fa-solid fa-chevron-right"></i></button>
+  </div>
+  {% endif %}
+</div>
+
+<script>
+function getCookie(name) {
+  let cookieValue = null;
+  if (document.cookie && document.cookie !== '') {
+    const cookies = document.cookie.split(';');
+    for (let i = 0; i < cookies.length; i++) {
+      const cookie = cookies[i].trim();
+      if (cookie.substring(0, name.length + 1) === (name + '=')) {
+        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+        break;
+      }
+    }
+  }
+  return cookieValue;
+}
+
+function irAPagina(n) {
+  const input = document.getElementById('fPage');
+  if (input) input.value = n;
+  document.getElementById('formFiltros').submit();
+}
+
+async function reintentarEnvio(citaId, tipo, btn) {
+  const caja = document.getElementById('reintentar-resultado-' + citaId);
+  if (btn) { btn.classList.add('loading'); btn.disabled = true; }
+  if (caja) { caja.style.display = 'none'; caja.textContent = ''; }
+
+  const resp = await fetch(`/panel-admin/api/reintentar-envio-ipp/${citaId}/`, {
+    method: 'POST',
+    headers: { 'X-CSRFToken': getCookie('csrftoken'), 'X-Requested-With': 'XMLHttpRequest' },
+    body: new URLSearchParams({ tipo: tipo }),
+  });
+
+  let data = null;
+  try { data = await resp.json(); } catch (e) { /* respuesta no JSON */ }
+
+  if (btn) { btn.classList.remove('loading'); btn.disabled = false; }
+  if (!caja) {
+    // Recarga como respaldo si no hay caja disponible
+    alert((data && data.mensaje) ? data.mensaje : 'Respuesta: ' + resp.status);
+    if (data) location.reload();
+    return;
+  }
+
+  const lineas = [];
+  lineas.push(data && data.mensaje ? data.mensaje : 'Sin respuesta del servidor (HTTP ' + resp.status + ')');
+  if (data && data.resultados) {
+    for (const r of data.resultados) {
+      const destino = r.tipo === 'paciente' ? 'Paciente' : 'Psicólogo';
+      lineas.push((r.ok ? '✅ ' : '❌ ') + destino + ': ' + r.detalle);
+    }
+  }
+  caja.style.display = 'block';
+  caja.className = 'ipp-result ' + (data && data.status === 'success' ? 'ok' : 'err');
+  caja.textContent = lineas.join('\n');
+
+  // Reflejar el nuevo estado en BD recargando la página (los datos se reevalúan en el servidor)
+  if (data && data.status === 'success') {
+    setTimeout(() => location.reload(), 1800);
+  }
+}
+</script>
+{% endblock %}
