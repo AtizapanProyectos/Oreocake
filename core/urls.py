@@ -154,5 +154,15 @@ urlpatterns = [
     # Encuesta de Salud Mental TECTUM (In-House)
     path('encuesta-tectum/', views.encuesta_tectum, name='encuesta_tectum'),
     path('encuesta/', views.encuesta_tectum, name='encuesta_tectum_alias'),
+
+    # INTELLIGENCE CENTER (30/10/2026) - Panel de análisis para Dirección
+    path('panel-admin/intelligence/', views.panel_admin_intelligence, name='panel_admin_intelligence'),
+    path('panel-admin/api/intelligence/kpis/', views.api_intelligence_kpis, name='api_intelligence_kpis'),
+    path('panel-admin/api/intelligence/feed/', views.api_intelligence_feed, name='api_intelligence_feed'),
+    path('panel-admin/api/intelligence/pacientes/', views.api_intelligence_pacientes, name='api_intelligence_pacientes'),
+    path('panel-admin/api/intelligence/psicologos/', views.api_intelligence_psicologos, name='api_intelligence_psicologos'),
+    path('panel-admin/api/intelligence/horarios/', views.api_intelligence_horarios, name='api_intelligence_horarios'),
+    path('panel-admin/api/intelligence/insights/', views.api_intelligence_insights, name='api_intelligence_insights'),
+    path('panel-admin/api/intelligence/exportar/', views.api_intelligence_exportar, name='api_intelligence_exportar'),
 ]
 

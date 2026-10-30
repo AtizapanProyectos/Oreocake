@@ -1,0 +1,954 @@
+{% extends 'base.html' %}
+
+{% block title %}Intelligence Center · HOPE{% endblock %}
+
+{% block content %}
+<script src='https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js'></script>
+
+<style>
+/* =============================================================
+   INTELLIGENCE CENTER (30/10/2026) - HOPE ADMIN
+   Paleta heredada del dashboard V2 de panel_admin:
+   #5A3FA3 · #F85B8C · #F27C21 · #25B8B8
+   ============================================================= */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+.ic-page {
+  --p:      #5A3FA3;
+  --p-lgt:  #EDE9FF;
+  --p-mid:  #8B72D4;
+  --pink:   #F85B8C;
+  --pink-l: #FFF0F5;
+  --org:    #F27C21;
+  --org-l:  #FFF5EC;
+  --teal:   #25B8B8;
+  --teal-l: #E8FAFA;
+  --yel:    #F8D33D;
+  --ok:     #1F9D55;
+  --ok-l:   #E9F9EF;
+  --risk:   #D64545;
+  --risk-l: #FDECEC;
+
+  --ink:   #0D0D18;
+  --ink2:  #3D3D55;
+  --ink3:  #7A7A99;
+  --ink4:  #B8B8CC;
+  --surf:  #F6F4FF;
+  --wht:   #FFFFFF;
+  --bd:    rgba(90,63,163,0.09);
+
+  --fd:    'Outfit', sans-serif;
+  --fb:    'Plus Jakarta Sans', sans-serif;
+
+  --rsm: 12px; --rmd: 18px; --rlg: 26px;
+  --shc: 0 2px 16px rgba(90,63,163,0.07);
+  --shh: 0 10px 36px rgba(90,63,163,0.13);
+
+  background: var(--surf);
+  background-image:
+    radial-gradient(ellipse 70% 40% at 15% -5%, rgba(90,63,163,0.07) 0%, transparent 55%),
+    radial-gradient(ellipse 50% 35% at 85% 95%, rgba(37,184,184,0.05) 0%, transparent 50%);
+  color: var(--ink);
+  font-family: var(--fb);
+  min-height: 100vh;
+}
+
+.ic-wrap { max-width: 1480px; margin: 0 auto; padding: 28px 20px 90px; }
+@media (min-width: 768px) { .ic-wrap { padding: 36px 30px 70px; } }
+
+/* ---------- MASTHEAD ---------- */
+.ic-mast {
+  display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap;
+  background: var(--wht); border: 1px solid var(--bd); border-radius: var(--rlg);
+  padding: 18px 22px; margin-bottom: 20px; box-shadow: var(--shc); position: relative; overflow: hidden;
+}
+.ic-mast::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  background: linear-gradient(90deg, var(--p), var(--pink), var(--teal));
+}
+.ic-back {
+  display: inline-flex; align-items: center; gap: 8px; font-weight: 700; font-size: 13px;
+  color: var(--p); text-decoration: none; padding: 9px 16px; border-radius: 999px;
+  border: 1.5px solid var(--p-lgt); background: var(--wht); transition: .2s;
+}
+.ic-back:hover { background: var(--p-lgt); }
+.ic-title { font-family: var(--fd); font-size: clamp(20px, 3vw, 27px); line-height: 1.15; }
+.ic-title em { font-style: italic; color: var(--p); }
+.ic-sub {
+  font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 1.5px;
+  color: var(--ink3); margin-top: 4px;
+}
+.ic-live { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 700; color: var(--ok); }
+.ic-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--ok); animation: icPulse 1.6s infinite; }
+.ic-dot.paused { background: var(--ink4); animation: none; }
+@keyframes icPulse { 0% { box-shadow: 0 0 0 0 rgba(31,157,85,.45); } 70% { box-shadow: 0 0 0 9px rgba(31,157,85,0); } 100% { box-shadow: 0 0 0 0 rgba(31,157,85,0); } }
+
+/* ---------- FILTROS ---------- */
+.ic-filters {
+  position: sticky; top: 10px; z-index: 40;
+  background: var(--wht); border: 1px solid var(--bd); border-radius: var(--rmd);
+  padding: 14px; margin-bottom: 20px; box-shadow: var(--shh);
+  display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end;
+}
+.ic-filters label { font-size: 10px; font-weight: 800; letter-spacing: .6px; text-transform: uppercase; color: var(--ink3); display: block; margin-bottom: 5px; }
+.ic-filters input, .ic-filters select {
+  border: 1.6px solid var(--bd); border-radius: 10px; padding: 9px 12px; font-size: 13.5px;
+  font-family: var(--fb); color: var(--ink); background: var(--surf); min-width: 130px;
+  transition: border-color .18s; outline: none;
+}
+.ic-filters input:focus, .ic-filters select:focus { border-color: var(--p); background: var(--wht); }
+.ic-btn {
+  border: none; cursor: pointer; border-radius: 999px; font-weight: 800; font-family: var(--fd);
+  transition: transform .15s, box-shadow .2s, opacity .2s; display: inline-flex; align-items: center; gap: 8px;
+  padding: 11px 20px; font-size: 13.5px; text-decoration: none;
+}
+.ic-btn:hover { transform: translateY(-1px); box-shadow: var(--shh); }
+.ic-btn:active { transform: translateY(0); }
+.ic-btn-p { background: linear-gradient(135deg, var(--p), var(--p-mid)); color: var(--wht); }
+.ic-btn-soft { background: var(--p-lgt); color: var(--p); }
+.ic-btn-xs { padding: 7px 14px; font-size: 12px; }
+.ic-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.ic-chip {
+  cursor: pointer; border: 1.5px solid var(--bd); background: var(--wht); color: var(--ink2);
+  border-radius: 999px; padding: 8px 14px; font-size: 12px; font-weight: 700; transition: .18s;
+}
+.ic-chip:hover { border-color: var(--p); }
+.ic-chip.active { background: var(--p); border-color: var(--p); color: var(--wht); }
+
+/* ---------- SECCIONES ---------- */
+.ic-section { margin-bottom: 22px; }
+.ic-sec-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
+.ic-sec-title { font-family: var(--fd); font-size: 17px; font-weight: 800; display: flex; align-items: center; gap: 10px; }
+.ic-sec-title i { color: var(--p); font-size: 15px; }
+.ic-card {
+  background: var(--wht); border: 1px solid var(--bd); border-radius: var(--rmd);
+  padding: 18px; box-shadow: var(--shc); transition: box-shadow .2s;
+}
+.ic-card:hover { box-shadow: var(--shh); }
+
+/* ---------- KPI GRID ---------- */
+.ic-kpis { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+@media (min-width: 768px) { .ic-kpis { grid-template-columns: repeat(4, 1fr); } }
+.ic-kpi {
+  background: var(--wht); border: 1px solid var(--bd); border-radius: var(--rmd);
+  padding: 16px; box-shadow: var(--shc); position: relative; overflow: hidden; transition: box-shadow .2s, transform .15s;
+}
+.ic-kpi:hover { box-shadow: var(--shh); transform: translateY(-2px); }
+.ic-kpi::after {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  background: var(--kpi-accent, var(--p)); opacity: .85;
+}
+.ic-kpi-label { font-size: 10px; font-weight: 800; letter-spacing: .8px; text-transform: uppercase; color: var(--ink3); display: flex; align-items: center; gap: 7px; }
+.ic-kpi-label i { color: var(--kpi-accent, var(--p)); font-size: 13px; }
+.ic-kpi-value { font-family: var(--fd); font-size: clamp(22px, 3vw, 30px); font-weight: 900; margin-top: 7px; line-height: 1; color: var(--ink); }
+.ic-kpi-sub { font-size: 11px; color: var(--ink3); margin-top: 6px; font-weight: 600; line-height: 1.4; }
+.ic-delta { display: inline-flex; align-items: center; gap: 4px; font-weight: 800; font-size: 11px; border-radius: 999px; padding: 2px 9px; }
+.ic-delta.up { background: var(--ok-l); color: var(--ok); }
+.ic-delta.down { background: var(--risk-l); color: var(--risk); }
+.ic-delta.flat { background: var(--p-lgt); color: var(--p); }
+
+/* ---------- INSIGHTS ---------- */
+.ic-insights { display: grid; grid-template-columns: 1fr; gap: 10px; }
+@media (min-width: 768px) { .ic-insights { grid-template-columns: repeat(2, 1fr); } }
+.ic-insight {
+  border-left: 4px solid var(--teal); border-radius: var(--rsm);
+  background: var(--wht); padding: 13px 16px; box-shadow: var(--shc);
+  font-size: 13.5px; font-weight: 600; color: var(--ink2); display: flex; gap: 10px; align-items: flex-start;
+}
+.ic-insight i { margin-top: 2px; }
+.ic-insight.positivo { border-color: var(--ok); background: var(--ok-l); color: #14603A; }
+.ic-insight.alerta { border-color: var(--risk); background: var(--risk-l); color: #8B2626; }
+.ic-insight.neutro { border-color: var(--teal); }
+
+/* ---------- GRIDS ---------- */
+.ic-grid2 { display: grid; gap: 16px; grid-template-columns: 1fr; }
+@media (min-width: 992px) { .ic-grid2 { grid-template-columns: 1.1fr .9fr; } }
+.ic-grid3 { display: grid; gap: 16px; grid-template-columns: 1fr; }
+@media (min-width: 992px) { .ic-grid3 { grid-template-columns: repeat(3, 1fr); } }
+.ic-chart-box { position: relative; height: 260px; }
+
+/* ---------- FEED ---------- */
+.ic-feed { max-height: 430px; overflow-y: auto; display: flex; flex-direction: column; gap: 9px; padding-right: 4px; }
+.ic-feed-row {
+  display: flex; gap: 12px; align-items: flex-start; padding: 11px 13px;
+  border-radius: var(--rsm); background: var(--surf); border: 1px solid var(--bd);
+  animation: icSlide .35s ease;
+}
+@keyframes icSlide { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+.ic-feed-ico {
+  flex: 0 0 34px; height: 34px; border-radius: 10px; display: grid; place-items: center;
+  font-size: 13px; color: var(--wht);
+}
+.ic-feed-ico.registro { background: linear-gradient(135deg, var(--teal), #1CA6A6); }
+.ic-feed-ico.cita { background: linear-gradient(135deg, var(--p), var(--p-mid)); }
+.ic-feed-txt { font-size: 13.5px; font-weight: 600; color: var(--ink); line-height: 1.35; }
+.ic-feed-meta { font-size: 11px; color: var(--ink3); margin-top: 3px; display: flex; gap: 10px; flex-wrap: wrap; }
+.ic-empty { text-align: center; color: var(--ink3); font-size: 13px; padding: 30px 10px; }
+
+/* ---------- HEATMAP ---------- */
+.ic-heat { display: grid; gap: 4px; overflow-x: auto; padding-bottom: 6px; }
+.ic-heat-row { display: grid; grid-template-columns: 74px repeat(var(--heat-cols), minmax(30px, 1fr)) 52px; gap: 4px; align-items: center; }
+.ic-heat-lab { font-size: 10.5px; font-weight: 800; color: var(--ink3); text-transform: uppercase; }
+.ic-heat-cell { height: 26px; border-radius: 7px; background: var(--p-lgt); display: grid; place-items: center; font-size: 9.5px; font-weight: 800; color: transparent; transition: .15s; }
+.ic-heat-cell.has { color: var(--wht); }
+.ic-heat-head { height: 16px !important; font-size: 9px; font-weight: 700; color: var(--ink3); background: transparent !important; }
+
+/* ---------- TABS + TABLAS ---------- */
+.ic-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+.ic-tab {
+  cursor: pointer; border: 1.6px solid var(--bd); background: var(--wht); border-radius: 999px;
+  padding: 10px 18px; font-family: var(--fd); font-weight: 700; font-size: 13px; color: var(--ink2); transition: .18s;
+}
+.ic-tab:hover { border-color: var(--p); color: var(--p); }
+.ic-tab.active { background: var(--p); border-color: var(--p); color: var(--wht); }
+.ic-tab .cnt { background: var(--p-lgt); color: var(--p); border-radius: 999px; padding: 1px 8px; font-size: 11px; margin-left: 6px; }
+.ic-tab.active .cnt { background: rgba(255,255,255,.25); color: var(--wht); }
+
+.ic-tablewrap { overflow-x: auto; border-radius: var(--rmd); }
+table.ic-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.ic-table th {
+  text-align: left; font-size: 10px; letter-spacing: .7px; text-transform: uppercase;
+  color: var(--ink3); font-weight: 800; padding: 11px 12px; border-bottom: 2px solid var(--bd); white-space: nowrap;
+}
+.ic-table td { padding: 11px 12px; border-bottom: 1px solid var(--bd); color: var(--ink2); vertical-align: middle; }
+.ic-table tbody tr { transition: background .15s; }
+.ic-table tbody tr:hover { background: var(--surf); }
+.ic-badge { display: inline-flex; align-items: center; gap: 5px; border-radius: 999px; padding: 3px 10px; font-size: 11px; font-weight: 800; white-space: nowrap; }
+.ic-b-activo { background: var(--ok-l); color: var(--ok); }
+.ic-b-riesgo { background: var(--org-l); color: var(--org); }
+.ic-b-inactivo { background: var(--risk-l); color: var(--risk); }
+.ic-b-nunca { background: var(--p-lgt); color: var(--p); }
+.ic-b-neutro { background: var(--teal-l); color: #157B7B; }
+.ic-av { width: 30px; height: 30px; border-radius: 50%; background: linear-gradient(135deg, var(--p-lgt), var(--pink-l)); display: grid; place-items: center; font-weight: 900; font-size: 12px; color: var(--p); flex: none; }
+.ic-td-user { display: flex; align-items: center; gap: 10px; }
+.ic-td-user .nm { font-weight: 800; color: var(--ink); }
+.ic-td-user .ml { font-size: 11px; color: var(--ink3); }
+.ic-pager { display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 14px; }
+.ic-pager button { border: 1.5px solid var(--bd); background: var(--wht); border-radius: 10px; padding: 8px 14px; font-weight: 700; font-size: 12.5px; cursor: pointer; color: var(--ink2); }
+.ic-pager button:disabled { opacity: .4; cursor: not-allowed; }
+.ic-pager button:not(:disabled):hover { border-color: var(--p); color: var(--p); }
+
+/* ---------- EMBUDO ---------- */
+.ic-funnel { display: flex; flex-direction: column; gap: 9px; }
+.ic-funnel-row { background: var(--wht); border: 1px solid var(--bd); border-radius: var(--rsm); padding: 11px 14px; box-shadow: var(--shc); }
+.ic-funnel-top { display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 13px; font-weight: 700; color: var(--ink2); }
+.ic-funnel-bar { height: 10px; border-radius: 999px; background: var(--p-lgt); margin-top: 9px; overflow: hidden; }
+.ic-funnel-fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--p), var(--pink)); transition: width .8s ease; }
+.ic-funnel-drop { font-size: 11px; font-weight: 800; color: var(--risk); }
+.ic-beh-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+.ic-beh { background: var(--wht); border: 1px solid var(--bd); border-radius: var(--rsm); padding: 14px; box-shadow: var(--shc); }
+.ic-beh .v { font-family: var(--fd); font-size: 21px; font-weight: 900; color: var(--p); }
+.ic-beh .k { font-size: 10.5px; font-weight: 800; text-transform: uppercase; letter-spacing: .7px; color: var(--ink3); margin-top: 4px; }
+
+/* ---------- NOTAS ---------- */
+.ic-nota { background: var(--wht); border: 1px dashed rgba(90,63,163,.35); border-radius: var(--rmd); padding: 16px; font-size: 12.5px; color: var(--ink3); line-height: 1.65; }
+.ic-nota b { color: var(--ink2); }
+
+.ic-loading { display: grid; place-items: center; min-height: 120px; color: var(--ink3); font-size: 13px; gap: 10px; }
+.ic-spinner { width: 26px; height: 26px; border: 3px solid var(--p-lgt); border-top-color: var(--p); border-radius: 50%; animation: icSpin .8s linear infinite; }
+@keyframes icSpin { to { transform: rotate(360deg); } }
+.ic-error { background: var(--risk-l); color: var(--risk); border-radius: var(--rsm); padding: 12px 16px; font-size: 13px; font-weight: 600; display: none; margin-bottom: 14px; }
+</style>
+
+<div class="ic-page">
+<div class="ic-wrap">
+
+  <!-- ===== MASTHEAD ===== -->
+  <div class="ic-mast">
+    <div>
+      <a class="ic-back" href="{% url 'panel_admin' %}"><i class="fa-solid fa-arrow-left"></i> Volver al tablero</a>
+      <div class="ic-title" style="margin-top:10px;">Intelligence <em>Center</em></div>
+      <div class="ic-sub">Análisis operativa, clínico y comercial · datos reales en vivo</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:18px;flex-wrap:wrap;">
+      <div class="ic-live"><span class="ic-dot" id="icLiveDot"></span><span id="icLiveTxt">En vivo</span></div>
+      <a class="ic-btn ic-btn-soft" href="#" id="icExportKpisCsv"><i class="fa-solid fa-file-csv"></i> KPIs CSV</a>
+      <a class="ic-btn ic-btn-p" href="#" id="icExportKpisExcel"><i class="fa-solid fa-file-excel"></i> KPIs Excel</a>
+    </div>
+  </div>
+
+  <!-- ===== FILTROS GLOBALES ===== -->
+  <div class="ic-filters">
+    <div>
+      <label>Periodo de actividad</label>
+      <div class="ic-chips" id="icChips">
+        <button class="ic-chip" data-rango="7">7 días</button>
+        <button class="ic-chip" data-rango="30">30 días</button>
+        <button class="ic-chip" data-rango="90">90 días</button>
+        <button class="ic-chip active" data-rango="todo">Histórico</button>
+      </div>
+    </div>
+    <div>
+      <label>Desde</label>
+      <input type="date" id="icDesde">
+    </div>
+    <div>
+      <label>Hasta</label>
+      <input type="date" id="icHasta" value="{{ hoy|date:'Y-m-d' }}">
+    </div>
+    <div>
+      <label>Psicólogo</label>
+      <select id="icPsicologo">
+        <option value="">Todos</option>
+        {% for p in psicologos %}
+        <option value="{{ p.id }}">{{ p.nombre }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label>Preferencia de terapeuta</label>
+      <select id="icPreferencia">
+        <option value="">Todas</option>
+        <option value="Mujer">Mujer</option>
+        <option value="Hombre">Hombre</option>
+        <option value="Indistinto">Indistinto</option>
+        <option value="Sin registro">Sin registro</option>
+      </select>
+    </div>
+    <div>
+      <label>Estado del paciente</label>
+      <select id="icEstado">
+        <option value="">Todos</option>
+        <option value="activo">Activo</option>
+        <option value="en_riesgo">En riesgo</option>
+        <option value="inactivo">Inactivo</option>
+        <option value="nunca">Nunca agendó</option>
+      </select>
+    </div>
+    <div>
+      <label>Primera cita</label>
+      <select id="icPrimera">
+        <option value="">Todas</option>
+        <option value="si">Ya tomó su primera cita</option>
+        <option value="no">Primera cita programada (futura)</option>
+        <option value="none">Nunca agendó</option>
+      </select>
+    </div>
+    <div>
+      <label>Buscar paciente</label>
+      <input type="text" id="icQ" placeholder="Nombre o correo">
+    </div>
+    <button class="ic-btn ic-btn-p" id="icAplicar"><i class="fa-solid fa-filter"></i> Aplicar</button>
+  </div>
+
+  <div class="ic-error" id="icErr"></div>
+
+  <!-- ===== KPI GRID ===== -->
+  <div class="ic-section">
+    <div class="ic-sec-head">
+      <div class="ic-sec-title"><i class="fa-solid fa-chart-pie"></i> Resumen general del negocio</div>
+      <div style="font-size:11px;font-weight:700;color:var(--ink3)"><span id="icKpiStamp">--</span></div>
+    </div>
+    <div class="ic-kpis" id="icKpis">
+      <div class="ic-loading" style="grid-column:1/-1"><div class="ic-spinner"></div> Calculando KPIs en vivo...</div>
+    </div>
+  </div>
+
+  <!-- ===== INSIGHTS ===== -->
+  <div class="ic-section">
+    <div class="ic-sec-head">
+      <div class="ic-sec-title"><i class="fa-solid fa-brain"></i> Hallazgos automáticos</div>
+      <button class="ic-btn ic-btn-xs ic-btn-soft" onclick="cargarInsights()" id="icRecalcBtn"><i class="fa-solid fa-rotate"></i> Recalcular</button>
+    </div>
+    <div class="ic-insights" id="icInsights">
+      <div class="ic-loading" style="grid-column:1/-1"><div class="ic-spinner"></div> Analizando la operación...</div>
+    </div>
+  </div>
+
+  <!-- ===== FEED + HORARIOS ===== -->
+  <div class="ic-grid2 ic-section">
+    <div class="ic-card">
+      <div class="ic-sec-head" style="margin-bottom:12px;">
+        <div class="ic-sec-title"><i class="fa-solid fa-satellite-dish"></i> Actividad en tiempo real</div>
+      </div>
+      <div class="ic-feed" id="icFeed">
+        <div class="ic-loading" style="width:100%"><div class="ic-spinner"></div> Conectando...</div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;">
+        <span class="ic-badge ic-b-neutro">Fuentes reales: cuentas nuevas / altas de cita</span>
+        <span class="ic-badge ic-b-riesgo">Reagendaciones y pagos no se registran hoy</span>
+      </div>
+    </div>
+    <div class="ic-card">
+      <div class="ic-sec-head" style="margin-bottom:12px;">
+        <div class="ic-sec-title"><i class="fa-solid fa-fire"></i> Curva de horarios preferidos</div>
+        <div style="font-size:11px;font-weight:700;color:var(--ink3)" id="icHeatMeta"></div>
+      </div>
+      <div id="icHeat">
+        <div class="ic-loading"><div class="ic-spinner"></div> Calculando demanda...</div>
+      </div>
+      <div class="ic-grid3" style="margin-top:16px;">
+        <div class="ic-chart-box" style="height:190px;"><canvas id="cFranja"></canvas></div>
+        <div class="ic-chart-box" style="height:190px;"><canvas id="cDias"></canvas></div>
+        <div class="ic-chart-box" style="height:190px;"><canvas id="cHoras"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== EMBUDO + COMPORTAMIENTO ===== -->
+  <div class="ic-grid2 ic-section">
+    <div class="ic-card">
+      <div class="ic-sec-head" style="margin-bottom:12px;">
+        <div class="ic-sec-title"><i class="fa-solid fa-filter-circle-dollar"></i> Embudo de conversión</div>
+      </div>
+      <div class="ic-funnel" id="icFunnel">
+        <div class="ic-loading" style="width:100%"><div class="ic-spinner"></div> Midiendo el embudo...</div>
+      </div>
+    </div>
+    <div class="ic-card">
+      <div class="ic-sec-head" style="margin-bottom:12px;">
+        <div class="ic-sec-title"><i class="fa-solid fa-magnifying-glass-chart"></i> Comportamiento y evolución</div>
+      </div>
+      <div id="icBeh">
+        <div class="ic-loading"><div class="ic-spinner"></div> Detectando patrones...</div>
+      </div>
+      <div class="ic-chart-box" style="margin-top:16px; height:220px;"><canvas id="cEvolucion"></canvas></div>
+    </div>
+  </div>
+
+  <!-- ===== TABLAS ===== -->
+  <div class="ic-section">
+    <div class="ic-sec-head">
+      <div class="ic-sec-title"><i class="fa-solid fa-table-list"></i> Detalle operativo</div>
+      <div style="display:flex; gap:8px; flex-wrap:wrap">
+        <button class="ic-btn ic-btn-xs ic-btn-soft" id="icExportCSV"><i class="fa-solid fa-file-csv"></i> Exportar vista CSV</button>
+        <button class="ic-btn ic-btn-xs ic-btn-soft" id="icExportExcel"><i class="fa-solid fa-file-excel"></i> Exportar vista Excel</button>
+      </div>
+    </div>
+
+    <div class="ic-tabs">
+      <button class="ic-tab active" data-vista="nuevos">Nuevos pacientes</button>
+      <button class="ic-tab" data-vista="activos">Pacientes activos <span class="cnt" id="cntAct">0</span></button>
+      <button class="ic-tab" data-vista="atencion">Requieren atención <span class="cnt" id="cntAten">0</span></button>
+      <button class="ic-tab" data-vista="programados">Nuevos programados</button>
+      <button class="ic-tab" data-vista="psicologos">Ranking psicólogos</button>
+    </div>
+
+    <div class="ic-card" id="icTabla">
+      <div class="ic-loading"><div class="ic-spinner"></div> Cargando vista...</div>
+    </div>
+    <div class="ic-pager" id="icPager" style="display:none">
+      <button id="pgPrev"><i class="fa-solid fa-chevron-left"></i></button>
+      <span id="pgInfo" style="font-size:12px;font-weight:700;color:var(--ink3)"></span>
+      <button id="pgNext"><i class="fa-solid fa-chevron-right"></i></button>
+    </div>
+  </div>
+
+  <!-- ===== NOTAS ===== -->
+  <div class="ic-nota">
+    <b>Metodología y limitaciones reales (sin datos simulados):</b><br>
+    - Una fila de la tabla de citas cuenta como sesión tomada; el estatus interno de la cita no se usa para
+    calcular actividad, tal como opera hoy.<br>
+    - <b>Ingresos = estimación</b> con la tarifa oficial del sistema (individual 100 + 10%; pareja 200 + 7.5%;
+    familiar 200 + 100 por integrante extra + 7.5%). El convenio TECTUM In-House se cuenta en 0. La base de
+    datos no guarda montos de pago, donativos ni reembolsos.<br>
+    - El sexo del paciente no existe como dato en la base y no se infiere, por eso no está disponible como filtro.<br>
+    - Reagendaciones y pagos no generan registro en la base hoy, por lo que el feed muestra registros de
+    cuentas nuevas y altas de cita únicamente.<br>
+    - Estado del paciente: Activo = cita futura o sesión hace 15 días o menos · En riesgo = 16 a 30 días sin
+    sesión · Inactivo = más de 30 días · Nunca agendó = cero citas.
+  </div>
+</div>
+</div>
+
+<script>
+/* =============================================================
+   INTELLIGENCE CENTER - JS de la página dedicada
+   - Todo consulta endpoints api/intelligence/* (solo lectura)
+   - Polling: feed 15 s, KPIs 60 s, insights 120 s; pausa en pestaña oculta
+   - Los filtros globales viajan en querystring
+   ============================================================= */
+
+var IC = {
+  vista: 'nuevos',
+  page: 1,
+  totalPages: 1,
+  charts: {},
+  feedCursor: null,
+  timers: []
+};
+
+/* ---------- utilidades ---------- */
+function esc(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+function fechaEs(iso) {
+  if (!iso) return '';
+  var d = new Date(iso);
+  if (isNaN(d.getTime())) { var s = String(iso); return s.slice(0, 10).split('-').reverse().join('/'); }
+  return d.toLocaleDateString('es-MX', { day: '2-digit', month: '2-digit', year: 'numeric' });
+}
+function haceCuanto(iso) {
+  var d = new Date(iso);
+  var s = Math.max(0, (Date.now() - d.getTime()) / 1000);
+  if (s < 60) return 'Hace ' + Math.floor(s) + ' seg';
+  if (s < 3600) return 'Hace ' + Math.floor(s / 60) + ' min';
+  if (s < 86400) return 'Hace ' + Math.floor(s / 3600) + ' h';
+  return fechaEs(iso);
+}
+function mostrarError(m) {
+  var el = document.getElementById('icErr');
+  el.textContent = m; el.style.display = 'block';
+  clearTimeout(el._t);
+  el._t = setTimeout(function () { el.style.display = 'none'; }, 8000);
+}
+function qs() {
+  var p = new URLSearchParams();
+  p.set('desde', document.getElementById('icDesde').value || '');
+  p.set('hasta', document.getElementById('icHasta').value || '');
+  p.set('psicologo', document.getElementById('icPsicologo').value || '');
+  p.set('preferencia', document.getElementById('icPreferencia').value || '');
+  p.set('estado', document.getElementById('icEstado').value || '');
+  p.set('primera_cita', document.getElementById('icPrimera').value || '');
+  p.set('q', document.getElementById('icQ').value || '');
+  return p;
+}
+function fetchJson(url) {
+  return fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+    .then(function (r) { return r.json(); });
+}
+
+/* ---------- KPIs ---------- */
+function badgeDelta(d) {
+  if (d === null || d === undefined) return '<span class="ic-delta flat">Sin comparación</span>';
+  var cls = d > 0 ? 'up' : (d < 0 ? 'down' : 'flat');
+  var sig = d > 0 ? '+' : '';
+  return '<span class="ic-delta ' + cls + '">' + sig + d + '% vs 30 previos</span>';
+}
+function kpiCard(ac, icono, valor, sub) {
+  return '<div class="ic-kpi" style="--kpi-accent:' + ac + '">' +
+    '<div class="ic-kpi-label"><i class="fa-solid ' + icono + '"></i></div>' +
+    '<div class="ic-kpi-value">' + valor + '</div>' +
+    '<div class="ic-kpi-sub">' + sub + '</div>' +
+    '</div>';
+}
+function renderKpis(k) {
+  var delta = k.delta || {};
+  var h = '';
+  h += '<div style="grid-column:1/-1;font-size:12px;font-weight:700;color:var(--ink3);display:flex;gap:18px;flex-wrap:wrap">Registros 30 días: <span style="color:var(--ink2)">' + badgeDelta(delta.registros_30d) + '</span> · Citas 30 días: <span style="color:var(--ink2)">' + badgeDelta(delta.citas_30d) + '</span></div>';
+  h += kpiCard('var(--p)', 'fa-users', k.pacientes.total, 'Pacientes registrados');
+  h += kpiCard('var(--ok)', 'fa-user-check', k.pacientes.activos, 'Pacientes activos (cita futura o sesión reciente)');
+  h += kpiCard('var(--org)', 'fa-user-clock', k.pacientes.en_riesgo, 'En riesgo (16 a 30 días sin sesión)');
+  h += kpiCard('var(--risk)', 'fa-user-slash', k.pacientes.inactivos, 'Inactivos (más de 30 días)');
+  h += kpiCard('var(--p-mid)', 'fa-hourglass-start', k.pacientes.nunca_agendaron, 'Nunca agendaron después del registro');
+  h += kpiCard('var(--teal)', 'fa-user-plus', k.pacientes.nuevos_semana, 'Nuevos pacientes esta semana (' + k.pacientes.nuevos_mes + ' este mes)');
+  h += kpiCard('var(--pink)', 'fa-heart-circle-check', k.pacientes.retencion_pct + '%', 'Tasa de retención (2+ sesiones sobre pacientes con 1+)');
+  h += kpiCard('var(--p)', 'fa-user-doctor', k.psicologos.activos + ' / ' + k.psicologos.total, 'Psicólogos activos / totales');
+  h += kpiCard('var(--teal)', 'fa-calendar-day', k.citas.hoy, 'Citas hoy en agenda');
+  h += kpiCard('var(--p)', 'fa-calendar-days', k.citas.mes, 'Citas este mes (' + k.citas.semana + ' esta semana)');
+  h += kpiCard('var(--org)', 'fa-hand-holding-dollar', '$' + k.ingresos.mes.total.toLocaleString('es-MX'), 'Ingresos estimados del mes · ' + k.ingresos.mes.citas + ' citas (' + k.ingresos.mes.exentos + ' exentas In-House)');
+  h += kpiCard('var(--org)', 'fa-dollar-sign', '$' + k.ingresos.hoy.total.toLocaleString('es-MX'), 'Ingresos estimados de hoy');
+  document.getElementById('icKpis').innerHTML = h;
+  document.getElementById('icKpiStamp').textContent = 'Actualizado ' + new Date(k.generado_en).toLocaleTimeString('es-MX');
+  document.getElementById('cntAct').textContent = k.pacientes.activos;
+  document.getElementById('cntAten').textContent = k.pacientes.en_riesgo + k.pacientes.inactivos + k.pacientes.nunca_agendaron;
+}
+function cargarKpis() {
+  fetchJson('/panel-admin/api/intelligence/kpis/')
+    .then(function (d) {
+      if (d.status === 'error') { mostrarError(d.message); return; }
+      renderKpis(d.kpis);
+    })
+    .catch(function (e) { mostrarError('KPIs: ' + e.message); });
+}
+
+/* ---------- FEED ---------- */
+function feedRow(e) {
+  var icono = e.tipo === 'registro' ? 'fa-user-plus' : 'fa-calendar-plus';
+  return '<div class="ic-feed-row">' +
+    '<div class="ic-feed-ico ' + e.tipo + '"><i class="fa-solid ' + icono + '"></i></div>' +
+    '<div><div class="ic-feed-txt">' + esc(e.texto) + '</div>' +
+    '<div class="ic-feed-meta"><span>' + haceCuanto(e.ts) + '</span>' +
+    (e.detalle ? '<span><i class="fa-solid fa-tag" style="opacity:.4"></i> ' + esc(e.detalle) + '</span>' : '') +
+    '</div></div></div>';
+}
+function renderFeed(eventos, primera) {
+  var el = document.getElementById('icFeed');
+  if (primera) {
+    el.innerHTML = eventos.length
+      ? eventos.map(feedRow).join('')
+      : '<div class="ic-empty">Sin actividad en la ventana de 6 horas.<br>El feed se llena al registrarse cuentas nuevas o citas nuevas.</div>';
+  }
+  if (eventos.length) IC.feedCursor = eventos[0].ts;
+}
+function cargarFeed() {
+  var p = new URLSearchParams();
+  if (IC.feedCursor) p.set('since', IC.feedCursor);
+  var primera = !IC.feedCursor;
+  fetchJson('/panel-admin/api/intelligence/feed/?' + p.toString())
+    .then(function (d) {
+      if (d.status === 'error') { mostrarError(d.message); return; }
+      renderFeed(d.eventos, primera);
+      if (!IC.feedCursor) IC.feedCursor = d.servidor;
+    })
+    .catch(function (e) { mostrarError('Feed: ' + e.message); });
+}
+
+/* ---------- INSIGHTS ---------- */
+function renderInsights(hallazgos) {
+  var mapa = { positivo: 'fa-circle-check', alerta: 'fa-triangle-exclamation', neutro: 'fa-lightbulb' };
+  document.getElementById('icInsights').innerHTML = hallazgos.map(function (h) {
+    return '<div class="ic-insight ' + h.tono + '"><i class="fa-solid ' + mapa[h.tono] + '"></i> ' + esc(h.texto) + '</div>';
+  }).join('');
+}
+function cargarInsights() {
+  document.getElementById('icInsights').innerHTML =
+    '<div class="ic-loading" style="grid-column:1/-1"><div class="ic-spinner"></div> Analizando la operación...</div>';
+  Promise.all([
+    fetchJson('/panel-admin/api/intelligence/insights/'),
+  ]).then(function (res) {
+    var d = res[0];
+    if (d.status === 'error') { mostrarError(d.message); return; }
+    renderInsights(d.hallazgos);
+    renderFunnel(d.embudo, d.caidas);
+    renderBeh(d.comportamiento);
+  }).catch(function (e) { mostrarError('Insights: ' + e.message); });
+}
+
+/* ---------- EMBUDO Y COMPORTAMIENTO ---------- */
+function renderFunnel(etapas, caidas) {
+  if (!etapas.length) { document.getElementById('icFunnel').innerHTML = '<div class="ic-empty">Sin datos.</div>'; return; }
+  var max = etapas[0].valor || 1;
+  var h = '';
+  for (var i = 0; i < etapas.length; i++) {
+    var e = etapas[i];
+    var pct = Math.max(3, Math.round(100 * e.valor / max));
+    var drop = i > 0 ? caidas[i - 1] : null;
+    h += '<div class="ic-funnel-row">' +
+      '<div class="ic-funnel-top"><span>' + (i + 1) + '. ' + esc(e.etapa) + '</span>' +
+      '<span><b style="font-family:var(--fd);font-size:16px;color:var(--p)">' + e.valor.toLocaleString('es-MX') + '</b>' +
+      (drop && drop.perdidos ? ' <span class="ic-funnel-drop">- ' + drop.perdidos + ' (' + drop.pct + '%)</span>' : '') +
+      '</span></div>' +
+      '<div class="ic-funnel-bar"><div class="ic-funnel-fill" style="width:' + pct + '%"></div></div>' +
+      '</div>';
+  }
+  document.getElementById('icFunnel').innerHTML = h;
+}
+function renderBeh(b) {
+  var r = b.registro_a_primera, g = b.gap_entre_sesiones;
+  var h = '<div class="ic-beh-grid">';
+  h += '<div class="ic-beh"><div class="v">' + (r.promedio_dias == null ? 'Sin señal' : r.promedio_dias + ' días') + '</div><div class="k">Registro a primera cita</div><div class="ic-kpi-sub">' + r.bucket_1d_pct + '% en menos de 1 día · ' + r.bucket_3d_pct + '% menos de 3 · ' + r.bucket_7d_pct + '% menos de 7 (' + r.muestras + ' pacientes)</div></div>';
+  h += '<div class="ic-beh"><div class="v">' + (g.promedio_dias == null ? 'Sin señal' : g.promedio_dias + ' días') + '</div><div class="k">Tiempo entre sesiones</div><div class="ic-kpi-sub">mediana ' + (g.mediana_dias == null ? 'sin dato' : g.mediana_dias) + ' días · ' + g.muestras + ' huecos medidos</div></div>';
+  h += '<div class="ic-beh"><div class="v">' + b.pacientes_5mas_sesiones + '</div><div class="k">Pacientes con alta recurrencia (5+ sesiones)</div></div>';
+  h += '<div class="ic-beh"><div class="v">' + (b.hora_primera_cita_top || 'sin dato') + '</div><div class="k">Horario donde más primeras citas se agendan</div></div>';
+  h += '</div>';
+  document.getElementById('icBeh').innerHTML = h;
+}
+
+/* ---------- HORARIOS ---------- */
+function colorCalor(v, max) {
+  if (!v) return 'var(--p-lgt)';
+  var t = Math.min(1, v / max);
+  if (t < .25) return '#B9A7E8';
+  if (t < .5) return '#8B72D4';
+  if (t < .75) return '#5A3FA3';
+  return '#3D2A6E';
+}
+function fmtHora(h) {
+  var hh = h % 12 || 12;
+  return hh + ' ' + (h >= 12 ? 'PM' : 'AM');
+}
+function renderHorarios(c) {
+  document.getElementById('icHeatMeta').textContent = c.total.toLocaleString('es-MX') + ' citas analizadas';
+  var horas = c.horas;
+  if (!horas.length) {
+    document.getElementById('icHeat').innerHTML = '<div class="ic-empty">Sin citas en el periodo seleccionado.</div>';
+    ['cFranja', 'cDias', 'cHoras'].forEach(function (id) {
+      if (IC.charts[id]) { IC.charts[id].destroy(); IC.charts[id] = null; }
+    });
+    return;
+  }
+  var maxv = 0;
+  c.heatmap.forEach(function (f) { f.valores.forEach(function (v) { if (v.citas > maxv) maxv = v.citas; }); });
+
+  var g = '<div style="overflow-x:auto"><div class="ic-heat" style="min-width:600px">';
+  g += '<div class="ic-heat-row"><div class="ic-heat-lab">Día</div>' +
+    horas.map(function (h) { return '<div class="ic-heat-cell ic-heat-head">' + (h % 12 || 12) + '</div>'; }).join('') +
+    '<div class="ic-heat-cell ic-heat-head">Total</div></div>';
+  c.heatmap.forEach(function (fila, i) {
+    var cells = fila.valores.map(function (v) {
+      return v.citas
+        ? '<div class="ic-heat-cell has" style="background:' + colorCalor(v.citas, maxv) + '" title="' + fila.dia + ' ' + fmtHora(v.hora) + ': ' + v.citas + ' citas">' + v.citas + '</div>'
+        : '<div class="ic-heat-cell"></div>';
+    }).join('');
+    g += '<div class="ic-heat-row"><div class="ic-heat-lab">' + fila.dia.slice(0, 3) + '</div>' + cells +
+      '<div class="ic-heat-cell ic-heat-head">' + c.por_dia[i].citas + '</div></div>';
+  });
+  g += '</div></div>';
+  document.getElementById('icHeat').innerHTML = g;
+
+  dibuja('cFranja', 'doughnut', Object.keys(c.franja), Object.keys(c.franja).map(function (k) { return c.franja[k]; }));
+  dibuja('cDias', 'bar', c.por_dia.map(function (d) { return d.dia.slice(0, 3); }), c.por_dia.map(function (d) { return d.citas; }));
+  dibuja('cHoras', 'bar', c.por_hora.map(function (x) { return x.hora; }), c.por_hora.map(function (x) { return x.citas; }));
+}
+function dibuja(id, tipo, labels, data) {
+  var cv = document.getElementById(id);
+  if (!cv) return;
+  if (IC.charts[id]) { IC.charts[id].destroy(); }
+  var colores = ['rgba(90,63,163,.85)', 'rgba(248,91,140,.85)', 'rgba(37,184,184,.85)', 'rgba(242,124,33,.85)', 'rgba(139,114,212,.85)', 'rgba(31,157,85,.85)', 'rgba(248,211,61,.85)'];
+  var cfg = {
+    type: tipo,
+    data: { labels: labels, datasets: [{ data: data, backgroundColor: colores, borderWidth: 0 }] },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: tipo === 'doughnut',
+          position: 'bottom',
+          labels: { boxWidth: 10, font: { size: 10 } }
+        }
+      },
+      scales: tipo === 'doughnut' ? {} : {
+        y: { beginAtZero: true, ticks: { precision: 0, font: { size: 10 } } },
+        x: { ticks: { font: { size: 9.5 }, maxRotation: 90 } }
+      }
+    }
+  };
+  try { IC.charts[id] = new Chart(cv.getContext('2d'), cfg); } catch (e) { /* CDN caido: la tabla de numeros sigue visible */ }
+}
+function cargarHorarios() {
+  fetchJson('/panel-admin/api/intelligence/horarios/?' + qs().toString())
+    .then(function (d) {
+      if (d.status === 'error') { mostrarError(d.message); return; }
+      renderHorarios(d.curva);
+      renderEvolucion(d.evolucion);
+    })
+    .catch(function (e) { mostrarError('Horarios: ' + e.message); });
+}
+function renderEvolucion(ev) {
+  var cv = document.getElementById('cEvolucion');
+  if (IC.charts.cEvolucion) { IC.charts.cEvolucion.destroy(); }
+  IC.charts.cEvolucion = new Chart(cv.getContext('2d'), {
+    type: 'line',
+    data: {
+      labels: ev.labels,
+      datasets: [
+        { label: 'Nuevos registros', data: ev.registros, borderColor: '#25B8B8', backgroundColor: 'rgba(37,184,184,.15)', fill: true, tension: .35 },
+        { label: 'Citas tomadas', data: ev.citas, borderColor: '#5A3FA3', backgroundColor: 'rgba(90,63,163,.15)', fill: true, tension: .35 }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { labels: { font: { size: 10.5 } } } },
+      scales: { y: { beginAtZero: true, ticks: { precision: 0, font: { size: 10 } } }, x: { ticks: { font: { size: 10 } } } }
+    }
+  });
+}
+
+/* ---------- TABLAS ---------- */
+function badgeEstado(e, label) {
+  var map = { activo: 'ic-b-activo', en_riesgo: 'ic-b-riesgo', inactivo: 'ic-b-inactivo', nunca: 'ic-b-nunca' };
+  return '<span class="ic-badge ' + (map[e] || 'ic-b-neutro') + '">' + esc(label) + '</span>';
+}
+function celdaUser(nombre, sub) {
+  var ini = (nombre || '?').trim().charAt(0).toUpperCase();
+  return '<div class="ic-td-user"><div class="ic-av">' + esc(ini) + '</div><div><div class="nm">' + esc(nombre) + '</div>' + (sub ? '<div class="ml">' + esc(sub) + '</div>' : '') + '</div></div>';
+}
+function tablaHead(cols) { return '<tr>' + cols.map(function (c) { return '<th>' + c + '</th>'; }).join('') + '</tr>'; }
+
+function renderTabla(vista, data) {
+  var h = '<div class="ic-tablewrap"><table class="ic-table">';
+
+  if (vista === 'psicologos') {
+    h += tablaHead(['Posición', 'Psicólogo', 'Pacientes totales', 'Activos', 'En riesgo', 'Inactivos', 'Citas', 'Citas próximas', 'Retención', 'Prom. sesiones', 'Horario más pedido', 'Día más pedido']);
+    data.ranking.forEach(function (r) {
+      var colorPos = r.posicion === 1 ? '#E8A300' : (r.posicion === 2 ? '#9aa7b5' : (r.posicion === 3 ? '#c98a4b' : null));
+      var badgePos = '<span class="ic-badge" style="' + (colorPos ? 'background:var(--p-lgt);color:' + colorPos : 'background:var(--surf);color:var(--ink3)') + ';width:34px;justify-content:center">' + r.posicion + '</span>';
+      h += '<tr>' +
+        '<td>' + badgePos + '</td>' +
+        '<td>' + celdaUser(r.nombre, r.esta_activo ? 'Aceptando nuevos pacientes' : 'Inactivo en agenda') + '</td>' +
+        '<td><b>' + r.pacientes_totales + '</b></td>' +
+        '<td>' + r.pacientes_activos + '</td>' +
+        '<td>' + r.pacientes_en_riesgo + '</td>' +
+        '<td>' + r.pacientes_inactivos + '</td>' +
+        '<td>' + r.citas_realizadas + '</td>' +
+        '<td>' + r.proximas_citas + '</td>' +
+        '<td><span class="ic-badge ' + (r.retencion_pct >= 50 ? 'ic-b-activo' : (r.retencion_pct >= 25 ? 'ic-b-riesgo' : 'ic-b-inactivo')) + '">' + r.retencion_pct + '%</span></td>' +
+        '<td>' + r.promedio_sesiones + '</td>' +
+        '<td>' + esc(r.horario_mas_solicitado || 'sin dato') + '</td>' +
+        '<td>' + esc(r.dia_mas_solicitado || 'sin dato') + '</td>' +
+        '</tr>';
+    });
+    h += '</table></div>';
+    document.getElementById('icTabla').innerHTML = h;
+    IC.totalPages = 1;
+    pager();
+    return;
+  }
+
+  if (vista === 'programados') {
+    h += tablaHead(['Paciente', 'Psicólogo', 'Fecha', 'Hora', 'Tipo', 'Modalidad', 'Primera sesión']);
+    data.filas.forEach(function (f) {
+      var marcaOrg = f.es_tectum ? 'In-House' : (f.es_beneficios ? 'Beneficios' : '');
+      h += '<tr>' +
+        '<td>' + celdaUser(f.paciente, marcaOrg) + '</td>' +
+        '<td>' + esc(f.psicologo) + '</td>' +
+        '<td>' + fechaEs(f.fecha) + '</td>' +
+        '<td>' + esc(f.hora) + '</td>' +
+        '<td>' + esc(f.tipo) + '</td>' +
+        '<td>' + esc(f.modalidad) + '</td>' +
+        '<td>' + (f.es_primera ? '<span class="ic-badge ic-b-nunca">Primera</span>' : '<span class="ic-badge ic-b-neutro">Seguimiento</span>') + '</td>' +
+        '</tr>';
+    });
+  } else if (vista === 'atencion') {
+    h += tablaHead(['Paciente', 'Registro', 'Última sesión', 'Próxima', 'Psicólogo', 'Citas', 'Estado', 'Motivo']);
+    data.filas.forEach(function (f) {
+      h += '<tr>' +
+        '<td>' + celdaUser(f.nombre, f.email) + '</td>' +
+        '<td>' + fechaEs(f.fecha_registro) + '</td>' +
+        '<td>' + (f.ultima ? fechaEs(f.ultima) : '-') + '</td>' +
+        '<td>' + (f.proxima ? fechaEs(f.proxima) : '-') + '</td>' +
+        '<td>' + esc(f.psicologo || 'Sin asignar') + '</td>' +
+        '<td>' + f.citas_total + '</td>' +
+        '<td>' + badgeEstado(f.estado, f.estado_label) + '</td>' +
+        '<td style="max-width:280px;font-size:12px">' + esc(f.motivo) + '</td>' +
+        '</tr>';
+    });
+  } else if (vista === 'nuevos') {
+    h += tablaHead(['Paciente', 'Registro', 'Preferencia', 'Psicólogo asignado', 'Primera cita', 'Citas', 'Estado']);
+    data.filas.forEach(function (f) {
+      h += '<tr>' +
+        '<td>' + celdaUser(f.nombre, f.email) + '</td>' +
+        '<td>' + fechaEs(f.fecha_registro) + '</td>' +
+        '<td>' + esc(f.preferencia) + '</td>' +
+        '<td>' + esc(f.psicologo || 'Se auto-asigna al pagar') + '</td>' +
+        '<td>' + (f.primera ? fechaEs(f.primera) : 'Sin agendar') + '</td>' +
+        '<td>' + f.citas_total + '</td>' +
+        '<td>' + badgeEstado(f.estado, f.estado_label) + '</td>' +
+        '</tr>';
+    });
+  } else { /* activos */
+    h += tablaHead(['Paciente', 'Registro', 'Última sesión', 'Próxima cita', 'Psicólogo', 'Citas', 'Preferencia', 'Estado']);
+    data.filas.forEach(function (f) {
+      h += '<tr>' +
+        '<td>' + celdaUser(f.nombre, f.email) + '</td>' +
+        '<td>' + fechaEs(f.fecha_registro) + '</td>' +
+        '<td>' + (f.ultima ? fechaEs(f.ultima) : '-') + '</td>' +
+        '<td>' + (f.proxima ? fechaEs(f.proxima) : '-') + '</td>' +
+        '<td>' + esc(f.psicologo || 'Sin asignar') + '</td>' +
+        '<td>' + f.citas_total + '</td>' +
+        '<td>' + esc(f.preferencia) + '</td>' +
+        '<td>' + badgeEstado(f.estado, f.estado_label) + '</td>' +
+        '</tr>';
+    });
+  }
+  h += '</table></div>';
+  if (!data.filas.length) h += '<div class="ic-empty">Sin resultados con los filtros actuales.</div>';
+  document.getElementById('icTabla').innerHTML = h;
+  IC.totalPages = data.pages || 1;
+  pager();
+}
+function cargarTabla() {
+  if (IC.vista === 'psicologos') {
+    fetchJson('/panel-admin/api/intelligence/psicologos/')
+      .then(function (d) {
+        if (d.status === 'error') { mostrarError(d.message); return; }
+        renderTabla('psicologos', { ranking: d.ranking });
+      })
+      .catch(function (e) { mostrarError('Ranking: ' + e.message); });
+    return;
+  }
+  var p = qs();
+  p.set('vista', IC.vista);
+  p.set('page', IC.page);
+  fetchJson('/panel-admin/api/intelligence/pacientes/?' + p.toString())
+    .then(function (d) {
+      if (d.status === 'error') { mostrarError(d.message); return; }
+      renderTabla(IC.vista, d);
+    })
+    .catch(function (e) { mostrarError('Tabla: ' + e.message); });
+}
+
+/* ---------- PAGINADOR ---------- */
+function pager() {
+  var box = document.getElementById('icPager');
+  if (IC.vista === 'psicologos' || IC.totalPages <= 1) { box.style.display = 'none'; return; }
+  box.style.display = 'flex';
+  document.getElementById('pgInfo').textContent = 'Página ' + IC.page + ' de ' + IC.totalPages;
+  document.getElementById('pgPrev').disabled = IC.page <= 1;
+  document.getElementById('pgNext').disabled = IC.page >= IC.totalPages;
+}
+document.getElementById('pgPrev').onclick = function () { IC.page--; cargarTabla(); };
+document.getElementById('pgNext').onclick = function () { IC.page++; cargarTabla(); };
+
+/* ---------- EXPORTACIÓN ---------- */
+function exportar(tipo, vista) {
+  if (vista === 'kpis') {
+    window.location.href = '/panel-admin/api/intelligence/exportar/?vista=kpis&formato=' + tipo;
+    return;
+  }
+  var p = qs();
+  p.set('vista', vista || IC.vista);
+  window.location.href = '/panel-admin/api/intelligence/exportar/?' + p.toString() + '&formato=' + tipo;
+}
+document.getElementById('icExportCSV').onclick = function () { exportar('csv'); };
+document.getElementById('icExportExcel').onclick = function () { exportar('excel'); };
+document.getElementById('icExportKpisCsv').onclick = function (e) { e.preventDefault(); exportar('csv', 'kpis'); };
+document.getElementById('icExportKpisExcel').onclick = function (e) { e.preventDefault(); exportar('excel', 'kpis'); };
+
+/* ---------- FILTROS ---------- */
+document.querySelectorAll('.ic-chip').forEach(function (ch) {
+  ch.onclick = function () {
+    document.querySelectorAll('.ic-chip').forEach(function (c) { c.classList.remove('active'); });
+    ch.classList.add('active');
+    var rango = ch.dataset.rango;
+    if (rango === 'todo') {
+      document.getElementById('icDesde').value = '';
+      document.getElementById('icHasta').value = '';
+    } else {
+      var dd = new Date(Date.now() - (parseInt(rango, 10) - 1) * 86400000);
+      document.getElementById('icDesde').value = dd.toISOString().slice(0, 10);
+      document.getElementById('icHasta').value = new Date().toISOString().slice(0, 10);
+    }
+    aplicar();
+  };
+});
+document.getElementById('icAplicar').onclick = aplicar;
+document.getElementById('icQ').addEventListener('keydown', function (e) { if (e.key === 'Enter') aplicar(); });
+
+function aplicar() {
+  IC.page = 1;
+  IC.feedCursor = null; /* refresca el feed desde ahora */
+  cargarKpis();
+  cargarFeed();
+  cargarHorarios();
+  cargarTabla();
+  cargarInsights();
+}
+
+/* ---------- TABS ---------- */
+document.querySelectorAll('.ic-tab').forEach(function (t) {
+  t.onclick = function () {
+    document.querySelectorAll('.ic-tab').forEach(function (x) { x.classList.remove('active'); });
+    t.classList.add('active');
+    IC.vista = t.dataset.vista;
+    IC.page = 1;
+    cargarTabla();
+  };
+});
+
+/* ---------- POLLING con pausa por visibilidad ---------- */
+function setTimers(on) {
+  IC.timers.forEach(clearInterval);
+  IC.timers = [];
+  if (on) {
+    IC.timers.push(setInterval(cargarFeed, 15000));
+    IC.timers.push(setInterval(cargarKpis, 60000));
+    IC.timers.push(setInterval(cargarInsights, 120000));
+  }
+  document.getElementById('icLiveDot').classList.toggle('paused', !on);
+  document.getElementById('icLiveTxt').textContent = on ? 'En vivo' : 'Pausado';
+}
+document.addEventListener('visibilitychange', function () { setTimers(!document.hidden); });
+
+/* ---------- ARRANQUE ---------- */
+cargarKpis();
+cargarFeed();
+cargarHorarios();
+cargarTabla();
+cargarInsights();
+setTimers(true);
+</script>
+{% endblock %}

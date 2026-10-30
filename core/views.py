@@ -10197,3 +10197,192 @@ def api_reintento_automatizacion(request, cita_id):
 
 
 
+
+
+# =========================================================================
+# INTELLIGENCE CENTER (30/10/2026)
+# Panel de análisis operativa para Dirección (superusuario). Solo lectura:
+# las vistas delegan TODO el cálculo en core/analytics_engine.py,
+# que nunca escribe en la base de datos. Gated con es_admin literal.
+# =========================================================================
+from core import analytics_engine
+
+
+@user_passes_test(es_admin, login_url='/')
+def panel_admin_intelligence(request):
+    """
+    /panel-admin/intelligence/
+    Página dedicada del Intelligence Center, con el mismo lenguaje visual
+    de panel_admin.html. Devuelve solo datos de render; el resto llega por
+    los endpoints api/intelligence/*.
+    """
+    psicologos = []
+    for p in PerfilPsicologo.objects.select_related('usuario').order_by('id'):
+        nombre = (p.usuario.first_name if p.usuario and p.usuario.first_name
+                  else (p.usuario.username if p.usuario else 'Sin nombre'))
+        titulo = 'Dra. ' if p.genero == 'Mujer' else 'Dr. '
+        psicologos.append({'id': p.id, 'nombre': (titulo + nombre).strip()})
+
+    return render(request, 'panel_admin_intelligence.html', {
+        'psicologos': psicologos,
+        'hoy': timezone.localdate(),
+    })
+
+
+def _int_fechas_filtro(request):
+    """Parametros psicologo/desde/hasta; fechas invalidas se ignoran."""
+    psicologo_id = None
+    ps = request.GET.get('psicologo', '').strip()
+    if ps.isdigit():
+        psicologo_id = int(ps)
+    desde = hasta = None
+    for nombre, campo in (('desde', 'desde'), ('hasta', 'hasta')):
+        valor = request.GET.get(nombre, '').strip()
+        if valor:
+            try:
+                f = datetime.strptime(valor, '%Y-%m-%d').date()
+                if campo == 'desde':
+                    desde = f
+                else:
+                    hasta = f
+            except (ValueError, TypeError):
+                pass
+    return psicologo_id, desde, hasta
+
+
+@user_passes_test(es_admin, login_url='/')
+def api_intelligence_kpis(request):
+    """Tarjetas KPI: pacientes, estados, psicologos, citas, ingresos, deltas."""
+    try:
+        return JsonResponse({'status': 'success', 'kpis': analytics_engine.KPIs()})
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': f'Error al calcular KPIs: {e}'}, status=500)
+
+
+@user_passes_test(es_admin, login_url='/')
+def api_intelligence_feed(request):
+    """
+    Feed en tiempo real por cursor GET ?since=<iso>. Fuentes reales:
+    User.date_joined y Cita.fecha_creacion (el sistema no registra
+    reagendaciones ni pagos; esa ausencia se declara en la UI).
+    """
+    desde = request.GET.get('since', '').strip() or None
+    limite = request.GET.get('limite', '').strip()
+    limite = int(limite) if limite.isdigit() else 50
+    limite = max(10, min(limite, 100))
+    try:
+        data = analytics_engine.Feed_Eventos(desde=desde, limite=limite)
+        return JsonResponse({'status': 'success', **data})
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': f'Error al leer el feed: {e}'}, status=500)
+
+
+@user_passes_test(es_admin, login_url='/')
+def api_intelligence_pacientes(request):
+    """
+    Listados paginados (25/pg): nuevos / activos / atencion / programados.
+    Filtros: psicologo, preferencia, estado, primera_cita, q (texto).
+    """
+    vista = request.GET.get('vista', 'nuevos').strip().lower()
+    if vista not in ('nuevos', 'activos', 'atencion', 'programados'):
+        vista = 'nuevos'
+    page = request.GET.get('page', '').strip()
+    page = int(page) if page.isdigit() else 1
+    psicologo_id, _, _ = _int_fechas_filtro(request)
+    preferencia = request.GET.get('preferencia', '').strip() or None
+    estado = request.GET.get('estado', '').strip() or None
+    primera = request.GET.get('primera_cita', '').strip() or None
+    q = request.GET.get('q', '').strip() or None
+
+    try:
+        if vista == 'programados':
+            data = analytics_engine.Proximas_Citas(psicologo_id=psicologo_id, desde_pagina=page)
+            return JsonResponse({'status': 'success', 'vista': 'programados',
+                                 **data, 'total_paginas': data['pages']})
+        data = analytics_engine.Listado_Pacientes(
+            vista=vista, page=page, per_page=25,
+            psicologo_id=psicologo_id, preferencia=preferencia,
+            estado=estado, primera_cita=primera, q=q)
+        return JsonResponse({'status': 'success', 'total_paginas': data['pages'], **data})
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': f'Error al listar pacientes: {e}'}, status=500)
+
+
+@user_passes_test(es_admin, login_url='/')
+def api_intelligence_psicologos(request):
+    """Ranking real por psicologo (pacientes, estados, retencion, horario top)."""
+    try:
+        return JsonResponse({'status': 'success', 'ranking': analytics_engine.Ranking_Psicologos()})
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': f'Error al calcular ranking: {e}'}, status=500)
+
+
+@user_passes_test(es_admin, login_url='/')
+def api_intelligence_horarios(request):
+    """
+    Curva de horarios: heatmap dia x hora, franjas, dias y tipos.
+    Filtros: psicologo, desde, hasta (rango de la Cita).
+    """
+    psicologo_id, desde, hasta = _int_fechas_filtro(request)
+    try:
+        data = analytics_engine.Heatmap_Horarios(psicologo_id=psicologo_id,
+                                                 desde=desde, hasta=hasta)
+        return JsonResponse({'status': 'success', 'curva': data,
+                             'evolucion': analytics_engine.Evolucion_Mensual(6)})
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': f'Error al calcular horarios: {e}'}, status=500)
+
+
+@user_passes_test(es_admin, login_url='/')
+def api_intelligence_insights(request):
+    """Embudo, comportamiento y hallazgos automaticos (deterministas, sin IA)."""
+    try:
+        data = analytics_engine.Insights()
+        embudo = analytics_engine.Embudo_y_Comportamiento()
+        return JsonResponse({'status': 'success', **data, 'embudo': embudo['embudo'],
+                             'caidas': embudo['caidas'],
+                             'comportamiento': embudo['comportamiento']})
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': f'Error al generar insights: {e}'}, status=500)
+
+
+@user_passes_test(es_admin, login_url='/')
+def api_intelligence_exportar(request):
+    """
+    Exportacion CSV / Excel (utf-8-sig, mismo patron del reporte de
+    crecimiento). Vistas: kpis, nuevos, activos, atencion, programados,
+    psicologos, horarios. Solo lectura; sin datos simulados.
+    """
+    vista = request.GET.get('vista', 'kpis').strip().lower()
+    vistas_validas = ('kpis', 'nuevos', 'activos', 'atencion', 'programados',
+                      'psicologos', 'horarios')
+    if vista not in vistas_validas:
+        return JsonResponse({'status': 'error', 'message': 'Vista de exportacion invalida.'}, status=400)
+    formato = request.GET.get('formato', 'csv').strip().lower()
+    if formato not in ('csv', 'excel'):
+        formato = 'csv'
+    psicologo_id, desde, hasta = _int_fechas_filtro(request)
+
+    try:
+        if vista == 'kpis':
+            headers, rows = analytics_engine.Filas_Exportacion_KPIs()
+        else:
+            headers, rows = analytics_engine.Filas_Exportacion(
+                vista, psicologo_id=psicologo_id, desde=desde, hasta=hasta)
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': f'Error al exportar: {e}'}, status=500)
+
+    import io
+    buffer = io.StringIO()
+    if formato == 'excel':
+        # BOM utf-8 para que Excel español abra el archivo con acentos ok
+        buffer.write('\ufeff')
+        buffer.write('sep=,\r\n')
+    writer = csv.writer(buffer)
+    writer.writerow(headers)
+    for row in rows:
+        writer.writerow(['' if v is None else v for v in row])
+    respuesta = HttpResponse(buffer.getvalue(), content_type='text/csv; charset=utf-8')
+    nombre = f'intelligence_{vista}_{timezone.localdate().isoformat()}.csv'
+    respuesta['Content-Disposition'] = f'attachment; filename="{nombre}"'
+    return respuesta

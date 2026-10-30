@@ -306,6 +306,9 @@ class Cita(models.Model):
             models.Index(fields=['fecha', 'estado']),
             models.Index(fields=['psicologo', 'fecha', 'estado']),
             models.Index(fields=['paciente', 'estado']), # 🔥 OPTIMIZADO: Historial del paciente rápido
+            # Intelligence Center (30/10/2026): secuencias por paciente y curva de horarios
+            models.Index(fields=['paciente', 'fecha']),
+            models.Index(fields=['fecha', 'hora']),
         ]
 
     def __str__(self):
@@ -706,6 +709,10 @@ class EventoAuditoria(models.Model):
 
     class Meta:
         ordering = ['-timestamp']
+        indexes = [
+            # Intelligence Center (30/10/2026): feed por tipo de evento
+            models.Index(fields=['accion', 'timestamp']),
+        ]
 
     def __str__(self): 
         usr = self.usuario.username if self.usuario else "Sistema"
