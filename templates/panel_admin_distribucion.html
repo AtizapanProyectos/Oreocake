@@ -1,0 +1,871 @@
+{% extends 'base.html' %}
+
+{% block title %}Distribución & Simulador de Reasignación · HOPE{% endblock %}
+
+{% block content %}
+<style>
+/* =============================================================
+   DISTRIBUCION & SIMULADOR DE REASIGNACION (30/10/2026) - HOPE ADMIN
+   Paleta heredada del dashboard: #5A3FA3 · #F85B8C · #F27C21 · #25B8B8
+   SOLO SIMULACION: ninguna accion escribe en la base de datos.
+   ============================================================= */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+.dist-page {
+  --p:      #5A3FA3;
+  --p-lgt:  #EDE9FF;
+  --p-mid:  #8B72D4;
+  --pink:   #F85B8C;
+  --pink-l: #FFF0F5;
+  --org:    #F27C21;
+  --org-l:  #FFF5EC;
+  --teal:   #25B8B8;
+  --teal-l: #E8FAFA;
+  --ok:     #1F9D55;
+  --ok-l:   #E9F9EF;
+  --risk:   #D64545;
+  --risk-l: #FDECEC;
+
+  --ink:   #0D0D18;
+  --ink2:  #3D3D55;
+  --ink3:  #7A7A99;
+  --ink4:  #B8B8CC;
+  --surf:  #F6F4FF;
+  --wht:   #FFFFFF;
+  --bd:    rgba(90,63,163,0.09);
+
+  --fd:    'Outfit', sans-serif;
+  --fb:    'Plus Jakarta Sans', sans-serif;
+
+  --rsm: 12px; --rmd: 18px; --rlg: 26px;
+  --shc: 0 2px 16px rgba(90,63,163,0.07);
+  --shh: 0 10px 36px rgba(90,63,163,0.13);
+
+  background: var(--surf);
+  background-image:
+    radial-gradient(ellipse 70% 40% at 15% -5%, rgba(37,184,184,0.07) 0%, transparent 55%),
+    radial-gradient(ellipse 50% 35% at 85% 95%, rgba(90,63,163,0.06) 0%, transparent 50%);
+  color: var(--ink);
+  font-family: var(--fb);
+  min-height: 100vh;
+}
+.dist-wrap { max-width: 1600px; margin: 0 auto; padding: 26px 18px 90px; }
+
+/* ---------- MASTHEAD ---------- */
+.dist-mast {
+  display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap;
+  background: var(--wht); border: 1px solid var(--bd); border-radius: var(--rlg);
+  padding: 18px 22px; margin-bottom: 18px; box-shadow: var(--shc); position: relative; overflow: hidden;
+}
+.dist-mast::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  background: linear-gradient(90deg, var(--teal), var(--p), var(--pink));
+}
+.dist-back {
+  display: inline-flex; align-items: center; gap: 8px; font-weight: 700; font-size: 13px;
+  color: var(--p); text-decoration: none; padding: 9px 16px; border-radius: 999px;
+  border: 1.5px solid var(--p-lgt); background: var(--wht); transition: .2s;
+}
+.dist-back:hover { background: var(--p-lgt); }
+.dist-title { font-family: var(--fd); font-size: clamp(20px, 3vw, 26px); line-height: 1.15; }
+.dist-title em { font-style: italic; color: var(--teal); }
+.dist-sub { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 1.5px; color: var(--ink3); margin-top: 4px; }
+
+.dist-btn {
+  border: none; cursor: pointer; border-radius: 999px; font-weight: 800; font-family: var(--fd);
+  transition: transform .15s, box-shadow .2s, opacity .2s; display: inline-flex; align-items: center; gap: 8px;
+  padding: 10px 18px; font-size: 13px; text-decoration: none;
+}
+.dist-btn:hover { transform: translateY(-1px); box-shadow: var(--shh); }
+.dist-btn:disabled { opacity: .5; cursor: wait; }
+.dist-btn-p { background: linear-gradient(135deg, var(--p), var(--p-mid)); color: var(--wht); }
+.dist-btn-teal { background: linear-gradient(135deg, var(--teal), #178a8a); color: var(--wht); }
+.dist-btn-soft { background: var(--p-lgt); color: var(--p); }
+.dist-btn-xs { padding: 7px 13px; font-size: 12px; }
+
+.dist-banner {
+  background: var(--teal-l); border: 1px solid rgba(37,184,184,.3); border-radius: var(--rsm);
+  color: #106666; padding: 11px 16px; font-size: 12.5px; font-weight: 700;
+  display: flex; gap: 10px; align-items: center; margin-bottom: 16px; line-height: 1.5;
+}
+.dist-banner i { color: var(--teal); font-size: 15px; flex: none; }
+
+/* ---------- TOOLBAR ---------- */
+.dist-toolbar {
+  background: var(--wht); border: 1px solid var(--bd); border-radius: var(--rmd);
+  padding: 12px 14px; margin-bottom: 16px; box-shadow: var(--shc);
+  display: flex; flex-wrap: wrap; gap: 12px; align-items: center; position: sticky; top: 10px; z-index: 40;
+}
+.dist-legend { display: flex; gap: 12px; flex-wrap: wrap; font-size: 11.5px; font-weight: 700; color: var(--ink3); }
+.dist-legend span { display: inline-flex; align-items: center; gap: 5px; }
+.dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+.dot-activo { background: var(--teal); }
+.dot-nuevo { background: var(--ok); }
+.dot-riesgo { background: var(--org); }
+.dot-inactivo { background: var(--risk); }
+.dist-search {
+  border: 1.6px solid var(--bd); border-radius: 10px; padding: 8px 12px; font-size: 13px;
+  font-family: var(--fb); color: var(--ink); background: var(--surf); width: 230px; outline: none;
+}
+.dist-search:focus { border-color: var(--teal); background: var(--wht); }
+
+/* ---------- LAYOUT ---------- */
+.dist-layout { display: grid; grid-template-columns: 1fr; gap: 16px; }
+@media (min-width: 1200px) { .dist-layout { grid-template-columns: 1fr 350px; align-items: start; } }
+
+.dist-tablero { display: grid; grid-template-columns: repeat(1, 1fr); gap: 14px; }
+@media (min-width: 768px) { .dist-tablero { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 1550px) { .dist-tablero { grid-template-columns: repeat(3, 1fr); } }
+
+/* ---------- TARJETA PSICOLOGO (zona de soltar) ---------- */
+.dist-card {
+  background: var(--wht); border: 1.5px solid var(--bd); border-radius: var(--rmd);
+  padding: 15px; box-shadow: var(--shc); transition: box-shadow .2s, outline-color .15s, background .15s;
+  outline: 2px dashed transparent; outline-offset: -3px;
+}
+.dist-card.drop-ok { outline-color: var(--teal); }
+.dist-card.drop-over { outline-color: var(--p); background: var(--p-lgt); }
+.dist-head { display: flex; align-items: center; gap: 11px; margin-bottom: 10px; }
+.dist-ava {
+  width: 42px; height: 42px; border-radius: 50%; display: grid; place-items: center; flex: none;
+  font-family: var(--fd); font-weight: 900; font-size: 16px; color: var(--wht);
+}
+.dist-ava.mujer { background: linear-gradient(135deg, var(--pink), #D6336C); }
+.dist-ava.hombre { background: linear-gradient(135deg, var(--p), var(--p-mid)); }
+.dist-name { font-family: var(--fd); font-weight: 800; font-size: 14.5px; line-height: 1.2; }
+.dist-meta { font-size: 11px; color: var(--ink3); font-weight: 600; margin-top: 3px; display: flex; gap: 7px; flex-wrap: wrap; align-items: center; }
+.dist-badge { display: inline-flex; align-items: center; gap: 4px; border-radius: 999px; padding: 2px 9px; font-size: 10.5px; font-weight: 800; white-space: nowrap; }
+.dist-b-ok { background: var(--ok-l); color: var(--ok); }
+.dist-b-bad { background: var(--risk-l); color: var(--risk); }
+.dist-b-warn { background: var(--org-l); color: var(--org); }
+.dist-b-info { background: var(--p-lgt); color: var(--p); }
+.dist-b-teal { background: var(--teal-l); color: #157B7B; }
+
+.dist-cargabar { height: 7px; border-radius: 999px; background: var(--surf); margin: 9px 0 10px; overflow: hidden; }
+.dist-cargafill { height: 100%; border-radius: 999px; transition: width .5s ease, background .3s; }
+
+.dist-stats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-bottom: 10px; }
+.dist-stat { background: var(--surf); border-radius: 10px; padding: 7px 4px; text-align: center; position: relative; }
+.dist-stat .v { font-family: var(--fd); font-weight: 900; font-size: 16px; color: var(--ink); line-height: 1; }
+.dist-stat .k { font-size: 8.5px; font-weight: 800; text-transform: uppercase; letter-spacing: .4px; color: var(--ink3); margin-top: 3px; }
+.dist-stat .dif { position: absolute; top: -6px; right: -3px; font-size: 9px; font-weight: 900; border-radius: 999px; padding: 1px 5px; }
+.dif.up { background: var(--teal-l); color: #157B7B; }
+.dif.down { background: var(--org-l); color: var(--org); }
+
+/* ---------- BURBUJAS DE PACIENTES ---------- */
+.dist-chips { display: flex; flex-wrap: wrap; gap: 6px; max-height: 250px; overflow-y: auto; padding: 2px; }
+.dist-chip {
+  cursor: grab; user-select: none;
+  border: 1.5px solid var(--bd); border-radius: 999px; background: var(--wht);
+  padding: 4px 10px 4px 6px; font-size: 11.5px; font-weight: 700; color: var(--ink2);
+  display: inline-flex; align-items: center; gap: 6px; line-height: 1.2; max-width: 100%;
+  transition: box-shadow .15s, border-color .15s, opacity .15s;
+}
+.dist-chip:hover { border-color: var(--p); box-shadow: 0 2px 8px rgba(90,63,163,.15); }
+.dist-chip:active { cursor: grabbing; }
+.dist-chip.dragging { opacity: .35; }
+.dist-chip.moved-out { opacity: .3; text-decoration: line-through; pointer-events: none; }
+.dist-chip.moved-in { border-color: var(--teal); background: var(--teal-l); animation: chipIn .3s ease; }
+@keyframes chipIn { from { transform: scale(.6); opacity: 0; } to { transform: none; opacity: 1; } }
+.chip-dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+.chip-pref {
+  font-size: 9px; font-weight: 900; border-radius: 50%; width: 15px; height: 15px; flex: none;
+  display: grid; place-items: center; color: var(--wht);
+}
+.pref-Mujer { background: var(--pink); }
+.pref-Hombre { background: var(--p); }
+.pref-Indistinto { background: var(--teal); }
+.pref-rest { background: var(--ink4); }
+.chip-flag { font-size: 10px; font-weight: 900; color: var(--ok); }
+.chip-est { font-size: 9px; font-weight: 800; padding: 1px 6px; border-radius: 999px; flex: none; }
+.ce-activo { background: var(--teal-l); color: #157B7B; }
+.ce-en_riesgo { background: var(--org-l); color: var(--org); }
+.ce-inactivo { background: var(--risk-l); color: var(--risk); }
+.ce-nunca { background: var(--p-lgt); color: var(--p); }
+
+/* ---------- PANEL DE SIMULACION ---------- */
+.dist-side { position: sticky; top: 78px; display: flex; flex-direction: column; gap: 12px; }
+.sim-card { background: var(--wht); border: 1.5px solid var(--bd); border-radius: var(--rmd); padding: 15px; box-shadow: var(--shc); }
+.sim-title { font-family: var(--fd); font-size: 15px; font-weight: 800; display: flex; align-items: center; gap: 9px; }
+.sim-title i { color: var(--teal); }
+.sim-count { background: var(--teal); color: var(--wht); border-radius: 999px; padding: 1px 10px; font-size: 12px; }
+.sim-list { display: flex; flex-direction: column; gap: 9px; margin-top: 12px; max-height: 46vh; overflow-y: auto; }
+.sim-move { border: 1px solid var(--bd); border-radius: var(--rsm); padding: 10px 12px; background: var(--surf); }
+.sim-move-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+.sim-move-autor { font-size: 13px; font-weight: 800; color: var(--ink); line-height: 1.3; }
+.sim-move-ruta { font-size: 11.5px; color: var(--ink3); font-weight: 700; margin-top: 3px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.sim-resumen { margin-top: 7px; font-size: 11.5px; font-weight: 700; display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.sim-ok { color: var(--ok); }
+.sim-aviso { color: var(--org); }
+.sim-bad { color: var(--risk); }
+.sim-detalles { margin-top: 6px; font-size: 11px; color: var(--ink3); line-height: 1.55; display: none; border-top: 1px dashed var(--bd); padding-top: 6px; }
+.sim-move.open .sim-detalles { display: block; }
+.sim-undo { border: none; background: var(--risk-l); color: var(--risk); border-radius: 8px; width: 26px; height: 26px; cursor: pointer; font-weight: 900; flex: none; }
+.sim-resumen-global { margin-top: 12px; border-top: 2px solid var(--bd); padding-top: 10px; font-size: 12px; font-weight: 700; color: var(--ink2); line-height: 1.7; }
+.sim-empty { text-align: center; color: var(--ink3); font-size: 12.5px; padding: 24px 8px; line-height: 1.7; }
+
+/* ---------- MODAL DETALLE PACIENTE ---------- */
+.dist-modal-bg {
+  position: fixed; inset: 0; background: rgba(13,13,24,.55); z-index: 90;
+  display: none; align-items: flex-start; justify-content: center; padding: 40px 16px; overflow-y: auto;
+}
+.dist-modal-bg.show { display: flex; }
+.dist-modal {
+  background: var(--wht); border-radius: var(--rlg); max-width: 780px; width: 100%;
+  box-shadow: 0 30px 80px rgba(13,13,24,.35); animation: modIn .25s ease;
+}
+@keyframes modIn { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+.mod-head { padding: 20px 22px 14px; border-bottom: 2px solid var(--bd); display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; position: relative; }
+.mod-head::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; border-radius: var(--rlg) var(--rlg) 0 0; background: linear-gradient(90deg, var(--p), var(--pink), var(--teal)); }
+.mod-name { font-family: var(--fd); font-size: 20px; font-weight: 900; }
+.mod-close { border: none; background: var(--surf); width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 14px; color: var(--ink2); flex: none; }
+.mod-body { padding: 16px 22px 22px; max-height: 66vh; overflow-y: auto; }
+.mod-sec { margin-bottom: 18px; }
+.mod-sec-t { font-size: 11px; font-weight: 900; letter-spacing: .8px; text-transform: uppercase; color: var(--p); margin-bottom: 8px; display: flex; gap: 7px; align-items: center; }
+.mod-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(215px, 1fr)); gap: 8px; }
+.mod-field { background: var(--surf); border-radius: 10px; padding: 9px 12px; }
+.mod-field .fk { font-size: 9.5px; font-weight: 800; text-transform: uppercase; letter-spacing: .4px; color: var(--ink3); }
+.mod-field .fv { font-size: 12.5px; font-weight: 700; color: var(--ink); margin-top: 2px; line-height: 1.4; overflow-wrap: anywhere; }
+.mod-sug { border: 1.5px solid var(--bd); border-radius: var(--rsm); padding: 11px 13px; margin-bottom: 9px; transition: border-color .15s; }
+.mod-sug:hover { border-color: var(--teal); }
+.mod-sug-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+.mod-sug-nombre { font-weight: 800; font-size: 13.5px; }
+.mod-sug-carga { font-size: 11.5px; font-weight: 800; color: var(--teal); }
+.mod-sug-checks { font-size: 11px; color: var(--ink3); margin-top: 5px; line-height: 1.55; }
+.mod-sug-checks i.fa-circle-check { color: var(--ok); }
+.mod-sug-checks i.fa-triangle-exclamation { color: var(--org); }
+.mod-sug-checks i.fa-ban { color: var(--risk); }
+.mod-loading { text-align: center; color: var(--ink3); padding: 40px 10px; font-size: 13px; }
+.spin { width: 24px; height: 24px; border: 3px solid var(--p-lgt); border-top-color: var(--p); border-radius: 50%; animation: sp .8s linear infinite; margin: 0 auto 10px; }
+@keyframes sp { to { transform: rotate(360deg); } }
+.dist-err { background: var(--risk-l); color: var(--risk); border-radius: var(--rsm); padding: 11px 15px; font-size: 13px; font-weight: 600; display: none; margin-bottom: 12px; }
+.dist-nota { background: var(--wht); border: 1px dashed rgba(90,63,163,.35); border-radius: var(--rmd); padding: 14px 16px; font-size: 12px; color: var(--ink3); line-height: 1.65; margin-top: 20px; }
+</style>
+
+<div class="dist-page">
+<div class="dist-wrap">
+
+  <div class="dist-mast">
+    <div>
+      <a class="dist-back" href="{% url 'panel_admin_intelligence' %}"><i class="fa-solid fa-arrow-left"></i> Intelligence Center</a>
+      <div class="dist-title" style="margin-top:10px;">Distribución & <em>Simulador de Reasignación</em></div>
+      <div class="dist-sub">Balanceo de carga entre psicólogos · burbujas arrastrables · solo análisis</div>
+    </div>
+    <div style="display:flex;gap:9px;flex-wrap:wrap;">
+      <button class="dist-btn dist-btn-soft" id="btnRefrescar"><i class="fa-solid fa-rotate"></i> Refrescar datos</button>
+      <button class="dist-btn dist-btn-teal" id="btnPlan"><i class="fa-solid fa-wand-magic-sparkles"></i> Plan de balanceo automático</button>
+    </div>
+  </div>
+
+  <div class="dist-banner">
+    <i class="fa-solid fa-shield-halved"></i>
+    <span>Simulación de solo lectura: nada se guarda ni se reasigna en la base de datos. Arrastra una burbuja de paciente hacia otra tarjeta de psicólogo para proyectar el impacto. Toca una burbuja para revisar su formulario de registro y ver sugerencias compatibles.</span>
+  </div>
+
+  <div class="dist-err" id="distErr"></div>
+
+  <div class="dist-toolbar">
+    <input type="text" class="dist-search" id="distQ" placeholder="Buscar paciente...">
+    <div class="dist-legend">
+      <span><span class="dot dot-activo"></span> Activo</span>
+      <span><span class="dot dot-nuevo"></span> Nuevo (sin primera sesión)</span>
+      <span><span class="dot dot-riesgo"></span> En riesgo</span>
+      <span><span class="dot dot-inactivo"></span> Inactivo</span>
+      <span><span class="chip-pref pref-Mujer" style="width:14px;height:14px;font-size:8px">M</span> pidió Mujer</span>
+      <span><span class="chip-pref pref-Hombre" style="width:14px;height:14px;font-size:8px">H</span> pidió Hombre</span>
+      <span><span class="chip-pref pref-Indistinto" style="width:14px;height:14px;font-size:8px">I</span> Indistinto</span>
+    </div>
+  </div>
+
+  <div class="dist-layout">
+    <div class="dist-tablero" id="distTablero">
+      <div class="mod-loading" style="grid-column:1/-1"><div class="spin"></div> Cargando distribución real...</div>
+    </div>
+    <div class="dist-side">
+      <div class="sim-card" id="simPrincipal">
+        <div class="sim-title"><i class="fa-solid fa-flask"></i> Simulación activa <span class="sim-count" id="simCount">0</span></div>
+        <div style="font-size:11.5px;color:var(--ink3);font-weight:600;margin-top:6px;" id="simMedia">Media de carga: --</div>
+        <div class="sim-list" id="simList">
+          <div class="sim-empty">Arrastra pacientes hacia otro psicólogo y aquí verás el impacto en tiempo real: compatibilidad, cambio de carga y avisos.</div>
+        </div>
+        <div class="sim-resumen-global" id="simGlobal" style="display:none"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="dist-nota">
+    <b>Cómo funciona (todo con datos reales, sin datos inventados):</b><br>
+    - La asignación de origen es la real: <b>TratamientoPaciente activo</b> del paciente y, si no existe, la
+    asignación global de su perfil. Los pacientes sin ninguna asignación aparecen en la tarjeta "Sin asignar".<br>
+    - La compatibilidad se evalúa con 4 datos reales: preferencia de género del cuestionario, tipo de sesión que
+    maneja el paciente, esquema de horario vigente del psicólogo y el cruce entre la disponibilidad que declaró
+    el paciente y las franjas que realmente atiende el especialista (Mañana 9-12 / Tarde 12-17 / Noche 17-20).<br>
+    - El plan automático sugiere pacientes nuevos o activos con preferencia "Indistinto" o sin registro que están
+    en psicólogos por encima de la media de activos, hacia el destino compatible con menor carga.<br>
+    - Nada de esto modifica la base de datos ni las asignaciones reales de la plataforma.
+  </div>
+</div>
+</div>
+
+<!-- ===== MODAL DETALLE ===== -->
+<div class="dist-modal-bg" id="modalBg">
+  <div class="dist-modal">
+    <div class="mod-head">
+      <div>
+        <div class="mod-name" id="modNombre">Paciente</div>
+        <div class="dist-meta mod-meta" id="modMeta" style="margin-top:6px;"></div>
+      </div>
+      <button class="mod-close" id="modClose" type="button"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="mod-body" id="modBody">
+      <div class="mod-loading"><div class="spin"></div> Cargando ficha...</div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* =============================================================
+   SIMULADOR DE DISTRIBUCION - JS
+   Los movimientos viven SOLO en el navegador (STATE.moves): el
+   servidor entrega datos reales y compatibilidades, jamas escribe.
+   Convencion: el bucket de pacientes sin asignar usa id '_sin'.
+   ============================================================= */
+var D = { psicologos: [], sin_asignar: [], porId: {}, maxActivos: 1, media: 0 };
+var STATE = { moves: [], base: {}, dragging: null };
+
+/* ---------- utilidades ---------- */
+function esc(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+function mostrarError(m) {
+  var el = document.getElementById('distErr');
+  el.textContent = m; el.style.display = 'block';
+  clearTimeout(el._t); el._t = setTimeout(function () { el.style.display = 'none'; }, 7000);
+}
+function fetchJson(url) {
+  return fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(function (r) { return r.json(); });
+}
+function iniciales(nombre) {
+  var t = String(nombre || '').replace(/^(Dra\.|Dr\.)\s*/, '').trim();
+  return t.charAt(0).toUpperCase();
+}
+function prefLetra(p) {
+  return { 'Mujer': 'M', 'Hombre': 'H', 'Indistinto': 'I' }[p] || '?';
+}
+function prefClase(p) {
+  return ['Mujer', 'Hombre', 'Indistinto'].indexOf(p) >= 0 ? 'pref-' + p : 'pref-rest';
+}
+function nombrePsi(id) {
+  if (id === '_sin' || id === null || id === undefined) return 'Sin asignar';
+  var p = D.porId[id];
+  return p ? p.nombre : ('Psicólogo ' + id);
+}
+function nombreCorto(estado) {
+  return { 'activo': 'Activo', 'en_riesgo': 'Riesgo', 'inactivo': 'Inactivo', 'nunca': 'Nuevo' }[estado] || estado;
+}
+
+/* ---------- niveles base y proyección ---------- */
+function baseDe(id) {
+  if (!STATE.base[id]) {
+    var p = D.porId[id];
+    STATE.base[id] = p ? { activos: p.activos, nuevos: p.nuevos, en_riesgo: p.en_riesgo,
+                           inactivos: p.inactivos, total: p.total }
+                       : { activos: 0, nuevos: 0, en_riesgo: 0, inactivos: 0, total: 0 };
+  }
+  return STATE.base[id];
+}
+function actualDe(id) {
+  var b = { activos: baseDe(id).activos, nuevos: baseDe(id).nuevos, en_riesgo: baseDe(id).en_riesgo,
+            inactivos: baseDe(id).inactivos, total: baseDe(id).total };
+  STATE.moves.forEach(function (m) {
+    var corta = String(m.de) === String(id);
+    var entra = String(m.ha) === String(id);
+    if (!corta && !entra) return;
+    var s = m.paciente.estado === 'en_riesgo' ? 'en_riesgo'
+          : (m.paciente.estado === 'inactivo' ? 'inactivo' : null);
+    var esActivo = m.paciente.estado === 'activo';
+    var esNuevo = m.paciente.nuevo || m.paciente.estado === 'nunca';
+    var signo = entra ? 1 : -1;
+    if (esActivo) b.activos += signo;
+    if (esNuevo) b.nuevos += signo;
+    if (s === 'en_riesgo') b.en_riesgo += signo;
+    if (s === 'inactivo') b.inactivos += signo;
+    b.total += signo;
+  });
+  return b;
+}
+function movDe(pid) {
+  for (var i = 0; i < STATE.moves.length; i++) {
+    if (STATE.moves[i].paciente.pid === pid) return STATE.moves[i];
+  }
+  return null;
+}
+function localizarPaciente(pid) {
+  var out = null;
+  D.psicologos.forEach(function (p) {
+    p.chips.forEach(function (c) { if (c.pid === pid) { out = Object.assign({}, c); out._origen = p.id; } });
+  });
+  D.sin_asignar.forEach(function (c) { if (c.pid === pid) { out = Object.assign({}, c); out._origen = '_sin'; } });
+  STATE.moves.forEach(function (m) { if (m.paciente.pid === pid) out = Object.assign({}, m.paciente); });
+  return out;
+}
+
+/* ---------- RENDER: burbuja ---------- */
+function chipHTML(c, destinoDe) {
+  var mov = movDe(c.pid);
+  if (mov) {
+    if (String(destinoDe) === String(mov.de)) {
+      return '<span class="dist-chip moved-out" title="Simulado hacia ' + esc(nombrePsi(mov.ha)) + '">' +
+        esc(c.nombre) + '</span>';
+    }
+    if (String(destinoDe) === String(mov.ha)) {
+      var movido = Object.assign({}, c);
+      return chipInterior(movido, mov.ha, true);
+    }
+    return '';
+  }
+  return chipInterior(c, destinoDe, false);
+}
+function chipInterior(c, destinoDe, inyectada) {
+  var dotCls = { activo: 'dot-activo', en_riesgo: 'dot-riesgo', inactivo: 'dot-inactivo', nunca: 'dot-nuevo' };
+  return '<span class="dist-chip' + (inyectada ? ' moved-in' : '') + '" draggable="true" data-pid="' + c.pid + '" data-origen="' + (inyectada ? movDe(c.pid).de : destinoDe) + '" ' +
+    'title="' + esc(c.nombre) + ' · ' + esc(c.estado_label) + (c.franjas.length ? ' · disponibilidad: ' + esc(c.franjas.join(', ')) : '') + '">' +
+    '<span class="chip-dot ' + (dotCls[c.estado] || '') + '"></span>' +
+    '<span class="chip-pref ' + prefClase(c.preferencia) + '">' + prefLetra(c.preferencia) + '</span>' +
+    esc(c.nombre) +
+    (c.nuevo ? ' <span class="chip-flag"><i class="fa-solid fa-seedling"></i></span>' : '') +
+    '<span class="chip-est ' + ('ce-' + (c.estado || '')) + '">' + esc(nombreCorto(c.estado)) + '</span>' +
+    '</span>';
+}
+
+/* ---------- RENDER: tarjeta ---------- */
+function statHTML(k, v, dif) {
+  var difHTML = dif ? '<span class="dif ' + (dif > 0 ? 'up' : 'down') + '">' + (dif > 0 ? '+' : '') + dif + '</span>' : '';
+  return '<div class="dist-stat">' + difHTML + '<div class="v">' + v + '</div><div class="k">' + k + '</div></div>';
+}
+function cardHTML(p, esPseudo) {
+  var b = actualDe(p.id);
+  var dif = {
+    activos: b.activos - baseDe(p.id).activos,
+    nuevos: b.nuevos - baseDe(p.id).nuevos,
+    en_riesgo: b.en_riesgo - baseDe(p.id).en_riesgo
+  };
+  var pct = Math.min(100, Math.round(100 * b.activos / (D.maxActivos || 1)));
+  var colorBarra = pct >= 80 ? 'linear-gradient(90deg,#F27C21,#D64545)'
+                             : 'linear-gradient(90deg, var(--teal), var(--p-mid))';
+
+  var chips = '';
+  var fuente = esPseudo ? D.sin_asignar : p.chips;
+  fuente.forEach(function (c) { chips += chipHTML(c, p.id); });
+  /* pacientes simulados hacia esta tarjeta (menu de destino) */
+  if (!esPseudo) {
+    STATE.moves.forEach(function (m) {
+      if (String(m.ha) === String(p.id) && !fuente.some(function (c) { return c.pid === m.paciente.pid; })) {
+        chips += chipHTML(m.paciente, p.id);
+      }
+    });
+  }
+
+  var head = '<div class="dist-head">' +
+    '<div class="dist-ava ' + (esPseudo ? '' : (p.genero === 'Mujer' ? 'mujer' : 'hombre')) + '" style="' + (esPseudo ? 'background:linear-gradient(135deg,#B8B8CC,#7A7A99);' : '') + '">' + (esPseudo ? '?' : esc(iniciales(p.nombre))) + '</div>' +
+    '<div style="flex:1;min-width:0">';
+  if (esPseudo) {
+    head += '<div class="dist-name">Sin asignar</div>' +
+      '<div class="dist-meta"><span class="dist-badge dist-b-warn"><i class="fa-solid fa-triangle-exclamation"></i> pacientes sin asignación real</span></div>';
+  } else {
+    head += '<div class="dist-name">' + esc(p.nombre) + '</div>' +
+      '<div class="dist-meta">' +
+      '<span class="dist-badge ' + (p.esta_activo ? 'dist-b-ok' : 'dist-b-bad') + '">' + (p.esta_activo ? 'Aceptando pacientes' : 'Inactivo en agenda') + '</span>' +
+      (p.especialidad ? '<span>' + esc(p.especialidad) + '</span>' : '') +
+      '</div>';
+  }
+  head += '</div>';
+  if (!esPseudo) {
+    head += '<div style="text-align:right;flex:none">' +
+      (p.esquema_ok ? '<span class="dist-badge dist-b-ok"><i class="fa-solid fa-calendar-check"></i> Esquema vigente</span>'
+                    : '<span class="dist-badge dist-b-bad"><i class="fa-solid fa-calendar-xmark"></i> Sin esquema</span>') +
+      '<div class="dist-meta" style="justify-content:flex-end;margin-top:5px;">' +
+      '<span title="Franjas según su esquema de horario"><i class="fa-solid fa-clock" style="opacity:.4"></i> ' + esc(p.franjas.join(' · ') || 'Sin franjas') + '</span>' +
+      '<span title="Horas libres de su esquaba en la semana (capacidad menos citas próximas)"><i class="fa-solid fa-hourglass-half" style="opacity:.4"></i> ' + esc(String(p.horas_libres)) + ' h libres</span>' +
+      '</div></div>';
+  }
+  head += '</div>';
+
+  return '<div class="dist-card" data-card="' + p.id + '">' + head +
+    '<div class="dist-cargabar"><div class="dist-cargafill" style="width:' + pct + '%;background:' + colorBarra + '"></div></div>' +
+    '<div class="dist-stats">' +
+    statHTML('Activos', b.activos, dif.activos) +
+    statHTML('Nuevos', b.nuevos, dif.nuevos) +
+    statHTML('Riesgo', b.en_riesgo, dif.en_riesgo) +
+    statHTML('Inactv', b.inactivos, 0) +
+    statHTML('Total', b.total, 0) +
+    '</div>' +
+    '<div class="dist-chips">' + chips + '</div>' +
+    '</div>';
+}
+
+function renderTablero() {
+  var max = 1;
+  D.psicologos.forEach(function (p) {
+    var b = actualDe(p.id);
+    if (b.activos > max) max = b.activos;
+  });
+  D.maxActivos = max;
+  var h = D.psicologos.map(function (p) { return cardHTML(p, false); }).join('');
+  var pseudo = {
+    id: '_sin', nombre: 'Sin asignar', genero: '',
+    total: D.sin_asignar.length,
+    activos: D.sin_asignar.filter(function (c) { return c.estado === 'activo'; }).length,
+    nuevos: D.sin_asignar.filter(function (c) { return c.nuevo || c.estado === 'nunca'; }).length,
+    en_riesgo: D.sin_asignar.filter(function (c) { return c.estado === 'en_riesgo'; }).length,
+    inactivos: D.sin_asignar.filter(function (c) { return c.estado === 'inactivo'; }).length
+  };
+  D.porId['_sin'] = pseudo;
+  h += cardHTML(pseudo, true);
+  document.getElementById('distTablero').innerHTML = h;
+  aplicarFiltro();
+  enlazarDnD();
+}
+function aplicarFiltro() {
+  var q = document.getElementById('distQ').value.trim().toLowerCase();
+  document.querySelectorAll('.dist-chip[data-pid]').forEach(function (chip) {
+    var pasa = !q || chip.textContent.toLowerCase().indexOf(q) >= 0;
+    chip.style.display = pasa ? '' : 'none';
+  });
+}
+
+/* ---------- DRAG & DROP ---------- */
+function enlazarDnD() {
+  document.querySelectorAll('.dist-chip[data-pid]').forEach(function (chip) {
+    var pid = parseInt(chip.dataset.pid, 10);
+
+    chip.addEventListener('dragstart', function (e) {
+      var mov = movDe(pid);
+      var de = mov ? mov.de : chip.dataset.origen;
+      if (de === '_sin') de = '_sin'; else de = parseInt(de, 10);
+      STATE.dragging = { pid: pid, de: de };
+      chip.classList.add('dragging');
+      try { e.dataTransfer.setData('text/plain', String(pid)); } catch (err) { }
+      document.querySelectorAll('.dist-card').forEach(function (card) {
+        if (String(card.dataset.card) !== String(de)) card.classList.add('drop-ok');
+      });
+    });
+    chip.addEventListener('dragend', function () {
+      chip.classList.remove('dragging');
+      STATE.dragging = null;
+      document.querySelectorAll('.dist-card').forEach(function (c) { c.classList.remove('drop-ok', 'drop-over'); });
+    });
+
+    /* toque: click abre la ficha del paciente (sugerencias incluidas) */
+    chip.addEventListener('click', function () { abrirDetalle(pid); });
+  });
+
+  document.querySelectorAll('.dist-card').forEach(function (card) {
+    var id = card.dataset.card;
+    card.addEventListener('dragover', function (e) {
+      if (STATE.dragging === null) return;
+      if (String(STATE.dragging.de) === String(id)) return;
+      e.preventDefault();
+      card.classList.add('drop-over');
+    });
+    card.addEventListener('dragleave', function () { card.classList.remove('drop-over'); });
+    card.addEventListener('drop', function (e) {
+      e.preventDefault();
+      card.classList.remove('drop-over');
+      if (STATE.dragging === null) return;
+      var drag = STATE.dragging;
+      STATE.dragging = null;
+      var ha = id === '_sin' ? '_sin' : parseInt(id, 10);
+      intentarMovimiento(drag.pid, drag.de, ha);
+    });
+  });
+}
+
+/* ---------- MOVIMIENTO (solo en memoria) ---------- */
+function intentarMovimiento(pid, de, ha) {
+  var paciente = localizarPaciente(pid);
+  if (!paciente) return;
+  if (de === undefined) de = paciente._origen;
+  if (String(ha) === String(de)) return;
+
+  var mov = movDe(pid);
+  if (mov) STATE.moves.splice(STATE.moves.indexOf(mov), 1);
+
+  var nuevo = { paciente: paciente, de: de, ha: ha, checks: null, resumen: 'Evaluando compatibilidad...', estado: 'cargando', destino_hoy: null };
+  STATE.moves.push(nuevo);
+  refreshUI();
+
+  if (ha === '_sin') {
+    nuevo.estado = 'listo';
+    nuevo.resumen = 'Retiro de asignación';
+    nuevo.checks = [{ nivel: 'aviso', texto: 'Queda como paciente sin psicólogo asignado.' }];
+    refreshUI();
+    return;
+  }
+  fetchJson('/panel-admin/api/intelligence/compatibilidad/?paciente=' + pid + '&psicologo=' + ha)
+    .then(function (d) {
+      if (d.status !== 'success') { nuevo.estado = 'error'; nuevo.resumen = d.message || 'Error'; refreshUI(); return; }
+      nuevo.estado = 'listo';
+      nuevo.checks = d.compatibilidad.checks;
+      nuevo.resumen = d.compatibilidad.resumen;
+      nuevo.destino_hoy = d.compatibilidad.destino_hoy;
+      refreshUI();
+    })
+    .catch(function (e) { nuevo.estado = 'error'; nuevo.resumen = 'Fallo de red: ' + e.message; refreshUI(); });
+}
+
+/* ---------- PANEL DE SIMULACION ---------- */
+function refreshUI() {
+  document.getElementById('simCount').textContent = STATE.moves.length;
+  document.getElementById('simMedia').textContent = 'Media de carga (activos): ' + D.media;
+  var lista = document.getElementById('simList');
+  if (!STATE.moves.length) {
+    lista.innerHTML = '<div class="sim-empty">Arrastra pacientes hacia otro psicólogo y aquí verás el impacto en tiempo real: compatibilidad, cambio de carga y avisos.</div>';
+  } else {
+    lista.innerHTML = STATE.moves.map(function (m, i) {
+      var veredicto = String(m.resumen || '');
+      var clase = veredicto.indexOf('Incompatible') === 0 ? 'sim-bad'
+        : (veredicto.indexOf('Compatible con avisos') === 0 ? 'sim-aviso'
+          : (m.estado === 'listo' ? 'sim-ok' : ''));
+      var icono = m.estado === 'cargando' ? 'fa-spinner fa-spin'
+        : (m.estado === 'error' ? 'fa-triangle-exclamation' : 'fa-circle-check');
+      var destinoHoy = m.destino_hoy
+        ? ' <span style="font-weight:600;color:var(--ink3)">(carga actual del destino: ' + m.destino_hoy.activos + ' activos, ' + m.destino_hoy.nuevos + ' nuevos)</span>' : '';
+      return '<div class="sim-move">' +
+        '<div class="sim-move-head"><div style="flex:1">' +
+        '<div class="sim-move-autor">' + esc(m.paciente.nombre) + '</div>' +
+        '<div class="sim-move-ruta">' + esc(nombrePsi(m.de)) + ' <i class="fa-solid fa-arrow-right-long" style="color:var(--teal)"></i> ' + esc(nombrePsi(m.ha)) + '</div>' +
+        '</div>' +
+        '<button class="sim-undo" type="button" data-undo="' + i + '" title="Deshacer"><i class="fa-solid fa-xmark"></i></button></div>' +
+        '<div class="sim-resumen ' + clase + '"><i class="fa-solid ' + icono + '"></i> ' + esc(veredicto) + destinoHoy +
+        (m.checks ? '<i class="fa-solid fa-chevron-down" data-expand="' + i + '" style="margin-left:auto;opacity:.45;cursor:pointer"></i>' : '') +
+        '</div>' +
+        '<div class="sim-detalles">' +
+        '<div><b>Preferencia del paciente:</b> ' + esc(m.paciente.preferencia || 'sin dato') + '</div>' +
+        '<div><b>Disponibilidad declarada:</b> ' + esc((m.paciente.franjas || []).join(', ') || 'no declaró') + '</div>' +
+        '<div><b>Tipo de sesión:</b> ' + esc((m.paciente.tipos || []).join(', ')) + '</div>' +
+        (m.checks || []).map(function (c) {
+          var ico = c.nivel === 'ok' ? 'fa-circle-check' : (c.nivel === 'aviso' ? 'fa-triangle-exclamation' : 'fa-ban');
+          return '<div><i class="fa-solid ' + ico + '"></i> ' + esc(c.texto) + '</div>';
+        }).join('') +
+        '</div></div>';
+    }).join('');
+    lista.querySelectorAll('[data-undo]').forEach(function (b) {
+      b.onclick = function () { STATE.moves.splice(parseInt(b.dataset.undo, 10), 1); refreshUI(); };
+    });
+    lista.querySelectorAll('[data-expand]').forEach(function (b) {
+      b.onclick = function () { b.closest('.sim-move').classList.toggle('open'); };
+    });
+  }
+
+  var g = document.getElementById('simGlobal');
+  if (STATE.moves.length) {
+    var cambios = [];
+    Object.keys(D.porId).forEach(function (id) {
+      var a = actualDe(id), b = baseDe(id);
+      var dA = a.activos - b.activos, dN = a.nuevos - b.nuevos;
+      if (dA || dN) {
+        cambios.push(nombrePsi(id) + ': activos ' + b.activos + ' &rarr; ' + a.activos +
+          ', nuevos ' + b.nuevos + ' &rarr; ' + a.nuevos);
+      }
+    });
+    g.style.display = 'block';
+    g.innerHTML = '<i class="fa-solid fa-scale-balanced" style="color:var(--teal)"></i> Proyección de carga: ' +
+      (cambios.length ? cambios.join(' · ') : 'sin cambio neto aún') +
+      '<div style="margin-top:9px;display:flex;gap:8px;flex-wrap:wrap">' +
+      '<button class="dist-btn dist-btn-xs dist-btn-teal" id="btnPlanCsv" type="button"><i class="fa-solid fa-file-csv"></i> Descargar plan (CSV)</button>' +
+      '<button class="dist-btn dist-btn-xs dist-btn-soft" id="btnLimpiar" type="button"><i class="fa-solid fa-eraser"></i> Limpiar simulación</button>' +
+      '</div>';
+    document.getElementById('btnLimpiar').onclick = function () { STATE.moves = []; refreshUI(); };
+    document.getElementById('btnPlanCsv').onclick = descargarPlan;
+  } else {
+    g.style.display = 'none';
+  }
+  renderTablero();
+}
+
+/* ---------- CSV del plan (solo cliente; no toca el servidor) ---------- */
+function descargarPlan() {
+  if (!STATE.moves.length) return;
+  var rows = [['Paciente', 'Psicologo actual', 'Psicologo propuesto', 'Estado', 'Preferencia declarada',
+               'Tipo de sesion', 'Compatibilidad', 'Detalle']];
+  STATE.moves.forEach(function (m) {
+    rows.push([
+      m.paciente.nombre, nombrePsi(m.de), nombrePsi(m.ha),
+      m.paciente.estado_label, m.paciente.preferencia,
+      (m.paciente.tipos || []).join('; '),
+      m.resumen,
+      (m.checks || []).map(function (c) { return c.texto; }).join(' | ')
+    ]);
+  });
+  var csv = '\ufeffsep=,\r\n' + rows.map(function (r) {
+    return r.map(function (v) { return '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"'; }).join(',');
+  }).join('\r\n');
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+  a.download = 'plan_reasignacion_simulada_' + new Date().toISOString().slice(0, 10) + '.csv';
+  a.click();
+}
+
+/* ---------- MODAL DETALLE PACIENTE ---------- */
+function abrirDetalle(pid) {
+  document.getElementById('modalBg').classList.add('show');
+  document.getElementById('modNombre').textContent = 'Paciente';
+  document.getElementById('modMeta').innerHTML = '';
+  document.getElementById('modBody').innerHTML = '<div class="mod-loading"><div class="spin"></div> Cargando ficha...</div>';
+  fetchJson('/panel-admin/api/intelligence/paciente-detalle/?paciente=' + pid)
+    .then(function (d) {
+      if (d.status !== 'success') {
+        document.getElementById('modBody').innerHTML = '<div class="mod-loading">' + esc(d.message) + '</div>';
+        return;
+      }
+      renderDetalle(d.paciente);
+    })
+    .catch(function (e) {
+      document.getElementById('modBody').innerHTML = '<div class="mod-loading">Fallo de red: ' + esc(e.message) + '</div>';
+    });
+}
+function renderDetalle(p) {
+  document.getElementById('modNombre').textContent = p.nombre;
+  document.getElementById('modMeta').innerHTML =
+    '<span class="dist-badge dist-b-info">' + esc(p.estado_label) + '</span>' +
+    (p.es_tectum ? '<span class="dist-badge dist-b-teal">TECTUM In-House</span>'
+      : (p.es_beneficios ? '<span class="dist-badge dist-b-teal">TECTUM Beneficios</span>' : '')) +
+    '<span class="dist-badge dist-b-warn"><i class="fa-solid fa-user-tag"></i> Preferencia: ' + esc(p.preferencia) + '</span>' +
+    (p.franjas.length ? '<span class="dist-badge dist-b-info"><i class="fa-solid fa-clock"></i> ' + esc(p.franjas.join(' / ')) + '</span>' : '');
+
+  var cuerpo = '';
+  cuerpo += '<div class="mod-sec"><div class="mod-sec-t"><i class="fa-solid fa-clipboard-question"></i> Formulario de registro (' + p.cuestionario.campos_contestados + ' campos contestados)</div>';
+  var fields = Object.keys(p.cuestionario.respuestas).map(function (k) {
+    var v = p.cuestionario.respuestas[k];
+    if (Array.isArray(v)) v = v.join(' · ');
+    return '<div class="mod-field"><div class="fk">' + esc(String(k).replace(/_/g, ' ')) + '</div><div class="fv">' + esc(v) + '</div></div>';
+  }).join('');
+  cuerpo += fields ? '<div class="mod-grid">' + fields + '</div>' : '<div class="mod-loading" style="padding:12px">Sin cuestionario registrado.</div>';
+  cuerpo += '</div>';
+
+  cuerpo += '<div class="mod-sec"><div class="mod-sec-t"><i class="fa-solid fa-user-doctor"></i> Asignación real</div><div class="mod-grid">' +
+    '<div class="mod-field"><div class="fk">Asignación global de perfil</div><div class="fv">' + (p.psicologo_perfil ? esc(p.psicologo_perfil.nombre) : 'Sin asignación global') + '</div></div>' +
+    '<div class="mod-field"><div class="fk">Cuestionario</div><div class="fv">' + esc(p.cuestionario.flujo || 'sin dato') + (p.cuestionario.fecha ? ' · ' + esc(String(p.cuestionario.fecha).slice(0, 10)) : '') + '</div></div>';
+  (p.tratamientos || []).forEach(function (t) {
+    cuerpo += '<div class="mod-field"><div class="fk">Tratamiento ' + esc(t.tipo) + (t.activo ? ' (activo)' : ' (inactivo)') + '</div><div class="fv">' + (t.psicologo ? esc(t.psicologo.nombre) : 'Sin psicólogo') + '</div></div>';
+  });
+  cuerpo += '</div></div>';
+
+  cuerpo += '<div class="mod-sec"><div class="mod-sec-t"><i class="fa-solid fa-calendar-days"></i> Resumen de citas</div><div class="mod-grid">' +
+    '<div class="mod-field"><div class="fk">Citas totales</div><div class="fv">' + p.citas.total + '</div></div>' +
+    '<div class="mod-field"><div class="fk">Primera cita</div><div class="fv">' + (p.citas.primera ? esc(String(p.citas.primera).slice(0, 10)) : 'Sin agendar') + '</div></div>' +
+    '<div class="mod-field"><div class="fk">Última sesión</div><div class="fv">' + (p.citas.ultima ? esc(String(p.citas.ultima).slice(0, 10)) : 'Sin sesión') + '</div></div>' +
+    '<div class="mod-field"><div class="fk">Próxima cita</div><div class="fv">' + (p.citas.proxima ? esc(String(p.citas.proxima).slice(0, 10)) : 'Sin próxima') + '</div></div>' +
+    '</div></div>';
+
+  cuerpo += '<div class="mod-sec"><div class="mod-sec-t"><i class="fa-solid fa-wand-magic-sparkles"></i> Sugerencias compatibles (menor carga primero)</div><div id="modSug"><div class="mod-loading"><div class="spin"></div> Buscando destinos...</div></div></div>';
+  document.getElementById('modBody').innerHTML = cuerpo;
+
+  fetchJson('/panel-admin/api/intelligence/sugerencias/?paciente=' + p.pid + '&limite=4')
+    .then(function (d) {
+      var box = document.getElementById('modSug');
+      if (!box) return;
+      if (d.status !== 'success') { box.innerHTML = '<div class="mod-loading">' + esc(d.message) + '</div>'; return; }
+      if (!d.sugerencias.length) { box.innerHTML = '<div class="mod-loading">Sin candidatos.</div>'; return; }
+      box.innerHTML = d.sugerencias.map(function (s) {
+        var checksHTML = s.checks.map(function (c) {
+          var ico = c.nivel === 'ok' ? 'fa-circle-check' : (c.nivel === 'aviso' ? 'fa-triangle-exclamation' : 'fa-ban');
+          return '<div><i class="fa-solid ' + ico + '"></i> ' + esc(c.texto) + '</div>';
+        }).join('');
+        var dif = '';
+        if (s.diferencia_vs_origen > 0) {
+          dif = '<div style="font-size:10.5px;margin-top:3px;color:var(--ok)">' + s.diferencia_vs_origen + ' menos activos que su psicólogo actual</div>';
+        }
+        var retorno = '<div class="mod-sug">' +
+          '<div class="mod-sug-head">' +
+          '<div><span class="mod-sug-nombre">' + esc(s.psicologo.nombre) + '</span>' +
+          '<div class="mod-sug-checks">' + checksHTML + '</div></div>' +
+          '<div style="text-align:right;flex:none">' +
+          '<div class="mod-sug-carga">' + s.carga_activos + ' activos</div>' + dif +
+          (s.compatible ? '<button class="dist-btn dist-btn-xs dist-btn-teal" type="button" data-sim="' + s.psicologo.id + '" style="margin-top:7px">Simular aquí</button>'
+                        : '<div class="sim-bad" style="font-size:10.5px;margin-top:5px">Incompatible</div>') +
+          '</div></div></div>';
+        return retorno;
+      }).join('');
+      box.querySelectorAll('[data-sim]').forEach(function (b) {
+        b.onclick = function () {
+          var psiId = parseInt(b.dataset.sim, 10);
+          var paciente = localizarPaciente(p.pid);
+          document.getElementById('modalBg').classList.remove('show');
+          intentarMovimiento(p.pid, paciente._origen, psiId);
+        };
+      });
+    })
+    .catch(function (e) {
+      var box = document.getElementById('modSug');
+      if (box) box.innerHTML = '<div class="mod-loading">Fallo de red: ' + esc(e.message) + '</div>';
+    });
+}
+
+/* ---------- PLAN AUTOMATICO ---------- */
+document.getElementById('btnPlan').onclick = function () {
+  var btn = this; btn.disabled = true;
+  document.getElementById('simList').innerHTML = '<div class="mod-loading"><div class="spin"></div> Generando plan de balanceo...</div>';
+  fetchJson('/panel-admin/api/intelligence/sugerencias-masivas/?limite=25')
+    .then(function (d) {
+      btn.disabled = false;
+      if (d.status !== 'success') { mostrarError(d.message); refreshUI(); return; }
+      STATE.moves = [];
+      (d.movimientos || []).forEach(function (m) {
+        var pac = Object.assign({}, m.paciente);
+        pac._origen = m.origen_id;
+        STATE.moves.push({
+          paciente: pac,
+          de: m.origen_id,
+          ha: m.mejor.psicologo.id,
+          checks: m.mejor.checks,
+          resumen: m.mejor.resumen,
+          estado: 'listo',
+          destino_hoy: m.mejor.destino_hoy
+        });
+      });
+      if (!STATE.moves.length) {
+        document.getElementById('simList').innerHTML =
+          '<div class="sim-empty">No hay movimientos sugeridos: la carga esta balanceada, o los pacientes sobre la media no tienen destino compatible.</div>';
+        document.getElementById('simGlobal').style.display = 'none';
+        document.getElementById('simCount').textContent = '0';
+        return;
+      }
+      refreshUI();
+    })
+    .catch(function (e) { btn.disabled = false; mostrarError('Plan: ' + e.message); refreshUI(); });
+};
+
+/* ---------- CARGA INICIAL ---------- */
+function cargarDistribucion() {
+  document.getElementById('distTablero').innerHTML = '<div class="mod-loading" style="grid-column:1/-1"><div class="spin"></div> Cargando distribución real...</div>';
+  document.getElementById('simList').innerHTML = '<div class="sim-empty">Arrastra pacientes hacia otro psicólogo y aquí verás el impacto en tiempo real: compatibilidad, cambio de carga y avisos.</div>';
+  document.getElementById('simGlobal').style.display = 'none';
+  STATE.moves = [];
+  STATE.base = {};
+  D.psicologos = [];
+  D.sin_asignar = [];
+  fetchJson('/panel-admin/api/intelligence/distribucion/')
+    .then(function (d) {
+      if (d.status !== 'success') { mostrarError(d.message); return; }
+      D.psicologos = d.distribucion.psicologos;
+      D.sin_asignar = d.distribucion.sin_asignar;
+      D.media = d.distribucion.media_activos || 0;
+      D.porId = {};
+      D.psicologos.forEach(function (p) { D.porId[p.id] = p; });
+      refreshUI();
+    })
+    .catch(function (e) { mostrarError('Distribución: ' + e.message); });
+}
+document.getElementById('btnRefrescar').onclick = cargarDistribucion;
+document.getElementById('distQ').addEventListener('input', aplicarFiltro);
+document.getElementById('modClose').onclick = function () { document.getElementById('modalBg').classList.remove('show'); };
+document.getElementById('modalBg').addEventListener('click', function (e) {
+  if (e.target === this) this.classList.remove('show');
+});
+cargarDistribucion();
+</script>
+{% endblock %}

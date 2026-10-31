@@ -107,6 +107,35 @@ def _pref_clasificador(valor):
     return 'Sin registro'
 
 
+def _franja_de_texto(valores):
+    """
+    Normaliza la respuesta 'horario' del cuestionario (lista o cadena con
+    textos como 'Mañana (9:00 a 12:00)') a nombres de franja estándar.
+    """
+    if valores is None:
+        return []
+    if not isinstance(valores, (list, tuple)):
+        valores = [valores]
+    franjas = []
+    for v in valores:
+        l = (str(v or '')).strip().lower()
+        if not l:
+            continue
+        if 'mañana' in l or 'manana' in l:
+            f = 'Mañana'
+        elif 'tarde' in l:
+            f = 'Tarde'
+        elif 'noche' in l:
+            f = 'Noche'
+        elif 'fin' in l or 'sábado' in l or 'sabado' in l or 'domingo' in l:
+            f = 'Fin de semana'
+        else:
+            f = None
+        if f and f not in franjas:
+            franjas.append(f)
+    return franjas
+
+
 def _formato_hora_12(h_int):
     hh12 = h_int % 12 or 12
     return f'{hh12}:00 {"PM" if h_int >= 12 else "AM"}'
@@ -172,7 +201,11 @@ def _coleccion_pacientes():
         prefs[pid] = {
             'preferencia': _pref_clasificador(resp.get('preferencia_terapeuta')),
             'campos': sum(1 for v in resp.values() if v not in (None, '', [], {})),
+            'horarios': _franja_de_texto(resp.get('horario')),
         }
+        # Si horario es una sola cadena (no lista), normalizar a lista
+        if prefs[pid]['horarios'] and isinstance(prefs[pid]['horarios'], str):
+            prefs[pid]['horarios'] = [prefs[pid]['horarios']]
 
     pacientes = []
     for perfil in perfiles:
@@ -180,7 +213,7 @@ def _coleccion_pacientes():
         agg = citas_agg.get(user.id) if user else None
         pref = prefs.get(user.id) if user else None
         if pref is None:
-            pref = {'preferencia': 'Sin registro', 'campos': 0}
+            pref = {'preferencia': 'Sin registro', 'campos': 0, 'horarios': []}
 
         psicologo = None
         if perfil.psicologo_asignado:
@@ -1130,3 +1163,539 @@ def Filas_Exportacion_KPIs():
         ['Ingresos estimados este mes', kpis['ingresos']['mes']['total']],
     ]
     return headers, rows
+
+
+# =========================================================================
+# DISTRIBUCION DE PACIENTES Y SIMULADOR DE REASIGNACION (30/10/2026)
+# Herramienta de ANALISIS/SIMULACION para Dirección:
+# - NINGUNA funcion de esta seccion escribe en la base de datos ni
+#   modifica asignaciones reales (TratamientoPaciente/UsuarioPerfil quedan
+#   intactos; el efecto de un movimiento se calcula en memoria).
+# - Compatibilidad paciente-psicologo evaluada con datos reales:
+#   preferencia de genero del cuestionario, capacidad por tipo de sesion,
+#   esquema de horario vigente y solapamiento de franjas de disponibilidad.
+# =========================================================================
+
+from .models import EsquemaHorarioPsicologo, TratamientoPaciente
+
+FRANJAS_TODAS = ['Mañana', 'Tarde', 'Noche', 'Fin de semana']
+
+
+def _minutos(t):
+    return t.hour * 60 + t.minute
+
+
+def _psi_info():
+    """
+    Información horaria real por psicólogo (2 consultas livianas):
+      - esquema_ok: tiene al menos un EsquemaHorarioPsicologo activo que
+        cubre hoy.
+      - ventanas: [(dia_semana 0-6, inicio_min, fin_min, tipo_sesion)]
+        construidas con la MISMA regla del algoritmo de slots oficial:
+        dia con bloques personalizados ignora la jornada base; comida
+        dividida en dos ventanas cuando cabe dentro de la jornada.
+      - horas: capacidad semanal en horas de las ventanas vigentes.
+    """
+    hoy = _hoy()
+    por_psi = {}
+    esquemas = (EsquemaHorarioPsicologo.objects.filter(activo=True)
+                .prefetch_related('dias_personalizados'))
+    for es in esquemas:
+        pid = es.psicologo_id
+        if not (es.fecha_inicio <= hoy <= es.fecha_fin):
+            continue
+        d = por_psi.setdefault(pid, {'esquema_ok': False, 'ventanas': []})
+        d['esquema_ok'] = True
+        pers = {}
+        for drow in es.dias_personalizados.all():
+            pers.setdefault(drow.dia_semana, []).append(
+                (drow.hora_inicio, drow.hora_fin, drow.tipo_sesion))
+        descansos = es.dias_descanso or []
+        for dia in range(7):
+            if dia in descansos:
+                continue
+            if dia in pers:
+                for hi, hf, tipo in pers[dia]:
+                    d['ventanas'].append((dia, _minutos(hi), _minutos(hf), tipo))
+            else:
+                ini, fin = _minutos(es.hora_inicio), _minutos(es.hora_fin)
+                if es.hora_comida_inicio and es.hora_comida_fin:
+                    ci = _minutos(es.hora_comida_inicio)
+                    cf = _minutos(es.hora_comida_fin)
+                    if ini < ci < cf < fin:
+                        d['ventanas'].append((dia, ini, ci, None))
+                        d['ventanas'].append((dia, cf, fin, None))
+                        continue
+                d['ventanas'].append((dia, ini, fin, None))
+    for d in por_psi.values():
+        d['horas'] = round(sum(max(0, v[2] - v[1]) / 60.0 for v in d['ventanas']), 1)
+        franjas = set()
+        for dia, ini, fin, _tipo in d['ventanas']:
+            for nombre, fi, ff in FRANJA_HORARIA:
+                # Solapamiento de la ventana con la franja (franjas en horas)
+                if ini < ff * 60 and fin > fi * 60:
+                    franjas.add(nombre)
+            if dia >= 5:
+                franjas.add('Fin de semana')
+        d['franjas'] = sorted(franjas, key=FRANJAS_TODAS.index)
+    return por_psi
+
+
+def _dataset_distribucion():
+    """
+    Dataset compartido del módulo: pacientes enriquecidos con estado
+    ("Activo"/"En riesgo"/...), indicador 'nuevo' (aún no toma su primera
+    sesión), tipos de servicio de sus tratamientos, franjas declaradas y su
+    psicólogo principal (fuente real: TratamientoPaciente activo; fallback
+    UsuarioPerfil.psicologo_asignado). Solo lectura.
+    """
+    hoy = _hoy()
+    pacientes, citas_agg, prefs = _coleccion_pacientes()
+    trat_por_pac = {}
+    for row in (TratamientoPaciente.objects
+                .values('paciente_id', 'psicologo_asignado_id', 'tipo_servicio', 'activo')):
+        if row['psicologo_asignado_id']:
+            trat_por_pac.setdefault(row['paciente_id'], []).append(row)
+
+    for pac in pacientes:
+        uid = pac['user_id']
+        pac['estado'] = _estado_paciente(pac, hoy)
+        pac['estado_label'] = ESTADO_LABEL[pac['estado']]
+        pac['nuevo'] = not pac['ultima_pasada']
+        rows = trat_por_pac.get(uid) or []
+        activos = [r for r in rows if r['activo']]
+        pac['tipos'] = sorted({r['tipo_servicio'] for r in (activos or rows)}) or ['individual']
+        if activos:
+            pac['psicologo_principal'] = activos[0]['psicologo_asignado_id']
+        elif pac['psicologo']:
+            pac['psicologo_principal'] = pac['psicologo']['id']
+        else:
+            pac['psicologo_principal'] = None
+        pac['franjas'] = (prefs.get(uid) or {}).get('horarios') or []
+        pac['prefs'] = prefs.get(uid) or {}
+    return pacientes
+
+
+def _chip_paciente(pac):
+    """DTO minimo del paciente para las tarjetas del simulador."""
+    return {
+        'pid': pac['id'],
+        'user_id': pac['user_id'],
+        'nombre': pac['nombre'],
+        'preferencia': pac['preferencia'],
+        'franjas': pac['franjas'],
+        'estado': pac['estado'],
+        'estado_label': pac['estado_label'],
+        'nuevo': pac['nuevo'],
+        'citas_total': pac['citas_total'],
+        'tipos': pac['tipos'],
+        'es_tectum': pac['es_tectum'],
+        'es_beneficios': pac['es_beneficios'],
+        'psicologo_perfil': pac['psicologo']['id'] if pac['psicologo'] else None,
+    }
+
+
+def Distribucion():
+    """
+    Foto real de la distribución de pacientes entre psicólogos:
+      - pacientes asignados por psicólogo (fuente TratamientoPaciente
+        activo, fallback UsuarioPerfil.psicologo_asignado).
+      - desglose activos / nuevos (sin primera sesión) / en riesgo /
+        inactivos; próximas citas reales de los próximos 7 días.
+      - franjas y capacidad semanal de su esquema vigente.
+      - bucket 'sin_asignar' para pacientes sin psicólogo real.
+      - media de activos entre psicólogos activos (referencia de carga).
+    """
+    pacientes = _dataset_distribucion()
+    psi_infos = _psi_info()
+    prox = {r['psicologo_id']: r['n'] for r in (
+        Cita.objects.filter(psicologo__isnull=False, fecha__gte=_hoy())
+        .values('psicologo_id').annotate(n=Count('id')))}
+
+    vacio = lambda: {'total': 0, 'activos': 0, 'nuevos': 0, 'en_riesgo': 0,
+                     'inactivos': 0, 'sin_proxima': 0, 'chips': []}
+    por_psi = defaultdict(vacio)
+    sin_asignar = []
+
+    for pac in pacientes:
+        chip = _chip_paciente(pac)
+        destino = pac['psicologo_principal']
+        if not destino:
+            sin_asignar.append(chip)
+            continue
+        d = por_psi[destino]
+        d['total'] += 1
+        d['chips'].append(chip)
+        if pac['estado'] == 'activo':
+            d['activos'] += 1
+        elif pac['estado'] == 'en_riesgo':
+            d['en_riesgo'] += 1
+        elif pac['estado'] == 'inactivo':
+            d['inactivos'] += 1
+        if pac['nuevo']:
+            d['nuevos'] += 1
+        if pac['citas_total'] >= 1 and not pac['proxima']:
+            d['sin_proxima'] += 1
+
+    lista = []
+    for p in PerfilPsicologo.objects.select_related('usuario').order_by('id'):
+        info = psi_infos.get(p.id, {})
+        d = por_psi.get(p.id, {'total': 0, 'activos': 0, 'nuevos': 0,
+                               'en_riesgo': 0, 'inactivos': 0,
+                               'sin_proxima': 0, 'chips': []})
+        nombre = (p.usuario.first_name if p.usuario and p.usuario.first_name
+                  else (p.usuario.username if p.usuario else 'Sin nombre'))
+        horas = info.get('horas', 0.0)
+        lista.append({
+            'id': p.id,
+            'nombre': f'{"Dra." if p.genero == "Mujer" else "Dr."} {nombre}'.strip(),
+            'genero': p.genero,
+            'esta_activo': p.esta_activo,
+            'especialidad': p.especialidad or '',
+            'atiende': [t for t, flag in (
+                ('individual', p.atiende_individual),
+                ('pareja', p.atiende_pareja),
+                ('familiar', p.atiende_familiar)) if flag],
+            'esquema_ok': bool(info.get('esquema_ok')),
+            'franjas': info.get('franjas', []),
+            'horas_semana': horas,
+            'horas_libres': round(max(0.0, horas - prox.get(p.id, 0)), 1),
+            'proximas_7d': prox.get(p.id, 0),
+            'total': d['total'],
+            'activos': d['activos'],
+            'nuevos': d['nuevos'],
+            'en_riesgo': d['en_riesgo'],
+            'inactivos': d['inactivos'],
+            'sin_proxima': d['sin_proxima'],
+            'chips': d['chips'],
+        })
+    lista.sort(key=lambda r: (-r['activos'], -r['total']))
+    con_activos = [r['activos'] for r in lista if r['esta_activo']]
+    media = round(sum(con_activos) / len(con_activos), 1) if con_activos else 0
+    return {
+        'psicologos': lista,
+        'sin_asignar': sin_asignar,
+        'media_activos': media,
+        'total_pacientes': len(pacientes),
+        'generado_en': _ahora().isoformat(),
+    }
+
+
+def Paciente_Detalle(perfil_id):
+    """
+    Ficha del paciente para el modal del simulador (solo lectura):
+    respuestas completas del cuestionario más reciente, asignaciones reales
+    (perfil global + tratamientos por modalidad) y resumen de citas.
+    """
+    hoy = _hoy()
+    perfil = (UsuarioPerfil.objects
+              .select_related('usuario', 'psicologo_asignado',
+                              'psicologo_asignado__usuario')
+              .get(id=perfil_id))
+    user = perfil.usuario
+
+    reg = (CuestionarioRegistro.objects
+           .filter(paciente=user)
+           .order_by('-fecha_completado', '-id')
+           .values('respuestas', 'fecha_completado', 'flujo_elegido')
+           .first())
+
+    def _nombre_psi(p):
+        if not p:
+            return None
+        n = None
+        if p.usuario:
+            n = p.usuario.first_name or p.usuario.username
+        return {'id': p.id, 'nombre': f'{"Dra." if p.genero == "Mujer" else "Dr."} {n or "Sin nombre"}'.strip(),
+                'genero': p.genero}
+
+    perfiles_trat = {tp.psicologo_asignado_id: tp for tp in
+                     TratamientoPaciente.objects.filter(paciente=user)
+                     .exclude(psicologo_asignado=None)
+                     .select_related('psicologo_asignado',
+                                     'psicologo_asignado__usuario')}
+    tratamientos = []
+    for row in (TratamientoPaciente.objects.filter(paciente=user)
+                .values('tipo_servicio', 'activo', 'psicologo_asignado_id')):
+        psi = None
+        tr = perfiles_trat.get(row['psicologo_asignado_id'])
+        if tr is not None:
+            psi = _nombre_psi(tr.psicologo_asignado)
+        tratamientos.append({'tipo': TIPO_SESION_LABEL.get(row['tipo_servicio'], row['tipo_servicio']),
+                             'activo': row['activo'], 'psicologo': psi})
+
+    agg = (Cita.objects.filter(paciente=user)
+           .aggregate(total=Count('id'),
+                      primera=Min('fecha'),
+                      ultima_pasada=Max('fecha', filter=Q(fecha__lt=hoy)),
+                      proxima=Min('fecha', filter=Q(fecha__gte=hoy)),
+                      canceladas=Count('id', filter=Q(estado='Cancelada'))))
+    fila = {
+        'citas_total': agg['total'],
+        'proxima': agg['proxima'].isoformat() if agg['proxima'] else None,
+        'ultima_pasada': agg['ultima_pasada'].isoformat() if agg['ultima_pasada'] else None,
+    }
+
+    resp = (reg or {}).get('respuestas') or {}
+    respuestas_limpias = {}
+    for k, v in resp.items():
+        if v in (None, '', [], {}):
+            continue
+        if isinstance(v, (list, tuple)):
+            respuestas_limpias[k] = [str(x) for x in v]
+        else:
+            respuestas_limpias[k] = str(v)
+
+    return {
+        'pid': perfil.id,
+        'user_id': user.id if user else None,
+        'nombre': perfil.nombre or (user.first_name if user else '') or 'Paciente',
+        'email': user.email if user else '',
+        'fecha_registro': user.date_joined.isoformat() if user else None,
+        'es_tectum': perfil.es_tectum,
+        'es_beneficios': perfil.es_beneficios,
+        'preferencia': _pref_clasificador(resp.get('preferencia_terapeuta')),
+        'franjas': _franja_de_texto(resp.get('horario')),
+        'cuestionario': {
+            'flujo': (reg or {}).get('flujo_elegido') or '',
+            'fecha': (reg or {}).get('fecha_completado').isoformat() if reg and reg.get('fecha_completado') else None,
+            'campos_contestados': len(respuestas_limpias),
+            'respuestas': respuestas_limpias,
+        },
+        'psicologo_perfil': _nombre_psi(perfil.psicologo_asignado),
+        'tratamientos': tratamientos,
+        'citas': {'total': agg['total'], 'primera': agg['primera'].isoformat() if agg['primera'] else None,
+                  'ultima': agg['ultima_pasada'].isoformat() if agg['ultima_pasada'] else None,
+                  'proxima': agg['proxima'].isoformat() if agg['proxima'] else None,
+                  'canceladas': agg['canceladas']},
+        'estado_label': ESTADO_LABEL[_estado_paciente(fila, hoy)],
+    }
+
+
+def _evaluacion_compat(pac, perfil_psi, info_psi, conteos, media=None):
+    """
+    Compatibilidad real paciente-psicólogo. Devuelve lista de revisiones:
+      nivel: 'ok' | 'aviso' | 'incompatible' (+ texto con el dato real).
+    Referencia de carga incluida (activos del destino vs media).
+    """
+    if media is None:
+        media = next(iter(conteos.values()), {}).get('media', 0) if conteos else 0
+    checks = []
+
+    pref = pac['preferencia']
+    if pref in ('Mujer', 'Hombre'):
+        if perfil_psi.genero == pref:
+            checks.append({'nivel': 'ok',
+                           'texto': f'El paciente pidió terapeuta {pref.lower()} y coincide.'})
+        else:
+            checks.append({'nivel': 'incompatible',
+                           'texto': (f'El paciente pidió terapeuta {pref.lower()} y '
+                                     f'{"Dra." if perfil_psi.genero == "Mujer" else "Dr."} '
+                                     f'{perfil_psi.usuario.first_name if perfil_psi.usuario else ""} es {perfil_psi.genero.lower()}.')})
+    elif pref == 'Indistinto':
+        checks.append({'nivel': 'ok',
+                       'texto': 'El paciente declaró que le es indistinto el género del terapeuta.'})
+    else:
+        checks.append({'nivel': 'aviso',
+                       'texto': 'El paciente no registró preferencia de terapeuta (compatible con cualquiera).'})
+
+    tipos_no_atiende = [t for t in pac['tipos'] if t not in
+                        [s for s, flag in (('individual', perfil_psi.atiende_individual),
+                                           ('pareja', perfil_psi.atiende_pareja),
+                                           ('familiar', perfil_psi.atiende_familiar)) if flag]]
+    if tipos_no_atiende:
+        checks.append({'nivel': 'incompatible',
+                       'texto': (f'No atiende el tipo de sesión requerido: '
+                                 f'{", ".join(TIPO_SESION_LABEL.get(t, t) for t in tipos_no_atiende)}.')})
+    else:
+        checks.append({'nivel': 'ok',
+                       'texto': 'Atiende el tipo de sesión que el paciente maneja.'})
+
+    if info_psi and info_psi.get('esquema_ok'):
+        checks.append({'nivel': 'ok', 'texto': 'Tiene esquema de horario vigente a la fecha.'})
+    else:
+        checks.append({'nivel': 'incompatible',
+                       'texto': 'Sin esquema de horario vigente para hoy (no genera citas en agenda).'})
+
+    franjas_psi = set((info_psi or {}).get('franjas') or [])
+    franjas_pac = set(pac.get('franjas') or [])
+    if not franjas_pac:
+        checks.append({'nivel': 'aviso',
+                       'texto': 'El paciente no declaró franja de disponibilidad en su cuestionario.'})
+    elif franjas_pac & franjas_psi:
+        comunes = sorted(franjas_pac & franjas_psi, key=FRANJAS_TODAS.index)
+        comunes_txt = ' · '.join(comunes)
+        checks.append({'nivel': 'ok',
+                       'texto': f'Su horario atiende la franja del paciente ({comunes_txt}).'})
+    else:
+        checks.append({'nivel': 'aviso',
+                       'texto': (f'La disponibilidad del paciente ({", ".join(sorted(franjas_pac, key=FRANJAS_TODAS.index))}) '
+                                 f'no cruza con sus franjas ({", ".join(franjas_psi) or "sin esquema"}).')})
+
+    if pac['estado'] == 'nunca':
+        checks.append({'nivel': 'aviso',
+                       'texto': 'El paciente registró cero citas: se movería como paciente nuevo.'})
+
+    c = conteos.get(perfil_psi.id, {})
+    activos = c.get('activos', 0)
+    if activos > media * 1.25 and media:
+        checks.append({'nivel': 'aviso',
+                       'texto': f'Ya carga {activos} pacientes activos (media de la operación: {media}).'})
+    elif media and activos < media * 0.75:
+        checks.append({'nivel': 'ok',
+                       'texto': f'Carga por debajo de la media ({activos} activos vs media {media}).'})
+    else:
+        checks.append({'nivel': 'ok',
+                       'texto': f'Carga en línea con la media ({activos} activos vs media {media}).'})
+    return checks
+
+
+def _conteos_carga():
+    """Conteos reales por psicólogo + media (sin chips, para compat y sugerencias)."""
+    pacientes = _dataset_distribucion()
+    conteos = defaultdict(lambda: {'total': 0, 'activos': 0, 'nuevos': 0,
+                                   'en_riesgo': 0, 'inactivos': 0})
+    pac_map = {}
+    for pac in pacientes:
+        destino = pac['psicologo_principal']
+        if destino:
+            d = conteos[destino]
+            d['total'] += 1
+            if pac['estado'] == 'activo':
+                d['activos'] += 1
+            elif pac['estado'] == 'en_riesgo':
+                d['en_riesgo'] += 1
+            elif pac['estado'] == 'inactivo':
+                d['inactivos'] += 1
+            if pac['nuevo']:
+                d['nuevos'] += 1
+        pac_map[pac['id']] = pac
+    activos_lista = [d['activos'] for d in conteos.values()]
+    media = round(sum(activos_lista) / len(activos_lista), 1) if activos_lista else 0
+    for d in conteos.values():
+        d['media'] = media
+    return pac_map, conteos, media, _psi_info()
+
+
+def _perfil_psi_por_id(psicologo_id):
+    return PerfilPsicologo.objects.select_related('usuario').filter(id=psicologo_id).first()
+
+
+def Compatibilidad(perfil_id, psicologo_id, pac_map=None, conteos=None, psi_extra=None):
+    """
+    Evalúa compatibilidad de UNA reasignación simulada. Reutilizable desde
+    sugerencias masivas (pasando caches) para no recalcular por movimiento.
+    """
+    if pac_map is None:
+        pac_map, conteos, media, _ = _conteos_carga()
+    psi_extra = psi_extra if psi_extra is not None else _psi_info()
+    pac = pac_map.get(perfil_id)
+    perfil_psi = _perfil_psi_por_id(psicologo_id)
+    if pac is None or perfil_psi is None:
+        return None
+    media = (conteos.get(psicologo_id, {}).get('media')
+             if psicologo_id in conteos else None)
+    if media is None:
+        media = next(iter(conteos.values()), {}).get('media', 0) if conteos else 0
+    checks = _evaluacion_compat(pac, perfil_psi, psi_extra.get(psicologo_id),
+                                conteos, media=media)
+    incompatible = any(c['nivel'] == 'incompatible' for c in checks)
+    avisos = sum(1 for c in checks if c['nivel'] == 'aviso')
+    resumen = ('Incompatible: revísalos antes de confirmar en producción'
+               if incompatible else
+               ('Compatible con avisos' if avisos else 'Compatible'))
+    n = conteos.get(psicologo_id, {})
+    return {
+        'psicologo': {'id': perfil_psi.id,
+                      'nombre': f'{"Dra." if perfil_psi.genero == "Mujer" else "Dr."} {(perfil_psi.usuario.first_name if perfil_psi.usuario and perfil_psi.usuario.first_name else (perfil_psi.usuario.username if perfil_psi.usuario else "Sin nombre"))}'.strip(),
+                      'genero': perfil_psi.genero},
+        'checks': checks,
+        'resumen': resumen,
+        'compatible': not incompatible,
+        'destino_hoy': {'total': n.get('total', 0), 'activos': n.get('activos', 0),
+                        'nuevos': n.get('nuevos', 0)},
+    }
+
+
+def Sugerencias_Reasignacion(perfil_id, limite=4):
+    """
+    Mejores destinos reales para un paciente: psicólogos compatibles
+    (preferencia + capacidad + esquema + franja) ordenados por menor carga
+    de pacientes activos. Solo análisis; no modifica nada.
+    """
+    pac_map, conteos, media, psi_extra = _conteos_carga()
+    pac = pac_map.get(perfil_id)
+    if pac is None:
+        return {'sugerencias': [], 'media_activos': media}
+    candidatos = PerfilPsicologo.objects.filter(esta_activo=True).select_related('usuario')
+    sugerencias = []
+    for p in candidatos:
+        if pac['psicologo_principal'] == p.id:
+            continue
+        eval_ = Compatibilidad(perfil_id, p.id, pac_map=pac_map, conteos=conteos, psi_extra=psi_extra)
+        if eval_ is None:
+            continue
+        avisos = sum(1 for c in eval_['checks'] if c['nivel'] == 'aviso')
+        carga = eval_['destino_hoy']['activos']
+        origen_id = pac.get('psicologo_principal')
+        carga_origen = conteos.get(origen_id, {}).get('activos', 0) if origen_id else None
+        diferencia = round(carga_origen - carga, 1) if carga_origen is not None else None
+        sugerencias.append({
+            'psicologo': eval_['psicologo'],
+            'resumen': eval_['resumen'],
+            'compatible': eval_['compatible'],
+            'checks': eval_['checks'],
+            'carga_activos': carga,
+            'diferencia_vs_origen': diferencia,
+            'avisos': avisos,
+        })
+    sugerencias.sort(key=lambda s: (not s['compatible'], s['carga_activos'], s['avisos']))
+    return {'sugerencias': sugerencias[:limite], 'media_activos': media}
+
+
+def Sugerencias_Automaticas(limite=25):
+    """
+    Balanceo sugerido de punta a punta: revisa pacientes activos/nuevos cuya
+    preferencia sea 'Indistinto' o no registrada, que estén asignados a un
+    psicólogo por encima de la media, y propone el destino compatible con
+    menor carga. Devuelve hasta `limite` movimientos simulados (no escribe).
+    """
+    pac_map, conteos, media, psi_extra = _conteos_carga()
+    pacientes = list(pac_map.values())
+    hacheteados = (p for p in pacientes
+                   if p['psicologo_principal']
+                   and (p['nuevo'] or p['estado'] == 'activo')
+                   and p['preferencia'] in ('Indistinto', 'Sin registro')
+                   and conteos.get(p['psicologo_principal'], {}).get('activos', 0) > media)
+    propuestas = []
+    for pac in hacheteados:
+        origen = pac['psicologo_principal']
+        carga_origen = conteos.get(origen, {}).get('activos', 0)
+        candidatos = PerfilPsicologo.objects.filter(esta_activo=True).select_related('usuario')
+        mejor = None
+        alternativos = []
+        for p in candidatos:
+            if p.id == origen:
+                continue
+            eval_ = Compatibilidad(pac['id'], p.id, pac_map=pac_map, conteos=conteos, psi_extra=psi_extra)
+            if eval_ is None or not eval_['compatible']:
+                continue
+            carga_dest = eval_['destino_hoy']['activos']
+            item = {'psicologo': eval_['psicologo'], 'carga': carga_dest,
+                    'resumen': eval_['resumen'], 'checks': eval_['checks'],
+                    'destino_hoy': eval_['destino_hoy']}
+            alternativos.append(item)
+            if mejor is None or carga_dest < mejor['carga']:
+                mejor = item
+        if not mejor:
+            continue
+        propuestas.append({
+            'paciente': _chip_paciente(pac),
+            'origen_id': origen,
+            'mejor': mejor,
+            'alternativos': [a for a in sorted(alternativos, key=lambda x: x['carga'])[:3] if a is not mejor],
+            'alivio_origen': round(carga_origen - mejor['carga'], 1),
+            'delta_activos': conteos.get(origen, {}).get('activos', 0) - mejor['carga'],
+        })
+    propuestas.sort(key=lambda m: -m['delta_activos'])
+    return {'movimientos': propuestas[:limite], 'media_activos': media}

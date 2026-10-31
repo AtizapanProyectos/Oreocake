@@ -10386,3 +10386,121 @@ def api_intelligence_exportar(request):
     nombre = f'intelligence_{vista}_{timezone.localdate().isoformat()}.csv'
     respuesta['Content-Disposition'] = f'attachment; filename="{nombre}"'
     return respuesta
+
+
+# =========================================================================
+# DISTRIBUCIÓN & SIMULADOR DE REASIGNACIÓN (30/10/2026)
+# Herramienta visual e interactiva para balancear la carga entre
+# psicólogos. 100% SIMULACIÓN: ninguna vista de este bloque escribe en la
+# base de datos ni altera asignaciones reales. El cálculo vive en
+# core/analytics_engine.py (seccion Distribucion/Simulador) y el efecto de
+# cada movimiento se proyecta en el navegador del usuario.
+# =========================================================================
+
+@user_passes_test(es_admin, login_url='/')
+def panel_admin_distribucion(request):
+    """
+    /panel-admin/distribucion/
+    Página del simulador: tarjetas de psicólogos con sus pacientes como
+    burbujas arrastrables, panel de simulación en vivo, ficha del paciente
+    (formulario de registro completo) y sugerencias automáticas de
+    balanceo. Solo análisis; no modifica la base de datos.
+    """
+    return render(request, 'panel_admin_distribucion.html', {
+        'hoy': timezone.localdate(),
+    })
+
+
+@user_passes_test(es_admin, login_url='/')
+def api_intelligence_distribucion(request):
+    """
+    Foto real de la distribución: pacientes asignados por psicólogo
+    (activos / nuevos / en riesgo / inactivos), franjas y esquema vigente,
+    próximos 7 dias y bucket de pacientes sin asignar.
+    """
+    try:
+        return JsonResponse({'status': 'success',
+                             'distribucion': analytics_engine.Distribucion()})
+    except Exception as e:
+        return JsonResponse({'status': 'error',
+                             'message': f'Error al calcular distribución: {e}'}, status=500)
+
+
+@user_passes_test(es_admin, login_url='/')
+def api_intelligence_paciente_detalle(request):
+    """
+    Ficha del paciente para el modal del simulador: respuestas completas del
+    cuestionario (preferencia de terapeuta, disponibilidad de horario,
+    motivo, etc.), asignaciones reales y resumen de citas.
+    """
+    perfil_id = request.GET.get('paciente', '').strip()
+    if not perfil_id.isdigit():
+        return JsonResponse({'status': 'error', 'message': 'Id de paciente invalido.'}, status=400)
+    try:
+        detalle = analytics_engine.Paciente_Detalle(int(perfil_id))
+        return JsonResponse({'status': 'success', 'paciente': detalle})
+    except Exception as e:
+        return JsonResponse({'status': 'error',
+                             'message': f'Paciente no encontrado: {e}'}, status=404)
+
+
+@user_passes_test(es_admin, login_url='/')
+def api_intelligence_compatibilidad(request):
+    """
+    Verificación de compatibilidad paciente-psicólogo para SIMULAR una
+    reasignación: preferencia de género, tipo de sesión, esquema vigente y
+    solapamiento de franjas. Devuelve revisiones con nivel ok/aviso/
+    incompatible; NO realiza la reasignación.
+    """
+    pac = request.GET.get('paciente', '').strip()
+    psi = request.GET.get('psicologo', '').strip()
+    if not pac.isdigit() or not psi.isdigit():
+        return JsonResponse({'status': 'error',
+                             'message': 'Parámetros invalidos (paciente/psicologo).'}, status=400)
+    try:
+        data = analytics_engine.Compatibilidad(int(pac), int(psi))
+        if data is None:
+            return JsonResponse({'status': 'error',
+                                 'message': 'Paciente o psicologo inexistente.'}, status=404)
+        return JsonResponse({'status': 'success', 'compatibilidad': data})
+    except Exception as e:
+        return JsonResponse({'status': 'error',
+                             'message': f'Error al evaluar compatibilidad: {e}'}, status=500)
+
+
+@user_passes_test(es_admin, login_url='/')
+def api_intelligence_sugerencias(request):
+    """
+    Mejores destinos reales para UN paciente: psicólogos compatibles
+    ordenados por menor carga de activos, con revisiones y diferencia vs
+    su psicólogo actual. Solo lectura.
+    """
+    pac = request.GET.get('paciente', '').strip()
+    if not pac.isdigit():
+        return JsonResponse({'status': 'error', 'message': 'Id de paciente invalido.'}, status=400)
+    limite = request.GET.get('limite', '').strip()
+    limite = int(limite) if limite.isdigit() and int(limite) > 0 else 4
+    try:
+        data = analytics_engine.Sugerencias_Reasignacion(int(pac), limite=limite)
+        return JsonResponse({'status': 'success', **data})
+    except Exception as e:
+        return JsonResponse({'status': 'error',
+                             'message': f'Error al calcular sugerencias: {e}'}, status=500)
+
+
+@user_passes_test(es_admin, login_url='/')
+def api_intelligence_sugerencias_masivas(request):
+    """
+    Plan de balanceo sugerido: pacientes activos/nuevos con preferencia
+    'Indistinto' o sin registro que hoy cargan a psicólogos por encima de la
+    media, con el destino compatible de menor carga. Simulación pura; no
+    escribe en la base de datos.
+    """
+    limite = request.GET.get('limite', '').strip()
+    limite = int(limite) if limite.isdigit() and int(limite) > 0 else 25
+    try:
+        data = analytics_engine.Sugerencias_Automaticas(limite=limite)
+        return JsonResponse({'status': 'success', **data})
+    except Exception as e:
+        return JsonResponse({'status': 'error',
+                             'message': f'Error al generar el plan: {e}'}, status=500)

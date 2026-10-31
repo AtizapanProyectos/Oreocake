@@ -164,5 +164,13 @@ urlpatterns = [
     path('panel-admin/api/intelligence/horarios/', views.api_intelligence_horarios, name='api_intelligence_horarios'),
     path('panel-admin/api/intelligence/insights/', views.api_intelligence_insights, name='api_intelligence_insights'),
     path('panel-admin/api/intelligence/exportar/', views.api_intelligence_exportar, name='api_intelligence_exportar'),
+
+    # DISTRIBUCIÓN & SIMULADOR DE REASIGNACIÓN (30/10/2026) - solo análisis
+    path('panel-admin/distribucion/', views.panel_admin_distribucion, name='panel_admin_distribucion'),
+    path('panel-admin/api/intelligence/distribucion/', views.api_intelligence_distribucion, name='api_intelligence_distribucion'),
+    path('panel-admin/api/intelligence/paciente-detalle/', views.api_intelligence_paciente_detalle, name='api_intelligence_paciente_detalle'),
+    path('panel-admin/api/intelligence/compatibilidad/', views.api_intelligence_compatibilidad, name='api_intelligence_compatibilidad'),
+    path('panel-admin/api/intelligence/sugerencias/', views.api_intelligence_sugerencias, name='api_intelligence_sugerencias'),
+    path('panel-admin/api/intelligence/sugerencias-masivas/', views.api_intelligence_sugerencias_masivas, name='api_intelligence_sugerencias_masivas'),
 ]
 
