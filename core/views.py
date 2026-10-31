@@ -10504,3 +10504,51 @@ def api_intelligence_sugerencias_masivas(request):
     except Exception as e:
         return JsonResponse({'status': 'error',
                              'message': f'Error al generar el plan: {e}'}, status=500)
+
+
+@user_passes_test(es_admin, login_url='/')
+@require_POST
+def api_intelligence_reasignar(request):
+    """
+    Ejecuta la REASIGNACION REAL de un paciente (acción de Dirección con
+    CSRF activo). Recibe paciente + psicologo (JSON o form) y refleja el
+    cambio en las tres tablas de negocio en una transacción atómica:
+      - Cita (todas las citas futuras del paciente con el psicólogo actual).
+      - UsuarioPerfil.psicologo_asignado (perfil global).
+      - TratamientoPaciente activo (servicio asignado).
+    Antes de tocar nada valida la compatibilidad completa (preferencia de
+    género, tipo de sesión, esquema vigente y cruce de horario): si hay
+    conflicto duro NO modifica la base y devuelve el motivo detallado.
+    Registra EventoAuditoria con el usuario de Dirección.
+    """
+    if request.content_type and 'json' in request.content_type.lower():
+        try:
+            data = json.loads((request.body or b'').decode('utf-8') or '{}')
+        except (ValueError, UnicodeDecodeError):
+            return JsonResponse({'status': 'error',
+                                 'message': 'Cuerpo JSON invalido.'}, status=400)
+    else:
+        data = request.POST.dict()
+
+    pac = str(data.get('paciente', '')).strip()
+    psi = str(data.get('psicologo', '')).strip()
+    if not pac.isdigit() or not psi.isdigit():
+        return JsonResponse({'status': 'error',
+                             'message': 'Paciente y psicologo son obligatorios.'}, status=400)
+    try:
+        resultado = analytics_engine.Reasignar_Real(int(pac), int(psi),
+                                                    usuario=request.user)
+    except Exception as e:
+        return JsonResponse({'status': 'error',
+                             'message': f'Error al ejecutar la reasignación: {e}'}, status=500)
+    if resultado.get('ok'):
+        return JsonResponse({'status': 'success',
+                             'resultado': 'ok',
+                             'resumen': resultado['resumen'],
+                             'message': 'Reasignación realizada correctamente.'})
+    return JsonResponse({'status': 'error',
+                         'resultado': 'no_realizada',
+                         'tipo_error': resultado.get('tipo_error', 'desconocido'),
+                         'checks': resultado.get('checks', []),
+                         'message': resultado.get('motivo',
+                                                  'No fue posible realizar la reasignación.')})

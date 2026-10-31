@@ -172,5 +172,6 @@ urlpatterns = [
     path('panel-admin/api/intelligence/compatibilidad/', views.api_intelligence_compatibilidad, name='api_intelligence_compatibilidad'),
     path('panel-admin/api/intelligence/sugerencias/', views.api_intelligence_sugerencias, name='api_intelligence_sugerencias'),
     path('panel-admin/api/intelligence/sugerencias-masivas/', views.api_intelligence_sugerencias_masivas, name='api_intelligence_sugerencias_masivas'),
+    path('panel-admin/api/intelligence/reasignar/', views.api_intelligence_reasignar, name='api_intelligence_reasignar'),
 ]
 
