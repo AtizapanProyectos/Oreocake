@@ -262,11 +262,12 @@ class LogEnvioReporteIPPAdmin(admin.ModelAdmin):
         return False
 
     def has_delete_permission(self, request, obj=None):
-        return False
+        # Borrado permitido SOLO para superusuarios (cuestionario/perfil asignadopermiso)
+        return request.user.is_superuser
 
 
 # ==========================================
-# BITÁCORA DE AUTOMATIZACIÓN DE NOTAS CLÍNICAS (SOLO LECTURA, 28/10/2026)
+# BITÁCORA DE AUTOMATIZACIÓN DE NOTAS CLÍNICAS (28/10/2026)
 # ==========================================
 @admin.register(LogAutomatizacionNotas)
 class LogAutomatizacionNotasAdmin(admin.ModelAdmin):
@@ -287,4 +288,5 @@ class LogAutomatizacionNotasAdmin(admin.ModelAdmin):
         return False
 
     def has_delete_permission(self, request, obj=None):
-        return False
+        # Borrado permitido SOLO para superusuarios
+        return request.user.is_superuser
