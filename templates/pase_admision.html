@@ -1,425 +1,919 @@
-<!DOCTYPE html>
+{% load static %}<!DOCTYPE html>
 <html lang="es-mx">
 <!--
-  Pase de Admisión — credencial de sesión presencial (Espacio HOPE).
-  Plantilla independiente (no extiende base.html). Imprimible a PDF (Chromium).
+  =============================================================================
+  PASE DE ADMISIÓN OFICIAL — ESPACIO HOPE (SESIÓN PRESENCIAL)
+  Plantilla independiente, auto-contenida y optimizada para impresión física y PDF.
 
-  Contexto esperado (todo opcional; sin contexto muestra los datos de ejemplo del diseño):
-    paciente_nombre   — nombre completo del paciente
-    psicologa_nombre  — nombre de la psicóloga asignada a la cita
-    fecha_humana      — p. ej. "31 Oct. 2026"
-    hora_humana       — p. ej. "10:00 AM"
-    folio             — folio legible de la cita, p. ej. "HOPE-251031-0147"
-    modalidad         — p. ej. "Presencial" (se imprime en minúsculas en el chip)
-    lugar_nombre      — p. ej. "Centro HOPE"
-    lugar_linea1      — calle y número
-    lugar_linea2      — municipio / estado
-    qr_data           — contenido del QR (por defecto: verificar_url)
-    verificar_url     — p. ej. la ruta de verificación con el folio:
-                        "/pase/verificar/HOPE-251031-0147/"
-    qr_data_uri       — QR en data-URI generado en servidor (segno): es la
-                        opción preferida; si está presente se usa en lugar de
-                        el servicio externo.
-    maps_url          — enlace «Ver en Google Maps» de la sede.
+  Variables de contexto compatibles:
+    • logo_url         : URL opcional del logo (por defecto carga static y fallback base64)
+    • paciente_nombre  : Nombre completo del consultante / paciente
+    • psicologa_nombre : Nombre de la especialista (o psicologo_nombre)
+    • psicologo_nombre : Nombre del especialista alternativo
+    • fecha_humana     : Fecha legible (ej. "31 Oct. 2026")
+    • hora_humana      : Hora legible (ej. "10:00 AM")
+    • modalidad        : Modalidad de atención (ej. "Presencial")
+    • lugar_nombre     : Nombre de la sede (ej. "Centro HOPE")
+    • lugar_linea1     : Dirección línea 1 (calle y número)
+    • lugar_linea2     : Dirección línea 2 (municipio / estado)
+    • maps_url         : Enlace directo a Google Maps
+    • folio            : Folio de la cita (ej. "HOPE-251031-0147")
+    • qr_data_uri      : Data-URI del código QR generado por el servidor
+    • qr_data          : Contenido del QR en texto plano si no hay data-uri
+    • verificar_url    : URL pública de verificación de la cita
+    • marca_correo     : Correo oficial de contacto (ej. "contacto@espaciohope.com")
+  =============================================================================
 -->
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pase de Admisión · {% if folio %}{{ folio }}{% else %}HOPE-251031-0147{% endif %}</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;700;800;900&family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --purple: #5A3FA3;          /* Ola frontal / figura clave        */
-            --purple-wave: #8F63D9;     /* Ola trasera                       */
-            --purple-ink: #3E2A75;      /* Títulos enfáticos                 */
-            --ink: #241A47;             /* Texto principal sobre claro       */
-            --muted: #645C96;           /* Texto secundario (tintado, no gris) */
-            --pink: #F85B8C;            /* Fucsia de marca                   */
-            --orange: #F27C21;
-            --yellow: #F8D33D;
-            --teal: #25B8B8;
-            --line: #EFEBFA;
-            --ground: #E9E3F6;
-            --font-h: 'Outfit', sans-serif;
-            --font-b: 'Plus Jakarta Sans', sans-serif;
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pase de Admisión · {% if folio %}{{ folio }}{% else %}HOPE-251031-0147{% endif %}</title>
 
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+  <!-- Tipografías institucionales HOPE -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800;900&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
 
-        body {
-            font-family: var(--font-b);
-            color: var(--ink);
-            background:
-                radial-gradient(120% 90% at 50% -10%, #F3EFFB 0%, var(--ground) 58%, #DFD6F0 100%);
-            min-height: 100vh;
-            display: grid;
-            place-items: center;
-            padding: 24px;
-            -webkit-print-color-adjust: exact;
-            print-color-adjust: exact;
-        }
+  <style>
+    :root {
+      /* Paleta institucional de marca HOPE */
+      --purple-primary: #5B45A8;
+      --purple-deep: #2A1F5C;
+      --purple-light: #7A5FD3;
+      --purple-soft: #F4F0FD;
+      --purple-border: #E5DEF7;
 
-        /* ——— La credencial ——————————————————————————————————————— */
-        .pase {
-            position: relative;
-            min-width: 0;
-            width: min(380px, 100%);
-            background: #fff;
-            border-radius: 30px;
-            overflow: hidden;
-            box-shadow: 0 18px 40px -18px rgba(62, 42, 117, .38),
-                        0 4px 12px -4px rgba(62, 42, 117, .12);
-            animation: llegar .55s cubic-bezier(0.22, 1, 0.36, 1) both;
-        }
-        @media (prefers-reduced-motion: reduce) { .pase { animation: none; } }
-        @keyframes llegar {
-            from { opacity: 0; transform: translateY(14px); }
-            to   { opacity: 1; transform: none; }
-        }
+      --teal-primary: #27C9C9;
+      --teal-dark: #0D8F8F;
+      --teal-soft: #E8F9F9;
 
-        /* Recortes de marca en las esquinas superiores */
-        .pase::before,
-        .pase::after {
-            content: "";
-            position: absolute;
-            top: 0;
-            pointer-events: none;
-        }
-        .pase::before {                       /* arco turquesa — sup. izquierda */
-            left: 0;
-            width: 112px;
-            height: 84px;
-            background: linear-gradient(160deg, #2BC9C9 0%, var(--teal) 100%);
-            border-bottom-right-radius: 100% 100%;
-        }
-        .pase::after {                        /* disco amarillo — sup. derecha */
-            right: -30px;
-            top: -34px;
-            width: 104px;
-            height: 104px;
-            background: linear-gradient(210deg, #FFDD64 0%, var(--yellow) 100%);
-            border-radius: 50%;
-        }
+      --pink-primary: #F24C85;
+      --pink-soft: #FDE9F1;
 
-        .pase-cuerpo { padding: 38px 26px 28px; }
+      --yellow-primary: #FFD62E;
+      --yellow-soft: #FFF9DB;
 
-        /* ——— Logotipo HOPE ————————————————————————————————————— */
-        .wordmark {
-            font-family: var(--font-h);
-            font-weight: 900;
-            font-size: 58px;
-            line-height: 1;
-            letter-spacing: .01em;
-            text-align: center;
-        }
-        .wm-teal  { color: var(--teal); }
-        .wm-pink  { color: var(--pink); }
-        .wm-purple{ color: var(--purple); }
-        .wm-orange{ color: var(--orange); }
+      --orange-primary: #F2703F;
+      --orange-soft: #FEF0EA;
 
-        /* La «O» fucsia con corazón blanco */
-        .wm-o {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: .80em;
-            height: .80em;
-            border-radius: 50%;
-            background: var(--pink);
-            vertical-align: -.045em;
-        }
-        .wm-o svg { width: .38em; height: .36em; }
+      --ink-dark: #1E1743;
+      --ink-muted: #645C94;
+      --ink-subtle: #8D85B8;
 
-        .tagline {
-            display: flex;
-            justify-content: center;
-            gap: 12px;
-            margin-top: 10px;
-            font-family: var(--font-h);
-            font-weight: 800;
-            font-size: 11px;
-            letter-spacing: .07em;
-            text-transform: uppercase;
-            white-space: nowrap;
-        }
-        .tagline span:nth-child(1) { color: #157C7C; }
-        .tagline span:nth-child(2) { color: var(--purple); }
-        .tagline span:nth-child(3) { color: #D81B5C; }
+      --white: #FFFFFF;
+      --border-color: #E8E2F6;
 
-        /* ——— Título ———————————————————————————————————————————— */
-        .titulo {
-            margin-top: 26px;
-            font-family: var(--font-h);
-            font-weight: 800;
-            font-size: 40px;
-            line-height: 1;
-            letter-spacing: .015em;
-            color: var(--purple-ink);
-            text-align: center;
-        }
-        .subtitulo {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 12px;
-            margin-top: 8px;
-            font-family: var(--font-h);
-            font-weight: 700;
-            font-size: 13px;
-            letter-spacing: .55em;
-            text-indent: .55em;   /* compensa el letter-spacing del último glifo */
-            color: var(--purple);
-        }
-        .subtitulo::before,
-        .subtitulo::after {
-            content: "";
-            flex: none;
-            width: 22px;
-            height: 2px;
-            border-radius: 2px;
-            background: var(--purple);
-        }
+      --font-display: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      --font-body: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
 
-        /* ——— Ilustración (cabeza + corazón) ————————————————————— */
-        .arte {
-            display: block;
-            width: 96px;
-            margin: 24px auto 22px;
-        }
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
 
-        /* ——— Datos ———————————————————————————————————————————— */
-        .dato-principal { text-align: center; }
-        .dato-principal .etiqueta {
-            font-size: 14.5px;
-            font-weight: 600;
-            color: var(--ink);
-        }
-        .dato-principal .valor {
-            margin-top: 2px;
-            font-family: var(--font-h);
-            font-weight: 700;
-            font-size: 21px;
-            color: var(--purple-ink);
-        }
+    body {
+      font-family: var(--font-body);
+      color: var(--ink-dark);
+      background: #4A3590;
+      background: radial-gradient(circle at 15% 20%, #7155C8 0%, #4A3590 50%, #2A1F5C 100%);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 32px 16px 48px;
+      position: relative;
+      overflow-x: hidden;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
 
-        .divisor {
-            border: 0;
-            border-top: 2px solid var(--line);
-            margin: 20px 0;
-        }
+    /* Fondos decorativos vectoriales dinámicos */
+    .fondo-geometrico {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      pointer-events: none;
+      opacity: 0.85;
+    }
 
-        .fila-datos {
-            display: flex;
-            align-items: center;
-            gap: 9px;
-            margin-top: 12px;
-            font-size: 15px;
-            font-weight: 700;
-            color: var(--ink);
-        }
-        .fila-datos svg { flex: none; width: 19px; height: 19px; }
-        .fila-par { display: flex; flex-wrap: wrap; gap: 12px; }
-        .fila-par .fila-datos { flex: 1; white-space: nowrap; }
+    /* Barra superior interactiva de acciones (solo visualización web) */
+    .barra-acciones {
+      position: relative;
+      z-index: 10;
+      width: min(440px, 100%);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 16px;
+      padding: 10px 18px;
+      background: rgba(255, 255, 255, 0.16);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      border-radius: 999px;
+      color: #FFFFFF;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+    }
+    .barra-acciones .info-txt {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: .02em;
+    }
+    .barra-acciones .info-txt svg {
+      width: 17px;
+      height: 17px;
+      color: var(--teal-primary);
+    }
+    .btn-imprimir {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--teal-primary);
+      color: var(--purple-deep);
+      border: none;
+      border-radius: 999px;
+      padding: 8px 16px;
+      font-family: var(--font-display);
+      font-weight: 800;
+      font-size: 13px;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: 0 4px 12px rgba(39, 201, 201, 0.4);
+    }
+    .btn-imprimir:hover {
+      background: #FFFFFF;
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(255, 255, 255, 0.5);
+    }
+    .btn-imprimir svg {
+      width: 16px;
+      height: 16px;
+    }
 
-        .lugar { display: flex; gap: 9px; margin-top: 4px; }
-        .lugar svg { flex: none; width: 19px; height: 19px; margin-top: 2px; }
-        .lugar .nombre {
-            font-family: var(--font-h);
-            font-weight: 700;
-            font-size: 16.5px;
-            color: var(--purple-ink);
-        }
-        .lugar .direccion {
-            margin-top: 1px;
-            font-size: 13.5px;
-            font-weight: 600;
-            line-height: 1.45;
-            color: var(--muted);
-        }
-        .link-maps {
-            display: inline-block;
-            margin-top: 4px;
-            font-size: 12px;
-            font-weight: 800;
-            color: var(--teal);
-            text-decoration: none;
-        }
-        .link-maps:hover { text-decoration: underline; }
+    /* =========================================================================
+       TARJETA PRINCIPAL DEL PASE DE ADMISIÓN
+       ========================================================================= */
+    .pase-card {
+      position: relative;
+      z-index: 1;
+      width: min(440px, 100%);
+      background: #FFFFFF;
+      border-radius: 32px;
+      overflow: hidden;
+      box-shadow:
+        0 24px 50px -12px rgba(18, 10, 50, 0.55),
+        0 0 0 1px rgba(255, 255, 255, 0.2),
+        0 0 0 8px rgba(255, 255, 255, 0.08);
+      animation: animEntrada 0.55s cubic-bezier(0.2, 0.9, 0.3, 1) both;
+    }
+    @keyframes animEntrada {
+      from { opacity: 0; transform: translateY(20px) scale(0.98); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
 
-        .chip-modalidad {
-            display: inline-flex;
-            align-items: center;
-            gap: 7px;
-            margin-top: 16px;
-            padding: 5px 12px;
-            border: 1.5px solid #BFE6E6;
-            border-radius: 999px;
-            background: #F2FBFB;
-            font-size: 11.5px;
-            font-weight: 800;
-            letter-spacing: .12em;
-            text-transform: uppercase;
-            color: #146464;
-        }
-        .chip-modalidad i {
-            width: 7px;
-            height: 7px;
-            border-radius: 50%;
-            background: var(--teal);
-        }
+    /* Cabecera del pase */
+    .pase-header {
+      position: relative;
+      background: linear-gradient(180deg, #FAF7FF 0%, #FFFFFF 100%);
+      padding: 30px 24px 18px;
+      text-align: center;
+      border-bottom: 1px solid #F1ECFC;
+    }
 
-        /* ——— Pie: ola + QR ————————————————————————————————————— */
-        .pase-pie {
-            position: relative;
-            display: flex;
-            align-items: flex-end;
-            gap: 18px;
-            padding: 44px 26px 24px;
-            color: #fff;
-        }
-        .pase-pie .ola {
-            position: absolute;
-            inset: 0;
-            width: 100%;
-            height: 100%;
-            z-index: -1;
-        }
-        .qr {
-            flex: none;
-            width: 86px;
-            height: 86px;
-            padding: 7px;
-            background: #fff;
-            border-radius: 12px;
-        }
-        .qr img { display: block; width: 100%; height: 100%; }
-        .verifica {
-            font-family: var(--font-h);
-            font-weight: 700;
-            font-size: 19px;
-            line-height: 1.25;
-        }
-        .folio {
-            margin-top: 6px;
-            font-size: 11.5px;
-            font-weight: 700;
-            letter-spacing: .04em;
-            color: rgba(255, 255, 255, .95);
-        }
-        .marca-pie {
-            margin-top: 3px;
-            font-family: var(--font-h);
-            font-size: 11px;
-            font-weight: 600;
-            letter-spacing: .14em;
-            text-transform: uppercase;
-            color: rgba(255, 255, 255, .72);
-        }
+    /* Ranura troquelada superior estilo credencial */
+    .ranura-credencial {
+      width: 56px;
+      height: 7px;
+      background: #E5DEF7;
+      border-radius: 6px;
+      margin: 0 auto 16px;
+      box-shadow: inset 0 2px 3px rgba(42, 31, 92, 0.2);
+    }
 
-        /* ——— Impresión ————————————————————————————————————————— */
-        @media print {
-            body { background: #fff; padding: 0; }
-            .pase {
-                width: 380px;
-                box-shadow: none;
-                border: 1px solid var(--line);
-                animation: none;
-            }
-            @page { margin: 12mm; }
-        }
+    /* Contenedor del Logo Institucional HOPE */
+    .logo-hope-wrapper {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 14px;
+      padding: 4px 10px;
+    }
+    .logo-hope-img {
+      display: block;
+      max-height: 48px;
+      max-width: 250px;
+      width: auto;
+      height: auto;
+      object-fit: contain;
+    }
 
-        @media (max-width: 420px) {
-            body { padding: 14px; }
-            .wordmark { font-size: 52px; }
-            .titulo { font-size: 36px; }
-        }
-    </style>
+    .badge-estado {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 5px 14px;
+      border-radius: 999px;
+      background: var(--teal-soft);
+      border: 1px solid #B8EFEF;
+      color: var(--teal-dark);
+      font-family: var(--font-display);
+      font-weight: 800;
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+    .badge-estado .dot-status {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--teal-dark);
+      box-shadow: 0 0 0 2px rgba(13, 143, 143, 0.25);
+    }
+
+    .titulo-pase {
+      font-family: var(--font-display);
+      font-weight: 900;
+      font-size: 32px;
+      line-height: 1.05;
+      letter-spacing: 0.02em;
+      color: var(--purple-deep);
+    }
+    .subtitulo-pase {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 6px;
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 11px;
+      letter-spacing: 0.4em;
+      text-indent: 0.4em;
+      color: var(--purple-primary);
+      text-transform: uppercase;
+    }
+    .subtitulo-pase::before,
+    .subtitulo-pase::after {
+      content: "";
+      width: 24px;
+      height: 2px;
+      border-radius: 2px;
+      background: linear-gradient(90deg, var(--teal-primary), var(--pink-primary));
+    }
+
+    /* Cuerpo del pase */
+    .pase-body {
+      padding: 20px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    /* Tarjeta del Consultante (protagonista) */
+    .card-consultante {
+      position: relative;
+      padding: 16px 20px 18px;
+      border-radius: 22px;
+      background: linear-gradient(135deg, #5B45A8 0%, #43308A 100%);
+      color: #FFFFFF;
+      overflow: hidden;
+      box-shadow: 0 10px 22px -8px rgba(91, 69, 168, 0.6);
+    }
+    /* Manchas decorativas en la tarjeta del consultante */
+    .card-consultante::before {
+      content: "";
+      position: absolute;
+      right: -24px;
+      top: -24px;
+      width: 90px;
+      height: 90px;
+      border-radius: 50%;
+      background: var(--yellow-primary);
+      opacity: 0.92;
+      pointer-events: none;
+    }
+    .card-consultante::after {
+      content: "";
+      position: absolute;
+      left: -20px;
+      bottom: -30px;
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: var(--teal-primary);
+      opacity: 0.85;
+      pointer-events: none;
+    }
+    .card-consultante > * {
+      position: relative;
+      z-index: 1;
+    }
+    .etiqueta-consultante {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-family: var(--font-display);
+      font-size: 10.5px;
+      font-weight: 800;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: #F1ECFC;
+      margin-bottom: 4px;
+    }
+    .etiqueta-consultante svg {
+      width: 14px;
+      height: 14px;
+      color: var(--yellow-primary);
+    }
+    .nombre-consultante {
+      font-family: var(--font-display);
+      font-weight: 800;
+      font-size: clamp(21px, 6vw, 25px);
+      line-height: 1.15;
+      color: #FFFFFF;
+      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+      word-break: break-word;
+    }
+    .tipo-servicio-consultante {
+      margin-top: 4px;
+      font-size: 11.5px;
+      font-weight: 600;
+      color: rgba(255, 255, 255, 0.82);
+      letter-spacing: 0.02em;
+    }
+
+    /* Tarjeta del Psicólogo asignado */
+    .card-especialista {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 12px 16px;
+      border-radius: 18px;
+      background: var(--purple-soft);
+      border: 1px solid var(--purple-border);
+    }
+    .icono-psico {
+      flex: none;
+      width: 40px;
+      height: 40px;
+      border-radius: 14px;
+      background: #FFFFFF;
+      display: grid;
+      place-items: center;
+      box-shadow: 0 4px 10px rgba(91, 69, 168, 0.12);
+      border: 1px solid #ECE6FA;
+    }
+    .icono-psico svg {
+      width: 22px;
+      height: 22px;
+      color: var(--purple-primary);
+    }
+    .info-psico .etiqueta-psico {
+      font-family: var(--font-display);
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--ink-muted);
+    }
+    .info-psico .nombre-psico {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 15.5px;
+      color: var(--purple-deep);
+      line-height: 1.25;
+      margin-top: 2px;
+    }
+
+    /* Fila de detalles: Fecha y Hora */
+    .grid-horario {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .tile-dato {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 14px;
+      border-radius: 16px;
+      font-family: var(--font-display);
+    }
+    .tile-dato svg {
+      flex: none;
+      width: 22px;
+      height: 22px;
+    }
+    .tile-dato .dato-text {
+      display: flex;
+      flex-direction: column;
+    }
+    .tile-dato .dato-label {
+      font-size: 9.5px;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      line-height: 1;
+      margin-bottom: 3px;
+    }
+    .tile-dato .dato-val {
+      font-size: 15px;
+      font-weight: 800;
+      line-height: 1.15;
+    }
+    .tile-fecha {
+      background: var(--yellow-soft);
+      border: 1px solid #F5E7A0;
+      color: #6C5200;
+    }
+    .tile-fecha svg {
+      color: #9E7700;
+    }
+    .tile-hora {
+      background: var(--teal-soft);
+      border: 1px solid #B7ECEC;
+      color: #0A6767;
+    }
+    .tile-hora svg {
+      color: #0D8F8F;
+    }
+
+    /* Sede y Ubicación */
+    .card-sede {
+      display: flex;
+      gap: 14px;
+      padding: 14px 16px;
+      border-radius: 20px;
+      border: 1.5px dashed var(--purple-border);
+      background: #FBFAFE;
+    }
+    .icono-pin {
+      flex: none;
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: var(--pink-primary);
+      display: grid;
+      place-items: center;
+      color: #FFFFFF;
+      box-shadow: 0 4px 12px rgba(242, 76, 133, 0.35);
+    }
+    .icono-pin svg {
+      width: 20px;
+      height: 20px;
+    }
+    .info-sede {
+      flex: 1;
+    }
+    .info-sede .sede-nombre {
+      font-family: var(--font-display);
+      font-weight: 800;
+      font-size: 15.5px;
+      color: var(--purple-deep);
+    }
+    .info-sede .sede-direccion {
+      margin-top: 3px;
+      font-size: 12.5px;
+      font-weight: 600;
+      line-height: 1.4;
+      color: var(--ink-muted);
+    }
+    .info-sede .link-maps {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      margin-top: 6px;
+      font-family: var(--font-display);
+      font-size: 11.5px;
+      font-weight: 800;
+      color: var(--teal-dark);
+      text-decoration: none;
+      transition: color 0.15s ease;
+    }
+    .info-sede .link-maps:hover {
+      color: var(--purple-primary);
+      text-decoration: underline;
+    }
+
+    /* Modalidad pill centrado */
+    .fila-modalidad {
+      text-align: center;
+      margin-top: -2px;
+      margin-bottom: 2px;
+    }
+    .chip-modalidad {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 6px 14px;
+      border-radius: 999px;
+      background: var(--orange-soft);
+      border: 1px solid #FCD4C2;
+      color: #9C3911;
+      font-family: var(--font-display);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+    .chip-modalidad i {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--orange-primary);
+    }
+
+    /* =========================================================================
+       LÍNEA DE PERFORACIÓN DEL TICKET (CORTE DE ABORDAJE)
+       ========================================================================= */
+    .perforacion-ticket {
+      position: relative;
+      height: 28px;
+      background: #FFFFFF;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0;
+    }
+    .linea-puntos {
+      width: calc(100% - 44px);
+      border-bottom: 2px dashed #D6CBEE;
+    }
+    .muesca-izq,
+    .muesca-der {
+      position: absolute;
+      top: 50%;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: #4A3590; /* Se empata con el fondo para simular troquel */
+      transform: translateY(-50%);
+    }
+    .muesca-izq { left: -11px; }
+    .muesca-der { right: -11px; }
+
+    /* =========================================================================
+       PIE DE SEGURIDAD Y VERIFICACIÓN QR
+       ========================================================================= */
+    .pase-footer {
+      position: relative;
+      background: linear-gradient(135deg, #4A3590 0%, #352373 100%);
+      color: #FFFFFF;
+      padding: 24px 24px 22px;
+      overflow: hidden;
+    }
+    /* Ola estilizada en pie */
+    .ola-fondo-footer {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      pointer-events: none;
+      opacity: 0.45;
+    }
+    .contenido-footer {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      align-items: center;
+      gap: 18px;
+    }
+    .marco-qr {
+      flex: none;
+      width: 98px;
+      height: 98px;
+      padding: 7px;
+      background: #FFFFFF;
+      border-radius: 16px;
+      box-shadow: 0 8px 18px rgba(0, 0, 0, 0.35);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .marco-qr img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      image-rendering: -webkit-optimize-contrast;
+      image-rendering: crisp-edges;
+    }
+    .info-verificacion {
+      flex: 1;
+    }
+    .info-verificacion .titulo-verificacion {
+      font-family: var(--font-display);
+      font-weight: 800;
+      font-size: 18px;
+      line-height: 1.15;
+      color: #FFFFFF;
+    }
+    .info-verificacion .sub-verificacion {
+      margin-top: 3px;
+      font-size: 11px;
+      font-weight: 600;
+      color: rgba(255, 255, 255, 0.8);
+      line-height: 1.35;
+    }
+    .info-verificacion .badge-folio {
+      display: inline-block;
+      margin-top: 8px;
+      padding: 4px 10px;
+      border-radius: 6px;
+      background: rgba(255, 214, 46, 0.16);
+      border: 1px solid rgba(255, 214, 46, 0.4);
+      font-family: var(--font-display);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      color: var(--yellow-primary);
+    }
+    .info-verificacion .firma-hope {
+      margin-top: 6px;
+      font-family: var(--font-display);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.6);
+    }
+
+    /* Pautas breves al reverso o pie */
+    .pautas-paciente {
+      position: relative;
+      z-index: 1;
+      margin-top: 16px;
+      padding-top: 14px;
+      border-top: 1px dashed rgba(255, 255, 255, 0.2);
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      font-size: 10px;
+      font-weight: 600;
+      color: rgba(255, 255, 255, 0.85);
+      line-height: 1.3;
+    }
+    .pautas-paciente span {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .pautas-paciente svg {
+      flex: none;
+      width: 12px;
+      height: 12px;
+      color: var(--teal-primary);
+    }
+
+    /* =========================================================================
+       REGLAS ESTRICTAS DE IMPRESIÓN Y CONVERSIÓN A PDF (@media print)
+       ========================================================================= */
+    @page {
+      size: portrait;
+      margin: 10mm 12mm;
+    }
+
+    @media print {
+      body {
+        background: #FFFFFF !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        display: block !important;
+        min-height: auto !important;
+      }
+
+      /* Ocultar elementos visuales no aptos para impresión */
+      .no-print,
+      .barra-acciones,
+      .fondo-geometrico {
+        display: none !important;
+      }
+
+      .pase-card {
+        width: 100% !important;
+        max-width: 440px !important;
+        margin: 0 auto !important;
+        box-shadow: none !important;
+        border: 1px solid #D6CBEE !important;
+        animation: none !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+      }
+
+      /* Color de fondo simulado para muescas en papel */
+      .muesca-izq,
+      .muesca-der {
+        background: #FFFFFF !important;
+        border: 1px solid #D6CBEE !important;
+      }
+
+      /* Forzar fidelidad total del color y vectores */
+      * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+    }
+
+    @media (max-width: 480px) {
+      body {
+        padding: 16px 10px 32px;
+      }
+      .pase-card {
+        border-radius: 26px;
+      }
+      .pase-header {
+        padding: 24px 18px 14px;
+      }
+      .pase-body {
+        padding: 16px 18px;
+      }
+      .grid-horario {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
 </head>
 <body>
 
-    <main class="pase" role="article" aria-label="Pase de admisión a sesión">
-        <div class="pase-cuerpo">
+  <!-- Fondo vectorial de marca HOPE -->
+  <svg class="fondo-geometrico no-print" viewBox="0 0 800 1000" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+    <path d="M-60 1060 C-60 700 40 560 160 600 C260 635 230 900 200 1060" fill="none" stroke="#27C9C9" stroke-width="86" stroke-linecap="round" opacity="0.3"/>
+    <path d="M860 -40 C760 120 780 260 700 300 C620 340 560 200 640 120" fill="none" stroke="#FFD62E" stroke-width="64" stroke-linecap="round" opacity="0.25"/>
+    <circle cx="720" cy="880" r="70" fill="#F24C85" opacity="0.2"/>
+    <circle cx="90" cy="120" r="34" fill="#F2703F" opacity="0.25"/>
+  </svg>
 
-            <div class="wordmark" aria-label="HOPE">
-                <span class="wm-teal">H</span><span class="wm-o"><svg viewBox="0 0 40 36" role="img" aria-hidden="true"><path d="M20 34.5C12.5 28.7 2.5 21.4 2.5 12.6 2.5 6.9 6.8 2.5 12.2 2.5c3.1 0 6 1.5 7.8 4 1.8-2.5 4.7-4 7.8-4 5.4 0 9.7 4.4 9.7 10.1 0 8.8-10 16.1-17.5 21.9z" fill="#fff"/></svg></span><span class="wm-purple">P</span><span class="wm-orange">E</span>
-            </div>
-            <p class="tagline"><span>Oportunidad</span><span>Prevención</span><span>Esperanza</span></p>
+  <!-- Barra de acciones interactiva (solo pantalla, se oculta en impresión) -->
+  <div class="barra-acciones no-print" role="toolbar" aria-label="Acciones del pase">
+    <div class="info-txt">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      <span>Pase de Admisión HOPE</span>
+    </div>
+    <button type="button" class="btn-imprimir" onclick="window.print()" title="Imprimir pase o guardar como PDF">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+      <span>Imprimir / PDF</span>
+    </button>
+  </div>
 
-            <h1 class="titulo">ADMISIÓN</h1>
-            <p class="subtitulo">PASE</p>
+  <!-- TARJETA PRINCIPAL DEL PASE -->
+  <main class="pase-card" role="article" aria-label="Pase de admisión presencial a sesión psicológica">
 
-            <!-- Cabeza con corazón de bienestar -->
-            <svg class="arte" viewBox="0 0 120 104" role="img" aria-label="Perfil de una persona con un corazón">
-                <path d="M79 10 C60 4.5 42 13 36.5 28.5 33.6 36.6 33.9 42.7 30.4 49.2 L24.7 59.6 c-1.7 3.1 0 5.6 3.4 5.6 l6.4 0 0 14.6 c0 5.5 3.6 8.8 9 8.8 l6.2 0.02 c2.9 0 5-2.3 5-5.2 l0-7.3" fill="none" stroke="#5A3FA3" stroke-width="4.4" stroke-linecap="round" stroke-linejoin="round"/>
-                <path d="M70.5 11.9 c8.6 1.5 15.4 8 17.2 16.4" fill="none" stroke="#5A3FA3" stroke-width="4.4" stroke-linecap="round"/>
-                <path d="M73 34 c4.2-5.4 12.2-3.4 13.4 2.6 1.2-6 9.2-8 13.4-2.6 3.6 4.6 1.4 11-4.6 15.8 -2.9 2.3-6.2 4.3-8.8 5.7 -2.6-1.4-5.9-3.4-8.8-5.7 -6-4.8-8.2-11.2-4.6-15.8z" fill="#F85B8C" stroke="#5A3FA3" stroke-width="3.2" stroke-linejoin="round"/>
-                <g stroke="#F8D33D" stroke-width="4.6" stroke-linecap="round">
-                    <path d="M13.5 34 L6 30"/>
-                    <path d="M15.5 46 L7 46"/>
-                    <path d="M13.5 58 L7.5 62.5"/>
-                </g>
-            </svg>
+    <!-- CABECERA -->
+    <header class="pase-header">
+      <div class="ranura-credencial" aria-hidden="true"></div>
 
-            <div class="dato-principal">
-                <p class="etiqueta">Psicólogo/a:</p>
-                <p class="valor">{% if psicologa_nombre %}{{ psicologa_nombre }}{% elif psicologo_nombre %}{{ psicologo_nombre }}{% else %}Dra. Mariana López Torres{% endif %}</p>
-            </div>
+      <!-- LOGOTIPO OFICIAL HOPE EXTENDIDO:
+           Compatible con static, logo_url opcional y fallback embebido base64 para Chromium/PDF -->
+      <div class="logo-hope-wrapper">
+        <img class="logo-hope-img"
+             alt="HOPE · Oportunidad, Prevención, Esperanza"
+             src="{% if logo_url %}{{ logo_url }}{% else %}{% static 'img/logo_hope_extendido.png' %}{% endif %}"
+             onerror="this.onerror=null; this.src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAlgAAADkCAYAAABE8Vr7AAAACXBIWXMAABYlAAAWJQFJUiTwAAAgAElEQVR4nO3dMXPiSP7/8c/+73L7qHJsLr7A3nsCZggd2L7QkTWJM2o8yaXG6S9ZtsicjBwRrseBQ1Z+Ard2cPHh2FXc8ACu5h+oNTRYgASCbon3q8q1rAfDF5DUH7pbrZ++f/8uAAAAFOf/uS4AAACgaghYAAAABSMgAUAAFAwAhYAAEDBCFgAAQMEIWAAAAAUjYAEAABSMgAUAAFAwAhYAAEDBCFgAAAAF+7PrAgDEhq1mXVJd0qGkXXO7bv75UNJOzod8sm5H5r/Pkr7Vuv3o3b0BAIX5iWsRAps3bDUPFYem5OfIQRmvkgaKw9ezpOdatz9wUAcAVE6hAeu//+wFkoLCHrB4V3/5v/Nn10Vk8d9/9jqKG14fhX/5v/NQdRFlYnqnziQ1zE/e3qhNGSkOXJGkqNbtl2J/qZq3k5tDSR3XdTgWTd/ee7iO0u5YVf/7998D+d2mbovwT3/7V5j3j4oeIqzLzTfxrHZdF5CDq16NLCLXBZSB6aUKFAerfbfVZLYj6dT8aNhqvir+vO8VB65v7krbKrvyd//fFPv1X0vS28mNFPe8PpufSNLz3sN1VbfLutgOfBAt80fMwQIPV...8HOYzGeXA4ArEAAAAASUVORK5CYII=';">
+      </div>
 
-            <hr class="divisor">
+      <div class="badge-estado">
+        <span class="dot-status" aria-hidden="true"></span>
+        <span>Cita Confirmada · Presencial</span>
+      </div>
 
-            <div class="fila-par">
-                <p class="fila-datos">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="#5A3FA3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="Fecha"><rect x="3" y="4.5" width="18" height="16" rx="3"/><path d="M3 9.5 h18"/><path d="M8 2.5 v4 M16 2.5 v4"/></svg>
-                    {% if fecha_humana %}{{ fecha_humana }}{% else %}31 Oct. 2026{% endif %}
-                </p>
-                <p class="fila-datos">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="#5A3FA3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="Hora"><circle cx="12" cy="12" r="9"/><path d="M12 7 v5 l3.2 2"/></svg>
-                    {% if hora_humana %}{{ hora_humana }}{% else %}10:00 AM{% endif %}
-                </p>
-            </div>
+      <h1 class="titulo-pase">ADMISIÓN</h1>
+      <p class="subtitulo-pase">Pase Oficial</p>
+    </header>
 
-            <p class="fila-datos">
-                <svg viewBox="0 0 24 24" fill="none" stroke="#5A3FA3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="Paciente"><circle cx="12" cy="8" r="4"/><path d="M4.5 20.5 c1.3-4 4-6 7.5-6 s6.2 2 7.5 6"/></svg>
-                {% if paciente_nombre %}{{ paciente_nombre }}{% else %}Ana Sofía García Méndez{% endif %}
-            </p>
+    <!-- CUERPO PRINCIPAL CON LOS DATOS DE LA CITA -->
+    <section class="pase-body">
 
-            <hr class="divisor">
+      <!-- TARJETA DEL CONSULTANTE (PROTAGONISTA) -->
+      <div class="card-consultante">
+        <span class="etiqueta-consultante">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></svg>
+          Consultante
+        </span>
+        <h2 class="nombre-consultante">{% if paciente_nombre %}{{ paciente_nombre }}{% else %}Ana Sofía García Méndez{% endif %}</h2>
+        <p class="tipo-servicio-consultante">Consulta de Atención Psicológica Presencial</p>
+      </div>
 
-            <div class="lugar">
-                <svg viewBox="0 0 24 24" fill="none" stroke="#5A3FA3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="Sede"><path d="M12 21.5 c-4.2-4.6-7.5-8.6-7.5-12.4 A7.5 7.5 0 0 1 12 1.6 A7.5 7.5 0 0 1 19.5 9.1 c0 3.8-3.3 7.8-7.5 12.4z" transform="translate(0 1)"/><circle cx="12" cy="9.2" r="2.6"/></svg>
-                <div>
-                    <p class="nombre">{% if lugar_nombre %}{{ lugar_nombre }}{% else %}Centro HOPE{% endif %}</p>
-                    <p class="direccion">{% if lugar_linea1 %}{{ lugar_linea1 }}{% else %}Av. Innovación 123,{% endif %}<br>{% if lugar_linea2 %}{{ lugar_linea2 }}{% else %}Atizapán de Zaragoza, Edo. de México{% endif %}</p>
-                    {% if maps_url %}<a class="link-maps" href="{{ maps_url }}">Ver en Google Maps →</a>{% endif %}
-                </div>
-            </div>
+      <!-- ESPECIALISTA / PSICÓLOGO(A) ASIGNADO(A) -->
+      <div class="card-especialista">
+        <div class="icono-psico" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        </div>
+        <div class="info-psico">
+          <p class="etiqueta-psico">Especialista Asignado(a)</p>
+          <p class="nombre-psico">{% if psicologa_nombre %}{{ psicologa_nombre }}{% elif psicologo_nombre %}{{ psicologo_nombre }}{% else %}Dra. Mariana López Torres{% endif %}</p>
+        </div>
+      </div>
 
-            <span class="chip-modalidad"><i aria-hidden="true"></i>{% if modalidad %}{{ modalidad }}{% else %}Presencial{% endif %}</span>
+      <!-- GRID DE FECHA Y HORA -->
+      <div class="grid-horario">
+        <div class="tile-dato tile-fecha">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-label="Fecha"><rect x="3" y="4" width="18" height="18" rx="3"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          <div class="dato-text">
+            <span class="dato-label">Fecha</span>
+            <span class="dato-val">{% if fecha_humana %}{{ fecha_humana }}{% else %}31 Oct. 2026{% endif %}</span>
+          </div>
         </div>
 
-        <footer class="pase-pie">
-            <svg class="ola" viewBox="0 0 400 150" preserveAspectRatio="none" aria-hidden="true">
-                <path fill="#8F63D9" d="M0 40 C58 12 140 8 205 26 C268 44 338 20 400 28 L400 208 L0 208 Z"/>
-                <path fill="#5A3FA3" d="M0 74 C68 48 165 46 243 62 C298 73 356 58 400 64 L400 208 L0 208 Z"/>
-            </svg>
-            <span class="qr">
-                {% if qr_data_uri %}
-                {# QR renderizado en servidor (data-URI): funciona en PDF y correo sin depender de servicios externos #}
-                <img src="{{ qr_data_uri }}" alt="Código QR para verificar la cita en recepción">
-                {% else %}
-                {# Fallback: servicio público de QR hacia la ruta de verificación #}
-                <img src="https://api.qrserver.com/v1/create-qr-code/?size=160x160&margin=2&data={% if qr_data %}{{ qr_data|urlencode }}{% elif verificar_url %}{{ verificar_url|urlencode }}{% else %}https://espaciohope.com/pase/verificar/HOPE-251031-0147/{% endif %}" alt="Código QR para verificar la cita en recepción">
-                {% endif %}
-            </span>
-            <div>
-                <p class="verifica">Verifica<br>tu entrada</p>
-                <p class="folio">Folio {% if folio %}{{ folio }}{% else %}HOPE-251031-0147{% endif %}</p>
-                <p class="marca-pie">Espacio HOPE</p>
-            </div>
-        </footer>
-    </main>
+        <div class="tile-dato tile-hora">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-label="Hora"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          <div class="dato-text">
+            <span class="dato-label">Horario</span>
+            <span class="dato-val">{% if hora_humana %}{{ hora_humana }}{% else %}10:00 AM{% endif %}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- SEDE Y UBICACIÓN FÍSICA -->
+      <div class="card-sede">
+        <div class="icono-pin" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        </div>
+        <div class="info-sede">
+          <p class="sede-nombre">{% if lugar_nombre %}{{ lugar_nombre }}{% else %}Centro HOPE{% endif %}</p>
+          <p class="sede-direccion">
+            {% if lugar_linea1 %}{{ lugar_linea1 }}{% else %}Av. Innovación 123,{% endif %}<br>
+            {% if lugar_linea2 %}{{ lugar_linea2 }}{% else %}Atizapán de Zaragoza, Edo. de México{% endif %}
+          </p>
+          {% if maps_url %}
+          <a class="link-maps" href="{{ maps_url }}" target="_blank" rel="noopener noreferrer">
+            <span>Ver ubicación en Google Maps</span>
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>
+          </a>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- MODALIDAD CHIP -->
+      <div class="fila-modalidad">
+        <span class="chip-modalidad">
+          <i aria-hidden="true"></i>
+          <span>Modalidad {% if modalidad %}{{ modalidad }}{% else %}Presencial{% endif %}</span>
+        </span>
+      </div>
+
+    </section>
+
+    <!-- LÍNEA DE PERFORACIÓN DEL TICKET -->
+    <div class="perforacion-ticket" aria-hidden="true">
+      <span class="muesca-izq"></span>
+      <div class="linea-puntos"></div>
+      <span class="muesca-der"></span>
+    </div>
+
+    <!-- PIE DE SEGURIDAD Y VERIFICACIÓN QR -->
+    <footer class="pase-footer">
+      <svg class="ola-fondo-footer" viewBox="0 0 400 160" preserveAspectRatio="none" aria-hidden="true">
+        <path fill="#5B45A8" d="M0,45 C120,80 240,10 400,50 L400,160 L0,160 Z"></path>
+        <path fill="#27C9C9" opacity="0.18" d="M0,70 C160,20 280,100 400,60 L400,160 L0,160 Z"></path>
+      </svg>
+
+      <div class="contenido-footer">
+        <!-- CÓDIGO QR -->
+        <div class="marco-qr">
+          {% if qr_data_uri %}
+          <img src="{{ qr_data_uri }}" alt="Código QR oficial para verificar cita en recepción de HOPE">
+          {% else %}
+          <img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&margin=2&data={% if qr_data %}{{ qr_data|urlencode }}{% elif verificar_url %}{{ verificar_url|urlencode }}{% else %}https://espaciohope.com/pase/verificar/HOPE-251031-0147/{% endif %}" alt="Código QR oficial para verificar cita en recepción de HOPE">
+          {% endif %}
+        </div>
+
+        <!-- DATOS DE VERIFICACIÓN -->
+        <div class="info-verificacion">
+          <p class="titulo-verificacion">Verifica tu acceso</p>
+          <p class="sub-verificacion">Presenta este código al personal de recepción en tu llegada.</p>
+          <span class="badge-folio">Folio: {% if folio %}{{ folio }}{% else %}HOPE-251031-0147{% endif %}</span>
+          <p class="firma-hope">Espacio HOPE · Salud Mental Integral</p>
+        </div>
+      </div>
+
+      <!-- PAUTAS BREVES PARA EL PACIENTE -->
+      <div class="pautas-paciente">
+        <span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+          Llegar 10 min antes
+        </span>
+        <span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+          Identificación oficial
+        </span>
+      </div>
+    </footer>
+
+  </main>
 
 </body>
 </html>
