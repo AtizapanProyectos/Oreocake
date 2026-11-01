@@ -250,9 +250,13 @@
                             <i class="fas fa-door-open"></i>Presencial
                         </div>
                     </div>
-                    <div class="hpa-meet-note">
+                    <div class="hpa-meet-note" id="hpa-note-enlinea">
                         <i class="fas fa-circle-check"></i>
                         <span>Si es <strong>En línea</strong>, al confirmar se genera el Google Meet automáticamente y se le envía por correo al paciente.</span>
+                    </div>
+                    <div class="hpa-meet-note" id="hpa-note-presencial" style="display: none; background: #f3e8ff; color: #5a3fa3;">
+                        <i class="fas fa-qrcode"></i>
+                        <span>Si es <strong>Presencial</strong>, NO se genera Meet: al confirmar se le envía al paciente su <strong>pase de acceso (PDF con QR)</strong> para Clínica HOPE (Lago Margarita 47, CDMX).</span>
                     </div>
                 </div>
 
@@ -304,7 +308,7 @@
                 <div class="hpa-card hpa-exito" id="hpa-exito">
                     <i class="fas fa-circle-check"></i>
                     <h3>¡Cita agendada!</h3>
-                    <p>Se le notificó al paciente por correo, junto con el Meet si aplica.</p>
+                    <p id="hpa-exito-texto">Se le notificó al paciente por correo, junto con el Meet si aplica.</p>
                     <a href="{% url 'panel_admin' %}">Volver al panel admin</a>
                 </div>
             </div>
@@ -562,7 +566,7 @@ document.addEventListener('DOMContentLoaded', function () {
         diasScroll.innerHTML = '<div class="hpa-vacio">Buscando horarios…</div>';
         avisoBox.classList.remove('activo');
 
-        const params = new URLSearchParams({ paciente_id: pacienteId, tipo_sesion: tipoSesion });
+        const params = new URLSearchParams({ paciente_id: pacienteId, tipo_sesion: tipoSesion, modalidad: modalidad });
         fetch(URL_DISPONIBILIDAD + '?' + params.toString())
             .then(function (r) {
                 // 🔎 DEBUG: si el server responde con error HTTP (500, 400, etc.)
@@ -590,6 +594,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         alert(
                             'DEBUG - No hay horarios:\n' +
                             'tipo_sesion: ' + tipoSesion + '\n' +
+                            'modalidad: ' + modalidad + '\n' +
                             'paciente_id: ' + pacienteId + '\n' +
                             'aviso del server: ' + (data.aviso || '(sin aviso)') + '\n' +
                             'payload completo en la consola (F12 > Console)'
@@ -663,11 +668,28 @@ document.addEventListener('DOMContentLoaded', function () {
     // ------------------------------------------------------------------
     // Modalidad
     // ------------------------------------------------------------------
+    const noteEnLinea = document.getElementById('hpa-note-enlinea');
+    const notePresencial = document.getElementById('hpa-note-presencial');
+
     document.querySelectorAll('.hpa-modalidad-btn').forEach(function (btn) {
         btn.addEventListener('click', function () {
             document.querySelectorAll('.hpa-modalidad-btn').forEach(function (b) { b.classList.remove('activo'); });
             btn.classList.add('activo');
             modalidad = btn.dataset.modalidad;
+
+            // Nota contextual según modalidad (Meet vs pase presencial).
+            if (noteEnLinea && notePresencial) {
+                noteEnLinea.style.display = (modalidad === 'Presencial') ? 'none' : 'flex';
+                notePresencial.style.display = (modalidad === 'Presencial') ? 'flex' : 'none';
+            }
+
+            // La disponibilidad depende de la modalidad (solo psicólogos
+            // Presencial/Mixto ofertan slots presenciales): refetch.
+            if (pacienteId) {
+                fechaSeleccionada = null;
+                horaSeleccionada = null;
+                fetchDisponibilidad();
+            }
         });
     });
 
@@ -702,6 +724,13 @@ document.addEventListener('DOMContentLoaded', function () {
         .then(function (r) { return r.json(); })
         .then(function (data) {
             if (data.status === 'success') {
+                // Texto de éxito según modalidad (Meet en línea / pase presencial).
+                const textoExito = document.getElementById('hpa-exito-texto');
+                if (textoExito) {
+                    textoExito.textContent = (modalidad === 'Presencial')
+                        ? 'Se le notificó al paciente por correo, junto con su pase de acceso presencial (PDF con QR).'
+                        : 'Se le notificó al paciente por correo, junto con el Meet si aplica.';
+                }
                 document.getElementById('hpa-form').style.display = 'none';
                 document.getElementById('hpa-exito').classList.add('activo');
             } else {

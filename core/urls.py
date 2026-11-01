@@ -117,6 +117,13 @@ urlpatterns = [
     path('panel-admin/automatizacion-notas/', views.panel_admin_automatizacion_notas, name='panel_admin_automatizacion_notas'),
     path('panel-admin/api/reintento-automatizacion/<int:cita_id>/', views.api_reintento_automatizacion, name='api_reintento_automatizacion'),
 
+    # 🎫 PASE DE ACCESO PRESENCIAL (31/10/2026)
+    # Descarga protegida (solo el paciente dueño o admin) del pase en PDF.
+    path('panel/pase-admision/<int:cita_id>/', views.descargar_pase_admision, name='descargar_pase_admision'),
+    # Verificación pública del QR: recibe SOLO el código aleatorio de la cita,
+    # nunca datos personales. La cita real se valida contra la BD.
+    path('pase/verificar/<str:codigo>/', views.verificar_pase, name='verificar_pase'),
+
     # Repositorio Clínico Global para Psicólogos
     path('repositorio-clinico/', views.repositorio_clinico_view, name='repositorio_clinico'),
     path('api/repositorio-clinico/subir/', views.subir_documento_repositorio_ajax, name='subir_documento_repositorio'),

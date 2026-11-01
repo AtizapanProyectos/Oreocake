@@ -35,6 +35,25 @@ class PerfilPsicologo(models.Model):
     atiende_pareja = models.BooleanField(default=False, verbose_name="Atiende Terapia de Pareja", db_index=True) # 🔥 OPTIMIZADO
     atiende_familiar = models.BooleanField(default=False, verbose_name="Atiende Terapia Familiar", db_index=True) # 🔥 OPTIMIZADO
 
+    # 🏢 MODALIDAD DE ATENCIÓN (En línea / Presencial / Mixto)
+    # El default 'En línea' es compatible con los registros existentes: todos los
+    # psicólogos ya capturados conservan exactamente el comportamiento y oferta
+    # que tenían antes de la modalidad presencial (ningún dato cambia).
+    MODALIDAD_CHOICE = [
+        ('En línea', 'En Línea'),
+        ('Presencial', 'Presencial'),
+        ('Mixto', 'Mixto (Presencial y En Línea)'),
+    ]
+    modalidad_atencion = models.CharField(
+        max_length=20,
+        choices=MODALIDAD_CHOICE,
+        default='En línea',
+        verbose_name="Modalidad de Atención",
+        db_index=True,
+        help_text="Psicólogos Presencial o Mixto aparecen en las búsquedas de sesiones presenciales. "
+                  "Psicólogos En línea solo aparecen en sesiones en línea."
+    )
+
     class Meta:
         indexes = [
             # Filtro combinado crucial para la búsqueda global de disponibilidad por estado, género y modalidad
@@ -299,6 +318,11 @@ class Cita(models.Model):
     integrantes_familia = models.PositiveSmallIntegerField(blank=True, null=True, verbose_name="Número de integrantes (Terapia Familiar)")
     es_tectum = models.BooleanField(default=False, db_index=True, verbose_name="Cita Convenio TECTUM")
     es_beneficios = models.BooleanField(default=False, db_index=True, verbose_name="Cita Convenio TECTUM Beneficios")  # añadido 28/10/2026 (monitoreo automatización)
+    # 🎫 Código único de verificación del Pase de Acceso presencial (31/10/2026).
+    # Token aleatorio guardado en BD; es lo ÚNICO que viaja dentro del QR, de modo
+    # que el código no expone datos personales del paciente. Nullable para no
+    # afectar citas históricas (en línea) que no necesitan pase.
+    codigo_pase = models.CharField(max_length=64, blank=True, null=True, unique=True, db_index=True, verbose_name="Código de verificación del pase")
 
     class Meta:
         unique_together = [['psicologo', 'fecha', 'hora']]

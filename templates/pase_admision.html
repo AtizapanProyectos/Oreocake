@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="es-mx">
+<!--
+  Pase de Admisión — credencial de sesión presencial (Espacio HOPE).
+  Plantilla independiente (no extiende base.html). Imprimible a PDF (Chromium).
+
+  Contexto esperado (todo opcional; sin contexto muestra los datos de ejemplo del diseño):
+    paciente_nombre   — nombre completo del paciente
+    psicologa_nombre  — nombre de la psicóloga asignada a la cita
+    fecha_humana      — p. ej. "31 Oct. 2026"
+    hora_humana       — p. ej. "10:00 AM"
+    folio             — folio legible de la cita, p. ej. "HOPE-251031-0147"
+    modalidad         — p. ej. "Presencial" (se imprime en minúsculas en el chip)
+    lugar_nombre      — p. ej. "Centro HOPE"
+    lugar_linea1      — calle y número
+    lugar_linea2      — municipio / estado
+    qr_data           — contenido del QR (por defecto: verificar_url)
+    verificar_url     — p. ej. la ruta de verificación con el folio:
+                        "/pase/verificar/HOPE-251031-0147/"
+    qr_data_uri       — QR en data-URI generado en servidor (segno): es la
+                        opción preferida; si está presente se usa en lugar de
+                        el servicio externo.
+    maps_url          — enlace «Ver en Google Maps» de la sede.
+-->
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pase de Admisión · {% if folio %}{{ folio }}{% else %}HOPE-251031-0147{% endif %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;700;800;900&family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --purple: #5A3FA3;          /* Ola frontal / figura clave        */
+            --purple-wave: #8F63D9;     /* Ola trasera                       */
+            --purple-ink: #3E2A75;      /* Títulos enfáticos                 */
+            --ink: #241A47;             /* Texto principal sobre claro       */
+            --muted: #645C96;           /* Texto secundario (tintado, no gris) */
+            --pink: #F85B8C;            /* Fucsia de marca                   */
+            --orange: #F27C21;
+            --yellow: #F8D33D;
+            --teal: #25B8B8;
+            --line: #EFEBFA;
+            --ground: #E9E3F6;
+            --font-h: 'Outfit', sans-serif;
+            --font-b: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: var(--font-b);
+            color: var(--ink);
+            background:
+                radial-gradient(120% 90% at 50% -10%, #F3EFFB 0%, var(--ground) 58%, #DFD6F0 100%);
+            min-height: 100vh;
+            display: grid;
+            place-items: center;
+            padding: 24px;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
+        /* ——— La credencial ——————————————————————————————————————— */
+        .pase {
+            position: relative;
+            min-width: 0;
+            width: min(380px, 100%);
+            background: #fff;
+            border-radius: 30px;
+            overflow: hidden;
+            box-shadow: 0 18px 40px -18px rgba(62, 42, 117, .38),
+                        0 4px 12px -4px rgba(62, 42, 117, .12);
+            animation: llegar .55s cubic-bezier(0.22, 1, 0.36, 1) both;
+        }
+        @media (prefers-reduced-motion: reduce) { .pase { animation: none; } }
+        @keyframes llegar {
+            from { opacity: 0; transform: translateY(14px); }
+            to   { opacity: 1; transform: none; }
+        }
+
+        /* Recortes de marca en las esquinas superiores */
+        .pase::before,
+        .pase::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            pointer-events: none;
+        }
+        .pase::before {                       /* arco turquesa — sup. izquierda */
+            left: 0;
+            width: 112px;
+            height: 84px;
+            background: linear-gradient(160deg, #2BC9C9 0%, var(--teal) 100%);
+            border-bottom-right-radius: 100% 100%;
+        }
+        .pase::after {                        /* disco amarillo — sup. derecha */
+            right: -30px;
+            top: -34px;
+            width: 104px;
+            height: 104px;
+            background: linear-gradient(210deg, #FFDD64 0%, var(--yellow) 100%);
+            border-radius: 50%;
+        }
+
+        .pase-cuerpo { padding: 38px 26px 28px; }
+
+        /* ——— Logotipo HOPE ————————————————————————————————————— */
+        .wordmark {
+            font-family: var(--font-h);
+            font-weight: 900;
+            font-size: 58px;
+            line-height: 1;
+            letter-spacing: .01em;
+            text-align: center;
+        }
+        .wm-teal  { color: var(--teal); }
+        .wm-pink  { color: var(--pink); }
+        .wm-purple{ color: var(--purple); }
+        .wm-orange{ color: var(--orange); }
+
+        /* La «O» fucsia con corazón blanco */
+        .wm-o {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: .80em;
+            height: .80em;
+            border-radius: 50%;
+            background: var(--pink);
+            vertical-align: -.045em;
+        }
+        .wm-o svg { width: .38em; height: .36em; }
+
+        .tagline {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin-top: 10px;
+            font-family: var(--font-h);
+            font-weight: 800;
+            font-size: 11px;
+            letter-spacing: .07em;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+        .tagline span:nth-child(1) { color: #157C7C; }
+        .tagline span:nth-child(2) { color: var(--purple); }
+        .tagline span:nth-child(3) { color: #D81B5C; }
+
+        /* ——— Título ———————————————————————————————————————————— */
+        .titulo {
+            margin-top: 26px;
+            font-family: var(--font-h);
+            font-weight: 800;
+            font-size: 40px;
+            line-height: 1;
+            letter-spacing: .015em;
+            color: var(--purple-ink);
+            text-align: center;
+        }
+        .subtitulo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin-top: 8px;
+            font-family: var(--font-h);
+            font-weight: 700;
+            font-size: 13px;
+            letter-spacing: .55em;
+            text-indent: .55em;   /* compensa el letter-spacing del último glifo */
+            color: var(--purple);
+        }
+        .subtitulo::before,
+        .subtitulo::after {
+            content: "";
+            flex: none;
+            width: 22px;
+            height: 2px;
+            border-radius: 2px;
+            background: var(--purple);
+        }
+
+        /* ——— Ilustración (cabeza + corazón) ————————————————————— */
+        .arte {
+            display: block;
+            width: 96px;
+            margin: 24px auto 22px;
+        }
+
+        /* ——— Datos ———————————————————————————————————————————— */
+        .dato-principal { text-align: center; }
+        .dato-principal .etiqueta {
+            font-size: 14.5px;
+            font-weight: 600;
+            color: var(--ink);
+        }
+        .dato-principal .valor {
+            margin-top: 2px;
+            font-family: var(--font-h);
+            font-weight: 700;
+            font-size: 21px;
+            color: var(--purple-ink);
+        }
+
+        .divisor {
+            border: 0;
+            border-top: 2px solid var(--line);
+            margin: 20px 0;
+        }
+
+        .fila-datos {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            margin-top: 12px;
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--ink);
+        }
+        .fila-datos svg { flex: none; width: 19px; height: 19px; }
+        .fila-par { display: flex; flex-wrap: wrap; gap: 12px; }
+        .fila-par .fila-datos { flex: 1; white-space: nowrap; }
+
+        .lugar { display: flex; gap: 9px; margin-top: 4px; }
+        .lugar svg { flex: none; width: 19px; height: 19px; margin-top: 2px; }
+        .lugar .nombre {
+            font-family: var(--font-h);
+            font-weight: 700;
+            font-size: 16.5px;
+            color: var(--purple-ink);
+        }
+        .lugar .direccion {
+            margin-top: 1px;
+            font-size: 13.5px;
+            font-weight: 600;
+            line-height: 1.45;
+            color: var(--muted);
+        }
+        .link-maps {
+            display: inline-block;
+            margin-top: 4px;
+            font-size: 12px;
+            font-weight: 800;
+            color: var(--teal);
+            text-decoration: none;
+        }
+        .link-maps:hover { text-decoration: underline; }
+
+        .chip-modalidad {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            margin-top: 16px;
+            padding: 5px 12px;
+            border: 1.5px solid #BFE6E6;
+            border-radius: 999px;
+            background: #F2FBFB;
+            font-size: 11.5px;
+            font-weight: 800;
+            letter-spacing: .12em;
+            text-transform: uppercase;
+            color: #146464;
+        }
+        .chip-modalidad i {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: var(--teal);
+        }
+
+        /* ——— Pie: ola + QR ————————————————————————————————————— */
+        .pase-pie {
+            position: relative;
+            display: flex;
+            align-items: flex-end;
+            gap: 18px;
+            padding: 44px 26px 24px;
+            color: #fff;
+        }
+        .pase-pie .ola {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
+        .qr {
+            flex: none;
+            width: 86px;
+            height: 86px;
+            padding: 7px;
+            background: #fff;
+            border-radius: 12px;
+        }
+        .qr img { display: block; width: 100%; height: 100%; }
+        .verifica {
+            font-family: var(--font-h);
+            font-weight: 700;
+            font-size: 19px;
+            line-height: 1.25;
+        }
+        .folio {
+            margin-top: 6px;
+            font-size: 11.5px;
+            font-weight: 700;
+            letter-spacing: .04em;
+            color: rgba(255, 255, 255, .95);
+        }
+        .marca-pie {
+            margin-top: 3px;
+            font-family: var(--font-h);
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: .14em;
+            text-transform: uppercase;
+            color: rgba(255, 255, 255, .72);
+        }
+
+        /* ——— Impresión ————————————————————————————————————————— */
+        @media print {
+            body { background: #fff; padding: 0; }
+            .pase {
+                width: 380px;
+                box-shadow: none;
+                border: 1px solid var(--line);
+                animation: none;
+            }
+            @page { margin: 12mm; }
+        }
+
+        @media (max-width: 420px) {
+            body { padding: 14px; }
+            .wordmark { font-size: 52px; }
+            .titulo { font-size: 36px; }
+        }
+    </style>
+</head>
+<body>
+
+    <main class="pase" role="article" aria-label="Pase de admisión a sesión">
+        <div class="pase-cuerpo">
+
+            <div class="wordmark" aria-label="HOPE">
+                <span class="wm-teal">H</span><span class="wm-o"><svg viewBox="0 0 40 36" role="img" aria-hidden="true"><path d="M20 34.5C12.5 28.7 2.5 21.4 2.5 12.6 2.5 6.9 6.8 2.5 12.2 2.5c3.1 0 6 1.5 7.8 4 1.8-2.5 4.7-4 7.8-4 5.4 0 9.7 4.4 9.7 10.1 0 8.8-10 16.1-17.5 21.9z" fill="#fff"/></svg></span><span class="wm-purple">P</span><span class="wm-orange">E</span>
+            </div>
+            <p class="tagline"><span>Oportunidad</span><span>Prevención</span><span>Esperanza</span></p>
+
+            <h1 class="titulo">ADMISIÓN</h1>
+            <p class="subtitulo">PASE</p>
+
+            <!-- Cabeza con corazón de bienestar -->
+            <svg class="arte" viewBox="0 0 120 104" role="img" aria-label="Perfil de una persona con un corazón">
+                <path d="M79 10 C60 4.5 42 13 36.5 28.5 33.6 36.6 33.9 42.7 30.4 49.2 L24.7 59.6 c-1.7 3.1 0 5.6 3.4 5.6 l6.4 0 0 14.6 c0 5.5 3.6 8.8 9 8.8 l6.2 0.02 c2.9 0 5-2.3 5-5.2 l0-7.3" fill="none" stroke="#5A3FA3" stroke-width="4.4" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M70.5 11.9 c8.6 1.5 15.4 8 17.2 16.4" fill="none" stroke="#5A3FA3" stroke-width="4.4" stroke-linecap="round"/>
+                <path d="M73 34 c4.2-5.4 12.2-3.4 13.4 2.6 1.2-6 9.2-8 13.4-2.6 3.6 4.6 1.4 11-4.6 15.8 -2.9 2.3-6.2 4.3-8.8 5.7 -2.6-1.4-5.9-3.4-8.8-5.7 -6-4.8-8.2-11.2-4.6-15.8z" fill="#F85B8C" stroke="#5A3FA3" stroke-width="3.2" stroke-linejoin="round"/>
+                <g stroke="#F8D33D" stroke-width="4.6" stroke-linecap="round">
+                    <path d="M13.5 34 L6 30"/>
+                    <path d="M15.5 46 L7 46"/>
+                    <path d="M13.5 58 L7.5 62.5"/>
+                </g>
+            </svg>
+
+            <div class="dato-principal">
+                <p class="etiqueta">Psicólogo/a:</p>
+                <p class="valor">{% if psicologa_nombre %}{{ psicologa_nombre }}{% elif psicologo_nombre %}{{ psicologo_nombre }}{% else %}Dra. Mariana López Torres{% endif %}</p>
+            </div>
+
+            <hr class="divisor">
+
+            <div class="fila-par">
+                <p class="fila-datos">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="#5A3FA3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="Fecha"><rect x="3" y="4.5" width="18" height="16" rx="3"/><path d="M3 9.5 h18"/><path d="M8 2.5 v4 M16 2.5 v4"/></svg>
+                    {% if fecha_humana %}{{ fecha_humana }}{% else %}31 Oct. 2026{% endif %}
+                </p>
+                <p class="fila-datos">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="#5A3FA3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="Hora"><circle cx="12" cy="12" r="9"/><path d="M12 7 v5 l3.2 2"/></svg>
+                    {% if hora_humana %}{{ hora_humana }}{% else %}10:00 AM{% endif %}
+                </p>
+            </div>
+
+            <p class="fila-datos">
+                <svg viewBox="0 0 24 24" fill="none" stroke="#5A3FA3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="Paciente"><circle cx="12" cy="8" r="4"/><path d="M4.5 20.5 c1.3-4 4-6 7.5-6 s6.2 2 7.5 6"/></svg>
+                {% if paciente_nombre %}{{ paciente_nombre }}{% else %}Ana Sofía García Méndez{% endif %}
+            </p>
+
+            <hr class="divisor">
+
+            <div class="lugar">
+                <svg viewBox="0 0 24 24" fill="none" stroke="#5A3FA3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="Sede"><path d="M12 21.5 c-4.2-4.6-7.5-8.6-7.5-12.4 A7.5 7.5 0 0 1 12 1.6 A7.5 7.5 0 0 1 19.5 9.1 c0 3.8-3.3 7.8-7.5 12.4z" transform="translate(0 1)"/><circle cx="12" cy="9.2" r="2.6"/></svg>
+                <div>
+                    <p class="nombre">{% if lugar_nombre %}{{ lugar_nombre }}{% else %}Centro HOPE{% endif %}</p>
+                    <p class="direccion">{% if lugar_linea1 %}{{ lugar_linea1 }}{% else %}Av. Innovación 123,{% endif %}<br>{% if lugar_linea2 %}{{ lugar_linea2 }}{% else %}Atizapán de Zaragoza, Edo. de México{% endif %}</p>
+                    {% if maps_url %}<a class="link-maps" href="{{ maps_url }}">Ver en Google Maps →</a>{% endif %}
+                </div>
+            </div>
+
+            <span class="chip-modalidad"><i aria-hidden="true"></i>{% if modalidad %}{{ modalidad }}{% else %}Presencial{% endif %}</span>
+        </div>
+
+        <footer class="pase-pie">
+            <svg class="ola" viewBox="0 0 400 150" preserveAspectRatio="none" aria-hidden="true">
+                <path fill="#8F63D9" d="M0 40 C58 12 140 8 205 26 C268 44 338 20 400 28 L400 208 L0 208 Z"/>
+                <path fill="#5A3FA3" d="M0 74 C68 48 165 46 243 62 C298 73 356 58 400 64 L400 208 L0 208 Z"/>
+            </svg>
+            <span class="qr">
+                {% if qr_data_uri %}
+                {# QR renderizado en servidor (data-URI): funciona en PDF y correo sin depender de servicios externos #}
+                <img src="{{ qr_data_uri }}" alt="Código QR para verificar la cita en recepción">
+                {% else %}
+                {# Fallback: servicio público de QR hacia la ruta de verificación #}
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=160x160&margin=2&data={% if qr_data %}{{ qr_data|urlencode }}{% elif verificar_url %}{{ verificar_url|urlencode }}{% else %}https://espaciohope.com/pase/verificar/HOPE-251031-0147/{% endif %}" alt="Código QR para verificar la cita en recepción">
+                {% endif %}
+            </span>
+            <div>
+                <p class="verifica">Verifica<br>tu entrada</p>
+                <p class="folio">Folio {% if folio %}{{ folio }}{% else %}HOPE-251031-0147{% endif %}</p>
+                <p class="marca-pie">Espacio HOPE</p>
+            </div>
+        </footer>
+    </main>
+
+</body>
+</html>

@@ -143,6 +143,63 @@ CAPACIDAD_POR_TIPO_SESION = {
 TIPOS_SESION_VALIDOS = tuple(CAPACIDAD_POR_TIPO_SESION.keys())
 
 # =========================================================================
+# 🏢 MODALIDAD DE LA CITA (En línea / Presencial) — flujo presencial 31/10/2026
+# =========================================================================
+# Modalidades que una cita puede llevar. La 'En línea' conserva el
+# comportamiento histórico; la 'Presencial' es el flujo nuevo.
+MODALIDADES_CITA_VALIDAS = ('En línea', 'Presencial')
+
+# Compatibilidad entre la modalidad de la CITA y la configuración del
+# psicólogo (PerfilPsicologo.modalidad_atencion):
+#   - Presencial → solo psicólogos 'Presencial' o 'Mixto' (jamás un
+#     exclusivamente en línea).
+#   - En línea   → psicólogos 'En línea' o 'Mixto'. Con el default que
+#     tienen TODOS los registros existentes ('En línea'), esta línea
+#     produce exactamente el mismo resultado que antes del cambio.
+COMPATIBILIDAD_MODALIDAD_PSICOLOGO = {
+    'En línea': ['En línea', 'Mixto'],
+    'Presencial': ['Presencial', 'Mixto'],
+}
+
+# Mensaje amigable para el paciente que ya lleva sesiones en línea y
+# detecta presencial en el wizard (regla de negocio de esta etapa):
+MENSAJE_PRESENCIAL_CONTACTA = 'Contacta a tu psicólogo para agendar una cita presencial'
+
+# 🎫 Sede de las sesiones presenciales (única fuente de verdad; los campos
+# usuario/pase/correos leen de aquí).
+PASE_SEDE = {
+    'nombre': 'Clínica HOPE',
+    'linea1': 'Lago Margarita 47, Chapultepec Morales, Granada',
+    'linea2': 'Miguel Hidalgo, 11520 Ciudad de México, CDMX',
+    'maps_url': 'https://maps.app.goo.gl/MUVCAVMi3DTprEsf7',
+}
+
+# ⚠️ ETAPA DE PRUEBAS / PRÓXIMA HABILITACIÓN:
+# Las citas PRESENCIALES NO solicitan pago mientras esta constante sea False.
+# Al autorizarse el cobro, cambiar a True y las rutas de Clip/PayPal volverán
+# a aplicar al flujo presencial sin más modificaciones.
+PAGO_PRESENCIAL_HABILITADO = False
+
+
+def psicologo_atiende_modalidad(psicologo, modalidad):
+    """
+    True si el psicólogo puede atender la modalidad solicitada de la cita.
+    - 'Mixto' responde a ambas modalidades.
+    - El default de los registros históricos ('En línea') hace que el
+      comportamiento en línea sea idéntico al de antes del cambio.
+    - 'Mixto' como modalidad de cita no está habilitado aún (solo En línea /
+      Presencial), pero se devuelve conservadoramente.
+    """
+    if psicologo is None or not psicologo.esta_activo:
+        return False
+    modalidad = modalidad or 'En línea'
+    modalidades_permitidas = COMPATIBILIDAD_MODALIDAD_PSICOLOGO.get(modalidad, ['En línea', 'Mixto'])
+    # ⚠️ Importante: getattr con default 'En línea' para que registros
+    # históricos (o filas creadas sin pasar por el ORM) no queden excluidos.
+    modalidad_psicologo = getattr(psicologo, 'modalidad_atencion', 'En línea') or 'En línea'
+    return modalidad_psicologo in modalidades_permitidas
+
+# =========================================================================
 # 💰 NUEVO: PRECIOS Y COMISIONES (única fuente de verdad del backend)
 # =========================================================================
 # El monto que se cobra SIEMPRE se recalcula en el servidor a partir de
@@ -203,7 +260,7 @@ from .models import DiaFestivo, Cita, PerfilPsicologo
 from datetime import datetime, timedelta, time
 from collections import defaultdict
 
-def _buscar_slots_globales_con_filtros(filtros, fecha_inicio, fecha_fin, tipo_sesion):
+def _buscar_slots_globales_con_filtros(filtros, fecha_inicio, fecha_fin, tipo_sesion, modalidad="En línea"):
     """
     Helper interno: corre la búsqueda global de slots con el diccionario de
     filtros que le pases (puede o no incluir 'genero').
@@ -221,7 +278,7 @@ def _buscar_slots_globales_con_filtros(filtros, fecha_inicio, fecha_fin, tipo_se
     slots_globales = {}
 
     for psicologo in psicologos_activos:
-        slots_psicologo = obtener_slots_psicologo(psicologo, fecha_inicio, fecha_fin, tipo_sesion)
+        slots_psicologo = obtener_slots_psicologo(psicologo, fecha_inicio, fecha_fin, tipo_sesion, modalidad=modalidad)
 
         for fecha_str, lista_horas in slots_psicologo.items():
             if fecha_str not in slots_globales:
@@ -234,7 +291,7 @@ def _buscar_slots_globales_con_filtros(filtros, fecha_inicio, fecha_fin, tipo_se
     }
 
 
-def obtener_slots_globales(fecha_inicio, fecha_fin, preferencia=None, tipo_sesion="individual"):
+def obtener_slots_globales(fecha_inicio, fecha_fin, preferencia=None, tipo_sesion="individual", modalidad="En línea"):
     """
     🔥 BÚSQUEDA GLOBAL: usada cuando el paciente TODAVÍA NO tiene psicólogo asignado.
 
@@ -242,12 +299,19 @@ def obtener_slots_globales(fecha_inicio, fecha_fin, preferencia=None, tipo_sesio
     pero si con ese género no hay ni un solo horario disponible, hacemos un
     segundo intento sin el filtro de género en vez de devolver "no hay horarios"
     cuando en realidad sí hay citas (solo que con el otro género).
+
+    🏢 MODALIDAD: desde el 31/10/2026 respeta la modalidad de la cita pedida:
+    solo psicólogos Presencial/Mixto para 'Presencial'; En línea/Mixto para
+    'En línea' (idéntico resultado al histórico, pues TODOS los psicólogos
+    registrados antes del cambio quedaron con default 'En línea').
     """
+    modalidad = modalidad if modalidad in MODALIDADES_CITA_VALIDAS else 'En línea'
     campo_capacidad = CAPACIDAD_POR_TIPO_SESION.get(tipo_sesion, 'atiende_individual')
 
     filtros_base = {
         campo_capacidad: True,
         'esta_activo': True,
+        'modalidad_atencion__in': COMPATIBILIDAD_MODALIDAD_PSICOLOGO[modalidad],
     }
 
     genero_preferido = None
@@ -261,13 +325,13 @@ def obtener_slots_globales(fecha_inicio, fecha_fin, preferencia=None, tipo_sesio
 
     if genero_preferido:
         filtros_con_genero = {**filtros_base, 'genero': genero_preferido}
-        resultado = _buscar_slots_globales_con_filtros(filtros_con_genero, fecha_inicio, fecha_fin, tipo_sesion)
+        resultado = _buscar_slots_globales_con_filtros(filtros_con_genero, fecha_inicio, fecha_fin, tipo_sesion, modalidad=modalidad)
         if resultado:
             return resultado
         # 🔥 No hubo nada con el género preferido: mejor ofrecer el otro género
         # que dejar al paciente sin ninguna opción. Caemos al filtro base (sin genero).
 
-    return _buscar_slots_globales_con_filtros(filtros_base, fecha_inicio, fecha_fin, tipo_sesion)
+    return _buscar_slots_globales_con_filtros(filtros_base, fecha_inicio, fecha_fin, tipo_sesion, modalidad=modalidad)
 
 def _calcular_bloqueos_covision(fecha_inicio, fecha_fin):
     """
@@ -308,12 +372,22 @@ def _calcular_bloqueos_covision(fecha_inicio, fecha_fin):
     return bloqueos
 
 
-def obtener_slots_psicologo(psicologo, fecha_inicio, fecha_fin, tipo_sesion="individual"):
+def obtener_slots_psicologo(psicologo, fecha_inicio, fecha_fin, tipo_sesion="individual", modalidad="En línea"):
     """
     🔥 BÚSQUEDA POR PSICÓLOGO: usada una vez que el paciente YA tiene un psicólogo asignado.
+
+    🏢 MODALIDAD (31/10/2026): si la modalidad pedida es 'Presencial' y el
+    psicólogo NO está configurado como Presencial/Mixto, devuelve{}
+    (el bloqueo es EN SERVIDOR: no se puede saltear manipulando la petición).
+    Con modalidad 'En línea' el resultado es idéntico al histórico porque
+    todos los psicólogos registrados antes del cambio quedaron como 'En línea'.
     """
+    modalidad = modalidad if modalidad in MODALIDADES_CITA_VALIDAS else 'En línea'
     campo_capacidad = CAPACIDAD_POR_TIPO_SESION.get(tipo_sesion, 'atiende_individual')
     if not psicologo.esta_activo or not getattr(psicologo, campo_capacidad, False):
+        return {}
+
+    if not psicologo_atiende_modalidad(psicologo, modalidad):
         return {}
 
     esquemas_rango = getattr(psicologo, '_esquemas_rango', None)
@@ -419,13 +493,204 @@ def obtener_slots_psicologo(psicologo, fecha_inicio, fecha_fin, tipo_sesion="ind
 
     return slots_por_fecha
 
-def obtener_slots_psicologo_para_dia(psicologo, fecha, tipo_sesion="individual"):
+def obtener_slots_psicologo_para_dia(psicologo, fecha, tipo_sesion="individual", modalidad="En línea"):
     """
     Función auxiliar para consultar los espacios de un solo día.
     Llama a la función principal que ya actualizamos con el nuevo modelo.
     """
-    slots_map = obtener_slots_psicologo(psicologo, fecha, fecha, tipo_sesion=tipo_sesion)
+    slots_map = obtener_slots_psicologo(psicologo, fecha, fecha, tipo_sesion=tipo_sesion, modalidad=modalidad)
     return slots_map.get(fecha.strftime('%Y-%m-%d'), [])
+
+
+# =========================================================================
+# 🎫 PASE DE ACCESO PRESENCIAL (31/10/2026)
+# =========================================================================
+# Generación del pase HTML→PDF (reutiliza utils_pdf.convertir_html_a_pdf),
+# código QR (segno/qrcode, con fallback a servicio externo) y correo con el
+# PDF adjunto (reutiliza el SMTP de Zoho que ya usa todo el sistema).
+# =========================================================================
+
+def _generar_codigo_pase():
+    """Token aleatorio que viaja dentro del QR. No contiene datos personales;
+    el código solo tiene sentido si la cita existe en la BD."""
+    return uuid.uuid4().hex
+
+
+def _generar_qr_data_uri(contenido):
+    """Devuelve el QR como data-URI PNG para incrustarlo en el PDF del pase.
+    Preferimos renderizarlo en servidor para no depender de servicios externos.
+    Devuelve None si ninguna librería está disponible (el template hace
+    fallback al servicio público de QR)."""
+    contenido = (contenido or '').strip()
+    if not contenido:
+        return None
+    try:
+        import segno
+        import io
+        buf = io.BytesIO()
+        segno.make(contenido, error='m').save(buf, kind='png', scale=8, border=2, dark='#241A47')
+        return 'data:image/png;base64,' + base64.b64encode(buf.getvalue()).decode('ascii')
+    except Exception:
+        pass
+    try:
+        import qrcode
+        import io
+        img = qrcode.make(contenido)
+        buf = io.BytesIO()
+        img.save(buf, format='PNG')
+        return 'data:image/png;base64,' + base64.b64encode(buf.getvalue()).decode('ascii')
+    except Exception:
+        return None
+
+
+def _folio_pase(cita):
+    """Folio legible para el pase (solo presentación; el QR usa codigo_pase)."""
+    fecha = cita.fecha or timezone.localdate()
+    return f'HOPE-{fecha.strftime("%y%m%d")}-{cita.id:04d}'
+
+
+def _contexto_pase_admision(cita, request=None):
+    """
+    Arma el contexto completo para pase_admision.html (PDF) y para la
+    verificación pública.
+    """
+    psicologo_nombre = 'Psicólogo asignado'
+    if cita.psicologo and cita.psicologo.usuario:
+        nombre = (cita.psicologo.usuario.get_full_name() or cita.psicologo.usuario.first_name or '').strip()
+        if nombre:
+            titulo = 'Dra.' if getattr(cita.psicologo, 'genero', '') == 'Mujer' else 'Dr.'
+            psicologo_nombre = f'{titulo} {nombre}'
+
+    paciente_nombre = ''
+    if cita.paciente:
+        paciente_nombre = (cita.paciente.get_full_name() or cita.paciente.first_name or '').strip()
+
+    hora_humana = cita.hora.strftime('%I:%M %p') if cita.hora else ''
+    codigo = cita.codigo_pase or ''
+    verificar_path = reverse('verificar_pase', args=[codigo]) if codigo else ''
+    verificar_url = request.build_absolute_uri(verificar_path) if (verificar_path and request) else None
+
+    contexto = {
+        'folio': _folio_pase(cita),
+        'paciente_nombre': paciente_nombre or 'Consultante HOPE',
+        'psicologo_nombre': psicologo_nombre,
+        'fecha_humana': cita.fecha.strftime('%d %b. %Y') if cita.fecha else '',
+        'hora_humana': hora_humana,
+        'modalidad': 'Presencial',
+        'lugar_nombre': PASE_SEDE['nombre'],
+        'lugar_linea1': PASE_SEDE['linea1'],
+        'lugar_linea2': PASE_SEDE['linea2'],
+        'maps_url': PASE_SEDE['maps_url'],
+        'verificar_url': verificar_url or (verificar_path or ''),
+        'qr_data_uri': _generar_qr_data_uri(verificar_path or codigo) if codigo else None,
+        'marca_correo': 'contacto@espaciohope.com',
+    }
+    return contexto
+
+
+def _enviar_correo_pase_admision(cita, request=None):
+    """
+    Envía el Pase de Acceso presencial por correo al paciente con el PDF
+    adjunto (generado con el mismo motor Chromium→PDF de los reportes).
+    Devuelve True si se envió (o fail_silently se tragó el error SMTP).
+    El QR se incrusta en data-URI (render server-side), así que se puede
+    escanear tanto desde el PDF como desde el correo.
+    """
+    contexto = _contexto_pase_admision(cita, request)
+
+    # 1) PDF del pase (igual infraestructura que los Reportes Check-In)
+    html_pase = render_to_string('pase_admision.html', contexto)
+    pdf_bytes = convertir_html_a_pdf(html_pase)
+
+    # 2) Correo de presentación (plantilla styled para clientes de correo)
+    correo_html = render_to_string('correo_pase_admision.html', {
+        **contexto,
+        'cita_id': cita.id,
+    })
+
+    asunto = 'Tu Pase de Acceso presencial · Espacio HOPE'
+    remitente = 'Espacio HOPE <contacto@espaciohope.com>'
+    destinatarios = [cita.paciente.email] if (cita.paciente and cita.paciente.email) else []
+    correo = EmailMultiAlternatives(asunto, strip_tags(correo_html), remitente, destinatarios)
+    correo.attach_alternative(correo_html, 'text/html')
+    if pdf_bytes and destinatarios:
+        correo.attach(f"Pase-HOPE-{cita.id}.pdf", pdf_bytes, 'application/pdf')
+    return correo.send(fail_silently=True)
+
+
+def descargar_pase_admision(request, cita_id):
+    """
+    Descarga del Pase de Acceso en PDF. Solo el propio paciente (o un admin)
+    y solo para citas PRESENCIALES. Es la acción del botón
+    «DESCARGAR MI PASE DE ACCESO A HOPE».
+    """
+    if not request.user.is_authenticated:
+        return redirect('modulo_informativo')
+
+    cita = get_object_or_404(
+        Cita.objects.select_related('psicologo__usuario', 'paciente'),
+        id=cita_id,
+    )
+
+    permiso = (cita.paciente_id == request.user.id) or es_admin(request.user)
+    if not permiso:
+        return HttpResponse('No tienes acceso a este pase.', status=403)
+
+    if cita.modalidad != 'Presencial':
+        return HttpResponse('Este pase solo existe para citas presenciales.', status=404)
+
+    html_pase = render_to_string('pase_admision.html', _contexto_pase_admision(cita, request))
+    pdf_bytes = convertir_html_a_pdf(html_pase)
+    response = HttpResponse(pdf_bytes, content_type='application/pdf')
+    response['Content-Disposition'] = f'inline; filename="Pase-HOPE-{cita.id}.pdf"'
+    return response
+
+
+def verificar_pase(request, codigo):
+    """
+    Ruta CONTROLADA a la que apunta el QR del pase. Recibe únicamente el
+    código aleatorio (el QR no contiene datos personales del paciente): si
+    corresponde a una cita presencial Confirmada se muestran los datos
+    mínimos de verificación en recepción; en cualquier otro caso se muestra
+    el estado inválido sin exponer información privada.
+    """
+    cita = None
+    motivo = ''
+    if codigo:
+        candidata = Cita.objects.select_related('psicologo__usuario', 'paciente').filter(codigo_pase=codigo).first()
+        if candidata is None:
+            motivo = 'Este folio no corresponde a ninguna sesión activa.'
+        elif candidata.modalidad != 'Presencial':
+            motivo = 'Esta sesión no requiere pase presencial.'
+        elif candidata.estado != 'Confirmada':
+            motivo = 'La sesión ya no está activa o fue reagendada. Consulta en recepción.'
+        else:
+            cita = candidata
+
+    contexto_verificacion = None
+    if cita:
+        psi_nombre = (cita.psicologo.usuario.get_full_name() or cita.psicologo.usuario.first_name or '').strip() if (cita.psicologo and cita.psicologo.usuario) else ''
+        contexto_verificacion = {
+            'folio': _folio_pase(cita),
+            'paciente_nombre': ((cita.paciente.get_full_name() or cita.paciente.first_name or '')).strip() if cita.paciente else '',
+            'psicologa_nombre': psi_nombre,
+            'fecha_humana': cita.fecha.strftime('%d %b. %Y') if cita.fecha else '',
+            'hora_humana': cita.hora.strftime('%I:%M %p') if cita.hora else '',
+            'modalidad': 'Presencial',
+            'lugar_nombre': PASE_SEDE['nombre'],
+            'marca_correo': 'contacto@espaciohope.com',
+        }
+
+    render_ctx = {
+        'estado': 'valida' if cita else 'invalida',
+        'motivo': motivo,
+        'marca_correo': 'contacto@espaciohope.com',
+    }
+    if contexto_verificacion:
+        render_ctx.update(contexto_verificacion)
+
+    return render(request, 'pase_verificacion.html', render_ctx)
+
 # =========================================================================
 # 🧠 FUNCIÓN MAESTRA: CREAR ENLACE DE GOOGLE MEET
 # =========================================================================
@@ -1238,6 +1503,13 @@ def obtener_disponibilidad_por_tipo_ajax(request):
     para esa modalidad en TratamientoPaciente. Si lo tiene, muestra sus horarios.
     Si no lo tiene aún, muestra la disponibilidad global de todos los especialistas
     habilitados para esa modalidad.
+
+    🏢 MODALIDAD (31/10/2026): acepta ?modalidad=Presencial para el flujo
+    presencial. En ese caso:
+      1. El filtro de psicólogos presencial/mixto se aplica EN SERVIDOR.
+      2. Regla de negocio de esta etapa: si el paciente YA llevó sesiones en
+         línea, no puede agendar presencial (le pedimos contactar a su
+         psicólogo); la validación se repite en guardar_cita_ajax.
     """
     if not request.user.is_authenticated:
         return JsonResponse({'status': 'error', 'message': 'Debes iniciar sesión.'}, status=403)
@@ -1246,10 +1518,24 @@ def obtener_disponibilidad_por_tipo_ajax(request):
     if tipo_sesion not in TIPOS_SESION_VALIDOS:
         tipo_sesion = 'individual'
 
+    modalidad = request.GET.get('modalidad', 'En línea')
+    if modalidad not in MODALIDADES_CITA_VALIDAS:
+        modalidad = 'En línea'
+
     try:
         perfil_usuario = request.user.perfil
     except Exception:
         return JsonResponse({'status': 'error', 'message': 'Perfil no encontrado.'}, status=400)
+
+    # 🏢 Regla de negocio presencial: paciente con sesiones en línea previas
+    # no agenda presencial desde el wizard (mensaje amigable, sin bloquearlo
+    # por su historial para la modalidad en línea).
+    if modalidad == 'Presencial' and Cita.objects.filter(paciente=request.user, modalidad='En línea').exists():
+        return JsonResponse({
+            'status': 'error',
+            'bloqueado_presencial': True,
+            'message': MENSAJE_PRESENCIAL_CONTACTA,
+        }, status=200)
 
     preferencia = ""
     ultimo_cuestionario = CuestionarioRegistro.objects.filter(
@@ -1283,8 +1569,8 @@ def obtener_disponibilidad_por_tipo_ajax(request):
         if getattr(perfil_usuario.psicologo_asignado, campo_capacidad, False):
             psicologo_asignado = perfil_usuario.psicologo_asignado
 
-    if psicologo_asignado and getattr(psicologo_asignado, campo_capacidad, False):
-        dias_json = obtener_slots_psicologo(psicologo_asignado, hoy, fecha_limite, tipo_sesion=tipo_sesion)
+    if psicologo_asignado and getattr(psicologo_asignado, campo_capacidad, False) and psicologo_atiende_modalidad(psicologo_asignado, modalidad):
+        dias_json = obtener_slots_psicologo(psicologo_asignado, hoy, fecha_limite, tipo_sesion=tipo_sesion, modalidad=modalidad)
         doc_nombre = psicologo_asignado.usuario.first_name if psicologo_asignado.usuario else ""
         return JsonResponse({
             'status': 'success',
@@ -1294,7 +1580,9 @@ def obtener_disponibilidad_por_tipo_ajax(request):
         })
     else:
         # No tiene psicólogo para esta modalidad: mostramos la disponibilidad global
-        dias_json = obtener_slots_globales(hoy, fecha_limite, preferencia, tipo_sesion=tipo_sesion)
+        # (el filtro de modalidad se aplica dentro de la búsqueda con el campo
+        #  modalidad_atencion del psicólogo, validado también en el servidor).
+        dias_json = obtener_slots_globales(hoy, fecha_limite, preferencia, tipo_sesion=tipo_sesion, modalidad=modalidad)
         return JsonResponse({
             'status': 'success',
             'dias': dias_json,
@@ -1369,12 +1657,22 @@ def guardar_cita_ajax(request):
         hora_str = request.POST.get('hora')
         animo = request.POST.get('animo', 'No especificó')
         modalidad_str = request.POST.get('modalidad', 'En línea')
+        if modalidad_str not in MODALIDADES_CITA_VALIDAS:
+            modalidad_str = 'En línea'  # mismo comportamiento histórico ante valores raros
         tipo_sesion_str = request.POST.get('tipo_servicio', 'individual')
         # 💳 Referencia de la orden de PayPal (si el guardado viene después de un
         # pago ya capturado). La registramos en el log INMEDIATAMENTE, antes de
         # cualquier posible excepción, para que un pago cobrado nunca quede sin
         # rastro aunque falle el resto del guardado de la cita.
         paypal_order_id = request.POST.get('paypal_order_id')
+
+        # ⚠️ ETAPA DE PRUEBAS (PAGO_PRESENCIAL_HABILITADO = False): las citas
+        # presenciales no llevan cobro. Si el front manda una orden de PayPal
+        # para una cita presencial, se descarta aquí (delimitado por esta
+        # constante: al habilitar el pago, el flujo regresa solo).
+        if modalidad_str == 'Presencial' and not PAGO_PRESENCIAL_HABILITADO:
+            paypal_order_id = None
+
         if paypal_order_id:
             logging.getLogger(__name__).info(
                 'Pago de PayPal recibido (orden %s) para usuario %s - fecha %s %s',
@@ -1396,6 +1694,14 @@ def guardar_cita_ajax(request):
             hora_obj = parsear_hora_flexible(hora_str)
             perfil = request.user.perfil
 
+            # 🏢 Validación en SERVIDOR de la regla presencial (además de la que
+            # corre en disponibilidad): un paciente que ya llevó sesiones en
+            # línea no agendar presencial desde el wizard.
+            if modalidad_str == 'Presencial' and Cita.objects.filter(
+                paciente=request.user, modalidad='En línea'
+            ).exists():
+                return JsonResponse({'status': 'error', 'message': MENSAJE_PRESENCIAL_CONTACTA})
+
             # 🔥 MULTISERVICIO: Buscamos si ya tiene psicólogo asignado a este servicio específico
             tratamiento = TratamientoPaciente.objects.filter(
                 paciente=request.user, tipo_servicio=tipo_sesion_str, activo=True
@@ -1405,6 +1711,16 @@ def guardar_cita_ajax(request):
 
             # Si el doctor de este tratamiento ya no atiende esta modalidad, permitimos reasignar un especialista
             if psicologo and not getattr(psicologo, campo_capacidad, False):
+                psicologo = None
+
+            # 🏢 Validación en SERVIDOR: el psicólogo asignado debe corresponder
+            # a la modalidad solicitada (Presencial solo con Presencial/Mixto;
+            # en línea el resultado es idéntico al histórico). Además, en
+            # presencial no se asume que "su" psicólogo atiende presencial:
+            # si no lo hace, cae al pool compatible y se reasigna el especialista.
+            if psicologo and not psicologo_atiende_modalidad(psicologo, modalidad_str):
+                if modalidad_str == 'Presencial':
+                    return JsonResponse({'status': 'error', 'message': 'Contacta a tu psicólogo para agendar una cita presencial'})
                 psicologo = None
 
             # Si no tiene psicólogo asignado para esta modalidad, asignamos automáticamente
@@ -1425,7 +1741,11 @@ def guardar_cita_ajax(request):
                     activo=True, fecha_inicio__lte=fecha_obj, fecha_fin__gte=fecha_obj
                 )
                 psicologos_candidatos = PerfilPsicologo.objects.filter(
-                    esta_activo=True, **{campo_capacidad: True}
+                    esta_activo=True,
+                    **{campo_capacidad: True},
+                    # 🏢 Modalidad validada EN SERVIDOR: nunca aparecen psicólogos
+                    # exclusivamente en línea en un flujo presencial (ni viceversa).
+                    modalidad_atencion__in=COMPATIBILIDAD_MODALIDAD_PSICOLOGO[modalidad_str],
                 ).prefetch_related(
                     Prefetch('esquemas_horarios', queryset=esquemas_del_dia, to_attr='_esquemas_rango')
                 )
@@ -1433,7 +1753,7 @@ def guardar_cita_ajax(request):
                 # 1. Filtramos doctores que tengan el slot válido
                 doctores_con_slot_valido = []
                 for psicologo_temp in psicologos_candidatos:
-                    slots_del_dia = obtener_slots_psicologo_para_dia(psicologo_temp, fecha_obj, tipo_sesion=tipo_sesion_str)
+                    slots_del_dia = obtener_slots_psicologo_para_dia(psicologo_temp, fecha_obj, tipo_sesion=tipo_sesion_str, modalidad=modalidad_str)
                     if hora_obj.strftime('%I:%M %p') in slots_del_dia:
                         doctores_con_slot_valido.append(psicologo_temp.id)
 
@@ -1493,6 +1813,7 @@ def guardar_cita_ajax(request):
                     id_google = datos_meet['id_evento']
 
             # Crear la cita
+            # 🎫 Las citas presenciales traen código único de pase (QR de verificación).
             cita = Cita.objects.create(
                 paciente=request.user,
                 psicologo=psicologo,
@@ -1507,8 +1828,23 @@ def guardar_cita_ajax(request):
                 es_tectum=es_tectum_cita,
                 es_beneficios=es_beneficios,  # 28/10/2026: separación de organizaciones
                 enlace_meet=link_final,
-                id_evento_google=id_google  
+                id_evento_google=id_google,
+                codigo_pase=_generar_codigo_pase() if modalidad_str == 'Presencial' else None,
             )
+
+            # 🎫 PASE DE ACCESO (solo presencial): correo con presentación más el
+            # PDF adjunto (misma infraestructura SMTP/PDF del sistema).
+            if modalidad_str == 'Presencial':
+                try:
+                    _enviar_correo_pase_admision(cita, request)
+                except Exception:
+                    logging.getLogger(__name__).exception('Fallo el correo del pase de admisión de la cita %s', cita.id)
+                return JsonResponse({
+                    'status': 'success',
+                    'modalidad': 'Presencial',
+                    'cita_id': cita.id,
+                    'pase_url': request.build_absolute_uri(reverse('descargar_pase_admision', args=[cita.id])),
+                })
 
             # Enviar correo (asumiendo que las funciones render_to_string, strip_tags y send_mail están importadas)
             es_tectum_email = es_tectum_cita or es_beneficios
@@ -1530,6 +1866,8 @@ def guardar_cita_ajax(request):
             remitente = 'TECTUM <contacto@espaciohope.com>' if es_tectum_email else 'Espacio HOPE <contacto@espaciohope.com>'
             send_mail(asunto, mensaje_plano, remitente, [request.user.email], html_message=mensaje_html, fail_silently=True)
 
+            # 🏢 Las citas en línea conservan su respuesta histórica (el front
+            # muestra el botón de ingreso a la consulta después del reload).
             return JsonResponse({'status': 'success'})
         except Exception as e:
             if paypal_order_id:
@@ -3523,6 +3861,16 @@ def iniciar_pago_clip(request):
                 animo = request.POST.get('animo', 'No especificó')
                 modalidad = request.POST.get('modalidad', 'En línea')
 
+                # ⚠️ ETAPA DE PRUEBAS (PAGO_PRESENCIAL_HABILITADO = False):
+                # las citas presenciales NO cobran por Clip. Si alguien fuerza
+                # un POST con modalidad='Presencial', se rechaza aquí para que
+                # ninguna cita presencial quede Pendiente de pago.
+                if modalidad == 'Presencial' and not PAGO_PRESENCIAL_HABILITADO:
+                    return JsonResponse({
+                        'status': 'error',
+                        'message': 'Las citas presenciales no requieren pago por el momento. Agenda tu cita presencial desde tu panel.'
+                    })
+
                 # 🔥 NUNCA confiamos en el "monto" que manda el navegador: se
                 # recalcula aquí con la misma función usada en el resumen.
                 integrantes_familia = None
@@ -3629,6 +3977,11 @@ def pago_exitoso_clip(request, cita_id):
             if psicologo and not getattr(psicologo, campo_capacidad, False):
                 psicologo = None
 
+            # 🏢 Compatibilidad de modalidad: solo psicólogos Presencial/Mixto
+            # para citas presenciales; En línea/Mixto para las de en línea.
+            if psicologo and not psicologo_atiende_modalidad(psicologo, cita.modalidad):
+                psicologo = None
+
             # --- ASIGNACIÓN DE PSICÓLOGO ---
             if not psicologo:
                 preferencia = ""
@@ -3644,8 +3997,12 @@ def pago_exitoso_clip(request, cita_id):
                     pass
 
                 doctores_con_slot_valido = []
-                for psicologo_temp in PerfilPsicologo.objects.filter(esta_activo=True, **{campo_capacidad: True}):
-                    slots_del_dia = obtener_slots_psicologo_para_dia(psicologo_temp, cita.fecha, tipo_sesion=cita.tipo_sesion)
+                modalidades_ok = COMPATIBILIDAD_MODALIDAD_PSICOLOGO.get(cita.modalidad or 'En línea', ['En línea', 'Mixto'])
+                for psicologo_temp in PerfilPsicologo.objects.filter(
+                    esta_activo=True, **{campo_capacidad: True},
+                    modalidad_atencion__in=modalidades_ok,
+                ):
+                    slots_del_dia = obtener_slots_psicologo_para_dia(psicologo_temp, cita.fecha, tipo_sesion=cita.tipo_sesion, modalidad=cita.modalidad)
                     if cita.hora.strftime('%I:%M %p') in slots_del_dia:
                         doctores_con_slot_valido.append(psicologo_temp.id)
 
@@ -3685,6 +4042,7 @@ def pago_exitoso_clip(request, cita_id):
                     return redirect('panel_generico')
 
             # --- GOOGLE MEET ---
+            # 🏢 Las citas exclusivamente presenciales NO generan Meet.
             link_final = None
             id_google = None
             if cita.modalidad == 'En línea':
@@ -3701,6 +4059,10 @@ def pago_exitoso_clip(request, cita_id):
                     id_google = datos_meet['id_evento']
 
             # --- GUARDADO FINAL ---
+            # 🎫 Las citas presenciales reciben su Pase de Acceso: código único
+            # de verificación (lo lleva el QR) + correo con el PDF adjunto.
+            if cita.modalidad == 'Presencial' and not cita.codigo_pase:
+                cita.codigo_pase = _generar_codigo_pase()
             cita.psicologo = psicologo
             cita.estado = 'Confirmada'
             cita.enlace_meet = link_final
@@ -3709,6 +4071,16 @@ def pago_exitoso_clip(request, cita_id):
 
             # --- CORREO ---
             es_tectum_email = getattr(cita, 'es_tectum', False) or getattr(getattr(paciente, 'perfil', None), 'es_tectum', False) or request.session.get('convenio_tectum_beneficios', False)
+            if cita.modalidad == 'Presencial':
+                # 🎫 Pase de Acceso: correo con presentación + PDF adjunto.
+                # (utiliza la misma infraestructura SMTP/PDF que corre todo el sistema)
+                try:
+                    _enviar_correo_pase_admision(cita, request)
+                except Exception:
+                    logging.getLogger(__name__).exception('Fallo el correo del pase de admisión de la cita %s', cita.id)
+                messages.success(request, "¡Todo listo! Tu cita presencial fue agendada. Te enviamos tu Pase de Acceso por correo.")
+                return redirect('panel_generico')
+
             asunto = 'Confirmación de tu sesión en TECTUM' if es_tectum_email else 'Confirmación de tu sesión en HOPE'
             if link_final:
                 link_correo = request.build_absolute_uri(reverse('formulario_previo_meet', args=[cita.id]))
@@ -3840,11 +4212,21 @@ def admin_disponibilidad_ajax(request):
     Igual que obtener_disponibilidad_por_tipo_ajax, pero para cuando el
     ADMIN consulta la disponibilidad del paciente que él eligió (en vez de
     usar request.user). Usa las mismas funciones de slots de siempre.
+
+    🏢 MODALIDAD (31/10/2026): acepta ?modalidad=Presencial; los psicólogos
+    que se ofrecen se filtran por compatibilidad presencial/mixto EN SERVIDOR.
+    A diferencia del wizard del paciente, el admin NO se bloquea por el
+    historial: es el canal operativo cuando el paciente-contacto ya fue vía
+    psicólogo o recepción.
     """
     paciente_id = request.GET.get('paciente_id')
     tipo_sesion = request.GET.get('tipo_sesion', 'individual')
     if tipo_sesion not in TIPOS_SESION_VALIDOS:
         tipo_sesion = 'individual'
+
+    modalidad = request.GET.get('modalidad', 'En línea')
+    if modalidad not in MODALIDADES_CITA_VALIDAS:
+        modalidad = 'En línea'
 
     if not paciente_id:
         return JsonResponse({'status': 'error', 'message': 'Selecciona primero un paciente.'}, status=400)
@@ -3886,10 +4268,10 @@ def admin_disponibilidad_ajax(request):
         if getattr(perfil_paciente.psicologo_asignado, campo_capacidad, False):
             psicologo_asignado = perfil_paciente.psicologo_asignado
 
-    if psicologo_asignado and getattr(psicologo_asignado, campo_capacidad, False):
-        dias_json = obtener_slots_psicologo(psicologo_asignado, hoy, fecha_limite, tipo_sesion=tipo_sesion)
+    if psicologo_asignado and getattr(psicologo_asignado, campo_capacidad, False) and psicologo_atiende_modalidad(psicologo_asignado, modalidad):
+        dias_json = obtener_slots_psicologo(psicologo_asignado, hoy, fecha_limite, tipo_sesion=tipo_sesion, modalidad=modalidad)
     else:
-        dias_json = obtener_slots_globales(hoy, fecha_limite, preferencia, tipo_sesion=tipo_sesion)
+        dias_json = obtener_slots_globales(hoy, fecha_limite, preferencia, tipo_sesion=tipo_sesion, modalidad=modalidad)
 
     return JsonResponse({
         'status': 'success',
@@ -3923,6 +4305,8 @@ def admin_guardar_cita_ajax(request):
     hora_str = request.POST.get('hora')
     animo = request.POST.get('animo', 'No especificó')
     modalidad_str = request.POST.get('modalidad', 'En línea')
+    if modalidad_str not in MODALIDADES_CITA_VALIDAS:
+        modalidad_str = 'En línea'
     tipo_sesion_str = request.POST.get('tipo_servicio', 'individual')
 
     if tipo_sesion_str not in TIPOS_SESION_VALIDOS:
@@ -3949,6 +4333,13 @@ def admin_guardar_cita_ajax(request):
         if psicologo and not getattr(psicologo, campo_capacidad, False):
             psicologo = None
 
+        # 🏢 Compatibilidad de modalidad del psicólogo asignado (reglas
+        # idénticas a las del agendamiento del paciente): en presencial solo
+        # psicólogos Presencial o Mixto. Si no es compatible, reasignamos
+        # desde el pool habilitado para esa modalidad.
+        if psicologo and not psicologo_atiende_modalidad(psicologo, modalidad_str):
+            psicologo = None
+
         # Asignación automática (misma lógica que guardar_cita_ajax)
         if not psicologo:
             preferencia = ""
@@ -3967,14 +4358,17 @@ def admin_guardar_cita_ajax(request):
                 activo=True, fecha_inicio__lte=fecha_obj, fecha_fin__gte=fecha_obj
             )
             psicologos_candidatos = PerfilPsicologo.objects.filter(
-                esta_activo=True, **{campo_capacidad: True}
+                esta_activo=True,
+                **{campo_capacidad: True},
+                # 🏢 Modalidad aplicada EN SERVIDOR (idéntico al flujo del paciente).
+                modalidad_atencion__in=COMPATIBILIDAD_MODALIDAD_PSICOLOGO[modalidad_str],
             ).prefetch_related(
                 Prefetch('esquemas_horarios', queryset=esquemas_del_dia, to_attr='_esquemas_rango')
             )
 
             doctores_con_slot_valido = []
             for psicologo_temp in psicologos_candidatos:
-                slots_del_dia = obtener_slots_psicologo_para_dia(psicologo_temp, fecha_obj, tipo_sesion=tipo_sesion_str)
+                slots_del_dia = obtener_slots_psicologo_para_dia(psicologo_temp, fecha_obj, tipo_sesion=tipo_sesion_str, modalidad=modalidad_str)
                 if hora_obj.strftime('%I:%M %p') in slots_del_dia:
                     doctores_con_slot_valido.append(psicologo_temp.id)
 
@@ -4059,8 +4453,18 @@ def admin_guardar_cita_ajax(request):
             es_beneficios=es_beneficios_cita,  # 28/10/2026: separación de organizaciones
             enlace_meet=link_final,
             id_evento_google=id_google,
-            es_tectum=es_tectum_cita
+            es_tectum=es_tectum_cita,
+            codigo_pase=_generar_codigo_pase() if modalidad_str == 'Presencial' else None,
         )
+
+        # 🎫 Presencial: correo del Pase de Acceso con el PDF adjunto (la cita
+        # administrada tampoco cobra nada, como siempre ha sido aquí).
+        if modalidad_str == 'Presencial':
+            try:
+                _enviar_correo_pase_admision(cita, request)
+            except Exception:
+                logging.getLogger(__name__).exception('Fallo el correo del pase de admisión (cita admin %s)', cita.id)
+            return JsonResponse({'status': 'success', 'modalidad': 'Presencial', 'cita_id': cita.id})
 
         # Mismo correo de confirmación que ya usa el flujo normal
         asunto = 'Confirmación de tu sesión en TECTUM' if es_tectum_cita else 'Confirmación de tu sesión en HOPE'

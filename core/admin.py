@@ -77,9 +77,9 @@ class HorarioPersonalizadoDiaInline(admin.TabularInline):
 @admin.register(PerfilPsicologo)
 class PerfilPsicologoAdmin(ImportExportModelAdmin):
     inlines = [EsquemaHorarioInline, DiaLibreInline] 
-    list_display = ('usuario', 'cedula_profesional', 'especialidad', 'genero', 'esta_activo')
+    list_display = ('usuario', 'cedula_profesional', 'especialidad', 'genero', 'modalidad_atencion', 'esta_activo')
     search_fields = ('usuario__first_name', 'usuario__last_name', 'cedula_profesional')
-    list_filter = ('genero', 'esta_activo')
+    list_filter = ('genero', 'modalidad_atencion', 'esta_activo')
     list_per_page = 20
 
 # 🔥 NUEVO ADMIN: Para poder editar los esquemas y meterle las excepciones por día

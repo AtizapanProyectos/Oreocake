@@ -619,6 +619,10 @@ function mostrarErrorCita(mensaje, opts) {
                     <p style="margin: 0; font-size: 18px; font-weight: 700; color: var(--c-purple); font-family: var(--font-headings);">{{ user.first_name|title }} {{ user.last_name|title }}</p>
                 </div>
 
+                <a href="{% url 'descargar_pase_admision' cita_proxima.id %}" style="display: block; width: 100%; box-sizing: border-box; margin-bottom: 18px; background: linear-gradient(135deg, var(--c-purple) 0%, #3B2474 100%); color: white; padding: 15px 20px; border-radius: 14px; font-weight: 800; font-size: 14px; text-decoration: none; font-family: var(--font-headings); letter-spacing: 1px; box-shadow: 0 10px 26px rgba(90,63,163,0.35);">
+                    <i class="fas fa-qrcode" style="margin-right: 8px;"></i> DESCARGAR MI PASE DE ACCESO A HOPE
+                </a>
+
                 <div style="display: flex; align-items: center; justify-content: center; gap: 10px; color: var(--c-orange); font-weight: 800; font-size: 14px;">
                     <i class="fas fa-camera"></i> 
                     <span>TOMA CAPTURA DE ESTE PASE</span>
@@ -1002,11 +1006,11 @@ function mostrarErrorCita(mensaje, opts) {
                                     <i class="fas fa-video"></i> En Línea
                                 </div>
                             </label>
-                            <label style="flex: 1; cursor: not-allowed;">
-                                <input type="radio" name="modalidad_opcion" value="Presencial" disabled style="display: none;">
-                                <div id="mod-card-presencial" class="mod-card" style="border: 2px dashed #e2e8f0; background: #f8fafc; color: #cbd5e1; padding: 15px; border-radius: 15px; font-weight: 700; transition: 0.3s; text-align: center; position: relative;">
+                            <label style="flex: 1; cursor: pointer;">
+                                <input type="radio" name="modalidad_opcion" value="Presencial" style="display: none;" onclick="seleccionarModalidad('Presencial')">
+                                <div id="mod-card-presencial" class="mod-card" style="border: 2px solid #e2e8f0; background: #f8fafc; color: #645C96; padding: 15px; border-radius: 15px; font-weight: 700; transition: 0.3s; text-align: center; position: relative;">
                                     <i class="fas fa-user-friends"></i> Presencial
-                                    <span style="display:block; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; margin-top: 4px; color: var(--c-pink);">(Próximamente)</span>
+                                    <span style="display:block; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; margin-top: 4px; color: var(--c-pink);">Sede HOPE</span>
                                 </div>
                             </label>
                         </div>
@@ -1028,27 +1032,10 @@ function mostrarErrorCita(mensaje, opts) {
                       
                 
 
-                        <!-- BADGE DE CONSENTIMIENTO INFORMADO FIRMADO Y VERIFICADO -->
-                        <div id="consentimiento-badge-verificado" style="{% if not tiene_consentimiento %}display: none;{% endif %} background: #f0fdf4; border: 1.5px solid #86efac; padding: 16px 20px; border-radius: 18px; margin-bottom: 24px; text-align: left; box-shadow: 0 4px 12px rgba(34,197,94,0.06);">
-                            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
-                                <div style="display: flex; align-items: center; gap: 14px;">
-                                    <div style="width: 42px; height: 42px; border-radius: 50%; background: #dcfce7; color: #16a34a; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0;">
-                                        <i class="fas fa-file-signature"></i>
-                                    </div>
-                                    <div>
-                                        <div style="font-weight: 800; font-size: 14px; color: #15803d; font-family: var(--font-headings);">Consentimiento Informado Aprobado</div>
-                                        <div style="font-size: 12px; color: #166534; font-family: var(--font-body);">Documento clínico y autorización legal en regla para tu atención psicológica.</div>
-                                    </div>
-                                </div>
-                                <div id="wrapper-btn-pdf" style="display: inline-block;">
-                                    {% if consentimiento_pdf_url %}
-                                    <a id="btn-ver-pdf-consentimiento" href="{{ consentimiento_pdf_url }}" target="_blank" style="background: white; border: 1.5px solid #86efac; color: #15803d; padding: 7px 15px; border-radius: 12px; font-size: 12px; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.04);">
-                                        <i class="fas fa-file-pdf"></i> Ver PDF Oficial
-                                    </a>
-                                    {% endif %}
-                                </div>
-                            </div>
-                        </div>
+                        <!-- (El badge visual verde "Consentimiento Informado Aprobado" se retiró de
+                             esta pantalla por diseño; la validación, el registro del consentimiento
+                             y el proceso de firma digital NO cambiaron: se conservan intactos en el
+                             backend y en el modal de firma.) -->
 
                         <!-- TARJETA DE PROTECCIÓN / BLOQUEO PARA NUEVOS CONSULTANTES -->
                         <div id="consentimiento-bloqueo-card" style="{% if tiene_consentimiento %}display: none;{% endif %} background: linear-gradient(135deg, #fff7ed 0%, #fef2f2 100%); border: 2px dashed #f97316; padding: 26px 22px; border-radius: 22px; margin-bottom: 26px; text-align: center; box-shadow: 0 8px 24px rgba(249,115,22,0.08);">
@@ -1063,6 +1050,24 @@ function mostrarErrorCita(mensaje, opts) {
                             </p>
                             <button type="button" id="btn-abrir-firma-consentimiento" onclick="abrirModalConsentimiento()" style="background: linear-gradient(135deg, var(--c-purple) 0%, #7c3aed 100%); color: white; border: none; border-radius: 14px; padding: 14px 30px; font-size: 14px; font-weight: 800; cursor: pointer; box-shadow: 0 6px 20px rgba(90,63,163,0.32); display: inline-flex; align-items: center; gap: 10px; transition: transform 0.2s ease; font-family: var(--font-headings);" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
                                 <i class="fas fa-file-signature"></i> Revisar y Firmar Consentimiento Digital
+                            </button>
+                        </div>
+
+                        <!-- 🏢 ETAPA DE PRUEBAS: confirmación SIN PAGO para la modalidad presencial.
+                             Solo se muestra cuando modalidadSeleccionada === 'Presencial'.
+                             Al autorizarse el cobro, activar PAGO_PRESENCIAL_HABILITADO en core/views.py
+                             y eliminar este bloque. -->
+                        <div id="caja-confirmar-presencial" style="display: none; margin-top: 20px; padding: 28px 24px; border-radius: 24px; text-align: center; background: linear-gradient(135deg, #f3e8ff 0%, #ccfbf1 100%); border: 2px solid var(--c-purple);">
+                            <div style="width: 60px; height: 60px; border-radius: 50%; background: var(--c-purple); color: white; display: flex; align-items: center; justify-content: center; font-size: 26px; margin: 0 auto 14px; box-shadow: 0 8px 22px rgba(90,63,163,0.35);">
+                                <i class="fas fa-user-friends"></i>
+                            </div>
+                            <h3 style="font-family: var(--font-headings); font-size: 21px; font-weight: 800; color: var(--c-purple); margin: 0 0 8px;">Consulta Presencial · Clínica HOPE</h3>
+                            <p style="font-size: 14px; color: var(--text-muted); line-height: 1.6; margin: 0 auto 20px; max-width: 460px;">
+                                Tu cita se confirmará <strong>sin pago</strong> durante esta etapa. Recibirás tu <strong>Pase de Acceso</strong>
+                                con el QR y la dirección de la sede (Lago Margarita 47, CDMX) en tu correo y en tu panel.
+                            </p>
+                            <button type="button" onclick="confirmarCitaPresencial()" style="background: linear-gradient(135deg, var(--c-purple) 0%, #3B2474 100%); color: white; border: none; border-radius: 16px; padding: 17px 38px; font-size: 15px; font-weight: 800; cursor: pointer; box-shadow: 0 10px 26px rgba(90,63,163,0.35); display: inline-flex; align-items: center; gap: 12px; font-family: var(--font-headings);">
+                                <i class="fas fa-check-circle"></i> Confirmar mi cita presencial
                             </button>
                         </div>
 
@@ -1371,6 +1376,10 @@ function mostrarErrorCita(mensaje, opts) {
         <i class="fas fa-check-circle" style="font-size: 65px; color: var(--c-teal); margin-bottom: 20px;"></i>
         <h2 style="font-family: var(--font-headings); font-size: 2.2rem; color: var(--text-main); margin-bottom: 10px;">¡Todo listo!</h2>
         <p id="texto-exito-dinamico" style="font-size: 16px; color: var(--text-muted); margin-bottom: 30px;">Tu sesión ha sido confirmada y agendada con éxito en tu panel.</p>
+        <!-- Botón del pase presencial (oculto por defecto; solo se muestra para citas Presencial) -->
+        <a id="btn-descargar-pase-exito" href="#" style="display: none; width: 100%; box-sizing: border-box; margin-bottom: 12px; background: linear-gradient(135deg, var(--c-purple) 0%, #3B2474 100%); color: white; padding: 14px 20px; border-radius: 14px; font-weight: 800; font-size: 14px; text-decoration: none; font-family: var(--font-headings); box-shadow: 0 10px 26px rgba(90,63,163,0.35); letter-spacing: 1px;">
+            <i class="fas fa-qrcode" style="margin-right: 8px;"></i> DESCARGAR MI PASE DE ACCESO A HOPE
+        </a>
         <button onclick="location.reload()" class="btn-brutal" style="width: 100%; background: var(--c-teal); color: white;">
             Excelente <i class="fas fa-arrow-right" style="margin-left: 8px;"></i>
         </button>
@@ -2043,18 +2052,33 @@ function seleccionarServicioHub(tipo) {
     }
 }
 
-// 🔥 NUEVO: refresca el calendario según la modalidad elegida, mostrando
-// solo los horarios de psicólogos habilitados para esa modalidad.
-function refrescarDisponibilidadPorTipo(tipo) {
+// 🔥 NUEVO: refresca el calendario según la modalidad elegida (individual /
+// pareja / familiar y, 31/10/2026, también En línea / Presencial), mostrando
+// solo los horarios de psicólogos habilitados para esa combinación (el filtro
+// vive en el backend, no aquí).
+function refrescarDisponibilidadPorTipo(tipo, modalidad) {
     const carousel = document.getElementById('dateCarousel');
     if (!carousel) return;
     carousel.style.opacity = '0.4';
 
-    fetch(`{% url 'disponibilidad_por_tipo' %}?tipo_sesion=${encodeURIComponent(tipo)}`)
+    let url = `{% url 'disponibilidad_por_tipo' %}?tipo_sesion=${encodeURIComponent(tipo)}`;
+    if (modalidad) {
+        url += `&modalidad=${encodeURIComponent(modalidad)}`;
+    }
+
+    fetch(url)
         .then(r => r.json())
         .then(data => {
             carousel.style.opacity = '1';
-            if (data.status !== 'success') return;
+            if (data.status !== 'success') {
+                // 🏢 Regla presencial del backend: paciente con sesiones en
+                // línea previas. Avisamos y volvemos a la modalidad En línea.
+                if (data.bloqueado_presencial) {
+                    mostrarToast(data.message || 'Contacta a tu psicólogo para agendar una cita presencial', 'error');
+                    fallbackModalidadEnLinea();
+                }
+                return;
+            }
 
             if (data.aviso) {
                 alert(data.aviso);
@@ -2150,6 +2174,17 @@ function guardarCitaSinPago(pagoRef) {
             document.getElementById('step-3-loading').style.display = 'none';
 
             if (data.status === 'success') {
+
+                // Cita presencial (etapa de pruebas, sin pago): además del mensaje
+                // de éxito ofrecemos la descarga del pase de acceso HOPE.
+                const btnPaseExito = document.getElementById('btn-descargar-pase-exito');
+                if (data.modalidad === 'Presencial' && data.pase_url && btnPaseExito) {
+                    btnPaseExito.href = data.pase_url;
+                    btnPaseExito.style.display = 'inline-block';
+                    document.getElementById('texto-exito-dinamico').innerText = 'Tu cita presencial ha sido confirmada. Descarga tu pase de acceso (QR) y preséntalo en Clínica HOPE.';
+                } else if (btnPaseExito) {
+                    btnPaseExito.style.display = 'none';
+                }
 
                 document.getElementById('alerta-exito-cita').style.display = 'flex';
 
@@ -2362,6 +2397,8 @@ function agendarDirectoPrueba() {
         document.getElementById('step-1-schedule').style.display = 'none';
         document.getElementById('step-2-payment').style.display = 'block';
         document.getElementById('step-2-payment').scrollIntoView({behavior: 'smooth', block: 'start'});
+        // Presencial: muestra caja sin pago; En línea: método de pago normal.
+        refrescarVistaPagoSegunModalidad();
     }
 
     // Alertas
@@ -2466,6 +2503,8 @@ function agendarDirectoPrueba() {
                     document.getElementById('step-1-schedule').style.display = 'none';
                     document.getElementById('step-2-payment').style.display = 'block';
                     document.getElementById('step-2-payment').scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    // Presencial: caja sin pago; En línea: métodos de pago.
+                    refrescarVistaPagoSegunModalidad();
                 }
             });
         }
@@ -2579,17 +2618,119 @@ document.addEventListener("DOMContentLoaded", function () {
 
 window.modalidadSeleccionada = 'En línea'; // Por defecto
 
-    function seleccionarModalidad(mod) {
-        window.modalidadSeleccionada = mod;
+    // 🏢 Regresamos el wizard a la modalidad En línea (usado cuando el backend
+    // rechaza presencial o cuando el usuario cambia de modalidad).
+    function aplicarEstiloModalidad(mod) {
         document.querySelectorAll('.mod-card').forEach(c => {
             c.style.borderColor = '#e2e8f0';
             c.style.color = 'var(--text-muted)';
             c.style.background = '#f8fafc';
         });
         const selected = document.getElementById('mod-card-' + (mod === 'En línea' ? 'linea' : 'presencial'));
-        selected.style.borderColor = 'var(--c-purple)';
-        selected.style.color = 'var(--c-purple)';
-        selected.style.background = '#f3e8ff';
+        if (selected) {
+            selected.style.borderColor = mod === 'Presencial' ? 'var(--c-pink)' : 'var(--c-teal)';
+            selected.style.color = mod === 'Presencial' ? 'var(--c-pink)' : 'var(--c-teal)';
+            selected.style.background = mod === 'Presencial' ? '#fff1f4' : '#f0fdfa';
+        }
+    }
+
+    function fallbackModalidadEnLinea() {
+        window.modalidadSeleccionada = 'En línea';
+        const radio = document.querySelector('input[name="modalidad_opcion"][value="En línea"]');
+        if (radio) radio.checked = true;
+        aplicarEstiloModalidad('En línea');
+        refrescarVistaPagoSegunModalidad();
+    }
+
+    // 🏢 Muestra/oculta la vista de pago según la modalidad: presencial NO
+    // cobra en esta etapa (muestra su caja de confirmación propia); en línea
+    // conserva los métodos de pago intactos.
+    function refrescarVistaPagoSegunModalidad() {
+        const esPresencial = window.modalidadSeleccionada === 'Presencial';
+        const metodosPago = document.getElementById('seccion-metodos-pago');
+        const cajaPresencial = document.getElementById('caja-confirmar-presencial');
+        const precioEl = document.getElementById('precio-dinamico');
+        const desgloseEl = document.getElementById('desglose-precio');
+        const descEl = document.getElementById('desc-dinamica');
+
+        if (esPresencial) {
+            if (metodosPago) metodosPago.style.display = 'none';
+            if (cajaPresencial) {
+                cajaPresencial.style.display = window.tieneConsentimiento ? 'block' : 'none';
+            }
+            if (precioEl) precioEl.innerHTML = `$0.00 <span style="font-size:16px;">MXN</span>`;
+            if (desgloseEl) desgloseEl.innerHTML = `<span style="color: var(--c-teal); font-weight: 800; background: #e6fffa; padding: 4px 12px; border-radius: 8px; display: inline-block;">Sin costo · etapa de pruebas presencial</span>`;
+            if (descEl) descEl.innerText = 'Consulta Psicológica Presencial en Clínica HOPE';
+        } else {
+            if (cajaPresencial) cajaPresencial.style.display = 'none';
+            if (metodosPago) metodosPago.style.display = window.tieneConsentimiento ? 'block' : 'none';
+            // Restauramos los precios reales de la modalidad en línea (misma
+            // función principal que los calcula para individual/pareja/familiar).
+            if (typeof actualizarResumenPrecio === 'function') actualizarResumenPrecio();
+        }
+    }
+
+    function seleccionarModalidad(mod) {
+        if (mod === 'Presencial') {
+            // 🏢 Flujo presencial: consultamos disponibilidad presencial.
+            // El backend valida (a) la regla anti-historial-en-línea y
+            // (b) qué psicólogos atienden presencial; aquí solo presentamos.
+            if (!window.tieneConsentimiento) {
+                abrirModalConsentimiento();
+                window.modalidadPendientePresencial = true;
+                return;
+            }
+            const tipo = window.tipoServicioAgendado || 'individual';
+            fetch(`{% url 'disponibilidad_por_tipo' %}?tipo_sesion=${encodeURIComponent(tipo)}&modalidad=${encodeURIComponent('Presencial')}`)
+                .then(r => r.json())
+                .then(data => {
+                    if (data.bloqueado_presencial || (data.status === 'error' && data.message)) {
+                        mostrarToast(data.message || 'Contacta a tu psicólogo para agendar una cita presencial', 'error');
+                        fallbackModalidadEnLinea();
+                        return;
+                    }
+                    window.modalidadSeleccionada = 'Presencial';
+                    const radio = document.querySelector('input[name="modalidad_opcion"][value="Presencial"]');
+                    if (radio) radio.checked = true;
+                    aplicarEstiloModalidad('Presencial');
+                    // Refrescamos el calendario con el pool presencial y volvemos
+                    // al paso 1 para que elija día/hora entre esos psicólogos.
+                    refrescarDisponibilidadPorTipo(tipo, 'Presencial');
+                    refrescarVistaPagoSegunModalidad();
+                    const step1 = document.getElementById('step-1-schedule');
+                    const step2 = document.getElementById('step-2-payment');
+                    if (step1) step1.style.display = 'block';
+                    if (step2) step2.style.display = 'none';
+                })
+                .catch(() => {
+                    mostrarToast('No pudimos cargar la disponibilidad presencial. Intenta de nuevo.', 'error');
+                });
+            return;
+        }
+
+        window.modalidadSeleccionada = mod;
+        aplicarEstiloModalidad(mod);
+        // Volver a En línea: repintamos horarios del pool en línea y pago normal.
+        refrescarDisponibilidadPorTipo(window.tipoServicioAgendado || 'individual', 'En línea');
+        refrescarVistaPagoSegunModalidad();
+    }
+
+    // 🏢 Confirmación de cita presencial (sin pasarela durante las pruebas):
+    // reutiliza el mismo guardado del wizard; solo no lleva referencia de pago.
+    function confirmarCitaPresencial() {
+        if (!window.tieneConsentimiento) {
+            abrirModalConsentimiento();
+            return;
+        }
+        if (!window.fechaSeleccionada || !window.horaSeleccionada) {
+            alert("Por favor, selecciona primero una fecha y un horario disponible en el calendario.");
+            return;
+        }
+        if (!slotCumpleAnticipacion(window.fechaSeleccionada, window.horaSeleccionada)) {
+            mostrarToast('Ese horario ya no cumple con las 2 horas de anticipación. Elige otro.', 'error');
+            return;
+        }
+        guardarCitaSinPago(null);
     }
 
 
@@ -2874,23 +3015,7 @@ function guardarConsentimientoDigital() {
             const cardBloqueo = document.getElementById('consentimiento-bloqueo-card');
             if (cardBloqueo) cardBloqueo.style.display = 'none';
 
-            // 2. Mostrar badge de consentimiento verificado
-            const badgeVerificado = document.getElementById('consentimiento-badge-verificado');
-            if (badgeVerificado) {
-                badgeVerificado.style.display = 'block';
-                if (data.pdf_url) {
-                    const wrapperPdf = document.getElementById('wrapper-btn-pdf');
-                    if (wrapperPdf) {
-                        wrapperPdf.innerHTML = `
-                            <a id="btn-ver-pdf-consentimiento" href="${data.pdf_url}" target="_blank" style="background: white; border: 1.5px solid #86efac; color: #15803d; padding: 7px 15px; border-radius: 12px; font-size: 12px; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.04);">
-                                <i class="fas fa-file-pdf"></i> Ver PDF Oficial
-                            </a>
-                        `;
-                    }
-                }
-            }
-
-            // 3. Desbloquear métodos de pago protegidos (PayPal y Transferencia)
+            // 2. Desbloquear métodos de pago protegidos (PayPal y Transferencia)
             const seccionPago = document.getElementById('seccion-metodos-pago');
             if (seccionPago) {
                 seccionPago.style.display = 'block';
@@ -2901,7 +3026,7 @@ function guardarConsentimientoDigital() {
                 }, 20);
             }
 
-            // 4. Si el usuario ya había seleccionado fecha y hora, levantar la pantalla de pagos
+            // 3. Si el usuario ya había seleccionado fecha y hora, levantar la pantalla de pagos
             if (window.fechaSeleccionada && window.horaSeleccionada) {
                 const wizard = document.getElementById('booking-wizard');
                 if (wizard) wizard.style.display = 'block';
