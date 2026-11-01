@@ -960,6 +960,29 @@ function mostrarErrorCita(mensaje, opts) {
                 Selecciona el día y la hora
             </h2>
 
+            <!-- ⚡ SELECTOR DE MODALIDAD (movido ANTES de las fechas): al elegir
+                 En línea o Presencial se recarga el carrusel de días/slots con el
+                 pool de psicólogos de esa modalidad (filtro rendel backend). -->
+            <div style="margin-bottom: 30px; text-align: left; max-width: 450px; margin-left: auto; margin-right: auto;">
+                <p style="font-size: 13px; font-weight: 700; color: var(--text-muted); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 1px;">Modalidad de tu sesión:</p>
+                <div style="display: flex; gap: 15px;">
+                    <label style="flex: 1; cursor: pointer;">
+                        <input type="radio" name="modalidad_opcion" value="En línea" checked style="display: none;" onclick="seleccionarModalidad('En línea')">
+                        <div id="mod-card-linea" class="mod-card" style="border: 2px solid var(--c-teal); background: #f0fdfa; color: var(--c-teal); padding: 15px; border-radius: 15px; font-weight: 700; transition: 0.3s; text-align: center;">
+                            <i class="fas fa-video"></i> En Línea
+                        </div>
+                    </label>
+                    <label style="flex: 1; cursor: pointer;">
+                        <input type="radio" name="modalidad_opcion" value="Presencial" style="display: none;" onclick="seleccionarModalidad('Presencial')">
+                        <div id="mod-card-presencial" class="mod-card" style="border: 2px solid #e2e8f0; background: #f8fafc; color: #645C96; padding: 15px; border-radius: 15px; font-weight: 700; transition: 0.3s; text-align: center; position: relative;">
+                            <span style="position: absolute; top: -10px; right: 10px; background: var(--c-pink); color: #fff; font-size: 9px; font-weight: 800; letter-spacing: 1px; padding: 3px 9px; border-radius: 100px; box-shadow: 0 4px 10px rgba(248,91,140,0.35);">¡NUEVO!</span>
+                            <i class="fas fa-user-friends"></i> Presencial
+                        </div>
+                    </label>
+                </div>
+                <p style="font-size: 12px; color: var(--text-muted); margin: 10px 2px 0;">Los horarios se muestran según la modalidad que elijas aquí.</p>
+            </div>
+
             <div id="step-1-schedule">
                 <div class="date-carousel" id="dateCarousel">
                     {% for dia, horas in dias_disponibles.items %}
@@ -997,25 +1020,10 @@ function mostrarErrorCita(mensaje, opts) {
                     <p id="selected-time-text" style="font-size: 16px; color: var(--c-teal); margin-bottom: 24px; font-weight: 700; background: #e6fffa; display: inline-block; padding: 8px 22px; border-radius: 50px; border: 1px solid #b2f5ea;"></p>
                 </div>
 
-                    <div style="margin-bottom: 30px; text-align: left; max-width: 450px; margin-left: auto; margin-right: auto;">
-                        <p style="font-size: 13px; font-weight: 700; color: var(--text-muted); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 1px;">Modalidad de tu sesión:</p>
-                        <div style="display: flex; gap: 15px;">
-                            <label style="flex: 1; cursor: pointer;">
-                                <input type="radio" name="modalidad_opcion" value="En línea" checked style="display: none;" onclick="seleccionarModalidad('En línea')">
-                                <div id="mod-card-linea" class="mod-card" style="border: 2px solid var(--c-teal); background: #f0fdfa; color: var(--c-teal); padding: 15px; border-radius: 15px; font-weight: 700; transition: 0.3s; text-align: center;">
-                                    <i class="fas fa-video"></i> En Línea
-                                </div>
-                            </label>
-                            <label style="flex: 1; cursor: pointer;">
-                                <input type="radio" name="modalidad_opcion" value="Presencial" style="display: none;" onclick="seleccionarModalidad('Presencial')">
-                                <div id="mod-card-presencial" class="mod-card" style="border: 2px solid #e2e8f0; background: #f8fafc; color: #645C96; padding: 15px; border-radius: 15px; font-weight: 700; transition: 0.3s; text-align: center; position: relative;">
-                                    <i class="fas fa-user-friends"></i> Presencial
-                                    <span style="display:block; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; margin-top: 4px; color: var(--c-pink);">Sede HOPE</span>
-                                </div>
-                            </label>
-                        </div>
-                    </div>
-                    
+                    <!-- El selector de modalidad ahora vive en el paso 1 (encima del
+                         calendario). Aquí solo se muestra el resumen/confirmación
+                         según la modalidad ya elegida. -->
+
                     <div class="payment-box">
                         <p style="text-transform: uppercase; letter-spacing: 2px; font-size: 12px; color: #9ca3af; margin-bottom: 10px; font-weight: 700;">Total a pagar</p>
 

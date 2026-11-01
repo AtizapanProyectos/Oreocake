@@ -1915,7 +1915,12 @@ def reagendar_cita_ajax(request):
 
     # 🔒 MISMA LÓGICA que usamos al agendar: solo slots realmente libres del doctor
     # (respetando la modalidad de la cita original: individual/pareja/familiar)
-    slots_del_dia = obtener_slots_psicologo_para_dia(cita.psicologo, nueva_fecha, tipo_sesion=cita.tipo_sesion)
+    # ⚠️ Se pasa la MODALIDAD de la cita: una cita Presencial solo se reagenda en
+    # horarios de psicólogos Presencial/Mixto; una En línea queda igual que siempre.
+    slots_del_dia = obtener_slots_psicologo_para_dia(
+        cita.psicologo, nueva_fecha, tipo_sesion=cita.tipo_sesion,
+        modalidad=cita.modalidad or 'En línea'
+    )
     if nueva_hora.strftime('%I:%M %p') not in slots_del_dia:
         return JsonResponse({'status': 'error', 'message': 'Ese horario ya no está disponible.'})
 
