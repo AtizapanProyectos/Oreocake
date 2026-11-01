@@ -1070,23 +1070,7 @@ function mostrarErrorCita(mensaje, opts) {
                             </button>
                         </div>
 
-                        <!-- 🏢 ETAPA DE PRUEBAS: confirmación SIN PAGO para la modalidad presencial.
-                             Solo se muestra cuando modalidadSeleccionada === 'Presencial'.
-                             Al autorizarse el cobro, activar PAGO_PRESENCIAL_HABILITADO en core/views.py
-                             y eliminar este bloque. -->
-                        <div id="caja-confirmar-presencial" style="display: none; margin-top: 20px; padding: 28px 24px; border-radius: 24px; text-align: center; background: linear-gradient(135deg, #f3e8ff 0%, #ccfbf1 100%); border: 2px solid var(--c-purple);">
-                            <div style="width: 60px; height: 60px; border-radius: 50%; background: var(--c-purple); color: white; display: flex; align-items: center; justify-content: center; font-size: 26px; margin: 0 auto 14px; box-shadow: 0 8px 22px rgba(90,63,163,0.35);">
-                                <i class="fas fa-user-friends"></i>
-                            </div>
-                            <h3 style="font-family: var(--font-headings); font-size: 21px; font-weight: 800; color: var(--c-purple); margin: 0 0 8px;">Consulta Presencial · Clínica HOPE</h3>
-                            <p style="font-size: 14px; color: var(--text-muted); line-height: 1.6; margin: 0 auto 20px; max-width: 460px;">
-                                Tu cita se confirmará <strong>sin pago</strong> durante esta etapa. Recibirás tu <strong>Pase de Acceso</strong>
-                                con el QR y la dirección de la sede (Lago Margarita 47, CDMX) en tu correo y en tu panel.
-                            </p>
-                            <button type="button" onclick="confirmarCitaPresencial()" style="background: linear-gradient(135deg, var(--c-purple) 0%, #3B2474 100%); color: white; border: none; border-radius: 16px; padding: 17px 38px; font-size: 15px; font-weight: 800; cursor: pointer; box-shadow: 0 10px 26px rgba(90,63,163,0.35); display: inline-flex; align-items: center; gap: 12px; font-family: var(--font-headings);">
-                                <i class="fas fa-check-circle"></i> Confirmar mi cita presencial
-                            </button>
-                        </div>
+
 
                         <!-- SECCIÓN PROTEGIDA DE MÉTODOS DE PAGO -->
                         <div id="seccion-metodos-pago" style="{% if not tiene_consentimiento %}display: none;{% endif %}">
@@ -1927,12 +1911,16 @@ function actualizarResumenPrecio() {
         document.getElementById('desglose-precio').innerHTML = `+ <span style="color: var(--c-orange); font-weight: 600;">$${comision.toFixed(2)} de comisión</span>`;
     }
 
+    const esPresencial = window.modalidadSeleccionada === 'Presencial';
     const descripciones = {
-        individual: 'Consulta Psicológica Online Individual',
-        pareja: 'Sesión para dos personas (Pareja)',
-        familiar: `Terapia Familiar (${window.integrantesFamilia} integrantes)`,
+        individual: esPresencial ? 'Consulta Psicológica Presencial Individual' : 'Consulta Psicológica Online Individual',
+        pareja: esPresencial ? 'Sesión Presencial para dos personas (Pareja)' : 'Sesión para dos personas (Pareja)',
+        familiar: esPresencial ? `Terapia Familiar (${window.integrantesFamilia} integrantes) Presencial` : `Terapia Familiar (${window.integrantesFamilia} integrantes)`,
     };
-    document.getElementById('desc-dinamica').innerText = descripciones[tipo] || descripciones.individual;
+    const descEl = document.getElementById('desc-dinamica');
+    if (descEl) {
+        descEl.innerText = descripciones[tipo] || descripciones.individual;
+    }
 }
 
 function confirmarCitaTectum() {
@@ -2192,7 +2180,7 @@ function guardarCitaSinPago(pagoRef) {
 
             if (data.status === 'success') {
 
-                // Cita presencial (etapa de pruebas, sin pago): además del mensaje
+                // Cita presencial: además del mensaje
                 // de éxito ofrecemos la descarga del pase de acceso HOPE.
                 const btnPaseExito = document.getElementById('btn-descargar-pase-exito');
                 if (data.modalidad === 'Presencial' && data.pase_url && btnPaseExito) {
@@ -2238,33 +2226,7 @@ function guardarCitaSinPago(pagoRef) {
     }
 }
 
-function agendarDirectoPrueba() {
-    // Si aún no hay fecha/hora seleccionada, intenta buscar el primer slot visible
-    if (!window.fechaSeleccionada || !window.horaSeleccionada) {
-        const primerSlot = document.querySelector('.time-slot-btn');
-        if (primerSlot) {
-            primerSlot.click();
-        } else {
-            alert("Selecciona primero una fecha y hora en el calendario.");
-            return;
-        }
-    }
 
-    if (!window.tipoServicioAgendado) {
-        window.tipoServicioAgendado = 'individual';
-    }
-    if (!window.modalidadSeleccionada) {
-        window.modalidadSeleccionada = 'En línea';
-    }
-    if (!window.animoSeleccionado) {
-        window.animoSeleccionado = 'No especificó';
-    }
-
-    const chk = document.getElementById('check-consentimiento');
-    if (chk) chk.checked = true;
-
-    guardarCitaSinPago('DEV_BYPASS_PRUEBA');
-}
 
 // Variable global para guardar qué eligió el usuario
     window.tipoServicioAgendado = window.tipoServicioAgendado || "individual"; 
@@ -2414,7 +2376,7 @@ function agendarDirectoPrueba() {
         document.getElementById('step-1-schedule').style.display = 'none';
         document.getElementById('step-2-payment').style.display = 'block';
         document.getElementById('step-2-payment').scrollIntoView({behavior: 'smooth', block: 'start'});
-        // Presencial: muestra caja sin pago; En línea: método de pago normal.
+        // Refrescar vista de pago según modalidad
         refrescarVistaPagoSegunModalidad();
     }
 
@@ -2520,7 +2482,7 @@ function agendarDirectoPrueba() {
                     document.getElementById('step-1-schedule').style.display = 'none';
                     document.getElementById('step-2-payment').style.display = 'block';
                     document.getElementById('step-2-payment').scrollIntoView({ behavior: 'smooth', block: 'start' });
-                    // Presencial: caja sin pago; En línea: métodos de pago.
+                    // Refrescar vista de pago según modalidad
                     refrescarVistaPagoSegunModalidad();
                 }
             });
@@ -2659,31 +2621,15 @@ window.modalidadSeleccionada = 'En línea'; // Por defecto
         refrescarVistaPagoSegunModalidad();
     }
 
-    // 🏢 Muestra/oculta la vista de pago según la modalidad: presencial NO
-    // cobra en esta etapa (muestra su caja de confirmación propia); en línea
-    // conserva los métodos de pago intactos.
+    // 🏢 Refresca la vista de pago según la modalidad y el consentimiento:
+    // tanto en línea como presencial operan con la pasarela oficial activa.
     function refrescarVistaPagoSegunModalidad() {
-        const esPresencial = window.modalidadSeleccionada === 'Presencial';
         const metodosPago = document.getElementById('seccion-metodos-pago');
-        const cajaPresencial = document.getElementById('caja-confirmar-presencial');
-        const precioEl = document.getElementById('precio-dinamico');
-        const desgloseEl = document.getElementById('desglose-precio');
-        const descEl = document.getElementById('desc-dinamica');
-
-        if (esPresencial) {
-            if (metodosPago) metodosPago.style.display = 'none';
-            if (cajaPresencial) {
-                cajaPresencial.style.display = window.tieneConsentimiento ? 'block' : 'none';
-            }
-            if (precioEl) precioEl.innerHTML = `$0.00 <span style="font-size:16px;">MXN</span>`;
-            if (desgloseEl) desgloseEl.innerHTML = `<span style="color: var(--c-teal); font-weight: 800; background: #e6fffa; padding: 4px 12px; border-radius: 8px; display: inline-block;">Sin costo · etapa de pruebas presencial</span>`;
-            if (descEl) descEl.innerText = 'Consulta Psicológica Presencial en Clínica HOPE';
-        } else {
-            if (cajaPresencial) cajaPresencial.style.display = 'none';
-            if (metodosPago) metodosPago.style.display = window.tieneConsentimiento ? 'block' : 'none';
-            // Restauramos los precios reales de la modalidad en línea (misma
-            // función principal que los calcula para individual/pareja/familiar).
-            if (typeof actualizarResumenPrecio === 'function') actualizarResumenPrecio();
+        if (metodosPago) {
+            metodosPago.style.display = window.tieneConsentimiento ? 'block' : 'none';
+        }
+        if (typeof actualizarResumenPrecio === 'function') {
+            actualizarResumenPrecio();
         }
     }
 
@@ -2732,23 +2678,7 @@ window.modalidadSeleccionada = 'En línea'; // Por defecto
         refrescarVistaPagoSegunModalidad();
     }
 
-    // 🏢 Confirmación de cita presencial (sin pasarela durante las pruebas):
-    // reutiliza el mismo guardado del wizard; solo no lleva referencia de pago.
-    function confirmarCitaPresencial() {
-        if (!window.tieneConsentimiento) {
-            abrirModalConsentimiento();
-            return;
-        }
-        if (!window.fechaSeleccionada || !window.horaSeleccionada) {
-            alert("Por favor, selecciona primero una fecha y un horario disponible en el calendario.");
-            return;
-        }
-        if (!slotCumpleAnticipacion(window.fechaSeleccionada, window.horaSeleccionada)) {
-            mostrarToast('Ese horario ya no cumple con las 2 horas de anticipación. Elige otro.', 'error');
-            return;
-        }
-        guardarCitaSinPago(null);
-    }
+
 
 
 

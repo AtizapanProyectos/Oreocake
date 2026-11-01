@@ -174,11 +174,9 @@ PASE_SEDE = {
     'maps_url': 'https://maps.app.goo.gl/MUVCAVMi3DTprEsf7',
 }
 
-# ⚠️ ETAPA DE PRUEBAS / PRÓXIMA HABILITACIÓN:
-# Las citas PRESENCIALES NO solicitan pago mientras esta constante sea False.
-# Al autorizarse el cobro, cambiar a True y las rutas de Clip/PayPal volverán
-# a aplicar al flujo presencial sin más modificaciones.
-PAGO_PRESENCIAL_HABILITADO = False
+# 💳 PASARELA DE PAGOS PRESENCIAL HABILITADA:
+# Las citas presenciales operan con pasarela completa (PayPal, tarjeta, transferencia).
+PAGO_PRESENCIAL_HABILITADO = True
 
 
 def psicologo_atiende_modalidad(psicologo, modalidad):
@@ -1665,13 +1663,18 @@ def guardar_cita_ajax(request):
         # cualquier posible excepción, para que un pago cobrado nunca quede sin
         # rastro aunque falle el resto del guardado de la cita.
         paypal_order_id = request.POST.get('paypal_order_id')
+        if paypal_order_id in ['DEV_BYPASS_PRUEBA', 'null', 'undefined', 'None', '']:
+            paypal_order_id = None
 
-        # ⚠️ ETAPA DE PRUEBAS (PAGO_PRESENCIAL_HABILITADO = False): las citas
-        # presenciales no llevan cobro. Si el front manda una orden de PayPal
-        # para una cita presencial, se descarta aquí (delimitado por esta
-        # constante: al habilitar el pago, el flujo regresa solo).
         if modalidad_str == 'Presencial' and not PAGO_PRESENCIAL_HABILITADO:
             paypal_order_id = None
+
+        # 🔒 Seguridad en servidor: Se exige pago válido para agendar (salvo convenio TECTUM In-House)
+        if not es_tectum_cita and not paypal_order_id:
+            return JsonResponse({
+                'status': 'error',
+                'message': 'Se requiere completar el pago correspondiente para confirmar tu cita.'
+            })
 
         if paypal_order_id:
             logging.getLogger(__name__).info(
