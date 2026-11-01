@@ -1,91 +1,110 @@
 <!DOCTYPE html>
 <!--
-  Correo de presentación del PASE DE ACCESO presencial (Espacio HOPE).
-  Se adjunta el PDF del pase a este correo. Contexto: los mismos datos de
-  _contexto_pase_admision (folio, paciente_nombre, psicologo_nombre,
-  fecha_humana, hora_humana, lugar_*, maps_url, verificar_url) + cita_id.
-  Usamos tablas + estilos inline para máxima compatibilidad con Gmail/Outlook.
+  Correo de confirmación y entrega del PASE DE ADMISIÓN presencial (Espacio HOPE).
+  Se adjunta el PDF del pase oficial a este correo.
+  Diseño homologado con templates/correo_cita.html para máxima consistencia y compatibilidad en Gmail/Outlook.
+  Contexto: folio, paciente_nombre, psicologo_nombre, fecha_humana, hora_humana,
+            lugar_nombre, lugar_linea1, lugar_linea2, maps_url, verificar_url, cita_id, marca_correo.
 -->
-<html lang="es-mx">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tu Pase de Acceso · Espacio HOPE</title>
+    <title>Tu Pase de Admisión Presencial · Espacio HOPE</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;600;700&display=swap');
+    </style>
 </head>
-<body style="margin:0; padding:0; background:#F3EFFB; font-family:'Segoe UI', Helvetica, Arial, sans-serif; color:#241A47;">
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F3EFFB; padding:24px 12px;">
+<body style="font-family: 'Plus Jakarta Sans', Helvetica, Arial, sans-serif; background-color: #F8FAFC; margin: 0; padding: 0; -webkit-font-smoothing: antialiased; color: #0f172a;">
+
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #F8FAFC; padding: 40px 16px;">
         <tr>
             <td align="center">
-                <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px; width:100%; background:#ffffff; border-radius:24px; overflow:hidden; box-shadow:0 12px 32px rgba(62,42,117,0.14);">
+                <!-- CONTENEDOR PRINCIPAL BLANCO -->
+                <table width="100%" max-width="600" cellpadding="0" cellspacing="0" border="0" style="background-color: #FFFFFF; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.06); max-width: 600px; width: 100%; border-top: 6px solid #5A3FA3;">
 
-                    <!-- Encabezado con curvas de marca -->
+                    <!-- CABECERA CON LOGOTIPO INSTITUCIONAL -->
                     <tr>
-                        <td style="background:linear-gradient(135deg,#5A3FA3 0%,#25B8B8 100%); padding:38px 40px 34px;" align="center">
-                            <p style="margin:0; font-size:34px; font-weight:900; letter-spacing:1px; color:#ffffff;">
-                                H<span style="color:#F85B8C;">O</span>PE
-                                <span style="display:block; font-size:12px; font-weight:700; letter-spacing:6px; color:rgba(255,255,255,0.85); margin-top:6px;">PASE DE ADMISIÓN</span>
-                            </p>
+                        <td align="center" style="background-color: #FFFFFF; padding: 36px 20px 12px 20px;">
+                            <img src="https://espaciohope.com/static/img/logo_hope_extendido.png" alt="Espacio HOPE" style="height: 52px; max-width: 250px; width: auto; display: block; margin: 0 auto; object-fit: contain;">
+                            <div style="display: inline-block; margin-top: 10px; padding: 4px 14px; background-color: #E8F9F9; color: #0D8F8F; border-radius: 20px; font-size: 11px; font-weight: 800; letter-spacing: 0.8px; text-transform: uppercase; font-family: 'Outfit', Helvetica, Arial, sans-serif;">
+                                Pase de Admisión Presencial
+                            </div>
                         </td>
                     </tr>
 
-                    <!-- Cuerpo -->
+                    <!-- CUERPO DEL CORREO -->
                     <tr>
-                        <td style="padding:36px 40px 8px;">
-                            <h1 style="margin:0 0 14px; font-size:24px; color:#3E2A75;">¡Tu sesión presencial está confirmada, {{ paciente_nombre }}!</h1>
-                            <p style="margin:0 0 18px; font-size:15px; line-height:1.65; color:#241A47;">
-                                Enviamos contigo (adjunto en este correo) tu <strong>Pase de Acceso a HOPE</strong> con el código QR de verificación.
-                                <strong>Preséntalo en recepción</strong> el día de tu consulta: puedes mostrarlo desde tu celular o imprimir el PDF.
+                        <td align="center" style="padding: 10px 40px 40px 40px;">
+                            <!-- BARRA DECORATIVA AMARILLA -->
+                            <div style="height: 4px; width: 44px; background-color: #F8D33D; margin: 0 auto 20px auto; border-radius: 2px;"></div>
+
+                            <h2 style="color: #0f172a; margin-top: 0; font-size: 26px; font-weight: 700; font-family: 'Outfit', Helvetica, Arial, sans-serif;">¡Hola, {{ paciente_nombre }}!</h2>
+
+                            <p style="color: #64748b; font-size: 15.5px; line-height: 1.6; margin-bottom: 22px;">
+                                Tu sesión de consulta psicológica presencial en <strong>Espacio HOPE</strong> está confirmada. Este es tu espacio seguro y confidencial para cuidar de tu bienestar emocional.
                             </p>
 
-                            <!-- Datos de la sesión -->
-                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F8F6FD; border:1.5px solid #E9E3F6; border-radius:18px; padding:8px; margin:22px 0;">
-                                <tr>
-                                    <td style="padding:14px 20px 4px; font-size:11px; letter-spacing:2px; text-transform:uppercase; color:#645C96; font-weight:700;">Detalles de tu consulta</td>
-                                </tr>
-                                <tr><td style="padding:2px 20px 6px; font-size:15px; color:#241A47;">
-                                    <strong>Psicólogo/a:</strong> {{ psicologo_nombre }}
-                                </td></tr>
-                                <tr><td style="padding:2px 20px 6px; font-size:15px; color:#241A47;">
+                            <p style="color: #0f172a; font-size: 15px; line-height: 1.6; margin-bottom: 25px; background-color: #F4F0FD; border-left: 4px solid #5A3FA3; padding: 12px 18px; border-radius: 0 10px 10px 0; text-align: left;">
+                                <strong>Adjunto en este correo encontrarás tu Pase de Admisión oficial en formato PDF</strong>. Puedes presentarlo directamente desde tu celular o imprimirlo para ingresar en recepción.
+                            </p>
+
+                            <!-- TARJETA DE DETALLES DE LA CITA -->
+                            <div style="background-color: #F8FAFC; border-radius: 14px; padding: 22px; margin-bottom: 30px; text-align: left; border: 1px solid #E2E8F0;">
+                                <p style="margin: 0 0 10px 0; color: #0f172a; font-size: 15px;">
+                                    <strong>Especialista asignado(a):</strong> {{ psicologo_nombre }}
+                                </p>
+                                <p style="margin: 0 0 10px 0; color: #0f172a; font-size: 15px;">
                                     <strong>Fecha:</strong> {{ fecha_humana }}
-                                </td></tr>
-                                <tr><td style="padding:2px 20px 6px; font-size:15px; color:#241A47;">
-                                    <strong>Hora:</strong> {{ hora_humana }} (CDMX)
-                                </td></tr>
-                                <tr><td style="padding:2px 20px 6px; font-size:15px; color:#241A47;">
-                                    <strong>Modalidad:</strong> <span style="background:#F2FBFB; border:1.5px solid #BFE6E6; color:#146464; border-radius:999px; padding:3px 12px; font-size:12px; font-weight:800;">PRESENCIAL</span>
-                                </td></tr>
-                                <tr><td style="padding:2px 20px 16px; font-size:15px; color:#241A47;">
+                                </p>
+                                <p style="margin: 0 0 10px 0; color: #0f172a; font-size: 15px;">
+                                    <strong>Horario:</strong> {{ hora_humana }} hrs (CDMX)
+                                </p>
+                                <p style="margin: 0 0 10px 0; color: #0f172a; font-size: 15px;">
+                                    <strong>Modalidad:</strong> <span style="background-color: #E8F9F9; border: 1px solid #B4EBEB; color: #0D8F8F; border-radius: 999px; padding: 2px 10px; font-size: 11.5px; font-weight: 800;">PRESENCIAL</span>
+                                </p>
+                                <p style="margin: 0 0 10px 0; color: #0f172a; font-size: 15px;">
                                     <strong>Sede:</strong> {{ lugar_nombre }}<br>
-                                    <span style="font-size:13.5px; color:#645C96;">{{ lugar_linea1 }}, {{ lugar_linea2 }}</span>
-                                </td></tr>
-                                <tr><td style="padding:0 20px 18px;">
-                                    <a href="{{ maps_url }}" style="display:inline-block; background:#25B8B8; color:#ffffff !important; text-decoration:none; font-weight:800; font-size:13px; padding:10px 20px; border-radius:12px;">Cómo llegar con Google Maps</a>
-                                </td></tr>
-                            </table>
+                                    <span style="font-size: 13.5px; color: #64748b;">{{ lugar_linea1 }}, {{ lugar_linea2 }}</span>
+                                </p>
+                                <p style="margin: 0; color: #5A3FA3; font-size: 14px; font-weight: 700;">
+                                    <strong>Folio de Cita:</strong> {{ folio }}
+                                </p>
+                            </div>
 
-                            <p style="margin:0 0 26px; font-size:14px; line-height:1.6; color:#241A47;">
-                                Tu folio de verificación es <strong style="color:#5A3FA3;">{{ folio }}</strong>.
-                                Si necesitas cambiar tu cita, responde a este correo o visita tu panel.
-                            </p>
+                            <!-- BOTONES DE ACCIÓN -->
+                            <div style="margin-bottom: 28px;">
+                                {% if maps_url %}
+                                <a href="{{ maps_url }}" target="_blank" style="display: inline-block; background-color: #5A3FA3; color: #FFFFFF; text-decoration: none; font-size: 16px; font-weight: bold; padding: 16px 38px; border-radius: 40px; box-shadow: 0 6px 18px rgba(90, 63, 163, 0.3); font-family: 'Outfit', Helvetica, Arial, sans-serif; margin-bottom: 12px;">
+                                    Cómo llegar con Google Maps &rarr;
+                                </a>
+                                {% endif %}
+                                <div>
+                                    <a href="https://espaciohope.com/panel/" target="_blank" style="color: #64748b; font-size: 13.5px; font-weight: 600; text-decoration: underline;">
+                                        Abrir mi panel de consultante en HOPE
+                                    </a>
+                                </div>
+                            </div>
+
+                            <!-- PAUTAS DE LLEGADA -->
+                            <div style="background-color: #F8FAFC; border-left: 4px solid #27C9C9; border-radius: 6px; padding: 14px 18px; margin-top: 20px; text-align: left;">
+                                <p style="margin: 0 0 6px 0; font-size: 13.5px; font-weight: 700; color: #0f172a;">Recomendaciones para el día de tu consulta:</p>
+                                <ul style="margin: 0; padding-left: 20px; font-size: 13px; color: #64748b; line-height: 1.6;">
+                                    <li>Llega con 10 a 15 minutos de anticipación a la clínica.</li>
+                                    <li>Presenta una identificación oficial vigente en recepción.</li>
+                                    <li>Ten a la mano el código QR de tu pase adjunto para escaneo rápido.</li>
+                                </ul>
+                            </div>
                         </td>
                     </tr>
 
-                    <!-- CTA -->
+                    <!-- FOOTER DEL CORREO -->
                     <tr>
-                        <td align="center" style="padding:0 40px 30px;">
-                            <a href="https://espaciohope.com/panel/" style="display:inline-block; background:#5A3FA3; color:#ffffff !important; text-decoration:none; font-weight:800; font-size:15px; padding:14px 34px; border-radius:16px;">Abrir mi panel</a>
-                        </td>
-                    </tr>
-
-                    <!-- Pie -->
-                    <tr>
-                        <td style="padding:20px 40px 26px; border-top:1.5px solid #EFEBFA;">
-                            <p style="margin:0; font-size:11.5px; color:#645C96; line-height:1.55;">
-                                Si el archivo adjunto no aparece, descarga tu pase directamente desde tu panel en
-                                espaciohope.com/panel/. Cualquier duda escríbenos a
-                                <a href="mailto:{{ marca_correo }}" style="color:#5A3FA3; text-decoration:none; font-weight:700;">{{ marca_correo }}</a>.
+                        <td align="center" style="background-color: #F3F4F6; padding: 22px 20px; border-top: 1px solid #E5E7EB;">
+                            <p style="color: #64748b; font-size: 12px; margin: 0; line-height: 1.5;">
+                                <strong style="color: #5A3FA3;">&copy; 2026 Plataforma HOPE.</strong> Todos los derechos reservados.
+                                <br>Cualquier duda o aclaración escríbenos a <a href="mailto:{{ marca_correo|default:'contacto@espaciohope.com' }}" style="color: #5A3FA3; text-decoration: none; font-weight: 600;">{{ marca_correo|default:'contacto@espaciohope.com' }}</a>
                             </p>
-                            <p style="margin:10px 0 0; font-size:11.5px; color:#645C96; font-weight:700; letter-spacing:1.5px; text-transform:uppercase;">Espacio HOPE · Oportunidad · Prevención · Esperanza</p>
                         </td>
                     </tr>
                 </table>
