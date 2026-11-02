@@ -684,6 +684,18 @@ def verificar_pase(request, codigo):
         'motivo': motivo,
         'marca_correo': 'contacto@espaciohope.com',
     }
+    # 🪑 Recepción (01/11/2026): si quien escanea el QR del pase es un
+    # superusuario (recepción logueada), la página de verificación muestra
+    # los botones "Sí vino / No vino" para registrar la llegada en BD
+    # (Cita.registro_llegada). El paciente/a visitante normal NO ve nada nuevo:
+    # el write queda siempre protegiendo (es_admin + POST + CSRF).
+    if cita and getattr(request.user, 'is_authenticated', False) and es_admin(request.user):
+        render_ctx.update({
+            'puede_registrar': True,
+            'cita_id': cita.id,
+            'registro_actual': getattr(cita, 'registro_llegada', 'No registrado') or 'No registrado',
+            'url_registrar_llegada': reverse('api_recepcion_registrar_llegada'),
+        })
     if contexto_verificacion:
         render_ctx.update(contexto_verificacion)
 
@@ -10974,8 +10986,13 @@ def api_intelligence_reasignar(request):
 #   - Módulos secundarios con URL + vista genérica ya montados; sus
 #     templates definitivos se integrarán más tarde (por ahora renderizan
 #     el placeholder recepcion_en_construccion.html vía
-#     _recepcion_modulo_pendiente). NO existe aún lógica de negocio aquí:
-#     la única escritura prevista es la del formulario de nuevo paciente.
+#     _recepcion_modulo_pendiente).
+#
+#   ÚNICA escritura del módulo (01/11/2026): el registro de llegada del
+#   paciente ('Vino' / 'No Vino' / 'No registrado') guardado en el propio
+#   modelo Cita (campos registro_llegada + fecha_registro_llegada, migra
+#   0065). Se marca por botón en la agenda o al escanear el QR del pase en
+#   verificar_pase (es_admin + POST + CSRF).
 # Contrato de contexto de panel_recepcion_v3.html (ver cabecera del template):
 #   logo_url, usuario_nombre, url_inicio, url_agendar_online,
 #   url_agendar_presencial, url_citas, url_agregar_paciente, citas_hoy
@@ -11032,12 +11049,59 @@ _RECEPCION_MAP_ESTADO = {
     'En recepción': 'en_sala',
 }
 
+# Etiquetas visuales del panel, incluyendo el nuevo estado 'no_vino'
+# derivado de Cita.registro_llegada (el template lo muestra con su chip coral).
+_RECEPCION_ETIQUETA_ESTADO = {
+    'confirmada': 'Confirmada',
+    'en_sala': 'En recepción',
+    'pendiente': 'Por confirmar',
+    'atendida': 'Atendida',
+    'no_vino': 'No vino',
+}
+
+
+def _recepcion_estado_visual(cita):
+    """
+    Estado visual de la fila de agenda, mezclando el estatus de llegada
+    (registro_llegada, marcado desde recepción/QR) con el estado de la cita:
+      - 'No Vino' → 'no_vino' (gana siempre: la inasistencia confirmada manda)
+      - 'Vino'    → 'en_sala' (ya pasó por recepción y está esperando)
+      - resto     → mapeo normal del estado de la cita.
+    """
+    registro = getattr(cita, 'registro_llegada', '') or 'No registrado'
+    if registro == 'No Vino':
+        return 'no_vino'
+    if registro == 'Vino':
+        return 'en_sala'
+    return _RECEPCION_MAP_ESTADO.get(cita.estado, 'confirmada')
+
+
+def _recepcion_registrar_llegada_bd(cita, nuevo_valor):
+    """
+    ÚNICA escritura del módulo de recepción: guarda el estatus de llegada
+    en la Cita (modelo existente). 'No registrado' limpia el timestamp;
+    'Vino'/'No Vino' lo sella con la fecha del registro.
+    """
+    cita.registro_llegada = nuevo_valor
+    cita.fecha_registro_llegada = timezone.now() if nuevo_valor in ('Vino', 'No Vino') else None
+    cita.save(update_fields=['registro_llegada', 'fecha_registro_llegada'])
+    visual = _recepcion_estado_visual(cita)
+    return {
+        'registro_llegada': nuevo_valor,
+        'estado': visual,
+        'etiqueta': _RECEPCION_ETIQUETA_ESTADO.get(visual, visual),
+    }
+
 
 def _recepcion_citas_hoy():
-    """Agenda REAL del día para el panel (dicts del contrato del template)."""
+    """Agenda REAL del día para el panel — SOLO sesiones PRESENCIALES del día.
+    (01/11/2026: la recepción física solo maneja presenciales; las citas en
+    línea se revisan en los otros paneles.)"""
     hoy = timezone.localdate()
-    citas_qs = (Cita.objects.filter(fecha=hoy)
+    citas_qs = (Cita.objects.filter(fecha=hoy, modalidad='Presencial')
                 .exclude(estado='Cancelada')
+                .exclude(estado='Pendiente')
+                .exclude(estado='Pendiente de Pago')
                 .select_related('paciente', 'paciente__perfil', 'psicologo__usuario')
                 .order_by('hora', 'id'))
     salida = []
@@ -11051,11 +11115,13 @@ def _recepcion_citas_hoy():
         except Exception:
             pase_url = ''
         salida.append({
+            'cita_id': c.id,
             'hora': hora_label,
             'paciente': _recepcion_nombre_paciente(c),
             'psicologa': _recepcion_nombre_psicologo(c),
-            'modalidad': 'online' if (c.modalidad or '') == 'En línea' else 'presencial',
-            'estado': _RECEPCION_MAP_ESTADO.get(c.estado, 'confirmada'),
+            'modalidad': 'presencial',
+            'estado': _recepcion_estado_visual(c),
+            'asistencia': getattr(c, 'registro_llegada', 'No registrado') or 'No registrado',
             'pase_url': pase_url,
             'url': reverse('panel_recepcion'),  # TODO: apuntar a la gestión de la cita cuando exista
         })
@@ -11078,9 +11144,41 @@ def panel_recepcion(request):
         'url_agendar_presencial': reverse('recepcion_agendar_presencial'),
         'url_citas': reverse('recepcion_citas'),
         'url_agregar_paciente': reverse('recepcion_agregar_paciente'),
+        'url_registrar_llegada': reverse('api_recepcion_registrar_llegada'),
         'citas_hoy': _recepcion_citas_hoy(),
     }
     return render(request, 'panel_recepcion_v3.html', contexto)
+
+
+@user_passes_test(es_admin, login_url='/')
+@require_POST
+def api_recepcion_registrar_llegada(request):
+    """
+    POST /panel-admin/recepcion/api/registrar-llegada/
+    ÚNICA acción de escritura del panel de recepción (01/11/2026), con CSRF
+    activo (header X-CSRFToken desde los templates). Guarda el estatus de
+    llegada del paciente en Cita.registro_llegada (modelo Cita sin lógica
+    extra): 'Vino' (entrada, botón o QR del pase), 'No Vino' (inasistencia
+    confirmada) o 'No registrado' (deshacer).
+    Body: cita_id · valor = 'Vino' | 'No Vino' | 'No registrado'
+    """
+    cita_id = request.POST.get('cita_id', '').strip()
+    valor = request.POST.get('valor', '').strip()
+    if valor not in ('Vino', 'No Vino', 'No registrado'):
+        return JsonResponse({'status': 'error',
+                             'mensaje': 'Valor de llegada no válido (Vino / No Vino / No registrado).'},
+                            status=400)
+    cita = (Cita.objects.filter(id=cita_id)
+            .select_related('paciente', 'psicologo__usuario').first())
+    if not cita:
+        return JsonResponse({'status': 'error', 'mensaje': f'No existe la cita #{cita_id}.'}, status=404)
+    if cita.modalidad != 'Presencial':
+        return JsonResponse({'status': 'error',
+                             'mensaje': 'El registro de llegada solo aplica a sesiones presenciales.'},
+                            status=400)
+
+    resultado = _recepcion_registrar_llegada_bd(cita, valor)
+    return JsonResponse({'status': 'success', 'cita_id': cita.id, **resultado})
 
 
 def _recepcion_modulo_pendiente(request, titulo, detalle):

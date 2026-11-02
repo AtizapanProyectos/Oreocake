@@ -190,5 +190,7 @@ urlpatterns = [
     path('panel-admin/recepcion/agendar-online/', views.recepcion_agendar_online, name='recepcion_agendar_online'),
     path('panel-admin/recepcion/agendar-presencial/', views.recepcion_agendar_presencial, name='recepcion_agendar_presencial'),
     path('panel-admin/recepcion/citas/', views.recepcion_citas, name='recepcion_citas'),
+    # 🪑 Registro de llegada (Vino/No Vino) — escritura en Cita (POST/CSRF)
+    path('panel-admin/recepcion/api/registrar-llegada/', views.api_recepcion_registrar_llegada, name='api_recepcion_registrar_llegada'),
 ]
 

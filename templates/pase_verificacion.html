@@ -11,6 +11,11 @@
     folio, paciente_nombre, psicologa_nombre, fecha_humana, hora_humana,
     modalidad, lugar_nombre — datos de la cita (se muestran solo si es válida)
     marca_correo   — remitente de contacto, p. ej. "contacto@espaciohope.com"
+
+  🪑 Recepción (01/11/2026): solo para quien escanea siendo SUPERUSUARIO:
+    puede_registrar — True muestra la barra de acciones "Sí vino / No vino"
+    cita_id, registro_actual, url_registrar_llegada — POST con CSRF a la API
+    de registro de llegada (escribe Cita.registro_llegada en BD).
 -->
 <head>
     <meta charset="UTF-8">
@@ -204,6 +209,57 @@
             .datos { margin: 20px 20px 0; }
             .datos dl { grid-template-columns: 96px 1fr; }
         }
+
+        /* 🪑 Barra de acciones de recepción (solo superusuario escaneando el QR) */
+        .recepcion {
+            margin: 18px 28px 0;
+            border: 2px dashed #B4E4E4;
+            border-radius: 18px;
+            padding: 16px 18px 14px;
+            background: #F0FAFA;
+            text-align: center;
+        }
+        .recepcion h2 {
+            font-family: var(--font-h);
+            font-weight: 800;
+            font-size: 14px;
+            letter-spacing: .12em;
+            text-transform: uppercase;
+            color: #0E7F7F;
+        }
+        .recepcion p.sub {
+            margin-top: 4px;
+            font-size: 12.5px;
+            font-weight: 600;
+            color: var(--muted);
+        }
+        .recepcion .llego {
+            margin-top: 12px;
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+        .llego button {
+            cursor: pointer;
+            border: 0;
+            padding: 11px 22px;
+            border-radius: 99px;
+            font: 800 14px var(--font-h);
+            transition: transform .12s, filter .15s;
+        }
+        .llego button:hover { transform: translateY(-2px); filter: brightness(1.05); }
+        .llego button[data-valor="Vino"]    { background: var(--teal); color: #06403F; }
+        .llego button[data-valor="No Vino"] { background: #FFE1EC; color: #BE1856; }
+        .llego button:disabled { opacity: .55; cursor: wait; }
+        .llego button.sel { outline: 3px solid var(--purple-ink); outline-offset: 2px; }
+        .recepcion .msg {
+            margin-top: 10px;
+            font-size: 13px;
+            font-weight: 700;
+            color: #0E7F7F;
+            min-height: 1em;
+        }
+        .recepcion .msg.err { color: #C22E62; }
     </style>
 </head>
 <body>
@@ -273,6 +329,68 @@
                     </div>
                 </dl>
             </div>
+
+            {% if puede_registrar %}
+            <section class="recepcion" aria-label="Registro de llegada">
+                <h2>Acciones de recepción</h2>
+                <p class="sub">Registro de llegada de esta sesión presencial (se guarda en la cita).</p>
+                <form method="post" id="form-registro-llegada" style="display:none">
+                    {% csrf_token %}
+                    <input type="hidden" name="cita_id" value="{{ cita_id }}">
+                </form>
+                <div class="llego">
+                    <button type="button" data-valor="Vino"
+                        {% if registro_actual == 'Vino' %}class="sel"{% endif %}>✓ Sí vino</button>
+                    <button type="button" data-valor="No Vino"
+                        {% if registro_actual == 'No Vino' %}class="sel"{% endif %}>✕ No vino</button>
+                </div>
+                <p class="msg" id="msg-llegada" aria-live="polite">
+                    {% if registro_actual == 'Vino' %}Entrada ya registrada (Vino).{% elif registro_actual == 'No Vino' %}Inasistencia ya registrada (No vino).{% endif %}
+                </p>
+            </section>
+            <script>
+            (function(){
+              var form = document.getElementById('form-registro-llegada');
+              var token = form ? form.querySelector('[name=csrfmiddlewaretoken]') : null;
+              var msg = document.getElementById('msg-llegada');
+              var URL_API = '{{ url_registrar_llegada|escapejs }}';
+              var LABELS = {'Vino': '✓ Sí vino', 'No Vino': '✕ No vino', 'No registrado': 'Registro deshecho'};
+              document.querySelectorAll('.llego button[data-valor]').forEach(function(btn){
+                btn.addEventListener('click', function(){
+                  if (!token || !form) { if (msg) { msg.textContent = 'No se pudo leer el token CSRF.'; msg.className = 'msg err'; } return; }
+                  document.querySelectorAll('.llego button[data-valor]').forEach(function(b){ b.classList.remove('sel'); });
+                  btn.classList.add('sel');
+                  btn.disabled = true;
+                  if (msg) { msg.className = 'msg'; msg.textContent = 'Registrando…'; }
+                  var body = new URLSearchParams();
+                  body.set('cita_id', '{{ cita_id|escapejs }}');
+                  body.set('valor', btn.dataset.valor);
+                  fetch(URL_API, {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: {'X-CSRFToken': token.value, 'Content-Type': 'application/x-www-form-urlencoded'},
+                    body: body.toString()
+                  }).then(function(r){ return r.json(); }).then(function(d){
+                    btn.disabled = false;
+                    if (d && d.status === 'success') {
+                      if (msg) { msg.className = 'msg'; msg.textContent = '(' + (LABELS[d.registro_llegada] || d.registro_llegada) + ') Llegada guardada en la cita #' + d.cita_id; }
+                      // reflejar selección real del servidor
+                      document.querySelectorAll('.llego button[data-valor]').forEach(function(b){
+                        b.classList.toggle('sel', b.dataset.valor === d.registro_llegada);
+                      });
+                    } else {
+                      if (msg) { msg.className = 'msg err'; msg.textContent = (d && d.mensaje) || 'No se pudo registrar.'; }
+                      btn.classList.remove('sel');
+                    }
+                  }).catch(function(e){
+                    btn.disabled = false; btn.classList.remove('sel');
+                    if (msg) { msg.className = 'msg err'; msg.textContent = 'Error de red: ' + e; }
+                  });
+                });
+              });
+            })();
+            </script>
+            {% endif %}
 
             <div class="pie">
                 <svg class="ola" viewBox="0 0 400 64" preserveAspectRatio="none" aria-hidden="true">
