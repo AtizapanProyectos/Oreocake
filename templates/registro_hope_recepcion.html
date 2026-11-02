@@ -1,0 +1,655 @@
+{% comment %}
+  Registro HOPE · formulario único (rediseño con DESIGN.md / panel de recepción v3).
+  Plantilla independiente: no extiende base.html. Misma lógica que #formRegistro de inicio.html:
+    POST {% url 'registro_usuario' %} por AJAX (X-Requested-With + X-CSRFToken) → JSON {status, redirect_url | message}
+    Campos: website (honeypot), origen ('recepcion' cuando se usa desde el panel de recepción:
+            el server NO intercambia la sesión del staff y regresa al panel de recepción),
+            flujo_elegido, respuestas_json, servicio_origen, nombre, email, telefono,
+            telefono_emergencia, password, acepta_privacidad. El seudónimo ("¿Cómo te llamamos?") viaja dentro de respuestas_json.
+  Contexto: cuestionario_json (obligatorio, igual que inicio.html), logo_url, url_inicio, flujo_elegido,
+            servicio_origen, origen_recepcion (opcionales).
+  Flujo: [selector de proceso si no llega flujo] → preguntas del cuestionario → formulario de cuenta.
+  También acepta ?flujo=individual|pareja|familiar&servicio=terapia_individual en la URL.
+  Sirve desde: /panel-admin/recepcion/agregar-paciente/ (vista recepcion_agregar_paciente).
+{% endcomment %}<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Registro | Espacio HOPE</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@500;700;800&family=Figtree:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --purple:#5B45A8;--deep:#3F2C85;--ink:#2A1F5C;--muted:#675F9C;--line:#E6DFF6;--bg:#F7F3FE;
+  --teal:#27C9C9;--teal-s:#D9F6F6;--teal-d:#0E7F7F;
+  --pink:#E8397A;--pink-s:#FFE1EC;--pink-d:#BE1856;
+  --orange:#F2703F;--yellow:#FFD62E;--yellow-s:#FFF2B8;--yellow-d:#7F5D00;--lilac-s:#ECE6FB;
+  --fh:'Lexend',sans-serif;--fb:'Figtree',sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0}
+html{-webkit-text-size-adjust:100%}
+body{font-family:var(--fb);background:var(--bg);color:var(--ink);min-height:100vh;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+:focus-visible{outline:3px solid var(--deep);outline-offset:3px;border-radius:12px}
+.ic{width:20px;height:20px;flex:none;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.top{background:rgba(255,255,255,.92);backdrop-filter:blur(10px);border-bottom:2px solid var(--line);height:74px;display:flex;align-items:center;justify-content:space-between;padding:0 clamp(18px,4vw,40px)}
+.top img{height:44px;width:auto;display:block}
+.top a.volver{display:inline-flex;align-items:center;gap:8px;padding:8px 16px;border-radius:99px;font-weight:800;font-size:13px;color:var(--purple);text-decoration:none;border:3.5px solid #BFB0EA;transition:border-color .15s,background .15s}
+.top a.volver:hover{border-color:var(--purple);background:var(--lilac-s)}
+
+.pagina{width:min(1120px,100% - 40px);margin:clamp(20px,4vw,44px) auto 40px;display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.3fr);gap:22px;align-items:start}
+
+/* Bienvenida (único bloque muy saturado) */
+.hero{position:relative;overflow:hidden;border-radius:34px;color:#fff;padding:40px 34px 120px;background:linear-gradient(135deg,#46329A 0%,#5B45A8 55%,#6C52C8 100%);position:sticky;top:20px}
+.hero .saludo{display:inline-flex;align-items:center;gap:9px;padding:7px 15px 7px 11px;border-radius:99px;background:rgba(255,255,255,.16);font-weight:700;font-size:14.5px}
+.hero .saludo .ic{fill:var(--yellow);stroke:none}
+.hero h1{margin-top:18px;font:800 clamp(30px,3.6vw,44px)/1.07 var(--fh);letter-spacing:-.02em;text-wrap:balance}
+.hero p{margin-top:14px;font-size:16px;font-weight:500;line-height:1.55;color:#EEE8FF;max-width:34ch}
+.hero ul{list-style:none;padding:0;margin-top:22px;display:grid;gap:10px}
+.hero li{display:flex;align-items:center;gap:10px;font-weight:700;font-size:14.5px}
+.hero li .ic{background:rgba(255,255,255,.16);border-radius:50%;padding:5px;width:28px;height:28px}
+.hero .ola{position:absolute;left:0;right:0;bottom:-1px;width:100%;height:92px}
+
+/* Formulario */
+.caja{background:#fff;border:2px solid var(--line);border-radius:34px;padding:clamp(22px,3.4vw,34px)}
+.caja>header h2{font:800 clamp(24px,3vw,30px)/1.1 var(--fh);color:var(--deep)}
+.caja>header p{margin-top:8px;color:var(--muted);font-weight:600;font-size:15px;line-height:1.5}
+.sec{margin-top:24px;padding:22px;border-radius:26px;background:var(--bg)}
+.sec h3{display:flex;align-items:center;gap:10px;font:800 17px var(--fh);color:var(--deep);margin-bottom:16px}
+.sec h3 i{width:12px;height:12px;border-radius:50%;background:var(--c)}
+.campo{margin-bottom:16px}
+.campo:last-child{margin-bottom:0}
+.campo label{display:block;font-weight:800;font-size:13.5px;margin-bottom:7px;color:var(--ink)}
+.campo label em{font-style:normal;color:var(--pink-d)}
+.campo .ayuda{margin-top:6px;font-size:12.5px;font-weight:600;color:var(--muted)}
+.input{position:relative;display:flex;align-items:center}
+.input>.ic{position:absolute;left:17px;color:var(--muted);pointer-events:none}
+.input input{width:100%;height:52px;padding:0 18px 0 48px;border-radius:99px;border:2px solid transparent;background:#fff;font:600 15.5px var(--fb);color:var(--ink);transition:border-color .15s}
+.input input::placeholder{color:#9A93C4;font-weight:500}
+.input input:focus{outline:none;border-color:var(--purple)}
+.input input.invalido{border-color:var(--pink)}
+.input.pw input{padding-right:54px}
+.ojo{position:absolute;right:8px;width:38px;height:38px;border-radius:50%;border:0;background:none;color:var(--muted);cursor:pointer;display:grid;place-items:center}
+.ojo:hover{background:var(--lilac-s);color:var(--purple)}
+.dos{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.dos .campo{margin-bottom:0}
+.emerg input{background:var(--pink-s)}
+.emerg input:focus{background:#fff;border-color:var(--pink)}
+.emerg .input>.ic{color:var(--pink-d)}
+.emerg label{color:var(--pink-d)}
+
+.acepto{display:flex;gap:14px;align-items:flex-start;margin-top:22px;padding:18px 20px;border-radius:26px;background:var(--pink-s);cursor:pointer;font-size:14.5px;font-weight:600;line-height:1.5}
+.acepto input{width:24px;height:24px;margin-top:1px;accent-color:var(--pink);flex:none;cursor:pointer}
+.acepto button{all:unset;cursor:pointer;color:var(--pink-d);font-weight:800;border-bottom:2px dashed var(--pink)}
+.acepto button:focus-visible{outline:3px solid var(--deep);outline-offset:3px}
+
+.enviar{width:100%;margin-top:20px;display:inline-flex;align-items:center;justify-content:center;gap:10px;height:58px;border-radius:99px;border:3.5px solid var(--purple);background:var(--purple);color:#fff;font:800 17px var(--fb);cursor:pointer;transition:transform .15s,background .15s}
+.enviar:hover:not(:disabled){transform:translateY(-2px);background:var(--deep);border-color:var(--deep)}
+.enviar:disabled{opacity:.6;cursor:wait}
+.enviar .ic{fill:var(--yellow);stroke:none}
+.spin{width:18px;height:18px;border-radius:50%;border:3px solid #fff;border-right-color:transparent;display:inline-block}
+@media (prefers-reduced-motion:no-preference){.spin{animation:giro .8s linear infinite}.enviar,.top a.volver{transition-duration:.15s}}
+@keyframes giro{to{transform:rotate(360deg)}}
+.msg{display:none;margin-top:16px;padding:14px 16px;border-radius:22px;background:var(--pink-s);color:var(--pink-d);font-weight:700;font-size:14.5px;line-height:1.45}
+.msg.activo{display:block}
+.pie{margin-top:22px;text-align:center;font:700 15px var(--fh);color:var(--muted)}
+.pie .ic{fill:var(--pink);stroke:none;vertical-align:-4px;margin-right:6px;width:20px;height:20px}
+
+
+[hidden]{display:none!important}
+.progreso{margin-top:22px}
+.progreso .pista{height:10px;border-radius:99px;background:var(--lilac-s);overflow:hidden}
+.progreso #progressBar{height:100%;width:0;background:var(--pink);border-radius:99px}
+@media (prefers-reduced-motion:no-preference){.progreso #progressBar{transition:width .5s cubic-bezier(.4,0,.2,1)}}
+.progreso #progressText{margin-top:8px;text-align:right;font-weight:800;font-size:13px;color:var(--pink-d)}
+.paso{margin-top:22px}
+.paso h3.pregunta{font:800 clamp(20px,2.4vw,24px)/1.3 var(--fh);color:var(--ink);margin-bottom:20px;text-wrap:balance}
+.tipos{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.tipo{cursor:pointer;border:3px solid var(--c);background:var(--s);border-radius:26px;padding:20px 12px;text-align:center;font:800 15px var(--fb);color:var(--ink);transition:transform .2s}
+.tipo:hover{transform:translateY(-4px) rotate(-.6deg)}
+.tipo .ic{display:block;margin:0 auto 10px;width:30px;height:30px;color:var(--d)}
+.tipo[data-flujo="individual"]{--c:var(--teal);--s:var(--teal-s);--d:var(--teal-d)}
+.tipo[data-flujo="pareja"]{--c:var(--pink);--s:var(--pink-s);--d:var(--pink-d)}
+.tipo[data-flujo="familiar"]{--c:var(--yellow);--s:var(--yellow-s);--d:var(--yellow-d)}
+.opciones{display:flex;flex-direction:column;gap:12px;border:0;padding:0;min-width:0}
+.opcion{display:flex;align-items:center;gap:14px;padding:16px 18px;border-radius:22px;background:var(--bg);border:2px solid transparent;cursor:pointer;font-weight:700;font-size:16px;line-height:1.35;transition:border-color .15s,background .15s}
+.opcion:hover{border-color:#BFB0EA}
+.opcion input{width:24px;height:24px;flex:none;accent-color:var(--purple);cursor:pointer}
+.opcion:has(input:checked){background:var(--lilac-s);border-color:var(--purple);color:var(--deep)}
+.opcion:focus-within{outline:3px solid var(--deep);outline-offset:3px}
+.texto-libre{width:100%;height:58px;padding:0 22px;border-radius:99px;border:2px solid transparent;background:var(--bg);font:600 16px var(--fb);color:var(--ink)}
+.texto-libre:focus{outline:none;border-color:var(--purple);background:#fff}
+.valor-grande{text-align:center;margin-bottom:8px}
+.valor-grande strong{display:block;font:800 clamp(64px,12vw,92px)/1 var(--fh);color:var(--purple)}
+.valor-grande strong.rosa{color:var(--pink)}
+.valor-grande span{display:block;margin-top:4px;font-weight:700;color:var(--muted)}
+input[type=range].rango{-webkit-appearance:none;appearance:none;width:100%;height:12px;border-radius:99px;background:var(--lilac-s);margin:22px 0 10px;cursor:pointer}
+input[type=range].rango::-webkit-slider-thumb{-webkit-appearance:none;width:32px;height:32px;border-radius:50%;background:#fff;border:5px solid var(--purple);box-shadow:0 6px 14px -4px rgba(30,15,90,.45)}
+input[type=range].rango::-moz-range-thumb{width:24px;height:24px;border-radius:50%;background:#fff;border:5px solid var(--purple)}
+input[type=range].rango.rosa::-webkit-slider-thumb{border-color:var(--pink)}
+input[type=range].rango.rosa::-moz-range-thumb{border-color:var(--pink)}
+.limites{display:flex;justify-content:space-between;font-size:13px;font-weight:700;color:var(--muted)}
+.nav-pasos{display:flex;gap:12px;margin-top:26px}
+.mini{cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:0 22px;height:52px;border-radius:99px;font:800 14px var(--fb);background:#fff;color:var(--purple);border:3.5px solid #BFB0EA;transition:border-color .15s,background .15s}
+.mini:hover{border-color:var(--purple);background:var(--lilac-s)}
+.mini.chico{height:auto;padding:7px 14px;font-size:12.5px}
+.siguiente{flex:1;height:52px;border-radius:99px;border:3.5px solid var(--purple);background:var(--purple);color:#fff;font:800 16px var(--fb);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:10px}
+.siguiente:hover{background:var(--deep);border-color:var(--deep)}
+.aviso{margin-top:16px;padding:12px 16px;border-radius:22px;background:var(--yellow-s);color:var(--yellow-d);font-weight:700;font-size:14.5px;line-height:1.45}
+.volver-resp{margin:20px 0 0}
+.req{margin-top:8px;color:var(--muted);font-weight:600;font-size:14px}
+@media (max-width:560px){.tipos{grid-template-columns:1fr}}
+
+/* Aviso de privacidad */
+dialog{border:0;padding:0;border-radius:34px;width:min(680px,100% - 32px);max-height:88vh;background:#fff;color:var(--ink);box-shadow:0 30px 60px -20px rgba(30,15,90,.5)}
+dialog::backdrop{background:rgba(42,31,92,.55);backdrop-filter:blur(6px)}
+dialog .cab{display:flex;align-items:center;gap:14px;padding:26px 28px 0}
+dialog .cab .ico{width:48px;height:48px;border-radius:18px;background:var(--teal);color:var(--ink);display:grid;place-items:center}
+dialog .cab h2{flex:1;font:800 22px var(--fh);color:var(--deep)}
+dialog .cuerpo{padding:16px 28px;max-height:52vh;overflow-y:auto;font-size:14.5px;line-height:1.65;color:var(--muted);font-weight:500}
+dialog .cuerpo p+p{margin-top:12px}
+dialog .cuerpo strong{color:var(--ink)}
+dialog .pieza{padding:8px 28px 26px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;padding:12px 26px;border-radius:99px;font:800 15px var(--fb);border:3.5px solid var(--purple);background:var(--purple);color:#fff}
+.btn.sec2{background:#fff;color:var(--purple);border-color:#BFB0EA}
+.cerrar{width:40px;height:40px;border-radius:50%;border:3.5px solid #BFB0EA;background:#fff;color:var(--purple);cursor:pointer;display:grid;place-items:center}
+.cerrar:hover{border-color:var(--purple);background:var(--lilac-s)}
+
+@media (max-width:900px){
+  .pagina{grid-template-columns:1fr}
+  .hero{position:relative;top:0;padding:30px 24px 96px}
+  .hero ul{display:none}
+  .hero p{max-width:none}
+}
+@media (max-width:560px){.dos{grid-template-columns:1fr}.dos .campo{margin-bottom:16px}.dos .campo:last-child{margin-bottom:0}.sec{padding:18px}.top img{height:38px}}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <symbol id="i-smile" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8.5 14.2c1 1.4 2.200 2.100 3.500 2.100s2.500-.7 3.500-2.100M9 9.500v.01M15 9.500v.01"/></symbol>
+  <symbol id="i-id" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="3"/><circle cx="9" cy="11" r="2.200"/><path d="M5.800 16c.6-1.600 1.800-2.300 3.200-2.300s2.600.7 3.200 2.300M14.500 10h4M14.500 13.500h3"/></symbol>
+  <symbol id="i-mail" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M4 7.500l8 6 8-6"/></symbol>
+  <symbol id="i-phone" viewBox="0 0 24 24"><path d="M5 4h3.500l1.800 4.500-2.200 1.400a11 11 0 0 0 5 5l1.400-2.200L19 14.500V18a2 2 0 0 1-2 2A13 13 0 0 1 3 6a2 2 0 0 1 2-2z"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="5"/><path d="M12 8.500v7M8.500 12h7"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="4.500" y="10.500" width="15" height="10" rx="3"/><path d="M8 10.500V8a4 4 0 0 1 8 0v2.500"/></symbol>
+  <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2.500 12S6 5.500 12 5.500 21.500 12 21.500 12 18 18.500 12 18.500 2.500 12 2.500 12z"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="i-eyeoff" viewBox="0 0 24 24"><path d="M3 3l18 18M10.500 5.700A9 9 0 0 1 12 5.500c6 0 9.500 6.500 9.500 6.500a15 15 0 0 1-3.200 3.800M6.400 7.300A15 15 0 0 0 2.500 12S6 18.500 12 18.500c1.500 0 2.800-.4 4-1M9.900 9.900a3 3 0 0 0 4.200 4.200"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l7.500 3v5.500c0 4.500-3 8-7.500 9.500-4.500-1.500-7.500-5-7.500-9.500V6z"/><path d="M8.800 12l2.200 2.200 4.200-4.400"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M4.500 12.500l5 5L19.500 7"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="M14.500 5.500L8 12l6.500 6.500"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4.500 21c.9-4.200 3.600-6.500 7.500-6.500s6.600 2.300 7.500 6.500"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.500"/><path d="M2.500 20c.8-3.600 3.200-5.500 6.500-5.500s5.700 1.900 6.500 5.500M16 4.800a3.500 3.500 0 0 1 0 6.400M18 14.800c1.800.7 3 2.300 3.500 5.200"/></symbol>
+  <symbol id="i-pareja" viewBox="0 0 24 24"><path d="M12 20.500C5 15.600 3 12.400 3 9.300 3 6.700 5 5 7.300 5c1.900 0 3.500 1 4.700 2.900C13.200 6 14.800 5 16.700 5 19 5 21 6.700 21 9.300c0 3.100-2 6.300-9 11.200z"/></symbol>
+  <symbol id="i-next" viewBox="0 0 24 24"><path d="M9.500 5.500L16 12l-6.500 6.500"/></symbol>
+  <symbol id="i-heart" viewBox="0 0 24 24"><path d="M12 2C6.500 2 2 5.800 2 10.500c0 2.600 1.400 4.900 3.600 6.400L5 21.500l4.300-2.400c.9.2 1.700.3 2.700.3 5.500 0 10-3.800 10-8.500S17.500 2 12 2z"/></symbol>
+</svg>
+
+<header class="top">
+  <img src="{% if logo_url %}{{ logo_url }}{% else %}data:image/png;base64,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{% endif %}" alt="HOPE · Oportunidad, Prevención, Esperanza">
+  <a class="volver" href="{{ url_inicio|default:'/' }}"><svg class="ic" aria-hidden="true"><use href="#i-back"/></svg>Volver al inicio</a>
+</header>
+
+<main class="pagina">
+  <section class="hero" aria-labelledby="frase">
+    <p class="saludo"><svg class="ic" aria-hidden="true"><use href="#i-heart"/></svg>Bienvenida y bienvenido</p>
+    <h1 id="frase">Todo lo que sientes importa, tú nos importas</h1>
+    <p>Crea tu cuenta en unos minutos. Paso a paso, a tu ritmo.</p>
+    <ul>
+      <li><svg class="ic" aria-hidden="true"><use href="#i-shield"/></svg>Tus datos están protegidos</li>
+      <li><svg class="ic" aria-hidden="true"><use href="#i-smile"/></svg>Puedes usar un nombre que te guste</li>
+      <li><svg class="ic" aria-hidden="true"><use href="#i-heart"/></svg>Sin juicio, con cuidado</li>
+    </ul>
+    <svg class="ola" viewBox="0 0 1200 110" preserveAspectRatio="none" aria-hidden="true">
+      <path fill="#FFD62E" d="M0 50C150 10 300 8 450 40S780 90 930 60 1130 20 1200 36V110H0Z"/>
+      <path fill="#F7F3FE" d="M0 84C160 52 330 52 500 76S840 106 1010 84 1140 62 1200 70V110H0Z"/>
+    </svg>
+  </section>
+
+  <section class="caja" aria-labelledby="titulo-form">
+    <header id="triageHeader">
+      <h2 id="titulo-form">Tu proceso</h2>
+      <p id="triageSubtitle">Paso a paso, a tu ritmo.</p>
+    </header>
+
+    <div class="progreso" id="progresoBox" hidden>
+      <div class="pista" role="progressbar" aria-label="Avance del registro" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="progressTrack"><div id="progressBar"></div></div>
+      <p id="progressText" aria-live="polite"></p>
+    </div>
+
+    <div class="paso" id="stepSeleccion" hidden>
+      <h3 class="pregunta">¿Qué tipo de proceso buscas?</h3>
+      <div class="tipos">
+        <button type="button" class="tipo" data-flujo="individual" data-servicio="terapia_individual"><svg class="ic" aria-hidden="true"><use href="#i-user"/></svg>Terapia individual</button>
+        <button type="button" class="tipo" data-flujo="pareja" data-servicio="terapia_pareja"><svg class="ic" aria-hidden="true"><use href="#i-pareja"/></svg>Terapia de pareja</button>
+        <button type="button" class="tipo" data-flujo="familiar" data-servicio="terapia_familiar"><svg class="ic" aria-hidden="true"><use href="#i-users"/></svg>Terapia familiar</button>
+      </div>
+    </div>
+
+    <div class="paso" id="stepPreguntas" hidden>
+      <fieldset class="opciones-wrap" style="border:0;padding:0;min-width:0">
+        <legend><h3 class="pregunta" id="questionText"></h3></legend>
+        <div id="questionOptionsContainer"></div>
+      </fieldset>
+      <div class="nav-pasos">
+        <button type="button" id="btnAtras" class="mini" aria-label="Pregunta anterior" hidden><svg class="ic" aria-hidden="true"><use href="#i-back"/></svg></button>
+        <button type="button" id="btnSiguiente" class="siguiente">Continuar <svg class="ic" aria-hidden="true"><use href="#i-next"/></svg></button>
+      </div>
+    </div>
+
+    <div class="aviso" id="avisoPaso" role="alert" hidden></div>
+
+    <form action="{% url 'registro_usuario' %}" method="POST" id="formRegistro" novalidate hidden>
+      {% csrf_token %}
+      <input type="text" name="website" value="" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0;">{% comment %} honeypot anti-bots (no llenar) {% endcomment %}
+      <input type="hidden" name="origen" value="{% if origen_recepcion %}recepcion{% endif %}">{% comment %} marca de recepción: el server no cambia la sesión del staff {% endcomment %}
+      <input type="hidden" name="flujo_elegido" id="inputFlujoFinal">
+      <input type="hidden" name="respuestas_json" id="inputRespuestasFinal">
+      <input type="hidden" name="servicio_origen" id="inputServicioOrigen">
+
+      <p class="req">Los campos con <strong style="color:var(--pink-d)">*</strong> son necesarios para abrir tu expediente.</p>
+      <div class="sec" style="margin-top:16px">
+        <h3><i style="--c:var(--teal)"></i>¿Cómo te llamamos?</h3>
+        <div class="campo">
+          <label for="pseudonimoFinal">Tu nombre favorito <em>*</em></label>
+          <div class="input"><svg class="ic" aria-hidden="true"><use href="#i-smile"/></svg>
+            <input type="text" id="pseudonimoFinal" placeholder="Ej. Alex, Majo..." required autocomplete="nickname"></div>
+          <p class="ayuda">Así te llamaremos en pantalla.</p>
+        </div>
+        <div class="campo">
+          <label for="nombre">Nombre completo (privado) <em>*</em></label>
+          <div class="input"><svg class="ic" aria-hidden="true"><use href="#i-id"/></svg>
+            <input type="text" id="nombre" name="nombre" placeholder="Para tu expediente clínico oficial" required autocomplete="name"></div>
+        </div>
+      </div>
+
+      <div class="sec">
+        <h3><i style="--c:var(--pink)"></i>¿Cómo te contactamos?</h3>
+        <div class="campo">
+          <label for="email">Correo electrónico <em>*</em></label>
+          <div class="input"><svg class="ic" aria-hidden="true"><use href="#i-mail"/></svg>
+            <input type="email" id="email" name="email" placeholder="tucorreo@ejemplo.com" required autocomplete="email"></div>
+        </div>
+        <div class="dos">
+          <div class="campo">
+            <label for="telefono">Tu teléfono <em>*</em></label>
+            <div class="input"><svg class="ic" aria-hidden="true"><use href="#i-phone"/></svg>
+              <input type="tel" id="telefono" name="telefono" placeholder="A 10 dígitos" required inputmode="tel" autocomplete="tel"></div>
+          </div>
+          <div class="campo emerg">
+            <label for="telefono_emergencia">Teléfono de emergencia <em>*</em></label>
+            <div class="input"><svg class="ic" aria-hidden="true"><use href="#i-plus"/></svg>
+              <input type="tel" id="telefono_emergencia" name="telefono_emergencia" placeholder="Familiar o amigo" required inputmode="tel"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sec">
+        <h3><i style="--c:var(--yellow)"></i>Tu acceso</h3>
+        <div class="campo">
+          <label for="inputRegisterPassword">Crea una contraseña <em>*</em></label>
+          <div class="input pw"><svg class="ic" aria-hidden="true"><use href="#i-lock"/></svg>
+            <input type="password" name="password" id="inputRegisterPassword" placeholder="Mínimo 8 caracteres" required autocomplete="new-password">
+            <button type="button" class="ojo" id="btnOjo" aria-label="Mostrar u ocultar contraseña" aria-pressed="false"><svg class="ic" aria-hidden="true"><use id="iconoOjo" href="#i-eye"/></svg></button></div>
+        </div>
+      </div>
+
+      <label class="acepto">
+        <input type="checkbox" name="acepta_privacidad" id="aceptaPriv" required>
+        <span>He leído y acepto el <button type="button" id="abrirPriv">Aviso de Privacidad</button> para la protección de mi expediente clínico.</span>
+      </label>
+
+      <button type="button" class="mini chico volver-resp" id="btnVolverRespuestas"><svg class="ic" aria-hidden="true" style="width:16px;height:16px"><use href="#i-back"/></svg>Volver a mis respuestas</button>
+      <button type="submit" class="enviar" id="btnSubmitFinal">Finalizar registro <svg class="ic" aria-hidden="true"><use href="#i-heart"/></svg></button>
+      <div class="msg" id="msgError" role="alert"></div>
+    </form>
+
+    <p class="pie"><svg class="ic" aria-hidden="true"><use href="#i-heart"/></svg>Un buen recibimiento también es parte del cuidado.</p>
+  </section>
+</main>
+
+<dialog id="modalPrivacidad" aria-labelledby="tPriv">
+  <div class="cab">
+    <div class="ico"><svg class="ic" aria-hidden="true"><use href="#i-shield"/></svg></div>
+    <h2 id="tPriv">Aviso de privacidad</h2>
+    <button type="button" class="cerrar" data-cerrar aria-label="Cerrar"><svg class="ic" aria-hidden="true"><use href="#i-x"/></svg></button>
+  </div>
+  <div class="cuerpo">
+    <p><strong>AVISO DE PRIVACIDAD INTEGRAL HOPE</strong></p>
+    <p>En HOPE, con domicilio en Lago Margarita 47, Chapultepec Morales, Granada, Miguel Hidalgo, 11520 Ciudad de México, CDMX, somos responsables del uso, tratamiento y protección de sus datos personales, en cumplimiento con lo dispuesto por la Ley Federal de Protección de Datos Personales en Posesión de los Particulares y demás normativa aplicable.</p>
+    <p>Los datos personales que recabamos de usted serán utilizados para las siguientes finalidades primarias: verificar su identidad, brindarle los servicios contratados, integrar expedientes, dar seguimiento a su proceso, así como cumplir con obligaciones legales y contractuales derivadas de la relación establecida.</p>
+    <p>De manera adicional, utilizaremos su información personal para finalidades secundarias que nos permiten mejorar la calidad del servicio, tales como envío de información sobre servicios, actividades, contenidos, campañas informativas, así como fines de mercadotecnia, publicidad y prospección comercial. Usted puede manifestar en cualquier momento su negativa para el tratamiento de sus datos personales para estas finalidades secundarias, sin que ello afecte la prestación del servicio.</p>
+    <p>Para llevar a cabo las finalidades descritas, podremos recabar datos personales de identificación, datos de contacto, así como información relacionada con la prestación y seguimiento del servicio. HOPE no recaba datos personales sensibles sin su consentimiento expreso.</p>
+    <p>Usted tiene derecho a acceder a sus datos personales que poseemos, conocer el uso que les damos, rectificarlos en caso de ser inexactos o incompletos, cancelarlos cuando considere que no son necesarios para las finalidades señaladas o se estén utilizando de manera indebida, así como oponerse al tratamiento de los mismos para fines específicos. Estos derechos se conocen como derechos ARCO.</p>
+    <p>Para el ejercicio de sus derechos ARCO, deberá enviar una solicitud al correo electrónico <strong>contacto@espaciohope.com</strong>, incluyendo su nombre completo, medio de contacto, identificación oficial, descripción clara de los datos sobre los que desea ejercer algún derecho, así como cualquier elemento que facilite la localización de sus datos. HOPE dará respuesta a su solicitud en un plazo máximo de 15 días hábiles.</p>
+    <p>HOPE podrá transferir sus datos personales sin requerir su consentimiento en los casos previstos por la ley, así como a autoridades competentes cuando sea requerido legalmente. En cualquier otro caso, se solicitará su autorización expresa.</p>
+    <p>Le informamos que en nuestro sitio web utilizamos cookies, web beacons y tecnologías similares para mejorar su experiencia como usuario, analizar tendencias de navegación y ofrecer contenidos personalizados. Los datos recabados a través de estas tecnologías incluyen idioma, región, tipo de navegador, sistema operativo, páginas visitadas y comportamiento de navegación.</p>
+    <p>El presente Aviso de Privacidad puede ser modificado o actualizado en cualquier momento para cumplir con cambios legales o mejorar nuestras prácticas de privacidad. Cualquier modificación será publicada a través de nuestros medios oficiales.</p>
+    <p>Al proporcionar sus datos personales y utilizar nuestros servicios, usted acepta el tratamiento de su información conforme a lo establecido en el presente Aviso de Privacidad.</p>
+  </div>
+  <div class="pieza"><button type="button" class="btn" data-cerrar>Entendido</button></div>
+</dialog>
+
+<script>
+(function () {
+  var form = document.getElementById('formRegistro');
+  var btn = document.getElementById('btnSubmitFinal');
+  var msg = document.getElementById('msgError');
+  var dlg = document.getElementById('modalPrivacidad');
+  var BTN_HTML = btn.innerHTML;
+
+  var h2 = document.querySelector('#triageHeader h2');
+  var sub = document.getElementById('triageSubtitle');
+  var stepSel = document.getElementById('stepSeleccion');
+  var stepPreg = document.getElementById('stepPreguntas');
+  var progBox = document.getElementById('progresoBox');
+  var aviso = document.getElementById('avisoPaso');
+  var optsBox = document.getElementById('questionOptionsContainer');
+  var btnAtras = document.getElementById('btnAtras');
+  var btnSig = document.getElementById('btnSiguiente');
+
+  // ── Cuestionario (mismo JSON que inicio.html: cuestionario_json) ──
+  var dataCuestionario = {};
+  try {
+    dataCuestionario = JSON.parse('{{ cuestionario_json|escapejs|default:"{}" }}');
+  } catch (e) {
+    console.error('Error al parsear el JSON de Django:', e);
+  }
+
+  var flujoActual = '';
+  var indicePregunta = 0;
+  var respuestasGuardadas = {};
+  var preguntasFlujo = [];
+  var historialNavegacion = [];
+  var vinoDeSeleccion = false;
+
+  function mostrarAviso(texto) {
+    aviso.textContent = texto;
+    aviso.hidden = false;
+    aviso.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }
+  function ocultarAviso() { aviso.hidden = true; }
+  function setProgreso(pct) {
+    document.getElementById('progressBar').style.width = pct + '%';
+    document.getElementById('progressTrack').setAttribute('aria-valuenow', Math.round(pct));
+  }
+
+  // Flujo y servicio: contexto de Django o ?flujo= & ?servicio= en la URL
+  var qs = new URLSearchParams(window.location.search);
+  var flujoInicial = '{{ flujo_elegido|default:"" }}' || qs.get('flujo') || '';
+  var servicioInicial = '{{ servicio_origen|default:"" }}' || qs.get('servicio') || '';
+  var SERVICIO_POR_FLUJO = { individual: 'terapia_individual', pareja: 'terapia_pareja', familiar: 'terapia_familiar' };
+
+  function abrirRegistroDirecto(flujo, servicioExacto) {
+    document.getElementById('inputServicioOrigen').value = servicioExacto || SERVICIO_POR_FLUJO[flujo] || '';
+    ocultarAviso();
+    if (Object.keys(dataCuestionario).length === 0) {
+      console.error('Django no envió cuestionario_json a esta vista.');
+      stepSel.hidden = true;
+      mostrarAviso('No pudimos cargar las preguntas. Recarga la página; si sigue igual, avisa al equipo de HOPE.');
+      return;
+    }
+    stepSel.hidden = true;
+    form.hidden = true;
+    stepPreg.hidden = false;
+    progBox.hidden = false;
+    iniciarCuestionario(flujo);
+  }
+
+  function iniciarCuestionario(flujo) {
+    if (!dataCuestionario[flujo]) {
+      console.error('El flujo solicitado no existe en cuestionario_json:', flujo);
+      stepPreg.hidden = true; progBox.hidden = true;
+      mostrarAviso('Ese tipo de proceso no está disponible por ahora. Elige otro o avisa al equipo de HOPE.');
+      return;
+    }
+    flujoActual = flujo;
+    preguntasFlujo = dataCuestionario[flujoActual].preguntas;
+    h2.textContent = dataCuestionario[flujoActual].titulo || 'Cuéntanos un poco de ti';
+    sub.textContent = 'Paso a paso, a tu ritmo.';
+    historialNavegacion = [];
+    respuestasGuardadas = {};
+    indicePregunta = obtenerSiguienteIndiceValido(0);
+    mostrarPregunta();
+  }
+
+  function debeMostrarPregunta(pregunta) {
+    if (!pregunta.mostrar_si) return true;
+    var depId = pregunta.mostrar_si.id;
+    var valoresPermitidos = pregunta.mostrar_si.valores;
+    var respuestaPrevia = respuestasGuardadas[depId];
+    if (!respuestaPrevia) return false;
+    if (Array.isArray(respuestaPrevia)) return respuestaPrevia.some(function (r) { return valoresPermitidos.indexOf(r) !== -1; });
+    return valoresPermitidos.indexOf(respuestaPrevia) !== -1;
+  }
+
+  function obtenerSiguienteIndiceValido(inicio) {
+    var nextIndex = inicio;
+    while (nextIndex < preguntasFlujo.length) {
+      if (debeMostrarPregunta(preguntasFlujo[nextIndex])) return nextIndex;
+      nextIndex++;
+    }
+    return nextIndex;
+  }
+
+  function el(tag, cls, texto) {
+    var n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (texto !== undefined) n.textContent = texto;
+    return n;
+  }
+
+  function construirSlider(q, min, max, val, rosa, etiquetaUnidad) {
+    var cont = el('div');
+    var grande = el('div', 'valor-grande');
+    var num = el('strong', rosa ? 'rosa' : '', String(val));
+    num.id = q.id + '_valDisplay';
+    num.setAttribute('aria-live', 'polite');
+    grande.appendChild(num);
+    if (etiquetaUnidad) grande.appendChild(el('span', '', etiquetaUnidad));
+    var rango = el('input', 'rango' + (rosa ? ' rosa' : ''));
+    rango.type = 'range'; rango.id = q.id; rango.min = min; rango.max = max; rango.value = val;
+    rango.setAttribute('aria-label', q.pregunta);
+    rango.addEventListener('input', function () { num.textContent = rango.value; });
+    var lim = el('div', 'limites');
+    lim.appendChild(el('span', '', etiquetaUnidad ? min + ' años' : String(min)));
+    lim.appendChild(el('span', '', etiquetaUnidad ? max + '+ años' : String(max)));
+    cont.appendChild(grande); cont.appendChild(rango); cont.appendChild(lim);
+    return cont;
+  }
+
+  function mostrarPregunta() {
+    optsBox.innerHTML = '';
+    ocultarAviso();
+
+    if (indicePregunta >= preguntasFlujo.length) {
+      finalizarCuestionario();
+      return;
+    }
+
+    setProgreso((indicePregunta / preguntasFlujo.length) * 100);
+    document.getElementById('progressText').textContent = 'Pregunta ' + (historialNavegacion.length + 1);
+
+    var q = preguntasFlujo[indicePregunta];
+    document.getElementById('questionText').textContent = q.pregunta;
+    btnAtras.hidden = !(historialNavegacion.length > 0 || vinoDeSeleccion);
+
+    var esPreguntaEdad = q.id === 'edad' || q.pregunta.toLowerCase().indexOf('edad') !== -1;
+    var previa = respuestasGuardadas[q.id];
+
+    if (q.tipo === 'single' || q.tipo === 'multiple') {
+      var inputType = q.tipo === 'single' ? 'radio' : 'checkbox';
+      var grupo = el('div', 'opciones');
+      grupo.setAttribute('role', q.tipo === 'single' ? 'radiogroup' : 'group');
+      (q.opciones || []).forEach(function (opcion) {
+        var label = el('label', 'opcion');
+        var inp = document.createElement('input');
+        inp.type = inputType; inp.name = q.id; inp.value = opcion;
+        if (previa && (Array.isArray(previa) ? previa.indexOf(opcion) !== -1 : previa === opcion)) inp.checked = true;
+        label.appendChild(inp);
+        label.appendChild(el('span', '', opcion));
+        grupo.appendChild(label);
+      });
+      optsBox.appendChild(grupo);
+    } else if (esPreguntaEdad) {
+      optsBox.appendChild(construirSlider(q, 13, 60, previa || 24, false, 'años de edad'));
+    } else if (q.tipo === 'numero' && q.min !== undefined && q.max !== undefined) {
+      optsBox.appendChild(construirSlider(q, q.min, q.max, previa || Math.ceil((q.min + q.max) / 2), true, ''));
+    } else {
+      var libre = el('input', 'texto-libre');
+      libre.type = q.tipo === 'numero' ? 'number' : 'text';
+      libre.id = q.id; libre.placeholder = 'Escribe aquí...'; libre.value = previa || '';
+      libre.setAttribute('aria-label', q.pregunta);
+      optsBox.appendChild(libre);
+    }
+  }
+
+  btnSig.addEventListener('click', function () {
+    var q = preguntasFlujo[indicePregunta];
+    var hayRespuesta = false;
+    if (q.tipo === 'single') {
+      var sel = document.querySelector('#questionOptionsContainer input[name="' + q.id + '"]:checked');
+      if (sel) { respuestasGuardadas[q.id] = sel.value; hayRespuesta = true; }
+    } else if (q.tipo === 'multiple') {
+      var sels = Array.prototype.map.call(document.querySelectorAll('#questionOptionsContainer input[name="' + q.id + '"]:checked'), function (n) { return n.value; });
+      if (sels.length > 0) { respuestasGuardadas[q.id] = sels; hayRespuesta = true; }
+    } else {
+      var val = document.getElementById(q.id).value.trim();
+      if (val !== '') {
+        if (q.tipo === 'numero') {
+          var num = parseInt(val, 10);
+          if (q.min !== undefined && num < q.min) { mostrarAviso('Por favor ingresa un número que sea mínimo ' + q.min + '.'); return; }
+          if (q.max !== undefined && num > q.max) { mostrarAviso('Por favor ingresa un número que sea máximo ' + q.max + '.'); return; }
+        }
+        respuestasGuardadas[q.id] = val;
+        hayRespuesta = true;
+      }
+    }
+    if (!hayRespuesta) { mostrarAviso('Por favor, selecciona una respuesta para continuar.'); return; }
+    historialNavegacion.push(indicePregunta);
+    indicePregunta = obtenerSiguienteIndiceValido(indicePregunta + 1);
+    mostrarPregunta();
+  });
+
+  btnAtras.addEventListener('click', function () {
+    if (historialNavegacion.length > 0) {
+      indicePregunta = historialNavegacion.pop();
+      mostrarPregunta();
+    } else if (vinoDeSeleccion) {
+      stepPreg.hidden = true; progBox.hidden = true; ocultarAviso();
+      h2.textContent = 'Tu proceso'; stepSel.hidden = false;
+    }
+  });
+
+  function finalizarCuestionario() {
+    stepPreg.hidden = true;
+    ocultarAviso();
+    form.hidden = false;
+    h2.textContent = 'Crea tu cuenta segura';
+    sub.textContent = 'Último paso: tus datos de contacto y tu contraseña.';
+    document.getElementById('inputFlujoFinal').value = flujoActual;
+    setProgreso(100);
+    document.getElementById('progressText').textContent = 'Último paso';
+  }
+
+  document.getElementById('btnVolverRespuestas').addEventListener('click', function () {
+    if (!historialNavegacion.length) return;
+    form.hidden = true; stepPreg.hidden = false;
+    h2.textContent = dataCuestionario[flujoActual].titulo || 'Cuéntanos un poco de ti';
+    sub.textContent = 'Paso a paso, a tu ritmo.';
+    indicePregunta = historialNavegacion.pop();
+    mostrarPregunta();
+  });
+
+  // Selector de proceso (solo cuando no llega ?flujo= ni contexto)
+  document.querySelectorAll('.tipo').forEach(function (b) {
+    b.addEventListener('click', function () {
+      vinoDeSeleccion = true;
+      abrirRegistroDirecto(b.dataset.flujo, b.dataset.servicio);
+    });
+  });
+
+  if (flujoInicial) {
+    abrirRegistroDirecto(flujoInicial, servicioInicial);
+  } else {
+    h2.textContent = 'Tu proceso';
+    stepSel.hidden = false;
+  }
+
+  // ── Contraseña visible / oculta ──
+  var pw = document.getElementById('inputRegisterPassword');
+  document.getElementById('btnOjo').addEventListener('click', function () {
+    var ver = pw.type === 'password';
+    pw.type = ver ? 'text' : 'password';
+    this.setAttribute('aria-pressed', ver ? 'true' : 'false');
+    document.getElementById('iconoOjo').setAttribute('href', ver ? '#i-eyeoff' : '#i-eye');
+  });
+
+  // ── Aviso de privacidad ──
+  document.getElementById('abrirPriv').addEventListener('click', function () {
+    if (dlg.showModal) dlg.showModal(); else dlg.setAttribute('open', '');
+  });
+  dlg.querySelectorAll('[data-cerrar]').forEach(function (b) {
+    b.addEventListener('click', function () { if (dlg.close) dlg.close(); else dlg.removeAttribute('open'); });
+  });
+  dlg.addEventListener('click', function (e) { if (e.target === dlg && dlg.close) dlg.close(); });
+
+  function mostrarError(texto) {
+    msg.textContent = texto;
+    msg.classList.add('activo');
+    msg.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }
+
+  // ── Envío AJAX del registro final (misma mecánica que inicio.html) ──
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    msg.classList.remove('activo');
+    if (form.dataset.enviando === 'true') return;
+
+    var invalido = form.querySelector(':invalid');
+    form.querySelectorAll('.input input').forEach(function (i) { i.classList.toggle('invalido', !i.checkValidity()); });
+    if (invalido) {
+      invalido.focus();
+      mostrarError(invalido.type === 'checkbox'
+        ? 'Para crear tu cuenta, acepta el Aviso de Privacidad.'
+        : 'Revisa los campos marcados en rosa: faltan datos o el formato no es válido.');
+      return;
+    }
+    form.dataset.enviando = 'true';
+
+    respuestasGuardadas['pseudonimo'] = document.getElementById('pseudonimoFinal').value;
+    var servicioElegido = document.getElementById('inputServicioOrigen').value;
+    if (servicioElegido) respuestasGuardadas['servicio_solicitado'] = servicioElegido;
+    document.getElementById('inputRespuestasFinal').value = JSON.stringify(respuestasGuardadas);
+
+    btn.innerHTML = '<span class="spin" aria-hidden="true"></span> Creando expediente…';
+    btn.disabled = true;
+
+    fetch(form.getAttribute('action'), {
+      method: 'POST',
+      body: new FormData(form),
+      headers: {
+        'X-Requested-With': 'XMLHttpRequest',
+        'X-CSRFToken': form.querySelector('[name=csrfmiddlewaretoken]').value
+      }
+    })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        if (data.status === 'success') { window.location.href = data.redirect_url; return; }
+        btn.innerHTML = BTN_HTML; btn.disabled = false; form.dataset.enviando = 'false';
+        mostrarError(data.message || 'No pudimos crear tu cuenta. Revisa tus datos e intenta de nuevo.');
+      })
+      .catch(function () {
+        btn.innerHTML = BTN_HTML; btn.disabled = false; form.dataset.enviando = 'false';
+        mostrarError('No pudimos conectarnos. Revisa tu conexión e intenta de nuevo.');
+      });
+  });
+
+  form.querySelectorAll('.input input').forEach(function (i) {
+    i.addEventListener('input', function () { i.classList.remove('invalido'); });
+  });
+})();
+</script>
+</body>
+</html>

@@ -16,6 +16,11 @@
       "hasta las". Se abre por la tarjeta "Consultorios" de Más herramientas
       (#modCo) o por el botón 🪑 de cada fila de la agenda (window.hopeConsultorios,
       precargado con el primer consultorio libre al marcar "Sí vino").
+    Registro de PACIENTE (02/11/2026): bloque amarillo "Agregar paciente" y pestaña
+      "Pacientes" → /panel-admin/recepcion/agregar-paciente/ → registro_hope_recepcion.html
+      con el MISMO motor de registro de inicio.html (POST /registro-ajax/ por AJAX →
+      crea la cuenta real en BD); con sesión de superusuario el POST lleva
+      origen='recepcion' y registrar_usuario NO intercambia la sesión del staff.
     citas_hoy → SOLO sesiones PRESENCIALES del día; lista de dicts:
                 cita_id, hora, paciente, psicologa, modalidad ("presencial"),
                 estado ("confirmada"|"en_sala"|"pendiente"|"atendida"|"no_vino"),
@@ -258,7 +263,7 @@ body.co-lock{overflow:hidden}
       <a class="tab" href="{{ url_agendar_presencial|default:'#' }}"><svg class="ic"><use href="#i-pin"/></svg>Presencial</a>
       <a class="tab" href="{{ url_citas|default:'#' }}"><svg class="ic"><use href="#i-cal"/></svg>Citas</a>
       <!-- MÓDULO: copia una línea para sumar nuevas funciones -->
-      <a class="tab soon" href="#modulos"><svg class="ic"><use href="#i-users"/></svg>Pacientes</a>
+      <a class="tab" href="{{ url_agregar_paciente|default:'#' }}"><svg class="ic"><use href="#i-users"/></svg>Pacientes</a>
     </nav>
     <div class="yo"><span>{% if usuario_nombre %}{{ usuario_nombre }}{% else %}Recepción HOPE{% endif %}</span><div class="avatar" aria-hidden="true">{% if usuario_nombre %}{{ usuario_nombre|slice:":1" }}{% else %}R{% endif %}</div></div>
   </div>

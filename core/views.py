@@ -915,6 +915,14 @@ def registrar_usuario(request):
         except json.JSONDecodeError:
             respuestas_dict = {}
 
+        # Registro desde recepción (02/11/2026): cuando un SUPERUSUARIO crea la
+        # cuenta desde el módulo de recepción (POST origen='recepcion'), NO se
+        # intercambia la sesión activa: la recepcionista conserva su panel y la
+        # cuenta del paciente queda creada igual por el mismo motor de abajo.
+        origen_recepcion = (request.POST.get('origen') == 'recepcion'
+                            and request.user.is_authenticated
+                            and request.user.is_superuser)
+
         user_existente = User.objects.filter(Q(username__iexact=email) | Q(email__iexact=email)).first()
         if user_existente:
             # Si el usuario ya está autenticado con esta cuenta
@@ -924,7 +932,8 @@ def registrar_usuario(request):
                 # Verificamos si la contraseña coincide para enlazar el servicio a su cuenta
                 user_auth = authenticate(request, username=user_existente.username, password=password)
                 if user_auth:
-                    login(request, user_auth)
+                    if not origen_recepcion:
+                        login(request, user_auth)  # en recepción NO se roba la sesión del staff
                     user = user_auth
                 else:
                     return JsonResponse({
@@ -957,6 +966,8 @@ def registrar_usuario(request):
             )
 
             redirect_target = 'panel_beneficios' if es_beneficios_bool else ('panel_tectum' if es_tectum_bool else 'panel_generico')
+            if origen_recepcion:
+                redirect_target = 'panel_recepcion'
             return JsonResponse({'status': 'success', 'redirect_url': reverse(redirect_target)})
 
         user = User.objects.create_user(
@@ -992,10 +1003,14 @@ def registrar_usuario(request):
         )
 
         # 🔥 Iniciamos sesión automáticamente en el servidor
-        login(request, user)
-        
+        # (en recepción NO: la cuenta se crea sin cambiar la sesión del staff)
+        if not origen_recepcion:
+            login(request, user)
+
         # 🔥 Mandamos la URL directa para que el JS del frontend redirija al instante
         redirect_target = 'panel_beneficios' if es_beneficios_bool else ('panel_tectum' if es_tectum_bool else 'panel_generico')
+        if origen_recepcion:
+            redirect_target = 'panel_recepcion'
         return JsonResponse({'status': 'success', 'redirect_url': reverse(redirect_target)})
 
     return JsonResponse({'status': 'error', 'message': 'Método no permitido.'}, status=405)
@@ -11196,13 +11211,22 @@ def _recepcion_modulo_pendiente(request, titulo, detalle):
 def recepcion_agregar_paciente(request):
     """
     GET /panel-admin/recepcion/agregar-paciente/
-    MÓDULO PENDIENTE (integrar después): aquí irá el formulario de registro
-    de paciente nuevo en recepción (bloque amarillo grande del panel).
+    Registro HOPE en recepción (registro_hope_recepcion.html, 02/11/2026):
+    MISMA lógica que el formulario de registro de inicio.html — POST AJAX a
+    registro_usuario (/registro-ajax/) con honeypot + CSRF → crea User +
+    UsuarioPerfil + CuestionarioRegistro. Diferencia documentada: cuando la
+    sesión activa es de superusuario y el POST trae origen='recepcion',
+    registrar_usuario NO intercambia la sesión (la recepcionista no pierde su
+    panel) y devuelve redirect_url al panel de recepción.
     """
-    return _recepcion_modulo_pendiente(
-        request, 'Agregar paciente',
-        'Aquí se integrará el formulario para registrar a un paciente nuevo '
-        'desde recepción (datos, cuestionario inicial y asignación).')
+    contexto = {
+        'logo_url': _recepcion_logo_url(),
+        'url_inicio': reverse('panel_recepcion'),
+        # Mismo contrato que inicio.html: cuestionario_json es OBLIGATORIO
+        'cuestionario_json': json.dumps(CUESTIONARIO_CLINICO),
+        'origen_recepcion': True,
+    }
+    return render(request, 'registro_hope_recepcion.html', contexto)
 
 
 @user_passes_test(es_admin, login_url='/')
