@@ -324,7 +324,7 @@ class Cita(models.Model):
     # afectar citas históricas (en línea) que no necesitan pase.
     codigo_pase = models.CharField(max_length=64, blank=True, null=True, unique=True, db_index=True, verbose_name="Código de verificación del pase")
     # 🪑 Recepción presencial (01/11/2026): registro de llegada del paciente.
-    # La recepción lo marca desde el panel (/panel-admin/recepcion/) o al
+    # La recepción lo marca desde el panel (/recep-59/) o al
     # escanear el QR del pase (verificar_pase siendo superusuario). No altera
     # el campo estado (Confirmada/Completada); es SOLO el estatus de llegada:
     # 'No registrado' aún no pasa por recepción, 'Vino' entrada confirmada,

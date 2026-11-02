@@ -10996,7 +10996,7 @@ def api_intelligence_reasignar(request):
 # =========================================================================
 # 🪑 RECEPCIÓN HOPE PRESENCIAL (01/11/2026)
 # Escritorio del personal de recepción física de HOPE.
-#   - Vista principal: /panel-admin/recepcion/ → templates/panel_recepcion_v3.html
+#   - Vista principal: /recep-59/ → templates/panel_recepcion_v3.html
 #     Solo superusuarios (es_admin literal = is_superuser).
 #   - Módulos secundarios con URL + vista genérica ya montados; sus
 #     templates definitivos se integrarán más tarde (por ahora renderizan
@@ -11146,7 +11146,7 @@ def _recepcion_citas_hoy():
 @user_passes_test(es_admin, login_url='/')
 def panel_recepcion(request):
     """
-    GET /panel-admin/recepcion/
+    GET /recep-59/
     Escritorio de recepción presencial HOPE (panel_recepcion_v3.html).
     Solo superusuarios. Solo lectura de BD: arma la agenda del día y las
     URLs de navegación; los módulos de acción aún apuntan a placeholders.
@@ -11169,7 +11169,7 @@ def panel_recepcion(request):
 @require_POST
 def api_recepcion_registrar_llegada(request):
     """
-    POST /panel-admin/recepcion/api/registrar-llegada/
+    POST /recep-59/api/registrar-llegada/
     ÚNICA acción de escritura del panel de recepción (01/11/2026), con CSRF
     activo (header X-CSRFToken desde los templates). Guarda el estatus de
     llegada del paciente en Cita.registro_llegada (modelo Cita sin lógica
@@ -11210,7 +11210,7 @@ def _recepcion_modulo_pendiente(request, titulo, detalle):
 @user_passes_test(es_admin, login_url='/')
 def recepcion_agregar_paciente(request):
     """
-    GET /panel-admin/recepcion/agregar-paciente/
+    GET /recep-59/agregar-paciente/
     Registro HOPE en recepción (registro_hope_recepcion.html, 02/11/2026):
     MISMA lógica que el formulario de registro de inicio.html — POST AJAX a
     registro_usuario (/registro-ajax/) con honeypot + CSRF → crea User +
@@ -11232,7 +11232,7 @@ def recepcion_agregar_paciente(request):
 @user_passes_test(es_admin, login_url='/')
 def recepcion_agendar_cita(request):
     """
-    GET /panel-admin/recepcion/agendar/  (con ?modalidad=online|presencial)
+    GET /recep-59/agendar/  (con ?modalidad=online|presencial)
     Agendador de RECEPCIÓN (template admin_agendar_cita_recepcion.html):
     mismo motor/flujo que el agendador admin (endpoints admin_* y
     admin_guardar_cita_paciente), pero con sus URLs separadas y su propio
@@ -11266,7 +11266,7 @@ def recepcion_agendar_cita(request):
 @user_passes_test(es_admin, login_url='/')
 def recepcion_agendar_online(request):
     """
-    GET /panel-admin/recepcion/agendar-online/
+    GET /recep-59/agendar-online/
     Acceso directo del panel de recepción (bloque/pestaña "En línea"):
     abre el agendador de recepción con la modalidad ya fijada a En línea.
     """
@@ -11276,7 +11276,7 @@ def recepcion_agendar_online(request):
 @user_passes_test(es_admin, login_url='/')
 def recepcion_agendar_presencial(request):
     """
-    GET /panel-admin/recepcion/agendar-presencial/
+    GET /recep-59/agendar-presencial/
     Acceso directo del panel de recepción (bloque/pestaña "Presencial"):
     abre el agendador de recepción con la modalidad ya fijada a Presencial.
     """
@@ -11286,7 +11286,7 @@ def recepcion_agendar_presencial(request):
 @user_passes_test(es_admin, login_url='/')
 def recepcion_citas(request):
     """
-    GET /panel-admin/recepcion/citas/
+    GET /recep-59/citas/
     MÓDULO PENDIENTE (integrar después): bandeja de gestión de citas
     existentes (consulta, reagenda y cambios desde recepción).
     """

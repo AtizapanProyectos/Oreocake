@@ -182,16 +182,18 @@ urlpatterns = [
     path('panel-admin/api/intelligence/reasignar/', views.api_intelligence_reasignar, name='api_intelligence_reasignar'),
 
     # 🪑 RECEPCIÓN HOPE PRESENCIAL (01/11/2026) — solo superusuarios
-    # Panel del escritorio de recepción física. Los módulos secundarios
-    # tienen URL + vista ya montadas; sus templates definitivos se
-    # integrarán después (por ahora muestran el placeholder genérico).
-    path('panel-admin/recepcion/', views.panel_recepcion, name='panel_recepcion'),
-    path('panel-admin/recepcion/agregar-paciente/', views.recepcion_agregar_paciente, name='recepcion_agregar_paciente'),
-    path('panel-admin/recepcion/agendar/', views.recepcion_agendar_cita, name='recepcion_agendar_cita'),
-    path('panel-admin/recepcion/agendar-online/', views.recepcion_agendar_online, name='recepcion_agendar_online'),
-    path('panel-admin/recepcion/agendar-presencial/', views.recepcion_agendar_presencial, name='recepcion_agendar_presencial'),
-    path('panel-admin/recepcion/citas/', views.recepcion_citas, name='recepcion_citas'),
+    # Panel del escritorio de recepción física — URL DISFRAZADA (02/11/2026):
+    # corre bajo /recep-59/ (no cuelga de /panel-admin/). Los `name` no cambian,
+    # así que reverse() y todos los enlaces internos siguen funcionando.
+    # Todas las vistas exigen superusuario (@user_passes_test(es_admin)).
+    # El acceso sin sesión redirige a '/' (login_url) — entrada oculta por diseño.
+    path('recep-59/', views.panel_recepcion, name='panel_recepcion'),
+    path('recep-59/agregar-paciente/', views.recepcion_agregar_paciente, name='recepcion_agregar_paciente'),
+    path('recep-59/agendar/', views.recepcion_agendar_cita, name='recepcion_agendar_cita'),
+    path('recep-59/agendar-online/', views.recepcion_agendar_online, name='recepcion_agendar_online'),
+    path('recep-59/agendar-presencial/', views.recepcion_agendar_presencial, name='recepcion_agendar_presencial'),
+    path('recep-59/citas/', views.recepcion_citas, name='recepcion_citas'),
     # 🪑 Registro de llegada (Vino/No Vino) — escritura en Cita (POST/CSRF)
-    path('panel-admin/recepcion/api/registrar-llegada/', views.api_recepcion_registrar_llegada, name='api_recepcion_registrar_llegada'),
+    path('recep-59/api/registrar-llegada/', views.api_recepcion_registrar_llegada, name='api_recepcion_registrar_llegada'),
 ]
 
