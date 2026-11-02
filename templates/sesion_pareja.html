@@ -1184,8 +1184,8 @@
             const sel = document.querySelector(`input[name="${q.id}"]:checked`);
             if (sel) { respuestasGuardadas[q.id] = sel.value; hayRespuesta = true; }
         } else if (q.tipo === "multiple") {
-            const病毒Sels = Array.from(document.querySelectorAll(`input[name="${q.id}"]:checked`)).map(el => el.value);
-            if (病毒Sels.length > 0) { respuestasGuardadas[q.id] = 病毒Sels; hayRespuesta = true; }
+            const sels = Array.from(document.querySelectorAll(`input[name="${q.id}"]:checked`)).map(el => el.value);
+            if (sels.length > 0) { respuestasGuardadas[q.id] = sels; hayRespuesta = true; }
         } else {
             const el = document.getElementById(q.id);
             const val = el ? el.value.trim() : "";
