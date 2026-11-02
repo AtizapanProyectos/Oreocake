@@ -11206,29 +11206,57 @@ def recepcion_agregar_paciente(request):
 
 
 @user_passes_test(es_admin, login_url='/')
+def recepcion_agendar_cita(request):
+    """
+    GET /panel-admin/recepcion/agendar/  (con ?modalidad=online|presencial)
+    Agendador de RECEPCIÓN (template admin_agendar_cita_recepcion.html):
+    mismo motor/flujo que el agendador admin (endpoints admin_* y
+    admin_guardar_cita_paciente), pero con sus URLs separadas y su propio
+    template. Vista de recepción != vista de administración: son dos
+    pantallas distintas que comparten la lógica probada del backend.
+    """
+    modalidad_param = (request.GET.get('modalidad') or request.GET.get('m') or '').strip().lower()
+    if modalidad_param in ('presencial', 'presenciales', 'sede', 'en-sede'):
+        modalidad_inicial = 'presencial'
+    elif modalidad_param in ('online', 'en-linea', 'en linea', 'linea', 'video'):
+        modalidad_inicial = 'online'
+    else:
+        modalidad_inicial = None  # el template usa su default (En línea)
+
+    contexto = {
+        # Mismo contrato de precios que el agendador admin (para el resumen referencial)
+        'precios_config_json': json.dumps({
+            'base': PRECIO_BASE_SESION,
+            'comision_pct': COMISION_PORCENTAJE_SESION,
+            'incremento_integrante_familiar': INCREMENTO_POR_INTEGRANTE_FAMILIAR,
+            'min_integrantes_familiar': MIN_INTEGRANTES_FAMILIAR,
+        }),
+        # 🪑 Marca de recepción: preset de modalidad y botón de regreso
+        'origen_recepcion': True,
+        'modalidad_inicial': modalidad_inicial,
+        'volver_panel_url': reverse('panel_recepcion'),
+    }
+    return render(request, 'admin_agendar_cita_recepcion.html', contexto)
+
+
+@user_passes_test(es_admin, login_url='/')
 def recepcion_agendar_online(request):
     """
     GET /panel-admin/recepcion/agendar-online/
-    MÓDULO PENDIENTE (integrar después): flujo de agendado de sesiones en
-    línea atendido por recepción.
+    Acceso directo del panel de recepción (bloque/pestaña "En línea"):
+    abre el agendador de recepción con la modalidad ya fijada a En línea.
     """
-    return _recepcion_modulo_pendiente(
-        request, 'Agendar cita en línea',
-        'Aquí se integrará el flujo de agendado de sesiones por videollamada '
-        'atendido desde recepción.')
+    return redirect(reverse('recepcion_agendar_cita') + '?modalidad=online')
 
 
 @user_passes_test(es_admin, login_url='/')
 def recepcion_agendar_presencial(request):
     """
     GET /panel-admin/recepcion/agendar-presencial/
-    MÓDULO PENDIENTE (integrar después): flujo de agendado presencial con
-    asignación de consultorio y generación del pase de admisión.
+    Acceso directo del panel de recepción (bloque/pestaña "Presencial"):
+    abre el agendador de recepción con la modalidad ya fijada a Presencial.
     """
-    return _recepcion_modulo_pendiente(
-        request, 'Agendar cita presencial',
-        'Aquí se integrará el flujo de agendado presencial: reserva de '
-        'consultorio y generación del pase de admisión.')
+    return redirect(reverse('recepcion_agendar_cita') + '?modalidad=presencial')
 
 
 @user_passes_test(es_admin, login_url='/')

@@ -187,6 +187,7 @@ urlpatterns = [
     # integrarán después (por ahora muestran el placeholder genérico).
     path('panel-admin/recepcion/', views.panel_recepcion, name='panel_recepcion'),
     path('panel-admin/recepcion/agregar-paciente/', views.recepcion_agregar_paciente, name='recepcion_agregar_paciente'),
+    path('panel-admin/recepcion/agendar/', views.recepcion_agendar_cita, name='recepcion_agendar_cita'),
     path('panel-admin/recepcion/agendar-online/', views.recepcion_agendar_online, name='recepcion_agendar_online'),
     path('panel-admin/recepcion/agendar-presencial/', views.recepcion_agendar_presencial, name='recepcion_agendar_presencial'),
     path('panel-admin/recepcion/citas/', views.recepcion_citas, name='recepcion_citas'),

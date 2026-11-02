@@ -1,0 +1,874 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Agendar cita (Recepción) - HOPE{% endblock %}
+
+{% block content %}
+{% comment %}
+  Agendador administrativo HOPE · rediseño visual (sistema DESIGN.md / panel de recepción v3).
+  Misma plantilla, mismas URLs, mismos endpoints y mismos nombres de parámetros que la versión anterior:
+    admin_buscar_pacientes · admin_disponibilidad_paciente · calcular_precio_sesion · admin_guardar_cita_paciente · panel_admin
+  Contexto: precios_config_json, logo_url,
+  Contexto: precios_config_json (igual que antes).
+  Acceso directo a una modalidad desde el panel de recepción (sin tocar vistas):
+    ?modalidad=presencial  |  ?modalidad=online   (también #presencial / #online)
+{% endcomment %}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@500;700;800&family=Figtree:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+.hpa-root{
+  --purple:#5B45A8;--deep:#3F2C85;--ink:#2A1F5C;--muted:#675F9C;--line:#E6DFF6;
+  --teal:#27C9C9;--teal-s:#D9F6F6;--teal-d:#0E7F7F;
+  --pink:#E8397A;--pink-s:#FFE1EC;--pink-d:#BE1856;
+  --orange:#F2703F;--yellow:#FFD62E;--yellow-s:#FFF2B8;--yellow-d:#7F5D00;
+  --bg:#F7F3FE;--lilac-s:#ECE6FB;--coral-s:#FFE6DA;--coral-d:#A83F0C;
+  --fh:'Lexend',sans-serif;--fb:'Figtree',sans-serif;
+  /* color de la modalidad elegida */
+  --m:var(--teal);--ms:var(--teal-s);--md:var(--teal-d);--mi:var(--ink);
+  position:relative;overflow-x:clip;background:var(--bg);color:var(--ink);font-family:var(--fb);
+  padding-top:var(--nav-height,70px);min-height:100vh;-webkit-print-color-adjust:exact;print-color-adjust:exact;
+}
+.hpa-root[data-modo="presencial"]{--m:var(--pink);--ms:var(--pink-s);--md:var(--pink-d);--mi:#fff}
+.hpa-root *,.hpa-root *::before,.hpa-root *::after{box-sizing:border-box}
+.hpa-root :focus-visible{outline:3px solid var(--deep);outline-offset:3px;border-radius:12px}
+.hpa-ic{width:22px;height:22px;flex:none;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.hpa-wrap{position:relative;z-index:1;width:min(1180px,100% - 40px);margin-inline:auto}
+.hpa-oculto{display:none!important}
+
+/* Bienvenida */
+.hpa-hero{position:relative;overflow:hidden;background:linear-gradient(135deg,#46329A 0%,#5B45A8 55%,#6C52C8 100%);color:#fff;padding:clamp(28px,4vw,46px) 0 112px}
+.hpa-hero .hpa-ola{position:absolute;left:0;right:0;bottom:-1px;width:100%;height:96px}
+.hpa-hero .hpa-wrap{z-index:2}
+.hpa-saludo{display:inline-flex;align-items:center;gap:9px;padding:7px 15px 7px 11px;border-radius:99px;background:rgba(255,255,255,.16);font-weight:700;font-size:14.5px}
+.hpa-saludo .hpa-ic{fill:var(--yellow);stroke:none}
+.hpa-hero h1{margin-top:16px;max-width:20ch;font:800 clamp(30px,4.6vw,50px)/1.05 var(--fh);letter-spacing:-.02em;text-wrap:balance}
+.hpa-hero p.hpa-sub{margin-top:12px;max-width:52ch;font-size:16px;font-weight:500;line-height:1.55;color:#EEE8FF}
+
+/* Elige modalidad: bloques de acción */
+.hpa-modos{position:relative;z-index:3;margin-top:-66px;display:grid;grid-template-columns:repeat(2,1fr);gap:18px}
+.hpa-modo{--a:var(--line);--b:#fff;--ic:var(--muted);position:relative;overflow:hidden;min-height:196px;display:flex;flex-direction:column;justify-content:flex-end;text-align:left;cursor:pointer;
+  padding:84px 24px 24px;border-radius:34px;background:var(--b);color:var(--ink);border:3px solid var(--a);font-family:inherit;
+  box-shadow:0 18px 26px -24px rgba(30,15,90,.5);transition:transform .2s,border-color .2s,background .2s}
+.hpa-modo[data-modo="online"]{--sa:var(--teal);--sb:var(--teal-s);--sic:var(--ink)}
+.hpa-modo[data-modo="presencial"]{--sa:var(--pink);--sb:var(--pink-s);--sic:#fff}
+.hpa-modo:hover{transform:translateY(-4px)}
+.hpa-modo[aria-pressed="true"]{--a:var(--sa);--b:var(--sb);--ic:var(--sic);box-shadow:0 18px 26px -22px rgba(30,15,90,.55)}
+.hpa-modo .hpa-deco{position:absolute;right:-56px;top:-48px;width:250px;height:250px;color:var(--a);pointer-events:none;z-index:0}
+.hpa-modo h2,.hpa-modo p{position:relative;z-index:1}
+.hpa-modo .hpa-ic.g{position:absolute;left:22px;top:22px;width:26px;height:26px;padding:10px;box-sizing:content-box;border-radius:18px;background:var(--a);color:var(--ic);transition:background .2s}
+.hpa-modo h2{display:block;margin:0;font:800 25px/1.1 var(--fh);letter-spacing:-.01em}
+.hpa-modo p{margin-top:8px;font-size:14.5px;font-weight:600;line-height:1.4;max-width:32ch;color:var(--ink)}
+.hpa-modo .hpa-sel{position:absolute;left:92px;top:34px;display:none;align-items:center;gap:6px;padding:4px 11px;border-radius:99px;background:#fff;color:var(--ink);font-size:12px;font-weight:800}
+.hpa-modo[aria-pressed="true"] .hpa-sel{display:inline-flex}
+.hpa-modo .hpa-sel .hpa-ic{width:14px;height:14px;stroke-width:3}
+.hpa-onda{display:block;width:100%;height:30px;margin-top:26px}
+
+/* Rejilla */
+.hpa-grid{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(300px,1fr);gap:22px;margin-top:22px;align-items:start}
+.hpa-col{display:flex;flex-direction:column;gap:18px;min-width:0}
+.hpa-aside{position:sticky;top:calc(var(--nav-height,70px) + 14px)}
+.hpa-card{background:#fff;border-radius:34px;padding:26px;border:2px solid var(--line);transition:opacity .2s}
+.hpa-card.hpa-disabled{opacity:.5;pointer-events:none}
+.hpa-card h2{display:flex;align-items:center;gap:12px;font:800 21px/1.15 var(--fh);color:var(--deep);margin-bottom:16px}
+.hpa-paso{flex:none;width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:var(--ms);color:var(--md);border:3px solid var(--m);font:800 15px var(--fh);transition:background .2s,border-color .2s}
+.hpa-card h2 small{display:block;font:600 13px var(--fb);color:var(--muted);margin-top:2px}
+
+/* Buscador */
+.hpa-buscador{position:relative}
+.hpa-buscar{display:flex;align-items:center;gap:10px;padding:0 18px;height:50px;border-radius:99px;background:var(--bg);color:var(--muted);border:2px solid transparent}
+.hpa-buscar:focus-within{border-color:var(--purple)}
+.hpa-buscar input{flex:1;min-width:0;border:0;outline:0!important;background:none;font:600 15px var(--fb);color:var(--ink)}
+.hpa-buscar .hpa-ic{width:19px;height:19px}
+.hpa-resultados{position:absolute;z-index:20;top:calc(100% + 8px);left:0;right:0;background:#fff;border-radius:22px;box-shadow:0 18px 30px -14px rgba(30,15,90,.45);border:2px solid var(--line);max-height:280px;overflow-y:auto;display:none;padding:6px}
+.hpa-resultados.activo{display:block}
+.hpa-resultado-item{padding:11px 14px;cursor:pointer;border-radius:16px}
+.hpa-resultado-item:hover,.hpa-resultado-item:focus-visible{background:var(--bg)}
+.hpa-resultado-item strong{display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:15px;font-weight:800;color:var(--ink)}
+.hpa-resultado-item span{display:block;margin-top:2px;font-size:12.5px;font-weight:600;color:var(--muted)}
+.hpa-resultado-vacio{padding:14px;font-size:14px;font-weight:600;color:var(--muted)}
+.hpa-etq{display:inline-flex;align-items:center;padding:2px 10px;border-radius:99px;background:var(--yellow);color:var(--ink);font-size:11px;font-weight:800}
+
+.hpa-paciente-elegido{display:none;margin-top:14px;align-items:center;gap:14px;background:var(--bg);border-radius:22px;padding:12px 14px}
+.hpa-paciente-elegido.activo{display:flex}
+.hpa-ini{flex:none;width:46px;height:46px;border-radius:50%;display:grid;place-items:center;background:var(--m);color:var(--mi);font:800 16px var(--fh)}
+.hpa-paciente-elegido .datos{flex:1;min-width:0}
+.hpa-paciente-elegido .datos strong{display:block;font-size:15px;font-weight:800;overflow-wrap:anywhere}
+.hpa-paciente-elegido .datos span{display:block;font-size:12.5px;font-weight:600;color:var(--muted);overflow-wrap:anywhere}
+.hpa-mini{cursor:pointer;padding:7px 14px;border-radius:99px;font:800 12.5px var(--fb);background:#fff;color:var(--purple);border:3.5px solid #BFB0EA;transition:border-color .15s,background .15s}
+.hpa-mini:hover{border-color:var(--purple);background:var(--lilac-s)}
+
+/* Convenio */
+.hpa-opciones{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.hpa-opc{position:relative;display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:22px;background:var(--bg);border:2px solid transparent;cursor:pointer;font-weight:800;font-size:14.5px;transition:border-color .15s,background .15s}
+.hpa-opc input{position:absolute;opacity:0;pointer-events:none}
+.hpa-opc .hpa-radio{flex:none;width:22px;height:22px;border-radius:50%;border:3px solid #BFB0EA;background:#fff;transition:border-color .15s,background .15s}
+.hpa-opc.activo{background:var(--lilac-s);border-color:var(--purple)}
+.hpa-opc.activo .hpa-radio{border-color:var(--purple);background:radial-gradient(circle,var(--purple) 45%,#fff 50%)}
+.hpa-opc.tectum.activo{background:var(--yellow-s);border-color:var(--yellow)}
+.hpa-opc.tectum.activo .hpa-radio{border-color:var(--yellow-d);background:radial-gradient(circle,var(--yellow-d) 45%,#fff 50%)}
+.hpa-opc:focus-within{outline:3px solid var(--deep);outline-offset:3px}
+
+/* Tipo de sesión */
+.hpa-tipo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.hpa-tipo-btn{cursor:pointer;border:2px solid transparent;background:var(--bg);border-radius:22px;padding:16px 10px;text-align:center;font:800 14px var(--fb);color:var(--ink);transition:background .15s,border-color .15s,transform .15s}
+.hpa-tipo-btn .hpa-ic{display:block;margin:0 auto 8px;width:26px;height:26px;color:var(--purple)}
+.hpa-tipo-btn:hover{border-color:#BFB0EA}
+.hpa-tipo-btn.activo{background:var(--lilac-s);border-color:var(--purple)}
+.hpa-familiar-box{display:none;margin-top:14px;align-items:center;justify-content:space-between;gap:12px;background:var(--yellow-s);border-radius:22px;padding:12px 16px}
+.hpa-familiar-box.activo{display:flex}
+.hpa-familiar-box > span{font-size:14px;font-weight:800;color:var(--yellow-d)}
+.hpa-stepper{display:flex;align-items:center;gap:12px}
+.hpa-stepper button{width:36px;height:36px;border-radius:50%;border:3.5px solid #BFB0EA;background:#fff;color:var(--purple);font:800 18px var(--fh);cursor:pointer;line-height:1}
+.hpa-stepper button:hover{border-color:var(--purple);background:var(--lilac-s)}
+.hpa-stepper strong{font:800 20px var(--fh);min-width:24px;text-align:center}
+
+/* Día y hora */
+.hpa-dias-scroll{display:flex;gap:10px;overflow-x:auto;padding:4px 2px 10px;scrollbar-width:thin;scrollbar-color:#BFB0EA transparent}
+.hpa-dia-chip{flex:0 0 auto;cursor:pointer;min-width:72px;border:2px solid transparent;border-radius:22px;padding:10px 8px;text-align:center;background:var(--bg);color:var(--ink);font-family:inherit;transition:background .15s,border-color .15s}
+.hpa-dia-chip .dow{display:block;font-size:12px;font-weight:800;color:var(--muted)}
+.hpa-dia-chip .num{display:block;font:800 22px/1.1 var(--fh);margin:3px 0}
+.hpa-dia-chip .mes{display:block;font-size:12px;font-weight:700;color:var(--muted)}
+.hpa-dia-chip:hover{border-color:#BFB0EA}
+.hpa-dia-chip.activo{background:var(--purple)}
+.hpa-dia-chip.activo .dow,.hpa-dia-chip.activo .num,.hpa-dia-chip.activo .mes{color:#fff}
+.hpa-horas-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:10px;margin-top:14px}
+.hpa-hora-btn{cursor:pointer;border:2px solid var(--line);background:#fff;border-radius:99px;padding:10px 6px;text-align:center;font:800 14px var(--fb);color:var(--ink);transition:background .15s,border-color .15s}
+.hpa-hora-btn:hover{border-color:var(--purple);background:var(--lilac-s)}
+.hpa-hora-btn.activo{border-color:var(--purple);background:var(--purple);color:#fff}
+.hpa-vacio{padding:22px 16px;text-align:center;border-radius:22px;border:2px dashed var(--line);color:var(--muted);font-weight:600;line-height:1.5;font-size:14px;width:100%}
+.hpa-cargando{display:flex;align-items:center;justify-content:center;gap:10px}
+.hpa-spin{display:inline-block;width:16px;height:16px;border-radius:50%;border:3px solid currentColor;border-right-color:transparent;vertical-align:-3px}
+@media (prefers-reduced-motion:no-preference){.hpa-spin{animation:hpa-giro .8s linear infinite}}
+@keyframes hpa-giro{to{transform:rotate(360deg)}}
+.hpa-aviso{display:none;font-size:14px;font-weight:600;line-height:1.45;background:var(--yellow-s);color:var(--yellow-d);border-radius:22px;padding:12px 16px;margin-bottom:14px}
+.hpa-aviso.activo{display:block}
+
+/* Columna derecha */
+.hpa-nota{display:flex;gap:12px;align-items:flex-start;border-radius:22px;padding:14px 16px;font-size:14px;font-weight:600;line-height:1.5}
+.hpa-nota .hpa-ic{margin-top:1px}
+.hpa-nota.enlinea{background:var(--teal-s);color:#0A5F5F}
+.hpa-nota.presencial{background:var(--pink-s);color:var(--pink-d)}
+.hpa-nota strong{font-weight:800}
+.hpa-select{width:100%;height:48px;padding:0 18px;border-radius:99px;border:2px solid transparent;font:600 15px var(--fb);color:var(--ink);background:var(--bg)}
+.hpa-select:focus{outline:none;border-color:var(--purple)}
+.hpa-ayuda{margin-top:10px;font-size:12.5px;font-weight:600;color:var(--muted)}
+
+.hpa-resumen{position:relative;overflow:hidden;padding:26px;border-radius:34px;background:var(--deep);color:#fff;border:0}
+.hpa-resumen::after{content:"";position:absolute;right:-22px;bottom:-30px;width:90px;height:90px;border-radius:50%;background:var(--orange);pointer-events:none}
+.hpa-resumen .hpa-deco2{position:absolute;right:40px;top:-24px;width:160px;height:160px;color:var(--teal);pointer-events:none}
+.hpa-resumen>*{position:relative;z-index:1}
+.hpa-resumen h2{color:#fff;margin-bottom:14px}
+.hpa-resumen dl{display:grid;gap:10px;margin:0}
+.hpa-resumen dl div{display:flex;flex-direction:column;gap:1px}
+.hpa-resumen dt,.hpa-resumen dd{margin:0}
+.hpa-resumen dt{font-weight:700;font-size:13px;color:#D9CFFF}
+.hpa-resumen dd{font-weight:800;font-size:16px;overflow-wrap:anywhere}
+.hpa-resumen dd.hpa-hh{font:800 30px/1.1 var(--fh);color:var(--yellow)}
+.hpa-resumen dd.hpa-hh.sin{font:800 16px var(--fb);color:#fff}
+.hpa-ref{margin-top:16px;padding:12px 14px;border-radius:22px;background:rgba(255,255,255,.12);font-size:13px;font-weight:600;color:#EEE8FF}
+.hpa-precio-row{display:flex;justify-content:space-between;gap:10px;padding:2px 0}
+.hpa-precio-row.total{border-top:2px dashed rgba(255,255,255,.3);margin-top:6px;padding-top:8px;font-weight:800}
+.hpa-nota-admin{margin-top:8px;font-size:12.5px;color:#D9CFFF}
+.hpa-btn-confirmar{width:100%;margin-top:18px;display:inline-flex;align-items:center;justify-content:center;gap:10px;background:var(--yellow);color:var(--ink);font:800 16px var(--fb);padding:15px 20px;border-radius:99px;border:3.5px solid var(--yellow);cursor:pointer;transition:transform .15s,background .15s}
+.hpa-btn-confirmar:hover:not(:disabled){transform:translateY(-2px);background:#FFE15C}
+.hpa-btn-confirmar:disabled{opacity:.45;cursor:not-allowed}
+.hpa-faltante{margin-top:10px;text-align:center;font-size:13px;font-weight:700;color:#D9CFFF}
+.hpa-msg{display:none;border-radius:22px;padding:14px 16px;font-size:14px;font-weight:700;line-height:1.45;margin-top:14px}
+.hpa-msg.ok{background:var(--teal-s);color:#0A5F5F}
+.hpa-msg.error{background:var(--pink-s);color:var(--pink-d)}
+.hpa-msg.activo{display:block}
+
+/* Éxito */
+.hpa-exito{display:none;position:relative;overflow:hidden;max-width:640px;margin:34px auto 0;text-align:center;padding:38px 28px 34px;background:#fff;border-radius:34px;border:3px solid var(--teal)}
+.hpa-exito.activo{display:block}
+.hpa-exito .hpa-deco{position:absolute;right:-60px;top:-56px;width:230px;height:230px;color:var(--teal);pointer-events:none}
+.hpa-exito .hpa-check{position:relative;width:68px;height:68px;margin:0 auto 14px;border-radius:22px;display:grid;place-items:center;background:var(--teal);color:var(--ink)}
+.hpa-exito .hpa-check .hpa-ic{width:34px;height:34px;stroke-width:3}
+.hpa-exito h3{position:relative;font:800 28px var(--fh);color:var(--deep)}
+.hpa-exito p{position:relative;margin:8px auto 0;max-width:44ch;font-size:15px;font-weight:600;line-height:1.5;color:var(--muted)}
+.hpa-exito .hpa-datos{position:relative;display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin-top:20px}
+.hpa-exito .hpa-datos span{padding:8px 16px;border-radius:99px;background:var(--bg);font-weight:800;font-size:14px}
+.hpa-exito .hpa-acciones{position:relative;display:flex;flex-wrap:wrap;justify-content:center;gap:12px;margin-top:24px}
+.hpa-btn{display:inline-flex;align-items:center;gap:8px;cursor:pointer;padding:12px 24px;border-radius:99px;font:800 15px var(--fb);text-decoration:none;border:3.5px solid var(--purple)}
+.hpa-btn.pri{background:var(--purple);color:#fff!important}
+.hpa-btn.sec{background:#fff;color:var(--purple)!important;border-color:#BFB0EA}
+.hpa-btn.sec:hover{border-color:var(--purple);background:var(--lilac-s)}
+
+.hpa-pie{margin:34px 0 40px;text-align:center;font:700 15px var(--fh);color:var(--muted)}
+.hpa-pie .hpa-ic{width:20px;height:20px;fill:var(--pink);stroke:none;vertical-align:-4px;margin-right:6px}
+
+@media (max-width:1080px){.hpa-grid{grid-template-columns:1fr}.hpa-aside{position:static}}
+@media (max-width:700px){
+  .hpa-modos{grid-template-columns:1fr;margin-top:-60px}
+  .hpa-modo{min-height:0}.hpa-modo .hpa-deco{width:170px;height:170px;right:-40px;top:-40px}
+  .hpa-opciones,.hpa-tipo-grid{grid-template-columns:1fr}
+  .hpa-card{padding:20px;border-radius:28px}
+  .hpa-hero h1{max-width:none}
+}
+@media print{.hpa-modos,.hpa-onda{display:none}}
+</style>
+
+<div class="hpa-root" id="hpa-root" data-modo="online">
+  <!-- 🪑 Preset de modalidad inyectado por la vista de recepción (tiene prioridad sobre ?modalidad= del URL) -->
+  <input type="hidden" id="hpa-modalidad-inicial" value="{{ modalidad_inicial|default:'' }}">
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+    <symbol id="hpa-i-video" viewBox="0 0 24 24"><rect x="2.5" y="6" width="13" height="12" rx="3"/><path d="M15.5 10.5l6-3.5v10l-6-3.5"/></symbol>
+    <symbol id="hpa-i-pin" viewBox="0 0 24 24"><path d="M12 22c-4.2-4.6-7.5-8.6-7.5-12.4a7.5 7.5 0 0 1 15 0C19.5 13.4 16.2 17.4 12 22z"/><circle cx="12" cy="9.5" r="2.6"/></symbol>
+    <symbol id="hpa-i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4.5 21c.9-4.2 3.6-6.5 7.5-6.5s6.6 2.3 7.5 6.5"/></symbol>
+    <symbol id="hpa-i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.6 3.2-5.5 6.5-5.5s5.7 1.9 6.5 5.5M16 4.8a3.5 3.5 0 0 1 0 6.4M18 14.8c1.8.7 3 2.3 3.5 5.2"/></symbol>
+    <symbol id="hpa-i-pareja" viewBox="0 0 24 24"><path d="M12 20.5C5 15.6 3 12.4 3 9.3 3 6.7 5 5 7.3 5c1.9 0 3.5 1 4.7 2.9C13.2 6 14.800 5 16.700 5 19 5 21 6.700 21 9.300c0 3.100-2 6.300-9 11.200z"/></symbol>
+    <symbol id="hpa-i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20.5 20.5L16 16"/></symbol>
+    <symbol id="hpa-i-check" viewBox="0 0 24 24"><path d="M4.500 12.500l5 5L19.500 7"/></symbol>
+    <symbol id="hpa-i-qr" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><path d="M14 14h3v3h-3zM20 14v.01M14 20h.01M20 20h.01M17 20v-3"/></symbol>
+    <symbol id="hpa-i-heart" viewBox="0 0 24 24"><path d="M12 2C6.5 2 2 5.8 2 10.5c0 2.6 1.4 4.9 3.6 6.4L5 21.5l4.3-2.4c.9.2 1.7.3 2.7.3 5.5 0 10-3.8 10-8.5S17.5 2 12 2z"/></symbol>
+    <symbol id="hpa-lazo-g" viewBox="-15 0 150 135"><path d="M-10 130C-10 60 30 8 70 30c36 20 6 80-8 50-14-30 24-60 50-30" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round"/></symbol>
+    <symbol id="hpa-lazo-f" viewBox="-15 0 150 135"><path d="M-10 130C-10 60 30 8 70 30c36 20 6 80-8 50-14-30 24-60 50-30" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round"/></symbol>
+  </svg>
+
+  <section class="hpa-hero" aria-labelledby="hpa-frase">
+    <svg class="hpa-ola" viewBox="0 0 1200 110" preserveAspectRatio="none" aria-hidden="true">
+      <path fill="#FFD62E" d="M0 50C150 10 300 8 450 40S780 90 930 60 1130 20 1200 36V110H0Z"/>
+      <path fill="#F7F3FE" d="M0 84C160 52 330 52 500 76S840 106 1010 84 1140 62 1200 70V110H0Z"/>
+    </svg>
+    <div class="hpa-wrap">
+      <p class="hpa-saludo"><svg class="hpa-ic" aria-hidden="true"><use href="#hpa-i-heart"/></svg>Agendar cita desde recepción</p>
+      <h1 id="hpa-frase">Todo lo que sientes importa, tú nos importas</h1>
+      <p class="hpa-sub">Elige la modalidad, busca al paciente y reserva su día y hora. Aquí no se cobra nada.</p>
+    </div>
+  </section>
+
+  <div class="hpa-wrap">
+    <section class="hpa-modos" id="hpa-modos" aria-label="Modalidad de la cita">
+      <button type="button" class="hpa-modo" data-modo="online" data-modalidad="En línea" aria-pressed="true">
+        <svg class="hpa-deco" aria-hidden="true"><use href="#hpa-lazo-g"/></svg>
+        <svg class="hpa-ic g" aria-hidden="true"><use href="#hpa-i-video"/></svg>
+        <span class="hpa-sel"><svg class="hpa-ic" aria-hidden="true"><use href="#hpa-i-check"/></svg>Seleccionada</span>
+        <h2>Cita en línea</h2><p>Videollamada con Google Meet, desde cualquier lugar.</p>
+      </button>
+      <button type="button" class="hpa-modo" data-modo="presencial" data-modalidad="Presencial" aria-pressed="false">
+        <svg class="hpa-deco" aria-hidden="true"><use href="#hpa-lazo-g"/></svg>
+        <svg class="hpa-ic g" aria-hidden="true"><use href="#hpa-i-pin"/></svg>
+        <span class="hpa-sel"><svg class="hpa-ic" aria-hidden="true"><use href="#hpa-i-check"/></svg>Seleccionada</span>
+        <h2>Cita presencial</h2><p>En la sede, con pase de acceso con QR para el paciente.</p>
+      </button>
+    </section>
+
+    <svg class="hpa-onda" viewBox="0 0 1180 30" preserveAspectRatio="none" aria-hidden="true" fill="none" stroke-linecap="round">
+      <path d="M0 15C74 -1 148 31 222 15S370 -1 444 15 592 31 666 15 814 -1 888 15 1036 31 1110 15 1160 7 1180 11" stroke="#27C9C9" stroke-width="3"/>
+      <path d="M0 22C90 8 160 36 260 22S420 8 520 22" stroke="#FFD62E" stroke-width="3" opacity=".9"/>
+      <circle cx="640" cy="24" r="4" fill="#E8397A" stroke="none"/><circle cx="880" cy="6" r="3.5" fill="#F2703F" stroke="none"/>
+    </svg>
+
+    <form id="hpa-form">
+      {% csrf_token %}
+      <div class="hpa-grid">
+
+        <div class="hpa-col">
+          <section class="hpa-card" aria-labelledby="hpa-t1">
+            <h2 id="hpa-t1"><span class="hpa-paso" aria-hidden="true">1</span>¿A quién le agendamos?</h2>
+            <div class="hpa-buscador">
+              <label class="hpa-buscar">
+                <svg class="hpa-ic" aria-hidden="true"><use href="#hpa-i-search"/></svg>
+                <input type="text" id="hpa-buscar-input" placeholder="Busca por nombre, correo o teléfono" autocomplete="off" aria-label="Buscar paciente">
+              </label>
+              <div class="hpa-resultados" id="hpa-resultados" role="listbox" aria-label="Pacientes encontrados"></div>
+            </div>
+            <div class="hpa-paciente-elegido" id="hpa-paciente-elegido" aria-live="polite">
+              <span class="hpa-ini" id="hpa-paciente-ini" aria-hidden="true">?</span>
+              <div class="datos">
+                <strong id="hpa-paciente-nombre"></strong>
+                <span id="hpa-paciente-email"></span>
+              </div>
+              <button type="button" class="hpa-mini" id="hpa-cambiar-paciente">Cambiar</button>
+            </div>
+          </section>
+
+          <section class="hpa-card hpa-disabled" id="hpa-card-convenio" aria-labelledby="hpa-t2">
+            <h2 id="hpa-t2"><span class="hpa-paso" aria-hidden="true">2</span>Convenio o plataforma</h2>
+            <div class="hpa-opciones">
+              <label class="hpa-opc activo" id="lbl-convenio-hope">
+                <input type="radio" name="convenio_tipo" value="hope" checked onchange="cambiarConvenioAdmin('hope')">
+                <span class="hpa-radio" aria-hidden="true"></span><span>Espacio HOPE (general)</span>
+              </label>
+              <label class="hpa-opc tectum" id="lbl-convenio-tectum">
+                <input type="radio" name="convenio_tipo" value="tectum" onchange="cambiarConvenioAdmin('tectum')">
+                <span class="hpa-radio" aria-hidden="true"></span><span>TECTUM In-House</span>
+              </label>
+            </div>
+          </section>
+
+          <section class="hpa-card hpa-disabled" id="hpa-card-tipo" aria-labelledby="hpa-t3">
+            <h2 id="hpa-t3"><span class="hpa-paso" aria-hidden="true">3</span>¿Qué tipo de sesión necesita?</h2>
+            <div class="hpa-tipo-grid" id="hpa-tipo-grid">
+              <button type="button" class="hpa-tipo-btn activo" data-tipo="individual"><svg class="hpa-ic" aria-hidden="true"><use href="#hpa-i-user"/></svg>Individual</button>
+              <button type="button" class="hpa-tipo-btn" data-tipo="pareja"><svg class="hpa-ic" aria-hidden="true"><use href="#hpa-i-pareja"/></svg>En pareja</button>
+              <button type="button" class="hpa-tipo-btn" data-tipo="familiar"><svg class="hpa-ic" aria-hidden="true"><use href="#hpa-i-users"/></svg>Familiar</button>
+            </div>
+            <div class="hpa-familiar-box" id="hpa-familiar-box">
+              <span>Número de integrantes</span>
+              <div class="hpa-stepper">
+                <button type="button" id="hpa-integrantes-menos" aria-label="Menos integrantes">−</button>
+                <strong id="hpa-integrantes-num" aria-live="polite">2</strong>
+                <button type="button" id="hpa-integrantes-mas" aria-label="Más integrantes">+</button>
+              </div>
+            </div>
+          </section>
+
+          <section class="hpa-card hpa-disabled" id="hpa-card-calendario" aria-labelledby="hpa-t4">
+            <h2 id="hpa-t4"><span class="hpa-paso" aria-hidden="true">4</span><span>Elige día y hora<small id="hpa-cal-modo">Horarios de citas en línea</small></span></h2>
+            <div class="hpa-aviso" id="hpa-aviso-modalidad" role="status"></div>
+            <div class="hpa-dias-scroll" id="hpa-dias-scroll">
+              <div class="hpa-vacio">Elige primero a un paciente y verás aquí los días disponibles.</div>
+            </div>
+            <div class="hpa-horas-grid" id="hpa-horas-grid"></div>
+          </section>
+        </div>
+
+        <aside class="hpa-col hpa-aside" aria-label="Resumen de la cita">
+          <section class="hpa-card" aria-label="Qué pasa al confirmar">
+            <div class="hpa-nota enlinea" id="hpa-note-enlinea">
+              <svg class="hpa-ic" aria-hidden="true"><use href="#hpa-i-video"/></svg>
+              <span>Al confirmar, se genera el <strong>Google Meet</strong> automáticamente y se le envía por correo al paciente.</span>
+            </div>
+            <div class="hpa-nota presencial hpa-oculto" id="hpa-note-presencial">
+              <svg class="hpa-ic" aria-hidden="true"><use href="#hpa-i-qr"/></svg>
+              <span>No se genera Meet. Al confirmar, el paciente recibe su <strong>pase de acceso (PDF con QR)</strong> para la sede: Lago Margarita 47, Miguel Hidalgo, CDMX.</span>
+            </div>
+          </section>
+
+          <section class="hpa-card hpa-disabled" id="hpa-card-animo" aria-labelledby="hpa-tanimo">
+            <h2 id="hpa-tanimo" style="font-size:18px;margin-bottom:12px">Estado de ánimo <span style="font:600 13px var(--fb);color:var(--muted)">(opcional)</span></h2>
+            <select class="hpa-select" id="hpa-animo" aria-labelledby="hpa-tanimo">
+              <option value="No especificó">No especificó</option>
+              <option value="Tranquilo">Tranquilo</option>
+              <option value="Bien">Bien</option>
+              <option value="Ansioso">Ansioso</option>
+              <option value="Triste">Triste</option>
+            </select>
+          </section>
+
+          <section class="hpa-card hpa-resumen hpa-disabled" id="hpa-card-resumen" aria-labelledby="hpa-tres">
+            <svg class="hpa-deco2" aria-hidden="true"><use href="#hpa-lazo-f"/></svg>
+            <h2 id="hpa-tres">Resumen de la cita</h2>
+            <dl>
+              <div><dt>Modalidad</dt><dd id="hpa-resumen-modalidad">En línea</dd></div>
+              <div><dt>Paciente</dt><dd id="hpa-resumen-paciente">Sin seleccionar</dd></div>
+              <div><dt>Plataforma</dt><dd id="hpa-resumen-convenio">Espacio HOPE (general)</dd></div>
+              <div><dt>Día</dt><dd id="hpa-resumen-fecha">Sin seleccionar</dd></div>
+              <div><dt>Hora</dt><dd class="hpa-hh sin" id="hpa-resumen-hora">Sin seleccionar</dd></div>
+            </dl>
+
+            <div class="hpa-ref">
+              <div class="hpa-precio-row"><span>Subtotal</span><span id="hpa-precio-subtotal">$0 MXN</span></div>
+              <div class="hpa-precio-row"><span>Comisión de plataforma</span><span id="hpa-precio-comision">$0 MXN</span></div>
+              <div class="hpa-precio-row total"><span>Total</span><span id="hpa-precio-total">$0 MXN</span></div>
+              <div class="hpa-nota-admin">Referencial: al agendar desde recepción, esta cita no genera cobro.</div>
+            </div>
+
+            <button type="submit" class="hpa-btn-confirmar" id="hpa-btn-confirmar" disabled>Confirmar cita</button>
+            <p class="hpa-faltante" id="hpa-faltante" aria-live="polite">Falta elegir: paciente, día y hora.</p>
+            <div class="hpa-msg" id="hpa-msg" role="alert"></div>
+          </section>
+        </aside>
+
+      </div>
+    </form>
+
+    <!-- Éxito: fuera del formulario para que siga visible cuando el formulario se oculta -->
+    <section class="hpa-exito" id="hpa-exito" aria-live="polite">
+      <svg class="hpa-deco" aria-hidden="true"><use href="#hpa-lazo-g"/></svg>
+      <div class="hpa-check" aria-hidden="true"><svg class="hpa-ic"><use href="#hpa-i-check"/></svg></div>
+      <h3>¡Cita agendada!</h3>
+      <p id="hpa-exito-texto">Se le notificó al paciente por correo, junto con el Meet si aplica.</p>
+      <div class="hpa-datos" id="hpa-exito-datos"></div>
+      <div class="hpa-acciones">
+        <a class="hpa-btn pri" href="{% if volver_panel_url %}{{ volver_panel_url }}{% else %}{% url 'panel_recepcion' %}{% endif %}">Volver a recepción</a>
+        <button type="button" class="hpa-btn sec" id="hpa-otra-cita">Agendar otra cita</button>
+      </div>
+    </section>
+
+    <p class="hpa-pie"><svg class="hpa-ic" aria-hidden="true"><use href="#hpa-i-heart"/></svg>Un buen recibimiento también es parte del cuidado.</p>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const csrfToken = document.querySelector('#hpa-form [name=csrfmiddlewaretoken]').value;
+    const preciosConfig = JSON.parse('{{ precios_config_json|escapejs }}' || '{}');
+
+    let pacienteId = null;
+    let tipoSesion = 'individual';
+    let modalidad = 'En línea';
+    let integrantesFamilia = 2;
+    let diasDisponibles = {};
+    let fechaSeleccionada = null;
+    let horaSeleccionada = null;
+
+    const URL_BUSCAR_PACIENTES = "{% url 'admin_buscar_pacientes' %}";
+    const URL_DISPONIBILIDAD = "{% url 'admin_disponibilidad_paciente' %}";
+    const URL_PRECIO = "{% url 'calcular_precio_sesion' %}";
+    const URL_GUARDAR = "{% url 'admin_guardar_cita_paciente' %}";
+
+    const root = document.getElementById('hpa-root');
+    const buscarInput = document.getElementById('hpa-buscar-input');
+    const resultadosBox = document.getElementById('hpa-resultados');
+    const pacienteElegidoBox = document.getElementById('hpa-paciente-elegido');
+    const diasScroll = document.getElementById('hpa-dias-scroll');
+    const horasGrid = document.getElementById('hpa-horas-grid');
+    const avisoBox = document.getElementById('hpa-aviso-modalidad');
+    const btnConfirmar = document.getElementById('hpa-btn-confirmar');
+    const msgBox = document.getElementById('hpa-msg');
+    const faltanteEl = document.getElementById('hpa-faltante');
+    const modoBtns = document.querySelectorAll('.hpa-modo');
+    const noteEnLinea = document.getElementById('hpa-note-enlinea');
+    const notePresencial = document.getElementById('hpa-note-presencial');
+
+    const BTN_CONFIRMAR_HTML = 'Confirmar cita';
+    const BTN_AGENDANDO_HTML = 'Agendando… <span class="hpa-spin" aria-hidden="true"></span>';
+
+    const cardsDependientes = ['hpa-card-convenio', 'hpa-card-tipo', 'hpa-card-calendario', 'hpa-card-animo', 'hpa-card-resumen'];
+
+    const DOW = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+    const MES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+
+    let esTectumSeleccionado = false;
+    let nombrePaciente = '';
+
+    function esc(s) {
+        const d = document.createElement('div');
+        d.textContent = (s === null || s === undefined) ? '' : s;
+        return d.innerHTML;
+    }
+
+    function iniciales(nombre) {
+        return (nombre || '?').split(' ').filter(Boolean).slice(0, 2).map(function (p) { return p[0]; }).join('').toUpperCase();
+    }
+
+    function fechaHumana(fechaStr) {
+        if (!fechaStr) return 'Sin seleccionar';
+        const partes = fechaStr.split('-').map(Number);
+        const d = new Date(partes[0], partes[1] - 1, partes[2]);
+        return DOW[d.getDay()] + ' ' + partes[2] + ' de ' + MES[partes[1] - 1];
+    }
+
+    // ------------------------------------------------------------------
+    // Convenio / Plataforma
+    // ------------------------------------------------------------------
+    window.cambiarConvenioAdmin = function (tipo) {
+        const radioHope = document.querySelector('input[name="convenio_tipo"][value="hope"]');
+        const radioTectum = document.querySelector('input[name="convenio_tipo"][value="tectum"]');
+        const lblHope = document.getElementById('lbl-convenio-hope');
+        const lblTectum = document.getElementById('lbl-convenio-tectum');
+        const resumenConvenio = document.getElementById('hpa-resumen-convenio');
+
+        if (tipo === 'tectum') {
+            esTectumSeleccionado = true;
+            if (radioTectum) radioTectum.checked = true;
+            if (lblTectum) lblTectum.classList.add('activo');
+            if (lblHope) lblHope.classList.remove('activo');
+            if (resumenConvenio) resumenConvenio.textContent = 'TECTUM In-House';
+        } else {
+            esTectumSeleccionado = false;
+            if (radioHope) radioHope.checked = true;
+            if (lblHope) lblHope.classList.add('activo');
+            if (lblTectum) lblTectum.classList.remove('activo');
+            if (resumenConvenio) resumenConvenio.textContent = 'Espacio HOPE (general)';
+        }
+    };
+
+    function formatoMoneda(valor) {
+        const n = Number(valor || 0);
+        return '$' + n.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' MXN';
+    }
+
+    function habilitarSiguientesPasos() {
+        cardsDependientes.forEach(function (id) {
+            document.getElementById(id).classList.remove('hpa-disabled');
+        });
+    }
+
+    // ------------------------------------------------------------------
+    // Modalidad (misma variable y mismos valores que antes: 'En línea' / 'Presencial')
+    // ------------------------------------------------------------------
+    function aplicarModoUI() {
+        const esPres = (modalidad === 'Presencial');
+        root.setAttribute('data-modo', esPres ? 'presencial' : 'online');
+        modoBtns.forEach(function (b) {
+            b.setAttribute('aria-pressed', b.dataset.modalidad === modalidad ? 'true' : 'false');
+        });
+        noteEnLinea.classList.toggle('hpa-oculto', esPres);
+        notePresencial.classList.toggle('hpa-oculto', !esPres);
+        document.getElementById('hpa-resumen-modalidad').textContent = esPres ? 'Presencial' : 'En línea';
+        document.getElementById('hpa-cal-modo').textContent = esPres ? 'Horarios de citas presenciales' : 'Horarios de citas en línea';
+    }
+
+    modoBtns.forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            if (btn.dataset.modalidad === modalidad) return;
+            modalidad = btn.dataset.modalidad;
+            aplicarModoUI();
+
+            // La disponibilidad depende de la modalidad (solo psicólogos
+            // Presencial/Mixto ofertan slots presenciales): refetch.
+            if (pacienteId) {
+                fechaSeleccionada = null;
+                horaSeleccionada = null;
+                fetchDisponibilidad();
+            }
+            actualizarResumen();
+        });
+    });
+
+    // Acceso directo desde el panel de recepción: ?modalidad=presencial|online, #presencial|#online,
+    // o el valor inyectado por la vista (hpa-modalidad-inicial, tiene prioridad).
+    (function modalidadInicial() {
+        const initEl = document.getElementById('hpa-modalidad-inicial');
+        const preset = (initEl && initEl.value || '').toLowerCase();
+        const q = preset || (new URLSearchParams(window.location.search).get('modalidad') || window.location.hash.replace('#', '') || '').toLowerCase();
+        if (q === 'presencial') modalidad = 'Presencial';
+        else if (q === 'online' || q === 'en-linea' || q === 'en línea') modalidad = 'En línea';
+        aplicarModoUI();
+    })();
+
+    // ------------------------------------------------------------------
+    // Buscador de paciente
+    // ------------------------------------------------------------------
+    let debounceTimer = null;
+    buscarInput.addEventListener('input', function () {
+        clearTimeout(debounceTimer);
+        const q = buscarInput.value.trim();
+        if (q.length < 2) {
+            resultadosBox.classList.remove('activo');
+            return;
+        }
+        debounceTimer = setTimeout(function () {
+            fetch(URL_BUSCAR_PACIENTES + '?q=' + encodeURIComponent(q))
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    resultadosBox.innerHTML = '';
+                    const resultados = data.resultados || [];
+                    if (!resultados.length) {
+                        resultadosBox.innerHTML = '<div class="hpa-resultado-vacio">No encontramos a nadie con esa búsqueda. Prueba con otro nombre, correo o teléfono.</div>';
+                    } else {
+                        resultados.forEach(function (p) {
+                            const item = document.createElement('div');
+                            item.className = 'hpa-resultado-item';
+                            item.setAttribute('role', 'option');
+                            item.tabIndex = 0;
+                            const badgeConvenio = p.es_tectum ? '<span class="hpa-etq">TECTUM</span>' : '';
+                            item.innerHTML = '<strong>' + esc(p.nombre) + badgeConvenio + '</strong><span>' + esc(p.email || 'Sin correo') +
+                                (p.psicologo_asignado ? ' · Terapeuta: ' + esc(p.psicologo_asignado) : ' · Sin terapeuta asignado aún') + '</span>';
+                            item.addEventListener('click', function () { elegirPaciente(p); });
+                            item.addEventListener('keydown', function (e) {
+                                if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); elegirPaciente(p); }
+                            });
+                            resultadosBox.appendChild(item);
+                        });
+                    }
+                    resultadosBox.classList.add('activo');
+                })
+                .catch(function (err) {
+                    console.error('[buscar pacientes] Excepción en fetch:', err);
+                    resultadosBox.innerHTML = '<div class="hpa-resultado-vacio">No pudimos buscar en este momento. Revisa tu conexión e intenta de nuevo.</div>';
+                    resultadosBox.classList.add('activo');
+                });
+        }, 300);
+    });
+
+    document.addEventListener('click', function (e) {
+        if (!resultadosBox.contains(e.target) && e.target !== buscarInput) {
+            resultadosBox.classList.remove('activo');
+        }
+    });
+
+    function elegirPaciente(p) {
+        pacienteId = p.id;
+        nombrePaciente = p.nombre || '';
+        document.getElementById('hpa-paciente-nombre').textContent = p.nombre;
+        document.getElementById('hpa-paciente-email').textContent = p.email || 'Sin correo';
+        document.getElementById('hpa-paciente-ini').textContent = iniciales(p.nombre);
+        document.getElementById('hpa-resumen-paciente').textContent = p.nombre;
+        pacienteElegidoBox.classList.add('activo');
+        resultadosBox.classList.remove('activo');
+        buscarInput.value = '';
+
+        if (p.es_tectum) {
+            cambiarConvenioAdmin('tectum');
+        } else {
+            cambiarConvenioAdmin('hope');
+        }
+
+        habilitarSiguientesPasos();
+        fetchDisponibilidad();
+        fetchPrecio();
+        actualizarResumen();
+    }
+
+    document.getElementById('hpa-cambiar-paciente').addEventListener('click', function () {
+        pacienteId = null;
+        nombrePaciente = '';
+        pacienteElegidoBox.classList.remove('activo');
+        cardsDependientes.forEach(function (id) { document.getElementById(id).classList.add('hpa-disabled'); });
+        diasScroll.innerHTML = '<div class="hpa-vacio">Elige primero a un paciente y verás aquí los días disponibles.</div>';
+        horasGrid.innerHTML = '';
+        avisoBox.classList.remove('activo');
+        fechaSeleccionada = null;
+        horaSeleccionada = null;
+        document.getElementById('hpa-resumen-paciente').textContent = 'Sin seleccionar';
+        cambiarConvenioAdmin('hope');
+        actualizarResumen();
+        buscarInput.focus();
+    });
+
+    // ------------------------------------------------------------------
+    // Calendario de días / horas
+    // ------------------------------------------------------------------
+    function renderDias() {
+        const fechas = Object.keys(diasDisponibles).sort();
+        diasScroll.innerHTML = '';
+
+        if (!fechas.length) {
+            diasScroll.innerHTML = '<div class="hpa-vacio">Por ahora no hay horarios disponibles para citas ' + (modalidad === 'Presencial' ? 'presenciales' : 'en línea') + '. Prueba con la otra modalidad o con otro tipo de sesión.</div>';
+            horasGrid.innerHTML = '';
+            fechaSeleccionada = null;
+            horaSeleccionada = null;
+            actualizarResumen();
+            return;
+        }
+
+        fechas.forEach(function (fechaStr) {
+            const [anio, mes, dia] = fechaStr.split('-').map(Number);
+            const fechaObj = new Date(anio, mes - 1, dia);
+
+            const chip = document.createElement('button');
+            chip.type = 'button';
+            chip.className = 'hpa-dia-chip' + (fechaStr === fechaSeleccionada ? ' activo' : '');
+            chip.setAttribute('aria-pressed', fechaStr === fechaSeleccionada ? 'true' : 'false');
+            chip.innerHTML = '<span class="dow">' + DOW[fechaObj.getDay()] + '</span>' +
+                              '<span class="num">' + dia + '</span>' +
+                              '<span class="mes">' + MES[mes - 1] + '</span>';
+            chip.addEventListener('click', function () {
+                fechaSeleccionada = fechaStr;
+                horaSeleccionada = null;
+                renderDias();
+                renderHoras();
+                actualizarResumen();
+            });
+            diasScroll.appendChild(chip);
+        });
+
+        if (!fechaSeleccionada || !diasDisponibles[fechaSeleccionada]) {
+            fechaSeleccionada = fechas[0];
+            renderDias();
+        }
+        renderHoras();
+    }
+
+    function renderHoras() {
+        horasGrid.innerHTML = '';
+        if (!fechaSeleccionada) return;
+
+        const horas = diasDisponibles[fechaSeleccionada] || [];
+        if (!horas.length) {
+            horasGrid.innerHTML = '<div class="hpa-vacio">Ese día no tiene horarios libres. Elige otro día.</div>';
+            return;
+        }
+
+        horas.forEach(function (hora) {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'hpa-hora-btn' + (hora === horaSeleccionada ? ' activo' : '');
+            btn.setAttribute('aria-pressed', hora === horaSeleccionada ? 'true' : 'false');
+            btn.textContent = hora;
+            btn.addEventListener('click', function () {
+                horaSeleccionada = hora;
+                renderHoras();
+                actualizarResumen();
+            });
+            horasGrid.appendChild(btn);
+        });
+    }
+
+    function convertirHoraA24(hora12) {
+        let [time, modifier] = hora12.split(' ');
+        let [hours, minutes] = time.split(':');
+        if (hours === '12') hours = '00';
+        if (modifier === 'PM') hours = parseInt(hours, 10) + 12;
+        return `${hours.toString().padStart(2, '0')}:${minutes}`;
+    }
+
+    function actualizarResumen() {
+        document.getElementById('hpa-resumen-fecha').textContent = fechaHumana(fechaSeleccionada);
+        const horaEl = document.getElementById('hpa-resumen-hora');
+        horaEl.textContent = horaSeleccionada || 'Sin seleccionar';
+        horaEl.classList.toggle('sin', !horaSeleccionada);
+        btnConfirmar.disabled = !(pacienteId && fechaSeleccionada && horaSeleccionada);
+
+        const faltan = [];
+        if (!pacienteId) faltan.push('paciente');
+        if (!fechaSeleccionada) faltan.push('día');
+        if (!horaSeleccionada) faltan.push('hora');
+        faltanteEl.textContent = faltan.length ? 'Falta elegir: ' + faltan.join(', ') + '.' : 'Todo listo para confirmar.';
+    }
+
+    // ------------------------------------------------------------------
+    // Disponibilidad del paciente elegido (endpoint admin)
+    // ------------------------------------------------------------------
+    function fetchDisponibilidad() {
+        if (!pacienteId) return;
+        diasScroll.innerHTML = '<div class="hpa-vacio hpa-cargando"><span class="hpa-spin" aria-hidden="true"></span>Buscando horarios…</div>';
+        horasGrid.innerHTML = '';
+        avisoBox.classList.remove('activo');
+
+        const params = new URLSearchParams({ paciente_id: pacienteId, tipo_sesion: tipoSesion, modalidad: modalidad });
+        fetch(URL_DISPONIBILIDAD + '?' + params.toString())
+            .then(function (r) {
+                console.log('[disponibilidad] HTTP status:', r.status);
+                return r.json().catch(function (parseErr) {
+                    console.error('[disponibilidad] La respuesta no es JSON válido:', parseErr);
+                    throw new Error('Respuesta no-JSON del servidor (status ' + r.status + ').');
+                });
+            })
+            .then(function (data) {
+                console.log('[disponibilidad] Payload recibido:', data);
+                if (data.status === 'success') {
+                    diasDisponibles = data.dias || {};
+                    fechaSeleccionada = null;
+                    horaSeleccionada = null;
+                    if (data.aviso) {
+                        avisoBox.textContent = data.aviso;
+                        avisoBox.classList.add('activo');
+                    }
+                    if (!Object.keys(diasDisponibles).length) {
+                        console.warn('[disponibilidad] Sin horarios', { tipoSesion: tipoSesion, modalidad: modalidad, pacienteId: pacienteId, aviso: data.aviso });
+                    }
+                    renderDias();
+                    actualizarResumen();
+                } else {
+                    console.error('[disponibilidad] Error del servidor:', data);
+                    diasScroll.innerHTML = '<div class="hpa-vacio">' + esc(data.message || 'No pudimos cargar la disponibilidad. Intenta de nuevo en un momento.') + '</div>';
+                }
+            })
+            .catch(function (err) {
+                console.error('[disponibilidad] Excepción en fetch:', err);
+                diasScroll.innerHTML = '<div class="hpa-vacio">No pudimos conectarnos para ver los horarios. Revisa tu conexión e intenta de nuevo.</div>';
+            });
+    }
+
+    function fetchPrecio() {
+        const params = new URLSearchParams({ tipo_sesion: tipoSesion });
+        if (tipoSesion === 'familiar') {
+            params.set('integrantes_familia', integrantesFamilia);
+        }
+        fetch(URL_PRECIO + '?' + params.toString())
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                if (data.status === 'success') {
+                    document.getElementById('hpa-precio-subtotal').textContent = formatoMoneda(data.subtotal);
+                    document.getElementById('hpa-precio-comision').textContent = formatoMoneda(data.comision);
+                    document.getElementById('hpa-precio-total').textContent = formatoMoneda(data.total);
+                }
+            })
+            .catch(function (err) { console.error('[precio] Excepción en fetch:', err); });
+    }
+
+    // ------------------------------------------------------------------
+    // Tipo de sesión
+    // ------------------------------------------------------------------
+    document.querySelectorAll('.hpa-tipo-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            document.querySelectorAll('.hpa-tipo-btn').forEach(function (b) { b.classList.remove('activo'); });
+            btn.classList.add('activo');
+            tipoSesion = btn.dataset.tipo;
+
+            document.getElementById('hpa-familiar-box').classList.toggle('activo', tipoSesion === 'familiar');
+
+            fetchDisponibilidad();
+            fetchPrecio();
+        });
+    });
+
+    const minIntegrantes = preciosConfig.min_integrantes_familiar || 2;
+    document.getElementById('hpa-integrantes-menos').addEventListener('click', function () {
+        if (integrantesFamilia > minIntegrantes) {
+            integrantesFamilia -= 1;
+            document.getElementById('hpa-integrantes-num').textContent = integrantesFamilia;
+            fetchPrecio();
+        }
+    });
+    document.getElementById('hpa-integrantes-mas').addEventListener('click', function () {
+        integrantesFamilia += 1;
+        document.getElementById('hpa-integrantes-num').textContent = integrantesFamilia;
+        fetchPrecio();
+    });
+
+    // ------------------------------------------------------------------
+    // Confirmar (endpoint admin, incluye paciente_id)
+    // ------------------------------------------------------------------
+    document.getElementById('hpa-form').addEventListener('submit', function (e) {
+        e.preventDefault();
+        if (!pacienteId || !fechaSeleccionada || !horaSeleccionada) return;
+
+        msgBox.classList.remove('activo', 'ok', 'error');
+        btnConfirmar.disabled = true;
+        btnConfirmar.innerHTML = BTN_AGENDANDO_HTML;
+
+        const formData = new FormData();
+        formData.append('paciente_id', pacienteId);
+        formData.append('fecha', fechaSeleccionada);
+        formData.append('hora', convertirHoraA24(horaSeleccionada));
+        formData.append('animo', document.getElementById('hpa-animo').value);
+        formData.append('modalidad', modalidad);
+        formData.append('tipo_servicio', tipoSesion);
+        formData.append('es_tectum', esTectumSeleccionado ? '1' : '0');
+        if (tipoSesion === 'familiar') {
+            formData.append('integrantes_familia', integrantesFamilia);
+        }
+
+        fetch(URL_GUARDAR, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': csrfToken },
+            body: formData
+        })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+            if (data.status === 'success') {
+                // Texto de éxito según modalidad (Meet en línea / pase presencial).
+                const textoExito = document.getElementById('hpa-exito-texto');
+                if (textoExito) {
+                    textoExito.textContent = (modalidad === 'Presencial')
+                        ? 'Se le notificó al paciente por correo, junto con su pase de acceso presencial (PDF con QR).'
+                        : 'Se le notificó al paciente por correo, junto con el Meet si aplica.';
+                }
+                document.getElementById('hpa-exito-datos').innerHTML =
+                    '<span>' + esc(nombrePaciente) + '</span><span>' + esc(modalidad) + '</span><span>' +
+                    esc(fechaHumana(fechaSeleccionada)) + '</span><span>' + esc(horaSeleccionada) + '</span>';
+                document.getElementById('hpa-form').style.display = 'none';
+                document.getElementById('hpa-modos').classList.add('hpa-oculto');
+                document.getElementById('hpa-exito').classList.add('activo');
+                document.getElementById('hpa-exito').scrollIntoView({ block: 'center' });
+            } else {
+                msgBox.textContent = data.message || 'No pudimos agendar la cita. Revisa los datos e intenta de nuevo.';
+                msgBox.classList.add('activo', 'error');
+                btnConfirmar.disabled = false;
+                btnConfirmar.innerHTML = BTN_CONFIRMAR_HTML;
+                fetchDisponibilidad();
+            }
+        })
+        .catch(function () {
+            msgBox.textContent = 'No pudimos conectarnos. Revisa tu conexión e intenta de nuevo.';
+            msgBox.classList.add('activo', 'error');
+            btnConfirmar.disabled = false;
+            btnConfirmar.innerHTML = BTN_CONFIRMAR_HTML;
+        });
+    });
+
+    document.getElementById('hpa-otra-cita').addEventListener('click', function () {
+        window.location.href = window.location.pathname + '?modalidad=' + (modalidad === 'Presencial' ? 'presencial' : 'online');
+    });
+
+    actualizarResumen();
+});
+</script>
+{% endblock %}
