@@ -10964,3 +10964,183 @@ def api_intelligence_reasignar(request):
                          'checks': resultado.get('checks', []),
                          'message': resultado.get('motivo',
                                                   'No fue posible realizar la reasignación.')})
+
+
+# =========================================================================
+# 🪑 RECEPCIÓN HOPE PRESENCIAL (01/11/2026)
+# Escritorio del personal de recepción física de HOPE.
+#   - Vista principal: /panel-admin/recepcion/ → templates/panel_recepcion_v3.html
+#     Solo superusuarios (es_admin literal = is_superuser).
+#   - Módulos secundarios con URL + vista genérica ya montados; sus
+#     templates definitivos se integrarán más tarde (por ahora renderizan
+#     el placeholder recepcion_en_construccion.html vía
+#     _recepcion_modulo_pendiente). NO existe aún lógica de negocio aquí:
+#     la única escritura prevista es la del formulario de nuevo paciente.
+# Contrato de contexto de panel_recepcion_v3.html (ver cabecera del template):
+#   logo_url, usuario_nombre, url_inicio, url_agendar_online,
+#   url_agendar_presencial, url_citas, url_agregar_paciente, citas_hoy
+# =========================================================================
+from django.templatetags.static import static
+
+_URL_LOGO_RECEPCION = 'img/logo_hope_extendido.png'
+
+
+def _recepcion_logo_url():
+    return static(_URL_LOGO_RECEPCION)
+
+
+def _recepcion_usuario_nombre(user):
+    """Nombre amigable para la barra superior del panel de recepción."""
+    if not getattr(user, 'is_authenticated', False):
+        return 'Recepción HOPE'
+    return (user.get_full_name() or user.username or '').strip() or 'Recepción HOPE'
+
+
+def _recepcion_nombre_paciente(cita):
+    """Nombre mostrado en la fila de la agenda del día."""
+    pac = cita.paciente
+    if not pac:
+        return 'Paciente'
+    nombre = f'{pac.first_name or ""} {pac.last_name or ""}'.strip()
+    if not nombre:
+        perfil = getattr(pac, 'perfil', None)
+        if perfil and getattr(perfil, 'nombre', ''):
+            nombre = perfil.nombre
+    return nombre or pac.username or 'Paciente'
+
+
+def _recepcion_nombre_psicologo(cita):
+    """Nombre con título de cortesía para la fila de la agenda del día."""
+    perfil = cita.psicologo
+    if not perfil or not perfil.usuario:
+        return 'Por asignar'
+    titulo = 'Dra. ' if getattr(perfil, 'genero', '') == 'Mujer' else (
+        'Dr. ' if getattr(perfil, 'genero', '') == 'Hombre' else '')
+    usuario = perfil.usuario
+    nombre = (usuario.get_full_name() or usuario.username or '').strip()
+    return (titulo + nombre).strip() or 'Por asignar'
+
+
+# Estados de Cita → estados visuales del contrato del template:
+# 'confirmada' | 'en_sala' | 'pendiente' | 'atendida'
+# (En recepción aún no existe como estado en BD; queda mapeado por si se agrega.)
+_RECEPCION_MAP_ESTADO = {
+    'Confirmada': 'confirmada',
+    'Pendiente': 'pendiente',
+    'Pendiente de Pago': 'pendiente',
+    'Completada': 'atendida',
+    'En recepción': 'en_sala',
+}
+
+
+def _recepcion_citas_hoy():
+    """Agenda REAL del día para el panel (dicts del contrato del template)."""
+    hoy = timezone.localdate()
+    citas_qs = (Cita.objects.filter(fecha=hoy)
+                .exclude(estado='Cancelada')
+                .select_related('paciente', 'paciente__perfil', 'psicologo__usuario')
+                .order_by('hora', 'id'))
+    salida = []
+    for c in citas_qs:
+        try:
+            hora_label = c.hora.strftime('%I:%M %p').upper()
+        except (AttributeError, ValueError):
+            hora_label = str(c.hora)
+        try:
+            pase_url = reverse('descargar_pase_admision', args=[c.id])
+        except Exception:
+            pase_url = ''
+        salida.append({
+            'hora': hora_label,
+            'paciente': _recepcion_nombre_paciente(c),
+            'psicologa': _recepcion_nombre_psicologo(c),
+            'modalidad': 'online' if (c.modalidad or '') == 'En línea' else 'presencial',
+            'estado': _RECEPCION_MAP_ESTADO.get(c.estado, 'confirmada'),
+            'pase_url': pase_url,
+            'url': reverse('panel_recepcion'),  # TODO: apuntar a la gestión de la cita cuando exista
+        })
+    return salida
+
+
+@user_passes_test(es_admin, login_url='/')
+def panel_recepcion(request):
+    """
+    GET /panel-admin/recepcion/
+    Escritorio de recepción presencial HOPE (panel_recepcion_v3.html).
+    Solo superusuarios. Solo lectura de BD: arma la agenda del día y las
+    URLs de navegación; los módulos de acción aún apuntan a placeholders.
+    """
+    contexto = {
+        'logo_url': _recepcion_logo_url(),
+        'usuario_nombre': _recepcion_usuario_nombre(request.user),
+        'url_inicio': reverse('panel_recepcion'),
+        'url_agendar_online': reverse('recepcion_agendar_online'),
+        'url_agendar_presencial': reverse('recepcion_agendar_presencial'),
+        'url_citas': reverse('recepcion_citas'),
+        'url_agregar_paciente': reverse('recepcion_agregar_paciente'),
+        'citas_hoy': _recepcion_citas_hoy(),
+    }
+    return render(request, 'panel_recepcion_v3.html', contexto)
+
+
+def _recepcion_modulo_pendiente(request, titulo, detalle):
+    """Render genérico mientras se integra el template definitivo del módulo."""
+    return render(request, 'recepcion_en_construccion.html', {
+        'logo_url': _recepcion_logo_url(),
+        'titulo_modulo': titulo,
+        'detalle': detalle,
+        'usuario_nombre': _recepcion_usuario_nombre(request.user),
+        'volver_url': reverse('panel_recepcion'),
+    })
+
+
+@user_passes_test(es_admin, login_url='/')
+def recepcion_agregar_paciente(request):
+    """
+    GET /panel-admin/recepcion/agregar-paciente/
+    MÓDULO PENDIENTE (integrar después): aquí irá el formulario de registro
+    de paciente nuevo en recepción (bloque amarillo grande del panel).
+    """
+    return _recepcion_modulo_pendiente(
+        request, 'Agregar paciente',
+        'Aquí se integrará el formulario para registrar a un paciente nuevo '
+        'desde recepción (datos, cuestionario inicial y asignación).')
+
+
+@user_passes_test(es_admin, login_url='/')
+def recepcion_agendar_online(request):
+    """
+    GET /panel-admin/recepcion/agendar-online/
+    MÓDULO PENDIENTE (integrar después): flujo de agendado de sesiones en
+    línea atendido por recepción.
+    """
+    return _recepcion_modulo_pendiente(
+        request, 'Agendar cita en línea',
+        'Aquí se integrará el flujo de agendado de sesiones por videollamada '
+        'atendido desde recepción.')
+
+
+@user_passes_test(es_admin, login_url='/')
+def recepcion_agendar_presencial(request):
+    """
+    GET /panel-admin/recepcion/agendar-presencial/
+    MÓDULO PENDIENTE (integrar después): flujo de agendado presencial con
+    asignación de consultorio y generación del pase de admisión.
+    """
+    return _recepcion_modulo_pendiente(
+        request, 'Agendar cita presencial',
+        'Aquí se integrará el flujo de agendado presencial: reserva de '
+        'consultorio y generación del pase de admisión.')
+
+
+@user_passes_test(es_admin, login_url='/')
+def recepcion_citas(request):
+    """
+    GET /panel-admin/recepcion/citas/
+    MÓDULO PENDIENTE (integrar después): bandeja de gestión de citas
+    existentes (consulta, reagenda y cambios desde recepción).
+    """
+    return _recepcion_modulo_pendiente(
+        request, 'Gestionar citas',
+        'Aquí se integrará la gestión de citas existentes: consulta, '
+        'reagenda y cambios administrados desde recepción.')

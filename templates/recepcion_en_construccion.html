@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="es-mx">
+<!--
+  Placeholder genérico del módulo Recepción HOPE Presencial (01/11/2026).
+  Uso: mientras no se integra el template definitivo de cada módulo
+  (agendar online / presencial, agregar paciente, gestionar citas), las
+  vistas dirigidas de recepción renderizan esta página con el contexto:
+    logo_url, titulo_modulo, detalle, usuario_nombre, volver_url
+  Cuando se integre el template real de un módulo, su vista deja de
+  llamar a _recepcion_modulo_pendiente() y este archivo queda sin uso.
+-->
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{ titulo_modulo }} · Recepción HOPE</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@700;800&family=Figtree:wght@600;700&display=swap" rel="stylesheet">
+<style>
+:root{--purple:#5B45A8;--deep:#3F2C85;--ink:#2A1F5C;--muted:#675F9C;--line:#E6DFF6;
+--yellow:#FFD62E;--yellow-s:#FFF2B8;--bg:#F7F3FE;--fh:'Lexend',sans-serif;--fb:'Figtree',sans-serif}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:var(--fb);color:var(--ink);background:var(--bg);min-height:100vh;display:grid;place-items:center;padding:24px}
+.card{width:min(560px,100%);background:#fff;border-radius:34px;padding:40px 36px;border:2px solid var(--line);text-align:center}
+.card img{height:48px;width:auto;margin-bottom:22px}
+.card h1{font:800 26px/1.15 var(--fh);color:var(--deep)}
+.card .detalle{margin-top:12px;font-weight:600;font-size:15px;line-height:1.55;color:var(--muted)}
+.card .pronto{display:inline-block;margin-top:20px;padding:7px 16px;border-radius:99px;background:var(--yellow-s);color:var(--deep);font-weight:800;font-size:13px}
+.card a{display:inline-block;margin-top:26px;padding:11px 22px;border-radius:99px;background:var(--purple);color:#fff;font-weight:800;font-size:14px;text-decoration:none;transition:background .15s}
+.card a:hover{background:var(--deep)}
+{% if usuario_nombre %}.yo{margin-top:18px;font-weight:700;font-size:13px;color:var(--muted)}{% endif %}
+</style>
+</head>
+<body>
+<main class="card">
+  <img src="{{ logo_url }}" alt="HOPE Logo">
+  <h1>{{ titulo_modulo }}</h1>
+  <p class="detalle">{{ detalle }}</p>
+  <span class="pronto">Módulo en integración</span>
+  {% if usuario_nombre %}<p class="yo">Sesión: {{ usuario_nombre }}</p>{% endif %}
+  <a href="{{ volver_url }}">← Volver a Recepción</a>
+</main>
+</body>
+</html>
