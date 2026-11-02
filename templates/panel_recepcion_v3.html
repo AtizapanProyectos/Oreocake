@@ -8,6 +8,14 @@
       ("#" si no llegan; el bloque amarillo grande usa url_agregar_paciente)
     url_registrar_llegada — endpoint POST/CSRF del registro de llegada
       (Cita.registro_llegada; 'Vino' | 'No Vino' | 'No registrado')
+    🪑 MÓDULO CONSULTORIOS (02/11/2026): overlay 100% frontend dentro del panel,
+      misma experiencia y dibujos que la página suelta "Consultorios · HOPE.html".
+      El estado NO toca la BD: vive en localStorage de este navegador (llaves
+      'hope-consultorios-v1' / 'hope-psicologos-v1' / 'hope-estilo'), con estados
+      Libre / En uso / Apartado por piso (alta/baja), psicólogo/a, consultante y
+      "hasta las". Se abre por la tarjeta "Consultorios" de Más herramientas
+      (#modCo) o por el botón 🪑 de cada fila de la agenda (window.hopeConsultorios,
+      precargado con el primer consultorio libre al marcar "Sí vino").
     citas_hoy → SOLO sesiones PRESENCIALES del día; lista de dicts:
                 cita_id, hora, paciente, psicologa, modalidad ("presencial"),
                 estado ("confirmada"|"en_sala"|"pendiente"|"atendida"|"no_vino"),
@@ -137,6 +145,71 @@ a{color:inherit;text-decoration:none}
 .pie{margin:34px 0 40px;text-align:center;font:700 15px var(--fh);color:var(--muted)}
 .pie .ic{width:20px;height:20px;fill:var(--pink);stroke:none;vertical-align:-4px;margin-right:6px}
 
+/* ===== 🪑 Consultorios — overlay del módulo (mismo flujo que
+   'Consultorios · HOPE.html'; estado en localStorage, sin BD) ===== */
+.mod-act{cursor:pointer;font:inherit;border:2px solid #BFB0EA;background:#fff;color:var(--purple);transition:border-color .15s,background .15s,transform .15s}
+.mod-act:hover{border-color:var(--purple);background:var(--lilac-s);transform:translateY(-2px)}
+#coOverlay{display:none;position:fixed;inset:0;z-index:70;overflow-y:auto;-webkit-overflow-scrolling:touch;background:var(--bg)}
+#coOverlay.on{display:block}
+body.co-lock{overflow:hidden}
+#coOverlay .ic{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+#coOverlay .co-wrap{width:min(1180px,100% - 36px);margin-inline:auto;position:relative;z-index:1}
+#coOverlay .co-hero{position:relative;overflow:hidden;color:#fff;background:linear-gradient(135deg,#46329A 0%,#5B45A8 55%,#6C52C8 100%);padding:30px 0 116px}
+#coOverlay .co-hero .ola{position:absolute;left:0;right:0;bottom:-1px;width:100%;height:88px}
+#coOverlay .chip-h{display:inline-flex;align-items:center;gap:9px;padding:7px 15px 7px 11px;border-radius:99px;background:rgba(255,255,255,.16);font-weight:700;font-size:14.5px}
+#coOverlay .chip-h .ic{fill:var(--yellow);stroke:none}
+#coOverlay .co-hero h1{margin-top:14px;font:800 clamp(26px,4.6vw,46px)/1.08 var(--fh);letter-spacing:-.02em;max-width:26ch}
+#coOverlay .co-hero .sub{margin-top:10px;font-size:15px;line-height:1.5;color:#EEE8FF;max-width:52ch;font-weight:500}
+#coOverlay .estilos{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:16px;font-weight:700;font-size:13.5px}
+#coOverlay .mini{cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:9px 16px;border-radius:99px;font:800 13px var(--fb);background:#fff;color:var(--purple);border:3.5px solid #BFB0EA;transition:border-color .15s,background .15s}
+#coOverlay .mini:hover{border-color:var(--purple);background:var(--lilac-s)}
+#coOverlay .mini.pri{background:var(--purple);border-color:var(--purple);color:#fff}
+#coOverlay .mini.armado{border-color:var(--pink);color:var(--pink-d)}
+#coOverlay .co-accs{display:flex;flex-direction:column;gap:8px;justify-content:center}
+#coOverlay .co-conts{display:grid;grid-template-columns:repeat(3,1fr) auto;gap:14px;margin-top:-58px;align-items:stretch;position:relative;z-index:2}
+#coOverlay .co-cont{border-radius:26px;padding:14px 20px;border:3px solid var(--m);background:var(--ms);color:var(--md);box-shadow:0 18px 26px -24px rgba(30,15,90,.5)}
+#coOverlay .co-cont b{display:block;font:800 30px/1 var(--fh)}
+#coOverlay .co-cont span{font-weight:800;font-size:13.5px}
+#coOverlay .co-cont.libre{--m:var(--teal);--ms:var(--teal-s);--md:var(--teal-d)}
+#coOverlay .co-cont.uso{--m:var(--pink);--ms:var(--pink-s);--md:var(--pink-d)}
+#coOverlay .co-cont.apartado{--m:var(--yellow);--ms:var(--yellow-s);--md:var(--yellow-d)}
+#coOverlay .piso{margin-top:22px;background:#fff;border:2px solid var(--line);border-radius:34px;padding:clamp(18px,3vw,26px)}
+#coOverlay .piso>header{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-bottom:18px}
+#coOverlay .piso h2{font:800 22px var(--fh);color:var(--deep);flex:1;display:flex;align-items:center;gap:10px}
+#coOverlay .piso h2 small{font:700 13px var(--fb);color:var(--muted)}
+#coOverlay .salas{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:16px}
+#coOverlay .sala{display:flex;flex-direction:column;gap:10px;text-align:left;cursor:pointer;font:inherit;color:var(--ink);padding:14px 14px 16px;border-radius:34px;background:var(--ms);border:3px solid var(--m);transition:transform .2s;box-shadow:0 18px 26px -24px rgba(30,15,90,.5)}
+#coOverlay .sala:hover{transform:translateY(-5px) rotate(-.6deg)}
+#coOverlay .sala .top{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:2px 6px 0}
+#coOverlay .sala h3{font:800 17px var(--fh);margin:0}
+#coOverlay .est{display:inline-flex;align-items:center;gap:7px;padding:4px 11px;border-radius:99px;background:#fff;color:var(--md);font-weight:800;font-size:12px}
+#coOverlay .est i{width:9px;height:9px;border-radius:50%;background:var(--m)}
+#coOverlay .esc{width:100%;height:auto;border-radius:24px;display:block}
+#coOverlay .info{display:block;padding:0 6px}
+#coOverlay .info b{display:block;font-size:15px;font-weight:800}
+#coOverlay .info span{display:block;margin-top:2px;font-size:12.5px;font-weight:600;color:var(--md)}
+#coOverlay dialog{border:0;padding:0;border-radius:34px;width:min(460px,100% - 28px);background:#fff;color:var(--ink);box-shadow:0 30px 60px -20px rgba(30,15,90,.55)}
+#coOverlay dialog::backdrop{background:rgba(42,31,92,.55);backdrop-filter:blur(6px)}
+#coOverlay dialog form{padding:26px;display:grid;gap:16px}
+#coOverlay dialog h2{font:800 22px var(--fh);color:var(--deep)}
+#coOverlay label.c{display:grid;gap:6px;font-weight:800;font-size:13.5px}
+#coOverlay label.c input{height:48px;padding:0 18px;border-radius:99px;border:2px solid transparent;background:var(--bg);font:600 15px var(--fb);color:var(--ink)}
+#coOverlay label.c input:focus{outline:none;border-color:var(--purple)}
+#coOverlay .segs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;border:0;padding:0;margin:0}
+#coOverlay .seg{position:relative}
+#coOverlay .seg input{position:absolute;opacity:0;inset:0;cursor:pointer}
+#coOverlay .seg span{display:block;text-align:center;padding:11px 6px;border-radius:99px;font-weight:800;font-size:13.5px;background:var(--bg);border:2px solid transparent}
+#coOverlay .seg.libre input:checked+span{background:var(--teal-s);border-color:var(--teal);color:var(--teal-d)}
+#coOverlay .seg.uso input:checked+span{background:var(--pink-s);border-color:var(--pink);color:var(--pink-d)}
+#coOverlay .seg.apartado input:checked+span{background:var(--yellow-s);border-color:var(--yellow);color:var(--yellow-d)}
+#coOverlay .acc{display:flex;flex-wrap:wrap;gap:10px;justify-content:flex-end}
+#coOverlay .co-pie{margin:28px 0 38px;text-align:center;font:700 14px var(--fh);color:var(--muted)}
+@keyframes co-bob{50%{transform:translateY(-6px)}}@keyframes co-tw{50%{opacity:.25}}@keyframes co-rot{to{transform:rotate(360deg)}}@keyframes co-blink{0%,92%,100%{transform:scaleY(1)}96%{transform:scaleY(.1)}}@keyframes co-br{50%{transform:scale(1.07)}}@keyframes co-dot{40%{transform:translateY(-5px)}}@keyframes co-pls{50%{transform:scale(1.25)}}@keyframes co-pop{40%{transform:scale(1.06) rotate(-1deg)}}
+@media (prefers-reduced-motion:no-preference){#coOverlay .bob{animation:co-bob 3.2s ease-in-out infinite}#coOverlay .tw{animation:co-tw 2.4s ease-in-out infinite}#coOverlay .tw2{animation-delay:.8s}#coOverlay .rot{animation:co-rot 16s linear infinite}#coOverlay .hand{animation:co-rot 5s linear infinite}#coOverlay .blink{animation:co-blink 4.5s infinite}#coOverlay .br{animation:co-br 3s ease-in-out infinite}#coOverlay .br2{animation-delay:1.5s}#coOverlay .dot{animation:co-dot 1.2s ease-in-out infinite}#coOverlay .d2{animation-delay:.2s}#coOverlay .d3{animation-delay:.4s}#coOverlay .pls{animation:co-pls 1.6s ease-in-out infinite}#coOverlay .pop{animation:co-pop .6s}}
+#coOverlay .rot,#coOverlay .hand,#coOverlay .blink,#coOverlay .br,#coOverlay .dot,#coOverlay .pls,#coOverlay .bob{transform-box:fill-box;transform-origin:center}
+@media (max-width:760px){#coOverlay .co-conts{grid-template-columns:repeat(3,1fr)}#coOverlay .co-conts .co-accs{grid-column:1/-1;flex-direction:row;justify-content:center}#coOverlay .co-cont{padding:12px}#coOverlay .co-cont b{font-size:26px}}
+@media print{#coOverlay{display:none!important}body.co-lock{overflow:auto}}
+
 @media (prefers-reduced-motion:no-preference){.reloj{animation:mece 6s ease-in-out infinite alternate}}
 @keyframes mece{to{transform:rotate(2deg) translateY(6px)}}
 
@@ -169,6 +242,7 @@ a{color:inherit;text-decoration:none}
   <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 17V11a6 6 0 0 1 12 0v6l1.5 2h-15zM10 21h4"/></symbol>
   <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20.5 20.5L16 16"/></symbol>
   <symbol id="i-list" viewBox="0 0 24 24"><path d="M9 6h12M9 12h12M9 18h12M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></symbol>
+  <symbol id="i-room" viewBox="0 0 24 24"><path d="M4 21V5a2 2 0 0 1 2-2h13v18"/><path d="M4 21h16M19 21H9"/><circle cx="15" cy="12" r="1.2"/></symbol>
   <symbol id="i-heart" viewBox="0 0 24 24"><path d="M12 2C6.5 2 2 5.8 2 10.5c0 2.6 1.4 4.9 3.6 6.4L5 21.5l4.3-2.4c.9.2 1.7.3 2.7.3 5.5 0 10-3.8 10-8.5S17.5 2 12 2z"/></symbol>
   <symbol id="lazo" viewBox="0 0 120 120"><path d="M-10 130C-10 60 30 8 70 30c36 20 6 80-8 50-14-30 24-60 50-30" fill="none" stroke="currentColor" stroke-width="22" stroke-linecap="round"/></symbol>
   <symbol id="lazo-g" viewBox="-15 0 150 135"><path d="M-10 130C-10 60 30 8 70 30c36 20 6 80-8 50-14-30 24-60 50-30" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round"/></symbol>
@@ -260,6 +334,9 @@ a{color:inherit;text-decoration:none}
       <section class="caja" id="modulos" aria-labelledby="t-mod">
         <h2 id="t-mod">Más herramientas</h2>
         <div class="mods">
+          <!-- MÓDULO 🪑 Consultorios: overlay 100% frontend (estado en localStorage).
+               La agenda también lo abre con el botón 🪑 que aparece al marcar "Sí vino". -->
+          <button class="mod mod-act" id="modCo" type="button"><svg class="ic"><use href="#i-room"/></svg>Consultorios<small>Abrir</small></button>
           <!-- MÓDULO: duplica esta tarjeta (cámbiala a <a href> cuando esté lista) -->
           <div class="mod"><svg class="ic"><use href="#i-users"/></svg>Lista de espera<small>Pronto</small></div>
           <div class="mod"><svg class="ic"><use href="#i-bell"/></svg>Recordatorios<small>Pronto</small></div>
@@ -272,7 +349,190 @@ a{color:inherit;text-decoration:none}
   <p class="pie"><svg class="ic"><use href="#i-heart"/></svg>Un buen recibimiento también es parte del cuidado.</p>
 </div>
 
-{% if citas_hoy %}{{ citas_hoy|json_script:"citas-data" }}{% endif %}
+<!-- ===== 🪑 CONSULTORIOS · recepción (módulo overlay) =====
+     Misma experiencia y dibujos que la página suelta "Consultorios · HOPE.html".
+     El estado NO toca la BD: vive en localStorage de este navegador (llaves
+     'hope-consultorios-v1' / 'hope-psicologos-v1' / 'hope-estilo'). Estados:
+     Libre / En uso (psicólogo/a + consultante + hasta) / Apartado, por piso
+     (alta/baja). Se abre con la tarjeta "Consultorios" de Más herramientas
+     (#modCo) o con el botón 🪑 de la fila al marcar "Sí vino" (precargado). -->
+<div id="coOverlay" role="dialog" aria-modal="true" aria-label="Consultorios de recepción" aria-hidden="true">
+  <header class="co-hero">
+    <svg class="ola" viewBox="0 0 1200 110" preserveAspectRatio="none" aria-hidden="true">
+      <path fill="#FFD62E" d="M0 50C150 10 300 8 450 40S780 90 930 60 1130 20 1200 36V110H0Z"/>
+      <path fill="#F7F3FE" d="M0 84C160 52 330 52 500 76S840 106 1010 84 1140 62 1200 70V110H0Z"/>
+    </svg>
+    <div class="co-wrap">
+      <p class="chip-h"><svg class="ic"><use href="#i-room"/></svg>Consultorios · recepción</p>
+      <h1 id="coFrase">¡Hoy es un gran día para brillar!</h1>
+      <p class="sub">Toca un consultorio para marcarlo en uso, apartarlo o dejarlo libre. Todo queda guardado en este navegador.</p>
+      <div class="estilos" role="group" aria-label="Estilo de los dibujos">
+        <span>Dibujos:</span>
+        <button type="button" class="mini" data-est="animado">Animado</button>
+        <button type="button" class="mini" data-est="minimal">Minimal</button>
+        <button type="button" class="mini" data-est="emojis">Emojis</button>
+        <button type="button" class="mini" data-est="iniciales">Iniciales</button>
+        <button type="button" class="mini" data-est="siluetas">Siluetas</button>
+      </div>
+    </div>
+  </header>
+  <main class="co-wrap">
+    <section class="co-conts" aria-label="Resumen" aria-live="polite">
+      <div class="co-cont libre"><b id="co-nL">0</b><span>Libres</span></div>
+      <div class="co-cont uso"><b id="co-nU">0</b><span>En uso</span></div>
+      <div class="co-cont apartado"><b id="co-nA">0</b><span>Apartados</span></div>
+      <div class="co-accs">
+        <button class="mini" id="coTodos" type="button">Liberar todos</button>
+        <button class="mini pri" id="coCerrar" type="button">← Volver a recepción</button>
+      </div>
+    </section>
+    <div id="coPisos"></div>
+    <p class="co-pie">Un buen recibimiento también es parte del cuidado.</p>
+  </main>
+  <dialog id="coDlg" aria-labelledby="coDt">
+    <form method="dialog" id="coF">
+      <h2 id="coDt">Consultorio</h2>
+      <label class="c">Nombre del consultorio<input id="coFn" required maxlength="30"></label>
+      <fieldset class="segs" aria-label="Estado">
+        <label class="seg libre"><input type="radio" name="coe" value="libre"><span>Libre</span></label>
+        <label class="seg uso"><input type="radio" name="coe" value="uso"><span>En uso</span></label>
+        <label class="seg apartado"><input type="radio" name="coe" value="apartado"><span>Apartado</span></label>
+      </fieldset>
+      <div id="coQuien" style="display:grid;gap:16px">
+        <label class="c">Psicólogo/a<input id="coFp" list="coPsis" maxlength="40" placeholder="Ej. Dra. Ana"></label>
+        <label class="c">Consultante (opcional)<input id="coFc" maxlength="40" placeholder="Solo el nombre"></label>
+        <label class="c">Hasta las (opcional)<input id="coFh" type="time"></label>
+      </div>
+      <datalist id="coPsis"></datalist>
+      <div class="acc">
+        <button type="button" class="mini" id="coDel">Eliminar consultorio</button>
+        <button type="button" class="mini" id="coNo">Cancelar</button>
+        <button class="mini pri" id="coOk">Guardar</button>
+      </div>
+    </form>
+  </dialog>
+</div>
+
+<script>
+/* ===== 🪑 Consultorios de recepción (overlay, mismo flujo y mismo estado local que
+   la página suelta "Consultorios · HOPE.html": localStorage 'hope-consultorios-v1').
+   Sin BD y sin CSRF: es un tablero visual para recepción.
+   API usada por la agenda de este panel:
+     window.hopeConsultorios.paraCita({cita_id, paciente, psicologa}) → abre el
+       overlay y precarga el dialogo del primer consultorio libre (o el que ya
+       esté asignado a esa cita) en estado "En uso".
+     window.hopeConsultorios.nombreDeCita(cita_id) → nombre del consultorio
+       asignado a esa cita (para la etiqueta del botón 🪑 de la fila). ===== */
+(function(){
+  var O=document.getElementById("coOverlay");
+  if(!O)return;
+  var K="hope-consultorios-v1",KP="hope-psicologos-v1";
+  var SK=["#F6D2B0","#E7B48C","#C58B62","#8D5A3B"],HR=["#2A1F5C","#5A3A2A","#C9792B","#1F1A2E","#8A5CF6"],SP=["#5B45A8","#3F8FE0"],SC=["#E8397A","#F2703F","#27C9C9","#FFD62E"];
+  var S=load(),P=lp(),cur=null,armed={},pendienteCita=null;
+  function load(){try{var j=JSON.parse(localStorage.getItem(K));if(j&&j.length)return j}catch(e){}
+    var n=0;function r(p){n++;return{id:n,nombre:"Consultorio "+n,piso:p,estado:"libre",psi:"",cons:"",desde:0,hasta:"",cita_id:null}}
+    return[r("baja"),r("baja"),r("baja"),r("alta"),r("alta"),r("alta"),r("alta")]}
+  function lp(){try{return JSON.parse(localStorage.getItem(KP))||[]}catch(e){return[]}}
+  function save(){try{localStorage.setItem(K,JSON.stringify(S));localStorage.setItem(KP,JSON.stringify(P))}catch(e){}}
+  function esc(s){var d=document.createElement("div");d.textContent=s||"";return d.innerHTML}
+  function hs(s){var h=7;for(var i=0;i<s.length;i++)h=(h*31+s.charCodeAt(i))>>>0;return h}
+  function pick(a,s,o){return a[(hs(s)+o)%a.length]}
+  function hh(t){var d=new Date(t);return d.getHours()+":"+("0"+d.getMinutes()).slice(-2)}
+  function hace(t){var m=Math.max(0,Math.round((Date.now()-t)/60000));return m<60?"hace "+m+" min":"hace "+Math.floor(m/60)+" h "+(m%60)+" min"}
+  function persona(x,s,sh){var sk=pick(SK,s,1),hc=pick(HR,s,3),st=hs(s)%3,cap='<path d="M-15 49a15 15 0 0 1 30 0c-6-5-9-6-15-6s-9 1-15 6z" fill="'+hc+'"/>';
+    return '<g transform="translate('+x+' 0)">'+(st===1?'<path d="M-17 52a17 17 0 0 1 34 0v26q0 6-6 6h-22q-6 0-6-6z" fill="'+hc+'"/>':'')+'<rect x="-6" y="62" width="12" height="14" rx="5" fill="'+sk+'"/><path d="M-25 124V92q0-17 16-17h18q16 0 16 17v32z" fill="'+sh+'"/><path d="M-7 75q7 8 14 0" fill="'+sk+'"/><ellipse cy="52" rx="14" ry="16" fill="'+sk+'"/>'+cap+(st===2?'<circle cy="32" r="7" fill="'+hc+'"/>':'')+'</g>'}
+  function star(x,y,c){return '<path class="tw tw'+(x%2?'':' tw2')+'" d="M'+x+' '+(y-7)+'q1 6 7 7q-6 1-7 7q-1-6-7-7q6-1 7-7z" fill="'+c+'"/>'}
+  var BASE='<svg class="esc" viewBox="0 0 240 150" aria-hidden="true"><rect width="240" height="150" fill="var(--card)"/><rect width="240" height="150" fill="var(--m)" opacity=".13"/><rect y="112" width="240" height="38" fill="var(--m)" opacity=".2"/><rect x="16" y="16" width="58" height="48" rx="12" fill="#BFEFF2" stroke="var(--m)" stroke-width="3"/><path d="M45 16v48M16 40h58" stroke="var(--m)" stroke-width="2.500"/><circle cx="30" cy="29" r="6" fill="#FFD62E"/><path d="M200 112h18l-3 18h-12z" fill="#F2703F"/><path d="M209 112c-12-6-14-20-8-30 8 8 10 18 8 30zM209 112c10-6 14-18 10-28-9 6-12 16-10 28z" fill="#27C9C9"/>';
+  function escenaSil(c){
+    var g=BASE;
+    var t='<rect x="88" y="104" width="64" height="8" rx="4" fill="#C9A27A"/><rect x="96" y="112" width="6" height="22" fill="#B58A62"/><rect x="138" y="112" width="6" height="22" fill="#B58A62"/>';
+    if(c.estado==='libre'){g+='<rect x="52" y="86" width="26" height="30" rx="8" fill="var(--m)" opacity=".35"/><rect x="162" y="86" width="26" height="30" rx="8" fill="var(--m)" opacity=".35"/><g class="bob"><circle cx="120" cy="66" r="30" fill="#FFD62E"/><circle cx="109" cy="61" r="3" fill="#2A1F5C"/><circle cx="131" cy="61" r="3" fill="#2A1F5C"/><path d="M107 72q13 12 26 0" stroke="#2A1F5C" stroke-width="3" fill="none" stroke-linecap="round"/><circle cx="100" cy="72" r="4.500" fill="#F2703F" opacity=".35"/><circle cx="140" cy="72" r="4.500" fill="#F2703F" opacity=".35"/></g>'+star(66,40,'#F2703F')+star(176,34,'#fff')+star(168,92,'#E8397A')+t}
+    else{var sp=c.psi||'psi'+c.id;g+=persona(70,sp,pick(SP,sp,0));
+      if(c.estado==='uso'){var sc=c.cons||'con'+c.id;g+=persona(170,sc,pick(SC,sc,2))+'<path d="M120 34c-9-6-14-13-9-18 3-3 7-1 9 2 2-3 6-5 9-2 5 5 0 12-9 18z" fill="#E8397A"/>'}
+      else g+='<circle cx="170" cy="62" r="22" fill="var(--card)" stroke="#BFA600" stroke-width="3"/><path d="M170 48v15l10 6" stroke="#7F5D00" stroke-width="3" fill="none" stroke-linecap="round"/><rect x="154" y="86" width="32" height="30" rx="8" fill="var(--m)" opacity=".4"/>';
+      g+=t+'<ellipse cx="120" cy="101" rx="9" ry="3" fill="#fff" opacity=".7"/>'}
+    return g+'</svg>'}
+  var EST=(function(){try{return localStorage.getItem('hope-estilo')||'animado'}catch(e){return'animado'}})();
+  function em(x,y,z,e,cl){return '<text class="'+(cl||'')+'" x="'+x+'" y="'+y+'" font-size="'+z+'" text-anchor="middle">'+e+'</text>'}
+  function disco(x,col,n){var i=(n||'?').trim().split(/\s+/).slice(0,2).map(function(w){return w.charAt(0)}).join('').toUpperCase()||'?',d=col==='#27C9C9'||col==='#FFD62E';return '<circle cx="'+x+'" cy="76" r="30" fill="'+col+'"/><circle cx="'+x+'" cy="76" r="30" fill="none" stroke="#fff" stroke-width="3" opacity=".6"/><text x="'+x+'" y="87" font-size="30" font-weight="800" fill="'+(d?'#2A1F5C':'#fff')+'" text-anchor="middle" font-family="Lexend,sans-serif">'+esc(i)+'</text>'}
+  function mini(c){var h='<svg class="esc" viewBox="0 0 240 110" aria-hidden="true">',k='var(--md)';
+    if(c.estado==='libre')return h+'<g class="bob" fill="none" stroke="'+k+'" stroke-width="4" stroke-linecap="round"><circle cx="120" cy="55" r="34"/><path d="M106 68q14 12 28 0"/></g><g class="bob" fill="'+k+'"><circle cx="108" cy="47" r="4"/><circle cx="132" cy="47" r="4"/></g></svg>';
+    if(c.estado==='uso')return h+'<circle cx="100" cy="55" r="32" fill="var(--m)" opacity=".8"/><circle cx="140" cy="55" r="32" fill="var(--m)" opacity=".5"/></svg>';
+    return h+'<circle cx="100" cy="55" r="32" fill="var(--m)" opacity=".8"/><circle cx="150" cy="55" r="26" fill="none" stroke="'+k+'" stroke-width="4" stroke-dasharray="3 9" stroke-linecap="round"/></svg>'}
+  function anim(c){var h='<svg class="esc" viewBox="0 0 240 150" aria-hidden="true"><rect width="240" height="150" fill="var(--m)" opacity=".1"/><circle cx="40" cy="124" r="46" fill="var(--m)" opacity=".13"/><circle cx="212" cy="28" r="36" fill="var(--m)" opacity=".13"/>';
+    if(c.estado==='libre'){var r='';for(var i=0;i<8;i++)r+='<path d="M120 9v9" transform="rotate('+(i*45)+' 120 55)"/>';
+      return h+'<g class="rot" stroke="#FFD62E" stroke-width="5" stroke-linecap="round">'+r+'</g><g class="bob"><circle cx="120" cy="58" r="30" fill="#FFD62E"/><ellipse class="blink" cx="109" cy="54" rx="3.500" ry="5" fill="#2A1F5C"/><ellipse class="blink" cx="131" cy="54" rx="3.500" ry="5" fill="#2A1F5C"/><path d="M107 67q13 12 26 0" stroke="#2A1F5C" stroke-width="3" fill="none" stroke-linecap="round"/><circle cx="99" cy="66" r="4.500" fill="#F2703F" opacity=".35"/><circle cx="141" cy="66" r="4.500" fill="#F2703F" opacity=".35"/></g>'+star(52,40,'#F2703F')+star(190,36,'#fff')+star(176,108,'#E8397A')+'</svg>'}
+    var sp=c.psi||'p'+c.id,sc=c.cons||'c'+c.id,L='<g class="br">'+disco(78,pick(SP,sp,0),c.psi)+'</g>',R;
+    if(c.estado==='uso')R='<g class="br br2">'+disco(162,pick(SC,sc,2),c.cons)+'</g><path class="pls" d="M120 86c-9-7-15-13-9-19 3-3 7-1 9 2 2-3 6-5 9-2 6 6 0 12-9 19z" fill="#E8397A"/><rect x="96" y="12" width="48" height="26" rx="13" fill="var(--card)"/><path d="M114 38l-4 8 10-8z" fill="var(--card)"/><circle class="dot" cx="108" cy="25" r="3.500" fill="var(--md)"/><circle class="dot d2" cx="120" cy="25" r="3.500" fill="var(--md)"/><circle class="dot d3" cx="132" cy="25" r="3.500" fill="var(--md)"/>';
+    else R='<g class="br br2"><circle cx="162" cy="76" r="30" fill="var(--card)" stroke="var(--m)" stroke-width="5"/><path d="M162 54v5M162 93v5M140 76h5M179 76h5" stroke="var(--md)" stroke-width="3" stroke-linecap="round"/><g class="hand"><circle cx="162" cy="76" r="20" fill="none"/><path d="M162 76V60" stroke="var(--md)" stroke-width="4" stroke-linecap="round"/></g><path d="M162 76l8 4" stroke="var(--md)" stroke-width="4" stroke-linecap="round"/></g>';
+    return h+L+R+'</svg>'}
+  function escena(c){if(EST==='siluetas')return escenaSil(c);if(EST==='minimal')return mini(c);if(EST==='animado')return anim(c);
+    var g=BASE,t='<rect x="88" y="104" width="64" height="8" rx="4" fill="#C9A27A"/><rect x="96" y="112" width="6" height="22" fill="#B58A62"/><rect x="138" y="112" width="6" height="22" fill="#B58A62"/>';
+    if(c.estado==='libre')return g+'<rect x="52" y="86" width="26" height="30" rx="8" fill="var(--m)" opacity=".35"/><rect x="162" y="86" width="26" height="30" rx="8" fill="var(--m)" opacity=".35"/>'+em(120,92,66,'😊','bob')+star(66,40,'#F2703F')+star(176,34,'#fff')+star(168,92,'#E8397A')+t+'</svg>';
+    var sp=c.psi||'p'+c.id,sc=c.cons||'c'+c.id,u=c.estado==='uso',w=u?em(120,40,22,'💜'):'';
+    if(EST==='emojis')g+=em(70,100,54,pick(['👩‍⚕️','👨‍⚕️','🧑‍⚕️'],sp,0))+(u?em(170,100,54,pick(['🙂','😊','🧑','👩','👨','🧑‍🦱','👩‍🦰','👨‍🦱'],sc,2)):em(170,92,44,'⏳'));
+    else g+=disco(70,pick(SP,sp,0),c.psi)+(u?disco(170,pick(SC,sc,2),c.cons):em(170,92,44,'⏳'));
+    return g+w+t+'</svg>'}
+  function sala(c){var T={libre:'Libre',uso:'En uso',apartado:'Apartado'},i;
+    if(c.estado==='libre')i='<b>¡Todo despejado!</b><span>Listo para recibir a alguien</span>';
+    else if(c.estado==='uso')i='<b>'+esc(c.psi||'Psicólogo/a sin nombre')+'</b><span>con '+esc(c.cons||'consultante')+' · desde '+hh(c.desde)+' ('+hace(c.desde)+')'+(c.hasta?' · hasta '+c.hasta:'')+'</span>';
+    else i='<b>'+esc(c.psi||'Apartado')+'</b><span>'+(c.cons?'espera a '+esc(c.cons)+' · ':'')+'desde '+hh(c.desde)+(c.hasta?' · hasta '+c.hasta:'')+'</span>';
+    return '<button type="button" class="sala '+c.estado+'" data-id="'+c.id+'" aria-label="'+esc(c.nombre)+': '+T[c.estado]+'. Toca para cambiar."><span class="top"><h3>'+esc(c.nombre)+'</h3><span class="est"><i></i>'+T[c.estado]+'</span></span>'+escena(c)+'<span class="info">'+i+'</span></button>'}
+  function render(){var h='',n={libre:0,uso:0,apartado:0};
+    [['alta','Planta alta'],['baja','Planta baja']].forEach(function(p){var l=S.filter(function(c){return c.piso===p[0]});l.forEach(function(c){n[c.estado]++});
+      var lb=l.filter(function(c){return c.estado==='libre'}).length;
+      h+='<section class="piso" aria-label="'+p[1]+'"><header><h2>'+p[1]+' <small>'+lb+' libre'+(lb===1?'':'s')+' de '+l.length+'</small></h2><button type="button" class="mini" data-add="'+p[0]+'">+ Agregar consultorio</button></header><div class="salas">'+(l.map(sala).join('')||'<p style="color:var(--muted);font-weight:600">Aún no hay consultorios aquí. Agrega el primero.</p>')+'</div></section>'});
+    document.getElementById('coPisos').innerHTML=h;document.getElementById('co-nL').textContent=n.libre;document.getElementById('co-nU').textContent=n.uso;document.getElementById('co-nA').textContent=n.apartado;
+    document.getElementById('coPsis').innerHTML=P.map(function(x){return '<option value="'+esc(x)+'">'}).join('')}
+  function ab(id){cur=S.filter(function(c){return String(c.id)===String(id)})[0];if(!cur)return;var d=document.getElementById('coDlg');
+    document.getElementById('coDt').textContent=cur.nombre;document.getElementById('coFn').value=cur.nombre;
+    var e=cur.estado==='libre'?'uso':cur.estado;document.querySelector('input[name=coe][value='+e+']').checked=true;
+    document.getElementById('coFp').value=cur.psi;document.getElementById('coFc').value=cur.cons;document.getElementById('coFh').value=cur.hasta;ver();d.showModal()}
+  function ver(){var e=document.querySelector('input[name=coe]:checked').value;document.getElementById('coQuien').style.display=e==='libre'?'none':'grid'}
+  function arma(b,k,txt,fn){if(armed[k]){armed[k]=0;fn();return}armed[k]=1;var o=b.textContent;b.textContent=txt;b.classList.add('armado');setTimeout(function(){armed[k]=0;b.textContent=o;b.classList.remove('armado')},3000)}
+  function abrir(){O.classList.add('on');O.setAttribute('aria-hidden','false');document.body.classList.add('co-lock');render()}
+  function cerrar(){O.classList.remove('on');O.setAttribute('aria-hidden','true');document.body.classList.remove('co-lock')}
+  function paraCita(info){info=info||{};abrir();
+    var rec=S.filter(function(c){return c.estado!=='libre'&&info.cita_id!=null&&String(c.cita_id)===String(info.cita_id)})[0];
+    if(!rec)rec=S.filter(function(c){return c.estado==='libre'})[0];
+    if(!rec){window.alert('No hay consultorios libres. Libera o aparta uno e inténtalo de nuevo.');return}
+    pendienteCita=info.cita_id!=null?info.cita_id:null;
+    ab(rec.id);
+    document.getElementById('coFp').value=info.psicologa||document.getElementById('coFp').value;
+    document.getElementById('coFc').value=info.paciente||document.getElementById('coFc').value;
+    ver()}
+  document.getElementById('coPisos').addEventListener('click',function(ev){var s=ev.target.closest('.sala'),a=ev.target.closest('[data-add]');
+    if(s)ab(s.dataset.id);else if(a){var id=Math.max.apply(0,S.map(function(c){return c.id}).concat(0))+1;S.push({id:id,nombre:'Consultorio '+(S.length+1),piso:a.dataset.add,estado:'libre',psi:'',cons:'',desde:0,hasta:'',cita_id:null});save();render()}});
+  document.querySelectorAll('#coOverlay input[name=coe]').forEach(function(r){r.addEventListener('change',ver)});
+  document.getElementById('coNo').onclick=function(){pendienteCita=null;document.getElementById('coDlg').close()};
+  document.getElementById('coDel').onclick=function(){var b=this;arma(b,'del','¿Seguro? Toca de nuevo',function(){S=S.filter(function(c){return c!==cur});pendienteCita=null;save();render();document.getElementById('coDlg').close()})};
+  document.getElementById('coF').addEventListener('submit',function(ev){ev.preventDefault();
+    var e=document.querySelector('input[name=coe]:checked').value,antes=cur.estado;
+    cur.nombre=document.getElementById('coFn').value.trim()||cur.nombre;cur.estado=e;
+    if(e==='libre'){cur.psi=cur.cons=cur.hasta='';cur.desde=0;cur.cita_id=null}
+    else{cur.psi=document.getElementById('coFp').value.trim();cur.cons=document.getElementById('coFc').value.trim();cur.hasta=document.getElementById('coFh').value;if(antes==='libre'||!cur.desde)cur.desde=Date.now();
+      if(pendienteCita!==null)cur.cita_id=pendienteCita;
+      if(cur.psi&&P.indexOf(cur.psi)<0)P.push(cur.psi)}
+    pendienteCita=null;
+    save();render();document.getElementById('coDlg').close();var pc=document.querySelector('#coPisos .sala[data-id="'+cur.id+'"]');if(pc)pc.classList.add('pop')});
+  document.getElementById('coTodos').onclick=function(){arma(this,'todos','¿Seguro? Toca de nuevo',function(){S.forEach(function(c){c.estado='libre';c.psi=c.cons=c.hasta='';c.desde=0;c.cita_id=null});save();render()})};
+  document.getElementById('coFrase').textContent=["¡Hoy es un gran día para brillar!","Una sonrisa tuya puede cambiar el día de alguien.","Qué bueno que estás aquí: tu calidez abre puertas.","Cada pequeño gesto es esperanza en acción.","Hoy sembramos tranquilidad, una cita a la vez."][Math.floor(Date.now()/864e5)%5];
+  document.querySelectorAll('#coOverlay [data-est]').forEach(function(b){b.onclick=function(){EST=b.dataset.est;try{localStorage.setItem('hope-estilo',EST)}catch(e){}document.querySelectorAll('#coOverlay [data-est]').forEach(function(x){x.setAttribute('aria-pressed',x===b)});render()}});
+  document.getElementById('coCerrar').onclick=cerrar;
+  document.getElementById('modCo').onclick=abrir;
+  window.hopeConsultorios={
+    abrir:abrir,
+    paraCita:paraCita,
+    nombreDeCita:function(citaId){if(citaId==null)return "";
+      for(var i=0;i<S.length;i++){var c=S[i];if(c.estado!=='libre'&&String(c.cita_id)===String(citaId))return c.nombre}
+      return ""}
+  };
+  setInterval(function(){if(O.classList.contains('on')&&!document.getElementById('coDlg').open)render()},30000);
+  /* Arranque: pinta los botones de dibujos con el estilo guardado */
+  document.querySelectorAll('#coOverlay [data-est]').forEach(function(x){x.setAttribute('aria-pressed',x.dataset.est===EST)});
+})();
+</script>
+
 {% if citas_hoy %}<input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}" id="csrf-hope">{% endif %}
 <script>
 (function(){
@@ -306,9 +566,12 @@ a{color:inherit;text-decoration:none}
     $("lista").innerHTML=v.map(function(c){
       var h=String(c.hora||"").split(" ");
       var pase=c.pase_url?'<a class="mini" href="'+esc(c.pase_url)+'">Ver pase</a>':"";
+      // 🪑 Módulo Consultorios: botón por fila (útil sobre todo al marcar "Sí vino")
+      var nomCo=(window.hopeConsultorios&&window.hopeConsultorios.nombreDeCita(c.cita_id))||"";
+      var btnCo='<button class="mini pide-co" data-co="'+esc(c.cita_id==null?"":c.cita_id)+'" title="Consultorios de recepción">🪑 '+esc(nomCo||"Consultorio")+'</button>';
       return '<li class="cita'+(c===sig?" sigue":"")+'"><div class="h">'+esc(h[0])+'<small>'+esc(h[1]||"")+'</small></div>'+
         '<div class="qui"><span class="ini '+esc(c.modalidad)+'" aria-hidden="true">'+esc(ini(c.paciente))+'</span><div style="min-width:0"><p class="n">'+esc(c.paciente)+'</p><p class="ps">'+esc(c.psicologa)+' · '+(c.modalidad==="online"?"En línea":"Presencial")+'</p></div></div>'+
-        '<div class="der"><span class="chip s-'+esc(c.estado)+'">'+(ETQ[c.estado]||esc(c.estado))+'</span>'+pase+botonesLlegada(c)+'<a class="mini" href="'+esc(c.url||"#")+'">Gestionar</a></div></li>';
+        '<div class="der"><span class="chip s-'+esc(c.estado)+'">'+(ETQ[c.estado]||esc(c.estado))+'</span>'+pase+btnCo+botonesLlegada(c)+'<a class="mini" href="'+esc(c.url||"#")+'">Gestionar</a></div></li>';
     }).join("");
   }
   function cuenta(e,m){return citas.filter(function(c){return (e?c.estado===e:true)&&(m?c.modalidad===m:true)}).length}
@@ -339,7 +602,14 @@ a{color:inherit;text-decoration:none}
 
   // 🪑 Registro de llegada (solo datos reales): guarda en BD mediante
   // POST/CSRF a url_registrar_llegada y repinta el chip de la fila.
+  // El botón 🪑 de la fila abre el módulo de Consultorios (overlay, estado local).
   $("lista").addEventListener("click",function(e){
+    var pc=e.target.closest("button.pide-co");
+    if(pc){
+      var ac=citas.filter(function(x){return String(x.cita_id)===String(pc.dataset.co)})[0];
+      if(ac&&window.hopeConsultorios)window.hopeConsultorios.paraCita({cita_id:ac.cita_id,paciente:ac.paciente,psicologa:ac.psicologa});
+      return;
+    }
     var b=e.target.closest("button[data-valor]");
     if(!b||!UPLOAD_URL)return;
     e.preventDefault();
@@ -351,6 +621,9 @@ a{color:inherit;text-decoration:none}
     .then(function(d){
       b.disabled=false;
       if(d.status!=="success"){b.classList.remove("sel");window.alert(d.mensaje||"No se pudo registrar la llegada.");return}
+      // Actualizar el dato local para que pinta() muestre el botón 🪑 al marcar "Sí vino"
+      var lc=citas.filter(function(x){return String(x.cita_id)===String(b.dataset.id)})[0];
+      if(lc){lc.asistencia=d.registro_llegada||lc.asistencia;lc.estado=d.estado||lc.estado}
       // Reflejar el resultado REAL del servidor en toda la fila
       var fila=b.closest("li.cita");
       if(fila){

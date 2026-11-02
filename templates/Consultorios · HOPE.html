@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Consultorios · HOPE</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@500;700;800&family=Figtree:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--purple:#5B45A8;--deep:#3F2C85;--ink:#2A1F5C;--muted:#675F9C;--line:#E6DFF6;--bg:#F7F3FE;--card:#fff;--lilac:#ECE6FB;
+--teal:#27C9C9;--teal-s:#D9F6F6;--teal-d:#0E7F7F;--pink:#E8397A;--pink-s:#FFE1EC;--pink-d:#BE1856;--yellow:#FFD62E;--yellow-s:#FFF2B8;--yellow-d:#7F5D00;
+--fh:'Lexend',sans-serif;--fb:'Figtree',sans-serif;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--purple:#7A63D1;--deep:#D2C8FF;--ink:#F1ECFF;--muted:#B9B0E8;--line:#3B3080;--bg:#171232;--card:#221A4A;--lilac:#2E2566;--teal-s:#17454A;--teal-d:#7FE8E8;--pink-s:#4E1C3A;--pink-d:#FF9DBF;--yellow-s:#4A4018;--yellow-d:#FFE680}}
+:root[data-theme="dark"]{--purple:#7A63D1;--deep:#D2C8FF;--ink:#F1ECFF;--muted:#B9B0E8;--line:#3B3080;--bg:#171232;--card:#221A4A;--lilac:#2E2566;--teal-s:#17454A;--teal-d:#7FE8E8;--pink-s:#4E1C3A;--pink-d:#FF9DBF;--yellow-s:#4A4018;--yellow-d:#FFE680}
+*,*::before,*::after{box-sizing:border-box;margin:0}
+html{height:100%}body{min-height:100%;background:var(--bg);color:var(--ink);font-family:var(--fb)}
+:focus-visible{outline:3px solid var(--deep);outline-offset:3px;border-radius:14px}
+.ic{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.wrap{width:min(1180px,100% - 36px);margin-inline:auto;position:relative;z-index:1}
+.hero{position:relative;overflow:hidden;color:#fff;background:linear-gradient(135deg,#46329A 0%,#5B45A8 55%,#6C52C8 100%);padding:34px 0 120px}
+.hero .ola{position:absolute;left:0;right:0;bottom:-1px;width:100%;height:92px}
+.chip-h{display:inline-flex;align-items:center;gap:9px;padding:7px 15px 7px 11px;border-radius:99px;background:rgba(255,255,255,.16);font-weight:700;font-size:14.5px}
+.chip-h .ic{fill:var(--yellow);stroke:none}
+.hero h1{margin-top:16px;font:800 clamp(30px,5vw,54px)/1.05 var(--fh);letter-spacing:-.02em;text-wrap:balance;max-width:20ch}
+.hero p{margin-top:12px;font-size:16px;line-height:1.5;color:#EEE8FF;max-width:48ch;font-weight:500}
+.estilos{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:18px;font-weight:700;font-size:14px}.estilos .mini[aria-pressed=true]{background:var(--yellow);border-color:var(--yellow);color:#2A1F5C}
+.conts{display:grid;grid-template-columns:repeat(3,1fr) auto;gap:14px;margin-top:-62px;align-items:stretch}
+.cont{border-radius:26px;padding:16px 20px;border:3px solid var(--m);background:var(--ms);color:var(--md);box-shadow:0 18px 26px -24px rgba(30,15,90,.5)}
+.cont b{display:block;font:800 34px/1 var(--fh)}.cont span{font-weight:800;font-size:14px}
+.libre{--m:var(--teal);--ms:var(--teal-s);--md:var(--teal-d)}.uso{--m:var(--pink);--ms:var(--pink-s);--md:var(--pink-d)}.apartado{--m:var(--yellow);--ms:var(--yellow-s);--md:var(--yellow-d)}
+.mini{cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:9px 16px;border-radius:99px;font:800 13px var(--fb);background:var(--card);color:var(--purple);border:3.5px solid #BFB0EA;transition:border-color .15s,background .15s}
+.mini:hover{border-color:var(--purple);background:var(--lilac)}
+.mini.pri{background:var(--purple);border-color:var(--purple);color:#fff}
+.mini.armado{border-color:var(--pink);color:var(--pink-d)}
+.piso{margin-top:22px;background:var(--card);border:2px solid var(--line);border-radius:34px;padding:clamp(18px,3vw,26px)}
+.piso>header{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-bottom:18px}
+.piso h2{font:800 22px var(--fh);color:var(--deep);flex:1;display:flex;align-items:center;gap:10px}
+.piso h2 small{font:700 13px var(--fb);color:var(--muted)}
+.salas{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:16px}
+.sala{display:flex;flex-direction:column;gap:10px;text-align:left;cursor:pointer;font:inherit;color:var(--ink);padding:14px 14px 16px;border-radius:34px;background:var(--ms);border:3px solid var(--m);transition:transform .2s;box-shadow:0 18px 26px -24px rgba(30,15,90,.5)}
+.sala:hover{transform:translateY(-5px) rotate(-.6deg)}
+.sala .top{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:2px 6px 0}
+.sala h3{font:800 17px var(--fh)}
+.est{display:inline-flex;align-items:center;gap:7px;padding:4px 11px;border-radius:99px;background:var(--card);color:var(--md);font-weight:800;font-size:12px}
+.est i{width:9px;height:9px;border-radius:50%;background:var(--m)}
+.esc{width:100%;height:auto;border-radius:24px;display:block}
+.info{display:block;padding:0 6px}.info b{display:block;font-size:15px;font-weight:800}.info span{display:block;margin-top:2px;font-size:12.5px;font-weight:600;color:var(--md)}
+@media (prefers-reduced-motion:no-preference){.bob{animation:bob 3.2s ease-in-out infinite}.tw{animation:tw 2.4s ease-in-out infinite}.tw2{animation-delay:.8s}@keyframes bob{50%{transform:translateY(-6px)}}@keyframes tw{50%{opacity:.25}}.rot{animation:rot 16s linear infinite}.hand{animation:rot 5s linear infinite}.blink{animation:blink 4.5s infinite}.br{animation:br 3s ease-in-out infinite}.br2{animation-delay:1.5s}.dot{animation:dot 1.2s ease-in-out infinite}.d2{animation-delay:.2s}.d3{animation-delay:.4s}.pls{animation:pls 1.6s ease-in-out infinite}.pop{animation:pop .6s}@keyframes rot{to{transform:rotate(360deg)}}@keyframes blink{0%,92%,100%{transform:scaleY(1)}96%{transform:scaleY(.1)}}@keyframes br{50%{transform:scale(1.07)}}@keyframes dot{40%{transform:translateY(-5px)}}@keyframes pls{50%{transform:scale(1.25)}}@keyframes pop{40%{transform:scale(1.06) rotate(-1deg)}}}
+.rot,.hand,.blink,.br,.dot,.pls,.bob{transform-box:fill-box;transform-origin:center}
+.pie{margin:30px 0 40px;text-align:center;font:700 15px var(--fh);color:var(--muted)}
+dialog{border:0;padding:0;border-radius:34px;width:min(460px,100% - 28px);background:var(--card);color:var(--ink);box-shadow:0 30px 60px -20px rgba(30,15,90,.55)}
+dialog::backdrop{background:rgba(42,31,92,.55);backdrop-filter:blur(6px)}
+dialog form{padding:26px;display:grid;gap:16px}
+dialog h2{font:800 22px var(--fh);color:var(--deep)}
+label.c{display:grid;gap:6px;font-weight:800;font-size:13.5px}
+label.c input{height:48px;padding:0 18px;border-radius:99px;border:2px solid transparent;background:var(--bg);font:600 15px var(--fb);color:var(--ink)}
+label.c input:focus{outline:none;border-color:var(--purple)}
+.segs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;border:0;padding:0}
+.seg{position:relative}.seg input{position:absolute;opacity:0;inset:0;cursor:pointer}
+.seg span{display:block;text-align:center;padding:11px 6px;border-radius:99px;font-weight:800;font-size:13.5px;background:var(--bg);border:2px solid transparent}
+.seg input:checked+span{background:var(--ms);border-color:var(--m);color:var(--md)}
+.seg input:focus-visible+span{outline:3px solid var(--deep);outline-offset:2px}
+.acc{display:flex;flex-wrap:wrap;gap:10px;justify-content:flex-end}
+@media (max-width:760px){.conts{grid-template-columns:repeat(3,1fr)}.conts .mini{grid-column:1/-1}.cont{padding:12px}.cont b{font-size:28px}}
+</style></head><body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><symbol id="h" viewBox="0 0 24 24"><path d="M12 2C6.5 2 2 5.8 2 10.5c0 2.6 1.4 4.9 3.6 6.4L5 21.500l4.300-2.400c.9.2 1.700.3 2.700.3 5.500 0 10-3.800 10-8.500S17.500 2 12 2z"/></symbol></svg>
+<header class="hero"><div class="wrap">
+<p class="chip-h"><svg class="ic" aria-hidden="true"><use href="#h"/></svg>Consultorios · recepción</p>
+<h1 id="frase"></h1>
+<p>Toca un consultorio para marcarlo en uso, apartarlo o dejarlo libre. Todo queda guardado en este navegador.</p><div class="estilos" role="group" aria-label="Estilo de los dibujos"><span>Dibujos:</span><button type="button" class="mini" data-est="animado">Animado</button><button type="button" class="mini" data-est="minimal">Minimal</button><button type="button" class="mini" data-est="emojis">Emojis</button><button type="button" class="mini" data-est="iniciales">Iniciales</button><button type="button" class="mini" data-est="siluetas">Siluetas</button></div></div>
+<svg class="ola" viewBox="0 0 1200 110" preserveAspectRatio="none" aria-hidden="true"><path fill="#FFD62E" d="M0 50C150 10 300 8 450 40S780 90 930 60 1130 20 1200 36V110H0Z"/><path style="fill:var(--bg)" d="M0 84C160 52 330 52 500 76S840 106 1010 84 1140 62 1200 70V110H0Z"/></svg></header>
+<main class="wrap">
+<section class="conts" aria-label="Resumen" aria-live="polite">
+<div class="cont libre"><b id="nL">0</b><span>Libres</span></div><div class="cont uso"><b id="nU">0</b><span>En uso</span></div><div class="cont apartado"><b id="nA">0</b><span>Apartados</span></div>
+<button class="mini" id="todos" type="button">Liberar todos</button></section>
+<div id="pisos"></div>
+<p class="pie">Un buen recibimiento también es parte del cuidado.</p></main>
+<dialog id="dlg" aria-labelledby="dt"><form method="dialog" id="f">
+<h2 id="dt">Consultorio</h2>
+<label class="c">Nombre del consultorio<input id="fn" required maxlength="30"></label>
+<fieldset class="segs" aria-label="Estado">
+<label class="seg libre"><input type="radio" name="e" value="libre"><span>Libre</span></label>
+<label class="seg uso"><input type="radio" name="e" value="uso"><span>En uso</span></label>
+<label class="seg apartado"><input type="radio" name="e" value="apartado"><span>Apartado</span></label></fieldset>
+<div id="quien" style="display:grid;gap:16px">
+<label class="c">Psicólogo/a<input id="fp" list="psis" maxlength="40" placeholder="Ej. Dra. Ana"></label>
+<label class="c">Consultante (opcional)<input id="fc" maxlength="40" placeholder="Solo el nombre"></label>
+<label class="c">Hasta las (opcional)<input id="fh" type="time"></label></div>
+<datalist id="psis"></datalist>
+<div class="acc"><button type="button" class="mini" id="del">Eliminar consultorio</button><button type="button" class="mini" id="no">Cancelar</button><button class="mini pri" id="ok">Guardar</button></div>
+</form></dialog>
+<script>
+var K='hope-consultorios-v1',KP='hope-psicologos-v1',FR=['¡Hoy es un gran día para brillar!','Una sonrisa tuya puede cambiar el día de alguien.','Qué bueno que estás aquí: tu calidez abre puertas.','Cada pequeño gesto es esperanza en acción.','Hoy sembramos tranquilidad, una cita a la vez.'];
+var SK=['#F6D2B0','#E7B48C','#C58B62','#8D5A3B'],HR=['#2A1F5C','#5A3A2A','#C9792B','#1F1A2E','#8A5CF6'],SP=['#5B45A8','#3F8FE0'],SC=['#E8397A','#F2703F','#27C9C9','#FFD62E'];
+var S=load(),P=lp(),cur=null,armed={};
+function load(){try{var j=JSON.parse(localStorage.getItem(K));if(j&&j.length)return j}catch(e){}var n=0;function r(p){n++;return{id:n,nombre:'Consultorio '+n,piso:p,estado:'libre',psi:'',cons:'',desde:0,hasta:''}}return[r('baja'),r('baja'),r('baja'),r('alta'),r('alta'),r('alta'),r('alta')]}
+function lp(){try{return JSON.parse(localStorage.getItem(KP))||[]}catch(e){return[]}}
+function save(){try{localStorage.setItem(K,JSON.stringify(S));localStorage.setItem(KP,JSON.stringify(P))}catch(e){}}
+function esc(s){var d=document.createElement('div');d.textContent=s||'';return d.innerHTML}
+function hs(s){var h=7;for(var i=0;i<s.length;i++)h=(h*31+s.charCodeAt(i))>>>0;return h}
+function pick(a,s,o){return a[(hs(s)+o)%a.length]}
+function hh(t){var d=new Date(t);return d.getHours()+':'+('0'+d.getMinutes()).slice(-2)}
+function hace(t){var m=Math.max(0,Math.round((Date.now()-t)/60000));return m<60?'hace '+m+' min':'hace '+Math.floor(m/60)+' h '+(m%60)+' min'}
+function persona(x,s,sh){var sk=pick(SK,s,1),hc=pick(HR,s,3),st=hs(s)%3,cap='<path d="M-15 49a15 15 0 0 1 30 0c-6-5-9-6-15-6s-9 1-15 6z" fill="'+hc+'"/>';
+return '<g transform="translate('+x+' 0)">'+(st===1?'<path d="M-17 52a17 17 0 0 1 34 0v26q0 6-6 6h-22q-6 0-6-6z" fill="'+hc+'"/>':'')+'<rect x="-6" y="62" width="12" height="14" rx="5" fill="'+sk+'"/><path d="M-25 124V92q0-17 16-17h18q16 0 16 17v32z" fill="'+sh+'"/><path d="M-7 75q7 8 14 0" fill="'+sk+'"/><ellipse cy="52" rx="14" ry="16" fill="'+sk+'"/>'+cap+(st===2?'<circle cy="32" r="7" fill="'+hc+'"/>':'')+'</g>'}
+function star(x,y,c){return '<path class="tw tw'+(x%2?'':' tw2')+'" d="M'+x+' '+(y-7)+'q1 6 7 7q-6 1-7 7q-1-6-7-7q6-1 7-7z" fill="'+c+'"/>'}
+function escenaSil(c){
+var g=BASE;
+var t='<rect x="88" y="104" width="64" height="8" rx="4" fill="#C9A27A"/><rect x="96" y="112" width="6" height="22" fill="#B58A62"/><rect x="138" y="112" width="6" height="22" fill="#B58A62"/>';
+if(c.estado==='libre'){g+='<rect x="52" y="86" width="26" height="30" rx="8" fill="var(--m)" opacity=".35"/><rect x="162" y="86" width="26" height="30" rx="8" fill="var(--m)" opacity=".35"/><g class="bob"><circle cx="120" cy="66" r="30" fill="#FFD62E"/><circle cx="109" cy="61" r="3" fill="#2A1F5C"/><circle cx="131" cy="61" r="3" fill="#2A1F5C"/><path d="M107 72q13 12 26 0" stroke="#2A1F5C" stroke-width="3" fill="none" stroke-linecap="round"/><circle cx="100" cy="72" r="4.500" fill="#F2703F" opacity=".35"/><circle cx="140" cy="72" r="4.500" fill="#F2703F" opacity=".35"/></g>'+star(66,40,'#F2703F')+star(176,34,'#fff')+star(168,92,'#E8397A')+t}
+else{var sp=c.psi||'psi'+c.id;g+=persona(70,sp,pick(SP,sp,0));
+if(c.estado==='uso'){var sc=c.cons||'con'+c.id;g+=persona(170,sc,pick(SC,sc,2))+'<path d="M120 34c-9-6-14-13-9-18 3-3 7-1 9 2 2-3 6-5 9-2 5 5 0 12-9 18z" fill="#E8397A"/>'}
+else g+='<circle cx="170" cy="62" r="22" fill="var(--card)" stroke="#BFA600" stroke-width="3"/><path d="M170 48v15l10 6" stroke="#7F5D00" stroke-width="3" fill="none" stroke-linecap="round"/><rect x="154" y="86" width="32" height="30" rx="8" fill="var(--m)" opacity=".4"/>';
+g+=t+'<ellipse cx="120" cy="101" rx="9" ry="3" fill="#fff" opacity=".7"/>'}
+return g+'</svg>'}
+var BASE='<svg class="esc" viewBox="0 0 240 150" aria-hidden="true"><rect width="240" height="150" fill="var(--card)"/><rect width="240" height="150" fill="var(--m)" opacity=".13"/><rect y="112" width="240" height="38" fill="var(--m)" opacity=".2"/><rect x="16" y="16" width="58" height="48" rx="12" fill="#BFEFF2" stroke="var(--m)" stroke-width="3"/><path d="M45 16v48M16 40h58" stroke="var(--m)" stroke-width="2.500"/><circle cx="30" cy="29" r="6" fill="#FFD62E"/><path d="M200 112h18l-3 18h-12z" fill="#F2703F"/><path d="M209 112c-12-6-14-20-8-30 8 8 10 18 8 30zM209 112c10-6 14-18 10-28-9 6-12 16-10 28z" fill="#27C9C9"/>',EST=(function(){try{return localStorage.getItem('hope-estilo')||'animado'}catch(e){return'animado'}})();
+function em(x,y,z,e,cl){return '<text class="'+(cl||'')+'" x="'+x+'" y="'+y+'" font-size="'+z+'" text-anchor="middle">'+e+'</text>'}
+function disco(x,col,n){var i=(n||'?').trim().split(/\s+/).slice(0,2).map(function(w){return w.charAt(0)}).join('').toUpperCase()||'?',d=col==='#27C9C9'||col==='#FFD62E';return '<circle cx="'+x+'" cy="76" r="30" fill="'+col+'"/><circle cx="'+x+'" cy="76" r="30" fill="none" stroke="#fff" stroke-width="3" opacity=".6"/><text x="'+x+'" y="87" font-size="30" font-weight="800" fill="'+(d?'#2A1F5C':'#fff')+'" text-anchor="middle" font-family="Lexend,sans-serif">'+esc(i)+'</text>'}
+function mini(c){var h='<svg class="esc" viewBox="0 0 240 110" aria-hidden="true">',k='var(--md)';
+if(c.estado==='libre')return h+'<g class="bob" fill="none" stroke="'+k+'" stroke-width="4" stroke-linecap="round"><circle cx="120" cy="55" r="34"/><path d="M106 68q14 12 28 0"/></g><g class="bob" fill="'+k+'"><circle cx="108" cy="47" r="4"/><circle cx="132" cy="47" r="4"/></g></svg>';
+if(c.estado==='uso')return h+'<circle cx="100" cy="55" r="32" fill="var(--m)" opacity=".8"/><circle cx="140" cy="55" r="32" fill="var(--m)" opacity=".5"/></svg>';
+return h+'<circle cx="100" cy="55" r="32" fill="var(--m)" opacity=".8"/><circle cx="150" cy="55" r="26" fill="none" stroke="'+k+'" stroke-width="4" stroke-dasharray="3 9" stroke-linecap="round"/></svg>'}
+function anim(c){var h='<svg class="esc" viewBox="0 0 240 150" aria-hidden="true"><rect width="240" height="150" fill="var(--m)" opacity=".1"/><circle cx="40" cy="124" r="46" fill="var(--m)" opacity=".13"/><circle cx="212" cy="28" r="36" fill="var(--m)" opacity=".13"/>';
+if(c.estado==='libre'){var r='';for(var i=0;i<8;i++)r+='<path d="M120 9v9" transform="rotate('+(i*45)+' 120 55)"/>';
+return h+'<g class="rot" stroke="#FFD62E" stroke-width="5" stroke-linecap="round">'+r+'</g><g class="bob"><circle cx="120" cy="58" r="30" fill="#FFD62E"/><ellipse class="blink" cx="109" cy="54" rx="3.500" ry="5" fill="#2A1F5C"/><ellipse class="blink" cx="131" cy="54" rx="3.500" ry="5" fill="#2A1F5C"/><path d="M107 67q13 12 26 0" stroke="#2A1F5C" stroke-width="3" fill="none" stroke-linecap="round"/><circle cx="99" cy="66" r="4.500" fill="#F2703F" opacity=".35"/><circle cx="141" cy="66" r="4.500" fill="#F2703F" opacity=".35"/></g>'+star(52,40,'#F2703F')+star(190,36,'#fff')+star(176,108,'#E8397A')+'</svg>'}
+var sp=c.psi||'p'+c.id,sc=c.cons||'c'+c.id,L='<g class="br">'+disco(78,pick(SP,sp,0),c.psi)+'</g>',R;
+if(c.estado==='uso')R='<g class="br br2">'+disco(162,pick(SC,sc,2),c.cons)+'</g><path class="pls" d="M120 86c-9-7-15-13-9-19 3-3 7-1 9 2 2-3 6-5 9-2 6 6 0 12-9 19z" fill="#E8397A"/><rect x="96" y="12" width="48" height="26" rx="13" fill="var(--card)"/><path d="M114 38l-4 8 10-8z" fill="var(--card)"/><circle class="dot" cx="108" cy="25" r="3.500" fill="var(--md)"/><circle class="dot d2" cx="120" cy="25" r="3.500" fill="var(--md)"/><circle class="dot d3" cx="132" cy="25" r="3.500" fill="var(--md)"/>';
+else R='<g class="br br2"><circle cx="162" cy="76" r="30" fill="var(--card)" stroke="var(--m)" stroke-width="5"/><path d="M162 54v5M162 93v5M140 76h5M179 76h5" stroke="var(--md)" stroke-width="3" stroke-linecap="round"/><g class="hand"><circle cx="162" cy="76" r="20" fill="none"/><path d="M162 76V60" stroke="var(--md)" stroke-width="4" stroke-linecap="round"/></g><path d="M162 76l8 4" stroke="var(--md)" stroke-width="4" stroke-linecap="round"/></g>';
+return h+L+R+'</svg>'}
+function escena(c){if(EST==='siluetas')return escenaSil(c);if(EST==='minimal')return mini(c);if(EST==='animado')return anim(c);
+var g=BASE,t='<rect x="88" y="104" width="64" height="8" rx="4" fill="#C9A27A"/><rect x="96" y="112" width="6" height="22" fill="#B58A62"/><rect x="138" y="112" width="6" height="22" fill="#B58A62"/>';
+if(c.estado==='libre')return g+'<rect x="52" y="86" width="26" height="30" rx="8" fill="var(--m)" opacity=".35"/><rect x="162" y="86" width="26" height="30" rx="8" fill="var(--m)" opacity=".35"/>'+em(120,92,66,'😊','bob')+star(66,40,'#F2703F')+star(176,34,'#fff')+star(168,92,'#E8397A')+t+'</svg>';
+var sp=c.psi||'p'+c.id,sc=c.cons||'c'+c.id,u=c.estado==='uso',w=u?em(120,40,22,'💜'):'';
+if(EST==='emojis')g+=em(70,100,54,pick(['👩‍⚕️','👨‍⚕️','🧑‍⚕️'],sp,0))+(u?em(170,100,54,pick(['🙂','😊','🧑','👩','👨','🧑‍🦱','👩‍🦰','👨‍🦱'],sc,2)):em(170,92,44,'⏳'));
+else g+=disco(70,pick(SP,sp,0),c.psi)+(u?disco(170,pick(SC,sc,2),c.cons):em(170,92,44,'⏳'));
+return g+w+t+'</svg>'}
+function sala(c){var T={libre:'Libre',uso:'En uso',apartado:'Apartado'},i;
+if(c.estado==='libre')i='<b>¡Todo despejado!</b><span>Listo para recibir a alguien</span>';
+else if(c.estado==='uso')i='<b>'+esc(c.psi||'Psicólogo/a sin nombre')+'</b><span>con '+esc(c.cons||'consultante')+' · desde '+hh(c.desde)+' ('+hace(c.desde)+')'+(c.hasta?' · hasta '+c.hasta:'')+'</span>';
+else i='<b>'+esc(c.psi||'Apartado')+'</b><span>'+(c.cons?'espera a '+esc(c.cons)+' · ':'')+'desde '+hh(c.desde)+(c.hasta?' · hasta '+c.hasta:'')+'</span>';
+return '<button type="button" class="sala '+c.estado+'" data-id="'+c.id+'" aria-label="'+esc(c.nombre)+': '+T[c.estado]+'. Toca para cambiar."><span class="top"><h3>'+esc(c.nombre)+'</h3><span class="est"><i></i>'+T[c.estado]+'</span></span>'+escena(c)+'<span class="info">'+i+'</span></button>'}
+function render(){var h='',n={libre:0,uso:0,apartado:0};
+[['alta','Planta alta'],['baja','Planta baja']].forEach(function(p){var l=S.filter(function(c){return c.piso===p[0]});l.forEach(function(c){n[c.estado]++});
+var lb=l.filter(function(c){return c.estado==='libre'}).length;
+h+='<section class="piso" aria-label="'+p[1]+'"><header><h2>'+p[1]+' <small>'+lb+' libre'+(lb===1?'':'s')+' de '+l.length+'</small></h2><button type="button" class="mini" data-add="'+p[0]+'">+ Agregar consultorio</button></header><div class="salas">'+(l.map(sala).join('')||'<p style="color:var(--muted);font-weight:600">Aún no hay consultorios aquí. Agrega el primero.</p>')+'</div></section>'});
+document.getElementById('pisos').innerHTML=h;document.getElementById('nL').textContent=n.libre;document.getElementById('nU').textContent=n.uso;document.getElementById('nA').textContent=n.apartado;
+document.getElementById('psis').innerHTML=P.map(function(x){return '<option value="'+esc(x)+'">'}).join('')}
+function ab(id){cur=S.filter(function(c){return c.id===id})[0];var d=document.getElementById('dlg');
+document.getElementById('dt').textContent=cur.nombre;document.getElementById('fn').value=cur.nombre;
+var e=cur.estado==='libre'?'uso':cur.estado;document.querySelector('input[name=e][value='+e+']').checked=true;
+document.getElementById('fp').value=cur.psi;document.getElementById('fc').value=cur.cons;document.getElementById('fh').value=cur.hasta;ver();d.showModal()}
+function ver(){var e=document.querySelector('input[name=e]:checked').value;document.getElementById('quien').style.display=e==='libre'?'none':'grid'}
+function arma(b,k,txt,fn){if(armed[k]){armed[k]=0;fn();return}armed[k]=1;var o=b.textContent;b.textContent=txt;b.classList.add('armado');setTimeout(function(){armed[k]=0;b.textContent=o;b.classList.remove('armado')},3000)}
+document.getElementById('pisos').addEventListener('click',function(ev){var s=ev.target.closest('.sala'),a=ev.target.closest('[data-add]');
+if(s)ab(+s.dataset.id);else if(a){var id=Math.max.apply(0,S.map(function(c){return c.id}).concat(0))+1;S.push({id:id,nombre:'Consultorio '+(S.length+1),piso:a.dataset.add,estado:'libre',psi:'',cons:'',desde:0,hasta:''});save();render()}});
+document.querySelectorAll('input[name=e]').forEach(function(r){r.addEventListener('change',ver)});
+document.getElementById('no').onclick=function(){document.getElementById('dlg').close()};
+document.getElementById('del').onclick=function(){var b=this;arma(b,'del','¿Seguro? Toca de nuevo',function(){S=S.filter(function(c){return c!==cur});save();render();document.getElementById('dlg').close()})};
+document.getElementById('f').addEventListener('submit',function(ev){ev.preventDefault();var e=document.querySelector('input[name=e]:checked').value,antes=cur.estado;
+cur.nombre=document.getElementById('fn').value.trim()||cur.nombre;cur.estado=e;
+if(e==='libre'){cur.psi=cur.cons=cur.hasta='';cur.desde=0}else{cur.psi=document.getElementById('fp').value.trim();cur.cons=document.getElementById('fc').value.trim();cur.hasta=document.getElementById('fh').value;if(antes==='libre'||!cur.desde)cur.desde=Date.now();
+if(cur.psi&&P.indexOf(cur.psi)<0)P.push(cur.psi)}
+save();render();document.getElementById('dlg').close();var pc=document.querySelector('.sala[data-id="'+cur.id+'"]');if(pc)pc.classList.add('pop')});
+document.getElementById('todos').onclick=function(){arma(this,'todos','¿Seguro? Toca de nuevo',function(){S.forEach(function(c){c.estado='libre';c.psi=c.cons=c.hasta='';c.desde=0});save();render()})};
+document.getElementById('frase').textContent=FR[Math.floor(Date.now()/864e5)%FR.length];
+function est(){document.querySelectorAll('[data-est]').forEach(function(b){b.setAttribute('aria-pressed',b.dataset.est===EST)})}
+document.querySelectorAll('[data-est]').forEach(function(b){b.onclick=function(){EST=b.dataset.est;try{localStorage.setItem('hope-estilo',EST)}catch(e){}est();render()}});
+est();render();setInterval(function(){if(!document.getElementById('dlg').open)render()},30000);
+</script></body></html>
