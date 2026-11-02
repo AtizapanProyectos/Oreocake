@@ -26,8 +26,8 @@
                 estado ("confirmada"|"en_sala"|"pendiente"|"atendida"|"no_vino"),
                 asistencia ("No registrado"|"Vino"|"No Vino"), pase_url, url
                 (estado 'en_sala'/'no_vino' se DERIVAN del registro de llegada)
-  NOTA: en la vista, la variable citas_hoy es la agenda REAL del día (no confligir con la
-  variable local de demostración del JS si aún no se envía desde la vista).
+  NOTA (02/11/2026): la agenda muestra SOLO citas reales. Si citas_hoy llega vacío
+  (o no llega), se muestra el estado vacío — ya NO hay datos de demostración.
   Nuevos módulos: añade un <a class="tab"> en la navegación y un bloque en #modulos (ver MÓDULO).
 -->
 <head>
@@ -127,7 +127,6 @@ a{color:inherit;text-decoration:none}
 .mini.sel{background:var(--purple);color:#fff;border-color:var(--purple)}
 .mini.no-vino.sel{background:var(--coral-d);border-color:var(--coral-d)}
 .vacio{padding:34px 18px;text-align:center;border-radius:22px;border:2px dashed var(--line);color:var(--muted);font-weight:600;line-height:1.5}
-.ejemplo{margin-top:14px;font-size:12.5px;font-weight:600;color:var(--muted)}
 @container (max-width:600px){.cita{grid-template-columns:52px minmax(0,1fr)}.cita .der{grid-column:1/-1;justify-content:flex-start}}
 
 /* Columna derecha */
@@ -315,7 +314,6 @@ body.co-lock{overflow:hidden}
         <label class="buscar"><svg class="ic" style="width:18px;height:18px"><use href="#i-search"/></svg><input id="q" type="search" placeholder="Buscar paciente o psicólogo/a" aria-label="Buscar cita"></label>
       </div>
       <ul class="lista" id="lista"></ul>
-      <p class="ejemplo" id="ejemplo" hidden>Estás viendo datos de ejemplo. Al enviar <code>citas_hoy</code> desde la vista, aparecerán las citas reales.</p>
     </section>
 
     <div class="col">
@@ -541,15 +539,11 @@ body.co-lock{overflow:hidden}
 {% if citas_hoy %}<input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}" id="csrf-hope">{% endif %}
 <script>
 (function(){
-  var DEMO=[
-    {hora:"09:00",paciente:"Valentina Ruiz Ortega",psicologa:"Dra. Mariana López Torres",modalidad:"presencial",estado:"atendida"},
-    {hora:"10:00",paciente:"Ana Sofía García Méndez",psicologa:"Dra. Mariana López Torres",modalidad:"presencial",estado:"en_sala"},
-    {hora:"11:30",paciente:"Diego Hernández Paz",psicologa:"Mtro. Luis Ramírez",modalidad:"online",estado:"confirmada"},
-    {hora:"12:30",paciente:"Camila Torres Vega",psicologa:"Dra. Mariana López Torres",modalidad:"presencial",estado:"pendiente"},
-    {hora:"16:00",paciente:"Mateo Castillo León",psicologa:"Mtro. Luis Ramírez",modalidad:"online",estado:"confirmada"}
-  ];
+  // 🧹 02/11/2026: SIN datos de demostración. La agenda muestra SOLO las citas
+  // reales presenciales de HOY que manda la vista (_recepcion_citas_hoy).
+  // Si no llega citas_hoy (o llega vacío), la agenda se muestra vacía.
   var ETQ={confirmada:"Confirmada",en_sala:"En recepción",pendiente:"Por confirmar",atendida:"Atendida",no_vino:"No vino"};
-  var el=document.getElementById("citas-data"),real=!!el,citas=real?JSON.parse(el.textContent):DEMO;
+  var el=document.getElementById("citas-data"),real=!!el,citas=real?JSON.parse(el.textContent):[];
   var UPLOAD_URL="{{ url_registrar_llegada|escapejs }}",TOK=(document.getElementById("csrf-hope")||{}).value||"";
   var $=function(id){return document.getElementById(id)},filtro="todas",q="";
   function esc(s){var d=document.createElement("div");d.textContent=s==null?"":s;return d.innerHTML}
@@ -583,7 +577,7 @@ body.co-lock{overflow:hidden}
   $("n-pres").textContent=cuenta(null,"presencial");$("n-onl").textContent=cuenta(null,"online");
   $("n-sala").textContent=cuenta("en_sala");$("n-pend").textContent=cuenta("pendiente");
   if(sig){$("s-hora").textContent=sig.hora;$("s-nom").textContent=sig.paciente}
-  $("ejemplo").hidden=real;
+  else{$("s-hora").textContent="--:--";$("s-nom").textContent="Sin citas pendientes"}
 
   function reloj(){
     var n=new Date(),hr=n.getHours();
