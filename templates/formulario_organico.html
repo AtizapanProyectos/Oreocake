@@ -237,9 +237,17 @@
 <div class="fo-wrapper">
     <!-- ENCABEZADO CÁLIDO Y HUMANO -->
     <div class="fo-header">
+        {% if modo_doctor %}
+        <i class="fas fa-clipboard-check"></i>
+        <h1>Contestar IPP de la sesión</h1>
+        <p>Registro previo de <strong>{{ cita.paciente.first_name|title }} {{ cita.paciente.last_name|title }}</strong>
+        (Cita #{{ cita.id }} · {{ cita.fecha|date:"d/m/Y" }} · {{ cita.hora|time:"H:i" }}).
+        Complétalo junto al paciente antes de iniciar la sesión presencial.</p>
+        {% else %}
         <i class="fas fa-heart-pulse"></i>
         <h1>Un momento para ti 💜</h1>
         <p>Nos alegra tenerte aquí. Antes de comenzar tu sesión, tómate un par de minutos para responder con calma. Cada respuesta nos ayuda a cuidar de ti y a que tu terapeuta te acompañe con toda la dedicación que mereces.</p>
+        {% endif %}
     </div>
 
     <div id="fo-error-general" class="fo-error">
@@ -414,7 +422,7 @@
         </div>
 
         <button type="submit" class="fo-btn-enviar" id="fo-btn-submit">
-            Guardar y entrar a mi sesión <i class="fas fa-arrow-right"></i>
+            {% if modo_doctor %}Guardar IPP de la sesión{% else %}Guardar y entrar a mi sesión{% endif %} <i class="fas fa-arrow-right"></i>
         </button>
 
         <!-- Tarjeta de confirmación y botón directo en la misma pestaña -->
@@ -423,16 +431,28 @@
                 <i class="fas fa-check"></i>
             </div>
             <h3 style="font-family: var(--font-headings); font-size: 1.25rem; font-weight: 800; color: #166534; margin: 0 0 6px;">¡Respuestas guardadas!</h3>
+            {% if modo_doctor %}
+            <p style="color: #15803d; font-size: 14px; margin: 0 0 16px;">El IPP de esta sesión quedó registrado. Puedes grabar la sesión (el audio se queda solo en este dispositivo) o ir al expediente del paciente.</p>
+            <a id="fo-direct-link" href="#" target="_self" class="fo-btn-enviar" style="text-decoration: none; margin-top: 0; background: linear-gradient(135deg, #16a34a 0%, #15803d 100%); display: inline-flex;">
+                <i class="fas fa-folder-open"></i> Ir al expediente del paciente
+            </a>
+            <div style="margin-top: 20px; text-align: left;">
+                {% include 'snippets/grabadora_local.html' %}
+            </div>
+            {% else %}
             <p style="color: #15803d; font-size: 14px; margin: 0 0 16px;">Redirigiendo a tu sesión en Google Meet en esta misma pestaña...</p>
             <a id="fo-direct-link" href="#" target="_self" class="fo-btn-enviar" style="text-decoration: none; margin-top: 0; background: linear-gradient(135deg, #16a34a 0%, #15803d 100%); display: inline-flex;">
                 <i class="fas fa-video"></i> Haz clic aquí para entrar a Meet ahora
             </a>
             <p style="color: #64748b; font-size: 12px; margin: 12px 0 0;">Si la página no carga en 2 segundos, pulsa el botón verde de arriba.</p>
+            {% endif %}
         </div>
     </form>
 </div>
 
 <script>
+let MODO_DOCTOR = {{ modo_doctor|yesno:"true,false" }};
+
 function getCookie(name) {
     let cookieValue = null;
     if (document.cookie && document.cookie !== '') {
@@ -491,8 +511,6 @@ document.getElementById('form-organico').addEventListener('submit', function (e)
     .then(r => r.json())
     .then(data => {
         if (data.status === 'success' && data.redirect_url) {
-            btn.innerHTML = '<i class="fas fa-check"></i> ¡Listo! Entrando a tu sesión...';
-
             // 1. Mostrar tarjeta y botón directo en la misma pestaña
             const successBox = document.getElementById('fo-success-box');
             const directLink = document.getElementById('fo-direct-link');
@@ -502,8 +520,15 @@ document.getElementById('form-organico').addEventListener('submit', function (e)
                 successBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }
 
-            // 2. Redirección en la misma pestaña sin abrir nuevas ventanas
-            window.location.replace(data.redirect_url);
+            // 2. Redirección en la misma pestaña sin abrir nuevas ventanas.
+            //    En modo doctor (sesión presencial) NO redirige automáticamente:
+            //    el doctor se queda aquí para usar la grabadora o abrir el expediente.
+            if (MODO_DOCTOR) {
+                btn.innerHTML = '<i class="fas fa-check"></i> ¡IPP guardado!';
+            } else {
+                btn.innerHTML = '<i class="fas fa-check"></i> ¡Listo! Entrando a tu sesión...';
+                window.location.replace(data.redirect_url);
+            }
         } else {
             btn.disabled = false;
             btn.innerHTML = textoOriginal;

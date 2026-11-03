@@ -1992,7 +1992,7 @@ def panel_doctor(request):
         fecha=hoy,
         estado='Confirmada',
         hora__gte=hora_limite  # <- muestra citas desde 1 hora atrás
-    ).order_by('hora')
+    ).prefetch_related('evaluacion_servicio').order_by('hora')
 
     # 🔥 NUEVO: Talleres/Grupos de hoy que NO han expirado
     talleres_hoy = Taller.objects.filter(
@@ -4848,26 +4848,37 @@ def formulario_previo_meet(request, cita_id):
     )
     paciente = cita.paciente
 
+    # ¿Quién entra? El psicólogo asignado a la cita (o superusuario) puede contestar el IPP
+    # directamente: se usa en sesiones presenciales, donde NO existe enlace de Meet.
+    es_doctor_visita = False
+    if request.user.is_authenticated:
+        if (hasattr(request.user, 'perfil_psicologo') and cita.psicologo and cita.psicologo.usuario == request.user) or request.user.is_superuser:
+            es_doctor_visita = True
+
     meet_url = (cita.enlace_meet or '').strip()
     if meet_url and not meet_url.startswith(('http://', 'https://')):
         meet_url = 'https://' + meet_url
 
     if not meet_url:
-        messages.error(request, 'Aún no se ha generado el enlace de tu sesión. Contáctanos por WhatsApp.')
-        return redirect('panel_generico')
+        if not es_doctor_visita:
+            messages.error(request, 'Aún no se ha generado el enlace de tu sesión. Contáctanos por WhatsApp.')
+            return redirect('panel_generico')
+        # Modo doctor / sesión presencial: se muestra el formulario sin Meet.
+    elif es_doctor_visita:
+        # Comportamiento original: el psicólogo entra directo a su Meet
+        return redirect(meet_url)
 
-    # Si quien entra es el psicólogo asignado a la cita (o superusuario), va directo a Meet
-    if request.user.is_authenticated:
-        if (hasattr(request.user, 'perfil_psicologo') and cita.psicologo and cita.psicologo.usuario == request.user) or request.user.is_superuser:
-            return redirect(meet_url)
-
-    # Si ya contestó el formulario para ESTA cita, saltamos directo a Meet.
+    # Si ya contestó el formulario para ESTA cita, saltamos directo a Meet
+    # (o al expediente del paciente cuando la sesión es presencial contestada por el doctor).
     ya_respondido = (
         EvaluacionSesionPaciente.objects.filter(cita=cita).exists() or
         RespuestaFormularioOrganica.objects.filter(paciente=paciente, cita=cita).exists()
     )
     if ya_respondido:
-        return redirect(meet_url)
+        if meet_url:
+            return redirect(meet_url)
+        messages.info(request, 'Este paciente ya tiene el IPP contestado para esta sesión. Puedes consultar el resultado en su expediente.')
+        return redirect('detalle_paciente', paciente_id=paciente.id)
 
     if request.method == 'POST':
         # 1. Procesamiento de los 12 reactivos del IPP
@@ -4947,9 +4958,18 @@ def formulario_previo_meet(request, cita_id):
         ipt_anterior = calcular_ipt(respuesta_anterior.puntaje) if respuesta_anterior else None
         mensaje = _mensaje_tierno_progreso(ipt_actual, ipt_anterior)
 
+        # Destino tras guardar: Meet si existe; en sesiones presenciales contestadas
+        # por el doctor, regresa al expediente del paciente.
+        if meet_url:
+            url_destino = meet_url
+        elif es_doctor_visita:
+            url_destino = reverse('detalle_paciente', args=[paciente.id])
+        else:
+            url_destino = reverse('panel_generico')
+
         return JsonResponse({
             'status': 'success',
-            'redirect_url': meet_url,
+            'redirect_url': url_destino,
             'ipt': ipt_actual,
             'mensaje': mensaje,
         })
@@ -4958,6 +4978,7 @@ def formulario_previo_meet(request, cita_id):
         'cita': cita,
         'preguntas': FORMULARIO_ORGANICO_PREGUNTAS,
         'escala': ESCALA_IPP,
+        'modo_doctor': es_doctor_visita,
         'es_tectum': getattr(cita, 'es_tectum', False) or 'tectuminhause' in request.get_host().lower() or 'tectum' in request.get_host().lower(),
     })
     

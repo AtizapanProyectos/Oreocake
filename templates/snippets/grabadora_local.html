@@ -1,0 +1,176 @@
+{# ============================================================================
+     GRABADORA DE SESIÓN (EXPERIMENTAL) — 100% LOCAL
+     ----------------------------------------------------------------------------
+     · Cita requerida en el contexto: {{ cita }} (usa cita.id para el nombre del
+       archivo; funciona también sin cita).
+     · El doctor inicia y detiene la grabación manualmente (MediaRecorder).
+     · El audio vive SOLO en este dispositivo (blob local + descarga manual).
+     · NO se envía al servidor, NO se procesa, NO se dispara ninguna acción
+       automática. Únicamente para pruebas y preparación de integraciones.
+       ========================================================================= #}
+<style>
+    .rec-local { font-family: 'Plus Jakarta Sans', 'Outfit', sans-serif; }
+    .rec-local-box {
+        background: #fefffb;
+        border: 1px dashed #a7d7c5;
+        border-radius: 18px;
+        padding: 16px 18px;
+        box-shadow: 0 4px 14px rgba(13, 148, 136, 0.06);
+    }
+    .rec-local-title {
+        display: flex; align-items: center; gap: 8px;
+        font-family: 'Outfit', sans-serif; font-size: 14px; font-weight: 800;
+        color: #0f766e; margin-bottom: 6px;
+    }
+    .rec-local-badge {
+        font-size: 9px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase;
+        background: #ccfbf1; color: #0f766e; padding: 3px 8px; border-radius: 20px;
+    }
+    .rec-local-nota { font-size: 11px; color: #64748b; line-height: 1.45; margin: 0 0 12px; }
+    .rec-local-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .rec-local-btn {
+        border: none; cursor: pointer; border-radius: 100px;
+        font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 13px;
+        padding: 10px 18px; display: inline-flex; align-items: center; gap: 8px;
+        transition: all .2s ease; color: #fff;
+    }
+    .rec-local-btn:disabled { background: #e2e8f0 !important; color: #94a3b8; cursor: not-allowed; }
+    .rec-local-start { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); box-shadow: 0 6px 16px rgba(239, 68, 68, .25); }
+    .rec-local-start:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(239, 68, 68, .35); }
+    .rec-local-stop { background: linear-gradient(135deg, #475569 0%, #334155 100%); box-shadow: 0 6px 16px rgba(71, 85, 105, .25); }
+    .rec-local-stop:hover:not(:disabled) { transform: translateY(-1px); }
+    .rec-local-timer { font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 14px; color: #dc2626; font-variant-numeric: tabular-nums; }
+    .rec-local-estado { font-size: 11.5px; color: #64748b; margin-top: 10px; line-height: 1.4; min-height: 0; }
+    .rec-local-resultado { margin-top: 12px; }
+    .rec-local-audio { width: 100%; height: 36px; margin-bottom: 10px; outline: none; }
+    .rec-local-descargar {
+        display: inline-flex; align-items: center; gap: 8px; text-decoration: none;
+        background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%); color: #fff;
+        font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 12.5px;
+        padding: 10px 16px; border-radius: 100px; box-shadow: 0 6px 16px rgba(13, 148, 136, .22);
+        transition: all .2s ease;
+    }
+    .rec-local-descargar:hover { transform: translateY(-1px); }
+    .rec-local-grabando-dot {
+        width: 10px; height: 10px; border-radius: 50%; background: #ef4444;
+        display: inline-block; margin-right: 6px; animation: rec-local-parpadeo 1.2s infinite;
+    }
+    @keyframes rec-local-parpadeo { 0%, 100% { opacity: 1; } 50% { opacity: .25; } }
+</style>
+
+<div class="rec-local" data-cita-id="{{ cita.id|default:'' }}">
+    <div class="rec-local-box">
+        <div class="rec-local-title">
+            <i class="fas fa-microphone-lines"></i> Grabación de la sesión
+            <span class="rec-local-badge">Experimental</span>
+        </div>
+        <p class="rec-local-nota">
+            Función en pruebas: el inicio y el alto son manuales y el audio se guarda únicamente
+            en este dispositivo. No se envía al servidor ni se procesa.
+        </p>
+        <div class="rec-local-actions">
+            <button type="button" class="rec-local-btn rec-local-start"><i class="fas fa-circle"></i> Iniciar Grabación</button>
+            <button type="button" class="rec-local-btn rec-local-stop" disabled><i class="fas fa-stop"></i> Detener Grabación</button>
+            <span class="rec-local-timer" style="display:none;"></span>
+        </div>
+        <div class="rec-local-estado"></div>
+        <div class="rec-local-resultado" style="display:none;">
+            <audio controls class="rec-local-audio"></audio>
+            <a class="rec-local-descargar" href="#"><i class="fas fa-download"></i> Guardar audio en mi dispositivo</a>
+        </div>
+    </div>
+</div>
+
+<script>
+(function () {
+    function initRecLocal(box) {
+        if (box.dataset.recInit === '1') return;
+        box.dataset.recInit = '1';
+
+        var citaId = box.getAttribute('data-cita-id') || '';
+        var btnStart = box.querySelector('.rec-local-start');
+        var btnStop = box.querySelector('.rec-local-stop');
+        var timer = box.querySelector('.rec-local-timer');
+        var estado = box.querySelector('.rec-local-estado');
+        var resultado = box.querySelector('.rec-local-resultado');
+        var audio = box.querySelector('.rec-local-audio');
+        var linkDesc = box.querySelector('.rec-local-descargar');
+
+        var stream = null, recorder = null, chunks = [], urlBlob = null, intTimer = null, t0 = 0;
+
+        function setEstado(html, esError) {
+            estado.innerHTML = html;
+            estado.style.color = esError ? '#b91c1c' : '#64748b';
+        }
+        function pararTimer() { if (intTimer) { clearInterval(intTimer); intTimer = null; } }
+        function fmtSegundos(s) {
+            var m = Math.floor(s / 60), r = s % 60;
+            return (m < 10 ? '0' : '') + m + ':' + (r < 10 ? '0' : '') + r;
+        }
+        function extensionDe(mime) {
+            if (mime && mime.indexOf('mp4') !== -1) return 'm4a';
+            if (mime && mime.indexOf('ogg') !== -1) return 'ogg';
+            return 'webm';
+        }
+
+        btnStart.addEventListener('click', async function () {
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || typeof MediaRecorder === 'undefined') {
+                setEstado('Tu navegador no soporta grabación de audio. Prueba con Chrome o Edge.', true);
+                return;
+            }
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            } catch (err) {
+                setEstado('No se pudo acceder al micrófono. Revisa los permisos del navegador.', true);
+                return;
+            }
+            chunks = [];
+            var opciones = {};
+            try {
+                if (MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported('audio/webm')) {
+                    opciones.mimeType = 'audio/webm';
+                }
+                recorder = new MediaRecorder(stream, opciones);
+            } catch (e) {
+                recorder = new MediaRecorder(stream);
+            }
+            recorder.ondataavailable = function (e) { if (e.data && e.data.size > 0) chunks.push(e.data); };
+            recorder.onstop = function () {
+                var blob = new Blob(chunks, { type: (recorder && recorder.mimeType) || 'audio/webm' });
+                if (urlBlob) { URL.revokeObjectURL(urlBlob); }
+                urlBlob = URL.createObjectURL(blob);
+                audio.src = urlBlob;
+                var ahora = new Date();
+                var p2 = function (n) { return ('0' + n).slice(-2); };
+                var sufijo = ahora.getFullYear() + p2(ahora.getMonth() + 1) + p2(ahora.getDate()) + '_' + p2(ahora.getHours()) + p2(ahora.getMinutes()) + p2(ahora.getSeconds());
+                linkDesc.href = urlBlob;
+                linkDesc.download = 'sesion_cita' + (citaId ? '_' + citaId : '') + '_' + sufijo + '.' + extensionDe(recorder && recorder.mimeType);
+                resultado.style.display = 'block';
+                if (stream) { stream.getTracks().forEach(function (t) { t.stop(); }); stream = null; }
+                setEstado('Grabación detenida. El audio quedó guardado temporalmente en este dispositivo y solo puedes escucharlo o descargarlo aquí.');
+            };
+            recorder.start();
+            btnStart.disabled = true;
+            btnStop.disabled = false;
+            resultado.style.display = 'none';
+            t0 = Date.now();
+            timer.textContent = '00:00';
+            timer.style.display = 'inline-block';
+            intTimer = setInterval(function () {
+                timer.textContent = fmtSegundos(Math.floor((Date.now() - t0) / 1000));
+            }, 500);
+            setEstado('<span class="rec-local-grabando-dot"></span>Grabando… (el audio permanece en este dispositivo)');
+        });
+
+        btnStop.addEventListener('click', function () {
+            if (recorder && recorder.state !== 'inactive') recorder.stop();
+            pararTimer();
+            timer.style.display = 'none';
+            btnStart.disabled = false;
+            btnStop.disabled = true;
+        });
+    }
+
+    document.querySelectorAll('.rec-local').forEach(initRecLocal);
+})();
+</script>
