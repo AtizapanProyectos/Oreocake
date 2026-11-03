@@ -59,6 +59,7 @@ urlpatterns = [
     path('api/registrar-taller/', views.procesar_registro_taller, name='registrar_taller_ajax'),
     path('reagendar-cita/', views.reagendar_cita_ajax, name='reagendar_cita'),
     path('sesion-previa/<int:cita_id>/', views.formulario_previo_meet, name='formulario_previo_meet'),
+    path('grabacion-sesion/<int:cita_id>/', views.grabacion_sesion, name='grabacion_sesion'),
     path('api/guardar-consentimiento/', views.guardar_consentimiento_ajax, name='guardar_consentimiento_ajax'),
 
 #Pruebas y produccion

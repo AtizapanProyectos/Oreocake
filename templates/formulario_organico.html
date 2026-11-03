@@ -432,13 +432,7 @@
             </div>
             <h3 style="font-family: var(--font-headings); font-size: 1.25rem; font-weight: 800; color: #166534; margin: 0 0 6px;">¡Respuestas guardadas!</h3>
             {% if modo_doctor %}
-            <p style="color: #15803d; font-size: 14px; margin: 0 0 16px;">El IPP de esta sesión quedó registrado. Puedes grabar la sesión (el audio se queda solo en este dispositivo) o ir al expediente del paciente.</p>
-            <a id="fo-direct-link" href="#" target="_self" class="fo-btn-enviar" style="text-decoration: none; margin-top: 0; background: linear-gradient(135deg, #16a34a 0%, #15803d 100%); display: inline-flex;">
-                <i class="fas fa-folder-open"></i> Ir al expediente del paciente
-            </a>
-            <div style="margin-top: 20px; text-align: left;">
-                {% include 'snippets/grabadora_local.html' %}
-            </div>
+            <p id="fo-success-texto" style="color: #15803d; font-size: 14px; margin: 0 0 16px;">El IPP de esta sesión quedó registrado. Llevándote al panel de grabación experimental de la sesión...</p>
             {% else %}
             <p style="color: #15803d; font-size: 14px; margin: 0 0 16px;">Redirigiendo a tu sesión en Google Meet en esta misma pestaña...</p>
             <a id="fo-direct-link" href="#" target="_self" class="fo-btn-enviar" style="text-decoration: none; margin-top: 0; background: linear-gradient(135deg, #16a34a 0%, #15803d 100%); display: inline-flex;">
@@ -451,8 +445,6 @@
 </div>
 
 <script>
-let MODO_DOCTOR = {{ modo_doctor|yesno:"true,false" }};
-
 function getCookie(name) {
     let cookieValue = null;
     if (document.cookie && document.cookie !== '') {
@@ -520,15 +512,9 @@ document.getElementById('form-organico').addEventListener('submit', function (e)
                 successBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }
 
-            // 2. Redirección en la misma pestaña sin abrir nuevas ventanas.
-            //    En modo doctor (sesión presencial) NO redirige automáticamente:
-            //    el doctor se queda aquí para usar la grabadora o abrir el expediente.
-            if (MODO_DOCTOR) {
-                btn.innerHTML = '<i class="fas fa-check"></i> ¡IPP guardado!';
-            } else {
-                btn.innerHTML = '<i class="fas fa-check"></i> ¡Listo! Entrando a tu sesión...';
-                window.location.replace(data.redirect_url);
-            }
+            // 2. Redirección en la misma pestaña sin abrir nuevas ventanas:
+            //    paciente → Meet · doctor (sesión presencial) → landing de grabación local.
+            window.location.replace(data.redirect_url);
         } else {
             btn.disabled = false;
             btn.innerHTML = textoOriginal;

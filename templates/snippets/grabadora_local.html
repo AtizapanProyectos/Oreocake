@@ -1,13 +1,15 @@
-{# ============================================================================
-     GRABADORA DE SESIÓN (EXPERIMENTAL) — 100% LOCAL
-     ----------------------------------------------------------------------------
-     · Cita requerida en el contexto: {{ cita }} (usa cita.id para el nombre del
-       archivo; funciona también sin cita).
-     · El doctor inicia y detiene la grabación manualmente (MediaRecorder).
-     · El audio vive SOLO en este dispositivo (blob local + descarga manual).
-     · NO se envía al servidor, NO se procesa, NO se dispara ninguna acción
-       automática. Únicamente para pruebas y preparación de integraciones.
-       ========================================================================= #}
+{% comment %}
+============================================================================
+ GRABADORA DE SESIÓN (EXPERIMENTAL) — 100% LOCAL
+ ----------------------------------------------------------------------------
+ - Requiere la variable "cita" en el contexto (usa cita.id para el nombre del
+   archivo; funciona también sin cita).
+ - El doctor inicia y detiene la grabación manualmente (MediaRecorder).
+ - El audio vive SOLO en este dispositivo (blob local + descarga manual).
+ - NO se envía al servidor, NO se procesa, NO se dispara ninguna acción
+   automática. Únicamente para pruebas y preparación de integraciones.
+============================================================================
+{% endcomment %}
 <style>
     .rec-local { font-family: 'Plus Jakarta Sans', 'Outfit', sans-serif; }
     .rec-local-box {

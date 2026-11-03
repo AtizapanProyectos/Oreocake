@@ -4877,8 +4877,9 @@ def formulario_previo_meet(request, cita_id):
     if ya_respondido:
         if meet_url:
             return redirect(meet_url)
-        messages.info(request, 'Este paciente ya tiene el IPP contestado para esta sesión. Puedes consultar el resultado en su expediente.')
-        return redirect('detalle_paciente', paciente_id=paciente.id)
+        # Presencial contestada por el doctor: a la landing de grabación de la sesión.
+        messages.info(request, 'Este paciente ya tiene el IPP contestado para esta sesión. Aquí está el panel de grabación experimental.')
+        return redirect('grabacion_sesion', cita_id=cita.id)
 
     if request.method == 'POST':
         # 1. Procesamiento de los 12 reactivos del IPP
@@ -4959,11 +4960,11 @@ def formulario_previo_meet(request, cita_id):
         mensaje = _mensaje_tierno_progreso(ipt_actual, ipt_anterior)
 
         # Destino tras guardar: Meet si existe; en sesiones presenciales contestadas
-        # por el doctor, regresa al expediente del paciente.
+        # por el doctor, a la landing de grabación local de la sesión.
         if meet_url:
             url_destino = meet_url
         elif es_doctor_visita:
-            url_destino = reverse('detalle_paciente', args=[paciente.id])
+            url_destino = reverse('grabacion_sesion', args=[cita.id])
         else:
             url_destino = reverse('panel_generico')
 
@@ -4982,6 +4983,36 @@ def formulario_previo_meet(request, cita_id):
         'es_tectum': getattr(cita, 'es_tectum', False) or 'tectuminhause' in request.get_host().lower() or 'tectum' in request.get_host().lower(),
     })
     
+
+def grabacion_sesion(request, cita_id):
+    """Landing de transición para sesiones PRESENCIALES: se muestra tras contestar
+    el IPP (modo doctor). Ofrece la grabadora local de la sesión (MediaRecorder,
+    100% local: el audio NUNCA se envía al servidor ni se procesa; solo se puede
+    escuchar/descargar desde este navegador)."""
+    if not request.user.is_authenticated:
+        return redirect('modulo_informativo')
+
+    cita = get_object_or_404(
+        Cita.objects.select_related('psicologo__usuario', 'paciente'),
+        id=cita_id
+    )
+
+    # Solo el psicólogo asignado a la cita (o superusuario)
+    es_dueno = (hasattr(request.user, 'perfil_psicologo') and cita.psicologo and
+                cita.psicologo.usuario == request.user) or request.user.is_superuser
+    if not es_dueno:
+        return redirect('modulo_informativo')
+
+    # Requiere el IPP de la sesión ya contestado (EvaluacionSesionPaciente)
+    if not EvaluacionSesionPaciente.objects.filter(cita=cita).exists():
+        messages.info(request, 'Primero contesta el IPP de esta sesión.')
+        return redirect('formulario_previo_meet', cita_id=cita.id)
+
+    return render(request, 'grabacion_sesion.html', {
+        'cita': cita,
+        'es_tectum': getattr(cita, 'es_tectum', False) or getattr(cita.paciente.perfil if hasattr(cita.paciente, 'perfil') else None, 'es_tectum', False),
+    })
+
 
 def citas_hoy_view(request):
     """Vista simple: todas las citas de hoy con el match paciente-psicólogo."""
