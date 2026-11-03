@@ -192,7 +192,7 @@ body.co-lock{overflow:hidden}
 #coOverlay .info{display:block;padding:0 6px}
 #coOverlay .info b{display:block;font-size:15px;font-weight:800}
 #coOverlay .info span{display:block;margin-top:2px;font-size:12.5px;font-weight:600;color:var(--md)}
-#coOverlay dialog{border:0;padding:0;border-radius:34px;width:min(460px,100% - 28px);background:#fff;color:var(--ink);box-shadow:0 30px 60px -20px rgba(30,15,90,.55)}
+#coOverlay dialog{border:0;padding:0;border-radius:34px;width:min(460px,100% - 28px);max-height:calc(100dvh - 40px);overflow-y:auto;background:#fff;color:var(--ink);box-shadow:0 30px 60px -20px rgba(30,15,90,.55);margin:auto}
 #coOverlay dialog::backdrop{background:rgba(42,31,92,.55);backdrop-filter:blur(6px)}
 #coOverlay dialog form{padding:26px;display:grid;gap:16px}
 #coOverlay dialog h2{font:800 22px var(--fh);color:var(--deep)}
