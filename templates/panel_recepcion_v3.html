@@ -536,6 +536,7 @@ body.co-lock{overflow:hidden}
 })();
 </script>
 
+{{ citas_hoy|json_script:"citas-data" }}
 {% if citas_hoy %}<input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}" id="csrf-hope">{% endif %}
 <script>
 (function(){
