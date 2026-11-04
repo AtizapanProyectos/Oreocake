@@ -2202,7 +2202,7 @@ def subir_comprobante_transferencia_ajax(request):
         # Sanity barato: si otro paciente ya subió un archivo byte-por-byte idéntico,
         # marcamos la fila para revisión (NO bloqueamos al paciente: la cita ya está agendada).
         estado_comprobante = 'Registrado'
-        if huella and ComprobanteTransferencia.objects.filter(huella=huella).exclude(usuario=usuario).exists():
+        if huella and ComprobanteTransferencia.objects.filter(huella_archivo=huella).exclude(usuario=usuario).exists():
             estado_comprobante = 'Revisar'
             logging.getLogger(__name__).warning(
                 '⚠️ Comprobante duplicado (misma huella) subido por usuario %s en cita %s',
@@ -4385,6 +4385,7 @@ def obtener_contactos_chat(request):
         return JsonResponse({'status': 'error', 'message': 'No autorizado'})
 
     # 🔥 MULTISERVICIO: Traemos a todos los pacientes con tratamientos, citas o perfil asignado a este doctor
+    psicologo = request.user.perfil_psicologo
     pacientes = User.objects.filter(
         Q(tratamientos__psicologo_asignado=psicologo) |
         Q(citas_como_paciente__psicologo=psicologo) |
