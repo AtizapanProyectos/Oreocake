@@ -1058,6 +1058,7 @@ document.addEventListener('DOMContentLoaded', function () {
             badge.innerHTML = ' <span style="background:#0284c7;color:#fff;font-size:9px;font-weight:800;padding:2px 7px;border-radius:100px;margin-left:6px;"><i class="fas fa-shield-alt" style="font-size:8px;"></i> TECTUM</span>';
             titleEl.appendChild(badge);
           }
+        }
         /* En vista lista: badge Presencial al título si aplica */
         if ((p.modalidad || '') === 'Presencial') {
           const titleEl2 = info.el.querySelector('.fc-list-event-title a') || info.el.querySelector('.fc-list-event-title');
