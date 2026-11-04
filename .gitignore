@@ -3,3 +3,10 @@ __pycache__
 staticfiles
 scratch/
 *.pdf
+# Herramientas de agentes IA (config local, no del proyecto)
+.agent/
+.gemini/
+.impeccable/
+.opencode/
+DESIGN.md
+PRODUCT.md

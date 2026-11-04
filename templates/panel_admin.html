@@ -893,6 +893,7 @@ body {
           <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
             <div id="m-pac" style="font-family:var(--fd);font-size:22px;color:var(--ink);line-height:1.1;"></div>
             <span id="m-tectum-badge" style="display:none;background:#0284c7;color:#fff;font-family:var(--fh);font-size:10px;font-weight:800;padding:3px 10px;border-radius:100px;letter-spacing:0.5px;"><i class="fas fa-shield-alt" style="margin-right:4px;"></i>TECTUM</span>
+            <span id="m-presencial-badge" style="display:none;background:#F59E0B;color:#fff;font-family:var(--fh);font-size:10px;font-weight:800;padding:3px 10px;border-radius:100px;letter-spacing:0.5px;"><i class="fas fa-map-marker-alt" style="margin-right:4px;"></i>PRESENCIAL</span>
           </div>
           <div id="m-est" style="margin-top:5px;font-family:var(--fh);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--teal);display:flex;align-items:center;gap:5px;">
             <i class="fas fa-circle" style="font-size:7px;"></i> Confirmada
@@ -1000,6 +1001,7 @@ document.addEventListener('DOMContentLoaded', function () {
       const isCan   = (p.estado || '') === 'Cancelada';
       const isPend  = (p.estado || '') === 'Pendiente'; /* <-- Detectamos si falta pago */
       const isTec   = !!p.es_tectum; /* <-- Distintivo Tectum */
+      const isPres  = (p.modalidad || '') === 'Presencial'; /* <-- Distintivo Presencial */
       
       /* Si falta pago, forzamos un tono rojito (#EF4444), de lo contrario usamos el color del doctor */
       const color   = isPend ? '#EF4444' : getDocColor(p.psicologo || 'N/A');
@@ -1007,13 +1009,14 @@ document.addEventListener('DOMContentLoaded', function () {
       const time    = arg.event.start.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
       const docName = (p.psicologo || 'N/A').split(' ')[0]; /* solo primer nombre */
       const tectumPill = isTec ? `<span style="background:#0284c7;color:#fff;font-size:9px;font-weight:800;padding:1px 6px;border-radius:100px;margin-left:4px;"><i class="fas fa-shield-alt" style="font-size:8px;"></i> TECTUM</span>` : '';
+      const presencialPill = isPres ? `<span style="background:#F59E0B;color:#fff;font-size:9px;font-weight:800;padding:1px 6px;border-radius:100px;margin-left:4px;"><i class="fas fa-map-marker-alt" style="font-size:8px;"></i> PRESENCIAL</span>` : '';
 
       if (view === 'dayGridMonth') {
         /* Vista mes: pill pequeña */
         return {
           html: `<div class="hev-pill ${isCan ? 'canceled' : ''}"
                       style="background:${color}18; border-left:3px solid ${color}; color:${color};">
-                   <i class="fas fa-${isPend ? 'exclamation-circle' : 'circle'}" style="font-size:8px;"></i> ${time} ${docName}${tectumPill}
+                   <i class="fas fa-${isPend ? 'exclamation-circle' : 'circle'}" style="font-size:8px;"></i> ${time} ${docName}${tectumPill}${presencialPill}
                  </div>`
         };
       }
@@ -1026,7 +1029,7 @@ document.addEventListener('DOMContentLoaded', function () {
       /* Vista semana/día: tarjeta grande */
       return {
         html: `<div class="hev-card ${isCan ? 'canceled' : ''}" style="border-left-color:${color}; ${isPend ? 'background:#FEF2F2;' : ''}${isTec ? 'border-top: 2px solid #0284c7;' : ''}">
-                 <div class="hev-time" style="${isPend ? 'color:#EF4444;' : ''}">${time}${tectumPill}</div>
+                 <div class="hev-time" style="${isPend ? 'color:#EF4444;' : ''}">${time}${tectumPill}${presencialPill}</div>
                  <div class="hev-doc" style="${isPend ? 'color:#DC2626;' : ''}">
                    <i class="fas fa-${isPend ? 'exclamation-circle' : 'user-md'}" style="margin-right:3px;font-size:10px;"></i>Dr(a). ${docName}
                  </div>
@@ -1054,6 +1057,15 @@ document.addEventListener('DOMContentLoaded', function () {
             badge.className = 'tec-badge';
             badge.innerHTML = ' <span style="background:#0284c7;color:#fff;font-size:9px;font-weight:800;padding:2px 7px;border-radius:100px;margin-left:6px;"><i class="fas fa-shield-alt" style="font-size:8px;"></i> TECTUM</span>';
             titleEl.appendChild(badge);
+          }
+        /* En vista lista: badge Presencial al título si aplica */
+        if ((p.modalidad || '') === 'Presencial') {
+          const titleEl2 = info.el.querySelector('.fc-list-event-title a') || info.el.querySelector('.fc-list-event-title');
+          if (titleEl2 && !titleEl2.querySelector('.pres-badge')) {
+            const badge2 = document.createElement('span');
+            badge2.className = 'pres-badge';
+            badge2.innerHTML = ' <span style="background:#F59E0B;color:#fff;font-size:9px;font-weight:800;padding:2px 7px;border-radius:100px;margin-left:6px;"><i class="fas fa-map-marker-alt" style="font-size:8px;"></i> PRESENCIAL</span>';
+            titleEl2.appendChild(badge2);
           }
         }
       }
@@ -1095,6 +1107,10 @@ document.addEventListener('DOMContentLoaded', function () {
       const tectumBadge = document.getElementById('m-tectum-badge');
       tectumBadge.style.display = p.es_tectum ? 'inline-flex' : 'none';
       document.getElementById('m-ava').style.borderColor = p.es_tectum ? '#0284c7' : 'rgba(90,63,163,0.15)';
+
+      // Badge Presencial en el modal
+      const presencialBadge = document.getElementById('m-presencial-badge');
+      presencialBadge.style.display = (p.modalidad || '') === 'Presencial' ? 'inline-flex' : 'none';
 
       // Lógica del botón de Meet
       const meetContainer = document.getElementById('m-meet-container');

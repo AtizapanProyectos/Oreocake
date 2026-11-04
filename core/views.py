@@ -1996,16 +1996,29 @@ def subir_comprobante_transferencia_ajax(request):
 
     usuario = request.user
 
-    # Flag gradual: sin fila en BD o activo=False => método oculto y endpoint inerte
-    if not ConfigTransferencia.esta_habilitado_para(usuario):
+    # 🪑 Recepción (3/11/2026): el staff puede archivar el comprobante EN NOMBRE
+    # de un paciente desde recep-59/agendar (paciente_id + superuser). El flujo
+    # del paciente (panel HOPE) no cambia en nada con esta rama.
+    es_recepcion = request.user.is_superuser and bool(request.POST.get('paciente_id'))
+    if es_recepcion:
+        try:
+            usuario = User.objects.get(id=request.POST.get('paciente_id'))
+        except (User.DoesNotExist, ValueError, TypeError):
+            return JsonResponse({'status': 'error', 'message': 'Paciente no encontrado. Vuelve a seleccionarlo.'})
+
+    # Flag gradual (SOLO flujo del paciente): sin fila en BD o activo=False =>
+    # método oculto y endpoint inerte. Recepción siempre puede (validación humana).
+    if not es_recepcion and not ConfigTransferencia.esta_habilitado_para(usuario):
         return JsonResponse({
             'status': 'error',
             'message': 'Este método de pago no está disponible por el momento. Usa PayPal o contáctanos por WhatsApp para pagar con transferencia.'
         })
 
-    # Anti-abuso: límite de subidas por paciente/hora (mismo patrón de cache locmem
-    # que el rate limit del registro; alcance por proceso igual que todo el sistema)
-    clave_rl = f'rl_comprobante_{usuario.id}'
+    # Anti-abuso: límite de subidas por usuario/hora (mismo patrón de cache locmem
+    # que el rate limit del registro; alcance por proceso igual que todo el
+    # sistema). En recepción el límite se lleva sobre la cuenta del STAFF, no
+    # sobre el paciente (para que múltiples cobros por paciente no lo bloqueen).
+    clave_rl = f'rl_comprobante_{request.user.id}'
     intentos = (cache.get(clave_rl) or 0) + 1
     cache.set(clave_rl, intentos, 3600)
     if intentos > _LIMITE_COMPROBANTES_POR_HORA:
@@ -2035,10 +2048,16 @@ def subir_comprobante_transferencia_ajax(request):
         tipo_sesion_str = 'individual'
 
     modalidad_str = 'En línea'
+    # 🪑 Recepción puede agendar PRESENCIAL con el comprobante en mano; el
+    # flujo del paciente se queda forzado a 'En línea' tal como siempre.
+    if es_recepcion and (request.POST.get('modalidad') or '') in MODALIDADES_CITA_VALIDAS:
+        modalidad_str = request.POST.get('modalidad')
 
     # Consentimiento: mismo criterio y retrocompatibilidad que guardar_cita_ajax
+    # (en recepción no se exige: el paciente puede ser presencial de primera vez
+    # y el staff asume esa validación aparte, igual que admin_guardar_cita_ajax).
     tiene_consentimiento = ConsentimientoInformado.objects.filter(paciente=usuario).exists() or Cita.objects.filter(paciente=usuario).exists()
-    if not tiene_consentimiento:
+    if not tiene_consentimiento and not es_recepcion:
         return JsonResponse({
             'status': 'error',
             'message': 'Es necesario firmar el Consentimiento Informado antes de agendar tu cita.',
@@ -2137,19 +2156,21 @@ def subir_comprobante_transferencia_ajax(request):
                 return JsonResponse({'status': 'error', 'message': 'Tu terapeuta ya tiene una cita en ese horario. Elige otro.'})
 
         # Google Meet (degradación silenciosa igual que guardar_cita_ajax: si falla Google, la cita existe sin Meet)
+        # 🪑 Presencial NO genera Meet (igual que todas las citas presenciales).
         link_final = None
         id_google = None
-        datos_meet = generar_link_meet(
-            fecha_obj=fecha_obj,
-            hora_obj=hora_obj,
-            paciente_nombre=usuario.first_name,
-            psicologo_nombre=psicologo.usuario.first_name,
-            paciente_email=usuario.email,
-            psicologo_email=psicologo.usuario.email
-        )
-        if datos_meet:
-            link_final = datos_meet['link']
-            id_google = datos_meet['id_evento']
+        if modalidad_str == 'En línea':
+            datos_meet = generar_link_meet(
+                fecha_obj=fecha_obj,
+                hora_obj=hora_obj,
+                paciente_nombre=usuario.first_name,
+                psicologo_nombre=psicologo.usuario.first_name,
+                paciente_email=usuario.email,
+                psicologo_email=psicologo.usuario.email
+            )
+            if datos_meet:
+                link_final = datos_meet['link']
+                id_google = datos_meet['id_evento']
 
         cita = Cita.objects.create(
             paciente=usuario,
@@ -2166,6 +2187,7 @@ def subir_comprobante_transferencia_ajax(request):
             es_beneficios=False,
             enlace_meet=link_final,
             id_evento_google=id_google,
+            codigo_pase=_generar_codigo_pase() if modalidad_str == 'Presencial' else None,
         )
 
         # Archivo del comprobante: respaldo auditable del pago, archivado con
@@ -2197,19 +2219,27 @@ def subir_comprobante_transferencia_ajax(request):
         comp.imagen.save(nombre_seguro, ContentFile(contenido_archivo))
 
         # Correo de confirmación SOLO al paciente (misma plantilla/reglas que guardar_cita_ajax)
-        asunto = 'Confirmación de tu sesión en HOPE'
-        contexto = {
-            'nombre': usuario.first_name,
-            'psicologo_nombre': psicologo.usuario.first_name,
-            'fecha': fecha_obj.strftime('%d/%m/%Y'),
-            'hora': hora_obj.strftime('%H:%M'),
-            'link_meet': request.build_absolute_uri(reverse('formulario_previo_meet', args=[cita.id])) if link_final else '',
-            'es_tectum': False,
-        }
-        mensaje_html = render_to_string('correo_cita.html', contexto)
-        mensaje_plano = strip_tags(mensaje_html)
-        remitente = 'Espacio HOPE <contacto@espaciohope.com>'
-        send_mail(asunto, mensaje_plano, remitente, [usuario.email], html_message=mensaje_html, fail_silently=True)
+        if modalidad_str == 'Presencial':
+            # 🎫 Pase de acceso presencial: correo + PDF con QR (la misma ruta
+            # probada que usan admin_guardar_cita_ajax y pago_exitoso_clip).
+            try:
+                _enviar_correo_pase_admision(cita, request)
+            except Exception:
+                logging.getLogger(__name__).exception('Fallo el correo del pase de admisión (cita recepción %s)', cita.id)
+        else:
+            asunto = 'Confirmación de tu sesión en HOPE'
+            contexto = {
+                'nombre': usuario.first_name,
+                'psicologo_nombre': psicologo.usuario.first_name,
+                'fecha': fecha_obj.strftime('%d/%m/%Y'),
+                'hora': hora_obj.strftime('%H:%M'),
+                'link_meet': request.build_absolute_uri(reverse('formulario_previo_meet', args=[cita.id])) if link_final else '',
+                'es_tectum': False,
+            }
+            mensaje_html = render_to_string('correo_cita.html', contexto)
+            mensaje_plano = strip_tags(mensaje_html)
+            remitente = 'Espacio HOPE <contacto@espaciohope.com>'
+            send_mail(asunto, mensaje_plano, remitente, [usuario.email], html_message=mensaje_html, fail_silently=True)
 
         return JsonResponse({
             'status': 'success',
@@ -2225,6 +2255,213 @@ def subir_comprobante_transferencia_ajax(request):
         )
         # Sin cobro en riesgo, no se expone str(e) al cliente
         return JsonResponse({'status': 'error', 'message': 'No pudimos procesar tu comprobante. Intenta de nuevo en un momento.'})
+
+
+# =========================================================================
+# 🪑 RECEPCIÓN (recep-59/agendar) — PASARELA DE PAGOS ANTES DE AGENDAR
+# 3/11/2026. Reutiliza exactamente los cierres YA PROBADOS del sistema:
+#   · Tarjeta → Clip: la cita nace 'Pendiente' y TODO el cierre vive en
+#     pago_exitoso_clip (asignación automática de psicólogo con la misma
+#     lógica, Meet o pase QR presencial, correo, estado 'Confirmada').
+#     Aquí solo se crea la cita pendiente y se genera el link de pago en
+#     nombre del paciente elegido por el staff.
+#   · Transferencia → subir_comprobante_transferencia_ajax (con paciente_id).
+#   · TECTUM → sigue gratuito vía admin_guardar_cita_paciente (no pasa aquí).
+# =========================================================================
+@user_passes_test(lambda u: u.is_superuser, login_url='/')  # == es_admin (se define más abajo en este archivo)
+@require_POST
+@transaction.atomic
+def recep_iniciar_pago_clip_paciente(request):
+    """
+    Crea la Cita en 'Pendiente' para el paciente_id de recepción y devuelve el
+    link de checkout de Clip. NUNCA confirma la cita: el estado pasa a
+    'Confirmada' SOLO cuando Clip redirige a /pago-exitoso/<id>/
+    (pago_exitoso_clip, la misma vista pública que usa el paciente).
+    """
+    paciente_id = request.POST.get('paciente_id')
+    if not paciente_id:
+        return JsonResponse({'status': 'error', 'message': 'Selecciona un paciente antes de cobrar.'})
+
+    try:
+        paciente_user = User.objects.select_related('perfil').get(id=paciente_id)
+    except (User.DoesNotExist, ValueError, TypeError):
+        return JsonResponse({'status': 'error', 'message': 'Paciente no encontrado. Vuelve a seleccionarlo.'})
+
+    # Candado de convenio: TECTUM In-House nunca se cobra (100% cubierto).
+    perfil_paciente = getattr(paciente_user, 'perfil', None)
+    es_tectum_forzado = request.POST.get('es_tectum') in ('1', 'true', 'True')
+    if es_tectum_forzado or getattr(perfil_paciente, 'es_tectum', False):
+        return JsonResponse({
+            'status': 'error',
+            'message': 'Las citas TECTUM In-House no se cobran (convenio). Usa "Confirmar cita" sin cobro.'
+        })
+
+    tipo_servicio = request.POST.get('tipo_servicio', 'individual')
+    if tipo_servicio not in TIPOS_SESION_VALIDOS:
+        tipo_servicio = 'individual'
+    modalidad = request.POST.get('modalidad', 'En línea')
+    if modalidad not in MODALIDADES_CITA_VALIDAS:
+        modalidad = 'En línea'
+    animo = (request.POST.get('animo') or 'No especificó').strip()[:50] or 'No especificó'
+
+    # El monto SIEMPRE se recalcula en servidor (nunca confiamos en el navegador).
+    integrantes_familia = None
+    if tipo_servicio == 'familiar':
+        precio_info = calcular_precio_sesion(tipo_servicio, request.POST.get('integrantes_familia'))
+        integrantes_familia = precio_info['integrantes_familia']
+    else:
+        precio_info = calcular_precio_sesion(tipo_servicio)
+    monto = precio_info['total']
+
+    try:
+        fecha_obj = datetime.strptime(request.POST.get('fecha'), '%Y-%m-%d').date()
+        hora_obj = parsear_hora_flexible(request.POST.get('hora'))
+    except Exception:
+        return JsonResponse({'status': 'error', 'message': 'Fecha u hora inválida. Vuelve a elegir día y hora.'})
+
+    # Pre-chequeo de disponibilidad con el MISMO algoritmo de slots que usan
+    # todas las agendas (obtener_slots_psicologo_para_dia): evita cobrar una
+    # tarjeta por un horario que ningún especialista pueda atender después.
+    campo_capacidad = CAPACIDAD_POR_TIPO_SESION[tipo_servicio]
+    esquemas_del_dia = EsquemaHorarioPsicologo.objects.filter(
+        activo=True, fecha_inicio__lte=fecha_obj, fecha_fin__gte=fecha_obj
+    )
+    psicologos_candidatos = PerfilPsicologo.objects.filter(
+        esta_activo=True,
+        **{campo_capacidad: True},
+        modalidad_atencion__in=COMPATIBILIDAD_MODALIDAD_PSICOLOGO[modalidad],
+    ).prefetch_related(
+        Prefetch('esquemas_horarios', queryset=esquemas_del_dia, to_attr='_esquemas_rango')
+    )
+    slot_disponible = False
+    for psicologo_temp in psicologos_candidatos:
+        slots_del_dia = obtener_slots_psicologo_para_dia(
+            psicologo_temp, fecha_obj, tipo_sesion=tipo_servicio, modalidad=modalidad
+        )
+        if hora_obj.strftime('%I:%M %p') in slots_del_dia:
+            slot_disponible = True
+            break
+    if not slot_disponible:
+        return JsonResponse({
+            'status': 'error',
+            'message': 'Lo sentimos, ese horario acaba de ser ocupado o no hay especialistas disponibles. Elige otro horario.'
+        })
+
+    # Cita 'Pendiente' SIN psicólogo: nunca se confirma sin pago. La asignación
+    # y el cierre los hace pago_exitoso_clip exactamente como en el flujo normal.
+    cita = Cita.objects.create(
+        paciente=paciente_user,
+        fecha=fecha_obj,
+        hora=hora_obj,
+        estado='Pendiente',
+        tipo_sesion=tipo_servicio,
+        integrantes_familia=integrantes_familia,
+        estado_animo=animo,
+        modalidad=modalidad,
+        motivo='Agendada por administración',
+        es_tectum=False,
+        es_beneficios=False,
+    )
+
+    # Clip: mismo payload / mismas credenciales / misma pasarela que iniciar_pago_clip.
+    try:
+        api_key = os.environ.get("CLIP_API_KEY_PROD")
+        clave_secreta = os.environ.get("CLIP_CLAVE_SECRETA_PROD")
+        credenciales_puras = f"{api_key}:{clave_secreta}"
+        base64_token = base64.b64encode(credenciales_puras.encode('utf-8')).decode('utf-8')
+
+        url = "https://api.payclip.com/v2/checkout"
+        dominio = "https://espaciohope.com"
+
+        payload = json.dumps({
+            "amount": float(monto),
+            "currency": "MXN",
+            "purchase_description": f"HOPE - {tipo_servicio.capitalize()}",
+            "redirection_url": {
+                "success": f"{dominio}/pago-exitoso/{cita.id}/",
+                "error": f"{dominio}/pago-cancelado/{cita.id}/",
+                # El pagador/cajero puede volver desde cualquier dispositivo:
+                # 'default' recae en la misma pantalla pública de confirmación.
+                "default": f"{dominio}/pago-exitoso/{cita.id}/"
+            },
+            "custom_transaction_id": f"RECEP_{cita.id}_{timezone.now().strftime('%M%S')}"
+        })
+        headers = {
+            'accept': 'application/vnd.clip.v2+json',
+            'content-type': 'application/json',
+            'Authorization': f"Basic {base64_token}"
+        }
+        response = requests.post(url, headers=headers, data=payload)
+        clip_data = response.json()
+
+        if response.status_code == 200 and 'payment_request_url' in clip_data:
+            return JsonResponse({
+                'status': 'success',
+                'payment_url': clip_data['payment_request_url'],
+                'cita_id': cita.id,
+                'monto': monto,
+            })
+        logging.getLogger(__name__).warning(
+            'Clip respondió sin payment_request_url en recepción (cita %s): status=%s body=%s',
+            cita.id, response.status_code, response.text[:300]
+        )
+    except Exception:
+        logging.getLogger(__name__).exception('Clip falló en recepción (cita %s)', cita.id)
+
+    # Sin link no hay cobro: se elimina la cita Pendiente y el horario queda libre.
+    cita.delete()
+    return JsonResponse({'status': 'error', 'message': 'Clip no generó el link de pago. Intenta de nuevo en un momento.'})
+
+
+@user_passes_test(lambda u: u.is_superuser, login_url='/')  # == es_admin (se define más abajo en este archivo)
+def recep_estado_cita_paciente(request):
+    """
+    GET para que la recepción vigile el estado de la cita mientras el pagador
+    completa el checkout de Clip. Solo lectura; no escribe nada.
+    """
+    cita_id = request.GET.get('cita_id')
+    if not cita_id:
+        return JsonResponse({'status': 'error', 'message': 'Falta cita_id.'})
+    try:
+        cita = Cita.objects.select_related('paciente').get(id=cita_id)
+    except (Cita.DoesNotExist, ValueError, TypeError):
+        # La cita dejó de existir (se liberó manualmente o Clip canceló el pago).
+        return JsonResponse({'status': 'success', 'existe': False, 'estado': ''})
+    return JsonResponse({
+        'status': 'success',
+        'existe': True,
+        'id': cita.id,
+        'estado': cita.estado or '',
+        'paciente': f"{cita.paciente.first_name} {cita.paciente.last_name}".strip() if cita.paciente else '',
+        'fecha': str(cita.fecha or ''),
+        'hora': cita.hora.strftime('%I:%M %p') if cita.hora else '',
+    })
+
+
+@user_passes_test(lambda u: u.is_superuser, login_url='/')  # == es_admin (se define más abajo en este archivo)
+@require_POST
+@transaction.atomic
+def recep_liberar_cita_pendiente(request):
+    """
+    La recepción libera el horario cuando el cobro de Clip no se completa.
+    SOLO elimina citas en 'Pendiente'/'Pendiente de Pago': una cita Confirmada,
+    Completada o con bitácora jamás se toca aquí (estados clínicos intactos).
+    """
+    cita_id = request.POST.get('cita_id')
+    try:
+        cita = Cita.objects.get(id=cita_id)
+    except (Cita.DoesNotExist, ValueError, TypeError):
+        return JsonResponse({'status': 'success', 'message': 'La cita ya no existe: el horario ya está libre.'})
+    if cita.estado not in ('Pendiente', 'Pendiente de Pago'):
+        return JsonResponse({
+            'status': 'error',
+            'message': f'La cita está en estado "{cita.estado}": ya no se puede liberar desde recepción.'
+        })
+    cita.delete()
+    logging.getLogger(__name__).info(
+        'Recepción liberó cita pendiente %s (staff %s)', cita_id, request.user.id
+    )
+    return JsonResponse({'status': 'success', 'message': 'Cita liberada: el horario quedó disponible y no se cobró.'})
 
 
 @transaction.atomic

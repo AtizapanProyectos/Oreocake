@@ -197,6 +197,14 @@ urlpatterns = [
     # 🪑 Registro de llegada (Vino/No Vino) — escritura en Cita (POST/CSRF)
     path('recep-59/api/registrar-llegada/', views.api_recepcion_registrar_llegada, name='api_recepcion_registrar_llegada'),
 
+    # 💳 3/11/2026 — Pasarela de pagos en recepción (antes de agendar):
+    # tarjeta (Clip, mismo cierre de pago_exitoso_clip) · transferencia con
+    # comprobante (reutiliza subir_comprobante_transferencia_ajax) · y las
+    # dos utilidades de la recepción para vigilar/liberar citas 'Pendiente'.
+    path('recep-59/api/cita-clip/', views.recep_iniciar_pago_clip_paciente, name='recep_iniciar_pago_clip_paciente'),
+    path('recep-59/api/estado-cita/', views.recep_estado_cita_paciente, name='recep_estado_cita_paciente'),
+    path('recep-59/api/liberar-cita/', views.recep_liberar_cita_pendiente, name='recep_liberar_cita_pendiente'),
+
     # 3/11/2026 — Transferencia con comprobante (reserva automática del wizard HOPE)
     # POST con header X-CSRFToken; controlado por el flag ConfigTransferencia (admin Django)
     path('api/subir-comprobante-transferencia/', views.subir_comprobante_transferencia_ajax, name='subir_comprobante_transferencia'),

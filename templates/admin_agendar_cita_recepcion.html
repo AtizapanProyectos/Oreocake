@@ -234,7 +234,7 @@
     <div class="hpa-wrap">
       <p class="hpa-saludo"><svg class="hpa-ic" aria-hidden="true"><use href="#hpa-i-heart"/></svg>Agendar cita desde recepción</p>
       <h1 id="hpa-frase">Todo lo que sientes importa, tú nos importas</h1>
-      <p class="hpa-sub">Elige la modalidad, busca al paciente y reserva su día y hora. Aquí no se cobra nada.</p>
+      <p class="hpa-sub">Elige la modalidad, busca al paciente, reserva su día y hora y procesa su pago (tarjeta o transferencia). El convenio TECTUM In-House no paga.</p>
     </div>
   </section>
 
@@ -363,7 +363,36 @@
               <div class="hpa-precio-row"><span>Subtotal</span><span id="hpa-precio-subtotal">$0 MXN</span></div>
               <div class="hpa-precio-row"><span>Comisión de plataforma</span><span id="hpa-precio-comision">$0 MXN</span></div>
               <div class="hpa-precio-row total"><span>Total</span><span id="hpa-precio-total">$0 MXN</span></div>
-              <div class="hpa-nota-admin">Referencial: al agendar desde recepción, esta cita no genera cobro.</div>
+              <div class="hpa-nota-admin" id="hpa-nota-cobro">Convenio activo: esta cita no genera cobro.</div>
+            </div>
+
+            <!-- 💳 3/11/2026 — PASARELA DE PAGOS EN RECEPCIÓN (solo HOPE no-Tectum):
+                 tarjeta (Clip, mismo cierre probado de pago_exitoso_clip) o
+                 transferencia con comprobante subiendo el foto/PDF al servidor.
+                 TECTUM In-House agenda sin costo y no ve esta caja. -->
+            <div id="hpa-pago-box" style="margin-top:16px; padding:16px; border-radius:22px; background:rgba(255,255,255,.08); border:2px dashed rgba(255,255,255,.35);">
+              <p style="margin:0 0 10px; font:800 14px var(--fh); color:#fff;">Forma de pago</p>
+              <div style="display:grid; gap:10px;">
+                <label style="display:flex; align-items:center; gap:10px; padding:12px 14px; border-radius:16px; background:rgba(255,255,255,.1); border:2px solid rgba(255,255,255,.25); cursor:pointer;">
+                  <input type="radio" name="hpa-metodo" id="hpa-metodo-tarjeta" value="tarjeta" checked style="accent-color:var(--yellow);">
+                  <span style="font-weight:700; font-size:14px;">Tarjeta — pasarela Clip</span>
+                </label>
+                <label style="display:flex; align-items:center; gap:10px; padding:12px 14px; border-radius:16px; background:rgba(255,255,255,.1); border:2px solid rgba(255,255,255,.25); cursor:pointer;">
+                  <input type="radio" name="hpa-metodo" id="hpa-metodo-transferencia" value="transferencia" style="accent-color:var(--yellow);">
+                  <span style="font-weight:700; font-size:14px;">Transferencia bancaria BBVA</span>
+                </label>
+              </div>
+              <div id="hpa-detalle-transferencia" class="hpa-oculto" style="margin-top:12px; padding:14px; border-radius:18px; background:rgba(255,255,255,.94); color:var(--ink);">
+                <p style="margin:0 0 8px; font-weight:800; font-size:13px; color:var(--purple);">Recibimos el pago en:</p>
+                <p style="margin:0; font-size:12.5px; line-height:1.55;">
+                  <strong>Titular:</strong> Servicios de Atención Emocional Juvenil SAPI de CV · <strong>Banco:</strong> BBVA<br>
+                  <strong>MXN</strong> — Cuenta: 0127845901 · CLABE: 012180001278459015<br>
+                  <strong>USD</strong> — Cuenta: 0127845960 · CLABE: 012180001278459604
+                </p>
+                <p style="margin:10px 0 6px; font-weight:700; font-size:13px;">Comprobante de pago:</p>
+                <input type="file" id="hpa-comprobante" accept="image/jpeg,image/png,image/webp,application/pdf" style="width:100%; font-size:12.5px;">
+                <p style="margin:8px 0 0; font-size:11.5px; color:var(--muted);">JPG, PNG, WebP o PDF · hasta 8 MB. Al confirmar, la cita queda agendada y el comprobante archivado para revisión.</p>
+              </div>
             </div>
 
             <button type="submit" class="hpa-btn-confirmar" id="hpa-btn-confirmar" disabled>Confirmar cita</button>
@@ -385,6 +414,22 @@
       <div class="hpa-acciones">
         <a class="hpa-btn pri" href="{% if volver_panel_url %}{{ volver_panel_url }}{% else %}{% url 'panel_recepcion' %}{% endif %}">Volver a recepción</a>
         <button type="button" class="hpa-btn sec" id="hpa-otra-cita">Agendar otra cita</button>
+      </div>
+    </section>
+
+    <!-- 💳 Panel de cobro con Clip (3/11/2026): aparece en lugar del formulario
+         cuando la recepción cobra por tarjeta. Vigila el estado de la cita
+         'Pendiente' hasta que Clip la confirma en /pago-exitoso/<id>/ -->
+    <section class="hpa-exito hpa-oculto" id="hpa-clip-panel" style="border-color:var(--yellow)">
+      <h3 style="margin-bottom:4px">Cobro con tarjeta</h3>
+      <p style="max-width:46ch">Comparte este enlace seguro con quien pagará (el paciente puede completarlo desde su teléfono). La cita quedó apartada en el horario elegido hasta que el pago termine.</p>
+      <div style="display:flex; flex-wrap:wrap; justify-content:center; gap:10px; margin-top:16px;">
+        <a id="hpa-clip-url" class="hpa-btn pri" target="_blank" rel="noopener" href="#">Abrir pasarela de pago</a>
+        <button type="button" class="hpa-btn sec" id="hpa-copiar-url">Copiar enlace</button>
+      </div>
+      <p id="hpa-clip-estado" style="margin-top:16px; font-weight:700; color:var(--muted);">Esperando el pago… la cita está en <strong>estado Pendiente</strong> y se confirmará sola al completar el cobro.</p>
+      <div class="hpa-acciones">
+        <button type="button" class="hpa-btn sec" id="hpa-clip-liberar">Liberar cita y descartar cobro</button>
       </div>
     </section>
 
@@ -410,6 +455,12 @@ document.addEventListener('DOMContentLoaded', function () {
     const URL_PRECIO = "{% url 'calcular_precio_sesion' %}";
     const URL_GUARDAR = "{% url 'admin_guardar_cita_paciente' %}";
 
+    // 💳 3/11/2026 — Pasarela de pagos de recepción
+    const URL_CITA_CLIP = "{% url 'recep_iniciar_pago_clip_paciente' %}";
+    const URL_ESTADO_CITA = "{% url 'recep_estado_cita_paciente' %}";
+    const URL_LIBERAR_CITA = "{% url 'recep_liberar_cita_pendiente' %}";
+    const URL_SUBIR_COMPROBANTE = "{% url 'subir_comprobante_transferencia' %}";
+
     const root = document.getElementById('hpa-root');
     const buscarInput = document.getElementById('hpa-buscar-input');
     const resultadosBox = document.getElementById('hpa-resultados');
@@ -426,6 +477,17 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const BTN_CONFIRMAR_HTML = 'Confirmar cita';
     const BTN_AGENDANDO_HTML = 'Agendando… <span class="hpa-spin" aria-hidden="true"></span>';
+
+    // 💳 3/11/2026 — Estado de la forma de pago elegida en recepción.
+    // 'tarjeta' | 'transferencia' (solo HOPE) · 'tectum' (sin cobro por convenio)
+    let metodoPago = 'tarjeta';
+    let clipTimer = null;
+    let clipCitaId = null;
+    const pagoBox = document.getElementById('hpa-pago-box');
+    const notaCobro = document.getElementById('hpa-nota-cobro');
+    const detalleTransferencia = document.getElementById('hpa-detalle-transferencia');
+    const clipPanel = document.getElementById('hpa-clip-panel');
+    const clipEstadoEl = document.getElementById('hpa-clip-estado');
 
     const cardsDependientes = ['hpa-card-convenio', 'hpa-card-tipo', 'hpa-card-calendario', 'hpa-card-animo', 'hpa-card-resumen'];
 
@@ -468,14 +530,41 @@ document.addEventListener('DOMContentLoaded', function () {
             if (lblTectum) lblTectum.classList.add('activo');
             if (lblHope) lblHope.classList.remove('activo');
             if (resumenConvenio) resumenConvenio.textContent = 'TECTUM In-House';
+            // 💳 TECTUM no paga nada (convenio): ocultamos la caja de pago.
+            metodoPago = 'tectum';
+            pagoBox.classList.add('hpa-oculto');
+            notaCobro.textContent = 'Convenio TECTUM: esta cita no genera cobro.';
         } else {
             esTectumSeleccionado = false;
             if (radioHope) radioHope.checked = true;
             if (lblHope) lblHope.classList.add('activo');
             if (lblTectum) lblTectum.classList.remove('activo');
             if (resumenConvenio) resumenConvenio.textContent = 'Espacio HOPE (general)';
+            // 💳 HOPE: exige cobro antes de confirmar (tarjeta o transferencia).
+            metodoPago = 'tarjeta';
+            pagoBox.classList.remove('hpa-oculto');
+            notaCobro.textContent = 'El pago se procesa antes de confirmar: tarjeta o transferencia.';
         }
+        const rbTarjeta = document.getElementById('hpa-metodo-tarjeta');
+        const rbTransfer = document.getElementById('hpa-metodo-transferencia');
+        if (rbTarjeta && rbTransfer) {
+            rbTarjeta.checked = (metodoPago === 'tarjeta');
+            rbTransfer.checked = (metodoPago === 'transferencia');
+        }
+        detalleTransferencia.classList.toggle('hpa-oculto', metodoPago !== 'transferencia');
+        actualizarBotonConfirmar();
     };
+
+    // 💳 Cambio de forma de pago (radio dentro de la caja de pago)
+    document.querySelectorAll('input[name="hpa-metodo"]').forEach(function (rb) {
+        rb.addEventListener('change', function () {
+            if (esTectumSeleccionado) return;
+            metodoPago = rb.value;
+            detalleTransferencia.classList.toggle('hpa-oculto', metodoPago !== 'transferencia');
+            actualizarBotonConfirmar();
+            actualizarResumen();
+        });
+    });
 
     function formatoMoneda(valor) {
         const n = Number(valor || 0);
@@ -698,18 +787,33 @@ document.addEventListener('DOMContentLoaded', function () {
         return `${hours.toString().padStart(2, '0')}:${minutes}`;
     }
 
+    function actualizarBotonConfirmar() {
+        if (esTectumSeleccionado) btnConfirmar.textContent = 'Confirmar cita (sin cobro)';
+        else if (metodoPago === 'tarjeta') btnConfirmar.textContent = 'Cobrar y agendar (tarjeta)';
+        else btnConfirmar.textContent = 'Agendar con comprobante';
+    }
+
     function actualizarResumen() {
         document.getElementById('hpa-resumen-fecha').textContent = fechaHumana(fechaSeleccionada);
         const horaEl = document.getElementById('hpa-resumen-hora');
         horaEl.textContent = horaSeleccionada || 'Sin seleccionar';
         horaEl.classList.toggle('sin', !horaSeleccionada);
         btnConfirmar.disabled = !(pacienteId && fechaSeleccionada && horaSeleccionada);
+        actualizarBotonConfirmar();
 
         const faltan = [];
         if (!pacienteId) faltan.push('paciente');
         if (!fechaSeleccionada) faltan.push('día');
         if (!horaSeleccionada) faltan.push('hora');
-        faltanteEl.textContent = faltan.length ? 'Falta elegir: ' + faltan.join(', ') + '.' : 'Todo listo para confirmar.';
+        if (faltan.length) {
+            faltanteEl.textContent = 'Falta elegir: ' + faltan.join(', ') + '.';
+        } else if (!esTectumSeleccionado) {
+            faltanteEl.textContent = metodoPago === 'transferencia'
+                ? 'Todo listo: se agendará al subir el comprobante de transferencia.'
+                : 'Todo listo: al confirmar se genera el cobro por tarjeta de ' + document.getElementById('hpa-precio-total').textContent + '.';
+        } else {
+            faltanteEl.textContent = 'Todo listo para confirmar (sin cobro, convenio TECTUM).';
+        }
     }
 
     // ------------------------------------------------------------------
@@ -805,16 +909,29 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // ------------------------------------------------------------------
     // Confirmar (endpoint admin, incluye paciente_id)
+    // 💳 3/11/2026 — Despachador por forma de pago:
+    //   · TECTUM        → admin_guardar_cita_paciente (sin cobro, fluido original)
+    //   · Tarjeta       → Clip: cita 'Pendiente' + link de pago; la cita se
+    //                     CONFIRMA SOLA cuando el pagador termina en la pasarela
+    //                     (cierre compartido con el flujo normal: /
+    //                     pago-exitoso/<id>/ → asignación + Meet/pase + correo)
+    //   · Transferencia → subir comprobante (cita Confirmada automática)
     // ------------------------------------------------------------------
     document.getElementById('hpa-form').addEventListener('submit', function (e) {
         e.preventDefault();
         if (!pacienteId || !fechaSeleccionada || !horaSeleccionada) return;
 
         msgBox.classList.remove('activo', 'ok', 'error');
-        btnConfirmar.disabled = true;
-        btnConfirmar.innerHTML = BTN_AGENDANDO_HTML;
 
-        const formData = new FormData();
+        if (esTectumSeleccionado) { agendarSinCobro(); return; }
+        if (metodoPago === 'tarjeta') { cobrarConClip(); return; }
+        if (metodoPago === 'transferencia') { agendarConComprobante(); return; }
+
+        msgBox.textContent = 'Elige la forma de pago (tarjeta o transferencia) antes de confirmar.';
+        msgBox.classList.add('activo', 'error');
+    });
+
+    function armarDatosComunes(formData) {
         formData.append('paciente_id', pacienteId);
         formData.append('fecha', fechaSeleccionada);
         formData.append('hora', convertirHoraA24(horaSeleccionada));
@@ -825,34 +942,49 @@ document.addEventListener('DOMContentLoaded', function () {
         if (tipoSesion === 'familiar') {
             formData.append('integrantes_familia', integrantesFamilia);
         }
+        return formData;
+    }
+
+    function botonCargando(texto) {
+        btnConfirmar.disabled = true;
+        btnConfirmar.innerHTML = texto + '… <span class="hpa-spin" aria-hidden="true"></span>';
+    }
+
+    function mostrarExito(texto) {
+        document.getElementById('hpa-exito-texto').textContent = texto;
+        document.getElementById('hpa-exito-datos').innerHTML =
+            '<span>' + esc(nombrePaciente) + '</span><span>' + esc(modalidad) + '</span><span>' +
+            esc(fechaHumana(fechaSeleccionada)) + '</span><span>' + esc(horaSeleccionada) + '</span>';
+        document.getElementById('hpa-form').style.display = 'none';
+        document.getElementById('hpa-modos').classList.add('hpa-oculto');
+        clipPanel.classList.add('hpa-oculto');
+        document.getElementById('hpa-exito').classList.add('activo');
+        document.getElementById('hpa-exito').scrollIntoView({ block: 'center' });
+    }
+
+    // ------------------------------------------------------------------
+    // 💳 RUTA 1 — TECTUM sin cobro (flujo admin original, intacto)
+    // ------------------------------------------------------------------
+    function agendarSinCobro() {
+        botonCargando('Agendando');
 
         fetch(URL_GUARDAR, {
             method: 'POST',
             headers: { 'X-CSRFToken': csrfToken },
-            body: formData
+            body: armarDatosComunes(new FormData())
         })
         .then(function (r) { return r.json(); })
         .then(function (data) {
             if (data.status === 'success') {
-                // Texto de éxito según modalidad (Meet en línea / pase presencial).
-                const textoExito = document.getElementById('hpa-exito-texto');
-                if (textoExito) {
-                    textoExito.textContent = (modalidad === 'Presencial')
-                        ? 'Se le notificó al paciente por correo, junto con su pase de acceso presencial (PDF con QR).'
-                        : 'Se le notificó al paciente por correo, junto con el Meet si aplica.';
-                }
-                document.getElementById('hpa-exito-datos').innerHTML =
-                    '<span>' + esc(nombrePaciente) + '</span><span>' + esc(modalidad) + '</span><span>' +
-                    esc(fechaHumana(fechaSeleccionada)) + '</span><span>' + esc(horaSeleccionada) + '</span>';
-                document.getElementById('hpa-form').style.display = 'none';
-                document.getElementById('hpa-modos').classList.add('hpa-oculto');
-                document.getElementById('hpa-exito').classList.add('activo');
-                document.getElementById('hpa-exito').scrollIntoView({ block: 'center' });
+                mostrarExito((modalidad === 'Presencial')
+                    ? 'Cita agendada sin cobro por convenio. El paciente recibirá su pase de acceso (PDF con QR) por correo.'
+                    : 'Cita agendada sin cobro por convenio. El paciente recibió la confirmación por correo, junto con el Meet.');
+                actualizarResumen();
             } else {
                 msgBox.textContent = data.message || 'No pudimos agendar la cita. Revisa los datos e intenta de nuevo.';
                 msgBox.classList.add('activo', 'error');
                 btnConfirmar.disabled = false;
-                btnConfirmar.innerHTML = BTN_CONFIRMAR_HTML;
+                actualizarBotonConfirmar();
                 fetchDisponibilidad();
             }
         })
@@ -860,9 +992,171 @@ document.addEventListener('DOMContentLoaded', function () {
             msgBox.textContent = 'No pudimos conectarnos. Revisa tu conexión e intenta de nuevo.';
             msgBox.classList.add('activo', 'error');
             btnConfirmar.disabled = false;
-            btnConfirmar.innerHTML = BTN_CONFIRMAR_HTML;
+            actualizarBotonConfirmar();
+        });
+    }
+
+    // ------------------------------------------------------------------
+    // 💳 RUTA 2 — Tarjeta vía Clip (cita 'Pendiente' + link de cobro)
+    // ------------------------------------------------------------------
+    function cobrarConClip() {
+        botonCargando('Preparando cobro');
+
+        const formData = armarDatosComunes(new FormData());
+        formData.set('es_tectum', '0');
+
+        fetch(URL_CITA_CLIP, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': csrfToken },
+            body: formData
+        })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+            if (data.status === 'success' && data.payment_url) {
+                iniciarCobroClip(data.cita_id, data.payment_url);
+            } else {
+                msgBox.textContent = data.message || 'No pudimos abrir la pasarela de cobro. Intenta de nuevo en un momento.';
+                msgBox.classList.add('activo', 'error');
+                btnConfirmar.disabled = false;
+                actualizarBotonConfirmar();
+                fetchDisponibilidad();
+            }
+        })
+        .catch(function () {
+            msgBox.textContent = 'No pudimos conectarnos con la pasarela. Revisa tu conexión e intenta de nuevo.';
+            msgBox.classList.add('activo', 'error');
+            btnConfirmar.disabled = false;
+            actualizarBotonConfirmar();
+        });
+    }
+
+    function iniciarCobroClip(citaId, paymentUrl) {
+        clipCitaId = citaId;
+        document.getElementById('hpa-clip-url').href = paymentUrl;
+        clipEstadoEl.innerHTML = 'Cita apartada en <strong>estado Pendiente</strong>. Esperando el pago… la cita se confirma sola cuando el pagador completa el cobro.';
+        document.getElementById('hpa-form').style.display = 'none';
+        document.getElementById('hpa-modos').classList.add('hpa-oculto');
+        document.getElementById('hpa-exito').classList.remove('activo');
+        clipPanel.classList.remove('hpa-oculto');
+        clipPanel.classList.add('activo');
+        document.getElementById('hpa-clip-liberar').style.display = 'inline-flex';
+        clipPanel.scrollIntoView({ block: 'center' });
+        if (clipTimer) clearInterval(clipTimer);
+        clipTimer = setInterval(verificarPagoClip, 5000);
+        verificarPagoClip();
+    }
+
+    function verificarPagoClip() {
+        if (!clipCitaId) return;
+        fetch(URL_ESTADO_CITA + '?cita_id=' + encodeURIComponent(clipCitaId))
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                if (!data.existe) {
+                    detenerVerificacionClip();
+                    clipEstadoEl.innerHTML = '<span style="color:var(--pink-d)">El enlace ya no está vigente: la cita se liberó o el pago se canceló. Ningún horario quedó ocupado.</span>';
+                    return;
+                }
+                if (data.estado === 'Confirmada') {
+                    detenerVerificacionClip();
+                    mostrarExito('El pago con tarjeta se completó y la cita quedó agendada. El paciente recibió por correo su confirmación (Meet o pase de acceso).');
+                    return;
+                }
+                if (data.estado === 'Pendiente' || data.estado === 'Pendiente de Pago') {
+                    clipEstadoEl.innerHTML = 'Cita apartada en <strong>estado Pendiente</strong>. Esperando el pago… la cita se confirma sola cuando el pagador completa el cobro.';
+                }
+            })
+            .catch(function () { /* red lenta: el siguiente ciclo reintenta */ });
+    }
+
+    function detenerVerificacionClip() {
+        if (clipTimer) { clearInterval(clipTimer); clipTimer = null; }
+        clipCitaId = null;
+    }
+
+    document.getElementById('hpa-copiar-url').addEventListener('click', function () {
+        const url = document.getElementById('hpa-clip-url').href;
+        if (navigator.clipboard) {
+            navigator.clipboard.writeText(url).then(function () {
+                clipEstadoEl.innerHTML = '<span style="color:var(--teal-d)">Enlace copiado: pégalo o mándalo por WhatsApp al pagador.</span>';
+            });
+        } else {
+            window.prompt('Copia el enlace de cobro:', url);
+        }
+    });
+
+    document.getElementById('hpa-clip-liberar').addEventListener('click', function () {
+        if (!clipCitaId || !window.confirm('¿Liberar la cita y descartar el cobro? El horario quedará disponible.')) return;
+        const citaIdParaLiberar = clipCitaId;
+        detenerVerificacionClip();
+        fetch(URL_LIBERAR_CITA, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': csrfToken },
+            body: new URLSearchParams({ cita_id: citaIdParaLiberar })
+        })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+            clipCitaId = null;
+            clipPanel.classList.add('hpa-oculto');
+            document.getElementById('hpa-form').style.display = '';
+            document.getElementById('hpa-modos').classList.remove('hpa-oculto');
+            msgBox.textContent = data.message || 'Cita liberada.';
+            msgBox.classList.add('activo', data.status === 'success' ? 'ok' : 'error');
+            btnConfirmar.disabled = false;
+            actualizarBotonConfirmar();
+        })
+        .catch(function () {
+            msgBox.textContent = 'No pudimos liberar la cita. Inténtalo de nuevo.';
+            msgBox.classList.add('activo', 'error');
         });
     });
+
+    // ------------------------------------------------------------------
+    // 💳 RUTA 3 — Transferencia con comprobante (cita Confirmada automática)
+    // ------------------------------------------------------------------
+    function agendarConComprobante() {
+        const inputComprobante = document.getElementById('hpa-comprobante');
+        const archivo = inputComprobante && inputComprobante.files ? inputComprobante.files[0] : null;
+
+        if (!archivo) {
+            msgBox.textContent = 'Pide la foto del comprobante (o tómala con la cámara de la computadora) y súbela aquí: es el respaldo del pago. Si nada de eso es posible, usa la tarjeta.';
+            msgBox.classList.add('activo', 'error');
+            return;
+        }
+        if (archivo.size > 8 * 1024 * 1024) {
+            msgBox.textContent = 'El archivo supera los 8 MB. Pide una captura más ligera o usa la tarjeta.';
+            msgBox.classList.add('activo', 'error');
+            return;
+        }
+        botonCargando('Subiendo comprobante');
+
+        const formData = armarDatosComunes(new FormData());
+        formData.set('es_tectum', '0');
+        formData.append('comprobante', archivo, archivo.name);
+
+        fetch(URL_SUBIR_COMPROBANTE, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': csrfToken },
+            body: formData
+        })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+            if (data.status === 'success') {
+                mostrarExito('Comprobante de transferencia archivado y cita agendada automáticamente. El paciente recibió la confirmación por correo (Meet o pase de acceso).');
+            } else {
+                msgBox.textContent = data.message || 'No pudimos procesar el comprobante. Intenta de nuevo.';
+                msgBox.classList.add('activo', 'error');
+                btnConfirmar.disabled = false;
+                actualizarBotonConfirmar();
+                fetchDisponibilidad();
+            }
+        })
+        .catch(function () {
+            msgBox.textContent = 'No pudimos conectarnos. El comprobante no se subió: intenta de nuevo.';
+            msgBox.classList.add('activo', 'error');
+            btnConfirmar.disabled = false;
+            actualizarBotonConfirmar();
+        });
+    }
 
     document.getElementById('hpa-otra-cita').addEventListener('click', function () {
         window.location.href = window.location.pathname + '?modalidad=' + (modalidad === 'Presencial' ? 'presencial' : 'online');

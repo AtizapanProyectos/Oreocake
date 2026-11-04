@@ -1029,6 +1029,29 @@ function mostrarErrorCita(mensaje, opts) {
                     <p id="selected-time-text" style="font-size: 16px; color: var(--c-teal); margin-bottom: 24px; font-weight: 700; background: #e6fffa; display: inline-block; padding: 8px 22px; border-radius: 50px; border: 1px solid #b2f5ea;"></p>
                 </div>
 
+                {% if transferencia_habilitada %}
+                <!-- 3/11/2026 — AVISO DE TRANSFERENCIA: se muestra al llegar al paso de pago
+                     (después de elegir el horario) para que el paciente sepa ANTES de pagar
+                     que el método de transferencia bancaria requiere subir su comprobante
+                     en esta pantalla. Si ConfigTransferencia se apaga, el aviso desaparece
+                     junto con la zona de subida (mismo flag). -->
+                <div id="aviso-transferencia-comprobante" style="margin: 0 auto 26px; max-width: 560px; background: linear-gradient(135deg, #faf5ff 0%, #ede9fe 100%); border: 1.5px solid #d8b4fe; padding: 16px 20px; border-radius: 18px; text-align: left; display: flex; align-items: flex-start; gap: 14px;">
+                    <div style="width: 40px; height: 40px; border-radius: 12px; background: #ede9fe; color: var(--c-purple); display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0;">
+                        <i class="fas fa-file-upload"></i>
+                    </div>
+                    <div>
+                        <p style="margin: 0 0 6px; font-size: 14.5px; color: var(--text-main); font-weight: 800; font-family: var(--font-headings); line-height: 1.4;">
+                            Para agendar su cita mediante transferencia bancaria, será necesario subir su comprobante de pago.
+                        </p>
+                        <p style="margin: 0; font-size: 13.5px; color: var(--text-muted); font-family: var(--font-body); line-height: 1.55;">
+                            Si presenta algún problema durante el proceso,
+                            <a href="https://wa.me/525521130230?text=Hola%2C%20adjunto%20mi%20comprobante%20de%20pago%20por%20transferencia%20para%20mi%20sesi%C3%B3n" target="_blank" rel="noopener" style="color: #1DA851; font-weight: 700; text-decoration: none;">contáctenos por WhatsApp</a>
+                            y con gusto le apoyaremos.
+                        </p>
+                    </div>
+                </div>
+                {% endif %}
+
                 <!-- 3/11/2026 — ESCALA EMOCIONAL DEL WIZARD (1 toque, saltable).
                      Se envía junto con la cita en el campo 'animo' (Cita.estado_animo).
                      Si el paciente no toca nada, queda "No especificó" como siempre. -->
