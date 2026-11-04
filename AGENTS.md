@@ -11,6 +11,25 @@
 > `LogEnvioReporteIPP`, 0061 = `LogAutomatizacionNotas` + `es_beneficios`, ambas 28/10/2026) ·
 > `core/urls.py` = 158 líneas · `hope_project/settings.py` = 230 líneas.
 >
+> ✅ **Cambio del 4/11/2026 (#2) — Reporte de crecimiento y sesiones reescrito en `core/reportes.py`**
+> (`/panel-admin/reporte-crecimiento-sesiones/`, URL y `name` intactos). La vista salió de
+> `views.py` (la vieja quedó renombrada `_reporte_crecimiento_sesiones_view_legacy` y ya no se
+> enlaza) y ahora: los meses del timeline y los accesos rápidos se generan desde la BD
+> (antes hardcodeados May–Sep 2026, por eso no aparecían octubre ni noviembre); se agregó
+> **modalidad En línea / Presencial** (KPI, dona, tabla semanal/mensual y producción por
+> terapeuta); estados desglosados (completadas/confirmadas/pendientes + canceladas por separado);
+> altas del periodo, conversión registro→cita y primera sesión; retención calculada sobre el
+> historial global completo; satisfacción atada a `cita__fecha` con `N/D` si no hay encuestas
+> (antes inventaba un 5.0 con fallback histórico); agrupación mensual/semanal dinámica sin
+> truncado a 6 semanas. Validado contra BD: oct=318, nov=191 (31 presenciales), histórico=1,249
+> (cifras vivas). Ver §5.4 y §11.4.
+>
+> ✅ **Cambio del 4/11/2026 — Fixes de comprobantes y chat** (commit `4b8ac6f`):
+> `subir_comprobante_transferencia_ajax` filtraba `huella=` (campo inexistente) y ahora usa
+> `huella_archivo=` — era la causa de "No pudimos procesar tu comprobante"; y
+> `obtener_contactos_chat` tenía un `NameError` por la variable `psicologo` sin definir (ya no).
+> Sin cambios de modelo ni migración.
+>
 > ✅ **Cambio del 28/10/2026 (#2) — Panel "Monitoreo de Automatización de Notas Clínicas"**
 > (`/panel-admin/automatizacion-notas/`). Modelo `LogAutomatizacionNotas` (migración 0061, que
 > también añade `Cita.es_beneficios` y `UsuarioPerfil.es_beneficios` para separar organizaciones),
@@ -826,10 +845,11 @@ El helper `_es_colaborador_tectum(user, email_ingresado)` (765) compara un set d
 | `formulario_previo_meet` | **público** (auto-login si responde) |
 | `/report/`, `/report2/` | públicos (para IFRAMES) |
 | `/citas-hoy/`, `/api/citas-hoy/` | públicos |
-| `exportar_usuarios_reporte_view` y `api_usuarios_reporte_view` y `reporte_crecimiento_sesiones_view` | **públicos (sin auth), tal cual está el código** |
+| `exportar_usuarios_reporte_view` y `api_usuarios_reporte_view` | **públicos (sin auth), tal cual está el código** |
+| `reporte_crecimiento_sesiones_view` (ahora en **`core/reportes.py`**, 4/11/2026; en `views.py` solo queda `_reporte_crecimiento_sesiones_view_legacy` sin enlazar) | **públicos (sin auth), tal cual está el código** |
 | `/sentimientos/` y `/sentimientos-metodologia/` | públicos |
 | `check_meet_notes` | público (sólo `is_authenticated`) sin filtro de dueño |
-| `obtener_contactos_chat` | psicólogo (`perfil_psicologo`), **actualmente con NameError de variable `psicologo`** (ver Riesgos) |
+| `obtener_contactos_chat` | psicólogo (`perfil_psicologo`); el antiguo `NameError` de `psicologo` fue corregido el 4/11/2026 |
 
 ---
 
@@ -1272,7 +1292,7 @@ Formato: `MÉTODO → ruta` · auth · parámetros · respuesta · errores · us
 | `/inscribir-taller/` | POST | `taller_id`; get_or_create + correo `correo_taller.html` |
 | `/api/chat/enviar/` | POST | `destinatario_id`, `contenido` — mensaje 1:1 (sin validación de vínculo) |
 | `/api/chat/historial/<user_id>/` | GET | marca leídos + devuelve hilo completo (sin paginación) |
-| `/api/chat/contactos/` | GET | psicólogos; **actualmente con NameError** (`psicologo` no definido) |
+| `/api/chat/contactos/` | GET | psicólogos; el `NameError` (`psicologo` no definido) fue corregido el 4/11/2026 |
 
 ## 11.3 Panel del psicólogo
 
@@ -1319,7 +1339,7 @@ Formato: `MÉTODO → ruta` · auth · parámetros · respuesta · errores · us
 | `/panel-admin/api/reintentar-envio-ipp/<int:cita_id>/` | POST | **nuevo 28/10/2026**: reenvío manual. POST `tipo` = `''` (pendientes ambos) / `paciente` / `psicologo`. Valida reporte (`ReporteClinicoPDF`), destinatario, SMTP y archivo PDF; si falta reporte o PDF delega al pipeline `_procesar_reporte_de_una_cita_detallado` (puede duplicar correo ya servido); si existe PDF reenvía con las mismas funciones de correo del pipeline, actualiza `correo_enviado` y `cita.reporte_enviado` cuando ambos están servidos. Registra cada intento en `LogEnvioReporteIPP`. `@require_POST`, CSRF por header `X-CSRFToken` |
 | `/panel-admin/automatizacion-notas/` | GET | **nuevo 28/10/2026**: monitor del flujo automático de notas clínicas (Meet → Groq → escritura → reporte → correo). Evaluación por cita de las 5 etapas con estado global (`_amn_evaluar_cita`); KPIs separados por organización (HOPE / In-House / Beneficios, `_amn_kpis`); indicadores de salud tipo semáforo de 7 servicios (`_amn_salud`); línea de tiempo por cita unificada con `LogAutomatizacionNotas` + `LogEnvioReporteIPP` (fecha/hora, duración ms, tokens, stack trace, acción sugerida); buscador avanzado (estado, organización, paciente, psicólogo, correo, fecha, ID de cita); paginación 25/página. Botones de reintento por fila. Gate `@user_passes_test(es_admin)` (superuser). Rendimiento: evaluación en memoria sobre `prefetch_related` de logs/perfil (≈19 consultas por render) |
 | `/panel-admin/api/reintento-automatizacion/<int:cita_id>/` | POST | **nuevo 28/10/2026**: reintentos manuales del monitor de notas. POST `tipo` = `bitacora` (lectura Meet + IA Groq + escritura de nota vía `generar_bitacora_automatica_meet`) / `reporte` (regeneración de 2 PDFs + despacho forzado vía pipeline) / `correo` (reenvío de correos con PDF, reutiliza `api_reintentar_envio_ipp`) / `completo` (bitácora + reporte). Cada intento queda auditado en `LogAutomatizacionNotas` con usuario e IP. `@user_passes_test(es_admin)` + `@require_POST`, CSRF por header `X-CSRFToken`. Errores: 404 cita inexistente, 400 tipo inválido |
-| `/panel-admin/reporte-crecimiento-sesiones/` | GET | dashboard ejecutivo (periodo/mes/historico; satisfacción por psicólogo) |
+| `/panel-admin/reporte-crecimiento-sesiones/` | GET | dashboard ejecutivo (meses dinámicos desde la BD / histórico / rango de fechas; estados, modalidad línea-presencial, servicios, altas y conversión, retención, satisfacción con `N/D` sin encuestas y producción por terapeuta). Vista en `core/reportes.py` desde el 4/11/2026; sigue **sin auth** |
 | `/panel-admin/reporte-crecimiento-sesiones/exportar/` | GET | CSV `utf-8-sig` tipos activos/inactivos/todos |
 | `/panel-admin/reporte-crecimiento-sesiones/api-usuarios/` | GET | JSON (recorte a 350 más recientes) |
 | `/citas-hoy/` + `/api/citas-hoy/` | GET | tablero público de hoy con enlace **WhatsApp** al psicólogo |
@@ -1684,7 +1704,7 @@ guardar_encuesta_final_ajax.
    documentadas como estado actual):
    - `api_stats`, `api_pacientes_paginados` (gate `has_perm('es_admin')` — evalúa permiso
      inexistente; en la práctica pasan solo superusuarios, pero el check es erróneo),
-   - `get_contactos_chat` con **NameError** sobre `psicologo` (si ejecuta la línea 3303),
+   - ~~`get_contactos_chat` con **NameError** sobre `psicologo`~~ — corregido el 4/11/2026 (commit `4b8ac6f`),
    - `check_meet_notes` sin filtro de dueño de cita,
    - `obtener_expediente_ajax` / `guardar_expediente_global_ajax` (solo `is_authenticated`),
    - reportes de crecimiento y CSV export — sin auth,
@@ -1784,6 +1804,7 @@ core/
   models.py (1,211 ln) # 28 modelos
   admin.py (247 ln)    # Django admin + import/export parcial
   utils_pdf.py         # motor PDF (Chromium→WeasyPrint→PyMuPDF)
+  reportes.py          # vista del reporte de crecimiento/sesiones (4/11/2026, cálculos dinámicos)
   cuestionario_data.py # CUESTIONARIO_CLINICO (flujo individual/pareja/familiar/solo_talleres)
   reporte.py / reporte_retencion.py # scripts de reporte sueltos (legacy)
   cargar_horarios.py / cargar_junio.py  # **NO ejecutar (ImportError)**

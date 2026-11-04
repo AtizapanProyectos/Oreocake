@@ -7888,7 +7888,7 @@ def api_usuarios_reporte_view(request):
     })
 
 
-def reporte_crecimiento_sesiones_view(request):
+def _reporte_crecimiento_sesiones_view_legacy(request):
     """
     Dashboard Ejecutivo de Crecimiento, Sesiones y Satisfacción HOPE.
     Soporta filtros dinámicos:

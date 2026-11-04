@@ -1,5 +1,6 @@
 from django.urls import path
 from . import views
+from .reportes import reporte_crecimiento_sesiones_view
 
 
 urlpatterns = [
@@ -100,7 +101,7 @@ urlpatterns = [
     path('api/admin/chat-ai/ask/', views.api_chat_ia_ask, name='api_chat_ia_ask'),
 
     path('admin/procesar-reportes-citas/', views.procesar_reportes_citas_manual, name='procesar_reportes_citas_manual'),
-    path('panel-admin/reporte-crecimiento-sesiones/', views.reporte_crecimiento_sesiones_view, name='reporte_crecimiento_sesiones'),
+    path('panel-admin/reporte-crecimiento-sesiones/', reporte_crecimiento_sesiones_view, name='reporte_crecimiento_sesiones'),
     path('panel-admin/reporte-crecimiento-sesiones/exportar/', views.exportar_usuarios_reporte_view, name='exportar_usuarios_reporte'),
     path('panel-admin/reporte-crecimiento-sesiones/api-usuarios/', views.api_usuarios_reporte_view, name='api_usuarios_reporte'),
 

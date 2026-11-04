@@ -89,6 +89,17 @@
       cursor: pointer;
     }
 
+    table { font-variant-numeric: tabular-nums; }
+    ::selection { background: rgba(0, 210, 224, .28); color: #fff; }
+    button:focus-visible, a:focus-visible, input:focus-visible {
+      outline: 2px solid var(--cyan);
+      outline-offset: 3px;
+    }
+    * { scrollbar-color: #28527A #071526; scrollbar-width: thin; }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+    }
+
     @media print {
       .no-print { display: none !important; }
       .slide-view, .slide-hidden { display: block !important; margin-bottom: 2rem; page-break-after: always; }
@@ -153,7 +164,7 @@
           <div>
             <div class="flex items-center gap-2">
               <span class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Filtrando por:</span>
-              <span class="text-xs font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full {% if es_rango_personalizado %}bg-[#10B981]/20 text-[#10B981] border border-[#10B981]/40{% elif es_historico %}bg-[#818CF8]/20 text-[#818CF8] border border-[#818CF8]/40{% else %}bg-[#00D2E0]/20 text-[#00D2E0] border border-[#00D2E0]/40{% endif %}">
+              <span class="text-xs font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full whitespace-nowrap shrink-0 {% if es_rango_personalizado %}bg-[#10B981]/20 text-[#10B981] border border-[#10B981]/40{% elif es_historico %}bg-[#818CF8]/20 text-[#818CF8] border border-[#818CF8]/40{% else %}bg-[#00D2E0]/20 text-[#00D2E0] border border-[#00D2E0]/40{% endif %}">
                 {% if es_rango_personalizado %}Rango Personalizado{% elif es_historico %}Histórico / Totales{% else %}Mes Específico{% endif %}
               </span>
             </div>
@@ -193,13 +204,17 @@
 
           <!-- Botones de Meses -->
           {% for m in meses_disponibles %}
-            <a href="?filtro=mes&mes={{ m.numero }}" 
+            <a href="?filtro=mes&mes={{ m.numero }}&anio={{ m.anio }}" 
                class="px-2.5 py-1.5 text-xs font-bold rounded-xl border transition flex items-center gap-1 {% if m.activo %}bg-[#00D2E0] text-[#071526] border-[#00D2E0] shadow-lg shadow-[#00D2E0]/20{% else %}bg-[#0B1E36] text-slate-400 border-[#17375E] hover:border-[#00D2E0] hover:text-white{% endif %}">
               <span>{{ m.nombre }}</span>
             </a>
           {% endfor %}
         </div>
 
+      </div>
+      <div class="mt-4 pt-3 border-t border-[#17375E] flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-[11px] text-slate-400">
+        <p>{{ subtitulo_periodo }}.</p>
+        <p class="shrink-0">Corte: {{ fecha_corte|date:'d/m/Y H:i' }} · Canceladas se reportan por separado.</p>
       </div>
     </div>
 
@@ -230,6 +245,29 @@
          3) Total de Registros de Usuarios (censo total)
          ========================================================================= -->
     <section id="slide-0" class="slide-view space-y-6">
+
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div class="glass-card-dark rounded-2xl px-4 py-3.5">
+          <span class="text-[11px] font-semibold text-slate-400 block">Altas en {{ nombre_periodo }}</span>
+          <strong class="text-2xl font-black text-white font-heading">{{ registros_periodo }}</strong>
+          <span class="text-[10px] text-slate-400 block">nuevas cuentas de paciente</span>
+        </div>
+        <div class="glass-card-dark rounded-2xl px-4 py-3.5">
+          <span class="text-[11px] font-semibold text-slate-400 block">Altas que ya agendaron</span>
+          <strong class="text-2xl font-black text-[#10B981] font-heading">{{ registros_convertidos }}</strong>
+          <span class="text-[10px] text-slate-400 block">con al menos una cita no cancelada</span>
+        </div>
+        <div class="glass-card-dark rounded-2xl px-4 py-3.5">
+          <span class="text-[11px] font-semibold text-slate-400 block">Conversión registro → cita</span>
+          <strong class="text-2xl font-black text-[#00D2E0] font-heading">{{ tasa_conversion_registros }}%</strong>
+          <span class="text-[10px] text-slate-400 block">de las altas de este periodo</span>
+        </div>
+        <div class="glass-card-dark rounded-2xl px-4 py-3.5">
+          <span class="text-[11px] font-semibold text-slate-400 block">Primera sesión en el periodo</span>
+          <strong class="text-2xl font-black text-[#F85B8C] font-heading">{{ pacientes_nuevos_periodo }}</strong>
+          <span class="text-[10px] text-slate-400 block">pacientes que inician historial HOPE</span>
+        </div>
+      </div>
       
       <!-- LOS 3 BLOQUES EN ORDEN ESTRICTO CON ACCIONES DE DESCARGA Y VISTA -->
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -243,8 +281,8 @@
             </div>
             <div class="mt-4">
               <div class="text-4xl font-black text-white font-heading">{{ usuarios_activos }}</div>
-              <h3 class="text-base font-bold text-[#10B981] mt-1">Usuarios Activos</h3>
-              <p class="text-xs text-slate-400 mt-1.5">Pacientes registrados que al menos han tomado una sesión en HOPE.</p>
+              <h2 class="text-base font-bold text-[#10B981] mt-1">Usuarios Activos</h2>
+              <p class="text-xs text-slate-400 mt-1.5">Pacientes con al menos una cita registrada no cancelada en HOPE.</p>
             </div>
           </div>
 
@@ -272,7 +310,7 @@
             </div>
             <div class="mt-4">
               <div class="text-4xl font-black text-white font-heading">{{ usuarios_sin_sesion }}</div>
-              <h3 class="text-base font-bold text-[#FB923C] mt-1">Registrados Sin Sesión</h3>
+              <h2 class="text-base font-bold text-[#FB923C] mt-1">Registrados Sin Sesión</h2>
               <p class="text-xs text-slate-400 mt-1.5">Crearon su cuenta en la plataforma pero aún no agendan su 1ra consulta.</p>
             </div>
           </div>
@@ -301,7 +339,7 @@
             </div>
             <div class="mt-4">
               <div class="text-4xl font-black text-white font-heading">{{ total_registros }}</div>
-              <h3 class="text-base font-bold text-[#00D2E0] mt-1">Total de Registros</h3>
+              <h2 class="text-base font-bold text-[#00D2E0] mt-1">Total de Registros</h2>
               <p class="text-xs text-slate-400 mt-1.5">Censo global de pacientes en plataforma (sin psicólogos ni administradores).</p>
             </div>
           </div>
@@ -328,7 +366,7 @@
         <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
           <div>
             <h2 class="text-base sm:text-lg font-bold text-white font-heading">Tendencia de Crecimiento de Nuevos Usuarios</h2>
-            <p class="text-xs text-slate-400">Captación y registro verídico semanal en plataforma HOPE ({{ nombre_periodo }})</p>
+            <p class="text-xs text-slate-400">Captación y registro verídico {% if modo_agrupacion == 'mensual' %}mensual{% else %}semanal{% endif %} en plataforma HOPE ({{ nombre_periodo }})</p>
           </div>
           <div class="flex items-center gap-4 text-xs font-semibold">
             <span class="flex items-center gap-1.5"><span class="w-3.5 h-1.5 bg-[#F85B8C] rounded-full inline-block"></span> Nuevos registros</span>
@@ -341,7 +379,7 @@
         </div>
 
         <!-- Weekly / Monthly Data Grid -->
-        <div class="grid grid-cols-2 sm:grid-cols-5 gap-3 mt-6 pt-5 border-t border-[#17375E]">
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mt-6 pt-5 border-t border-[#17375E]">
           {% for t in crecimiento_tarjetas %}
             <div class="p-3.5 rounded-2xl {% if t.destacado %}bg-[#F85B8C]/10 border border-[#F85B8C]/30{% else %}bg-[#0B1E36] border border-[#17375E]{% endif %} text-center">
               <span class="text-[11px] font-bold {% if t.destacado %}text-[#F85B8C]{% else %}text-slate-400{% endif %} block truncate">{{ t.label }}</span>
@@ -369,7 +407,7 @@
               <span class="text-[11px] font-extrabold uppercase tracking-wider text-[#00D2E0] bg-[#00D2E0]/15 px-2.5 py-1 rounded-full border border-[#00D2E0]/30 inline-block">
                 {{ nombre_periodo }}
               </span>
-              <span class="text-xs text-[#10B981] font-bold">{{ tasa_efectividad }}% Asistencia efectiva</span>
+              <span class="text-xs text-[#10B981] font-bold">{{ tasa_efectividad }}% completadas del total</span>
             </div>
             <div class="text-4xl sm:text-5xl font-black text-white mt-4 font-heading">{{ total_sesiones }}</div>
             <p class="text-sm font-semibold text-slate-300 mt-1">
@@ -393,9 +431,94 @@
               {% if es_historico %}Sesiones promedio por mes registrado{% else %}Sesiones promedio por ciclo semanal{% endif %}
             </p>
           </div>
-          <div class="text-xs font-bold text-[#FBBF24] bg-[#FBBF24]/15 px-2.5 py-1 rounded-lg w-fit border border-[#FBBF24]/30">Demanda constante</div>
+          <div class="text-xs font-bold text-[#FBBF24] bg-[#FBBF24]/15 px-2.5 py-1 rounded-lg w-fit border border-[#FBBF24]/30">Base: {{ total_sesiones }} citas no canceladas</div>
         </div>
 
+      </div>
+
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div class="glass-card-dark rounded-2xl px-4 py-3.5 border-t-2 border-t-[#10B981]">
+          <span class="text-[11px] font-semibold text-slate-400 block">Completadas</span>
+          <strong class="text-2xl font-black text-[#10B981] font-heading">{{ sesiones_completadas }}</strong>
+          <span class="text-[10px] text-slate-400 block">sesiones ya cerradas clínicamente</span>
+        </div>
+        <div class="glass-card-dark rounded-2xl px-4 py-3.5 border-t-2 border-t-[#00D2E0]">
+          <span class="text-[11px] font-semibold text-slate-400 block">Confirmadas</span>
+          <strong class="text-2xl font-black text-[#00D2E0] font-heading">{{ sesiones_confirmadas }}</strong>
+          <span class="text-[10px] text-slate-400 block">agendadas; incluye fechas futuras</span>
+        </div>
+        <div class="glass-card-dark rounded-2xl px-4 py-3.5 border-t-2 border-t-[#FB923C]">
+          <span class="text-[11px] font-semibold text-slate-400 block">Pendientes / otros</span>
+          <strong class="text-2xl font-black text-[#FB923C] font-heading">{{ sesiones_pendientes }}</strong>
+          <span class="text-[10px] text-slate-400 block">no completadas ni confirmadas</span>
+        </div>
+        <div class="glass-card-dark rounded-2xl px-4 py-3.5 border-t-2 border-t-[#F85B8C]">
+          <span class="text-[11px] font-semibold text-slate-400 block">Canceladas</span>
+          <strong class="text-2xl font-black text-[#F85B8C] font-heading">{{ sesiones_canceladas }}</strong>
+          <span class="text-[10px] text-slate-400 block">fuera del total operativo</span>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div class="lg:col-span-5 glass-card-dark p-6 rounded-3xl border border-[#17375E]">
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <h2 class="text-base font-bold text-white font-heading">Modalidad de atención</h2>
+              <p class="text-xs text-slate-400 mt-0.5">En línea y presencial sobre el total no cancelado</p>
+            </div>
+            <span class="text-xs font-bold text-[#10B981]">{{ pct_presencial }}% presencial</span>
+          </div>
+          <div class="grid grid-cols-[minmax(150px,0.8fr)_1fr] items-center gap-4 mt-4">
+            <div class="relative h-48"><canvas id="modalityDonutChart"></canvas></div>
+            <div class="space-y-4">
+              <div>
+                <div class="flex items-end justify-between gap-2">
+                  <span class="text-xs font-semibold text-slate-300"><i class="fa-solid fa-video text-[#00D2E0] mr-1.5"></i>En línea</span>
+                  <strong class="text-xl text-white font-heading">{{ sesiones_en_linea }}</strong>
+                </div>
+                <div class="h-1.5 rounded-full bg-[#071526] mt-2 overflow-hidden"><div class="h-full bg-[#00D2E0]" style="width: {{ pct_en_linea }}%"></div></div>
+                <span class="text-[10px] text-slate-400">{{ pct_en_linea }}% del periodo</span>
+              </div>
+              <div>
+                <div class="flex items-end justify-between gap-2">
+                  <span class="text-xs font-semibold text-slate-300"><i class="fa-solid fa-person-walking text-[#10B981] mr-1.5"></i>Presencial</span>
+                  <strong class="text-xl text-white font-heading">{{ sesiones_presenciales }}</strong>
+                </div>
+                <div class="h-1.5 rounded-full bg-[#071526] mt-2 overflow-hidden"><div class="h-full bg-[#10B981]" style="width: {{ pct_presencial }}%"></div></div>
+                <span class="text-[10px] text-slate-400">{{ pct_presencial }}% del periodo</span>
+              </div>
+              {% if sesiones_sin_modalidad %}<p class="text-[11px] text-slate-400">{{ sesiones_sin_modalidad }} sin modalidad especificada.</p>{% endif %}
+            </div>
+          </div>
+        </div>
+
+        <div class="lg:col-span-7 glass-card-dark p-6 rounded-3xl border border-[#17375E]">
+          <h2 class="text-base font-bold text-white font-heading">Tipo de servicio</h2>
+          <p class="text-xs text-slate-400 mt-0.5 mb-5">Distribución de las citas del periodo por proceso clínico</p>
+          <div class="space-y-4">
+            {% for s in servicios_stats %}
+            <div>
+              <div class="flex items-center justify-between gap-3 text-xs">
+                <span class="font-semibold text-slate-300">{{ s.nombre }}</span>
+                <span class="text-slate-400"><strong class="text-white text-sm">{{ s.total }}</strong> · {{ s.pct }}%</span>
+              </div>
+              <div class="h-2 rounded-full bg-[#071526] mt-2 overflow-hidden"><div class="h-full bg-gradient-to-r from-[#818CF8] to-[#00D2E0]" style="width: {{ s.pct }}%"></div></div>
+            </div>
+            {% empty %}
+            <p class="text-xs text-slate-400 py-8 text-center">No hay citas no canceladas en este periodo.</p>
+            {% endfor %}
+          </div>
+          <div class="mt-5 pt-4 border-t border-[#17375E] grid grid-cols-2 gap-3 text-center">
+            <div class="bg-[#0B1E36] rounded-xl p-3">
+              <span class="text-[10px] text-slate-400 block">Pacientes del periodo</span>
+              <strong class="text-xl text-white font-heading">{{ pacientes_unicos }}</strong>
+            </div>
+            <div class="bg-[#0B1E36] rounded-xl p-3">
+              <span class="text-[10px] text-slate-400 block">Con historial previo</span>
+              <strong class="text-xl text-white font-heading">{{ pacientes_con_historial }}</strong>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- Chart: Sesiones por Semana / Mes -->
@@ -403,12 +526,15 @@
         <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
           <div>
             <h2 class="text-base sm:text-lg font-bold text-white font-heading">
-              {% if es_historico %}Distribución de Sesiones por Mes{% else %}Distribución de Citas por Semana ({{ nombre_periodo }}){% endif %}
+              Distribución de Sesiones por {% if modo_agrupacion == 'mensual' %}Mes{% else %}Semana{% endif %} ({{ nombre_periodo }})
             </h2>
             <p class="text-xs text-slate-400">Volumen atendido y agendado por el equipo clínico de HOPE</p>
           </div>
-          <div class="flex items-center gap-4 text-xs font-semibold">
-            <span class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 bg-[#00D2E0] rounded-md inline-block"></span> Citas Totales del Periodo ({{ total_sesiones }})</span>
+          <div class="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs font-semibold">
+            <span class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 bg-[#10B981] rounded-md inline-block"></span> Completadas</span>
+            <span class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 bg-[#00D2E0] rounded-md inline-block"></span> Confirmadas</span>
+            <span class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 bg-[#FB923C] rounded-md inline-block"></span> Pendientes / otros</span>
+            <span class="text-slate-400">Total: {{ total_sesiones }}</span>
           </div>
         </div>
 
@@ -421,16 +547,77 @@
           <table class="w-full text-xs text-left">
             <thead>
               <tr class="text-slate-400 uppercase font-bold border-b border-[#17375E]">
-                <th class="py-2.5">{% if es_historico %}Mes / Periodo{% else %}Semana / Periodo{% endif %}</th>
-                <th class="py-2.5 text-center">Sesiones Totales</th>
+                <th class="py-2.5 pr-4">{% if modo_agrupacion == 'mensual' %}Mes{% else %}Semana{% endif %} / Periodo</th>
+                <th class="py-2.5 px-3 text-center">Total</th>
+                <th class="py-2.5 px-3 text-center">Completadas</th>
+                <th class="py-2.5 px-3 text-center">Confirmadas</th>
+                <th class="py-2.5 px-3 text-center">Pendientes</th>
+                <th class="py-2.5 px-3 text-center">En línea</th>
+                <th class="py-2.5 pl-3 text-center">Presenciales</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-[#17375E] text-slate-300 font-medium">
               {% for f in filas_tabla %}
               <tr class="hover:bg-[#0B1E36] transition">
-                <td class="py-3 font-bold text-white">{{ f.nombre }}</td>
-                <td class="py-3 text-center font-black text-[#00D2E0] text-sm">{{ f.total }}</td>
+                <td class="py-3 pr-4 font-bold text-white whitespace-nowrap">{{ f.nombre }}</td>
+                <td class="py-3 px-3 text-center font-black text-white text-sm">{{ f.total }}</td>
+                <td class="py-3 px-3 text-center text-[#10B981]">{{ f.completadas }}</td>
+                <td class="py-3 px-3 text-center text-[#00D2E0]">{{ f.confirmadas }}</td>
+                <td class="py-3 px-3 text-center text-[#FB923C]">{{ f.pendientes }}</td>
+                <td class="py-3 px-3 text-center">{{ f.en_linea }}</td>
+                <td class="py-3 pl-3 text-center font-bold text-[#10B981]">{{ f.presenciales }}</td>
               </tr>
+              {% endfor %}
+              <tr class="border-t-2 border-t-[#28527A] bg-[#0B1E36]/70">
+                <td class="py-3 pr-4 font-black text-white">Total verificado</td>
+                <td class="py-3 px-3 text-center font-black text-white">{{ total_sesiones }}</td>
+                <td class="py-3 px-3 text-center font-black text-[#10B981]">{{ sesiones_completadas }}</td>
+                <td class="py-3 px-3 text-center font-black text-[#00D2E0]">{{ sesiones_confirmadas }}</td>
+                <td class="py-3 px-3 text-center font-black text-[#FB923C]">{{ sesiones_pendientes }}</td>
+                <td class="py-3 px-3 text-center font-black text-white">{{ sesiones_en_linea }}</td>
+                <td class="py-3 pl-3 text-center font-black text-[#10B981]">{{ sesiones_presenciales }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="glass-card-dark p-6 sm:p-7 rounded-3xl border border-[#17375E]">
+        <div class="flex flex-wrap items-end justify-between gap-3 mb-5">
+          <div>
+            <h2 class="text-base sm:text-lg font-bold text-white font-heading">Producción por Terapeuta</h2>
+            <p class="text-xs text-slate-400">Citas, pacientes únicos y modalidad dentro de {{ nombre_periodo }}</p>
+          </div>
+          <span class="text-xs text-slate-400">{{ terapeutas_stats|length }} filas · ordenadas por volumen</span>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full min-w-[820px] text-xs text-left">
+            <thead>
+              <tr class="text-slate-400 uppercase font-bold border-b border-[#17375E]">
+                <th class="py-2.5 pr-4">Terapeuta</th>
+                <th class="py-2.5 px-3 text-center">Total</th>
+                <th class="py-2.5 px-3 text-center">Completadas</th>
+                <th class="py-2.5 px-3 text-center">Confirmadas</th>
+                <th class="py-2.5 px-3 text-center">Pendientes</th>
+                <th class="py-2.5 px-3 text-center">En línea</th>
+                <th class="py-2.5 px-3 text-center">Presenciales</th>
+                <th class="py-2.5 pl-3 text-center">Pacientes</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-[#17375E] text-slate-300">
+              {% for p in terapeutas_stats %}
+              <tr class="hover:bg-[#0B1E36] transition">
+                <td class="py-3 pr-4"><strong class="text-white block">{{ p.nombre }}</strong><span class="text-[10px] text-slate-400">{{ p.especialidad }}</span></td>
+                <td class="py-3 px-3 text-center font-black text-white">{{ p.total }}</td>
+                <td class="py-3 px-3 text-center text-[#10B981]">{{ p.completadas }}</td>
+                <td class="py-3 px-3 text-center text-[#00D2E0]">{{ p.confirmadas }}</td>
+                <td class="py-3 px-3 text-center text-[#FB923C]">{{ p.pendientes }}</td>
+                <td class="py-3 px-3 text-center">{{ p.en_linea }}</td>
+                <td class="py-3 px-3 text-center font-bold text-[#10B981]">{{ p.presenciales }}</td>
+                <td class="py-3 pl-3 text-center">{{ p.pacientes }}</td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="8" class="py-8 text-center text-slate-400">No hay producción registrada en este periodo.</td></tr>
               {% endfor %}
             </tbody>
           </table>
@@ -443,13 +630,30 @@
          SLIDE 3: RETENCIÓN DE PACIENTES
          ========================================================================= -->
     <section id="slide-2" class="slide-hidden space-y-6">
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div class="glass-card-dark rounded-2xl px-5 py-4 flex items-center justify-between gap-4">
+          <div>
+            <span class="text-xs font-semibold text-slate-400 block">Inician atención en este periodo</span>
+            <p class="text-[11px] text-slate-400 mt-1">Su primera cita histórica cae dentro del filtro.</p>
+          </div>
+          <strong class="text-3xl font-black text-[#F85B8C] font-heading">{{ pacientes_nuevos_periodo }}</strong>
+        </div>
+        <div class="glass-card-dark rounded-2xl px-5 py-4 flex items-center justify-between gap-4">
+          <div>
+            <span class="text-xs font-semibold text-slate-400 block">Ya tenían historial HOPE</span>
+            <p class="text-[11px] text-slate-400 mt-1">Su primera cita fue anterior al periodo seleccionado.</p>
+          </div>
+          <strong class="text-3xl font-black text-[#00D2E0] font-heading">{{ pacientes_con_historial }}</strong>
+        </div>
+      </div>
       
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
         
         <!-- Retention Chart -->
         <div class="lg:col-span-7 glass-card-dark p-6 sm:p-7 rounded-3xl border border-[#17375E]">
           <h2 class="text-base sm:text-lg font-bold text-white mb-1 font-heading">Distribución de Retención de Pacientes</h2>
-          <p class="text-xs text-slate-400 mb-6">Comportamiento según recurrencia en {{ nombre_periodo }}</p>
+          <p class="text-xs text-slate-400 mb-6">Historial completo, al corte actual, de los {{ pacientes_unicos }} pacientes con cita en {{ nombre_periodo }}</p>
           
           <div class="relative w-full h-64 flex items-center justify-center">
             <canvas id="donutRetentionChart"></canvas>
@@ -493,8 +697,8 @@
       <!-- Quick Summary -->
       <div class="p-5 glass-card-dark rounded-3xl border border-[#17375E] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
         <div>
-          <span class="font-extrabold text-[#FBBF24] text-sm">{{ pct_fidelizacion }}% de fidelización general ({{ pacientes_recurrentes }} consultantes con 2 o más sesiones)</span>
-          <p class="text-slate-300 mt-0.5">La gran mayoría de los consultantes mantienen continuidad terapéutica tras su primera cita.</p>
+          <span class="font-extrabold text-[#FBBF24] text-sm">{{ pct_fidelizacion }}% con 2 o más sesiones acumuladas ({{ pacientes_recurrentes }} pacientes)</span>
+          <p class="text-slate-300 mt-0.5">La recurrencia se calcula sobre todo el historial no cancelado de cada paciente, no solo sobre las citas del filtro.</p>
         </div>
       </div>
 
@@ -518,16 +722,11 @@
           </div>
           <div class="mt-3">
             <div class="flex items-baseline gap-2">
-              <span class="text-4xl font-black text-white font-heading">{{ promedio_satisfaccion_general }}</span>
+              <span class="text-4xl font-black text-white font-heading">{{ promedio_satisfaccion_general|default_if_none:'N/D' }}</span>
               <span class="text-base text-slate-400 font-bold">/ 5.0</span>
             </div>
-            <div class="flex items-center gap-1 text-[#FBBF24] text-xs mt-1">
-              <i class="fa-solid fa-star"></i>
-              <i class="fa-solid fa-star"></i>
-              <i class="fa-solid fa-star"></i>
-              <i class="fa-solid fa-star"></i>
-              <i class="fa-solid fa-star-half-stroke"></i>
-              <span class="text-white font-bold ml-1 text-xs">({{ pct_satisfaccion_general }}% Aprobación)</span>
+            <div class="text-xs mt-2 font-semibold {% if total_evaluaciones %}text-[#FBBF24]{% else %}text-slate-400{% endif %}">
+              {% if total_evaluaciones %}{{ pct_satisfaccion_general }}% de aprobación sobre escala 1–5{% else %}Sin encuestas vinculadas a sesiones de este periodo{% endif %}
             </div>
           </div>
           <p class="text-[11px] text-slate-400 mt-2">Promedio general obtenido en las encuestas de sesión HOPE.</p>
@@ -537,8 +736,8 @@
         <div class="glass-card-dark p-5 rounded-3xl border-t-4 border-t-[#00D2E0] flex flex-col justify-between">
           <span class="text-[10px] font-extrabold uppercase tracking-wider text-[#00D2E0] bg-[#00D2E0]/15 px-2 py-0.5 rounded-md w-fit">Reactivo 1</span>
           <div class="mt-3">
-            <div class="text-3xl font-black text-[#00D2E0] font-heading">{{ prom_atencion }} <span class="text-sm font-semibold text-slate-400">/ 5.0</span></div>
-            <h4 class="text-xs font-bold text-white mt-1">Atención del Terapeuta</h4>
+            <div class="text-3xl font-black text-[#00D2E0] font-heading">{{ prom_atencion|default_if_none:'N/D' }} <span class="text-sm font-semibold text-slate-400">/ 5.0</span></div>
+            <h3 class="text-xs font-bold text-white mt-1">Atención del Terapeuta</h3>
           </div>
           <p class="text-[11px] text-slate-400 mt-2">Grado de satisfacción con el trato y acompañamiento del psicólogo.</p>
         </div>
@@ -547,8 +746,8 @@
         <div class="glass-card-dark p-5 rounded-3xl border-t-4 border-t-[#818CF8] flex flex-col justify-between">
           <span class="text-[10px] font-extrabold uppercase tracking-wider text-[#818CF8] bg-[#818CF8]/15 px-2 py-0.5 rounded-md w-fit">Reactivo 2</span>
           <div class="mt-3">
-            <div class="text-3xl font-black text-[#818CF8] font-heading">{{ prom_escucha }} <span class="text-sm font-semibold text-slate-400">/ 5.0</span></div>
-            <h4 class="text-xs font-bold text-white mt-1">Escucha & Empatía</h4>
+            <div class="text-3xl font-black text-[#818CF8] font-heading">{{ prom_escucha|default_if_none:'N/D' }} <span class="text-sm font-semibold text-slate-400">/ 5.0</span></div>
+            <h3 class="text-xs font-bold text-white mt-1">Escucha & Empatía</h3>
           </div>
           <p class="text-[11px] text-slate-400 mt-2">El paciente se siente escuchado, comprendido y tratado con respeto.</p>
         </div>
@@ -557,8 +756,8 @@
         <div class="glass-card-dark p-5 rounded-3xl border-t-4 border-t-[#FBBF24] flex flex-col justify-between">
           <span class="text-[10px] font-extrabold uppercase tracking-wider text-[#FBBF24] bg-[#FBBF24]/15 px-2 py-0.5 rounded-md w-fit">Reactivo 3</span>
           <div class="mt-3">
-            <div class="text-3xl font-black text-[#FBBF24] font-heading">{{ prom_avance }} <span class="text-sm font-semibold text-slate-400">/ 5.0</span></div>
-            <h4 class="text-xs font-bold text-white mt-1">Avance hacia Objetivos</h4>
+            <div class="text-3xl font-black text-[#FBBF24] font-heading">{{ prom_avance|default_if_none:'N/D' }} <span class="text-sm font-semibold text-slate-400">/ 5.0</span></div>
+            <h3 class="text-xs font-bold text-white mt-1">Avance hacia Objetivos</h3>
           </div>
           <p class="text-[11px] text-slate-400 mt-2">Percepción del paciente sobre su progreso en los motivos de consulta.</p>
         </div>
@@ -582,15 +781,15 @@
           <div class="grid grid-cols-3 gap-2 pt-3 border-t border-[#17375E] text-center">
             <div class="p-2 bg-[#0B1E36] rounded-xl">
               <span class="text-[10px] text-slate-400 block font-bold">Individual</span>
-              <span class="text-sm font-black text-[#00D2E0] font-heading">{{ mod_ind }} ⭐</span>
+              <span class="text-sm font-black text-[#00D2E0] font-heading">{{ mod_ind|default_if_none:'N/D' }}{% if mod_ind is not None %} ⭐{% endif %}</span>
             </div>
             <div class="p-2 bg-[#0B1E36] rounded-xl">
               <span class="text-[10px] text-slate-400 block font-bold">Pareja</span>
-              <span class="text-sm font-black text-[#F85B8C] font-heading">{{ mod_par }} ⭐</span>
+              <span class="text-sm font-black text-[#F85B8C] font-heading">{{ mod_par|default_if_none:'N/D' }}{% if mod_par is not None %} ⭐{% endif %}</span>
             </div>
             <div class="p-2 bg-[#0B1E36] rounded-xl">
               <span class="text-[10px] text-slate-400 block font-bold">Familiar</span>
-              <span class="text-sm font-black text-[#FBBF24] font-heading">{{ mod_fam }} ⭐</span>
+              <span class="text-sm font-black text-[#FBBF24] font-heading">{{ mod_fam|default_if_none:'N/D' }}{% if mod_fam is not None %} ⭐{% endif %}</span>
             </div>
           </div>
         </div>
@@ -603,7 +802,7 @@
               <p class="text-xs text-slate-400">Calificación promedio (escala 1 a 5) recibida por cada terapeuta</p>
             </div>
             <span class="text-xs font-bold text-[#10B981] bg-[#10B981]/15 px-2.5 py-1 rounded-lg border border-[#10B981]/30">
-              Alta excelencia clínica
+              Promedios con al menos 1 encuesta del periodo
             </span>
           </div>
 
@@ -633,6 +832,7 @@
                   <div>
                     <h4 class="text-sm font-black text-white">{{ p.nombre }}</h4>
                     <span class="text-[11px] text-slate-400 block">{{ p.especialidad }}</span>
+                    <span class="text-[10px] text-slate-400 block mt-1">{{ p.total }} citas · {{ p.pacientes }} pacientes · {{ p.presenciales }} presenciales</span>
                   </div>
                   <div class="text-right">
                     <span class="text-base font-black text-[#FBBF24] font-heading">{{ p.promedio }} ⭐</span>
@@ -868,11 +1068,25 @@
           labels: {{ semanas_labels_json|safe }},
           datasets: [
             {
-              label: 'Sesiones Totales',
-              data: {{ semanas_datos_json|safe }},
+              label: 'Completadas',
+              data: {{ semanas_completadas_json|safe }},
+              backgroundColor: COLORS.green,
+              borderRadius: 5,
+              barPercentage: 0.72
+            },
+            {
+              label: 'Confirmadas',
+              data: {{ semanas_confirmadas_json|safe }},
               backgroundColor: COLORS.cyan,
-              borderRadius: 6,
-              barPercentage: 0.65
+              borderRadius: 5,
+              barPercentage: 0.72
+            },
+            {
+              label: 'Pendientes / otros',
+              data: {{ semanas_pendientes_json|safe }},
+              backgroundColor: COLORS.orange,
+              borderRadius: 5,
+              barPercentage: 0.72
             }
           ]
         },
@@ -900,11 +1114,13 @@
           },
           scales: {
             y: {
+              stacked: true,
               beginAtZero: true,
-              ticks: { color: COLORS.textMuted, font: { weight: '600' } },
+              ticks: { color: COLORS.textMuted, font: { weight: '600' }, precision: 0 },
               grid: { color: 'rgba(255, 255, 255, 0.06)' }
             },
-            x: { 
+            x: {
+              stacked: true,
               grid: { display: false },
               ticks: { color: COLORS.textLight, font: { weight: '600' } }
             }
@@ -1007,7 +1223,53 @@
       });
     }
 
-    // 5. Horizontal Bar Chart: Comparativa por Psicólogo
+    // 5. Donut Chart: Modalidad de las sesiones
+    function initModalityDonutChart() {
+      const canvas = document.getElementById('modalityDonutChart');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: ['En línea', 'Presencial', 'Sin especificar'],
+          datasets: [{
+            data: {{ modalidad_valores_json|safe }},
+            backgroundColor: [COLORS.cyan, COLORS.green, COLORS.orange],
+            borderWidth: 2,
+            borderColor: COLORS.dark
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: '66%',
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: { boxWidth: 10, usePointStyle: true, color: COLORS.textLight, font: { weight: '700', size: 10 } }
+            },
+            tooltip: {
+              backgroundColor: COLORS.card,
+              titleColor: COLORS.cyan,
+              bodyColor: '#FFFFFF',
+              borderColor: COLORS.border,
+              borderWidth: 1,
+              padding: 10,
+              cornerRadius: 10,
+              callbacks: {
+                label: function(ctx) {
+                  const total = ctx.dataset.data.reduce((a, b) => a + b, 0);
+                  const pct = total ? (ctx.parsed / total * 100).toFixed(1) : 0;
+                  return ` ${ctx.label}: ${ctx.parsed} citas (${pct}%)`;
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+
+    // 6. Horizontal Bar Chart: Comparativa por Psicólogo
     function initPsychologistsBarChart() {
       const ctx = document.getElementById('psychologistsBarChart').getContext('2d');
       const labels = {{ psicologos_chart_labels_json|safe }};
@@ -1050,7 +1312,7 @@
           },
           scales: {
             x: {
-              min: 3.5,
+              min: 0,
               max: 5.0,
               ticks: { color: COLORS.textMuted, font: { weight: '600' } },
               grid: { color: 'rgba(255, 255, 255, 0.06)' }
@@ -1227,6 +1489,7 @@
       initSessionsBarChart();
       initRetentionDonutChart();
       initSatisfactionDonutChart();
+      initModalityDonutChart();
       initPsychologistsBarChart();
     };
   </script>
