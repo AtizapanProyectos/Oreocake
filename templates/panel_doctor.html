@@ -1240,9 +1240,6 @@ body {
                 {% if cita.evaluacion_servicio %}
                   <span class="pill-badge" style="background:#ccfbf1; color:#0f766e;"><i class="fas fa-clipboard-check"></i> IPP contestado</span>
                 {% endif %}
-                <div style="flex-basis:100%; margin-top:4px;">
-                  {% include 'snippets/grabadora_sesion.html' %}
-                </div>
               {% elif cita.enlace_meet %}
                 <a href="{{ cita.enlace_meet }}" target="_blank" class="hbtn hbtn-video"
                    onclick="setTimeout(() => { window.location.href = '{% url 'detalle_paciente' cita.paciente.id %}'; }, 100);">
@@ -1255,6 +1252,16 @@ body {
               </a>
               {% endif %}
             </div>
+
+            {% if cita.modalidad == 'Presencial' %}
+            <!-- 5/11/2026: la grabadora vive en una fila COMPLETA de la grid
+                 (grid-column: 1 / -1), NO dentro de la columna de acciones:
+                 si va dentro, el column 'auto' + align-items:flex-end la
+                 desbordan hacia la izquierda tapando al paciente (bug responsive). -->
+            <div style="grid-column: 1 / -1; min-width: 0; margin-top: 2px;">
+              {% include 'snippets/grabadora_sesion.html' %}
+            </div>
+            {% endif %}
 
           </div>
           {% endfor %}
