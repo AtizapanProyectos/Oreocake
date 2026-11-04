@@ -196,5 +196,9 @@ urlpatterns = [
     path('recep-59/citas/', views.recepcion_citas, name='recepcion_citas'),
     # 🪑 Registro de llegada (Vino/No Vino) — escritura en Cita (POST/CSRF)
     path('recep-59/api/registrar-llegada/', views.api_recepcion_registrar_llegada, name='api_recepcion_registrar_llegada'),
+
+    # 3/11/2026 — Transferencia con comprobante (reserva automática del wizard HOPE)
+    # POST con header X-CSRFToken; controlado por el flag ConfigTransferencia (admin Django)
+    path('api/subir-comprobante-transferencia/', views.subir_comprobante_transferencia_ajax, name='subir_comprobante_transferencia'),
 ]
 

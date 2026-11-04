@@ -1407,5 +1407,116 @@ class LogAutomatizacionNotas(models.Model):
         return f"[{self.fecha.strftime('%d/%m/%Y %H:%M')}] Cita #{self.cita_id} · {self.etapa} · {self.estado}"
 
 
+# ==========================================
+# 3/11/2026 — FLUJO DE TRANSFERENCIA CON COMPROBANTE (reserva automática)
+# ==========================================
+class ConfigTransferencia(models.Model):
+    """
+    Flag gradual del método "sube tu comprobante de transferencia" (panel HOPE,
+    templates/panel_generico.html). Se administra SOLO desde Django admin
+    (/error-59/):
+      - `activo` enciende/apaga el método por completo.
+      - `porcentaje_pacientes` (0-100) activa el método solo para ese % de
+        pacientes, con bucketing DETERMINISTA por id (user.id % 100),
+        así el mismo paciente siempre ve lo mismo entre sesiones.
+
+    Fase 0 (despliegue inicial): sin fila en BD => método apagado y la caja de
+    transferencia del wizard conserva el botón de WhatsApp tal como siempre.
+    Nota: TECTUM In-House no paga y Beneficios usa su propio template, así que
+    el flag en la práctica solo afecta pacientes HOPE en panel_generico.html.
+    """
+    activo = models.BooleanField(default=False, db_index=True, verbose_name="Método activado")
+    porcentaje_pacientes = models.PositiveSmallIntegerField(
+        default=0,
+        verbose_name="% de pacientes que lo ven (0-100)",
+    )
+    fecha_actualizacion = models.DateTimeField(auto_now=True, verbose_name="Última actualización")
+
+    class Meta:
+        verbose_name = "Config. Transferencia con Comprobante (flag gradual)"
+        verbose_name_plural = "Config. Transferencia con Comprobante (flag gradual)"
+
+    @classmethod
+    def esta_habilitado_para(cls, usuario):
+        """Bucketing determinista por id: sin hash volátil ni sesiones raras."""
+        config = cls.objects.first()
+        if not config or not config.activo:
+            return False
+        try:
+            pct = max(0, min(int(config.porcentaje_pacientes or 0), 100))
+        except (TypeError, ValueError):
+            pct = 0
+        if pct >= 100:
+            return True
+        if pct <= 0:
+            return False
+        try:
+            return (usuario.id % 100) < pct
+        except Exception:
+            return False
+
+    def save(self, *args, **kwargs):
+        # Deja siempre una única fila de configuración (singleton lógico)
+        self.id = 1
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"Transferencia: {'ON' if self.activo else 'OFF'} · {self.porcentaje_pacientes}% de pacientes"
+
+
+class ComprobanteTransferencia(models.Model):
+    """
+    Respaldo del pago por transferencia (3/11/2026). El paciente sube la foto
+    del comprobante en el paso 2 del wizard y la Cita se agenda automáticamente
+    (sin validación manual). Este registro es el RESPALDO AUDITABLE del pago:
+    el staff lo revisa después desde el admin y, si detecta un problema,
+    SE PONE EN CONTACTO con el paciente (la cita nunca se cancela automática).
+    """
+    ESTADO_CHOICES = [
+        ('Registrado', 'Registrado (pendiente de revisión)'),
+        ('Verificado', 'Verificado (pago correcto)'),
+        ('Revisar', 'Revisar (contactar al paciente)'),
+    ]
+    cita = models.ForeignKey(
+        'Cita',
+        on_delete=models.CASCADE,
+        related_name='comprobantes_transferencia',
+        verbose_name="Sesión (Cita)",
+    )
+    usuario = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='comprobantes_transferencia',
+        verbose_name="Paciente",
+    )
+    imagen = models.FileField(
+        upload_to='comprobantes_transferencia/%Y/%m/',
+        verbose_name="Comprobante (foto / PDF)",
+    )
+    estado = models.CharField(
+        max_length=20, choices=ESTADO_CHOICES, default='Registrado',
+        db_index=True, verbose_name="Estado de la revisión",
+    )
+    notas = models.TextField(blank=True, null=True, verbose_name="Notas del staff")
+    huella_archivo = models.CharField(
+        max_length=64, blank=True, null=True,
+        verbose_name="Huella SHA-256 (detección de subidas repetidas)",
+    )
+    fecha_subida = models.DateTimeField(auto_now_add=True, db_index=True, verbose_name="Fecha de subida")
+
+    class Meta:
+        verbose_name = "Comprobante de Transferencia"
+        verbose_name_plural = "Comprobantes de Transferencia"
+        ordering = ['-fecha_subida']
+        indexes = [
+            models.Index(fields=['usuario', 'fecha_subida']),
+            models.Index(fields=['estado', 'fecha_subida']),
+        ]
+
+    def __str__(self):
+        return f"Cita #{self.cita_id} · {self.get_estado_display()} · {self.fecha_subida.strftime('%d/%m/%Y %H:%M') if self.fecha_subida else ''}"
+
+
 
 

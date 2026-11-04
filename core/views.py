@@ -1398,6 +1398,9 @@ def panel_generico(request):
         'psicologo_asignado': psicologo_asignado,
         'es_usuario_tectum': es_usuario_tectum,
         'es_tectum_beneficios': es_beneficios,
+        # 3/11/2026 — flag gradual del método "sube tu comprobante de transferencia"
+        # (solo HOPE; TECTUM In-House no paga y Beneficios usa su propio template)
+        'transferencia_habilitada': (not es_beneficios and not es_usuario_tectum and ConfigTransferencia.esta_habilitado_para(request.user)),
         # 🔥 NUEVO: se manda al frontend para que el resumen de costos en
         # tiempo real (JS) use exactamente los mismos números que el backend.
         'precios_config_json': json.dumps({
@@ -1910,6 +1913,318 @@ def guardar_cita_ajax(request):
     return JsonResponse({'status': 'error'})
 
 
+
+
+# ======================================================================
+# 3/11/2026 — TRANSFERENCIA CON COMPROBANTE (reserva automática, rollout gradual)
+# ======================================================================
+_TAMANO_MAX_COMPROBANTE_MB = 8
+_EXTENSIONES_COMPROBANTE = {'jpg', 'jpeg', 'png', 'webp', 'pdf'}
+_LIMITE_COMPROBANTES_POR_HORA = 6
+
+
+def _leer_y_validar_comprobante(archivo):
+    """
+    Blindaje de subida (3/11/2026):
+    - Lista blanca de extensión + límite de tamaño.
+    - Verificación por BYTES MÁGICOS (contenido real): un archivo que se hace
+      pasar por .jpg pero es HTML/SVG con scripts, un ejecutable camuflado o un
+      archivo corrupto NO sube al servidor. Nunca se ejecuta/parsea el archivo:
+      solo se leen sus primeros bytes y su contenido se archiva tal cual.
+    - NO se analiza nitidez ni calidad del comprobante por diseño: una foto
+      borrosa, recortada o con datos personales del banco es válida. La revisión
+      es humana y difierida; si hay dudas, el staff contacta al paciente.
+    Devuelve (error|None, contenido_bytes|None, extension_real|None).
+    """
+    if not archivo or not getattr(archivo, 'name', ''):
+        return 'No recibimos tu comprobante. Adjunta la foto o el PDF de tu transferencia.', None, None
+    if archivo.size > _TAMANO_MAX_COMPROBANTE_MB * 1024 * 1024:
+        return f'El archivo supera los {_TAMANO_MAX_COMPROBANTE_MB} MB. Intenta con una captura más ligera.', None, None
+    extension = archivo.name.rsplit('.', 1)[-1].lower() if '.' in archivo.name else ''
+    if extension not in _EXTENSIONES_COMPROBANTE:
+        return 'Formato no soportado. Sube una imagen (JPG, PNG o WebP) o un PDF.', None, None
+
+    try:
+        contenido = archivo.read()
+    except Exception:
+        return 'No pudimos leer tu archivo. Intenta de nuevo con otra captura.', None, None
+
+    if not contenido:
+        return 'El archivo llegó vacío. Intenta de nuevo con otra captura.', None, None
+
+    firma = contenido[:12]
+    if firma.startswith(b'\xff\xd8\xff'):
+        extension_real = 'jpg'
+    elif firma.startswith(b'\x89PNG\r\n\x1a\n'):
+        extension_real = 'png'
+    elif firma[:4] == b'RIFF' and len(contenido) >= 12 and contenido[8:12] == b'WEBP':
+        extension_real = 'webp'
+    elif b'%PDF' in contenido[:1024]:
+        extension_real = 'pdf'
+    else:
+        return 'El archivo no parece una imagen o PDF válido. Intenta de nuevo con una foto o captura nueva.', None, None
+
+    return None, contenido, extension_real
+
+
+@require_POST
+@transaction.atomic
+def subir_comprobante_transferencia_ajax(request):
+    """
+    Cambio del 3/11/2026 — Método de pago por TRANSFERENCIA con comprobante
+    (panel HOPE, paso 2 del wizard). El paciente paga a la cuenta BBVA, sube la
+    foto/PDF de su comprobante y la Cita se agenda AUTOMÁTICAMENTE sin
+    validación manual: el comprobante queda archivado en ComprobanteTransferencia
+    y el staff lo revisa DESPUÉS desde el admin (si detecta un problema,
+    contacta al paciente; la cita nunca se cancela automática).
+
+    NOTAS IMPORTANTES:
+    - NO sustituye a `guardar_cita_ajax` (que queda intacto para PayPal): es una
+      vista alterna con la MISMA lógica de asignación de psicólogo, doble-check
+      antirace, generación de Meet y correo de confirmación.
+    - Habilitado gradualmente por `ConfigTransferencia` (admin Django); fase
+      inicial apagada/0%.
+    - Reutiliza exactamente `obtener_slots_psicologo_para_dia` y
+      `CAPACIDAD_POR_TIPO_SESION` (mismo algoritmo de slots que el guardado PayPal).
+    - Sólo sesiones EN LÍNEA: la modalidad Presencial sigue con la pasarela
+      completa y sus validaciones propias (pase QR).
+    - CSRF activo: el front del wizard envía el header X-CSRFToken (mismo patrón
+      que los endpoints POST del repositorio clínico).
+    """
+    if not request.user.is_authenticated:
+        return JsonResponse({'status': 'error', 'message': 'Debes iniciar sesión.'})
+
+    usuario = request.user
+
+    # Flag gradual: sin fila en BD o activo=False => método oculto y endpoint inerte
+    if not ConfigTransferencia.esta_habilitado_para(usuario):
+        return JsonResponse({
+            'status': 'error',
+            'message': 'Este método de pago no está disponible por el momento. Usa PayPal o contáctanos por WhatsApp para pagar con transferencia.'
+        })
+
+    # Anti-abuso: límite de subidas por paciente/hora (mismo patrón de cache locmem
+    # que el rate limit del registro; alcance por proceso igual que todo el sistema)
+    clave_rl = f'rl_comprobante_{usuario.id}'
+    intentos = (cache.get(clave_rl) or 0) + 1
+    cache.set(clave_rl, intentos, 3600)
+    if intentos > _LIMITE_COMPROBANTES_POR_HORA:
+        return JsonResponse({
+            'status': 'error',
+            'message': 'Demasiados intentos de subida. Espera un momento e intenta de nuevo.'
+        })
+
+    # Validación del archivo: lista blanca + tamaño + bytes mágicos (ver comentario
+    # de _leer_y_validar_comprobante). El contenido en sí NO se juzga (nitidez,
+    # legibilidad, etc.): eso es revisión humana en el admin, nunca automática.
+    archivo = request.FILES.get('comprobante')
+    error_archivo, contenido_archivo, extension_real = _leer_y_validar_comprobante(archivo)
+    if error_archivo:
+        return JsonResponse({'status': 'error', 'message': error_archivo})
+    # Nombre ALEATORIO e inadivinable: el comprobante puede contener datos
+    # personales (banco, nombre, monto), así que el archivo se archiva como UUID
+    # en media/comprobantes_transferencia/YYYY/MM/ para evitar enumeración de URLs.
+    nombre_seguro = f"{uuid.uuid4().hex}.{extension_real}"
+
+    # Datos de la cita: mismos nombres de campo y tolerancias que guardar_cita_ajax
+    fecha_str = request.POST.get('fecha')
+    hora_str = request.POST.get('hora')
+    animo = (request.POST.get('animo') or 'No especificó').strip()[:50] or 'No especificó'
+    tipo_sesion_str = request.POST.get('tipo_servicio', 'individual')
+    if tipo_sesion_str not in TIPOS_SESION_VALIDOS:
+        tipo_sesion_str = 'individual'
+
+    modalidad_str = 'En línea'
+
+    # Consentimiento: mismo criterio y retrocompatibilidad que guardar_cita_ajax
+    tiene_consentimiento = ConsentimientoInformado.objects.filter(paciente=usuario).exists() or Cita.objects.filter(paciente=usuario).exists()
+    if not tiene_consentimiento:
+        return JsonResponse({
+            'status': 'error',
+            'message': 'Es necesario firmar el Consentimiento Informado antes de agendar tu cita.',
+            'requiere_consentimiento': True
+        })
+
+    integrantes_familia = None
+    if tipo_sesion_str == 'familiar':
+        precio_info = calcular_precio_sesion(tipo_sesion_str, request.POST.get('integrantes_familia'))
+        integrantes_familia = precio_info['integrantes_familia']
+
+    campo_capacidad = CAPACIDAD_POR_TIPO_SESION[tipo_sesion_str]
+
+    try:
+        fecha_obj = datetime.strptime(fecha_str, '%Y-%m-%d').date()
+        hora_obj = parsear_hora_flexible(hora_str)
+        perfil = usuario.perfil
+
+        # 🔥 MULTISERVICIO: psicólogo ya asignado a este servicio (idéntico a guardar_cita_ajax)
+        tratamiento = TratamientoPaciente.objects.filter(
+            paciente=usuario, tipo_servicio=tipo_sesion_str, activo=True
+        ).select_related('psicologo_asignado').first()
+
+        psicologo = tratamiento.psicologo_asignado if (tratamiento and tratamiento.psicologo_asignado) else None
+
+        if psicologo and not getattr(psicologo, campo_capacidad, False):
+            psicologo = None
+
+        if psicologo and not psicologo_atiende_modalidad(psicologo, modalidad_str):
+            psicologo = None
+
+        # Asignación automática idéntica a guardar_cita_ajax (mismo orden y desempate aleatorio)
+        if not psicologo:
+            preferencia = ''
+            try:
+                cuestionario = CuestionarioRegistro.objects.filter(
+                    paciente=usuario, flujo_elegido=tipo_sesion_str
+                ).order_by('-fecha_completado').first()
+                if not cuestionario:
+                    cuestionario = CuestionarioRegistro.objects.filter(paciente=usuario).order_by('-fecha_completado').first()
+                if cuestionario:
+                    preferencia = cuestionario.respuestas.get('preferencia_terapeuta', '')
+            except Exception:
+                pass
+
+            esquemas_del_dia = EsquemaHorarioPsicologo.objects.filter(
+                activo=True, fecha_inicio__lte=fecha_obj, fecha_fin__gte=fecha_obj
+            )
+            psicologos_candidatos = PerfilPsicologo.objects.filter(
+                esta_activo=True,
+                **{campo_capacidad: True},
+                modalidad_atencion__in=COMPATIBILIDAD_MODALIDAD_PSICOLOGO[modalidad_str],
+            ).prefetch_related(
+                Prefetch('esquemas_horarios', queryset=esquemas_del_dia, to_attr='_esquemas_rango')
+            )
+
+            doctores_con_slot_valido = []
+            for psicologo_temp in psicologos_candidatos:
+                slots_del_dia = obtener_slots_psicologo_para_dia(
+                    psicologo_temp, fecha_obj, tipo_sesion=tipo_sesion_str, modalidad=modalidad_str
+                )
+                if hora_obj.strftime('%I:%M %p') in slots_del_dia:
+                    doctores_con_slot_valido.append(psicologo_temp.id)
+
+            psicologos_libres = PerfilPsicologo.objects.filter(
+                id__in=doctores_con_slot_valido
+            ).select_for_update().annotate(
+                carga_historica=Count('citas_agendadas', filter=~Q(citas_agendadas__estado='Cancelada'))
+            )
+
+            if not psicologos_libres.exists():
+                return JsonResponse({'status': 'error', 'message': 'Lo sentimos, este horario acaba de ser ocupado o no hay especialistas disponibles. Elige otro horario y vuelve a subir tu comprobante.'})
+
+            if 'Mujer' in preferencia:
+                psicologo = psicologos_libres.filter(genero='Mujer').order_by('carga_historica', '?').first()
+            elif 'Hombre' in preferencia:
+                psicologo = psicologos_libres.filter(genero='Hombre').order_by('carga_historica', '?').first()
+
+            if not psicologo:
+                psicologo = psicologos_libres.order_by('carga_historica', '?').first()
+
+            TratamientoPaciente.objects.update_or_create(
+                paciente=usuario,
+                tipo_servicio=tipo_sesion_str,
+                defaults={'psicologo_asignado': psicologo, 'activo': True}
+            )
+
+            if not perfil.psicologo_asignado:
+                perfil.psicologo_asignado = psicologo
+                perfil.save(update_fields=['psicologo_asignado'])
+
+            if Cita.objects.filter(psicologo=psicologo, fecha=fecha_obj, hora=hora_obj, estado='Confirmada').exists():
+                return JsonResponse({'status': 'error', 'message': 'El horario fue ocupado mientras terminabas. Elige otro horario y vuelve a subir tu comprobante.'})
+        else:
+            if Cita.objects.filter(psicologo=psicologo, fecha=fecha_obj, hora=hora_obj, estado='Confirmada').exists():
+                return JsonResponse({'status': 'error', 'message': 'Tu terapeuta ya tiene una cita en ese horario. Elige otro.'})
+
+        # Google Meet (degradación silenciosa igual que guardar_cita_ajax: si falla Google, la cita existe sin Meet)
+        link_final = None
+        id_google = None
+        datos_meet = generar_link_meet(
+            fecha_obj=fecha_obj,
+            hora_obj=hora_obj,
+            paciente_nombre=usuario.first_name,
+            psicologo_nombre=psicologo.usuario.first_name,
+            paciente_email=usuario.email,
+            psicologo_email=psicologo.usuario.email
+        )
+        if datos_meet:
+            link_final = datos_meet['link']
+            id_google = datos_meet['id_evento']
+
+        cita = Cita.objects.create(
+            paciente=usuario,
+            psicologo=psicologo,
+            fecha=fecha_obj,
+            hora=hora_obj,
+            estado_animo=animo,
+            modalidad=modalidad_str,
+            tipo_sesion=tipo_sesion_str,
+            integrantes_familia=integrantes_familia,
+            motivo='Primera Sesión' if not perfil.psicologo_asignado else 'Sesión de Seguimiento',
+            estado='Confirmada',
+            es_tectum=False,
+            es_beneficios=False,
+            enlace_meet=link_final,
+            id_evento_google=id_google,
+        )
+
+        # Archivo del comprobante: respaldo auditable del pago, archivado con
+        # nombre UUID a partir del contenido ya validado por bytes mágicos.
+        huella = None
+        try:
+            import hashlib
+            huella = hashlib.sha256(contenido_archivo).hexdigest()
+        except Exception:
+            huella = None
+
+        # Sanity barato: si otro paciente ya subió un archivo byte-por-byte idéntico,
+        # marcamos la fila para revisión (NO bloqueamos al paciente: la cita ya está agendada).
+        estado_comprobante = 'Registrado'
+        if huella and ComprobanteTransferencia.objects.filter(huella=huella).exclude(usuario=usuario).exists():
+            estado_comprobante = 'Revisar'
+            logging.getLogger(__name__).warning(
+                '⚠️ Comprobante duplicado (misma huella) subido por usuario %s en cita %s',
+                usuario.id, cita.id
+            )
+
+        comp = ComprobanteTransferencia(
+            cita=cita,
+            usuario=usuario,
+            estado=estado_comprobante,
+            huella_archivo=huella,
+        )
+        # Guarda el storage y el modelo (FieldFile.save, save=True por defecto)
+        comp.imagen.save(nombre_seguro, ContentFile(contenido_archivo))
+
+        # Correo de confirmación SOLO al paciente (misma plantilla/reglas que guardar_cita_ajax)
+        asunto = 'Confirmación de tu sesión en HOPE'
+        contexto = {
+            'nombre': usuario.first_name,
+            'psicologo_nombre': psicologo.usuario.first_name,
+            'fecha': fecha_obj.strftime('%d/%m/%Y'),
+            'hora': hora_obj.strftime('%H:%M'),
+            'link_meet': request.build_absolute_uri(reverse('formulario_previo_meet', args=[cita.id])) if link_final else '',
+            'es_tectum': False,
+        }
+        mensaje_html = render_to_string('correo_cita.html', contexto)
+        mensaje_plano = strip_tags(mensaje_html)
+        remitente = 'Espacio HOPE <contacto@espaciohope.com>'
+        send_mail(asunto, mensaje_plano, remitente, [usuario.email], html_message=mensaje_html, fail_silently=True)
+
+        return JsonResponse({
+            'status': 'success',
+            'cita_id': cita.id,
+            'enlace_meet': link_final,
+            'formulario_previo': request.build_absolute_uri(reverse('formulario_previo_meet', args=[cita.id])),
+        })
+
+    except Exception as e:
+        logging.getLogger(__name__).exception(
+            'Error al agendar por transferencia con comprobante (usuario %s, fecha %s %s): %s',
+            usuario.id, fecha_str, hora_str, e
+        )
+        # Sin cobro en riesgo, no se expone str(e) al cliente
+        return JsonResponse({'status': 'error', 'message': 'No pudimos procesar tu comprobante. Intenta de nuevo en un momento.'})
 
 
 @transaction.atomic

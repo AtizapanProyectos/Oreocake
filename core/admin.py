@@ -289,4 +289,54 @@ class LogAutomatizacionNotasAdmin(admin.ModelAdmin):
 
     def has_delete_permission(self, request, obj=None):
         # Borrado permitido SOLO para superusuarios
+        return request.user.is_superuser
+
+
+# ==========================================
+# FLAGS DE TRANSFERENCIA CON COMPROBANTE (3/11/2026)
+# ==========================================
+@admin.register(ConfigTransferencia)
+class ConfigTransferenciaAdmin(admin.ModelAdmin):
+    """Singleton del rollout gradual. El staff lo edita aquí sin deploys."""
+    list_display = ('activo', 'porcentaje_pacientes', 'fecha_actualizacion')
+
+@admin.register(ComprobanteTransferencia)
+class ComprobanteTransferenciaAdmin(admin.ModelAdmin):
+    """
+    Cola de revisión diferida del payo por transferencia: los comprobantes se
+    agendaron automáticamente; el staff marca Verificado / Revisar y, si hay
+    un problema, contacta al paciente (la cita NUNCA se cancela automática).
+    """
+    list_display = ('id', 'fecha_subida', 'cita', 'usuario', 'estado', 'get_paciente_nombre')
+    list_filter = ('estado', 'fecha_subida')
+    search_fields = ('notas', 'cita__id', 'usuario__username', 'usuario__email')
+    list_select_related = ('cita', 'usuario', 'cita__psicologo__usuario')
+    list_editable = ('estado',)
+    list_per_page = 25
+    readonly_fields = ('cita', 'usuario', 'imagen', 'huella_archivo', 'fecha_subida')
+
+    fieldsets = (
+        ('Comprobante', {'fields': ('cita', 'usuario', 'imagen', 'fecha_subida', 'huella_archivo')}),
+        ('Revisión', {
+            'fields': ('estado', 'notas'),
+            # Revisión HUMANA e indulgente por diseño: la validez del pago se
+            # confirma con el paciente; la cita nunca se cancela automática.
+            'description': 'La foto puede ser borrosa, recortada o incluir datos personales: NO se exige re-subida por calidad. Si algo no cuadra (monto, montaje, duplicado), marca "Revisar", deja la nota y CONTACTA al paciente por WhatsApp. La cita sigue viva hasta que se resuelva.',
+        }),
+    )
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related('usuario', 'cita')
+
+    def get_paciente_nombre(self, obj):
+        if obj.usuario:
+            return (obj.usuario.first_name or obj.usuario.username).title()
+        return '—'
+    get_paciente_nombre.short_description = 'Nombre'
+
+    def has_add_permission(self, request):
+        # Los comprobantes SOLO nacen del flujo del paciente
+        return False
+
+    def has_delete_permission(self, request, obj=None):
         return request.user.is_superuser
