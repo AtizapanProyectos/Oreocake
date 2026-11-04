@@ -250,7 +250,20 @@
                     iconoGuardada.innerHTML = '<i class="fas fa-circle-check"></i> Guardada en el server (' + (data.tamanio_mb ? data.tamanio_mb + ' MB · ' : '') + fmtSegundos(duracion) + ')';
                     setEstado('Grabación guardada en el servidor ✓ Puedes escucharla aquí, descargarla o grabar de nuevo (reemplaza la anterior).');
                 } else {
-                    setEstado('No se pudo guardar: ' + ((data && data.message) || 'error desconocido. El audio aún está en este dispositivo; usa el botón descargar del navegador para conservarlo.'), true);
+                    // Copia LOCAL de emergencia: aunque el server falle, NADA se pierde.
+                    // El navegador guarda su propia copia y activa la descarga.
+                    if (urlBlob) { URL.revokeObjectURL(urlBlob); urlBlob = null; }
+                    urlBlob = URL.createObjectURL(blob);
+                    audio.src = urlBlob;
+                    var ahoraF = new Date();
+                    var p2f = function (n) { return ('0' + n).slice(-2); };
+                    var sufijoF = ahoraF.getFullYear() + p2f(ahoraF.getMonth() + 1) + p2f(ahoraF.getDate()) + '_' + p2f(ahoraF.getHours()) + p2f(ahoraF.getMinutes()) + p2f(ahoraF.getSeconds());
+                    linkDesc.href = urlBlob;
+                    linkDesc.setAttribute('download', 'grabacion_LOCAL_cita' + citaId + '_' + sufijoF + '.' + extensionDe(blob.type));
+                    resultado.style.display = 'block';
+                    iconoGuardada.innerHTML = '<i class="fas fa-triangle-exclamation" style="color:#b91c1c;"></i> NO quedó en el server — descárgala ya desde aquí (copia local)';
+                    setEstado('El servidor no la guardó' + (data && data.detalle ? ' — detalle: ' + data.detalle : '') +
+                        '. Tu audio está intacto en este navegador: usa «Descargar audio» AHORA para conservarla e inténtalo de nuevo.', true);
                 }
             })
             .catch(function () {

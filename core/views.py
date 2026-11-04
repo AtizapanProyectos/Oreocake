@@ -5654,8 +5654,14 @@ def api_guardar_grabacion_sesion(request, cita_id):
 
     except Exception as e:
         import logging
-        logging.getLogger(__name__).error(f"Error guardando grabación de sesión (cita {cita_id}): {e}")
-        return JsonResponse({'status': 'error', 'message': 'No se pudo guardar la grabación en el servidor. Intenta de nuevo.'}, status=500)
+        logging.getLogger(__name__).exception(f"Error guardando grabación de sesión (cita {cita_id}): {e}")
+        # detalle técnico al front para diagnóstico inmediato (mismo criterio
+        # que el resto de endpoints del sistema que exponen str(e))
+        return JsonResponse({
+            'status': 'error',
+            'message': 'No se pudo guardar la grabación en el servidor. Intenta de nuevo (el navegador conservará tu copia local para descargar).',
+            'detalle': str(e)[:400],
+        }, status=500)
 
     return JsonResponse({
         'status': 'success',

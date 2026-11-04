@@ -351,7 +351,19 @@
                 resultado.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 setEstado('Grabación guardada en el servidor ✓ (' + (data.tamanio_mb ? data.tamanio_mb + ' MB · ' : '') + fmtSegundos(duracion) + '). Puedes escucharla aquí, descargarla o grabar de nuevo (reemplaza la anterior).');
             } else {
-                setEstado('No se pudo guardar: ' + ((data && data.message) || 'error desconocido.'), true);
+                // Copia LOCAL de emergencia: aunque el server falle, NADA se pierde.
+                if (urlBlob) { URL.revokeObjectURL(urlBlob); urlBlob = null; }
+                urlBlob = URL.createObjectURL(blob);
+                audio.src = urlBlob;
+                var ahoraF = new Date();
+                var p2f = function (n) { return ('0' + n).slice(-2); };
+                var sufijoF = ahoraF.getFullYear() + p2f(ahoraF.getMonth() + 1) + p2f(ahoraF.getDate()) + '_' + p2f(ahoraF.getHours()) + p2f(ahoraF.getMinutes()) + p2f(ahoraF.getSeconds());
+                linkDesc.href = urlBlob;
+                linkDesc.download = 'grabacion_LOCAL_cita' + (citaId ? '_' + citaId : '') + '_' + sufijoF + '.' + extensionDe(blob.type);
+                resultado.style.display = 'block';
+                resultado.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                setEstado('El servidor no la guardó' + (data && data.detalle ? ' — detalle: ' + data.detalle : '') +
+                    '. Tu audio está intacto aquí: usa «Guardar audio en mi dispositivo» AHORA para conservarla e inténtalo de nuevo.', true);
             }
         })
         .catch(function () {
