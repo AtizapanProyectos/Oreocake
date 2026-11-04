@@ -1231,17 +1231,18 @@ body {
 
             <div class="cita-actions">
               {% if cita.modalidad == 'Presencial' %}
+                <!-- 5/11/2026: botones INDEPENDIENTES. La grabación ya NO
+                     requiere contestar el IPP; ambos aparecen siempre. -->
+                <a href="{% url 'formulario_previo_meet' cita.id %}" target="_blank" rel="noopener"
+                   class="hbtn hbtn-video" style="background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%);">
+                  <i class="fas fa-clipboard-check"></i> Contestar IPP
+                </a>
                 {% if cita.evaluacion_servicio %}
                   <span class="pill-badge" style="background:#ccfbf1; color:#0f766e;"><i class="fas fa-clipboard-check"></i> IPP contestado</span>
-                  <div style="flex-basis:100%; margin-top:4px;">
-                    {% include 'snippets/grabadora_local.html' %}
-                  </div>
-                {% else %}
-                  <a href="{% url 'formulario_previo_meet' cita.id %}" target="_blank" rel="noopener"
-                     class="hbtn hbtn-video" style="background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%);">
-                    <i class="fas fa-clipboard-check"></i> Contestar IPP
-                  </a>
                 {% endif %}
+                <div style="flex-basis:100%; margin-top:4px;">
+                  {% include 'snippets/grabadora_sesion.html' %}
+                </div>
               {% elif cita.enlace_meet %}
                 <a href="{{ cita.enlace_meet }}" target="_blank" class="hbtn hbtn-video"
                    onclick="setTimeout(() => { window.location.href = '{% url 'detalle_paciente' cita.paciente.id %}'; }, 100);">

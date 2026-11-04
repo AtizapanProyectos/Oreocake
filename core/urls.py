@@ -208,5 +208,11 @@ urlpatterns = [
     # 3/11/2026 — Transferencia con comprobante (reserva automática del wizard HOPE)
     # POST con header X-CSRFToken; controlado por el flag ConfigTransferencia (admin Django)
     path('api/subir-comprobante-transferencia/', views.subir_comprobante_transferencia_ajax, name='subir_comprobante_transferencia'),
+
+    # 🎙 GRABACIONES DE SESIONES PRESENCIALES (5/11/2026) — función experimental
+    # e INDEPENDIENTE del IPP. POST con FormData (audio + duracion_segundos) y
+    # header X-CSRFToken; el audio queda archivado en `GrabacionSesion`
+    # (tabla hija de Citas, solo para citas 'Presencial').
+    path('api/guardar-grabacion-sesion/<int:cita_id>/', views.api_guardar_grabacion_sesion, name='api_guardar_grabacion_sesion'),
 ]
 

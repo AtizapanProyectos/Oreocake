@@ -140,10 +140,11 @@
     <!-- Encabezado -->
     <div class="gs-header">
         <div class="gs-icono"><i class="fas fa-microphone-lines"></i></div>
-        <i class="pequena">Función experimental · solo en este dispositivo</i>
-        <h1>¡iPPI contestado!</h1>
-        <p>El registro previo de esta sesión quedó listo. Aquí puedes iniciar la grabación
-        de la sesión presencial cuando lo necesites.</p>
+        <i class="pequena">Función experimental · independiente del IPP · se guarda en el server</i>
+        <h1>Grabación de la sesión</h1>
+        <p>Inicia la grabación de la sesión presencial cuando lo necesites; no necesitas
+        haber contestado el IPP. Al detener, el audio se sube automáticamente al servidor
+        y queda archivado en la cita.</p>
         <div class="gs-datos">
             <span class="gs-dato"><i class="fas fa-user"></i> {{ cita.paciente.first_name|title }} {{ cita.paciente.last_name|title }}</span>
             <span class="gs-dato"><i class="fas fa-calendar-day"></i> {{ cita.fecha|date:"d/m/Y" }}</span>
@@ -157,7 +158,7 @@
             <i class="fas fa-circle-waveform-wave" style="color:var(--c-purple);"></i> Grabación de la sesión
             <span class="gs-badge">Experimental</span>
         </div>
-        <p style="font-size:13px; color:#64748b; margin:0;">Inicia y detén la grabación manualmente. El audio se queda solo en este dispositivo.</p>
+        <p style="font-size:13px; color:#64748b; margin:0;">Inicia y detén la grabación manualmente. Al detener, el audio se sube automáticamente al servidor.</p>
 
         <div class="gs-zona-boton">
             <button type="button" id="gs-boton" class="gs-boton" aria-label="Iniciar grabación">
@@ -179,9 +180,10 @@
 
         <div class="gs-nota">
             <i class="fas fa-shield-heart"></i>
-            <span>Función en pruebas: el audio <strong>no se envía al servidor</strong>, no se procesa
-            ni se dispara ninguna acción automática. Para conservarlo, detén la grabación y usa
-            «Guardar audio en mi dispositivo» antes de cerrar esta pestaña.</span>
+            <span>Función en pruebas: solo disponible para esta cita presencial. Al detener la grabación,
+            el audio se sube al servidor y queda <strong>archivado en la GrabacionSesion de esta cita</strong>;
+            si grabas de nuevo, la versión nueva reemplaza a la anterior. Puedes descargarla para conservarla
+            en tu dispositivo.</span>
         </div>
     </div>
 
@@ -209,9 +211,16 @@
     var btnRepetir = document.getElementById('gs-repetir');
 
     var citaId = '{{ cita.id|escapejs }}';
+    var urlGuardar = "{% url 'api_guardar_grabacion_sesion' cita.id %}";
     var stream = null, recorder = null, chunks = [], urlBlob = null, intTimer = null, t0 = 0;
     var grabando = false;
 
+    function getCookie(name) {
+        var valor = '; ' + document.cookie;
+        var partes = valor.split('; ' + name + '=');
+        if (partes.length === 2) return partes.pop().split(';').shift();
+        return null;
+    }
     function setEstado(html, esError) {
         estado.innerHTML = html;
         estado.classList.toggle('error', !!esError);
@@ -220,12 +229,33 @@
         var m = Math.floor(s / 60), r = s % 60;
         return (m < 10 ? '0' : '') + m + ':' + (r < 10 ? '0' : '') + r;
     }
+    function segundos(now) { return Math.floor((now - t0) / 1000); }
     function pararTimer() { if (intTimer) { clearInterval(intTimer); intTimer = null; } timer.style.display = 'none'; }
     function extensionDe(mime) {
         if (mime && mime.indexOf('mp4') !== -1) return 'm4a';
         if (mime && mime.indexOf('ogg') !== -1) return 'ogg';
         return 'webm';
     }
+    function marcarListo() {
+        btn.disabled = false;
+        btn.classList.remove('rec');
+        btnIcono.className = 'fas fa-microphone-lines';
+        btnTexto.textContent = 'Grabar';
+        timer.classList.add('inactivo');
+    }
+
+    // Estado inicial: si esta cita ya tiene grabación guardada en el servidor,
+    // se muestra el reproductor con esa versión archivada.
+    {% if grabacion %}
+    audio.src = "{{ grabacion.audio.url|escapejs }}";
+    var p2i = function (n) { return ('0' + n).slice(-2); };
+    var fi = new Date();
+    var sufijo = fi.getFullYear() + p2i(fi.getMonth() + 1) + p2i(fi.getDate()) + '_' + p2i(fi.getHours()) + p2i(fi.getMinutes()) + p2i(fi.getSeconds());
+    linkDesc.href = "{{ grabacion.audio.url|escapejs }}";
+    linkDesc.download = 'grabacion_cita' + citaId + '_' + sufijo + '.' + extensionDe("{{ grabacion.formato|default:'' }}");
+    resultado.style.display = 'block';
+    setEstado('Esta cita ya tiene una grabación guardada en el servidor ({{ grabacion.duracion_legible|escapejs }}). Puedes escucharla, descargarla o grabar de nuevo (la nueva versión reemplaza a la anterior).');
+    {% endif %}
 
     btn.addEventListener('click', async function () {
         if (grabando) { detener(); return; }
@@ -251,22 +281,7 @@
             recorder = new MediaRecorder(stream);
         }
         recorder.ondataavailable = function (e) { if (e.data && e.data.size > 0) chunks.push(e.data); };
-        recorder.onstop = function () {
-            var blob = new Blob(chunks, { type: (recorder && recorder.mimeType) || 'audio/webm' });
-            if (urlBlob) { URL.revokeObjectURL(urlBlob); }
-            urlBlob = URL.createObjectURL(blob);
-            audio.src = urlBlob;
-            var ahora = new Date();
-            var p2 = function (n) { return ('0' + n).slice(-2); };
-            var sufijo = ahora.getFullYear() + p2(ahora.getMonth() + 1) + p2(ahora.getDate()) + '_' + p2(ahora.getHours()) + p2(ahora.getMinutes()) + p2(ahora.getSeconds());
-            linkDesc.href = urlBlob;
-            linkDesc.download = 'sesion_cita' + (citaId ? '_' + citaId : '') + '_' + sufijo + '.' + extensionDe(recorder && recorder.mimeType);
-            resultado.style.display = 'block';
-            resultado.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            if (stream) { stream.getTracks().forEach(function (t) { t.stop(); }); stream = null; }
-            marcarListo();
-            setEstado('Grabación lista. Escúchala aquí o descárgala; si cierras la pestaña sin descargar, el audio se descarta.');
-        };
+        recorder.onstop = function () { subirAlServidor(); };
 
         recorder.start();
         grabando = true;
@@ -278,8 +293,8 @@
         timer.textContent = '00:00';
         timer.style.display = 'block';
         timer.classList.remove('inactivo');
-        intTimer = setInterval(function () { timer.textContent = fmtSegundos(Math.floor((Date.now() - t0) / 1000)); }, 500);
-        setEstado('<span class="gs-grabando-dot"></span>Grabando… (el audio permanece en este dispositivo)');
+        intTimer = setInterval(function () { timer.textContent = fmtSegundos(segundos(Date.now())); }, 500);
+        setEstado('<span class="gs-grabando-dot"></span>Grabando… (al detener, el audio se sube al servidor)');
     });
 
     function detener() {
@@ -291,12 +306,58 @@
         btnTexto.textContent = 'Procesando';
     }
 
-    function marcarListo() {
-        btn.disabled = false;
-        btn.classList.remove('rec');
-        btnIcono.className = 'fas fa-microphone-lines';
-        btnTexto.textContent = 'Grabar';
-        timer.classList.add('inactivo');
+    function subirAlServidor() {
+        var duracion = segundos(Date.now());
+        setEstado('<i class="fas fa-cloud-arrow-up" style="color:var(--c-yellow);"></i> Subiendo grabación al servidor…');
+        try { if (stream) { stream.getTracks().forEach(function (t) { t.stop(); }); stream = null; } } catch (e) {}
+
+        var blob = new Blob(chunks, { type: (recorder && recorder.mimeType) || 'audio/webm' });
+        if (!blob || !blob.size) {
+            setEstado('La grabación llegó vacía. Intenta grabar de nuevo.', true);
+            marcarListo();
+            return;
+        }
+
+        var fd = new FormData();
+        fd.append('audio', blob, 'grabacion_cita' + citaId + '.' + extensionDe(blob.type));
+        fd.append('duracion_segundos', String(duracion));
+
+        var csrf = getCookie('csrftoken');
+        if (!csrf) {
+            setEstado('No se encontró el token de seguridad (csrftoken). Recarga la página e intenta de nuevo.', true);
+            marcarListo();
+            return;
+        }
+
+        fetch(urlGuardar, {
+            method: 'POST',
+            headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRFToken': csrf },
+            body: fd,
+            credentials: 'same-origin'
+        })
+        .then(function (res) { return res.json().catch(function () { return {}; }); })
+        .then(function (data) {
+            marcarListo();
+            if (data && data.status === 'success') {
+                if (urlBlob) { URL.revokeObjectURL(urlBlob); urlBlob = null; }
+                urlBlob = URL.createObjectURL(blob);
+                audio.src = urlBlob;
+                var ahora = new Date();
+                var p2 = function (n) { return ('0' + n).slice(-2); };
+                var sufijo = ahora.getFullYear() + p2(ahora.getMonth() + 1) + p2(ahora.getDate()) + '_' + p2(ahora.getHours()) + p2(ahora.getMinutes()) + p2(ahora.getSeconds());
+                linkDesc.href = data.archivo_url || urlBlob;   // preferimos la copia del server
+                linkDesc.download = 'grabacion_cita' + (citaId ? '_' + citaId : '') + '_' + sufijo + '.' + (data.formato || extensionDe(blob.type));
+                resultado.style.display = 'block';
+                resultado.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                setEstado('Grabación guardada en el servidor ✓ (' + (data.tamanio_mb ? data.tamanio_mb + ' MB · ' : '') + fmtSegundos(duracion) + '). Puedes escucharla aquí, descargarla o grabar de nuevo (reemplaza la anterior).');
+            } else {
+                setEstado('No se pudo guardar: ' + ((data && data.message) || 'error desconocido.'), true);
+            }
+        })
+        .catch(function () {
+            marcarListo();
+            setEstado('Falló la conexión al subir la grabación al servidor. Intenta grabar de nuevo.', true);
+        });
     }
 
     btnRepetir.addEventListener('click', function () {

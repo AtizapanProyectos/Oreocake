@@ -1518,5 +1518,74 @@ class ComprobanteTransferencia(models.Model):
         return f"Cita #{self.cita_id} · {self.get_estado_display()} · {self.fecha_subida.strftime('%d/%m/%Y %H:%M') if self.fecha_subida else ''}"
 
 
+# ==========================================
+# GRABACIONES DE SESIONES PRESENCIALES (5/11/2026)
+# ==========================================
+# Tabla hija de `core_cita` (enlace 1:1): cada fila pertenece a UNA sola cita
+# y SOLO se crea para citas con modalidad 'Presencial' desde los botones de
+# grabación del panel del psicólogo (bloque de Citas de hoy).
+#
+# Nota de diseño: se usó OneToOne (tabla hija enlazada) en lugar de herencia
+# multi-tabla literal `class GrabacionSesion(Cita)` porque el guardado por
+# herencia multi-tabla REESCRIBE la fila padre (core_cita) al hacer save() con
+# valores vacíos, pudiendo corromper citas de producción.
+class GrabacionSesion(models.Model):
+    """
+    Grabación de audio de una sesión PRESENCIAL (5/11/2026). Función
+    experimental e independiente del IPP: existe un botón propio de grabación
+    en el panel del psicólogo y el audio se sube manualmente (el psicólogo la
+    inicia/detiene; al detener se envía al servidor y queda archivada aquí).
+    Si la cita se elimina, su grabación se elimina con ella (CASCADE).
+    """
+    cita = models.OneToOneField(
+        'Cita',
+        on_delete=models.CASCADE,
+        related_name='grabacion_sesion',
+        verbose_name="Sesión (Cita presencial)",
+    )
+    psicologo = models.ForeignKey(
+        PerfilPsicologo,
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='grabaciones_de_sesion',
+        verbose_name="Psicólogo que grabó",
+    )
+    audio = models.FileField(
+        upload_to='grabaciones_sesiones/%Y/%m/',
+        verbose_name="Archivo de audio",
+    )
+    formato = models.CharField(
+        max_length=20, blank=True, null=True,
+        verbose_name="Formato (webm / ogg / m4a / wav)",
+    )
+    duracion_segundos = models.PositiveIntegerField(
+        default=0, verbose_name="Duración (segundos)",
+    )
+    tamanio_bytes = models.PositiveBigIntegerField(
+        default=0, verbose_name="Tamaño del archivo (bytes)",
+    )
+    fecha_subida = models.DateTimeField(
+        auto_now_add=True, db_index=True, verbose_name="Fecha de guardado en servidor",
+    )
+
+    class Meta:
+        verbose_name = "Grabación de Sesión (presencial)"
+        verbose_name_plural = "Grabaciones de Sesiones (presenciales)"
+        ordering = ['-fecha_subida']
+
+    @property
+    def duracion_legible(self):
+        """Duración formateada mm:ss para mostrar en listas/admin."""
+        try:
+            s = int(self.duracion_segundos or 0)
+            return f"{s // 60:02d}:{s % 60:02d}"
+        except (ValueError, TypeError):
+            return "00:00"
+
+    def __str__(self):
+        fecha = self.fecha_subida.strftime('%d/%m/%Y %H:%M') if self.fecha_subida else ''
+        return f"Grabación Cita #{self.cita_id} · {self.duracion_legible} · {fecha}"
+
+
 
 

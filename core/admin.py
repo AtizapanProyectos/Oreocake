@@ -339,4 +339,38 @@ class ComprobanteTransferenciaAdmin(admin.ModelAdmin):
         return False
 
     def has_delete_permission(self, request, obj=None):
+        return request.user.is_superuser
+
+
+# ==========================================
+# GRABACIONES DE SESIONES PRESENCIALES (5/11/2026)
+# ==========================================
+@admin.register(GrabacionSesion)
+class GrabacionSesionAdmin(admin.ModelAdmin):
+    """Registro de SOLO LECTURA de las grabaciones de sesiones presenciales.
+    Las filas nacen (y se reemplazan) únicamente desde los botones de
+    grabación del panel del psicólogo / página grabacion-sesion."""
+    list_display = ('id', 'cita', 'fecha_subida', 'duracion_legible', 'formato', 'tamanio_mb', 'psicologo')
+    list_filter = ('formato', 'fecha_subida')
+    search_fields = ('cita__id', 'cita__paciente__email', 'cita__paciente__first_name')
+    list_select_related = ('cita', 'psicologo__usuario')
+    readonly_fields = ('cita', 'psicologo', 'audio', 'formato', 'duracion_segundos',
+                       'tamanio_bytes', 'fecha_subida')
+    list_per_page = 50
+
+    def tamanio_mb(self, obj):
+        try:
+            return f"{round(obj.tamanio_bytes / (1024 * 1024), 1)} MB"
+        except Exception:
+            return '—'
+    tamanio_mb.short_description = 'Tamaño'
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        # Borrado permitido SOLO para superusuarios
         return request.user.is_superuser

@@ -2544,7 +2544,7 @@ def panel_doctor(request):
         fecha=hoy,
         estado='Confirmada',
         hora__gte=hora_limite  # <- muestra citas desde 1 hora atrás
-    ).prefetch_related('evaluacion_servicio').order_by('hora')
+    ).prefetch_related('evaluacion_servicio', 'grabacion_sesion').order_by('hora')
 
     # 🔥 NUEVO: Talleres/Grupos de hoy que NO han expirado
     talleres_hoy = Taller.objects.filter(
@@ -5537,10 +5537,10 @@ def formulario_previo_meet(request, cita_id):
     
 
 def grabacion_sesion(request, cita_id):
-    """Landing de transición para sesiones PRESENCIALES: se muestra tras contestar
-    el IPP (modo doctor). Ofrece la grabadora local de la sesión (MediaRecorder,
-    100% local: el audio NUNCA se envía al servidor ni se procesa; solo se puede
-    escuchar/descargar desde este navegador)."""
+    """Pantalla de grabación para sesiones PRESENCIALES (independiente del IPP
+    desde el 5/11/2026: NO exige que el IPP esté contestado). Ofrece la
+    grabadora de la sesión (MediaRecorder); al detener, el audio se sube al
+    servidor y queda archivado en GrabacionSesion (tabla hija de Citas)."""
     if not request.user.is_authenticated:
         return redirect('modulo_informativo')
 
@@ -5555,14 +5555,116 @@ def grabacion_sesion(request, cita_id):
     if not es_dueno:
         return redirect('modulo_informativo')
 
-    # Requiere el IPP de la sesión ya contestado (EvaluacionSesionPaciente)
-    if not EvaluacionSesionPaciente.objects.filter(cita=cita).exists():
-        messages.info(request, 'Primero contesta el IPP de esta sesión.')
-        return redirect('formulario_previo_meet', cita_id=cita.id)
-
     return render(request, 'grabacion_sesion.html', {
         'cita': cita,
+        'grabacion': getattr(cita, 'grabacion_sesion', None),
         'es_tectum': getattr(cita, 'es_tectum', False) or getattr(cita.paciente.perfil if hasattr(cita.paciente, 'perfil') else None, 'es_tectum', False),
+    })
+
+
+# Límite de tamaño del audio subido al servidor (aprox. 1.5 h de webm/opus).
+TAMANIO_MAXIMO_GRABACION = 300 * 1024 * 1024  # 300 MB
+
+# Extensiones/formatos aceptados del blob de MediaRecorder (lista blanca):
+EXTENSIONES_GRABACION = {'webm': 'webm', 'ogg': 'ogg', 'mp4': 'm4a', 'm4a': 'm4a', 'mka': 'webm', 'wav': 'wav', 'wave': 'wav'}
+
+
+@require_POST
+def api_guardar_grabacion_sesion(request, cita_id):
+    """Endpoint del 5/11/2026: sube la grabación de una sesión PRESENCIAL al
+    servidor. El front (startRecording básica del panel / landing
+    grabacion_sesion) hace fetch con FormData: campo 'audio' (blob de
+    MediaRecorder) + 'duracion_segundos'. La grabación queda archivada en
+    GrabacionSesion (tabla hija de Citas); si la cita ya tenía grabación se
+    REMPLAZA (se borra el archivo anterior y se actualiza la fila).
+    Independiente del IPP: no consulta EvaluacionSesionPaciente en absoluto.
+    CSRF activo (header X-CSRFToken). Si la cita se elimina, la grabación se
+    elimina con ella (Cascade)."""
+    if not request.user.is_authenticated:
+        return JsonResponse({'status': 'error', 'message': 'Debes iniciar sesión.'}, status=403)
+
+    cita = get_object_or_404(Cita, id=cita_id)
+
+    # Solo el psicólogo asignado a la cita (o superusuario)
+    es_dueno = (hasattr(request.user, 'perfil_psicologo') and cita.psicologo and
+                cita.psicologo.usuario == request.user) or request.user.is_superuser
+    if not es_dueno:
+        return JsonResponse({'status': 'error', 'message': 'No tienes permiso para grabar esta cita.'}, status=403)
+
+    # Solo sesiones PRESENCIALES (la tabla es exclusiva para presencial)
+    if cita.modalidad != 'Presencial':
+        return JsonResponse({'status': 'error', 'message': 'Solo se puede grabar sesiones presenciales.'}, status=400)
+
+    archivo = request.FILES.get('audio')
+    if not archivo:
+        return JsonResponse({'status': 'error', 'message': 'No se recibió ningún audio.'}, status=400)
+
+    if archivo.size > TAMANIO_MAXIMO_GRABACION:
+        return JsonResponse({'status': 'error', 'message': 'La grabación es demasiado grande (máximo 300 MB).'}, status=400)
+    if archivo.size == 0:
+        return JsonResponse({'status': 'error', 'message': 'El audio llegó vacío. Graba de nuevo.'}, status=400)
+
+    # Formato desde el mimeType del blob (lista blanca, NO del nombre del archivo)
+    mime = (archivo.content_type or '').lower()
+    formato = None
+    for token, ext in EXTENSIONES_GRABACION.items():
+        if token in mime:
+            formato = ext
+            break
+    if not formato:
+        formato = 'webm'  # MediaRecorder por defecto en Chrome/Edge
+
+    # Duración reportada por el navegador (clamp 0 a 12 h)
+    try:
+        duracion = int(request.POST.get('duracion_segundos', '0'))
+        duracion = max(0, min(duracion, 12 * 3600))
+    except (ValueError, TypeError):
+        duracion = 0
+
+    # Nombre archivo del lado del servidor (no confiamos en el nombre del cliente):
+    # grabacion_cita{id}_{fechaHora}.{ext} — predecible SOLO para el psicólogo.
+    ahora = timezone.localtime(timezone.now())
+    nombre_archivo = f"grabacion_cita{cita.id}_{ahora.strftime('%Y%m%d_%H%M%S')}.{formato}"
+
+    try:
+        with transaction.atomic():
+            grabacion, existe = GrabacionSesion.objects.select_for_update().get_or_create(
+                cita=cita,
+                defaults={
+                    'psicologo': cita.psicologo,
+                    'audio': archivo,
+                }
+            )
+
+            # Remplazo: borramos el archivo anterior del disco antes de sobrescribir
+            if existe and grabacion.audio:
+                try:
+                    grabacion.audio.delete(save=False)
+                except (OSError, ValueError):
+                    pass
+                grabacion.audio = archivo
+
+            grabacion.psicologo = cita.psicologo
+            grabacion.formato = formato
+            grabacion.duracion_segundos = duracion
+            grabacion.tamanio_bytes = archivo.size
+            archivo.name = nombre_archivo  # nombre limpio definido por el servidor
+            grabacion.save()
+
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).error(f"Error guardando grabación de sesión (cita {cita_id}): {e}")
+        return JsonResponse({'status': 'error', 'message': 'No se pudo guardar la grabación en el servidor. Intenta de nuevo.'}, status=500)
+
+    return JsonResponse({
+        'status': 'success',
+        'grabacion_id': grabacion.id,
+        'archivo_url': grabacion.audio.url,
+        'formato': formato,
+        'duracion_segundos': duracion,
+        'tamanio_mb': round(archivo.size / (1024 * 1024), 1),
+        'fecha_subida': timezone.localtime(grabacion.fecha_subida).strftime('%d/%m/%Y %H:%M') if grabacion.fecha_subida else '',
+        'message': 'Grabación guardada en el servidor.',
     })
 
 
