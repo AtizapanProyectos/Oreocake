@@ -22,7 +22,7 @@ from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_GET
 
-from core.models import Cita, EvaluacionSesionPaciente, HistorialClinico
+from core.models import Cita, EvaluacionSesionPaciente, HistorialClinico, UsuarioPerfil, RespuestaFormularioOrganica
 
 logger = logging.getLogger(__name__)
 
@@ -356,7 +356,8 @@ def _contar_sentimiento(anio, mes, paquetes, clasificacion, fuente, modelo=None,
         emocion = _normalizar_emocion(emocion) or "Estrés"
         semana = max(1, min(semanas, int(paquete["semana"])))
         por_semana[emocion][semana - 1] += 1
-        manifs[emocion][manif or "No especificado en la nota"] += 1
+        if manif and manif.strip().casefold() not in {"no especificado en la nota", "sin especificar", "no se registró en la nota"}:
+            manifs[emocion][manif] += 1
 
     emo = []
     tm = []
@@ -367,21 +368,24 @@ def _contar_sentimiento(anio, mes, paquetes, clasificacion, fuente, modelo=None,
             continue
         emo.append([nombre, serie, color])
         tops = manifs[nombre].most_common(2)
-        primera = [tops[0][0], tops[0][1]] if tops else [nombre, total]
+        primera = [tops[0][0], tops[0][1]] if tops else None
         segunda = [tops[1][0], tops[1][1]] if len(tops) > 1 else None
-        tm.append([nombre, primera, segunda, color])
+        if primera:
+            tm.append([nombre, primera, segunda, color])
 
     total_notas = len(paquetes)
     if emo:
         principal, serie, _color = max(emo, key=lambda e: sum(e[1]))
         n = sum(serie)
         pct = round(100 * n / total_notas) if total_notas else 0
-        manif = tm[[e[0] for e in emo].index(principal)][1]
+        entrada_principal = next((item for item in tm if item[0] == principal), None)
+        manif = entrada_principal[1] if entrada_principal else None
         texto = (
             f"{principal} es el estado predominante en las bitácoras del mes "
-            f"({n} de {total_notas}, {pct}%). La manifestación más frecuente es "
-            f"«{manif[0]}» ({manif[1]})."
+            f"({n} de {total_notas}, {pct}%)."
         )
+        if manif and manif[1]:
+            texto += f" La manifestación más frecuente es «{manif[0]}» ({manif[1]})."
         hallazgo = [texto, "Principal estado en bitácoras", ACCIONES.get(principal, ACCIONES["Estrés"])]
     else:
         principal, pct = None, 0
@@ -476,7 +480,7 @@ def construir_sentimiento(anio, mes, citas, forzar=False):
             if re.search(r"@|\d{7,}", manif):
                 manif = ""
             if item.get("id") and emocion:
-                clasificacion[str(item["id"])] = (emocion, manif or "No especificado en la nota")
+                clasificacion[str(item["id"])] = (emocion, manif)
         if clasificacion:
             fuente = "groq"
         texto_sintesis = data.get("sintesis")
@@ -637,10 +641,7 @@ def construir_operacion(anio, mes):
     kpis = [
         ["Citas agendadas", total, f"{MESES[mes]} {anio}", ""],
         ["Colaboradores atendidos", colaboradores, "personas únicas", ""],
-        ["Crecimiento vs. " + MESES[prev_mes], growth_txt, growth_sub, growth_cls],
         ["Horario de mayor demanda", horario_txt, horario_sub, ""],
-        ["Psicólogo con más citas", psico_txt, psico_sub, psico_cls],
-        ["Cierre documental", cierre_txt, cierre_sub, ""],
     ]
 
     ins = []
@@ -676,7 +677,7 @@ def construir_operacion(anio, mes):
             ["Confirmar que el convenio esté marcado en la cita", "Revisar el mes anterior en el selector"],
         ])
 
-    if en_curso:
+    if en_curso and prev_total:
         ins.append([
             f"{MESES[mes].capitalize()} va en {total} citas al día {hoy.day}. {MESES[prev_mes].capitalize()} cerró con {prev_total}. No es un cierre de mes.",
             "Adopción del programa",
@@ -694,16 +695,6 @@ def construir_operacion(anio, mes):
                 "Comparar este mes con el anterior antes de concluir una tendencia",
                 "Medir de nuevo con este mismo panel",
                 "Separar agenda de cierre documental",
-            ],
-        ])
-    elif total:
-        ins.append([
-            f"{MESES[prev_mes].capitalize()} no tiene citas del convenio; {MESES[mes]} abre con {total}.",
-            "Adopción del programa",
-            [
-                "Tomar este mes como línea base",
-                "No calcular un crecimiento porcentual sin mes previo",
-                "Volver a medir el mes siguiente",
             ],
         ])
 
@@ -739,6 +730,90 @@ def construir_operacion(anio, mes):
     }
 
 
+
+def construir_ipp_tectum(anio, mes):
+    """Resumen longitudinal del IPP; solo TECTUM In-House (no Beneficios).
+
+    Una observación por cita, deduplicada por el modelo. El cambio corresponde
+    al primer/último registro por colaborador, no al cambio de promedio del grupo.
+    """
+    from datetime import date
+    from calendar import monthrange
+
+    corte = date(anio, mes, monthrange(anio, mes)[1])
+    usuarios = set(UsuarioPerfil.objects.filter(es_tectum=True).values_list("usuario_id", flat=True))
+    usuarios.discard(None)
+    if not usuarios:
+        return {"promedio": None, "mejor": None, "menor": None, "evaluaciones": 0,
+                "participantes": 0, "con_cambio": 0, "cambio_medio": None,
+                "semanas": [], "niveles": [], "explicacion": "Sin respuestas de colaboradores TECTUM."}
+
+    respuestas = (
+        RespuestaFormularioOrganica.objects
+        .filter(paciente_id__in=usuarios, cita__fecha__lte=corte)
+        .exclude(cita__estado="Cancelada")
+        .select_related("cita")
+        .order_by("paciente_id", "cita__fecha", "cita__hora", "id")
+    )
+    por_usuario = defaultdict(list)
+    semanas = defaultdict(list)
+    total_periodo = 0
+    for r in respuestas:
+        # Fuente real del IPP: escala 12..60 establecida en core.views.calcular_ipt
+        if not (12 <= r.puntaje <= 60):
+            continue
+        indice = round((r.puntaje - 12) * 100 / 48, 1)
+        por_usuario[r.paciente_id].append((r.cita.fecha, indice))
+        if r.cita.fecha.year == anio and r.cita.fecha.month == mes:
+            semana = min(5, (r.cita.fecha.day - 1) // 7 + 1)
+            semanas[semana].append(indice)
+            total_periodo += 1
+
+    ultimos = []
+    cambios = []
+    for user_id, valores in por_usuario.items():
+        # Considerar solo quienes tienen al menos 1 respuesta dentro del mes elegido
+        actual = [(fecha, val) for fecha, val in valores if fecha.year == anio and fecha.month == mes]
+        if not actual:
+            continue
+        ultimos.append(actual[-1][1])
+        if len(valores) >= 2:
+            # Cambio contra primera respuesta histórica, para el mismo usuario.
+            cambios.append(round(actual[-1][1] - valores[0][1], 1))
+
+    def promedio(nums):
+        return round(sum(nums) / len(nums), 1) if nums else None
+    return {
+        "promedio": promedio(ultimos), "mejor": max(ultimos) if ultimos else None,
+        "menor": min(ultimos) if ultimos else None,
+        "evaluaciones": total_periodo, "participantes": len(ultimos),
+        "con_cambio": len(cambios), "cambio_medio": promedio(cambios),
+        "semanas": [[f"S{i}", promedio(semanas[i]), len(semanas[i])] for i in range(1, 6)],
+        "explicacion": "IPP normalizado de 12 a 60 puntos a escala 0–100. El promedio usa la última evaluación de cada colaborador durante el mes. Los extremos son puntajes, no clasificaciones clínicas."
+    }
+
+
+def construir_detalle_citas_tectum(anio, mes):
+    """Listado de citas de la población TECTUM In-House, sin duplicar usuarios."""
+    citas = (Cita.objects.filter(paciente__perfil__es_tectum=True,
+                                 fecha__year=anio, fecha__month=mes)
+             .exclude(estado="Cancelada")
+             .select_related("paciente", "psicologo__usuario")
+             .order_by("fecha", "hora", "id"))
+    filas = []
+    for c in citas:
+        paciente = c.paciente
+        filas.append({
+            "nombre": paciente.get_full_name().strip() or getattr(paciente.perfil, "nombre", "") or paciente.username,
+            "fecha": c.fecha.strftime("%d/%m/%Y"),
+            "hora": c.hora.strftime("%H:%M") if c.hora else "—",
+            "psicologo": _nombre_psico(c),
+            "modalidad": c.modalidad,
+            "estado": c.estado,
+        })
+    return filas
+
+
 def _respuesta(request, plantilla, context):
     response = render(request, plantilla, context)
     response["Cache-Control"] = "private, no-store"
@@ -756,6 +831,8 @@ def _json(datos):
 def panel_bienestar_tectum_view(request):
     anio, mes = _periodo(request)
     data = construir_operacion(anio, mes)
+    data["panel"]["ipp"] = construir_ipp_tectum(anio, mes)
+    data["panel"]["detalle_citas"] = construir_detalle_citas_tectum(anio, mes)
     data["panel"]["sentimiento_url"] = (
         reverse("panel_bienestar_tectum_sentimiento")
         + f"?mes={mes}&anio={anio}"
