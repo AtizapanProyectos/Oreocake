@@ -22,7 +22,7 @@ from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_GET
 
-from core.models import Cita, EvaluacionSesionPaciente, HistorialClinico, UsuarioPerfil, RespuestaFormularioOrganica
+from core.models import Cita, EvaluacionSesionPaciente, HistorialClinico, UsuarioPerfil, RespuestaFormularioOrganica, CuestionarioRegistro
 
 logger = logging.getLogger(__name__)
 
@@ -797,6 +797,97 @@ def construir_ipp_tectum(anio, mes):
     }
 
 
+
+
+def construir_cuestionarios_iniciales_tectum(anio, mes):
+    """Resumen agregado del registro inicial TECTUM In-House hasta fin de mes.
+
+    Una encuesta más reciente por colaborador, sin datos nominales ni texto libre.
+    No mezcla perfiles del programa Beneficios.
+    """
+    from datetime import datetime
+    from django.utils import timezone
+
+    limite = timezone.make_aware(datetime(anio, mes, monthrange(anio, mes)[1], 23, 59, 59))
+    ids = list(UsuarioPerfil.objects.filter(
+        es_tectum=True, es_beneficios=False, usuario_id__isnull=False,
+    ).values_list("usuario_id", flat=True))
+    if not ids:
+        return {"colaboradores": 0, "formularios": 0, "preguntas": [], "hasta": f"{MESES[mes]} {anio}"}
+
+    # Se conserva la última captura del cuestionario inicial por usuario.
+    # Los usuarios sin cuestionario se contabilizan en colaboradores pero no en respuestas.
+    qs = (CuestionarioRegistro.objects.filter(paciente_id__in=ids, fecha_completado__lte=limite)
+          .order_by("paciente_id", "-fecha_completado", "-id")
+          .values("paciente_id", "respuestas"))
+    ultimas = {}
+    for fila in qs.iterator():
+        ultimas.setdefault(fila["paciente_id"], fila["respuestas"])
+
+    # No graficar respuestas identificables ni relatos clínicos abiertos.
+    privados = ("nombre", "apellido", "correo", "email", "telefono", "teléfono",
+                "direccion", "dirección", "domicilio", "contacto", "emergencia",
+                "nacimiento", "curp", "rfc", "contrase", "password", "observacion",
+                "comentario", "explica", "describe", "detalle", "motivo_consulta",
+                "historia", "relato", "otro_cual", "cual_otro", "especifica")
+    conteos = defaultdict(Counter)
+    participantes = defaultdict(set)
+    for uid, respuestas in ultimas.items():
+        if isinstance(respuestas, str):
+            try:
+                respuestas = json.loads(respuestas)
+            except (ValueError, TypeError):
+                continue
+        if not isinstance(respuestas, dict):
+            continue
+        for llave, valor in respuestas.items():
+            clave = str(llave).strip()
+            if not clave or any(term in clave.casefold() for term in privados):
+                continue
+            if isinstance(valor, bool):
+                opciones = ["Sí" if valor else "No"]
+            elif isinstance(valor, (int, float)) and not isinstance(valor, bool):
+                opciones = [str(valor)]
+            elif isinstance(valor, str):
+                opciones = [valor.strip()]
+            elif isinstance(valor, list):
+                opciones = [str(item).strip() for item in valor if isinstance(item, (str, int, float, bool))]
+            else:
+                continue
+            opciones = [v for v in opciones if v and len(v) <= 85]
+            if not opciones:
+                continue
+            # Excluye texto libre muy variable. Conserva únicamente opciones repetidas
+            # o respuestas breves con apariencia de categorías; nunca listas nominales.
+            for opcion in set(opciones):
+                conteos[clave][opcion] += 1
+            participantes[clave].add(uid)
+
+    preguntas = []
+    for clave, counter in conteos.items():
+        total = len(participantes[clave])
+        if total == 0:
+            continue
+        # Las respuestas abiertas (muchas respuestas distintas) no se publican.
+        if len(counter) > 12 or (len(counter) >= 5 and len(counter) / total > 0.8):
+            continue
+        # Evita revelar respuestas únicas o potencialmente identificables.
+        frecuentes = [(opcion, n) for opcion, n in counter.most_common() if n >= 3]
+        resto = sum(n for n in counter.values() if n < 3)
+        if resto:
+            frecuentes.append(("Otras respuestas", resto))
+        opciones = [{"texto": opcion, "cantidad": n,
+                     "porcentaje": round(n * 100 / total, 1)}
+                    for opcion, n in frecuentes]
+        titulo = clave.replace("_", " ").replace("-", " ").strip()
+        titulo = titulo[:1].upper() + titulo[1:]
+        preguntas.append({"clave": clave, "titulo": titulo,
+                          "participantes": total, "opciones": opciones})
+
+    preguntas.sort(key=lambda p: p["titulo"].casefold())
+    return {"colaboradores": len(ids), "formularios": len(ultimas),
+            "preguntas": preguntas, "hasta": f"{MESES[mes]} {anio}"}
+
 def construir_detalle_citas_tectum(anio, mes):
     """Listado de citas de la población TECTUM In-House, sin duplicar usuarios."""
     citas = (Cita.objects.filter(paciente__perfil__es_tectum=True,
@@ -838,6 +929,7 @@ def panel_bienestar_tectum_view(request):
     data = construir_operacion(anio, mes)
     data["panel"]["ipp"] = construir_ipp_tectum(anio, mes)
     data["panel"]["detalle_citas"] = construir_detalle_citas_tectum(anio, mes)
+    data["panel"]["cuestionarios_iniciales"] = construir_cuestionarios_iniciales_tectum(anio, mes)
     data["panel"]["sentimiento_url"] = (
         reverse("panel_bienestar_tectum_sentimiento")
         + f"?mes={mes}&anio={anio}"
