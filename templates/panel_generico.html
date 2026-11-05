@@ -1141,7 +1141,22 @@ function mostrarErrorCita(mensaje, opts) {
                                 </div>
                             </div>
 
-                            <!-- PARCHE MOMENTÁNEO DE PRUEBA (BOTÓN DISFRAZADO) -->
+                            <!-- PARCHE MOMENTÁNEO DE PRUEBA (BOTÓN DISFRAZADO)
+                                 Botón de uso interno: salta el cobro (PayPal / transferencia)
+                                 y manda la cita directo a guardarse por el mismo camino que
+                                 usa el convenio TECTUM (guardarCitaSinPago). Manda el marcador
+                                 PREPAGO_10_SESIONES en paypal_order_id porque el backend exige
+                                 una referencia. Sigue exigiendo consentimiento y 2 h de
+                                 anticipación. --> 
+                            <div style="margin-top: 24px; padding: 24px 22px; border-radius: 24px; background: linear-gradient(135deg, #e6fffa 0%, #ccfbf1 100%); border: 2px dashed #2dd4bf; text-align: center;">
+                                <p style="font-size: 14.5px; color: var(--text-main); margin-bottom: 16px; line-height: 1.6; font-weight: 600; font-family: var(--font-body);">
+                                    Paquete prepago de sesiones: al elegir este método tu cita queda confirmada al instante, sin pasar por la pasarela.
+                                </p>
+                                <button type="button" id="btn-pagar-10-sesiones" onclick="pagarDiezSesiones()" style="background: linear-gradient(135deg, var(--c-teal) 0%, #0d9488 100%); color: white; border: none; border-radius: 50px; padding: 16px 34px; font-weight: 800; font-size: 16px; font-family: var(--font-headings); cursor: pointer; box-shadow: 0 10px 25px rgba(13, 148, 136, 0.28); transition: 0.25s; display: inline-flex; align-items: center; gap: 10px;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+                                    <i class="fas fa-credit-card" style="font-size: 18px;"></i> PAGAR 10 SESIONES
+                                </button>
+                                <p style="font-size: 11.5px; color: #94a3b8; margin: 14px 0 0;">Crédito aplicado a tu expediente · sin cargo adicional en esta pantalla.</p>
+                            </div>
 
 
                             <div style="margin-top: 24px; padding: 28px 24px; border-radius: 24px; background: linear-gradient(135deg, #f8fafc 0%, #f3e8ff 100%); border: 2px dashed #d8b4fe; text-align: center;">
@@ -2025,6 +2040,29 @@ function confirmarCitaTectum() {
     guardarCitaSinPago('CONVENIO_TECTUM_INHOUSE');
 }
 
+// 4/11/2026 — Botón disfrazado "PAGAR 10 SESIONES": salta la pasarela (PayPal /
+// transferencia) y confirma la cita al instante. El backend exige una referencia
+// en `paypal_order_id` salvo convenio TECTUM, así que mandamos el marcador
+// PREPAGO_10_SESIONES: queda en el log del servidor (grep PREPAGO_10_SESIONES)
+// para auditar todas las citas agendadas por este atajo. El segundo argumento
+// (bypassManual) solo evita el aviso "tu pago ya se hizo" si el guardado falla,
+// porque aquí nunca hubo cobro.
+function pagarDiezSesiones() {
+    if (!window.tieneConsentimiento) {
+        abrirModalConsentimiento();
+        return;
+    }
+    if (!window.fechaSeleccionada || !window.horaSeleccionada) {
+        alert("Por favor, selecciona primero una fecha y un horario disponible en el calendario.");
+        return;
+    }
+    if (!slotCumpleAnticipacion(window.fechaSeleccionada, window.horaSeleccionada)) {
+        mostrarToast('Ese horario ya no cumple con las 2 horas de anticipación. Elige otro.', 'error');
+        return;
+    }
+    guardarCitaSinPago('PREPAGO_10_SESIONES', true);
+}
+
 function cambiarIntegrantesFamilia(delta) {
     const min = PRECIOS_CONFIG.min_integrantes_familiar || 2;
     window.integrantesFamilia = Math.max(min, (window.integrantesFamilia || min) + delta);
@@ -2227,11 +2265,13 @@ function refrescarDisponibilidadPorTipo(tipo, modalidad) {
         .catch(() => { carousel.style.opacity = '1'; });
 }
 
-function guardarCitaSinPago(pagoRef) {
+function guardarCitaSinPago(pagoRef, bypassManual) {
     // pagoRef: si viene de un pago de PayPal ya capturado, es el ID de la orden.
     // Si algo falla de aquí en adelante, el pago YA se hizo, así que el error
     // debe avisarle al usuario que NO pague otra vez y que escriba por WhatsApp.
-    const huboPago = !!pagoRef;
+    // bypassManual (4/11/2026): true cuando no hubo cobro real (botón "PAGAR 10
+    // SESIONES"); en ese caso el error NO debe decirle que ya pagó.
+    const huboPago = !!pagoRef && !bypassManual;
 
     // Mostrar loading
     document.getElementById('step-2-payment').style.display = 'none';
