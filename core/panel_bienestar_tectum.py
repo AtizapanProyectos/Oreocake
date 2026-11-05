@@ -116,7 +116,9 @@ _solo_superuser = user_passes_test(lambda u: u.is_superuser, login_url="/")
 
 
 def _qs_tectum():
-    return Cita.objects.exclude(estado="Cancelada").filter(Q(es_tectum=True) | Q(es_beneficios=True))
+    return (Cita.objects.exclude(estado="Cancelada")
+            .filter(es_tectum=True, es_beneficios=False,
+                    paciente__perfil__es_tectum=True))
 
 
 def _periodo(request):
@@ -126,7 +128,8 @@ def _periodo(request):
     # el mes de la última cita del convenio.
     ultima_nota = (
         HistorialClinico.objects
-        .filter(Q(cita__es_tectum=True) | Q(cita__es_beneficios=True))
+        .filter(cita__es_tectum=True, cita__es_beneficios=False,
+                 cita__paciente__perfil__es_tectum=True)
         .exclude(cita__estado="Cancelada")
         .exclude(notas_sesion="")
         .exclude(notas_sesion__isnull=True)
@@ -750,7 +753,8 @@ def construir_ipp_tectum(anio, mes):
 
     respuestas = (
         RespuestaFormularioOrganica.objects
-        .filter(paciente_id__in=usuarios, cita__fecha__lte=corte)
+        .filter(paciente_id__in=usuarios, cita__fecha__lte=corte,
+                cita__es_tectum=True, cita__es_beneficios=False)
         .exclude(cita__estado="Cancelada")
         .select_related("cita")
         .order_by("paciente_id", "cita__fecha", "cita__hora", "id")
@@ -796,6 +800,7 @@ def construir_ipp_tectum(anio, mes):
 def construir_detalle_citas_tectum(anio, mes):
     """Listado de citas de la población TECTUM In-House, sin duplicar usuarios."""
     citas = (Cita.objects.filter(paciente__perfil__es_tectum=True,
+                                 es_tectum=True, es_beneficios=False,
                                  fecha__year=anio, fecha__month=mes)
              .exclude(estado="Cancelada")
              .select_related("paciente", "psicologo__usuario")
