@@ -120,10 +120,24 @@ def _qs_tectum():
 
 
 def _periodo(request):
-    ultima = _qs_tectum().order_by("-fecha").values_list("fecha", flat=True).first()
     hoy = timezone.localdate()
-    anio = ultima.year if ultima else hoy.year
-    mes = ultima.month if ultima else hoy.month
+    # Por defecto se abre el mes más reciente con bitácoras clínicas: un mes con
+    # citas pero sin notas mostraría el panel vacío. Si aún no hay notas, se usa
+    # el mes de la última cita del convenio.
+    ultima_nota = (
+        HistorialClinico.objects
+        .filter(Q(cita__es_tectum=True) | Q(cita__es_beneficios=True))
+        .exclude(cita__estado="Cancelada")
+        .exclude(notas_sesion="")
+        .exclude(notas_sesion__isnull=True)
+        .order_by("-cita__fecha")
+        .values_list("cita__fecha", flat=True)
+        .first()
+    )
+    ultima = _qs_tectum().order_by("-fecha").values_list("fecha", flat=True).first()
+    referencia = ultima_nota or ultima
+    anio = referencia.year if referencia else hoy.year
+    mes = referencia.month if referencia else hoy.month
     try:
         if request.GET.get("anio"):
             anio = int(request.GET.get("anio"))
@@ -132,8 +146,8 @@ def _periodo(request):
     except (TypeError, ValueError):
         pass
     if not (1 <= mes <= 12 and 2000 <= anio <= 2100):
-        anio = ultima.year if ultima else hoy.year
-        mes = ultima.month if ultima else hoy.month
+        anio = referencia.year if referencia else hoy.year
+        mes = referencia.month if referencia else hoy.month
     return anio, mes
 
 
