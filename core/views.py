@@ -5563,11 +5563,106 @@ def grabacion_sesion(request, cita_id):
     })
 
 
-# Límite de tamaño del audio subido al servidor (aprox. 1.5 h de webm/opus).
+# Límite de tamaño del audio subido al servidor (1 h de webm/opus ~40-60 MB;
+# el tope cubre sesiones largas sin recodificar en el server).
 TAMANIO_MAXIMO_GRABACION = 300 * 1024 * 1024  # 300 MB
 
 # Extensiones/formatos aceptados del blob de MediaRecorder (lista blanca):
 EXTENSIONES_GRABACION = {'webm': 'webm', 'ogg': 'ogg', 'mp4': 'm4a', 'm4a': 'm4a', 'mka': 'webm', 'wav': 'wav', 'wave': 'wav'}
+
+
+def _preparar_audio_grabacion(uploaded, nombre):
+    """Copia el upload a un archivo propio, en streaming, antes de tocar el modelo.
+
+    Un audio > FILE_UPLOAD_MAX_MEMORY_SIZE (2.5 MB) llega como
+    TemporaryUploadedFile. Al asignarlo a un FileField, Django hace rename del
+    /tmp y el path desaparece. Si la vista lo guarda dos veces, la segunda
+    revienta con [Errno 2]. Esta copia no depende de ese spool y no carga
+    la sesión entera en RAM (hasta 300 MB / 1 h).
+    """
+    import shutil
+    import tempfile
+    from django.core.files import File
+
+    fd, dest = tempfile.mkstemp(prefix='hope_grabacion_', suffix='_' + nombre)
+    os.close(fd)
+    try:
+        if hasattr(uploaded, 'temporary_file_path'):
+            src = uploaded.temporary_file_path()
+            if not os.path.exists(src):
+                raise FileNotFoundError(src)
+            shutil.copyfile(src, dest)
+        else:
+            uploaded.seek(0)
+            with open(dest, 'wb') as out:
+                for chunk in uploaded.chunks():
+                    out.write(chunk)
+        handle = open(dest, 'rb')
+        wrapped = File(handle, name=nombre)
+        wrapped._hope_temp_path = dest
+        return wrapped
+    except Exception:
+        try:
+            os.remove(dest)
+        except OSError:
+            pass
+        raise
+
+
+def _cerrar_audio_preparado(archivo):
+    if archivo is None:
+        return
+    path = getattr(archivo, '_hope_temp_path', None)
+    try:
+        archivo.close()
+    except Exception:
+        pass
+    if path:
+        try:
+            os.remove(path)
+        except OSError:
+            pass
+
+
+def _persistir_grabacion_sesion(cita, preparado, formato, duracion, tamanio):
+    """Asigna el audio UNA vez y lo guarda UNA vez. Si la cita ya tenía
+    grabación, el archivo anterior se borra solo después de que el nuevo
+    quedó en disco. Un race del OneToOne reintenta sobre la fila ganadora
+    sin volver a mover un /tmp ya consumido."""
+    from django.db import IntegrityError
+
+    def _escribir(grabacion):
+        nombre_anterior = grabacion.audio.name if grabacion.pk and grabacion.audio else None
+        preparado.seek(0)
+        grabacion.psicologo = cita.psicologo
+        grabacion.formato = formato
+        grabacion.duracion_segundos = duracion
+        grabacion.tamanio_bytes = tamanio
+        grabacion.audio = preparado
+        grabacion.save()
+        if nombre_anterior and nombre_anterior != grabacion.audio.name:
+            try:
+                grabacion.audio.storage.delete(nombre_anterior)
+            except (OSError, ValueError):
+                pass
+        # auto_now_add no se refresca en un reemplazo; la UI muestra esta hora.
+        ahora_subida = timezone.now()
+        GrabacionSesion.objects.filter(pk=grabacion.pk).update(fecha_subida=ahora_subida)
+        grabacion.fecha_subida = ahora_subida
+        return grabacion
+
+    try:
+        with transaction.atomic():
+            try:
+                grabacion = GrabacionSesion.objects.select_for_update().get(cita=cita)
+            except GrabacionSesion.DoesNotExist:
+                grabacion = GrabacionSesion(cita=cita)
+            return _escribir(grabacion)
+    except IntegrityError:
+        preparado.seek(0)
+        with transaction.atomic():
+            grabacion = GrabacionSesion.objects.select_for_update().get(cita=cita)
+            return _escribir(grabacion)
 
 
 @require_POST
@@ -5626,32 +5721,20 @@ def api_guardar_grabacion_sesion(request, cita_id):
     # grabacion_cita{id}_{fechaHora}.{ext} — predecible SOLO para el psicólogo.
     ahora = timezone.localtime(timezone.now())
     nombre_archivo = f"grabacion_cita{cita.id}_{ahora.strftime('%Y%m%d_%H%M%S')}.{formato}"
+    archivo.name = nombre_archivo
 
+    # Los audios de más de 2.5 MB llegan como TemporaryUploadedFile en /tmp.
+    # FileField, al guardar, hace rename de ese /tmp (no copia). get_or_create
+    # lo guardaba una vez y el save() de abajo lo volvía a abrir: el path ya
+    # no existía → [Errno 2] No such file or directory: '/tmp/tmp….upload.webm'.
+    # Por eso los audios chicos sí quedaban y los de una sesión (aunque sea
+    # de 5 min) no. Se copia el spool a un temporal propio y se guarda UNA vez.
+    preparado = None
     try:
-        with transaction.atomic():
-            grabacion, existe = GrabacionSesion.objects.select_for_update().get_or_create(
-                cita=cita,
-                defaults={
-                    'psicologo': cita.psicologo,
-                    'audio': archivo,
-                }
-            )
-
-            # Remplazo: borramos el archivo anterior del disco antes de sobrescribir
-            if existe and grabacion.audio:
-                try:
-                    grabacion.audio.delete(save=False)
-                except (OSError, ValueError):
-                    pass
-                grabacion.audio = archivo
-
-            grabacion.psicologo = cita.psicologo
-            grabacion.formato = formato
-            grabacion.duracion_segundos = duracion
-            grabacion.tamanio_bytes = archivo.size
-            archivo.name = nombre_archivo  # nombre limpio definido por el servidor
-            grabacion.save()
-
+        preparado = _preparar_audio_grabacion(archivo, nombre_archivo)
+        grabacion = _persistir_grabacion_sesion(
+            cita, preparado, formato, duracion, archivo.size,
+        )
     except Exception as e:
         import logging
         logging.getLogger(__name__).exception(f"Error guardando grabación de sesión (cita {cita_id}): {e}")
@@ -5662,6 +5745,8 @@ def api_guardar_grabacion_sesion(request, cita_id):
             'message': 'No se pudo guardar la grabación en el servidor. Intenta de nuevo (el navegador conservará tu copia local para descargar).',
             'detalle': str(e)[:400],
         }, status=500)
+    finally:
+        _cerrar_audio_preparado(preparado)
 
     return JsonResponse({
         'status': 'success',
