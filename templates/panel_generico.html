@@ -1029,29 +1029,6 @@ function mostrarErrorCita(mensaje, opts) {
                     <p id="selected-time-text" style="font-size: 16px; color: var(--c-teal); margin-bottom: 24px; font-weight: 700; background: #e6fffa; display: inline-block; padding: 8px 22px; border-radius: 50px; border: 1px solid #b2f5ea;"></p>
                 </div>
 
-                {% if transferencia_habilitada %}
-                <!-- 3/11/2026 — AVISO DE TRANSFERENCIA: se muestra al llegar al paso de pago
-                     (después de elegir el horario) para que el paciente sepa ANTES de pagar
-                     que el método de transferencia bancaria requiere subir su comprobante
-                     en esta pantalla. Si ConfigTransferencia se apaga, el aviso desaparece
-                     junto con la zona de subida (mismo flag). -->
-                <div id="aviso-transferencia-comprobante" style="margin: 0 auto 26px; max-width: 560px; background: linear-gradient(135deg, #faf5ff 0%, #ede9fe 100%); border: 1.5px solid #d8b4fe; padding: 16px 20px; border-radius: 18px; text-align: left; display: flex; align-items: flex-start; gap: 14px;">
-                    <div style="width: 40px; height: 40px; border-radius: 12px; background: #ede9fe; color: var(--c-purple); display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0;">
-                        <i class="fas fa-file-upload"></i>
-                    </div>
-                    <div>
-                        <p style="margin: 0 0 6px; font-size: 14.5px; color: var(--text-main); font-weight: 800; font-family: var(--font-headings); line-height: 1.4;">
-                            Para agendar su cita mediante transferencia bancaria, será necesario subir su comprobante de pago.
-                        </p>
-                        <p style="margin: 0; font-size: 13.5px; color: var(--text-muted); font-family: var(--font-body); line-height: 1.55;">
-                            Si presenta algún problema durante el proceso,
-                            <a href="https://wa.me/525521130230?text=Hola%2C%20adjunto%20mi%20comprobante%20de%20pago%20por%20transferencia%20para%20mi%20sesi%C3%B3n" target="_blank" rel="noopener" style="color: #1DA851; font-weight: 700; text-decoration: none;">contáctenos por WhatsApp</a>
-                            y con gusto le apoyaremos.
-                        </p>
-                    </div>
-                </div>
-                {% endif %}
-
                 <!-- 3/11/2026 — ESCALA EMOCIONAL DEL WIZARD (1 toque, saltable).
                      Se envía junto con la cita en el campo 'animo' (Cita.estado_animo).
                      Si el paciente no toca nada, queda "No especificó" como siempre. -->
@@ -1141,24 +1118,10 @@ function mostrarErrorCita(mensaje, opts) {
                                 </div>
                             </div>
 
-                            <!-- PARCHE MOMENTÁNEO DE PRUEBA (BOTÓN DISFRAZADO)
-                                 Botón de uso interno: salta el cobro (PayPal / transferencia)
-                                 y manda la cita directo a guardarse por el mismo camino que
-                                 usa el convenio TECTUM (guardarCitaSinPago). Manda el marcador
-                                 PREPAGO_10_SESIONES en paypal_order_id porque el backend exige
-                                 una referencia. Sigue exigiendo consentimiento y 2 h de
-                                 anticipación. --> 
-                            <div style="margin-top: 24px; text-align: center;">
-                                <button type="button" id="btn-pagar-10-sesiones" onclick="pagarDiezSesiones()" style="background: linear-gradient(135deg, var(--c-purple) 0%, #3B2474 100%); color: white; border: none; border-radius: 50px; padding: 16px 34px; font-weight: 800; font-size: 16px; font-family: var(--font-headings); cursor: pointer; box-shadow: 0 10px 25px rgba(90, 63, 163, 0.3); transition: 0.25s; display: inline-flex; align-items: center; gap: 10px;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
-                                    <i class="fas fa-credit-card" style="font-size: 18px;"></i> PAGAR 10 SESIONES
-                                </button>
-                            </div>
-
-
                             <div style="margin-top: 24px; padding: 28px 24px; border-radius: 24px; background: linear-gradient(135deg, #f8fafc 0%, #f3e8ff 100%); border: 2px dashed #d8b4fe; text-align: center;">
                                 <p style="font-size: 16px; color: var(--text-main); margin-bottom: 20px; line-height: 1.6; font-weight: 600; font-family: var(--font-body);">
                                     ¿Prefieres transferencia directa? Paga a estos números de cuenta y <br><span style="display: inline-block; margin-top: 10px;">
-                                        {% if transferencia_habilitada %}<strong style="color: #3B2474; font-size: 18px; font-weight: 900; background: #ede9fe; padding: 6px 14px; border-radius: 12px; border: 2px solid #8b5cf6;">¡Sube tu comprobante y agenda automáticamente!</strong>{% else %}<strong style="color: #1DA851; font-size: 18px; font-weight: 900; background: #e8f9f0; padding: 6px 14px; border-radius: 12px; border: 2px solid #25D366;">¡Envíanos tu comprobante por WhatsApp!</strong>{% endif %}
+                                        <strong style="color: #1DA851; font-size: 18px; font-weight: 900; background: #e8f9f0; padding: 6px 14px; border-radius: 12px; border: 2px solid #25D366;">¡Envíanos tu comprobante por WhatsApp!</strong>
                                     </span>
                                 </p>
 
@@ -1202,55 +1165,19 @@ function mostrarErrorCita(mensaje, opts) {
                                     </div>
                                 </div>
                                 
-                                {% if transferencia_habilitada %}
-                                <!-- 3/11/2026 — MÉTODO NUEVO: subir comprobante y agendar automáticamente.
-                                     Respaldado por el endpoint /api/subir-comprobante-transferencia/ -->
-                                <div id="zona-comprobante-transferencia" style="margin-top: 26px;">
-                                    <p style="font-size: 15.5px; color: var(--text-main); font-weight: 800; margin: 0 0 6px; font-family: var(--font-headings);">¿Ya hiciste tu transferencia?</p>
-                                    <p style="font-size: 13.5px; color: var(--text-muted); margin: 0 0 14px;">Sube la foto de tu comprobante y tu sesión se agenda automáticamente con el especialista disponible.</p>
-
-                                    <!-- Preview del archivo elegido -->
-                                    <div id="preview-comprobante" style="display: none; align-items: center; justify-content: center; gap: 12px; background: white; border: 1.5px solid #e2e8f0; padding: 12px 16px; border-radius: 14px; margin-bottom: 12px;">
-                                        <img id="preview-comprobante-img" alt="Comprobante" style="max-width: 74px; max-height: 74px; border-radius: 10px; object-fit: cover; display: none; border: 1px solid #e2e8f0;">
-                                        <i id="preview-comprobante-pdf" class="fas fa-file-pdf" style="display: none; font-size: 36px; color: #ef4444;"></i>
-                                        <div style="text-align: left;">
-                                            <p id="preview-comprobante-nombre" style="margin: 0 0 2px; font-size: 13px; font-weight: 700; color: var(--text-main); max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"></p>
-                                            <button type="button" onclick="cambiarComprobante()" style="background: none; border: none; color: var(--c-purple); font-weight: 700; cursor: pointer; font-size: 12.5px; padding: 2px 0;">Cambiar archivo</button>
-                                        </div>
-                                    </div>
-
-                                    <input type="file" id="input-comprobante" accept="image/jpeg,image/png,image/webp,application/pdf" style="display: none;" onchange="manejarSeleccionComprobante(this)">
-                                    <label for="input-comprobante" id="btn-elegir-archivo" style="display: inline-flex; align-items: center; gap: 10px; background: white; border: 2px dashed #d8b4fe; color: var(--c-purple); padding: 15px 28px; border-radius: 16px; font-weight: 800; cursor: pointer; font-size: 14.5px; font-family: var(--font-headings); transition: 0.2s;" onmouseover="this.style.background='#faf5ff'" onmouseout="this.style.background='white'">
-                                        <i class="fas fa-camera" style="font-size: 18px;"></i> Tomar / subir foto del comprobante
-                                    </label>
-
-                                    <p id="error-comprobante" style="display: none; background: #fef2f2; color: #b91c1c; border: 1.5px solid #fecaca; padding: 10px 14px; border-radius: 12px; font-size: 13px; font-weight: 600; margin: 12px 0 0;"></p>
-
-                                    <div style="margin-top: 16px;">
-                                        <button type="button" id="btn-subir-comprobante" onclick="enviarComprobanteTransferencia()" style="background: linear-gradient(135deg, var(--c-purple) 0%, #3B2474 100%); color: white; border: none; border-radius: 50px; padding: 16px 34px; font-weight: 800; font-size: 16px; font-family: var(--font-headings); cursor: pointer; box-shadow: 0 10px 25px rgba(90, 63, 163, 0.3); transition: 0.25s; display: inline-flex; align-items: center; gap: 10px;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
-                                            <i class="fas fa-cloud-upload-alt"></i> Confirmar y agendar mi sesión
-                                        </button>
-                                    </div>
-
-                                    <p style="font-size: 11.5px; color: #94a3b8; margin: 12px 0 0;">JPG, PNG, WebP o PDF · hasta 8 MB. Nuestro equipo revisa tu pago y te contacta si hay algún detalle.</p>
-
-                                    <!-- WhatsApp queda como enlace secundario durante el rollout -->
-                                    <p style="font-size: 12.5px; color: var(--text-muted); margin: 14px 0 0;">
-                                        ¿Problemas para subirlo?
-                                        <a href="https://wa.me/525521130230?text=Hola%2C%20adjunto%20mi%20comprobante%20de%20pago%20por%20transferencia%20para%20mi%20sesi%C3%B3n" target="_blank" rel="noopener" style="color: #1DA851; font-weight: 700; text-decoration: none;">Envíanos tu comprobante por WhatsApp</a>
-                                    </p>
-                                </div>
-                                {% else %}
-                                <!-- Botón directo a WhatsApp súper resaltado (estado sin el método nuevo) -->
+                                <!-- 4/11/2026 — TRANSFERENCIA SIN AUTO-AGENDA: se eliminó la zona
+                                     de subida de comprobante (antes agenda automáticamente). Ahora
+                                     solo queda el botón de WhatsApp con los datos de la cita
+                                     precargados; la sesión la confirma el staff manualmente. -->
+                                <!-- Botón directo a WhatsApp súper resaltado -->
                                 <div style="margin-top: 30px;">
-                                    <a href="https://wa.me/525521130230?text=Hola%2C%20adjunto%20mi%20comprobante%20de%20pago%20por%20transferencia%20para%20mi%20sesi%C3%B3n" target="_blank" rel="noopener" style="display: inline-flex; align-items: center; gap: 12px; background: #25D366; color: white; padding: 16px 32px; border-radius: 50px; text-decoration: none; font-weight: 800; font-size: 17px; font-family: var(--font-headings); box-shadow: 0 10px 25px rgba(37, 211, 102, 0.3); transition: 0.3s;" onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 15px 30px rgba(37, 211, 102, 0.4)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 10px 25px rgba(37, 211, 102, 0.3)';">
+                                    <a id="btn-whatsapp-transferencia" href="https://wa.me/525521130230?text=Hola%2C%20adjunto%20mi%20comprobante%20de%20pago%20por%20transferencia%20para%20mi%20sesi%C3%B3n" onclick="return prepararWhatsAppTransferencia(this);" target="_blank" rel="noopener" style="display: inline-flex; align-items: center; gap: 12px; background: #25D366; color: white; padding: 16px 32px; border-radius: 50px; text-decoration: none; font-weight: 800; font-size: 17px; font-family: var(--font-headings); box-shadow: 0 10px 25px rgba(37, 211, 102, 0.3); transition: 0.3s;" onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 15px 30px rgba(37, 211, 102, 0.4)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 10px 25px rgba(37, 211, 102, 0.3)';">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16">
                                             <path d="M13.601 2.326A7.854 7.854 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c-.003 1.396.366 2.76 1.057 3.965L0 16l4.204-1.102a7.933 7.933 0 0 0 3.79.965h.004c4.368 0 7.926-3.558 7.93-7.93A7.898 7.898 0 0 0 13.6 2.326zM7.994 14.521a6.573 6.573 0 0 1-3.356-.92l-.24-.144-2.494.654.666-2.433-.156-.251a6.56 6.56 0 0 1-1.007-3.505c0-3.626 2.957-6.584 6.591-6.584a6.56 6.56 0 0 1 4.66 1.931 6.557 6.557 0 0 1 1.928 4.66c-.004 3.639-2.961 6.592-6.592 6.592zm3.615-4.934c-.197-.099-1.17-.578-1.353-.646-.182-.065-.315-.099-.445.099-.133.197-.513.646-.627.775-.114.133-.232.148-.43.05-.197-.1-.836-.308-1.592-.985-.59-.525-.985-1.175-1.103-1.372-.114-.198-.011-.304.088-.403.087-.088.197-.232.296-.346.1-.114.133-.198.198-.33.065-.134.034-.248-.015-.347-.05-.099-.445-1.076-.612-1.47-.16-.389-.323-.335-.445-.34-.114-.007-.247-.007-.38-.007a.729.729 0 0 0-.529.247c-.182.198-.691.677-.691 1.654 0 .977.71 1.916.81 2.049.098.133 1.394 2.132 3.383 2.992.47.205.84.326 1.129.418.475.152.904.129 1.246.08.38-.058 1.171-.48 1.338-.943.164-.464.164-.86.114-.943-.049-.084-.182-.133-.38-.232z"/>
                                         </svg>
                                         Enviar Comprobante
                                     </a>
                                 </div>
-                                {% endif %}
                             </div>
                             {% endif %}
                         </div> <!-- Fin #seccion-metodos-pago -->
@@ -1470,7 +1397,8 @@ function mostrarErrorCita(mensaje, opts) {
         <i class="fas fa-check-circle" style="font-size: 65px; color: var(--c-teal); margin-bottom: 20px;"></i>
         <h2 style="font-family: var(--font-headings); font-size: 2.2rem; color: var(--text-main); margin-bottom: 10px;">¡Todo listo!</h2>
         <p id="texto-exito-dinamico" style="font-size: 16px; color: var(--text-muted); margin-bottom: 30px;">Tu sesión ha sido confirmada y agendada con éxito en tu panel.</p>
-        <!-- 3/11/2026: botón de ingreso (visible para la cita agendada con comprobante de transferencia) -->
+        <!-- Botón de ingreso a la consulta (oculto por defecto; el flujo que lo
+             mostraba —agendar subiendo comprobante— se eliminó el 4/11/2026) -->
         <a id="btn-ingresar-sesion-exito" href="#" style="display: none; width: 100%; box-sizing: border-box; margin-bottom: 12px; background: linear-gradient(135deg, var(--c-teal) 0%, #168a8a 100%); color: white; padding: 14px 20px; border-radius: 14px; font-weight: 800; font-size: 14px; text-decoration: none; font-family: var(--font-headings); box-shadow: 0 10px 26px rgba(37,184,184,0.35);">
             <i class="fas fa-video" style="margin-right: 8px;"></i> INGRESAR A MI CONSULTA ONLINE
         </a>
@@ -2036,29 +1964,6 @@ function confirmarCitaTectum() {
     guardarCitaSinPago('CONVENIO_TECTUM_INHOUSE');
 }
 
-// 4/11/2026 — Botón disfrazado "PAGAR 10 SESIONES": salta la pasarela (PayPal /
-// transferencia) y confirma la cita al instante. El backend exige una referencia
-// en `paypal_order_id` salvo convenio TECTUM, así que mandamos el marcador
-// PREPAGO_10_SESIONES: queda en el log del servidor (grep PREPAGO_10_SESIONES)
-// para auditar todas las citas agendadas por este atajo. El segundo argumento
-// (bypassManual) solo evita el aviso "tu pago ya se hizo" si el guardado falla,
-// porque aquí nunca hubo cobro.
-function pagarDiezSesiones() {
-    if (!window.tieneConsentimiento) {
-        abrirModalConsentimiento();
-        return;
-    }
-    if (!window.fechaSeleccionada || !window.horaSeleccionada) {
-        alert("Por favor, selecciona primero una fecha y un horario disponible en el calendario.");
-        return;
-    }
-    if (!slotCumpleAnticipacion(window.fechaSeleccionada, window.horaSeleccionada)) {
-        mostrarToast('Ese horario ya no cumple con las 2 horas de anticipación. Elige otro.', 'error');
-        return;
-    }
-    guardarCitaSinPago('PREPAGO_10_SESIONES', true);
-}
-
 function cambiarIntegrantesFamilia(delta) {
     const min = PRECIOS_CONFIG.min_integrantes_familiar || 2;
     window.integrantesFamilia = Math.max(min, (window.integrantesFamilia || min) + delta);
@@ -2261,13 +2166,11 @@ function refrescarDisponibilidadPorTipo(tipo, modalidad) {
         .catch(() => { carousel.style.opacity = '1'; });
 }
 
-function guardarCitaSinPago(pagoRef, bypassManual) {
+function guardarCitaSinPago(pagoRef) {
     // pagoRef: si viene de un pago de PayPal ya capturado, es el ID de la orden.
     // Si algo falla de aquí en adelante, el pago YA se hizo, así que el error
     // debe avisarle al usuario que NO pague otra vez y que escriba por WhatsApp.
-    // bypassManual (4/11/2026): true cuando no hubo cobro real (botón "PAGAR 10
-    // SESIONES"); en ese caso el error NO debe decirle que ya pagó.
-    const huboPago = !!pagoRef && !bypassManual;
+    const huboPago = !!pagoRef;
 
     // Mostrar loading
     document.getElementById('step-2-payment').style.display = 'none';
@@ -2350,197 +2253,52 @@ function guardarCitaSinPago(pagoRef, bypassManual) {
 
 
 
-var comprobanteSeleccionado = null;
-
 // ============================================================
-// 3/11/2026 — TRANSFERENCIA CON COMPROBANTE (reserva automática)
-// Endpoint: /api/subir-comprobante-transferencia/ (flag ConfigTransferencia)
+// 4/11/2026 — TRANSFERENCIA SIN AUTO-AGENDA (reemplaza a
+// enviarComprobanteTransferencia, eliminada): el botón de WhatsApp ya no
+// manda un mensaje genérico, sino uno armado en el momento con los datos de
+// la cita elegida. NADA se guarda en la BD aquí: la sesión la confirma el
+// staff manualmente después de revisar el comprobante.
 // ============================================================
-function mostrarErrorComprobante(mensaje) {
-    const div = document.getElementById('error-comprobante');
-    if (!div) return;
-    div.innerText = mensaje;
-    div.style.display = 'block';
-    div.scrollIntoView({ behavior: 'smooth', block: 'center' });
-}
-
-function limpiarErrorComprobante() {
-    const div = document.getElementById('error-comprobante');
-    if (div) div.style.display = 'none';
-}
-
-function manejarSeleccionComprobante(input) {
-    const archivo = input.files && input.files[0];
-    if (!archivo) return;
-
-    // Doble de la validación del backend (el backend revalida siempre)
-    const permitidos = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
-    if (archivo.size > 8 * 1024 * 1024) {
-        manejarSinComprobante(input, 'La imagen supera los 8 MB. Intenta con una captura más ligera.');
-        return;
-    }
-    if (archivo.type && !permitidos.includes(archivo.type)) {
-        manejarSinComprobante(input, 'Formato no soportado. Sube una imagen (JPG, PNG o WebP) o un PDF.');
-        return;
-    }
-
-    limpiarErrorComprobante();
-    comprobanteSeleccionado = archivo;
-
-    // Preview: imagen en miniatura o icono PDF
-    const preview = document.getElementById('preview-comprobante');
-    const img = document.getElementById('preview-comprobante-img');
-    const pdfIcon = document.getElementById('preview-comprobante-pdf');
-    const nombre = document.getElementById('preview-comprobante-nombre');
-    const label = document.getElementById('btn-elegir-archivo');
-
-    if (nombre) nombre.innerText = archivo.name;
-    if (preview) preview.style.display = 'flex';
-    if (label) label.style.display = 'none';
-
-    if (archivo.type === 'application/pdf') {
-        if (img) img.style.display = 'none';
-        if (pdfIcon) pdfIcon.style.display = 'inline-block';
-    } else {
-        if (pdfIcon) pdfIcon.style.display = 'none';
-        if (img) {
-            const lector = new FileReader();
-            lector.onload = function (e) {
-                img.src = e.target.result;
-                img.style.display = 'inline-block';
-            };
-            lector.readAsDataURL(archivo);
-        }
-    }
-}
-
-function manejarSinComprobante(input, mensaje) {
-    input.value = '';
-    comprobanteSeleccionado = null;
-    mostrarErrorComprobante(mensaje);
-}
-
-function cambiarComprobante() {
-    const input = document.getElementById('input-comprobante');
-    if (input) input.click();
-}
-
-function enviarComprobanteTransferencia() {
-    if (!comprobanteSeleccionado) {
-        mostrarErrorComprobante('Primero sube la foto de tu comprobante.');
-        return;
-    }
-
-    const btn = document.getElementById('btn-subir-comprobante');
-    const btnEtiquetaOriginal = btn ? btn.innerHTML : '';
-    if (btn) {
-        btn.disabled = true;
-        btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Agendando tu sesión...';
-    }
-
-    const quedarseComprobante = function () {
-        if (btn) {
-            btn.disabled = false;
-            btn.innerHTML = btnEtiquetaOriginal;
-        }
+function prepararWhatsAppTransferencia(el) {
+    const SERVICIOS = {
+        individual: 'Terapia Individual',
+        pareja: 'Terapia de Pareja',
+        familiar: 'Terapia Familiar' + (window.integrantesFamilia ? ' (' + window.integrantesFamilia + ' integrantes)' : '')
     };
 
-    // POST idéntico en estructura al guardado normal: fecha/hora/animo + tipo de servicio.
-    // La respuesta 'success' muestra el modal de éxito con el ingreso a la consulta.
-    const enviar = function (formData) {
-        // Una cita nueva puede haberse creado con el mismo intento fallido anterior:
-        // el backend garantiza única asignación por antirace, así que reintentos son seguros.
-        fetch("{% url 'subir_comprobante_transferencia' %}", {
-            method: 'POST',
-            headers: { 'X-CSRFToken': getCookie('csrftoken') },
-            body: formData
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.status === 'success') {
-                const btnMeet = document.getElementById('btn-ingresar-sesion-exito');
-                if (btnMeet && data.formulario_previo) {
-                    btnMeet.href = data.formulario_previo;
-                    btnMeet.style.display = 'flex';
-                    btnMeet.style.width = '100%';
-                }
-                const texto = document.getElementById('texto-exito-dinamico');
-                if (texto) texto.innerText = 'Recibimos tu comprobante y confirmamos tu sesión. Ya está agendada en tu panel.';
-                const metodos = document.getElementById('step-2-payment');
-                if (metodos) metodos.style.display = 'none';
-                document.getElementById('alerta-exito-cita').style.display = 'flex';
-            } else {
-                mostrarErrorComprobante(data.message || 'No se pudo procesar tu comprobante.');
-                quedarseComprobante();
-            }
-        })
-        .catch(() => {
-            mostrarErrorComprobante('Error de conexión. No se guardó nada: espera un momento e intenta de nuevo.');
-            quedarseComprobante();
-        });
-    };
+    const partes = [];
+    partes.push('Hola, quiero pagar por transferencia mi sesión en Espacio HOPE.');
+    partes.push('Servicio: ' + (SERVICIOS[window.tipoServicioAgendado] || SERVICIOS.individual) + '.');
+    partes.push('Modalidad: ' + (window.modalidadSeleccionada || 'En línea') + '.');
 
-    // Comprimir la imagen (máx 1200px, JPEG 75%) para que una foto de cámara
-    // no suba 6-8 MB en datos móviles. PDFs vuelan tal cual.
-    if (comprobanteSeleccionado.type && comprobanteSeleccionado.type !== 'application/pdf') {
-        const lector = new FileReader();
-        lector.onload = function (e) {
-            const imagen = new Image();
-            imagen.onload = function () {
-                try {
-                    const MAXLADO = 1200;
-                    const escala = Math.min(1, MAXLADO / Math.max(imagen.width, imagen.height));
-                    const canvas = document.createElement('canvas');
-                    canvas.width = Math.round(imagen.width * escala);
-                    canvas.height = Math.round(imagen.height * escala);
-                    canvas.getContext('2d').drawImage(imagen, 0, 0, canvas.width, canvas.height);
-                    canvas.toBlob(function (blob) {
-                        const formData = new FormData();
-                        formData.append('fecha', window.fechaSeleccionada);
-                        formData.append('hora', window.horaSeleccionada);
-                        formData.append('animo', window.animoSeleccionado || 'No especificó');
-                        formData.append('tipo_servicio', window.tipoServicioAgendado);
-                        if (window.tipoServicioAgendado === 'familiar') {
-                            formData.append('integrantes_familia', window.integrantesFamilia);
-                        }
-                        formData.append('comprobante', blob, 'comprobante.jpg');
-                        enviar(formData);
-                    }, 'image/jpeg', 0.75);
-                } catch (err) {
-                    console.warn('Compresión fallida, enviamos el original.', err);
-                    const formData = new FormData();
-                    formData.append('fecha', window.fechaSeleccionada);
-                    formData.append('hora', window.horaSeleccionada);
-                    formData.append('animo', window.animoSeleccionado || 'No especificó');
-                    formData.append('tipo_servicio', window.tipoServicioAgendado);
-                    formData.append('comprobante', comprobanteSeleccionado);
-                    enviar(formData);
-                }
-            };
-            imagen.onerror = function () {
-                const formData = new FormData();
-                formData.append('fecha', window.fechaSeleccionada);
-                formData.append('hora', window.horaSeleccionada);
-                formData.append('animo', window.animoSeleccionado || 'No especificó');
-                formData.append('tipo_servicio', window.tipoServicioAgendado);
-                formData.append('comprobante', comprobanteSeleccionado);
-                enviar(formData);
-            };
-            imagen.src = e.target.result;
-        };
-        lector.readAsDataURL(comprobanteSeleccionado);
+    if (window.fechaSeleccionada && window.horaSeleccionada) {
+        const p = window.fechaSeleccionada.split('-');
+        const f = new Date(Number(p[0]), Number(p[1]) - 1, Number(p[2]));
+        const fechaTxt = f.toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+
+        const hm = window.horaSeleccionada.split(':');
+        const hh = parseInt(hm[0], 10);
+        const mm = hm[1] || '00';
+        const ampm = hh >= 12 ? 'PM' : 'AM';
+        const h12 = ((hh + 11) % 12) + 1;
+
+        partes.push('Fecha: ' + fechaTxt + '.');
+        partes.push('Hora: ' + h12 + ':' + mm + ' ' + ampm + '.');
     } else {
-        const formData = new FormData();
-        formData.append('fecha', window.fechaSeleccionada);
-        formData.append('hora', window.horaSeleccionada);
-        formData.append('animo', window.animoSeleccionado || 'No especificó');
-        formData.append('tipo_servicio', window.tipoServicioAgendado);
-        if (window.tipoServicioAgendado === 'familiar') {
-            formData.append('integrantes_familia', window.integrantesFamilia);
-        }
-        formData.append('comprobante', comprobanteSeleccionado);
-        enviar(formData);
+        partes.push('Fecha y hora: por confirmar (aún no elijo horario).');
     }
+
+    const correo = "{{ request.user.email|default:''|escapejs }}";
+    if (correo) {
+        partes.push('Mi correo: ' + correo + '.');
+    }
+    partes.push('Adjunto mi comprobante de pago.');
+
+    if (el) {
+        el.href = 'https://wa.me/' + (window.WHATSAPP_SOPORTE || '525521130230') + '?text=' + encodeURIComponent(partes.join(' '));
+    }
+    return true; // deja que el <a> abra WhatsApp normalmente
 }
 
 // Variable global para guardar qué eligió el usuario
