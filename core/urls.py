@@ -1,6 +1,10 @@
 from django.urls import path
 from . import views
 from .reportes import reporte_crecimiento_sesiones_view
+from .panel_bienestar_tectum import (
+    panel_bienestar_tectum_view,
+    panel_bienestar_tectum_sentimiento_view,
+)
 
 
 urlpatterns = [
@@ -215,5 +219,10 @@ urlpatterns = [
     # header X-CSRFToken; el audio queda archivado en `GrabacionSesion`
     # (tabla hija de Citas, solo para citas 'Presencial').
     path('api/guardar-grabacion-sesion/<int:cita_id>/', views.api_guardar_grabacion_sesion, name='api_guardar_grabacion_sesion'),
+
+    # Panel TECTUM de bienestar emocional (5/11/2026). Solo superusuario.
+    # No modifica vistas existentes: la lectura vive en core/panel_bienestar_tectum.py.
+    path('panel-admin/tectum-bienestar/', panel_bienestar_tectum_view, name='panel_bienestar_tectum'),
+    path('panel-admin/tectum-bienestar/sentimiento/', panel_bienestar_tectum_sentimiento_view, name='panel_bienestar_tectum_sentimiento'),
 ]
 
