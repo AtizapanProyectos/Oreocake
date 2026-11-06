@@ -1319,6 +1319,18 @@ class LogEnvioReporteIPP(models.Model):
         return f"[{self.fecha.strftime('%d/%m/%Y %H:%M')}] Cita #{self.cita_id} · {self.accion} · {self.resultado}"
 
 
+class EstadoFlujoSesion(models.Model):
+    """Resultados intermedios privados del panel manual; nunca se publican al paciente."""
+
+    cita = models.OneToOneField(Cita, on_delete=models.CASCADE, related_name='flujo_manual')
+    adjuntos = models.JSONField(default=list, blank=True)
+    texto_notas = models.TextField(blank=True)
+    datos_clinicos = models.JSONField(default=dict, blank=True)
+    fuente = models.CharField(max_length=30, blank=True)
+    fechas = models.JSONField(default=dict, blank=True)
+    actualizado = models.DateTimeField(auto_now=True)
+
+
 class LogAutomatizacionNotas(models.Model):
     """Bitácora detallada del flujo automático de notas clínicas (28/10/2026).
 
@@ -1330,9 +1342,11 @@ class LogAutomatizacionNotas(models.Model):
     """
 
     ETAPA_CHOICES = [
+        ('meet', 'Verificación de Google Meet'),
         ('lectura', 'Lectura de notas (Google Meet)'),
         ('ia', 'Procesamiento IA (Groq)'),
         ('escritura', 'Escritura de nota clínica'),
+        ('ipp', 'Verificación del IPP de la sesión'),
         ('reporte', 'Generación de reporte'),
         ('correo', 'Envío de correo'),
         ('completo', 'Sincronización completa'),

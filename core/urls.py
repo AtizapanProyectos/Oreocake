@@ -1,5 +1,6 @@
 from django.urls import path
 from . import views
+from . import flujo_clinico
 from .reportes import reporte_crecimiento_sesiones_view
 from .panel_bienestar_tectum import (
     panel_bienestar_tectum_view,
@@ -122,8 +123,9 @@ urlpatterns = [
     path('panel-admin/api/reintentar-envio-ipp/<int:cita_id>/', views.api_reintentar_envio_ipp, name='api_reintentar_envio_ipp'),
 
     # URLs para el Panel de Monitoreo de Automatización de Notas Clínicas (28/10/2026)
-    path('panel-admin/automatizacion-notas/', views.panel_admin_automatizacion_notas, name='panel_admin_automatizacion_notas'),
-    path('panel-admin/api/reintento-automatizacion/<int:cita_id>/', views.api_reintento_automatizacion, name='api_reintento_automatizacion'),
+    path('panel-admin/automatizacion-notas/', flujo_clinico.panel, name='panel_admin_automatizacion_notas'),
+    path('panel-admin/api/reintento-automatizacion/<int:cita_id>/', flujo_clinico.reintento, name='api_reintento_automatizacion'),
+    path('panel-admin/api/lote-automatizacion/', flujo_clinico.preparar_lote, name='api_lote_automatizacion'),
 
     # 🎫 PASE DE ACCESO PRESENCIAL (31/10/2026)
     # Descarga protegida (solo el paciente dueño o admin) del pase en PDF.
