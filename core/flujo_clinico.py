@@ -8,7 +8,7 @@ from functools import wraps
 from django.contrib.auth.models import User
 from django.core.paginator import Paginator
 from django.db import transaction
-from django.db.models import Exists, OuterRef, Q, Prefetch
+from django.db.models import Q, Prefetch
 from django.http import JsonResponse
 from django.shortcuts import render
 from django.urls import reverse
@@ -16,7 +16,7 @@ from django.utils import timezone
 from django.views.decorators.http import require_POST
 
 from .models import (Cita, EstadoFlujoSesion, HistorialClinico,
-                     LogAutomatizacionNotas, ReporteClinicoPDF)
+                     LogAutomatizacionNotas)
 
 ETAPAS = [('meet', 'Google Meet', 'video'), ('lectura', 'Notas', 'file-lines'),
           ('ia', 'Groq', 'arrows-rotate'), ('escritura', 'Expediente', 'folder-open'),
@@ -300,17 +300,6 @@ def _leer_documentos(adjuntos):
     return '\n\n'.join(partes)
 
 
-def _anterior_pendiente(cita):
-    anteriores = Cita.objects.filter(paciente_id=cita.paciente_id, estado__in=['Confirmada', 'Completada']).filter(
-        Q(fecha__lt=cita.fecha) | Q(fecha=cita.fecha, hora__lt=cita.hora) |
-        Q(fecha=cita.fecha, hora=cita.hora, pk__lt=cita.pk))
-    enviados = ReporteClinicoPDF.objects.filter(cita_id=OuterRef('pk'), correo_enviado=True)
-    return anteriores.annotate(
-        pac_ok=Exists(enviados.filter(tipo_destinatario='paciente')),
-        psi_ok=Exists(enviados.filter(tipo_destinatario='psicologo')),
-    ).exclude(pac_ok=True, psi_ok=True).order_by('fecha', 'hora', 'pk').first()
-
-
 def _prerrequisitos(cita, tipo):
     if cita.estado not in ('Confirmada', 'Completada') or timezone.now() < _inicio(cita) + timedelta(hours=2):
         raise PasoBloqueado('La sesión debe ser confirmada/completada y cumplir 2 horas desde su inicio.')
@@ -322,9 +311,6 @@ def _prerrequisitos(cita, tipo):
             raise PasoBloqueado('Falta la nota clínica de esta sesión.')
         if not _ipp(cita):
             raise PasoBloqueado('Falta el IPP correspondiente a esta sesión.')
-        anterior = _anterior_pendiente(cita)
-        if anterior:
-            raise PasoBloqueado(f'Primero complete la cita #{anterior.pk} del {anterior.fecha:%d/%m/%Y} para este paciente.', 'conflicto')
 
 
 def ejecutar_paso(cita, tipo, usuario):
