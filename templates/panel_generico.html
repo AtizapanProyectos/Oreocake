@@ -2202,10 +2202,10 @@ function guardarCitaSinPago(pagoRef, acciones) {
     document.getElementById('step-3-loading').style.display = 'block';
 
     try {
-        const formData = huboPago ? new FormData() : datosCitaPayPal();
-        if (huboPago) formData.append('orden', pagoRef);
+        const formData = datosCitaPayPal();
+        if (huboPago) formData.append('paypal_order_id', pagoRef);
 
-        return fetch(huboPago ? "{% url 'capturar_orden_cita_paypal' %}" : "{% url 'guardar_cita' %}", {
+        return fetch("{% url 'guardar_cita' %}", {
             method: 'POST',
             headers: {
                 'X-CSRFToken': getCookie('csrftoken')
@@ -2606,7 +2606,6 @@ function prepararWhatsAppTransferencia(el) {
 // --- PAYPAL SMART BUTTONS ---
 document.addEventListener("DOMContentLoaded", function () {
     if (document.getElementById('paypal-button-container')) {
-        let errorReserva = null;
         paypal.Buttons({
             
             // 1. Validaciones ANTES de abrir la ventana de PayPal
@@ -2627,47 +2626,24 @@ document.addEventListener("DOMContentLoaded", function () {
                 return actions.resolve();
             },
 
-            async createOrder() {
-                errorReserva = null;
-                const respuesta = await fetch("{% url 'crear_orden_cita_paypal' %}", {
-                    method: 'POST', body: datosCitaPayPal(),
-                    headers: {'X-CSRFToken': getCookie('csrftoken')}
+            createOrder(data, actions) {
+                const { total } = calcularPrecioFrontend(window.tipoServicioAgendado || 'individual', window.integrantesFamilia);
+                return actions.order.create({
+                    purchase_units: [{amount: {currency_code: 'MXN', value: total.toFixed(2)}}]
                 });
-                const datos = await respuesta.json().catch(() => null);
-                if (!respuesta.ok || !datos?.orden) {
-                    const mensaje = typeof datos?.message === 'string' && datos.message
-                        ? datos.message
-                        : respuesta.status === 403
-                            ? 'Recarga el panel e inicia sesión de nuevo para continuar.'
-                            : 'No pudimos iniciar la reserva. Intenta de nuevo.';
-                    console.warn('No se creó la orden de PayPal. HTTP', respuesta.status);
-                    errorReserva = mensaje;
-                    throw new Error(mensaje);
+            },
+
+            async onApprove(data, actions) {
+                const pago = await actions.order.capture();
+                if (pago.status !== 'COMPLETED') {
+                    mostrarErrorCita('PayPal todavía no confirmó el pago. Revisa su estado antes de volver a pagar.');
+                    return;
                 }
-                return datos.orden;
-            },
-
-            onApprove(data, actions) {
-                return guardarCitaSinPago(data.orderID, actions);
-            },
-
-            // 4. SI CANCELA LA VENTANITA
-            onCancel(data) {
-                if (!data.orderID) return;
-                const body = new FormData();
-                body.append('orden', data.orderID);
-                return fetch("{% url 'cancelar_reserva_paypal' %}", {
-                    method: 'POST', body, headers: {'X-CSRFToken': getCookie('csrftoken')}
-                });
+                return guardarCitaSinPago(pago.id || data.orderID);
             },
 
             // 5. SI ALGO EXPLOTA EN PAYPAL (antes de llegar a capturar el pago)
             onError: function (err) {
-                if (errorReserva) {
-                    mostrarErrorCita(errorReserva);
-                    errorReserva = null;
-                    return;
-                }
                 console.error("Error PayPal:", err);
                 mostrarErrorCita('Hubo un error de conexión con tu banco o PayPal. Si el cargo sí se realizó en tu cuenta, no vuelvas a pagar y contáctanos por WhatsApp.', {
                     pagoConfirmado: false

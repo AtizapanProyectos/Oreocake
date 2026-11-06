@@ -1757,7 +1757,13 @@ def _guardar_cita_paciente(request, reservar_pago=False):
             return JsonResponse({
                 'status': 'error', 'message': 'Verifica tu correo del padrón para activar la cobertura.',
             }, status=403)
-        if es_tectum_cita == reservar_pago:
+        # Compatibilidad temporal: el panel HOPE captura en el navegador.
+        referencia_paypal = (request.POST.get('paypal_order_id') or '').strip()
+        pago_legacy_hope = (
+            not reservar_pago and convenio == 'hope' and 1 <= len(referencia_paypal) <= 64
+            and referencia_paypal.isascii() and referencia_paypal.isalnum()
+        )
+        if es_tectum_cita == reservar_pago and not pago_legacy_hope:
             return JsonResponse({
                 'status': 'error',
                 'message': 'Actualiza tu panel para continuar con el método de confirmación de tu convenio.',
