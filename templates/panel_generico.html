@@ -68,7 +68,11 @@ function mostrarErrorCita(mensaje, opts) {
             + 'No te preocupes, tu dinero está bien — solo hubo un problema técnico al agendar la cita automáticamente. '
             + '<strong>Por favor, NO vuelvas a pagar.</strong> Escríbenos por WhatsApp con tu comprobante y te la agendamos manualmente en minutos.';
     }
-    cont.innerHTML = html;
+    if (opts.pagoConfirmado) {
+        cont.innerHTML = html;
+    } else {
+        cont.textContent = mensaje;
+    }
 
     // Insertamos (o reutilizamos) el botón de WhatsApp dentro del modal de error
     let waBtn = document.getElementById('btn-whatsapp-error-cita');
@@ -2602,6 +2606,7 @@ function prepararWhatsAppTransferencia(el) {
 // --- PAYPAL SMART BUTTONS ---
 document.addEventListener("DOMContentLoaded", function () {
     if (document.getElementById('paypal-button-container')) {
+        let errorReserva = null;
         paypal.Buttons({
             
             // 1. Validaciones ANTES de abrir la ventana de PayPal
@@ -2623,14 +2628,21 @@ document.addEventListener("DOMContentLoaded", function () {
             },
 
             async createOrder() {
+                errorReserva = null;
                 const respuesta = await fetch("{% url 'crear_orden_cita_paypal' %}", {
                     method: 'POST', body: datosCitaPayPal(),
                     headers: {'X-CSRFToken': getCookie('csrftoken')}
                 });
-                const datos = await respuesta.json();
-                if (!respuesta.ok || !datos.orden) {
-                    mostrarErrorCita(datos.message || 'No pudimos reservar el horario.');
-                    throw new Error('Reserva rechazada');
+                const datos = await respuesta.json().catch(() => null);
+                if (!respuesta.ok || !datos?.orden) {
+                    const mensaje = typeof datos?.message === 'string' && datos.message
+                        ? datos.message
+                        : respuesta.status === 403
+                            ? 'Recarga el panel e inicia sesión de nuevo para continuar.'
+                            : 'No pudimos iniciar la reserva. Intenta de nuevo.';
+                    console.warn('No se creó la orden de PayPal. HTTP', respuesta.status);
+                    errorReserva = mensaje;
+                    throw new Error(mensaje);
                 }
                 return datos.orden;
             },
@@ -2651,6 +2663,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
             // 5. SI ALGO EXPLOTA EN PAYPAL (antes de llegar a capturar el pago)
             onError: function (err) {
+                if (errorReserva) {
+                    mostrarErrorCita(errorReserva);
+                    errorReserva = null;
+                    return;
+                }
                 console.error("Error PayPal:", err);
                 mostrarErrorCita('Hubo un error de conexión con tu banco o PayPal. Si el cargo sí se realizó en tu cuenta, no vuelvas a pagar y contáctanos por WhatsApp.', {
                     pagoConfirmado: false

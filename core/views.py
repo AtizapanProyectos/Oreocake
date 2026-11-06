@@ -1984,7 +1984,9 @@ def _liberar_reservas_vencidas(**horario):
 def crear_orden_cita_paypal(request):
     from .pagos_paypal import ErrorPayPal, crear_orden
 
-    if not settings.PAYPAL_CLIENT_SECRET or settings.PAYPAL_CLIENT_ID == 'sb':
+    if (not settings.PAYPAL_CLIENT_SECRET or not settings.PAYPAL_CLIENT_ID
+            or settings.PAYPAL_CLIENT_ID == 'sb' or settings.PAYPAL_MODE not in ('live', 'sandbox')):
+        logging.getLogger(__name__).error('PayPal: configuración incompleta o modo inválido al crear orden.')
         return JsonResponse({'status': 'error', 'message': 'PayPal no está disponible en este momento.'}, status=503)
     try:
         pago = _guardar_cita_paciente(request, reservar_pago=True)
@@ -2000,7 +2002,13 @@ def crear_orden_cita_paypal(request):
             if not pago.orden:
                 pago.orden = crear_orden(pago)
                 pago.save(update_fields=['orden'])
-    except ErrorPayPal:
+    except ErrorPayPal as error:
+        causa = error.__cause__
+        respuesta = getattr(causa, 'response', None)
+        logging.getLogger(__name__).warning(
+            'PayPal: no se pudo crear la orden para la reserva %s (HTTP proveedor: %s).',
+            pago.pk, getattr(respuesta, 'status_code', None),
+        )
         return JsonResponse({'status': 'error', 'message': 'No se pudo abrir PayPal. Intenta nuevamente en el mismo horario.'}, status=502)
     return JsonResponse({'status': 'success', 'orden': pago.orden})
 
