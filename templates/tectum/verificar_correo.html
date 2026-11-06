@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+{% block title %}Verifica tu cobertura TECTUM{% endblock %}
+{% block content %}
+<section style="max-width: 36rem; margin: 7rem auto 3rem; padding: 1.5rem;">
+    {% if fuera_padron %}
+    <h1>Tu correo no figura en el padrón In-House</h1>
+    <p>Si tienes otra cuenta registrada en el convenio, inicia sesión con ese correo. También puedes pedir a tu empresa que revise tu acceso.</p>
+    <a href="{% url 'modulo_informativo' %}">Ir a inicio de sesión</a>
+    {% else %}
+    <h1>Activa tu cobertura TECTUM In-House</h1>
+    <p>Confirma que tienes acceso a {{ correo }} para agendar con la cobertura del convenio.</p>
+    <form method="post">
+        {% csrf_token %}
+        <button type="submit">Confirmar mi correo</button>
+    </form>
+    {% endif %}
+</section>
+{% endblock %}

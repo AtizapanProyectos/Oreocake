@@ -151,6 +151,7 @@ STATICFILES_DIRS = [
 # 3. Configuración de Archivos Multimedia (Fotos que suban los usuarios)
 MEDIA_URL = 'media/'
 MEDIA_ROOT = BASE_DIR / 'media'
+GRABACIONES_ROOT = os.environ.get('HOPE_GRABACIONES_ROOT') or BASE_DIR / 'grabaciones_privadas'
 
 
 # ==========================================
@@ -228,3 +229,5 @@ ALLOWED_HOSTS = [
 
 
 PAYPAL_CLIENT_ID = os.environ.get('PAYPAL_CLIENT_ID', 'sb')
+PAYPAL_CLIENT_SECRET = os.environ.get('PAYPAL_CLIENT_SECRET', '')
+PAYPAL_MODE = os.environ.get('PAYPAL_MODE', 'live')

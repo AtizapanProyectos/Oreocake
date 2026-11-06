@@ -482,6 +482,34 @@
                     {% endwith %}
                     {% endif %}
 
+                    {% if sesion.historial.pendiente_revision_audio %}
+                    <p role="status">Bitácora del audio pendiente de revisión. Revisa y guarda la bitácora antes del Check-In.</p>
+                    {% endif %}
+                    {% with grabacion=sesion.cita.grabacion_sesion %}
+                    {% if grabacion %}
+                    <details>
+                        <summary>Grabación presencial · {{ grabacion.get_estado_display }}</summary>
+                        <p><a href="{% url 'grabacion_sesion' sesion.cita.id %}">Abrir grabación y ver progreso</a></p>
+                        {% if grabacion.transcripcion %}
+                        <details>
+                            <summary>Transcripción del último procesamiento completado</summary>
+                            {{ grabacion.transcripcion|linebreaksbr }}
+                        </details>
+                        <details>
+                            <summary>Notas extraídas del audio</summary>
+                            <dl>
+                                <dt>Cómo llega</dt><dd>{{ grabacion.notas_generadas.como_llega|default:"Sin pasajes identificados"|linebreaksbr }}</dd>
+                                <dt>Notas de la sesión</dt><dd>{{ grabacion.notas_generadas.notas_sesion|linebreaksbr }}</dd>
+                                <dt>Aprendizaje</dt><dd>{{ grabacion.notas_generadas.aprendizaje_paciente|default:"Sin pasajes identificados"|linebreaksbr }}</dd>
+                                <dt>Cómo se va</dt><dd>{{ grabacion.notas_generadas.como_se_va|default:"Sin pasajes identificados"|linebreaksbr }}</dd>
+                                <dt>Recomendaciones</dt><dd>{{ grabacion.notas_generadas.recomendaciones|default:"Sin pasajes identificados"|linebreaksbr }}</dd>
+                            </dl>
+                        </details>
+                        {% endif %}
+                    </details>
+                    {% endif %}
+                    {% endwith %}
+
                 </div>{# /session-body #}
             </div>{# /session-card #}
 
@@ -545,7 +573,7 @@
                     </div>
                     <div class="upload-zona-body" id="uploadZonaBody">
                         <div class="upload-drop-area" id="uploadDropArea">
-                            <input type="file" name="archivo_adjunto" id="archivoNota" accept=".jpg,.jpeg,.png,.webp,.pdf,.doc,.docx" onchange="archivoSeleccionado(event)">
+                            <input type="file" name="archivo_adjunto" id="archivoNota" accept=".jpg,.jpeg,.png,.webp,.pdf,.docx" onchange="archivoSeleccionado(event)">
                             <div class="upload-drop-icon"><i class="fas fa-cloud-arrow-up"></i></div>
                             <div class="upload-drop-title">Arrastra aquí o haz clic para seleccionar</div>
                             <div class="upload-drop-sub">Tus notas escritas a mano o documentos clínicos</div>
@@ -912,6 +940,7 @@
         document.getElementById('vista-wizard').style.display = 'none';
         document.getElementById('vista-muro').style.display = 'block';
         document.getElementById('formBitacoraNueva').reset();
+        limpiarArchivo();
         document.getElementById('wizardCitaId').value = '';
         document.getElementById('wizard-cita-banner').style.display = 'none';
         document.getElementById('wizardHistorialId').value = '';
@@ -1004,7 +1033,8 @@
         mostrarStatus('processing', 'Analizando documento con IA…');
 
         const formData = new FormData();
-        formData.append('archivo', archivoActual);
+        const archivoEnviado = archivoActual;
+        formData.append('archivo', archivoEnviado);
         formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
 
         try {
@@ -1013,6 +1043,7 @@
                 headers: {'X-Requested-With': 'XMLHttpRequest'}
             });
             const rawData = await resp.json();
+            if (archivoActual !== archivoEnviado) return;
             if (rawData.status === 'success') {
                 const jsonIA = rawData.data;
                 if (jsonIA.como_llega) { let d = document.querySelector('[name="como_llega"]'); d.value += (d.value ? '\n\n' : '') + jsonIA.como_llega; }
@@ -1034,6 +1065,7 @@
                 btn.innerHTML = '<i class="fas fa-wand-magic-sparkles"></i> Procesar con IA y extraer texto';
             }
         } catch (err) {
+            if (archivoActual !== archivoEnviado) return;
             console.error(err);
             mostrarStatus('error', 'Error de conexión. Verifica la red e intenta de nuevo.');
             btn.disabled = false;

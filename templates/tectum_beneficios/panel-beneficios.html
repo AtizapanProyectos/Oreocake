@@ -319,7 +319,7 @@ function mostrarErrorCita(mensaje) {
 <div class="dashboard-header">
     <div style="display: flex; justify-content: center; align-items: center; gap: 14px; margin-bottom: 12px; flex-wrap: wrap;">
         <span class="step-tag" style="background: rgba(2, 132, 199, 0.25); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.4); margin: 0;">
-            <i class="fas fa-certificate"></i> Tarifa Preferencial Activa
+            <i class="fas fa-certificate"></i> Convenio TECTUM Beneficios
         </span>
     </div>
 
@@ -327,7 +327,7 @@ function mostrarErrorCita(mensaje) {
         Hola, {{ user.first_name }}
     </h1>
     <p style="font-size: 1.1rem; opacity: 0.9; max-width: 600px; margin: 0 auto; font-weight: 400;">
-        Bienvenido a tu panel de salud mental corporativa. Agenda tus sesiones con tarifa preferencial para ti o tu familia.
+        Bienvenido a tu panel de salud mental corporativa. Agenda tus sesiones para ti o tu familia con los precios que se muestran al agendar.
     </p>
 </div>
 
@@ -611,7 +611,20 @@ function mostrarErrorCita(mensaje) {
          TAB 2: MIS CITAS
          ===================================================================== -->
     <div id="tab-citas" class="tab-content">
+        {% if orden_paypal_pendiente %}
+        <p>
+            Hay un pago pendiente de verificar.
+            <button type="button" onclick="guardarCitaPagada('{{ orden_paypal_pendiente|escapejs }}')">Verificar mi pago</button>
+        </p>
+        {% endif %}
+
+        {% include 'snippets/otras_citas_confirmadas.html' %}
         {% if cita_proxima %}
+            {% if cita_proxima.modalidad == 'Presencial' and cita_proxima.estado == 'Confirmada' %}
+                <a href="{% url 'formulario_previo_meet' cita_proxima.id %}" class="btn-brutal">
+                    <i class="fas fa-clipboard-check"></i> Contestar IPP presencial
+                </a>
+            {% endif %}
         <div class="chic-card" style="margin-bottom: 30px; border-top: 6px solid #0284c7;">
             <div style="text-align: center; margin-bottom: 25px;">
                 <span class="step-tag" style="background: #e0f2fe; color: #0284c7; border: 1px solid #bae6fd;">
@@ -1039,10 +1052,17 @@ function actualizarResumenHorario() {
     }
 }
 
+let revisionDisponibilidad = 0;
 function refrescarDisponibilidad(tipo) {
-    fetch("{% url 'disponibilidad_por_tipo' %}?tipo=" + tipo)
+    const revision = ++revisionDisponibilidad;
+    fechaSeleccionada = null;
+    horaSeleccionada = null;
+    document.getElementById('slotsContainerTectum').replaceChildren();
+    fetch("{% url 'disponibilidad_por_tipo' %}?tipo_sesion=" + encodeURIComponent(tipo))
         .then(r => r.json())
         .then(data => {
+            if (revision !== revisionDisponibilidad) return;
+            if (data.status !== 'success') mostrarErrorCita(data.message || 'No pudimos consultar horarios.');
             if (data.status === 'success') {
                 const carousel = document.getElementById('dateCarouselTectum');
                 const slotsBox = document.getElementById('slotsContainerTectum');
@@ -1086,18 +1106,18 @@ function refrescarDisponibilidad(tipo) {
                         grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:20px;color:var(--text-muted);">Sin horarios este día.</div>';
                     } else {
                         horas.forEach(h => {
-                            const [hh, mm] = h.split(':');
-                            const hNum = parseInt(hh, 10);
-                            const ampm = hNum >= 12 ? 'PM' : 'AM';
-                            const h12 = (hNum % 12 || 12) + ':' + mm + ' ' + ampm;
-
+                            const partes = /^(\d{1,2}):(\d{2})\s+(AM|PM)$/i.exec(h);
+                            if (!partes) return;
+                            const horas24 = Number(partes[1]) % 12 + (partes[3].toUpperCase() === 'PM' ? 12 : 0);
+                            const hora24 = String(horas24).padStart(2, '0') + ':' + partes[2];
+                            const h12 = h;
                             const btnSlot = document.createElement('button');
                             btnSlot.type = 'button';
                             btnSlot.className = 'time-slot-btn';
                             btnSlot.dataset.fecha = diaStr;
-                            btnSlot.dataset.hora = h;
+                            btnSlot.dataset.hora = hora24;
                             btnSlot.innerText = h12;
-                            btnSlot.onclick = function() { seleccionarHora(h, h12, this); };
+                            btnSlot.onclick = function() { seleccionarHora(hora24, h12, this); };
                             grid.appendChild(btnSlot);
                         });
                     }
@@ -1113,6 +1133,9 @@ function refrescarDisponibilidad(tipo) {
 
                 aplicarCandadoHorariosTectum();   // 🔒 quita horarios con menos de 2 h de anticipación
             }
+        })
+        .catch(() => {
+            if (revision === revisionDisponibilidad) mostrarErrorCita('No pudimos consultar horarios. Intenta nuevamente.');
         });
 }
 
@@ -1126,7 +1149,7 @@ function mostrarToast(texto) {
 }
 
 // =========================================================================
-// PASARELAS DE PAGO: PAYPAL SMART BUTTONS & CLIP
+// PASARELAS DE PAGO: PAYPAL SMART BUTTONS
 // =========================================================================
 document.addEventListener("DOMContentLoaded", function () {
     actualizarCostos();
@@ -1145,111 +1168,58 @@ document.addEventListener("DOMContentLoaded", function () {
                 }
                 return actions.resolve();
             },
-            createOrder: function(data, actions) {
-                const { total } = calcularPrecioFrontend(servicioSeleccionado, integrantesFamilia);
-                return actions.order.create({
-                    purchase_units: [{
-                        amount: { value: total.toFixed(2) },
-                        description: "Sesión TECTUM Beneficios - " + servicioSeleccionado
-                    }]
-                });
+            async createOrder() {
+                const datos = new FormData();
+                datos.append('fecha', fechaSeleccionada);
+                datos.append('hora', horaSeleccionada);
+                datos.append('tipo_servicio', servicioSeleccionado);
+                datos.append('animo', document.getElementById('select-animo')?.value || 'No especificó');
+                if (servicioSeleccionado === 'familiar') datos.append('integrantes_familia', integrantesFamilia);
+                datos.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+                const respuesta = await fetch("{% url 'crear_orden_cita_paypal' %}", {method: 'POST', body: datos});
+                const resultado = await respuesta.json();
+                if (!respuesta.ok || !resultado.orden) {
+                    mostrarErrorCita(resultado.message || 'No pudimos reservar el horario.');
+                    throw new Error('Reserva rechazada');
+                }
+                return resultado.orden;
             },
-            onApprove: function(data, actions) {
-                return actions.order.capture().then(function(details) {
-                    guardarCitaPagada(details.id || data.orderID);
-                }).catch(function(err) {
-                    console.error("Error capturando PayPal:", err);
-                    mostrarErrorCita("Hubo un contratiempo al procesar tu pago con PayPal.");
-                });
+            onApprove(data, actions) {
+                return guardarCitaPagada(data.orderID, actions);
+            },
+            onCancel(data) {
+                if (!data.orderID) return;
+                const body = new FormData();
+                body.append('orden', data.orderID);
+                body.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+                return fetch("{% url 'cancelar_reserva_paypal' %}", {method: 'POST', body});
             }
         }).render('#paypal-button-container');
     }
 });
 
-function guardarCitaPagada(orderId) {
+async function guardarCitaPagada(orden, acciones) {
     const overlay = document.getElementById('loadingOverlayHope');
     overlay.style.display = 'flex';
-
-    const formData = new FormData();
-    formData.append('fecha', fechaSeleccionada);
-    formData.append('hora', horaSeleccionada);
-    formData.append('modalidad', 'En línea');
-    formData.append('tipo_servicio', servicioSeleccionado);
-    if (servicioSeleccionado === 'familiar') {
-        formData.append('integrantes_familia', integrantesFamilia);
-    }
-    formData.append('animo', document.getElementById('select-animo') ? document.getElementById('select-animo').value : 'No especificó');
-    formData.append('es_tectum', '0');
-    formData.append('convenio', 'tectumbeneficios');
-    formData.append('paypal_order_id', orderId || 'TECTUM_BENEFICIOS_PAGADO');
-    formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
-
-    fetch("{% url 'guardar_cita' %}", {
-        method: 'POST',
-        headers: { 'X-Requested-With': 'XMLHttpRequest' },
-        body: formData
-    })
-    .then(r => r.json())
-    .then(data => {
-        overlay.style.display = 'none';
-        if (data.status === 'success') {
+    try {
+        const datos = new FormData();
+        datos.append('orden', orden);
+        datos.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+        const respuesta = await fetch("{% url 'capturar_orden_cita_paypal' %}", {method: 'POST', body: datos});
+        const resultado = await respuesta.json();
+        if (resultado.reintentar_metodo && acciones) return acciones.restart();
+        if (resultado.status === 'success') {
             document.getElementById('alerta-exito-cita').style.display = 'flex';
         } else {
-            mostrarErrorCita(data.message || 'No se pudo confirmar la cita.');
+            mostrarErrorCita(resultado.message || 'No pudimos confirmar tu cita.');
         }
-    })
-    .catch(() => {
+    } catch (error) {
+        mostrarErrorCita('No pudimos comprobar tu pago. Contacta a soporte antes de pagar de nuevo. Referencia: ' + orden);
+    } finally {
         overlay.style.display = 'none';
-        mostrarErrorCita('Error de conexión al registrar tu cita.');
-    });
+    }
 }
 
-function iniciarPagoClipBeneficios() {
-    if (!fechaSeleccionada || !horaSeleccionada) {
-        mostrarErrorCita("Por favor, selecciona una fecha y una hora válida antes de pagar.");
-        return;
-    }
-    if (!window.tieneConsentimiento) {
-        abrirModalConsentimiento();
-        return;
-    }
-
-    const overlay = document.getElementById('loadingOverlayHope');
-    overlay.style.display = 'flex';
-
-    const { total } = calcularPrecioFrontend(servicioSeleccionado, integrantesFamilia);
-
-    const fd = new FormData();
-    fd.append('fecha', fechaSeleccionada);
-    fd.append('hora', horaSeleccionada);
-    fd.append('modalidad', 'En línea');
-    fd.append('tipo_servicio', servicioSeleccionado);
-    if (servicioSeleccionado === 'familiar') {
-        fd.append('integrantes_familia', integrantesFamilia);
-    }
-    fd.append('total', total.toFixed(2));
-    fd.append('es_tectum', '0');
-    fd.append('convenio', 'tectumbeneficios');
-    fd.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
-
-    fetch("{% url 'iniciar_pago_clip' %}", { method: 'POST', body: fd })
-        .then(r => r.json())
-        .then(data => {
-            overlay.style.display = 'none';
-            const payUrl = data.payment_url || data.payment_request_url;
-            if (data.status === 'success' && payUrl) {
-                window.location.href = payUrl;
-            } else {
-                mostrarErrorCita(data.message || 'No se pudo iniciar el cobro con Clip.');
-            }
-        })
-        .catch(() => {
-            overlay.style.display = 'none';
-            mostrarErrorCita('Error de conexión con la pasarela.');
-        });
-}
-
-// =========================================================================
 // CANVAS FIRMA DIGITAL Y CONSENTIMIENTO INFORMADO
 // =========================================================================
 let canvasFirma = null;

@@ -311,7 +311,7 @@ def _bitacoras(anio, mes, citas):
     ids = [c.id for c in citas]
     notas = {
         n.cita_id: n
-        for n in HistorialClinico.objects.filter(cita_id__in=ids)
+        for n in HistorialClinico.objects.filter(cita_id__in=ids, pendiente_revision_audio=False)
         if (n.notas_sesion or "").strip()
     }
     # Nombres del periodo para sustituirlos antes de mandar texto a Groq.

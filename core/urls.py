@@ -22,6 +22,11 @@ urlpatterns = [
     path('panel-tectum/', views.panel_generico, name='panel_tectum'),
     path('panel-beneficios/', views.panel_generico, name='panel_beneficios'),
     path('guardar-cita/', views.guardar_cita_ajax, name='guardar_cita'), # <-- AGREGA ESTA LÍNEA
+    path('api/tectum/verificar-correo/', views.enviar_verificacion_tectum, name='enviar_verificacion_tectum'),
+    path('tectum/verificar-correo/<str:token>/', views.verificar_correo_tectum, name='verificar_correo_tectum'),
+    path('api/paypal/citas/orden/', views.crear_orden_cita_paypal, name='crear_orden_cita_paypal'),
+    path('api/paypal/citas/cancelar/', views.cancelar_reserva_paypal, name='cancelar_reserva_paypal'),
+    path('api/paypal/citas/captura/', views.capturar_orden_cita_paypal, name='capturar_orden_cita_paypal'),
     path('disponibilidad-por-tipo/', views.obtener_disponibilidad_por_tipo_ajax, name='disponibilidad_por_tipo'), # NUEVO: filtra por individual/pareja/familiar
     path('calcular-precio-sesion/', views.calcular_precio_sesion_ajax, name='calcular_precio_sesion'), # NUEVO: precio en tiempo real
     path('panel-doctor/', views.panel_doctor, name='panel_doctor'),
@@ -57,9 +62,6 @@ urlpatterns = [
     path('api/chat/historial/<int:usuario_id>/', views.obtener_mensajes_chat, name='obtener_mensajes_chat'),
     path('api/chat/contactos/', views.obtener_contactos_chat, name='obtener_contactos_chat'),
     path('blog/<slug:slug>/', views.detalle_prensa, name='detalle_prensa'),
-    path('iniciar_pago_clip/', views.iniciar_pago_clip, name='iniciar_pago_clip'),
-    path('pago-exitoso/<int:cita_id>/', views.pago_exitoso_clip, name='pago_exitoso_clip'),
-    path('pago-cancelado/<int:cita_id>/', views.pago_cancelado_clip, name='pago_cancelado_clip'),
     path('talleres/', views.talleres_view, name='talleres'),
     path('api/registrar-taller/', views.procesar_registro_taller, name='registrar_taller_ajax'),
     path('reagendar-cita/', views.reagendar_cita_ajax, name='reagendar_cita'),
@@ -203,12 +205,8 @@ urlpatterns = [
     path('recep-59/api/registrar-llegada/', views.api_recepcion_registrar_llegada, name='api_recepcion_registrar_llegada'),
 
     # 💳 3/11/2026 — Pasarela de pagos en recepción (antes de agendar):
-    # tarjeta (Clip, mismo cierre de pago_exitoso_clip) · transferencia con
     # comprobante (reutiliza subir_comprobante_transferencia_ajax) · y las
     # dos utilidades de la recepción para vigilar/liberar citas 'Pendiente'.
-    path('recep-59/api/cita-clip/', views.recep_iniciar_pago_clip_paciente, name='recep_iniciar_pago_clip_paciente'),
-    path('recep-59/api/estado-cita/', views.recep_estado_cita_paciente, name='recep_estado_cita_paciente'),
-    path('recep-59/api/liberar-cita/', views.recep_liberar_cita_pendiente, name='recep_liberar_cita_pendiente'),
 
     # 3/11/2026 — Transferencia con comprobante (reserva automática del wizard HOPE)
     # POST con header X-CSRFToken; controlado por el flag ConfigTransferencia (admin Django)
@@ -218,6 +216,8 @@ urlpatterns = [
     # e INDEPENDIENTE del IPP. POST con FormData (audio + duracion_segundos) y
     # header X-CSRFToken; el audio queda archivado en `GrabacionSesion`
     # (tabla hija de Citas, solo para citas 'Presencial').
+    path('api/estado-grabacion-sesion/<int:cita_id>/', views.estado_grabacion_sesion, name='estado_grabacion_sesion'),
+    path('audio-grabacion-sesion/<int:cita_id>/', views.audio_grabacion_sesion, name='audio_grabacion_sesion'),
     path('api/guardar-grabacion-sesion/<int:cita_id>/', views.api_guardar_grabacion_sesion, name='api_guardar_grabacion_sesion'),
 
     # Panel TECTUM de bienestar emocional (5/11/2026). Solo superusuario.

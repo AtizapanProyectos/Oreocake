@@ -819,26 +819,6 @@
       }).render('#paypal-button-container-donacion');
     }
 
-    document.getElementById('btn-donar-clip')?.addEventListener('click', function () {
-      let monto = document.getElementById('donAmount').value;
-      if (!monto || monto < 50) { alert('El donativo mínimo es de $50 MXN. ¡Gracias por tu apoyo!'); return; }
-      let formData = new URLSearchParams();
-      formData.append('monto', monto);
-      formData.append('tipo_servicio', 'donativo');
-      formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
-      const originalClipBtn = this.innerHTML;
-      this.innerHTML = 'Redirigiendo...'; this.disabled = true;
-      fetch("{% url 'iniciar_pago_clip' %}", {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-Requested-With': 'XMLHttpRequest' },
-        body: formData.toString()
-      })
-        .then(response => response.json())
-        .then(data => {
-          if (data.status === 'success' && data.payment_url) { window.location.href = data.payment_url; }
-          else { alert('Error al procesar el donativo. Intenta de nuevo.'); this.innerHTML = originalClipBtn; this.disabled = false; }
-        });
-    });
   </script>
 </body>
 

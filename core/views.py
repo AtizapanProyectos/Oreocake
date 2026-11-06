@@ -2,7 +2,7 @@ from core import cuestionario_data
 from core import cuestionario_data
 from requests import request
 from django.views.decorators.http import require_POST
-from django.views.decorators.csrf import csrf_protect, csrf_exempt
+from django.views.decorators.csrf import csrf_protect, csrf_exempt, ensure_csrf_cookie
 # pyrefly: ignore [missing-import]
 from django.db.models import Count, Prefetch
 from decimal import Decimal
@@ -44,7 +44,7 @@ from django.contrib.auth import login
 from django.db.models import Q, Count, Prefetch
 from datetime import datetime, timedelta, time
 import json
-from django.db import transaction  # <--- Agrega esto en tus imports de hasta arriba
+from django.db import IntegrityError, transaction
 import os
 import uuid
 import base64
@@ -173,11 +173,6 @@ PASE_SEDE = {
     'linea2': 'Miguel Hidalgo, 11520 Ciudad de México, CDMX',
     'maps_url': 'https://maps.app.goo.gl/MUVCAVMi3DTprEsf7',
 }
-
-# 💳 PASARELA DE PAGOS PRESENCIAL HABILITADA:
-# Las citas presenciales operan con pasarela completa (PayPal, tarjeta, transferencia).
-PAGO_PRESENCIAL_HABILITADO = True
-
 
 def psicologo_atiende_modalidad(psicologo, modalidad):
     """
@@ -604,6 +599,7 @@ def _enviar_correo_pase_admision(cita, request=None):
     correo_html = render_to_string('correo_pase_admision.html', {
         **contexto,
         'cita_id': cita.id,
+        'ipp_url': request.build_absolute_uri(reverse('formulario_previo_meet', args=[cita.id])) if request else '',
     })
 
     asunto = 'Tu Pase de Acceso presencial · Espacio HOPE'
@@ -715,27 +711,18 @@ def _email_valido(email):
     return bool(email) and bool(_EMAIL_REGEX.match(email.strip()))
 
 
+def _servicio_calendar():
+    token = json.loads(os.environ['GOOGLE_TOKEN_JSON'])
+    credenciales = Credentials.from_authorized_user_info(token, ['https://www.googleapis.com/auth/calendar.events'])
+    if credenciales.expired and credenciales.refresh_token:
+        credenciales.refresh(Request())
+    return build('calendar', 'v3', credentials=credenciales)
+
+
 def generar_link_meet(fecha_obj, hora_obj, paciente_nombre, psicologo_nombre, paciente_email, psicologo_email):
-    SCOPES = ['https://www.googleapis.com/auth/calendar.events']
- 
-    # ✅ leer desde variable de entorno en lugar de archivo
-    token_json_str = os.environ.get('GOOGLE_TOKEN_JSON')
-    if not token_json_str:
-        print("ERROR: No existe la variable de entorno GOOGLE_TOKEN_JSON.")
-        return None
- 
     try:
-        token_data = json.loads(token_json_str)
-        creds = Credentials.from_authorized_user_info(token_data, SCOPES)
- 
-        if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
-            # Nota: en Railway no se persiste el refresh automáticamente,
-            # así que actualiza GOOGLE_TOKEN_JSON manualmente si expira.
-            print("⚠️ Token refrescado. Actualiza GOOGLE_TOKEN_JSON en Railway si hace falta.")
- 
-        service = build('calendar', 'v3', credentials=creds)
- 
+        service = _servicio_calendar()
+
         inicio_datetime = datetime.combine(fecha_obj, hora_obj)
         fin_datetime = inicio_datetime + timedelta(minutes=50)
  
@@ -831,8 +818,9 @@ def inicio_tectum_beneficios(request):
     """
     Landing oficial del Convenio TECTUM Beneficios x Espacio HOPE.
     Accesible directamente en tectumbeneficios.espaciohope.com o en la ruta /tectum-beneficios/
-    En esta modalidad los colaboradores cuentan con tarifa preferencial y realizan su pago mediante pasarela.
+    El panel muestra los importes de los servicios antes de iniciar PayPal.
     """
+    request.session.pop('convenio_tectum', None)
     request.session['convenio_tectum_beneficios'] = True
     articulos = ArticuloPrensa.objects.filter(publicado=True)[:6]
     context = {
@@ -907,7 +895,7 @@ def registrar_usuario(request):
             request.session['convenio_tectum_beneficios'] = True
 
         es_tectum_bool = False
-        if not es_beneficios_bool and ('tectuminhause' in request.get_host().lower() or request.POST.get('convenio') == 'tectum' or request.session.get('convenio_tectum')):
+        if not es_beneficios_bool and email in COLABORADORES_TECTUM and ('tectuminhause' in request.get_host().lower() or request.POST.get('convenio') == 'tectum' or request.session.get('convenio_tectum')):
             es_tectum_bool = True
 
         try:
@@ -1064,14 +1052,59 @@ COLABORADORES_TECTUM = {
 }
 
 
-def _es_colaborador_tectum(user, email_ingresado=''):
-    """True si el correo del usuario (o el que escribió) está en la lista blanca."""
-    correos = {
-        (user.email or '').strip().lower(),
-        (user.username or '').strip().lower(),
-        (email_ingresado or '').strip().lower(),
-    }
-    return bool(correos & COLABORADORES_TECTUM)
+def _es_colaborador_tectum(user):
+    return (user.email or '').strip().lower() in COLABORADORES_TECTUM
+
+
+def _correo_tectum_verificado(usuario):
+    correo = (usuario.email or '').strip().lower()
+    return bool(correo and getattr(getattr(usuario, 'perfil', None), 'correo_tectum_verificado', '') == correo)
+
+
+@require_POST
+def enviar_verificacion_tectum(request):
+    from django.core import signing
+
+    usuario = request.user
+    if not usuario.is_authenticated or not _es_colaborador_tectum(usuario):
+        return JsonResponse({'status': 'error', 'message': 'Tu correo no figura en el padrón de In-House.'}, status=403)
+    llave = f'verificacion-tectum-{usuario.pk}'
+    if not cache.add(llave, True, 90):
+        return JsonResponse({'status': 'success', 'message': 'Revisa tu correo. Ya te enviamos el enlace.'})
+    correo = usuario.email.strip().lower()
+    token = signing.dumps([usuario.pk, correo], salt='correo-tectum')
+    enlace = request.build_absolute_uri(reverse('verificar_correo_tectum', args=[token]))
+    try:
+        entregado = send_mail(
+            'Verifica tu correo para TECTUM In-House',
+            f'Abre este enlace e inicia sesión para activar tu cobertura de TECTUM In-House: {enlace}',
+            settings.DEFAULT_FROM_EMAIL, [correo],
+        )
+    except Exception:
+        entregado = 0
+    if not entregado:
+        cache.delete(llave)
+        return JsonResponse({'status': 'error', 'message': 'No pudimos enviar el correo. Intenta nuevamente.'}, status=502)
+    return JsonResponse({'status': 'success', 'message': 'Revisa tu correo para activar la cobertura.'})
+
+
+def verificar_correo_tectum(request, token):
+    from django.core import signing
+
+    try:
+        usuario_id, correo = signing.loads(token, salt='correo-tectum', max_age=3600)
+    except signing.BadSignature as error:
+        raise Http404('El enlace venció. Solicita otro desde tu panel.') from error
+    if not request.user.is_authenticated:
+        request.session['verificacion_tectum_pendiente'] = token
+        return redirect('modulo_informativo')
+    if (request.user.pk != usuario_id or correo != request.user.email.strip().lower() or
+            not _es_colaborador_tectum(request.user)):
+        raise Http404
+    if request.method == 'POST':
+        UsuarioPerfil.objects.filter(usuario=request.user).update(correo_tectum_verificado=correo)
+        return redirect('panel_tectum')
+    return render(request, 'tectum/verificar_correo.html', {'correo': correo})
 
 
 # =========================================================================
@@ -1186,7 +1219,7 @@ def login_usuario(request):
     # 🔒 REGLA: en TECTUM In-House solo entran los colaboradores de la lista blanca.
     # Superusuarios y psicólogos pasan siempre (equipo HOPE).
     if es_login_tectum_inhouse and not (user.is_superuser or hasattr(user, 'perfil_psicologo')):
-        if not _es_colaborador_tectum(user, email):
+        if not _es_colaborador_tectum(user):
             return JsonResponse({
                 'status': 'error',
                 'error_type': 'not_allowed',
@@ -1220,6 +1253,16 @@ def login_usuario(request):
     else:
         redirect_url = reverse('panel_generico')
 
+    verificacion = request.session.pop('verificacion_tectum_pendiente', None)
+    if verificacion:
+        return JsonResponse({'status': 'success', 'redirect_url': reverse('verificar_correo_tectum', args=[verificacion])})
+
+    cita_pendiente = request.session.pop('ipp_presencial_pendiente', None)
+    if cita_pendiente and Cita.objects.filter(
+        pk=cita_pendiente, paciente=user, modalidad='Presencial', estado__in=('Confirmada', 'Completada'),
+    ).exists():
+        redirect_url = reverse('formulario_previo_meet', args=[cita_pendiente])
+
     return JsonResponse({'status': 'success', 'redirect_url': redirect_url})
 
 
@@ -1243,21 +1286,18 @@ def panel_generico(request):
             logout(request)
             return redirect('modulo_informativo')
 
-    es_beneficios = (
-        'tectumbeneficios' in request.get_host().lower()
-        or 'panel-beneficios' in request.path
-        or request.session.get('convenio_tectum_beneficios', False)
-    )
-
-    es_usuario_tectum = False
-    if not es_beneficios:
-        if hasattr(perfil_usuario, 'es_tectum') and perfil_usuario.es_tectum:
-            es_usuario_tectum = True
-        elif 'tectuminhause' in request.get_host().lower() or request.session.get('convenio_tectum'):
-            es_usuario_tectum = True
-            if hasattr(perfil_usuario, 'es_tectum') and not perfil_usuario.es_tectum:
-                perfil_usuario.es_tectum = True
-                perfil_usuario.save(update_fields=['es_tectum'])
+    if request.path == '/panel-beneficios/':
+        request.session.pop('convenio_tectum', None)
+        request.session['convenio_tectum_beneficios'] = True
+    elif request.path == '/panel-tectum/':
+        if not _es_colaborador_tectum(request.user):
+            return render(request, 'tectum/verificar_correo.html', {'fuera_padron': True}, status=403)
+        request.session.pop('convenio_tectum_beneficios', None)
+        request.session['convenio_tectum'] = True
+    convenio = _convenio_cita(request)
+    es_beneficios = convenio == 'beneficios'
+    es_usuario_tectum = convenio == 'inhouse'
+    _liberar_reservas_vencidas()
 
 # Tipo de servicio y Preferencia desde cuestionario
     tipo_servicio = "individual"
@@ -1288,15 +1328,22 @@ def panel_generico(request):
     if not psicologo_asignado and tratamientos.exists():
         psicologo_asignado = tratamientos.first().psicologo_asignado
 
-    hora_limite_paciente = (now_local - timedelta(hours=1)).time().replace(second=0, microsecond=0)
+    limite_paciente = now_local - timedelta(hours=1)
     # Cita próxima
     # 🔥 OPTIMIZACIÓN: select_related evita un query extra al acceder a
     # cita_proxima.psicologo.usuario más abajo en el template.
     cita_proxima = Cita.objects.select_related('psicologo__usuario').filter(
-        Q(fecha__gt=hoy) | Q(fecha=hoy, hora__gte=hora_limite_paciente),
+        Q(fecha__gt=limite_paciente.date()) | Q(fecha=limite_paciente.date(), hora__gte=limite_paciente.time()),
         paciente=request.user,
         estado='Confirmada'
-    ).order_by('fecha', 'hora').first()
+    ).order_by('fecha', 'hora')
+    citas_confirmadas = list(cita_proxima)
+    citas_proximas = [
+        cita for cita in citas_confirmadas
+        if cita.es_beneficios == es_beneficios and (es_beneficios or cita.es_tectum == es_usuario_tectum)
+    ]
+    otras_organizaciones = [cita for cita in citas_confirmadas if cita not in citas_proximas]
+    cita_proxima = citas_proximas[0] if citas_proximas else None
 
     fecha_limite = hoy + timedelta(days=90)
 
@@ -1306,9 +1353,11 @@ def panel_generico(request):
 
     # Buscamos si tiene psicólogo asignado específicamente para la modalidad inicial
     tratamiento_inicial = tratamientos.filter(tipo_servicio=tipo_sesion_inicial).first()
-    psicologo_inicial = tratamiento_inicial.psicologo_asignado if tratamiento_inicial else (
-        psicologo_asignado if getattr(psicologo_asignado, CAPACIDAD_POR_TIPO_SESION.get(tipo_sesion_inicial, 'atiende_individual'), False) else None
-    )
+    psicologo_inicial = tratamiento_inicial.psicologo_asignado if tratamiento_inicial else None
+    if psicologo_inicial and (
+            not getattr(psicologo_inicial, CAPACIDAD_POR_TIPO_SESION[tipo_sesion_inicial], False)
+            or not psicologo_atiende_modalidad(psicologo_inicial, 'En línea')):
+        psicologo_inicial = None
 
     if psicologo_inicial:
         # Paciente con psicólogo asignado a esta modalidad: solo sus horarios
@@ -1368,18 +1417,24 @@ def panel_generico(request):
     # Verificación de Consentimiento Informado:
     # 1. Si el usuario ya firmó digitalmente en el nuevo modelo -> True
     # 2. Si es un usuario existente que ya cuenta con citas registradas -> True (retrocompatibilidad automática)
-    tiene_consentimiento = ConsentimientoInformado.objects.filter(paciente=request.user).exists() or Cita.objects.filter(paciente=request.user).exists()
+    tiene_consentimiento = _tiene_consentimiento(request.user)
     ultimo_consentimiento = ConsentimientoInformado.objects.filter(paciente=request.user).first()
     plantilla_panel = 'panel_generico.html'
     if es_beneficios:
         plantilla_panel = 'tectum_beneficios/panel-beneficios.html'
-    elif es_usuario_tectum or 'panel-tectum' in request.path:
+    elif es_usuario_tectum:
         plantilla_panel = 'tectum/panel-tectum.html'
+
+    orden_pendiente = PagoCitaPayPal.objects.filter(
+        cita__paciente=request.user, cita__estado='Pendiente', captura_iniciada=True,
+    ).values_list('orden', flat=True).first()
 
     return render(request, plantilla_panel, {
         'dias_disponibles_json': dias_json,
         'dias_disponibles': dias_html,
         'cita_proxima': cita_proxima,
+        'otras_citas_proximas': citas_proximas[1:] + otras_organizaciones,
+        'orden_paypal_pendiente': orden_pendiente,
         'perfil': perfil_usuario,
         'tratamientos': tratamientos,
         'doctores_chat': doctores_chat,
@@ -1397,6 +1452,7 @@ def panel_generico(request):
         'paypal_client_id': settings.PAYPAL_CLIENT_ID,
         'psicologo_asignado': psicologo_asignado,
         'es_usuario_tectum': es_usuario_tectum,
+        'correo_tectum_verificado': _correo_tectum_verificado(request.user),
         'es_tectum_beneficios': es_beneficios,
         # 3/11/2026 — flag gradual del método "sube tu comprobante de transferencia"
         # (solo HOPE; TECTUM In-House no paga y Beneficios usa su propio template)
@@ -1451,7 +1507,7 @@ def inscribir_taller_ajax(request):
     return JsonResponse({'status': 'error', 'message': 'Petición no válida.'})
 
 
-@csrf_exempt
+@require_POST
 def guardar_consentimiento_ajax(request):
     """
     Registra la firma digital del consultante, valida telepsicología
@@ -1465,11 +1521,24 @@ def guardar_consentimiento_ajax(request):
 
     firma_base64 = request.POST.get('firma_base64', '').strip()
     nombre_firmante = request.POST.get('nombre_firmante', '').strip()
-    acepta_telepsicologia = request.POST.get('acepta_telepsicologia', 'true').lower() in ['true', '1', 'yes']
-    declaracion_consentimiento = request.POST.get('declaracion_consentimiento', 'true').lower() in ['true', '1', 'yes']
+    acepta_telepsicologia = request.POST.get('acepta_telepsicologia', '').lower() in ['true', '1', 'yes']
+    declaracion_consentimiento = request.POST.get('declaracion_consentimiento', '').lower() in ['true', '1', 'yes']
 
-    if not firma_base64:
-        return JsonResponse({'status': 'error', 'message': 'La firma digital es obligatoria.'})
+    if not acepta_telepsicologia or not declaracion_consentimiento:
+        return JsonResponse({'status': 'error', 'message': 'Confirma ambas declaraciones del consentimiento.'}, status=400)
+    try:
+        from io import BytesIO
+        from PIL import Image
+
+        if not firma_base64.startswith('data:image/png;base64,') or len(firma_base64) > 2_000_000:
+            raise ValueError
+        contenido = base64.b64decode(firma_base64.split(',', 1)[1], validate=True)
+        with Image.open(BytesIO(contenido)) as imagen:
+            if imagen.format != 'PNG' or imagen.width * imagen.height > 4_000_000:
+                raise ValueError
+            imagen.verify()
+    except (OSError, ValueError, Image.DecompressionBombError):
+        return JsonResponse({'status': 'error', 'message': 'Traza una firma válida en el recuadro.'}, status=400)
 
     if not nombre_firmante:
         nombre_firmante = (request.user.get_full_name() or request.user.first_name or request.user.username).strip()
@@ -1482,43 +1551,44 @@ def guardar_consentimiento_ajax(request):
     user_agent = request.META.get('HTTP_USER_AGENT', '')
 
     try:
-        consentimiento = ConsentimientoInformado.objects.create(
-            paciente=request.user,
-            nombre_firmante=nombre_firmante,
-            acepta_telepsicologia=acepta_telepsicologia,
-            declaracion_consentimiento=declaracion_consentimiento,
-            firma_base64=firma_base64,
-            ip_registro=ip,
-            user_agent=user_agent[:500] if user_agent else '',
-            version="1.0"
-        )
+        with transaction.atomic():
+            consentimiento = ConsentimientoInformado.objects.create(
+                paciente=request.user,
+                nombre_firmante=nombre_firmante,
+                acepta_telepsicologia=acepta_telepsicologia,
+                declaracion_consentimiento=declaracion_consentimiento,
+                firma_base64=firma_base64,
+                ip_registro=ip,
+                user_agent=user_agent[:500] if user_agent else '',
+                version="1.0"
+            )
 
-        # Generar PDF oficial
-        import hashlib
-        logo_b64 = _obtener_logo_base64()
-        fecha_str = consentimiento.fecha_firma.strftime('%d/%m/%Y %H:%M')
-        folio_hash = hashlib.md5(f"{consentimiento.id}-{request.user.id}".encode()).hexdigest()[:8].upper()
+            # Generar PDF oficial
+            import hashlib
+            logo_b64 = _obtener_logo_base64()
+            fecha_str = consentimiento.fecha_firma.strftime('%d/%m/%Y %H:%M')
+            folio_hash = hashlib.md5(f"{consentimiento.id}-{request.user.id}".encode()).hexdigest()[:8].upper()
 
-        context_pdf = {
-            'consentimiento': consentimiento,
-            'paciente': request.user,
-            'fecha_str': fecha_str,
-            'folio_hash': folio_hash,
-            'logo_base64': logo_b64,
-        }
+            context_pdf = {
+                'consentimiento': consentimiento,
+                'paciente': request.user,
+                'fecha_str': fecha_str,
+                'folio_hash': folio_hash,
+                'logo_base64': logo_b64,
+            }
 
-        html_content = render_to_string('documentos/consentimiento_pdf.html', context_pdf)
-        pdf_bytes = convertir_html_a_pdf(html_content)
+            html_content = render_to_string('documentos/consentimiento_pdf.html', context_pdf)
+            pdf_bytes = convertir_html_a_pdf(html_content)
 
-        filename = f"consentimiento_{request.user.id}_{consentimiento.id}.pdf"
-        consentimiento.archivo_pdf.save(filename, ContentFile(pdf_bytes), save=True)
+            filename = f"consentimiento_{request.user.id}_{consentimiento.id}.pdf"
+            consentimiento.archivo_pdf.save(filename, ContentFile(pdf_bytes), save=True)
 
-        return JsonResponse({
-            'status': 'success',
-            'message': 'Consentimiento firmado y registrado exitosamente.',
-            'pdf_url': consentimiento.archivo_pdf.url if consentimiento.archivo_pdf else None,
-            'tiene_consentimiento': True
-        })
+            return JsonResponse({
+                'status': 'success',
+                'message': 'Consentimiento firmado y registrado exitosamente.',
+                'pdf_url': consentimiento.archivo_pdf.url if consentimiento.archivo_pdf else None,
+                'tiene_consentimiento': True
+            })
     except Exception as e:
         logging.getLogger(__name__).error(f"Error al guardar consentimiento informado: {e}", exc_info=True)
         return JsonResponse({'status': 'error', 'message': f'Error al registrar el consentimiento: {str(e)}'})
@@ -1542,6 +1612,7 @@ def obtener_disponibilidad_por_tipo_ajax(request):
     if not request.user.is_authenticated:
         return JsonResponse({'status': 'error', 'message': 'Debes iniciar sesión.'}, status=403)
 
+    _liberar_reservas_vencidas()
     tipo_sesion = request.GET.get('tipo_sesion', 'individual')
     if tipo_sesion not in TIPOS_SESION_VALIDOS:
         tipo_sesion = 'individual'
@@ -1592,11 +1663,6 @@ def obtener_disponibilidad_por_tipo_ajax(request):
 
     psicologo_asignado = tratamiento.psicologo_asignado if (tratamiento and tratamiento.psicologo_asignado) else None
 
-    # Si no tiene tratamiento de esa modalidad pero tiene en perfil_usuario y ese psicólogo sí atiende esa modalidad
-    if not psicologo_asignado and perfil_usuario.psicologo_asignado:
-        if getattr(perfil_usuario.psicologo_asignado, campo_capacidad, False):
-            psicologo_asignado = perfil_usuario.psicologo_asignado
-
     if psicologo_asignado and getattr(psicologo_asignado, campo_capacidad, False) and psicologo_atiende_modalidad(psicologo_asignado, modalidad):
         dias_json = obtener_slots_psicologo(psicologo_asignado, hoy, fecha_limite, tipo_sesion=tipo_sesion, modalidad=modalidad)
         doc_nombre = psicologo_asignado.usuario.first_name if psicologo_asignado.usuario else ""
@@ -1621,11 +1687,7 @@ def obtener_disponibilidad_por_tipo_ajax(request):
 
 def calcular_precio_sesion_ajax(request):
     """🔥 NUEVO: fuente de verdad del precio para el resumen en tiempo real del frontend."""
-    es_tectum = False
-    if request.user.is_authenticated and hasattr(request.user, 'perfil') and request.user.perfil.es_tectum:
-        es_tectum = True
-    elif 'tectuminhause' in request.get_host().lower() or request.session.get('convenio_tectum'):
-        es_tectum = True
+    es_tectum = _convenio_cita(request) == 'inhouse'
 
     tipo_sesion = request.GET.get('tipo_sesion', 'individual')
     integrantes_familia = request.GET.get('integrantes_familia')
@@ -1646,40 +1708,60 @@ def calcular_precio_sesion_ajax(request):
     return JsonResponse({'status': 'success', **resultado})
 
 
-from django.db import transaction
-@csrf_exempt
-@transaction.atomic
+def _convenio_cita(request):
+    host = request.get_host().split(':', 1)[0].lower()
+    if (host.startswith('tectumbeneficios.') or request.path == '/panel-beneficios/' or
+            request.session.get('convenio_tectum_beneficios')):
+        return 'beneficios'
+    if request.user.is_authenticated and _es_colaborador_tectum(request.user) and (
+            host.startswith('tectuminhause.') or request.path == '/panel-tectum/' or
+            request.session.get('convenio_tectum') or getattr(getattr(request.user, 'perfil', None), 'es_tectum', False)):
+        return 'inhouse'
+    return 'hope'
+
+
+def _tiene_consentimiento(paciente):
+    return ConsentimientoInformado.objects.filter(
+        paciente=paciente, acepta_telepsicologia=True, declaracion_consentimiento=True,
+    ).exclude(archivo_pdf='').exclude(archivo_pdf__isnull=True).exists() or Cita.objects.filter(
+        paciente=paciente, estado='Completada',
+    ).exists()
+
+
+@require_POST
 def guardar_cita_ajax(request):
+    try:
+        return _guardar_cita_paciente(request)
+    except IntegrityError:
+        return JsonResponse({'status': 'error', 'message': 'El horario acaba de ocuparse. Elige otro.'}, status=409)
+
+
+@transaction.atomic
+def _guardar_cita_paciente(request, reservar_pago=False):
     if request.method == 'POST':
         if not request.user.is_authenticated:
-            return JsonResponse({'status': 'error', 'message': 'Debes iniciar sesión.'})
+            return JsonResponse({'status': 'error', 'message': 'Debes iniciar sesión.'}, status=401)
 
-        es_beneficios = (
-            'tectumbeneficios' in request.get_host().lower()
-            or request.session.get('convenio_tectum_beneficios')
-            or request.POST.get('convenio') == 'tectumbeneficios'
-            or 'panel-beneficios' in (request.META.get('HTTP_REFERER', '') or '')
-        )
-        es_tectum_cita = False
-        if not es_beneficios:
-            if hasattr(request.user, 'perfil') and request.user.perfil.es_tectum:
-                es_tectum_cita = True
-            elif 'tectuminhause' in request.get_host().lower() or request.session.get('convenio_tectum') or request.POST.get('paypal_order_id') == 'CONVENIO_TECTUM_INHOUSE' or request.POST.get('es_tectum') in ['1', 'true', 'True']:
-                es_tectum_cita = True
-                if hasattr(request.user, 'perfil') and not request.user.perfil.es_tectum:
-                    request.user.perfil.es_tectum = True
-                    request.user.perfil.save(update_fields=['es_tectum'])
+        convenio = _convenio_cita(request)
+        es_beneficios = convenio == 'beneficios'
+        es_tectum_cita = convenio == 'inhouse'
 
-        # Verificación de Consentimiento Informado:
-        # Retrocompatibilidad: Los usuarios ya registrados con citas previas pasan automáticamente.
-        # Nuevos consultantes deben tener su ConsentimientoInformado firmado.
-        tiene_consentimiento = ConsentimientoInformado.objects.filter(paciente=request.user).exists() or Cita.objects.filter(paciente=request.user).exists()
-        if not tiene_consentimiento and not es_tectum_cita:
+        if not _tiene_consentimiento(request.user):
             return JsonResponse({
                 'status': 'error',
-                'message': 'Es necesario firmar el Consentimiento Informado antes de agendar tu cita.',
-                'requiere_consentimiento': True
-            })
+                'message': 'Firma el consentimiento informado antes de agendar.',
+                'requiere_consentimiento': True,
+            }, status=400)
+
+        if es_tectum_cita and not _correo_tectum_verificado(request.user):
+            return JsonResponse({
+                'status': 'error', 'message': 'Verifica tu correo del padrón para activar la cobertura.',
+            }, status=403)
+        if es_tectum_cita == reservar_pago:
+            return JsonResponse({
+                'status': 'error',
+                'message': 'Actualiza tu panel para continuar con el método de confirmación de tu convenio.',
+            }, status=400)
 
         fecha_str = request.POST.get('fecha')
         hora_str = request.POST.get('hora')
@@ -1688,44 +1770,50 @@ def guardar_cita_ajax(request):
         if modalidad_str not in MODALIDADES_CITA_VALIDAS:
             modalidad_str = 'En línea'  # mismo comportamiento histórico ante valores raros
         tipo_sesion_str = request.POST.get('tipo_servicio', 'individual')
-        # 💳 Referencia de la orden de PayPal (si el guardado viene después de un
-        # pago ya capturado). La registramos en el log INMEDIATAMENTE, antes de
-        # cualquier posible excepción, para que un pago cobrado nunca quede sin
-        # rastro aunque falle el resto del guardado de la cita.
-        paypal_order_id = request.POST.get('paypal_order_id')
-        if paypal_order_id in ['DEV_BYPASS_PRUEBA', 'null', 'undefined', 'None', '']:
-            paypal_order_id = None
-
-        if modalidad_str == 'Presencial' and not PAGO_PRESENCIAL_HABILITADO:
-            paypal_order_id = None
-
-        # 🔒 Seguridad en servidor: Se exige pago válido para agendar (salvo convenio TECTUM In-House)
-        if not es_tectum_cita and not paypal_order_id:
-            return JsonResponse({
-                'status': 'error',
-                'message': 'Se requiere completar el pago correspondiente para confirmar tu cita.'
-            })
-
-        if paypal_order_id:
-            logging.getLogger(__name__).info(
-                'Pago de PayPal recibido (orden %s) para usuario %s - fecha %s %s',
-                paypal_order_id, request.user, fecha_str, hora_str
-            )
-
         if tipo_sesion_str not in TIPOS_SESION_VALIDOS:
-            tipo_sesion_str = 'individual'
+            return JsonResponse({'status': 'error', 'message': 'Selecciona un servicio válido.'}, status=400)
+        if convenio != 'hope' and (modalidad_str != 'En línea' or (es_tectum_cita and tipo_sesion_str != 'individual')):
+            return JsonResponse({'status': 'error', 'message': 'Selecciona un servicio disponible en tu convenio.'}, status=400)
 
-        integrantes_familia = None
-        if tipo_sesion_str == 'familiar':
-            precio_info = calcular_precio_sesion(tipo_sesion_str, request.POST.get('integrantes_familia'))
-            integrantes_familia = precio_info['integrantes_familia']
+        precio_info = calcular_precio_sesion(tipo_sesion_str, request.POST.get('integrantes_familia'))
+        integrantes_familia = precio_info['integrantes_familia']
+        if integrantes_familia is not None and integrantes_familia > 6:
+            return JsonResponse({'status': 'error', 'message': 'Selecciona de 2 a 6 integrantes.'}, status=400)
 
         campo_capacidad = CAPACIDAD_POR_TIPO_SESION[tipo_sesion_str]
 
         try:
             fecha_obj = datetime.strptime(fecha_str, '%Y-%m-%d').date()
             hora_obj = parsear_hora_flexible(hora_str)
-            perfil = request.user.perfil
+            ahora = timezone.localtime()
+            inicio = timezone.make_aware(datetime.combine(fecha_obj, hora_obj))
+            if inicio < ahora + timedelta(hours=2) or fecha_obj > ahora.date() + timedelta(days=90):
+                return JsonResponse({'status': 'error', 'message': 'Elige un horario con dos horas de anticipación dentro de los próximos 90 días.'}, status=400)
+            User.objects.select_for_update().get(pk=request.user.pk)
+            _liberar_reservas_vencidas(fecha=fecha_obj, hora=hora_obj)
+            if reservar_pago:
+                pendiente = PagoCitaPayPal.objects.filter(
+                    cita__paciente=request.user, cita__estado='Pendiente',
+                    cita__fecha=fecha_obj, cita__hora=hora_obj, cita__tipo_sesion=tipo_sesion_str,
+                    cita__modalidad=modalidad_str, cita__es_beneficios=es_beneficios,
+                    cita__integrantes_familia=integrantes_familia,
+                ).filter(Q(vence__gt=ahora) | Q(captura_iniciada=True)).first()
+                if pendiente:
+                    return pendiente
+                if PagoCitaPayPal.objects.filter(
+                    cita__paciente=request.user, cita__estado='Pendiente', captura_iniciada=True,
+                ).exists():
+                    return JsonResponse({'status': 'error', 'message': 'Hay un pago pendiente de verificar. Retoma ese horario o contacta a soporte.'}, status=409)
+                anteriores = PagoCitaPayPal.objects.select_for_update().filter(
+                    cita__paciente=request.user, cita__estado='Pendiente', captura_iniciada=False,
+                )
+                for intento in anteriores:
+                    Cita.objects.filter(pk=intento.cita_id, estado='Pendiente').update(estado='Cancelada', psicologo=None)
+            if Cita.objects.filter(paciente=request.user, fecha=fecha_obj, hora=hora_obj, estado__in=('Confirmada', 'Pendiente')).exists():
+                return JsonResponse({'status': 'error', 'message': 'Ya tienes una cita o reserva a esa hora.'}, status=409)
+            perfil = getattr(request.user, 'perfil', None)
+            if perfil is None:
+                return JsonResponse({'status': 'error', 'message': 'Abre tu panel para completar tu perfil.'}, status=409)
 
             # 🏢 Validación en SERVIDOR de la regla presencial (además de la que
             # corre en disponibilidad): un paciente que ya llevó sesiones en
@@ -1809,110 +1897,166 @@ def guardar_cita_ajax(request):
                 if not psicologo:
                     psicologo = psicologos_libres.order_by('carga_historica', '?').first()
 
-                # 🔥 Guardamos en TratamientoPaciente específico de esta modalidad
-                TratamientoPaciente.objects.update_or_create(
-                    paciente=request.user,
-                    tipo_servicio=tipo_sesion_str,
-                    defaults={'psicologo_asignado': psicologo, 'activo': True}
-                )
+            psicologo = PerfilPsicologo.objects.select_for_update().get(pk=psicologo.pk)
+            if (hora_obj.strftime('%I:%M %p') not in obtener_slots_psicologo_para_dia(
+                    psicologo, fecha_obj, tipo_sesion=tipo_sesion_str, modalidad=modalidad_str)
+                    or Cita.objects.filter(psicologo=psicologo, fecha=fecha_obj, hora=hora_obj).exists()):
+                return JsonResponse({'status': 'error', 'message': 'Ese horario ya no está disponible. Elige otro.'}, status=409)
 
-                # Retrocompatibilidad: si el perfil general no tiene psicólogo, lo establecemos
-                if not perfil.psicologo_asignado:
-                    perfil.psicologo_asignado = psicologo
-                    perfil.save(update_fields=['psicologo_asignado'])
-                
-                # Verificación final
-                if Cita.objects.filter(psicologo=psicologo, fecha=fecha_obj, hora=hora_obj, estado='Confirmada').exists():
-                    return JsonResponse({'status': 'error', 'message': 'El horario fue ocupado mientras procesabas. Elige otro.'})
-                    
-            else:
-                if Cita.objects.filter(psicologo=psicologo, fecha=fecha_obj, hora=hora_obj, estado='Confirmada').exists():
-                    return JsonResponse({'status': 'error', 'message': 'Tu terapeuta ya tiene una cita en ese horario. Elige otro.'})
-
-            # Generar Meet si es en línea
-            link_final = None
-            id_google = None
-            if modalidad_str == 'En línea':
-                datos_meet = generar_link_meet(
-                    fecha_obj=fecha_obj,
-                    hora_obj=hora_obj,
-                    paciente_nombre=request.user.first_name,
-                    psicologo_nombre=psicologo.usuario.first_name,
-                    paciente_email=request.user.email,             
-                    psicologo_email=psicologo.usuario.email        
-                )
-                if datos_meet:
-                    link_final = datos_meet['link']
-                    id_google = datos_meet['id_evento']
-
-            # Crear la cita
-            # 🎫 Las citas presenciales traen código único de pase (QR de verificación).
             cita = Cita.objects.create(
-                paciente=request.user,
-                psicologo=psicologo,
-                fecha=fecha_obj,
-                hora=hora_obj,
-                estado_animo=animo,
-                modalidad=modalidad_str,
-                tipo_sesion=tipo_sesion_str,
-                integrantes_familia=integrantes_familia,
-                motivo='Primera Sesión' if not perfil.psicologo_asignado else 'Sesión de Seguimiento',
-                estado='Confirmada',
-                es_tectum=es_tectum_cita,
-                es_beneficios=es_beneficios,  # 28/10/2026: separación de organizaciones
-                enlace_meet=link_final,
-                id_evento_google=id_google,
+                paciente=request.user, psicologo=psicologo, fecha=fecha_obj, hora=hora_obj,
+                estado_animo=animo, modalidad=modalidad_str, tipo_sesion=tipo_sesion_str,
+                integrantes_familia=integrantes_familia, es_tectum=es_tectum_cita,
+                es_beneficios=es_beneficios, estado='Pendiente' if reservar_pago else 'Confirmada',
+                correo_confirmacion_enviado=False,
+                motivo='Sesión de Seguimiento' if perfil.psicologo_asignado else 'Primera Sesión',
                 codigo_pase=_generar_codigo_pase() if modalidad_str == 'Presencial' else None,
             )
-
-            # 🎫 PASE DE ACCESO (solo presencial): correo con presentación más el
-            # PDF adjunto (misma infraestructura SMTP/PDF del sistema).
-            if modalidad_str == 'Presencial':
-                try:
-                    _enviar_correo_pase_admision(cita, request)
-                except Exception:
-                    logging.getLogger(__name__).exception('Fallo el correo del pase de admisión de la cita %s', cita.id)
-                return JsonResponse({
-                    'status': 'success',
-                    'modalidad': 'Presencial',
-                    'cita_id': cita.id,
-                    'pase_url': request.build_absolute_uri(reverse('descargar_pase_admision', args=[cita.id])),
-                })
-
-            # Enviar correo (asumiendo que las funciones render_to_string, strip_tags y send_mail están importadas)
-            es_tectum_email = es_tectum_cita or es_beneficios
-            asunto = 'Confirmación de tu sesión en TECTUM' if es_tectum_email else 'Confirmación de tu sesión en HOPE'
-            if link_final:
-                link_correo = request.build_absolute_uri(reverse('formulario_previo_meet', args=[cita.id]))
-            else:
-                link_correo = "Cita Presencial (Revisa tu panel para ver la dirección)"
-            contexto = {
-                'nombre': request.user.first_name,
-                'psicologo_nombre': psicologo.usuario.first_name,
-                'fecha': fecha_obj.strftime('%d/%m/%Y'),
-                'hora': hora_obj.strftime('%H:%M'),
-                'link_meet': link_correo,
-                'es_tectum': es_tectum_email,
-            }
-            mensaje_html = render_to_string('correo_cita.html', contexto)
-            mensaje_plano = strip_tags(mensaje_html)
-            remitente = 'TECTUM <contacto@espaciohope.com>' if es_tectum_email else 'Espacio HOPE <contacto@espaciohope.com>'
-            send_mail(asunto, mensaje_plano, remitente, [request.user.email], html_message=mensaje_html, fail_silently=True)
-
-            # 🏢 Las citas en línea conservan su respuesta histórica (el front
-            # muestra el botón de ingreso a la consulta después del reload).
-            return JsonResponse({'status': 'success'})
-        except Exception as e:
-            if paypal_order_id:
-                logging.getLogger(__name__).error(
-                    '⚠️ PAGO COBRADO SIN CITA GUARDADA - orden PayPal %s, usuario %s: %s',
-                    paypal_order_id, request.user, e
+            if reservar_pago:
+                return PagoCitaPayPal.objects.create(
+                    cita=cita, monto=precio_info['total'], vence=ahora + timedelta(minutes=15),
                 )
-            return JsonResponse({'status': 'error', 'message': str(e)})
+            _registrar_tratamiento_cita(cita)
+            transaction.on_commit(lambda: _notificar_cita_paciente(cita, request), robust=True)
+            return _respuesta_cita(cita, request)
+        except (TypeError, ValueError):
+            return JsonResponse({'status': 'error', 'message': 'Selecciona una fecha y hora válidas.'}, status=400)
 
-    return JsonResponse({'status': 'error'})
+    return JsonResponse({'status': 'error'}, status=405)
 
 
+def _registrar_tratamiento_cita(cita):
+    TratamientoPaciente.objects.update_or_create(
+        paciente_id=cita.paciente_id, tipo_servicio=cita.tipo_sesion,
+        defaults={'psicologo_asignado_id': cita.psicologo_id, 'activo': True},
+    )
+    UsuarioPerfil.objects.filter(usuario_id=cita.paciente_id, psicologo_asignado__isnull=True).update(
+        psicologo_asignado_id=cita.psicologo_id,
+    )
+
+
+def _respuesta_cita(cita, request):
+    datos = {'status': 'success', 'cita_id': cita.pk, 'modalidad': cita.modalidad}
+    if cita.modalidad == 'Presencial':
+        datos['pase_url'] = reverse('descargar_pase_admision', args=[cita.pk])
+    return JsonResponse(datos)
+
+
+def _notificar_cita_paciente(cita, request):
+    if cita.modalidad == 'Presencial':
+        enviado = bool(_enviar_correo_pase_admision(cita, request))
+        Cita.objects.filter(pk=cita.pk).update(correo_confirmacion_enviado=enviado)
+        return
+    paciente, psicologo = cita.paciente, cita.psicologo.usuario
+    if not cita.enlace_meet:
+        meet = generar_link_meet(cita.fecha, cita.hora, paciente.first_name, psicologo.first_name, paciente.email, psicologo.email)
+        if meet:
+            Cita.objects.filter(pk=cita.pk, estado='Confirmada').update(
+                enlace_meet=meet['link'], id_evento_google=meet['id_evento'],
+            )
+            cita.enlace_meet = meet['link']
+    es_tectum = cita.es_tectum or cita.es_beneficios
+    marca = 'TECTUM' if es_tectum else 'Espacio HOPE'
+    html = render_to_string('correo_cita.html', {
+        'nombre': paciente.first_name, 'psicologo_nombre': psicologo.first_name,
+        'fecha': cita.fecha.strftime('%d/%m/%Y'), 'hora': cita.hora.strftime('%H:%M'),
+        'link_meet': request.build_absolute_uri(reverse('formulario_previo_meet', args=[cita.pk])) if cita.enlace_meet else '',
+        'enlace_pendiente': not cita.enlace_meet, 'es_tectum': es_tectum,
+    })
+    enviado = send_mail(f'Confirmación de tu sesión en {marca}', strip_tags(html),
+                        f'{marca} <contacto@espaciohope.com>', [paciente.email], html_message=html)
+    Cita.objects.filter(pk=cita.pk).update(correo_confirmacion_enviado=bool(enviado))
+
+
+def _liberar_reservas_vencidas(**horario):
+    pagos = PagoCitaPayPal.objects.filter(
+        vence__lte=timezone.now(), captura_iniciada=False, cita__estado='Pendiente',
+        **{f'cita__{campo}': valor for campo, valor in horario.items()},
+    )
+    for pago_id in pagos.values_list('pk', flat=True):
+        with transaction.atomic():
+            pago = pagos.select_for_update().filter(pk=pago_id).first()
+            if pago:
+                Cita.objects.filter(pk=pago.cita_id, estado='Pendiente').update(estado='Cancelada', psicologo=None)
+
+
+@require_POST
+def crear_orden_cita_paypal(request):
+    from .pagos_paypal import ErrorPayPal, crear_orden
+
+    if not settings.PAYPAL_CLIENT_SECRET or settings.PAYPAL_CLIENT_ID == 'sb':
+        return JsonResponse({'status': 'error', 'message': 'PayPal no está disponible en este momento.'}, status=503)
+    try:
+        pago = _guardar_cita_paciente(request, reservar_pago=True)
+    except IntegrityError:
+        return JsonResponse({'status': 'error', 'message': 'El horario acaba de ocuparse. Elige otro.'}, status=409)
+    if not isinstance(pago, PagoCitaPayPal):
+        return pago
+    try:
+        with transaction.atomic():
+            pago = PagoCitaPayPal.objects.select_for_update().get(pk=pago.pk)
+            if pago.cita.estado != 'Pendiente':
+                return JsonResponse({'status': 'error', 'message': 'La reserva ya no está disponible.'}, status=409)
+            if not pago.orden:
+                pago.orden = crear_orden(pago)
+                pago.save(update_fields=['orden'])
+    except ErrorPayPal:
+        return JsonResponse({'status': 'error', 'message': 'No se pudo abrir PayPal. Intenta nuevamente en el mismo horario.'}, status=502)
+    return JsonResponse({'status': 'success', 'orden': pago.orden})
+
+
+@require_POST
+def capturar_orden_cita_paypal(request):
+    from .pagos_paypal import ErrorPayPal, capturar_orden
+
+    if not request.user.is_authenticated:
+        return JsonResponse({'status': 'error', 'message': 'Inicia sesión para verificar tu pago.'}, status=401)
+    orden = request.POST.get('orden', '')
+    with transaction.atomic():
+        pago = PagoCitaPayPal.objects.select_for_update().filter(orden=orden, cita__paciente=request.user).first()
+        if not pago:
+            return JsonResponse({'status': 'error', 'message': 'No encontramos esa orden en tu cuenta.'}, status=404)
+        if pago.captura:
+            return _respuesta_cita(pago.cita, request)
+        if pago.cita.estado != 'Pendiente' or (pago.vence <= timezone.now() and not pago.captura_iniciada):
+            return JsonResponse({'status': 'error', 'message': 'La reserva venció. Selecciona de nuevo el horario.'}, status=409)
+        pago.captura_iniciada = True
+        pago.save(update_fields=['captura_iniciada'])
+
+    try:
+        with transaction.atomic():
+            pago = PagoCitaPayPal.objects.select_for_update().get(pk=pago.pk)
+            if not pago.captura:
+                captura = capturar_orden(pago, solo_consultar=pago.vence <= timezone.now())
+                cita = Cita.objects.select_for_update().get(pk=pago.cita_id, estado='Pendiente')
+                _registrar_tratamiento_cita(cita)
+                pago.captura = captura
+                pago.save(update_fields=['captura'])
+                cita.estado = 'Confirmada'
+                cita.save(update_fields=['estado'])
+                transaction.on_commit(lambda: _notificar_cita_paciente(cita, request), robust=True)
+    except ErrorPayPal as error:
+        if error.detalle in ('INSTRUMENT_DECLINED', 'ORDER_NOT_APPROVED'):
+            PagoCitaPayPal.objects.filter(pk=pago.pk, captura__isnull=True).update(captura_iniciada=False)
+            return JsonResponse({'status': 'error', 'reintentar_metodo': error.detalle == 'INSTRUMENT_DECLINED', 'message': 'PayPal pidió elegir otro medio de pago.'}, status=409)
+        logging.getLogger(__name__).warning('Captura PayPal por conciliar: cita=%s orden=%s', pago.cita_id, pago.orden)
+        return JsonResponse({
+            'status': 'error', 'message': f'No pudimos verificar el resultado. Retoma la misma orden {orden} o contacta a soporte antes de hacer otro pago.',
+        }, status=502)
+    return _respuesta_cita(pago.cita, request)
+
+
+@require_POST
+@transaction.atomic
+def cancelar_reserva_paypal(request):
+    if not request.user.is_authenticated:
+        return JsonResponse({'status': 'error'}, status=401)
+    pago = PagoCitaPayPal.objects.select_for_update().filter(
+        orden=request.POST.get('orden', ''), cita__paciente=request.user,
+    ).first()
+    if pago and not pago.captura_iniciada:
+        Cita.objects.filter(pk=pago.cita_id, estado='Pendiente').update(estado='Cancelada', psicologo=None)
+    return JsonResponse({'status': 'success'})
 
 
 # ======================================================================
@@ -2056,7 +2200,7 @@ def subir_comprobante_transferencia_ajax(request):
     # Consentimiento: mismo criterio y retrocompatibilidad que guardar_cita_ajax
     # (en recepción no se exige: el paciente puede ser presencial de primera vez
     # y el staff asume esa validación aparte, igual que admin_guardar_cita_ajax).
-    tiene_consentimiento = ConsentimientoInformado.objects.filter(paciente=usuario).exists() or Cita.objects.filter(paciente=usuario).exists()
+    tiene_consentimiento = _tiene_consentimiento(usuario)
     if not tiene_consentimiento and not es_recepcion:
         return JsonResponse({
             'status': 'error',
@@ -2221,7 +2365,7 @@ def subir_comprobante_transferencia_ajax(request):
         # Correo de confirmación SOLO al paciente (misma plantilla/reglas que guardar_cita_ajax)
         if modalidad_str == 'Presencial':
             # 🎫 Pase de acceso presencial: correo + PDF con QR (la misma ruta
-            # probada que usan admin_guardar_cita_ajax y pago_exitoso_clip).
+            # probada que usan admin_guardar_cita_ajax).
             try:
                 _enviar_correo_pase_admision(cita, request)
             except Exception:
@@ -2257,213 +2401,6 @@ def subir_comprobante_transferencia_ajax(request):
         return JsonResponse({'status': 'error', 'message': 'No pudimos procesar tu comprobante. Intenta de nuevo en un momento.'})
 
 
-# =========================================================================
-# 🪑 RECEPCIÓN (recep-59/agendar) — PASARELA DE PAGOS ANTES DE AGENDAR
-# 3/11/2026. Reutiliza exactamente los cierres YA PROBADOS del sistema:
-#   · Tarjeta → Clip: la cita nace 'Pendiente' y TODO el cierre vive en
-#     pago_exitoso_clip (asignación automática de psicólogo con la misma
-#     lógica, Meet o pase QR presencial, correo, estado 'Confirmada').
-#     Aquí solo se crea la cita pendiente y se genera el link de pago en
-#     nombre del paciente elegido por el staff.
-#   · Transferencia → subir_comprobante_transferencia_ajax (con paciente_id).
-#   · TECTUM → sigue gratuito vía admin_guardar_cita_paciente (no pasa aquí).
-# =========================================================================
-@user_passes_test(lambda u: u.is_superuser, login_url='/')  # == es_admin (se define más abajo en este archivo)
-@require_POST
-@transaction.atomic
-def recep_iniciar_pago_clip_paciente(request):
-    """
-    Crea la Cita en 'Pendiente' para el paciente_id de recepción y devuelve el
-    link de checkout de Clip. NUNCA confirma la cita: el estado pasa a
-    'Confirmada' SOLO cuando Clip redirige a /pago-exitoso/<id>/
-    (pago_exitoso_clip, la misma vista pública que usa el paciente).
-    """
-    paciente_id = request.POST.get('paciente_id')
-    if not paciente_id:
-        return JsonResponse({'status': 'error', 'message': 'Selecciona un paciente antes de cobrar.'})
-
-    try:
-        paciente_user = User.objects.select_related('perfil').get(id=paciente_id)
-    except (User.DoesNotExist, ValueError, TypeError):
-        return JsonResponse({'status': 'error', 'message': 'Paciente no encontrado. Vuelve a seleccionarlo.'})
-
-    # Candado de convenio: TECTUM In-House nunca se cobra (100% cubierto).
-    perfil_paciente = getattr(paciente_user, 'perfil', None)
-    es_tectum_forzado = request.POST.get('es_tectum') in ('1', 'true', 'True')
-    if es_tectum_forzado or getattr(perfil_paciente, 'es_tectum', False):
-        return JsonResponse({
-            'status': 'error',
-            'message': 'Las citas TECTUM In-House no se cobran (convenio). Usa "Confirmar cita" sin cobro.'
-        })
-
-    tipo_servicio = request.POST.get('tipo_servicio', 'individual')
-    if tipo_servicio not in TIPOS_SESION_VALIDOS:
-        tipo_servicio = 'individual'
-    modalidad = request.POST.get('modalidad', 'En línea')
-    if modalidad not in MODALIDADES_CITA_VALIDAS:
-        modalidad = 'En línea'
-    animo = (request.POST.get('animo') or 'No especificó').strip()[:50] or 'No especificó'
-
-    # El monto SIEMPRE se recalcula en servidor (nunca confiamos en el navegador).
-    integrantes_familia = None
-    if tipo_servicio == 'familiar':
-        precio_info = calcular_precio_sesion(tipo_servicio, request.POST.get('integrantes_familia'))
-        integrantes_familia = precio_info['integrantes_familia']
-    else:
-        precio_info = calcular_precio_sesion(tipo_servicio)
-    monto = precio_info['total']
-
-    try:
-        fecha_obj = datetime.strptime(request.POST.get('fecha'), '%Y-%m-%d').date()
-        hora_obj = parsear_hora_flexible(request.POST.get('hora'))
-    except Exception:
-        return JsonResponse({'status': 'error', 'message': 'Fecha u hora inválida. Vuelve a elegir día y hora.'})
-
-    # Pre-chequeo de disponibilidad con el MISMO algoritmo de slots que usan
-    # todas las agendas (obtener_slots_psicologo_para_dia): evita cobrar una
-    # tarjeta por un horario que ningún especialista pueda atender después.
-    campo_capacidad = CAPACIDAD_POR_TIPO_SESION[tipo_servicio]
-    esquemas_del_dia = EsquemaHorarioPsicologo.objects.filter(
-        activo=True, fecha_inicio__lte=fecha_obj, fecha_fin__gte=fecha_obj
-    )
-    psicologos_candidatos = PerfilPsicologo.objects.filter(
-        esta_activo=True,
-        **{campo_capacidad: True},
-        modalidad_atencion__in=COMPATIBILIDAD_MODALIDAD_PSICOLOGO[modalidad],
-    ).prefetch_related(
-        Prefetch('esquemas_horarios', queryset=esquemas_del_dia, to_attr='_esquemas_rango')
-    )
-    slot_disponible = False
-    for psicologo_temp in psicologos_candidatos:
-        slots_del_dia = obtener_slots_psicologo_para_dia(
-            psicologo_temp, fecha_obj, tipo_sesion=tipo_servicio, modalidad=modalidad
-        )
-        if hora_obj.strftime('%I:%M %p') in slots_del_dia:
-            slot_disponible = True
-            break
-    if not slot_disponible:
-        return JsonResponse({
-            'status': 'error',
-            'message': 'Lo sentimos, ese horario acaba de ser ocupado o no hay especialistas disponibles. Elige otro horario.'
-        })
-
-    # Cita 'Pendiente' SIN psicólogo: nunca se confirma sin pago. La asignación
-    # y el cierre los hace pago_exitoso_clip exactamente como en el flujo normal.
-    cita = Cita.objects.create(
-        paciente=paciente_user,
-        fecha=fecha_obj,
-        hora=hora_obj,
-        estado='Pendiente',
-        tipo_sesion=tipo_servicio,
-        integrantes_familia=integrantes_familia,
-        estado_animo=animo,
-        modalidad=modalidad,
-        motivo='Agendada por administración',
-        es_tectum=False,
-        es_beneficios=False,
-    )
-
-    # Clip: mismo payload / mismas credenciales / misma pasarela que iniciar_pago_clip.
-    try:
-        api_key = os.environ.get("CLIP_API_KEY_PROD")
-        clave_secreta = os.environ.get("CLIP_CLAVE_SECRETA_PROD")
-        credenciales_puras = f"{api_key}:{clave_secreta}"
-        base64_token = base64.b64encode(credenciales_puras.encode('utf-8')).decode('utf-8')
-
-        url = "https://api.payclip.com/v2/checkout"
-        dominio = "https://espaciohope.com"
-
-        payload = json.dumps({
-            "amount": float(monto),
-            "currency": "MXN",
-            "purchase_description": f"HOPE - {tipo_servicio.capitalize()}",
-            "redirection_url": {
-                "success": f"{dominio}/pago-exitoso/{cita.id}/",
-                "error": f"{dominio}/pago-cancelado/{cita.id}/",
-                # El pagador/cajero puede volver desde cualquier dispositivo:
-                # 'default' recae en la misma pantalla pública de confirmación.
-                "default": f"{dominio}/pago-exitoso/{cita.id}/"
-            },
-            "custom_transaction_id": f"RECEP_{cita.id}_{timezone.now().strftime('%M%S')}"
-        })
-        headers = {
-            'accept': 'application/vnd.clip.v2+json',
-            'content-type': 'application/json',
-            'Authorization': f"Basic {base64_token}"
-        }
-        response = requests.post(url, headers=headers, data=payload)
-        clip_data = response.json()
-
-        if response.status_code == 200 and 'payment_request_url' in clip_data:
-            return JsonResponse({
-                'status': 'success',
-                'payment_url': clip_data['payment_request_url'],
-                'cita_id': cita.id,
-                'monto': monto,
-            })
-        logging.getLogger(__name__).warning(
-            'Clip respondió sin payment_request_url en recepción (cita %s): status=%s body=%s',
-            cita.id, response.status_code, response.text[:300]
-        )
-    except Exception:
-        logging.getLogger(__name__).exception('Clip falló en recepción (cita %s)', cita.id)
-
-    # Sin link no hay cobro: se elimina la cita Pendiente y el horario queda libre.
-    cita.delete()
-    return JsonResponse({'status': 'error', 'message': 'Clip no generó el link de pago. Intenta de nuevo en un momento.'})
-
-
-@user_passes_test(lambda u: u.is_superuser, login_url='/')  # == es_admin (se define más abajo en este archivo)
-def recep_estado_cita_paciente(request):
-    """
-    GET para que la recepción vigile el estado de la cita mientras el pagador
-    completa el checkout de Clip. Solo lectura; no escribe nada.
-    """
-    cita_id = request.GET.get('cita_id')
-    if not cita_id:
-        return JsonResponse({'status': 'error', 'message': 'Falta cita_id.'})
-    try:
-        cita = Cita.objects.select_related('paciente').get(id=cita_id)
-    except (Cita.DoesNotExist, ValueError, TypeError):
-        # La cita dejó de existir (se liberó manualmente o Clip canceló el pago).
-        return JsonResponse({'status': 'success', 'existe': False, 'estado': ''})
-    return JsonResponse({
-        'status': 'success',
-        'existe': True,
-        'id': cita.id,
-        'estado': cita.estado or '',
-        'paciente': f"{cita.paciente.first_name} {cita.paciente.last_name}".strip() if cita.paciente else '',
-        'fecha': str(cita.fecha or ''),
-        'hora': cita.hora.strftime('%I:%M %p') if cita.hora else '',
-    })
-
-
-@user_passes_test(lambda u: u.is_superuser, login_url='/')  # == es_admin (se define más abajo en este archivo)
-@require_POST
-@transaction.atomic
-def recep_liberar_cita_pendiente(request):
-    """
-    La recepción libera el horario cuando el cobro de Clip no se completa.
-    SOLO elimina citas en 'Pendiente'/'Pendiente de Pago': una cita Confirmada,
-    Completada o con bitácora jamás se toca aquí (estados clínicos intactos).
-    """
-    cita_id = request.POST.get('cita_id')
-    try:
-        cita = Cita.objects.get(id=cita_id)
-    except (Cita.DoesNotExist, ValueError, TypeError):
-        return JsonResponse({'status': 'success', 'message': 'La cita ya no existe: el horario ya está libre.'})
-    if cita.estado not in ('Pendiente', 'Pendiente de Pago'):
-        return JsonResponse({
-            'status': 'error',
-            'message': f'La cita está en estado "{cita.estado}": ya no se puede liberar desde recepción.'
-        })
-    cita.delete()
-    logging.getLogger(__name__).info(
-        'Recepción liberó cita pendiente %s (staff %s)', cita_id, request.user.id
-    )
-    return JsonResponse({'status': 'success', 'message': 'Cita liberada: el horario quedó disponible y no se cobró.'})
-
-
 @transaction.atomic
 def reagendar_cita_ajax(request):
     if request.method != 'POST' or not request.user.is_authenticated:
@@ -2495,6 +2432,11 @@ def reagendar_cita_ajax(request):
     if not cita.psicologo:
         return JsonResponse({'status': 'error', 'message': 'Esta cita no tiene terapeuta asignado.'})
 
+    nuevo_inicio = timezone.make_aware(datetime.combine(nueva_fecha, nueva_hora))
+    if nuevo_inicio < ahora + timedelta(hours=2) or nueva_fecha > ahora.date() + timedelta(days=90):
+        return JsonResponse({'status': 'error', 'message': 'Elige un horario con dos horas de anticipación dentro de los próximos 90 días.'})
+    _liberar_reservas_vencidas(fecha=nueva_fecha, hora=nueva_hora)
+
     # 🔒 MISMA LÓGICA que usamos al agendar: solo slots realmente libres del doctor
     # (respetando la modalidad de la cita original: individual/pareja/familiar)
     # ⚠️ Se pasa la MODALIDAD de la cita: una cita Presencial solo se reagenda en
@@ -2511,9 +2453,28 @@ def reagendar_cita_ajax(request):
                             estado='Confirmada').exclude(id=cita.id).exists():
         return JsonResponse({'status': 'error', 'message': 'Ese horario acaba de ser ocupado.'})
 
-    cita.fecha = nueva_fecha
-    cita.hora = nueva_hora
-    cita.save(update_fields=['fecha', 'hora'])
+    try:
+        with transaction.atomic():
+            cita.fecha = nueva_fecha
+            cita.hora = nueva_hora
+            cita.correo_confirmacion_enviado = False
+            cita.save(update_fields=['fecha', 'hora', 'correo_confirmacion_enviado'])
+            if cita.modalidad == 'En línea' and cita.id_evento_google:
+                fin = nuevo_inicio + timedelta(minutes=50)
+                _servicio_calendar().events().patch(
+                    calendarId='primary', eventId=cita.id_evento_google, sendUpdates='all',
+                    body={
+                        'start': {'dateTime': nuevo_inicio.isoformat(), 'timeZone': 'America/Mexico_City'},
+                        'end': {'dateTime': fin.isoformat(), 'timeZone': 'America/Mexico_City'},
+                    },
+                ).execute()
+    except IntegrityError:
+        return JsonResponse({'status': 'error', 'message': 'Ese horario acaba de ocuparse.'}, status=409)
+    except Exception:
+        logging.getLogger(__name__).warning('Error al sincronizar el horario de la cita %s', cita.pk)
+        return JsonResponse({'status': 'error', 'message': 'No pudimos sincronizar el horario. Tu cita sigue con su fecha original.'}, status=502)
+
+    transaction.on_commit(lambda: _notificar_cita_paciente(cita, request), robust=True)
 
     return JsonResponse({
         'status': 'success',
@@ -2544,7 +2505,10 @@ def panel_doctor(request):
         fecha=hoy,
         estado='Confirmada',
         hora__gte=hora_limite  # <- muestra citas desde 1 hora atrás
-    ).prefetch_related('evaluacion_servicio', 'grabacion_sesion').order_by('hora')
+    ).prefetch_related(
+        'evaluacion_servicio',
+        Prefetch('grabacion_sesion', queryset=GrabacionSesion.objects.defer('transcripcion', 'notas_generadas')),
+    ).order_by('hora')
 
     # 🔥 NUEVO: Talleres/Grupos de hoy que NO han expirado
     talleres_hoy = Taller.objects.filter(
@@ -2718,7 +2682,7 @@ def guardar_historial_ajax(request):
             
             if historial_id:
                 # MODO EDICIÓN: Actualizamos la existente
-                historial = HistorialClinico.objects.get(id=historial_id, psicologo=psicologo)
+                historial = HistorialClinico.objects.get(id=historial_id, psicologo=psicologo, paciente=paciente)
                 historial.como_llega = request.POST.get('como_llega', '')
                 historial.notas_sesion = request.POST.get('notas_sesion', '')
                 historial.aprendizaje_paciente = request.POST.get('aprendizaje_paciente', '')
@@ -2726,6 +2690,8 @@ def guardar_historial_ajax(request):
                 historial.recomendaciones = request.POST.get('recomendaciones', '')
                 if archivo:
                     historial.archivo_adjunto = archivo
+                if historial.notas_sesion.strip():
+                    historial.pendiente_revision_audio = False
                 historial.save()
             else:
                 # MODO CREACIÓN: Lo que ya tenías
@@ -2739,7 +2705,7 @@ def guardar_historial_ajax(request):
                     archivo_adjunto=archivo
                 )
                 if cita_id and cita_id.strip() != "":
-                    cita = Cita.objects.filter(id=cita_id, psicologo=psicologo).first()
+                    cita = Cita.objects.filter(id=cita_id, psicologo=psicologo, paciente=paciente).first()
                     if cita:
                         historial.cita = cita
                         cita.estado = 'Completada'
@@ -2811,7 +2777,7 @@ def detalle_paciente(request, paciente_id):
  
     citas_pasadas = Cita.objects.filter(
         paciente=paciente, psicologo=psicologo, fecha__lte=now_local.date(),
-    ).order_by('-fecha', '-hora').select_related('nota_clinica')
+    ).order_by('-fecha', '-hora').select_related('nota_clinica', 'grabacion_sesion')
  
     historiales_vinculados_ids = set()
     sesiones = []
@@ -3298,6 +3264,11 @@ def procesar_archivo_ia(request):
 
     extension = archivo.name.rsplit('.', 1)[-1].lower()
 
+    if extension not in ('jpg', 'jpeg', 'png', 'webp', 'pdf', 'docx'):
+        return JsonResponse({'error': 'Usa JPG, PNG, WebP, PDF o DOCX.'}, status=400)
+    if archivo.size > 10 * 1024 * 1024:
+        return JsonResponse({'error': 'El archivo supera los 10 MB.'}, status=400)
+
     # 🔥 SÚPER PROMPT CLÍNICO DEDUCTIVO 🔥
     prompt_instrucciones = (
         "Eres un analizador clínico experto. Lee el documento adjunto, analiza el contexto y distribuye la información "
@@ -3339,17 +3310,32 @@ def procesar_archivo_ia(request):
                 temperature=0.1
             )
             texto_respuesta = response.choices[0].message.content.strip()
-            datos_distribuidos = _extraer_json_groq(texto_respuesta)
 
         # ── PDF O WORD ──
         else:
             texto_raw = ""
             if extension == 'pdf':
                 import fitz
-                doc_pdf = fitz.open(stream=archivo.read(), filetype="pdf")
-                for pagina in doc_pdf: texto_raw += pagina.get_text()
-                doc_pdf.close()
-            elif extension in ['doc', 'docx']:
+                with fitz.open(stream=archivo.read(), filetype="pdf") as doc_pdf:
+                    if len(doc_pdf) > 20:
+                        return JsonResponse({'error': 'El PDF supera las 20 páginas.'}, status=400)
+                    paginas = []
+                    for pagina in doc_pdf:
+                        texto = pagina.get_text()
+                        if not texto.strip():
+                            try:
+                                ocr = pagina.get_textpage_ocr(
+                                    language='spa', dpi=150, full=True,
+                                    tessdata=os.environ.get('TESSDATA_PREFIX'),
+                                )
+                                texto = pagina.get_text(textpage=ocr)
+                            except (RuntimeError, ValueError):
+                                return JsonResponse({
+                                    'error': 'El PDF requiere OCR en español. Sube una imagen JPG o PNG si el servidor no tiene OCR disponible.'
+                                }, status=422)
+                        paginas.append(texto)
+                    texto_raw = "\n".join(paginas)
+            elif extension == 'docx':
                 import docx
                 doc_word = docx.Document(archivo)
                 texto_raw = "\n".join(p.text for p in doc_word.paragraphs if p.text.strip())
@@ -3366,13 +3352,23 @@ def procesar_archivo_ia(request):
                 max_tokens=2000,
                 temperature=0.1,
             )
-            datos_distribuidos = _extraer_json_groq(response.choices[0].message.content.strip())
+            texto_respuesta = response.choices[0].message.content.strip()
 
-        return JsonResponse({'status': 'success', 'data': datos_distribuidos})
+        bloque = re.fullmatch(r'```(?:json)?\s*(.*?)\s*```', texto_respuesta, flags=re.DOTALL)
+        try:
+            datos = json.loads(bloque.group(1) if bloque else texto_respuesta)
+        except (json.JSONDecodeError, TypeError):
+            datos = None
+        campos = ('como_llega', 'notas_sesion', 'aprendizaje_paciente', 'como_se_va', 'recomendaciones')
+        if not isinstance(datos, dict) or not all(isinstance(datos.get(campo), str) for campo in campos):
+            return JsonResponse({'error': 'El análisis no devolvió las cinco secciones clínicas.'}, status=502)
+        if not any(datos[campo].strip() for campo in campos):
+            return JsonResponse({'error': 'El análisis no encontró contenido clínico en el documento.'}, status=422)
+        return JsonResponse({'status': 'success', 'data': {campo: datos[campo] for campo in campos}})
 
     except Exception as e:
-        print(f">>> ERROR IA: {e}")
-        return JsonResponse({'error': f'Error al procesar: {str(e)}'}, status=500)
+        logging.getLogger(__name__).warning('Falló el análisis de un documento clínico (%s)', type(e).__name__)
+        return JsonResponse({'error': 'No se pudo analizar el documento.'}, status=502)
 
 
 
@@ -3967,7 +3963,7 @@ def generar_sintesis_ajax(request, paciente_id):
             cuestionario_texto = "\n".join([f"- {k.replace('_', ' ').capitalize()}: {v}" for k, v in respuestas.items()])
 
         # 2. Obtener TODAS las bitácoras en orden cronológico
-        historiales = HistorialClinico.objects.filter(paciente=paciente, psicologo=psicologo).order_by('fecha_registro')
+        historiales = HistorialClinico.objects.filter(paciente=paciente, psicologo=psicologo, pendiente_revision_audio=False).order_by('fecha_registro')
         bitacoras_texto = ""
         
         for i, h in enumerate(historiales):
@@ -4427,289 +4423,6 @@ def detalle_prensa(request, slug):
     return render(request, 'detalle_prensa.html', {'articulo': articulo}) 
 
 
-@csrf_exempt
-@transaction.atomic
-def iniciar_pago_clip(request):
-    if request.method == 'POST':
-        try:
-            tipo_servicio = request.POST.get('tipo_servicio', 'individual')
-            
-            # Si es un donativo, saltamos la creación de la cita y respetamos
-            # el monto libre que decide la persona que dona.
-            if tipo_servicio == 'donativo':
-                monto = request.POST.get('monto')
-                cita_id = "DONATIVO"
-            else:
-                if tipo_servicio not in TIPOS_SESION_VALIDOS:
-                    tipo_servicio = 'individual'
-
-                # 1. ES UNA CITA: Capturamos datos y pre-apartamos el lugar
-                fecha_str = request.POST.get('fecha')
-                hora_str = request.POST.get('hora')
-                animo = request.POST.get('animo', 'No especificó')
-                modalidad = request.POST.get('modalidad', 'En línea')
-
-                # ⚠️ ETAPA DE PRUEBAS (PAGO_PRESENCIAL_HABILITADO = False):
-                # las citas presenciales NO cobran por Clip. Si alguien fuerza
-                # un POST con modalidad='Presencial', se rechaza aquí para que
-                # ninguna cita presencial quede Pendiente de pago.
-                if modalidad == 'Presencial' and not PAGO_PRESENCIAL_HABILITADO:
-                    return JsonResponse({
-                        'status': 'error',
-                        'message': 'Las citas presenciales no requieren pago por el momento. Agenda tu cita presencial desde tu panel.'
-                    })
-
-                # 🔥 NUNCA confiamos en el "monto" que manda el navegador: se
-                # recalcula aquí con la misma función usada en el resumen.
-                integrantes_familia = None
-                if tipo_servicio == 'familiar':
-                    precio_info = calcular_precio_sesion(tipo_servicio, request.POST.get('integrantes_familia'))
-                    integrantes_familia = precio_info['integrantes_familia']
-                else:
-                    precio_info = calcular_precio_sesion(tipo_servicio)
-                monto = precio_info['total']
-
-                fecha_obj = datetime.strptime(fecha_str, '%Y-%m-%d').date()
-                hora_obj = parsear_hora_flexible(hora_str)
-
-                # 28/10/2026: detectamos la organización (Beneficios) para separación de métricas
-                es_beneficios_clip = (
-                    'tectumbeneficios' in request.get_host().lower()
-                    or request.session.get('convenio_tectum_beneficios', False)
-                    or request.POST.get('convenio') == 'tectumbeneficios'
-                )
-
-                # Guardamos la cita en estado 'Pendiente' usando tus campos originales
-                cita = Cita.objects.create(
-                    paciente=request.user if request.user.is_authenticated else None,
-                    fecha=fecha_obj,
-                    hora=hora_obj,
-                    estado='Pendiente',
-                    tipo_sesion=tipo_servicio,
-                    integrantes_familia=integrantes_familia,
-                    estado_animo=animo,
-                    modalidad=modalidad,
-                    es_beneficios=es_beneficios_clip,  # 28/10/2026: separación de organizaciones
-                    motivo='Primera Sesión' if not getattr(request.user.perfil, 'psicologo_asignado', None) else 'Sesión de Seguimiento'
-                )
-                cita_id = cita.id
-
-            # 2. Configuración de Clip para Producción
-            api_key = os.environ.get("CLIP_API_KEY_PROD")
-            clave_secreta = os.environ.get("CLIP_CLAVE_SECRETA_PROD")
-            
-            credenciales_puras = f"{api_key}:{clave_secreta}"
-            base64_token = base64.b64encode(credenciales_puras.encode('utf-8')).decode('utf-8')
-            
-            url = "https://api.payclip.com/v2/checkout"
-            dominio = "https://espaciohope.com" # <--- Pon tu dominio real
-
-            payload = json.dumps({
-                "amount": float(monto),
-                "currency": "MXN",
-                "purchase_description": f"HOPE - {tipo_servicio.capitalize()}",
-                "redirection_url": {
-                    "success": f"{dominio}/pago-exitoso/{cita_id}/",
-                    "error": f"{dominio}/pago-cancelado/{cita_id}/",
-                    "default": f"{dominio}/panel/"
-                },
-                "custom_transaction_id": f"HOPE_{cita_id}_{timezone.now().strftime('%M%S')}"
-            })
-
-            headers = {
-                'accept': 'application/vnd.clip.v2+json', 
-                'content-type': 'application/json',
-                'Authorization': f"Basic {base64_token}"
-            }
-
-            # 3. Lanzamos petición
-            response = requests.post(url, headers=headers, data=payload)
-            clip_data = response.json()
-
-            if response.status_code == 200 and 'payment_request_url' in clip_data:
-                return JsonResponse({'status': 'success', 'payment_url': clip_data['payment_request_url']})
-            else:
-                if tipo_servicio != 'donativo':
-                    cita.delete() # Borramos la basura si Clip falla
-                return JsonResponse({'status': 'error', 'message': 'Clip no generó el link.'})
-
-        except Exception as e:
-            return JsonResponse({'status': 'error', 'message': str(e)})
-            
-    return JsonResponse({'status': 'error', 'message': 'Método no permitido'})
-
-
-@transaction.atomic
-def pago_exitoso_clip(request, cita_id):
-    # Caso 1: Fue un donativo
-    if cita_id == "DONATIVO":
-        messages.success(request, "¡Gracias por tu donativo! Eres un puente hacia la esperanza 🤍")
-        return redirect('inicio')
-
-    # Caso 2: Fue una Cita (Copiamos TU lógica original de PayPal)
-    try:
-        cita = Cita.objects.get(id=cita_id)
-        
-        if cita.estado in ['Pendiente', 'Pendiente de Pago']:
-            paciente = cita.paciente
-            perfil = paciente.perfil
-            
-            # 🔥 MULTISERVICIO: Buscamos si ya tiene psicólogo asignado a este servicio específico
-            tratamiento = TratamientoPaciente.objects.filter(
-                paciente=paciente, tipo_servicio=cita.tipo_sesion, activo=True
-            ).select_related('psicologo_asignado').first()
-
-            psicologo = tratamiento.psicologo_asignado if (tratamiento and tratamiento.psicologo_asignado) else None
-            campo_capacidad = CAPACIDAD_POR_TIPO_SESION.get(cita.tipo_sesion, 'atiende_individual')
-
-            if psicologo and not getattr(psicologo, campo_capacidad, False):
-                psicologo = None
-
-            # 🏢 Compatibilidad de modalidad: solo psicólogos Presencial/Mixto
-            # para citas presenciales; En línea/Mixto para las de en línea.
-            if psicologo and not psicologo_atiende_modalidad(psicologo, cita.modalidad):
-                psicologo = None
-
-            # --- ASIGNACIÓN DE PSICÓLOGO ---
-            if not psicologo:
-                preferencia = ""
-                try:
-                    cuestionario = CuestionarioRegistro.objects.filter(
-                        paciente=paciente, flujo_elegido=cita.tipo_sesion
-                    ).order_by('-fecha_completado').first()
-                    if not cuestionario:
-                        cuestionario = CuestionarioRegistro.objects.filter(paciente=paciente).order_by('-fecha_completado').first()
-                    if cuestionario:
-                        preferencia = cuestionario.respuestas.get('preferencia_terapeuta', '')
-                except:
-                    pass
-
-                doctores_con_slot_valido = []
-                modalidades_ok = COMPATIBILIDAD_MODALIDAD_PSICOLOGO.get(cita.modalidad or 'En línea', ['En línea', 'Mixto'])
-                for psicologo_temp in PerfilPsicologo.objects.filter(
-                    esta_activo=True, **{campo_capacidad: True},
-                    modalidad_atencion__in=modalidades_ok,
-                ):
-                    slots_del_dia = obtener_slots_psicologo_para_dia(psicologo_temp, cita.fecha, tipo_sesion=cita.tipo_sesion, modalidad=cita.modalidad)
-                    if cita.hora.strftime('%I:%M %p') in slots_del_dia:
-                        doctores_con_slot_valido.append(psicologo_temp.id)
-
-                psicologos_libres = PerfilPsicologo.objects.filter(
-                    id__in=doctores_con_slot_valido
-                ).select_for_update().annotate(
-                    carga_historica=Count('citas_agendadas', filter=~Q(citas_agendadas__estado='Cancelada'))
-                )
-
-                if not psicologos_libres.exists():
-                    cita.delete()
-                    messages.error(request, "Tu pago fue exitoso, pero el horario se ocupó. Contáctanos por WhatsApp para reagendar.")
-                    return redirect('panel_generico')
-
-                if 'Mujer' in preferencia:
-                    psicologo = psicologos_libres.filter(genero='Mujer').order_by('carga_historica', '?').first()
-                elif 'Hombre' in preferencia:
-                    psicologo = psicologos_libres.filter(genero='Hombre').order_by('carga_historica', '?').first()
-
-                if not psicologo:
-                    psicologo = psicologos_libres.order_by('carga_historica', '?').first()
-
-                # Guardamos en TratamientoPaciente específico
-                TratamientoPaciente.objects.update_or_create(
-                    paciente=paciente,
-                    tipo_servicio=cita.tipo_sesion,
-                    defaults={'psicologo_asignado': psicologo, 'activo': True}
-                )
-
-                if not perfil.psicologo_asignado:
-                    perfil.psicologo_asignado = psicologo
-                    perfil.save(update_fields=['psicologo_asignado'])
-            else:
-                if Cita.objects.filter(psicologo=psicologo, fecha=cita.fecha, hora=cita.hora, estado='Confirmada').exists():
-                    cita.delete()
-                    messages.error(request, "Tu pago fue exitoso, pero tu terapeuta ya agendó a alguien en ese minuto. Contáctanos para reagendar.")
-                    return redirect('panel_generico')
-
-            # --- GOOGLE MEET ---
-            # 🏢 Las citas exclusivamente presenciales NO generan Meet.
-            link_final = None
-            id_google = None
-            if cita.modalidad == 'En línea':
-                datos_meet = generar_link_meet(
-                    fecha_obj=cita.fecha,
-                    hora_obj=cita.hora,
-                    paciente_nombre=paciente.first_name,
-                    psicologo_nombre=psicologo.usuario.first_name,
-                    paciente_email=paciente.email,             
-                    psicologo_email=psicologo.usuario.email        
-                )
-                if datos_meet:
-                    link_final = datos_meet['link']
-                    id_google = datos_meet['id_evento']
-
-            # --- GUARDADO FINAL ---
-            # 🎫 Las citas presenciales reciben su Pase de Acceso: código único
-            # de verificación (lo lleva el QR) + correo con el PDF adjunto.
-            if cita.modalidad == 'Presencial' and not cita.codigo_pase:
-                cita.codigo_pase = _generar_codigo_pase()
-            cita.psicologo = psicologo
-            cita.estado = 'Confirmada'
-            cita.enlace_meet = link_final
-            cita.id_evento_google = id_google
-            cita.save()
-
-            # --- CORREO ---
-            es_tectum_email = getattr(cita, 'es_tectum', False) or getattr(getattr(paciente, 'perfil', None), 'es_tectum', False) or request.session.get('convenio_tectum_beneficios', False)
-            if cita.modalidad == 'Presencial':
-                # 🎫 Pase de Acceso: correo con presentación + PDF adjunto.
-                # (utiliza la misma infraestructura SMTP/PDF que corre todo el sistema)
-                try:
-                    _enviar_correo_pase_admision(cita, request)
-                except Exception:
-                    logging.getLogger(__name__).exception('Fallo el correo del pase de admisión de la cita %s', cita.id)
-                messages.success(request, "¡Todo listo! Tu cita presencial fue agendada. Te enviamos tu Pase de Acceso por correo.")
-                return redirect('panel_generico')
-
-            asunto = 'Confirmación de tu sesión en TECTUM' if es_tectum_email else 'Confirmación de tu sesión en HOPE'
-            if link_final:
-                link_correo = request.build_absolute_uri(reverse('formulario_previo_meet', args=[cita.id]))
-            else:
-                link_correo = "Cita Presencial (Revisa tu panel para ver la dirección)"
-            contexto = {
-                'nombre': paciente.first_name,
-                'psicologo_nombre': psicologo.usuario.first_name,
-                'fecha': cita.fecha.strftime('%d/%m/%Y'),
-                'hora': cita.hora.strftime('%H:%M'),
-                'link_meet': link_correo,
-                'es_tectum': es_tectum_email,
-            }
-            mensaje_html = render_to_string('correo_cita.html', contexto)
-            mensaje_plano = strip_tags(mensaje_html)
-            remitente = 'TECTUM <contacto@espaciohope.com>' if es_tectum_email else 'Espacio HOPE <contacto@espaciohope.com>'
-            send_mail(asunto, mensaje_plano, remitente, [paciente.email], html_message=mensaje_html, fail_silently=True)
-
-            messages.success(request, "¡Todo listo! Tu pago fue procesado con éxito y tu sesión ha sido agendada en tu panel.")
-        
-        return redirect('panel_generico')
-
-    except Cita.DoesNotExist:
-        messages.error(request, "Hubo un problema verificando tu cita, por favor contacta a soporte.")
-        return redirect('panel_generico')
-
-
-def pago_cancelado_clip(request, cita_id):
-    if cita_id != "DONATIVO":
-        try:
-            cita = Cita.objects.get(id=cita_id)
-            if cita.estado == 'Pendiente':
-                cita.delete() # Liberamos el horario para que otro lo ocupe
-        except Cita.DoesNotExist:
-            pass
-        messages.error(request, "El pago fue cancelado o la tarjeta fue rechazada. Puedes intentar agendar nuevamente.")
-        
-    return redirect('panel_generico')
-
-
-
 def procesar_registro_taller(request):
     if request.method == 'POST':
         nombre = request.POST.get('nombre')
@@ -4750,9 +4463,7 @@ def procesar_registro_taller(request):
 # eligió en el buscador. Todo lo demás -verificación real de horario,
 # asignación automática de psicólogo, generación de Google Meet, envío de
 # correo- es exactamente la misma lógica ya probada, así no se desincroniza
-# nunca del resto del sistema. Y no se cobra nada, igual que ya pasaba
-# antes en guardar_cita_ajax (el cobro solo vive en iniciar_pago_clip,
-# que aquí ni se toca).
+# nunca del resto del sistema.
 
 @user_passes_test(es_admin, login_url='/')
 def panel_admin_agendar_cita(request):
@@ -4841,6 +4552,7 @@ def admin_disponibilidad_ajax(request):
                 respuestas = {}
         preferencia = respuestas.get("preferencia_terapeuta", "")
 
+    _liberar_reservas_vencidas()
     hoy = timezone.localtime(timezone.now()).date()
     fecha_limite = hoy + timedelta(days=90)
     campo_capacidad = CAPACIDAD_POR_TIPO_SESION.get(tipo_sesion, 'atiende_individual')
@@ -5059,7 +4771,7 @@ def admin_guardar_cita_ajax(request):
         if link_final:
             link_correo = request.build_absolute_uri(reverse('formulario_previo_meet', args=[cita.id]))
         else:
-            link_correo = "Cita Presencial (Revisa tu panel para ver la dirección)"
+            link_correo = ""
         contexto = {
             'nombre': paciente_user.first_name,
             'psicologo_nombre': psicologo.usuario.first_name,
@@ -5150,10 +4862,6 @@ def donaciones_view(request):
 # =========================================================================
 # 🇻🇪 PÁGINA DE DONACIONES — COMUNIDAD VENEZOLANA
 # =========================================================================
-# Vista dedicada (antes vivía solo como modal en inicio.html). Reutiliza la
-# MISMA lógica de cobro que ya existe: PayPal Smart Buttons + Clip, ambos
-# apuntando al mismo endpoint iniciar_pago_clip con tipo_servicio='donativo',
-# así que no se toca nada del flujo de pago ya probado.
 def donaciones_venezuela(request):
     context = {
         'paypal_client_id': settings.PAYPAL_CLIENT_ID,
@@ -5166,7 +4874,7 @@ def donaciones_venezuela(request):
 # 🇨🇴 LANDING — COMUNIDAD COLOMBIANA
 # =========================================================================
 # Reutiliza la identidad visual del sitio principal. Ofrece dos caminos:
-#   1) "Donar aquí"            -> abre el mismo modal de donación (PayPal/Clip)
+#   1) "Donar aquí"            -> abre el mismo modal de donación (PayPal)
 #      que ya se usa en el resto del sitio, sin tocar esa lógica de cobro.
 #   2) "Únete a nuestra familia" -> redirige al formulario de contacto de
 #      Colombia (formulario_colombia), similar al de Venezuela.
@@ -5397,42 +5105,53 @@ def formulario_previo_meet(request, cita_id):
 
     cita = get_object_or_404(
         Cita.objects.select_related('psicologo__usuario', 'paciente'),
-        id=cita_id, estado='Confirmada'
+        Q(estado='Confirmada') | Q(modalidad='Presencial', estado='Completada'),
+        id=cita_id,
     )
     paciente = cita.paciente
+    presencial = cita.modalidad == 'Presencial'
+    es_doctor_visita = request.user.is_authenticated and (
+        request.user.is_superuser or (cita.psicologo and cita.psicologo.usuario_id == request.user.id)
+    )
+    if presencial and not request.user.is_authenticated:
+        request.session['ipp_presencial_pendiente'] = cita.id
+        return redirect('modulo_informativo')
+    if request.user.is_authenticated and request.user.id != cita.paciente_id and not es_doctor_visita:
+        raise Http404
 
-    # ¿Quién entra? El psicólogo asignado a la cita (o superusuario) puede contestar el IPP
-    # directamente: se usa en sesiones presenciales, donde NO existe enlace de Meet.
-    es_doctor_visita = False
-    if request.user.is_authenticated:
-        if (hasattr(request.user, 'perfil_psicologo') and cita.psicologo and cita.psicologo.usuario == request.user) or request.user.is_superuser:
-            es_doctor_visita = True
-
-    meet_url = (cita.enlace_meet or '').strip()
+    meet_url = '' if presencial else (cita.enlace_meet or '').strip()
     if meet_url and not meet_url.startswith(('http://', 'https://')):
         meet_url = 'https://' + meet_url
-
-    if not meet_url:
-        if not es_doctor_visita:
+    if not presencial:
+        if not meet_url:
             messages.error(request, 'Aún no se ha generado el enlace de tu sesión. Contáctanos por WhatsApp.')
             return redirect('panel_generico')
-        # Modo doctor / sesión presencial: se muestra el formulario sin Meet.
-    elif es_doctor_visita:
-        # Comportamiento original: el psicólogo entra directo a su Meet
-        return redirect(meet_url)
-
-    # Si ya contestó el formulario para ESTA cita, saltamos directo a Meet
-    # (o al expediente del paciente cuando la sesión es presencial contestada por el doctor).
-    ya_respondido = (
-        EvaluacionSesionPaciente.objects.filter(cita=cita).exists() or
-        RespuestaFormularioOrganica.objects.filter(paciente=paciente, cita=cita).exists()
-    )
-    if ya_respondido:
-        if meet_url:
+        if es_doctor_visita:
             return redirect(meet_url)
-        # Presencial contestada por el doctor: a la landing de grabación de la sesión.
-        messages.info(request, 'Este paciente ya tiene el IPP contestado para esta sesión. Aquí está el panel de grabación experimental.')
-        return redirect('grabacion_sesion', cita_id=cita.id)
+
+    if es_doctor_visita:
+        destino_presencial = reverse('panel_doctor')
+    elif cita.es_beneficios:
+        destino_presencial = reverse('panel_beneficios')
+    elif cita.es_tectum:
+        destino_presencial = reverse('panel_tectum')
+    else:
+        destino_presencial = reverse('panel_generico')
+
+    def ya_respondio():
+        return (
+            EvaluacionSesionPaciente.objects.filter(cita=cita).exists() or
+            RespuestaFormularioOrganica.objects.filter(paciente=paciente, cita=cita).exists()
+        )
+
+    def respuesta_guardada():
+        return JsonResponse({'status': 'success', 'redirect_url': meet_url or destino_presencial})
+
+    respondido = ya_respondio()
+    if respondido and request.method == 'POST':
+        return respuesta_guardada()
+    if respondido and meet_url:
+        return redirect(meet_url)
 
     if request.method == 'POST':
         # 1. Procesamiento de los 12 reactivos del IPP
@@ -5441,19 +5160,19 @@ def formulario_previo_meet(request, cita_id):
             valor = request.POST.get(pregunta['id'], '')
             respuestas_dict[pregunta['id']] = valor
 
+        if any(valor not in _OPCIONES_POR_PREGUNTA[clave] for clave, valor in respuestas_dict.items()):
+            return JsonResponse({'status': 'error', 'message': 'Responde los 12 reactivos del IPP.'}, status=400)
+
         puntaje = _calcular_puntaje_formulario_organico(respuestas_dict)
         ipt_actual = calcular_ipt(puntaje)
 
         # 2. Procesamiento de la sección de satisfacción (escala 1 a 5)
         try:
-            sat_1 = int(request.POST.get('sat_1', 5))
-            sat_2 = int(request.POST.get('sat_2', 5))
-            sat_3 = int(request.POST.get('sat_3', 5))
-            sat_1 = max(1, min(5, sat_1))
-            sat_2 = max(1, min(5, sat_2))
-            sat_3 = max(1, min(5, sat_3))
-        except (ValueError, TypeError):
-            sat_1, sat_2, sat_3 = 5, 5, 5
+            sat_1, sat_2, sat_3 = (int(request.POST[campo]) for campo in ('sat_1', 'sat_2', 'sat_3'))
+            if not all(1 <= valor <= 5 for valor in (sat_1, sat_2, sat_3)):
+                raise ValueError
+        except (KeyError, ValueError):
+            return JsonResponse({'status': 'error', 'message': 'Completa las tres respuestas de satisfacción.'}, status=400)
 
         promedio_sat = round((sat_1 + sat_2 + sat_3) / 3.0, 2)
         comentarios_sat = request.POST.get('comentarios_satisfaccion', '').strip()
@@ -5466,7 +5185,11 @@ def formulario_previo_meet(request, cita_id):
 
         try:
             with transaction.atomic():
-                Cita.objects.select_for_update().get(id=cita.id)
+                bloqueada = Cita.objects.select_for_update().get(id=cita.id)
+                if bloqueada.estado != 'Confirmada' and not (presencial and bloqueada.estado == 'Completada'):
+                    return JsonResponse({'status': 'error', 'message': 'La cita ya no está disponible.'}, status=409)
+                if ya_respondio():
+                    return respuesta_guardada()
 
                 respuesta_anterior = RespuestaFormularioOrganica.objects.filter(
                     paciente=paciente
@@ -5506,24 +5229,16 @@ def formulario_previo_meet(request, cita_id):
                     except Exception as auth_err:
                         print(f"Aviso auto-login paciente: {auth_err}")
 
-        except Exception as e:
-            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+        except Exception as error:
+            logging.getLogger(__name__).warning('Falló el guardado de IPP para la cita %s (%s)', cita_id, type(error).__name__)
+            return JsonResponse({'status': 'error', 'message': 'No se pudo guardar el IPP. Intenta nuevamente.'}, status=500)
 
         ipt_anterior = calcular_ipt(respuesta_anterior.puntaje) if respuesta_anterior else None
         mensaje = _mensaje_tierno_progreso(ipt_actual, ipt_anterior)
 
-        # Destino tras guardar: Meet si existe; en sesiones presenciales contestadas
-        # por el doctor, a la landing de grabación local de la sesión.
-        if meet_url:
-            url_destino = meet_url
-        elif es_doctor_visita:
-            url_destino = reverse('grabacion_sesion', args=[cita.id])
-        else:
-            url_destino = reverse('panel_generico')
-
         return JsonResponse({
             'status': 'success',
-            'redirect_url': url_destino,
+            'redirect_url': meet_url or destino_presencial,
             'ipt': ipt_actual,
             'mensaje': mensaje,
         })
@@ -5533,10 +5248,14 @@ def formulario_previo_meet(request, cita_id):
         'preguntas': FORMULARIO_ORGANICO_PREGUNTAS,
         'escala': ESCALA_IPP,
         'modo_doctor': es_doctor_visita,
+        'presencial': presencial,
+        'respondido': respondido,
+        'destino_presencial': destino_presencial,
         'es_tectum': getattr(cita, 'es_tectum', False) or 'tectuminhause' in request.get_host().lower() or 'tectum' in request.get_host().lower(),
     })
     
 
+@ensure_csrf_cookie
 def grabacion_sesion(request, cita_id):
     """Pantalla de grabación para sesiones PRESENCIALES (independiente del IPP
     desde el 5/11/2026: NO exige que el IPP esté contestado). Ofrece la
@@ -5556,9 +5275,11 @@ def grabacion_sesion(request, cita_id):
     if not es_dueno:
         return redirect('modulo_informativo')
 
+    if cita.modalidad != 'Presencial':
+        raise Http404
+
     return render(request, 'grabacion_sesion.html', {
         'cita': cita,
-        'grabacion': getattr(cita, 'grabacion_sesion', None),
         'es_tectum': getattr(cita, 'es_tectum', False) or getattr(cita.paciente.perfil if hasattr(cita.paciente, 'perfil') else None, 'es_tectum', False),
     })
 
@@ -5568,7 +5289,7 @@ def grabacion_sesion(request, cita_id):
 TAMANIO_MAXIMO_GRABACION = 300 * 1024 * 1024  # 300 MB
 
 # Extensiones/formatos aceptados del blob de MediaRecorder (lista blanca):
-EXTENSIONES_GRABACION = {'webm': 'webm', 'ogg': 'ogg', 'mp4': 'm4a', 'm4a': 'm4a', 'mka': 'webm', 'wav': 'wav', 'wave': 'wav'}
+EXTENSIONES_GRABACION = {'webm': 'webm', 'ogg': 'ogg', 'mp4': 'm4a', 'm4a': 'm4a', 'mka': 'webm', 'wav': 'wav', 'wave': 'wav', 'mpeg': 'mp3', 'mp3': 'mp3'}
 
 
 def _preparar_audio_grabacion(uploaded, nombre):
@@ -5625,44 +5346,61 @@ def _cerrar_audio_preparado(archivo):
 
 
 def _persistir_grabacion_sesion(cita, preparado, formato, duracion, tamanio):
-    """Asigna el audio UNA vez y lo guarda UNA vez. Si la cita ya tenía
-    grabación, el archivo anterior se borra solo después de que el nuevo
-    quedó en disco. Un race del OneToOne reintenta sobre la fila ganadora
-    sin volver a mover un /tmp ya consumido."""
-    from django.db import IntegrityError
-
-    def _escribir(grabacion):
-        nombre_anterior = grabacion.audio.name if grabacion.pk and grabacion.audio else None
-        preparado.seek(0)
+    """Serializa reemplazos y encola el audio después de guardarlo una vez."""
+    with transaction.atomic():
+        psicologo_id = cita.psicologo_id
+        cita = Cita.objects.select_for_update().get(pk=cita.pk)
+        if cita.psicologo_id != psicologo_id:
+            raise ValueError('Cambió el psicólogo asignado')
+        if cita.estado not in ('Confirmada', 'Completada') or cita.modalidad != 'Presencial':
+            raise ValueError('Cita no disponible')
+        grabacion = GrabacionSesion.objects.select_for_update().filter(cita=cita).first()
+        if grabacion is None:
+            grabacion = GrabacionSesion(cita=cita)
+        anterior = grabacion.audio.name
         grabacion.psicologo = cita.psicologo
         grabacion.formato = formato
         grabacion.duracion_segundos = duracion
         grabacion.tamanio_bytes = tamanio
         grabacion.audio = preparado
+        grabacion.estado = GrabacionSesion.Estado.CARGADA
+        grabacion.intento_iniciado = None
         grabacion.save()
-        if nombre_anterior and nombre_anterior != grabacion.audio.name:
-            try:
-                grabacion.audio.storage.delete(nombre_anterior)
-            except (OSError, ValueError):
-                pass
-        # auto_now_add no se refresca en un reemplazo; la UI muestra esta hora.
-        ahora_subida = timezone.now()
-        GrabacionSesion.objects.filter(pk=grabacion.pk).update(fecha_subida=ahora_subida)
-        grabacion.fecha_subida = ahora_subida
+        grabacion.fecha_subida = timezone.now()
+        GrabacionSesion.objects.filter(pk=grabacion.pk).update(fecha_subida=grabacion.fecha_subida)
+        if anterior and anterior != grabacion.audio.name:
+            transaction.on_commit(lambda: grabacion.audio.storage.delete(anterior), robust=True)
         return grabacion
 
+
+def _cita_grabacion_autorizada(request, cita_id):
+    cita = get_object_or_404(Cita.objects.select_related('psicologo'), id=cita_id, modalidad='Presencial')
+    if not request.user.is_authenticated or not (
+        request.user.is_superuser or (cita.psicologo and cita.psicologo.usuario_id == request.user.id)
+    ):
+        raise Http404
+    return cita
+
+
+def estado_grabacion_sesion(request, cita_id):
+    cita = _cita_grabacion_autorizada(request, cita_id)
+    grabacion = get_object_or_404(GrabacionSesion, cita=cita)
+    respuesta = JsonResponse({'estado': grabacion.estado, 'mensaje': grabacion.get_estado_display()})
+    respuesta['Cache-Control'] = 'private, no-store'
+    return respuesta
+
+
+def audio_grabacion_sesion(request, cita_id):
+    cita = _cita_grabacion_autorizada(request, cita_id)
+    grabacion = get_object_or_404(GrabacionSesion, cita=cita)
+    tipos = {'webm': 'audio/webm', 'ogg': 'audio/ogg', 'm4a': 'audio/mp4', 'wav': 'audio/wav', 'mp3': 'audio/mpeg'}
     try:
-        with transaction.atomic():
-            try:
-                grabacion = GrabacionSesion.objects.select_for_update().get(cita=cita)
-            except GrabacionSesion.DoesNotExist:
-                grabacion = GrabacionSesion(cita=cita)
-            return _escribir(grabacion)
-    except IntegrityError:
-        preparado.seek(0)
-        with transaction.atomic():
-            grabacion = GrabacionSesion.objects.select_for_update().get(cita=cita)
-            return _escribir(grabacion)
+        audio = grabacion.audio.open('rb')
+    except FileNotFoundError as error:
+        raise Http404 from error
+    respuesta = FileResponse(audio, content_type=tipos.get(grabacion.formato, 'application/octet-stream'))
+    respuesta['Cache-Control'] = 'private, no-store'
+    return respuesta
 
 
 @require_POST
@@ -5691,6 +5429,11 @@ def api_guardar_grabacion_sesion(request, cita_id):
     if cita.modalidad != 'Presencial':
         return JsonResponse({'status': 'error', 'message': 'Solo se puede grabar sesiones presenciales.'}, status=400)
 
+    if cita.estado not in ('Confirmada', 'Completada') or not cita.psicologo_id:
+        return JsonResponse({'status': 'error', 'message': 'La cita no está disponible para procesamiento.'}, status=409)
+    if timezone.localtime() < timezone.make_aware(datetime.combine(cita.fecha, cita.hora)):
+        return JsonResponse({'status': 'error', 'message': 'La cita aún no ha comenzado.'}, status=409)
+
     archivo = request.FILES.get('audio')
     if not archivo:
         return JsonResponse({'status': 'error', 'message': 'No se recibió ningún audio.'}, status=400)
@@ -5708,7 +5451,10 @@ def api_guardar_grabacion_sesion(request, cita_id):
             formato = ext
             break
     if not formato:
-        formato = 'webm'  # MediaRecorder por defecto en Chrome/Edge
+        extension = os.path.splitext(archivo.name)[1].lower().lstrip('.')
+        formato = EXTENSIONES_GRABACION.get(extension)
+    if not formato:
+        return JsonResponse({'status': 'error', 'message': 'Usa WebM, Ogg, M4A, MP4, MP3 o WAV.'}, status=400)
 
     # Duración reportada por el navegador (clamp 0 a 12 h)
     try:
@@ -5717,10 +5463,8 @@ def api_guardar_grabacion_sesion(request, cita_id):
     except (ValueError, TypeError):
         duracion = 0
 
-    # Nombre archivo del lado del servidor (no confiamos en el nombre del cliente):
-    # grabacion_cita{id}_{fechaHora}.{ext} — predecible SOLO para el psicólogo.
-    ahora = timezone.localtime(timezone.now())
-    nombre_archivo = f"grabacion_cita{cita.id}_{ahora.strftime('%Y%m%d_%H%M%S')}.{formato}"
+    # El nombre único distingue reemplazos incluso cuando dos cargas coinciden.
+    nombre_archivo = f"grabacion_cita{cita.id}_{uuid.uuid4().hex}.{formato}"
     archivo.name = nombre_archivo
 
     # Los audios de más de 2.5 MB llegan como TemporaryUploadedFile en /tmp.
@@ -5737,13 +5481,10 @@ def api_guardar_grabacion_sesion(request, cita_id):
         )
     except Exception as e:
         import logging
-        logging.getLogger(__name__).exception(f"Error guardando grabación de sesión (cita {cita_id}): {e}")
-        # detalle técnico al front para diagnóstico inmediato (mismo criterio
-        # que el resto de endpoints del sistema que exponen str(e))
+        logging.getLogger(__name__).warning('Falló el guardado de audio para la cita %s (%s)', cita_id, type(e).__name__)
         return JsonResponse({
             'status': 'error',
             'message': 'No se pudo guardar la grabación en el servidor. Intenta de nuevo (el navegador conservará tu copia local para descargar).',
-            'detalle': str(e)[:400],
         }, status=500)
     finally:
         _cerrar_audio_preparado(preparado)
@@ -5751,7 +5492,8 @@ def api_guardar_grabacion_sesion(request, cita_id):
     return JsonResponse({
         'status': 'success',
         'grabacion_id': grabacion.id,
-        'archivo_url': grabacion.audio.url,
+        'archivo_url': reverse('audio_grabacion_sesion', args=[cita.id]),
+        'estado': grabacion.estado,
         'formato': formato,
         'duracion_segundos': duracion,
         'tamanio_mb': round(archivo.size / (1024 * 1024), 1),
@@ -5804,9 +5546,11 @@ def citas_hoy_view(request):
 
 
 def api_citas_hoy(request):
-    hoy = timezone.localdate()
-    # Traemos las citas de hoy que no estén canceladas
-    citas = Cita.objects.filter(fecha=hoy).exclude(estado='Cancelada').order_by('hora')
+    fecha = timezone.localdate()
+    if request.GET.get('fecha_recordatorios') == 'manana':
+        fecha += timedelta(days=1)
+    # La consulta normal conserva las citas de hoy.
+    citas = Cita.objects.filter(fecha=fecha).exclude(estado='Cancelada').order_by('hora')
     
     lista_json = []
     for cita in citas:
@@ -5827,6 +5571,8 @@ def api_citas_hoy(request):
 
         lista_json.append({
             "cita_id": cita.id,
+            "fecha": cita.fecha.isoformat(),
+            "modalidad": cita.modalidad,
             "hora": cita.hora.strftime('%H:%M'),
             "nombre_doctor": nombre_doctor,
             "telefono_doctor": numero_doc_limpio,
@@ -6698,8 +6444,8 @@ def _construir_datos_checkin_paciente(paciente, cita=None):
         nombre_psicologo = doc.usuario.first_name if doc.usuario else ''
         cedula_psicologo = doc.cedula_profesional or ''
 
-    historiales = HistorialClinico.objects.filter(paciente=paciente).order_by('fecha_registro')
-    if cita and hasattr(cita, 'nota_clinica') and cita.nota_clinica:
+    historiales = HistorialClinico.objects.filter(paciente=paciente, pendiente_revision_audio=False).order_by('fecha_registro')
+    if cita and hasattr(cita, 'nota_clinica') and not cita.nota_clinica.pendiente_revision_audio:
         sesion_numero = HistorialClinico.objects.filter(
             paciente=paciente,
             fecha_registro__lte=cita.nota_clinica.fecha_registro
@@ -6885,8 +6631,8 @@ def _construir_datos_checkin_psicologo(paciente, cita=None):
     if not edad and perfil_paciente:
         edad = getattr(perfil_paciente, 'edad', '') or ''
 
-    historiales = HistorialClinico.objects.filter(paciente=paciente).order_by('fecha_registro')
-    if cita and hasattr(cita, 'nota_clinica') and cita.nota_clinica:
+    historiales = HistorialClinico.objects.filter(paciente=paciente, pendiente_revision_audio=False).order_by('fecha_registro')
+    if cita and hasattr(cita, 'nota_clinica') and not cita.nota_clinica.pendiente_revision_audio:
         sesion_numero = HistorialClinico.objects.filter(
             paciente=paciente,
             fecha_registro__lte=cita.nota_clinica.fecha_registro
@@ -7323,6 +7069,9 @@ def _procesar_reporte_de_una_cita_detallado(cita_id, log_func=None, forzar=False
             getattr(paciente, 'perfil', None), 'es_tectum', False
         )
 
+        if getattr(getattr(cita, 'nota_clinica', None), 'pendiente_revision_audio', False):
+            return False, 'La bitácora del audio requiere revisión del psicólogo.', detalles
+
         if not hasattr(cita, 'nota_clinica') or not cita.nota_clinica or not cita.nota_clinica.notas_sesion:
             detalles['etapas'].append({'etapa': 'Validación de Bitácora', 'ok': False, 'detalle': 'Falta la bitácora clínica del psicólogo. El psicólogo tratante aún no ha capturado notas_sesion para esta cita.'})
             _log_envio_ipp_seguro(cita, 'general', 'Envío automático (pipeline)', 'Error', 'Falta la bitácora clínica (notas_sesion vacía): no se genera reporte sin bitácora para evitar documentos vacíos.')
@@ -7546,6 +7295,10 @@ def procesar_citas_pendientes_de_reporte(log_func=None):
             min_restantes = max(0, int((DURACION_SESION_MINUTOS + ESPERA_MINIMA_MINUTOS) - minutos_transcurridos))
             _log(f"   ⏳ EN ESPERA: La sesión aún no cumple el tiempo de espera mínimo ({min_restantes} min restantes).")
             en_espera_tiempo += 1
+            continue
+
+        if getattr(getattr(cita, 'nota_clinica', None), 'pendiente_revision_audio', False):
+            en_espera_bitacora += 1
             continue
 
         tiene_bitacora = hasattr(cita, 'nota_clinica') and cita.nota_clinica is not None and bool(cita.nota_clinica.notas_sesion)

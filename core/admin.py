@@ -354,8 +354,15 @@ class GrabacionSesionAdmin(admin.ModelAdmin):
     list_filter = ('formato', 'fecha_subida')
     search_fields = ('cita__id', 'cita__paciente__email', 'cita__paciente__first_name')
     list_select_related = ('cita', 'psicologo__usuario')
-    readonly_fields = ('cita', 'psicologo', 'audio', 'formato', 'duracion_segundos',
-                       'tamanio_bytes', 'fecha_subida')
+    readonly_fields = ('cita', 'psicologo', 'descarga_audio', 'formato', 'duracion_segundos',
+                       'tamanio_bytes', 'fecha_subida', 'estado', 'intento_iniciado')
+    fields = readonly_fields
+
+    @admin.display(description='Audio')
+    def descarga_audio(self, obj):
+        from django.urls import reverse
+        from django.utils.html import format_html
+        return format_html('<a href="{}">Descargar audio</a>', reverse('audio_grabacion_sesion', args=[obj.cita_id]))
     list_per_page = 50
 
     def tamanio_mb(self, obj):
@@ -373,4 +380,21 @@ class GrabacionSesionAdmin(admin.ModelAdmin):
 
     def has_delete_permission(self, request, obj=None):
         # Borrado permitido SOLO para superusuarios
-        return request.user.is_superuser
+        return request.user.is_superuser
+
+@admin.register(PagoCitaPayPal)
+class PagoCitaPayPalAdmin(admin.ModelAdmin):
+    list_display = ('cita', 'monto', 'orden', 'captura', 'vence', 'captura_iniciada')
+    list_filter = ('captura_iniciada',)
+    list_select_related = ('cita',)
+    search_fields = ('orden', 'captura', '=cita__id')
+    readonly_fields = list_display
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False

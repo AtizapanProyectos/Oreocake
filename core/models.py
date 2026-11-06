@@ -6,6 +6,8 @@ from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 
+from .almacen_grabaciones import almacen_grabaciones
+
 
 def _sumar_meses(fecha, meses):
     """Suma 'meses' meses a una fecha, sin depender de librerías externas
@@ -239,6 +241,7 @@ class UsuarioPerfil(models.Model):
     telefono_emergencia = models.CharField(max_length=20, blank=True, null=True, verbose_name="Teléfono de Emergencia")
     es_padre = models.BooleanField(default=False, verbose_name="¿Es padre/madre de familia?")
     es_tectum = models.BooleanField(default=False, db_index=True, verbose_name="Convenio TECTUM In-House")
+    correo_tectum_verificado = models.EmailField(blank=True)
     es_beneficios = models.BooleanField(default=False, db_index=True, verbose_name="Convenio TECTUM Beneficios")  # añadido 28/10/2026 (monitoreo automatización)
     psicologo_asignado = models.ForeignKey(PerfilPsicologo, on_delete=models.SET_NULL, null=True, blank=True, related_name='pacientes_asignados', verbose_name="Psicólogo Asignado")
 
@@ -300,6 +303,7 @@ class Cita(models.Model):
     psicologo = models.ForeignKey(PerfilPsicologo, on_delete=models.CASCADE, related_name='citas_agendadas', null=True)
     fecha = models.DateField(verbose_name='Fecha de la sesión', db_index=True) # 🔥 OPTIMIZADO
     hora = models.TimeField(verbose_name='Hora de la sesión')
+    correo_confirmacion_enviado = models.BooleanField(null=True, blank=True)
     reporte_enviado = models.BooleanField(default=False)
     motivo = models.CharField(max_length=150, verbose_name='Motivo de consulta', default='Primera sesión')
     estado_animo = models.CharField(max_length=50, blank=True, null=True, verbose_name='Estado de ánimo')
@@ -376,6 +380,7 @@ class HistorialClinico(models.Model):
     como_se_va = models.TextField(blank=True, null=True, verbose_name="4. Cierre y Alta de sesión")
     recomendaciones = models.TextField(blank=True, null=True, verbose_name="5. Recomendaciones generales")
     archivo_adjunto = models.FileField(upload_to='bitacoras_adjuntos/', blank=True, null=True, verbose_name="Documento Escaneado o Foto")
+    pendiente_revision_audio = models.BooleanField(default=False)
     transcripcion_meet = models.FileField(upload_to='transcripciones_meet/', blank=True, null=True, verbose_name="Transcripción de Meet")
     diagnostico_temporal = models.CharField(max_length=250, blank=True, null=True)
     fecha_registro = models.DateTimeField(auto_now_add=True, db_index=True) # 🔥 OPTIMIZADO: list_filter rápido
@@ -1552,6 +1557,7 @@ class GrabacionSesion(models.Model):
     )
     audio = models.FileField(
         upload_to='grabaciones_sesiones/%Y/%m/',
+        storage=almacen_grabaciones,
         verbose_name="Archivo de audio",
     )
     formato = models.CharField(
@@ -1567,6 +1573,21 @@ class GrabacionSesion(models.Model):
     fecha_subida = models.DateTimeField(
         auto_now_add=True, db_index=True, verbose_name="Fecha de guardado en servidor",
     )
+
+    class Estado(models.TextChoices):
+        ARCHIVADA = 'archivada', 'Grabación archivada'
+        CARGADA = 'cargada', 'Grabación cargada'
+        AUDIO = 'audio', 'Procesando audio'
+        TRANSCRIBIENDO = 'transcribiendo', 'Transcribiendo'
+        NOTAS = 'notas', 'Generando notas'
+        GUARDANDO = 'guardando', 'Guardando información'
+        COMPLETADA = 'completada', 'Proceso completado'
+        ERROR = 'error', 'No se pudo procesar la grabación'
+
+    estado = models.CharField(max_length=16, choices=Estado.choices, default=Estado.ARCHIVADA, db_index=True)
+    intento_iniciado = models.DateTimeField(null=True, blank=True)
+    transcripcion = models.TextField(blank=True)
+    notas_generadas = models.JSONField(default=dict, blank=True)
 
     class Meta:
         verbose_name = "Grabación de Sesión (presencial)"
@@ -1588,4 +1609,12 @@ class GrabacionSesion(models.Model):
 
 
 
-
+
+
+class PagoCitaPayPal(models.Model):
+    cita = models.OneToOneField(Cita, on_delete=models.PROTECT, related_name='pago_paypal')
+    monto = models.DecimalField(max_digits=10, decimal_places=2)
+    orden = models.CharField(max_length=64, unique=True, null=True, blank=True)
+    captura = models.CharField(max_length=64, unique=True, null=True, blank=True)
+    vence = models.DateTimeField(db_index=True)
+    captura_iniciada = models.BooleanField(default=False)

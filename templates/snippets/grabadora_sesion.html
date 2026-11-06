@@ -50,6 +50,9 @@
     .gsn-rec-stop { background: linear-gradient(135deg, #475569 0%, #334155 100%); box-shadow: 0 6px 16px rgba(71, 85, 105, .25); }
     .gsn-rec-stop:hover:not(:disabled) { transform: translateY(-1px); }
     .gsn-rec-timer { font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 14px; color: #dc2626; font-variant-numeric: tabular-nums; }
+    .gsn-rec-pasos { font-size: 12px; padding-left: 22px; }
+    .gsn-rec-pasos [data-hecho] { color: #0f766e; }
+    .gsn-rec-pasos [aria-current="step"] { font-weight: 700; }
     .gsn-rec-estado { font-size: 11.5px; color: #64748b; margin-top: 10px; line-height: 1.4; }
     .gsn-rec-estado.error { color: #b91c1c; font-weight: 700; }
     .gsn-rec-resultado { margin-top: 12px; }
@@ -73,30 +76,43 @@
 </style>
 
 <div class="gsn-rec" data-cita-id="{{ cita.id|default:'' }}"
+     data-url-estado="{% url 'estado_grabacion_sesion' cita.id %}"
      data-url-guardar="{% url 'api_guardar_grabacion_sesion' cita.id %}"
      {% with grabacion=cita.grabacion_sesion %}
      {% if grabacion %}data-guardada="1"
-     data-audio-url="{{ grabacion.audio.url }}"
+     data-audio-url="{% url 'audio_grabacion_sesion' cita.id %}"
+     data-formato="{{ grabacion.formato }}"
      data-fecha-subida="{{ grabacion.fecha_subida|date:'d/m/Y H:i' }}"
      data-duracion="{{ grabacion.duracion_legible }}"{% endif %}
      {% endwith %}>
     <div class="gsn-rec-box">
         <div class="gsn-rec-title">
             <i class="fas fa-microphone-lines"></i> Grabación de la sesión
-            <span class="gsn-rec-badge">Experimental</span>
             <span class="gsn-rec-badge-serv"><i class="fas fa-cloud"></i> Se guarda en el server</span>
         </div>
         <p class="gsn-rec-nota">
-            Función en pruebas, <strong>independiente del IPP</strong>: el inicio y el alto son
-            manuales; al detener, el audio se sube automáticamente al servidor y queda
-            archivado en la cita. Puedes grabar de nuevo (reemplaza la versión anterior) o
-            descargarla a tu dispositivo.
+            Graba aquí o selecciona un archivo de audio al terminar la sesión.
+            La transcripción y las notas se guardan en el expediente de esta cita.
+            Una grabación nueva reemplaza el audio anterior.
         </p>
         <div class="gsn-rec-actions">
             <button type="button" class="gsn-rec-btn gsn-rec-start"><i class="fas fa-circle"></i> Iniciar Grabación</button>
             <button type="button" class="gsn-rec-btn gsn-rec-stop" disabled><i class="fas fa-stop"></i> Detener y Guardar</button>
             <span class="gsn-rec-timer" style="display:none;">00:00</span>
         </div>
+        <label>
+            Cargar grabación
+            <input type="file" class="gsn-rec-archivo" accept=".webm,.ogg,.wav,.mp3,.m4a,.mp4">
+        </label>
+        <ol class="gsn-rec-pasos" hidden>
+            <li data-paso="cargada">Grabación cargada</li>
+            <li data-paso="audio">Procesando audio</li>
+            <li data-paso="transcribiendo">Transcribiendo</li>
+            <li data-paso="notas">Generando notas</li>
+            <li data-paso="guardando">Guardando información</li>
+            <li data-paso="completada">Proceso completado</li>
+        </ol>
+        <div class="gsn-rec-proceso" role="status" aria-live="polite"></div>
         <div class="gsn-rec-estado">
             {% with grabacion=cita.grabacion_sesion %}
             {% if grabacion %}Grabación guardada el {{ grabacion.fecha_subida|date:'d/m/Y H:i' }} · {{ grabacion.duracion_legible }} (mm:ss). Puedes grabar de nuevo para reemplazarla.{% else %}Listo para grabar cuando lo necesites. No requiere contestar el IPP.{% endif %}
@@ -118,6 +134,42 @@
 
         var citaId = box.getAttribute('data-cita-id') || '';
         var urlGuardar = box.getAttribute('data-url-guardar');
+        var archivo = box.querySelector('.gsn-rec-archivo');
+        var proceso = box.querySelector('.gsn-rec-proceso');
+        var consulta = 0;
+        var estadosFinales = ['completada', 'error', 'archivada'];
+
+        function mostrarProceso(estadoActual, mensaje) {
+            var lista = box.querySelector('.gsn-rec-pasos');
+            var pasos = Array.from(lista.querySelectorAll('[data-paso]'));
+            var actual = pasos.findIndex(function (paso) { return paso.dataset.paso === estadoActual; });
+            lista.hidden = estadoActual === 'archivada';
+            if (actual >= 0) {
+                pasos.forEach(function (paso, indice) {
+                    paso.toggleAttribute('data-hecho', indice < actual || estadoActual === 'completada');
+                    if (indice === actual) paso.setAttribute('aria-current', 'step');
+                    else paso.removeAttribute('aria-current');
+                });
+            }
+            if (estadoActual === 'error') mensaje += '. Vuelve a cargar el audio para reintentar.';
+            proceso.textContent = mensaje;
+        }
+
+        async function consultarProceso(turno) {
+            try {
+                var respuesta = await fetch(box.dataset.urlEstado, { cache: 'no-store' });
+                if (!respuesta.ok) throw new Error();
+                var datos = await respuesta.json();
+                if (turno !== consulta) return;
+                mostrarProceso(datos.estado, datos.mensaje);
+                if (!estadosFinales.includes(datos.estado)) {
+                    setTimeout(function () { consultarProceso(turno); }, 2500);
+                }
+            } catch (error) {
+                if (turno === consulta) proceso.textContent = 'Estado temporalmente no disponible. Recarga para consultarlo.';
+            }
+        }
+
         var btnStart = box.querySelector('.gsn-rec-start');
         var btnStop = box.querySelector('.gsn-rec-stop');
         var timer = box.querySelector('.gsn-rec-timer');
@@ -156,22 +208,35 @@
         if (box.getAttribute('data-guardada') === '1') {
             audio.src = box.getAttribute('data-audio-url') || '';
             linkDesc.href = box.getAttribute('data-audio-url') || '#';
-            linkDesc.setAttribute('download', 'grabacion_cita_' + citaId + '.' + extensionDe(audio.src));
+            linkDesc.setAttribute('download', 'grabacion_cita_' + citaId + '.' + (box.dataset.formato || 'webm'));
             resultado.style.display = 'block';
             iconoGuardada.innerHTML = '<i class="fas fa-circle-check"></i> Guardada en el server el ' + (box.getAttribute('data-fecha-subida') || '') + ' (' + (box.getAttribute('data-duracion') || '') + ' min)';
         }
 
+        if (box.dataset.guardada === '1') consultarProceso(++consulta);
+
+        archivo.addEventListener('change', function () {
+            if (!archivo.files.length) return;
+            var seleccion = archivo.files[0];
+            archivo.value = '';
+            subirAudio(seleccion, seleccion.name, 0);
+        });
+
         btnStart.addEventListener('click', async function () {
             if (grabando) return;
+            btnStart.disabled = true;
+            archivo.disabled = true;
             setEstado('');
 
             if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || typeof MediaRecorder === 'undefined') {
+                marcarListo();
                 setEstado('Tu navegador no soporta grabación de audio. Prueba con Chrome o Edge.', true);
                 return;
             }
             try {
                 stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             } catch (err) {
+                marcarListo();
                 setEstado('No se pudo acceder al micrófono. Revisa los permisos del navegador.', true);
                 return;
             }
@@ -181,7 +246,15 @@
                 if (MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported('audio/webm')) opciones.mimeType = 'audio/webm';
                 recorder = new MediaRecorder(stream, opciones);
             } catch (e) {
-                recorder = new MediaRecorder(stream);
+                try {
+                    recorder = new MediaRecorder(stream);
+                } catch (error) {
+                    stream.getTracks().forEach(function (track) { track.stop(); });
+                    stream = null;
+                    marcarListo();
+                    setEstado('No se pudo iniciar la grabadora.', true);
+                    return;
+                }
             }
             recorder.ondataavailable = function (e) { if (e.data && e.data.size > 0) chunks.push(e.data); };
             recorder.onstop = function () { subirAlServidor(); };
@@ -220,8 +293,21 @@
                 return;
             }
 
+            subirAudio(blob, 'grabacion_cita' + citaId + '.' + extensionDe(blob.type), duracion);
+        }
+
+        function subirAudio(blob, nombre, duracion) {
+            var limite = 300 * 1024 * 1024;
+            if (!blob.size || blob.size > limite) {
+                setEstado('Elige un archivo con audio de hasta 300 MB.', true);
+                marcarListo();
+                return;
+            }
+            btnStart.disabled = true;
+            archivo.disabled = true;
+            setEstado('Subiendo grabación al servidor…');
             var fd = new FormData();
-            fd.append('audio', blob, 'grabacion_cita' + citaId + '.' + extensionDe(blob.type));
+            fd.append('audio', blob, nombre);
             fd.append('duracion_segundos', String(duracion));
 
             var csrf = getCookie('csrftoken');
@@ -248,32 +334,35 @@
                     linkDesc.setAttribute('download', 'grabacion_cita_' + citaId + '.' + (data.formato || extensionDe(blob.type)));
                     resultado.style.display = 'block';
                     iconoGuardada.innerHTML = '<i class="fas fa-circle-check"></i> Guardada en el server (' + (data.tamanio_mb ? data.tamanio_mb + ' MB · ' : '') + fmtSegundos(duracion) + ')';
-                    setEstado('Grabación guardada en el servidor ✓ Puedes escucharla aquí, descargarla o grabar de nuevo (reemplaza la anterior).');
+                    setEstado('Grabación guardada en el servidor.');
+                    mostrarProceso('cargada', 'Grabación cargada');
+                    var turno = ++consulta;
+                    setTimeout(function () { consultarProceso(turno); }, 1200);
                 } else {
-                    // Copia LOCAL de emergencia: aunque el server falle, NADA se pierde.
-                    // El navegador guarda su propia copia y activa la descarga.
-                    if (urlBlob) { URL.revokeObjectURL(urlBlob); urlBlob = null; }
-                    urlBlob = URL.createObjectURL(blob);
-                    audio.src = urlBlob;
-                    var ahoraF = new Date();
-                    var p2f = function (n) { return ('0' + n).slice(-2); };
-                    var sufijoF = ahoraF.getFullYear() + p2f(ahoraF.getMonth() + 1) + p2f(ahoraF.getDate()) + '_' + p2f(ahoraF.getHours()) + p2f(ahoraF.getMinutes()) + p2f(ahoraF.getSeconds());
-                    linkDesc.href = urlBlob;
-                    linkDesc.setAttribute('download', 'grabacion_LOCAL_cita' + citaId + '_' + sufijoF + '.' + extensionDe(blob.type));
-                    resultado.style.display = 'block';
-                    iconoGuardada.innerHTML = '<i class="fas fa-triangle-exclamation" style="color:#b91c1c;"></i> NO quedó en el server — descárgala ya desde aquí (copia local)';
-                    setEstado('El servidor no la guardó' + (data && data.detalle ? ' — detalle: ' + data.detalle : '') +
-                        '. Tu audio está intacto en este navegador: usa «Descargar audio» AHORA para conservarla e inténtalo de nuevo.', true);
+                    mostrarCopiaLocal(blob, nombre, data.message || 'El servidor no guardó la grabación.');
                 }
             })
             .catch(function () {
                 marcarListo();
-                setEstado('Falló la conexión al subir la grabación. Intenta de nuevo (graba otra vez).', true);
+                mostrarCopiaLocal(blob, nombre, 'Falló la conexión al subir la grabación.');
             });
+        }
+
+        function mostrarCopiaLocal(blob, nombre, mensaje) {
+            if (urlBlob) URL.revokeObjectURL(urlBlob);
+            urlBlob = URL.createObjectURL(blob);
+            audio.src = urlBlob;
+            linkDesc.href = urlBlob;
+            linkDesc.download = nombre;
+            resultado.style.display = 'block';
+            iconoGuardada.textContent = '';
+            estado.textContent = mensaje + ' Puedes descargar la copia local y volver a cargarla.';
+            estado.classList.add('error');
         }
 
         function marcarListo() {
             btnStart.disabled = false;
+            archivo.disabled = false;
             btnStop.disabled = true;
         }
     }

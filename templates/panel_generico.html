@@ -556,8 +556,21 @@ function mostrarErrorCita(mensaje, opts) {
     </div>
 
     <div id="tab-clinica" class="tab-content active">
+        {% if orden_paypal_pendiente %}
+        <p>
+            Hay un pago pendiente de verificar.
+            <button type="button" onclick="guardarCitaSinPago('{{ orden_paypal_pendiente|escapejs }}')">Verificar mi pago</button>
+        </p>
+        {% endif %}
+
+        {% include 'snippets/otras_citas_confirmadas.html' %}
         
         {% if cita_proxima %}
+            {% if cita_proxima.modalidad == 'Presencial' and cita_proxima.estado == 'Confirmada' %}
+                <a href="{% url 'formulario_previo_meet' cita_proxima.id %}" class="btn-brutal">
+                    <i class="fas fa-clipboard-check"></i> Contestar IPP presencial
+                </a>
+            {% endif %}
         <div class="chic-card" style="border-top: 6px solid var(--c-teal); text-align: center; margin-bottom: 35px; box-shadow: 0 16px 40px rgba(37, 184, 184, 0.08);">
             <span class="step-tag" style="background: #e6fffa; color: var(--c-teal); border: 1px solid #b2f5ea;">
                 <i class="fas fa-check-circle" style="margin-right: 5px;"></i> Próxima Sesión Confirmada
@@ -1961,7 +1974,7 @@ function confirmarCitaTectum() {
         mostrarToast('Ese horario ya no cumple con las 2 horas de anticipación. Elige otro.', 'error');
         return;
     }
-    guardarCitaSinPago('CONVENIO_TECTUM_INHOUSE');
+    guardarCitaSinPago();
 }
 
 function cambiarIntegrantesFamilia(delta) {
@@ -2166,32 +2179,29 @@ function refrescarDisponibilidadPorTipo(tipo, modalidad) {
         .catch(() => { carousel.style.opacity = '1'; });
 }
 
-function guardarCitaSinPago(pagoRef) {
-    // pagoRef: si viene de un pago de PayPal ya capturado, es el ID de la orden.
-    // Si algo falla de aquí en adelante, el pago YA se hizo, así que el error
-    // debe avisarle al usuario que NO pague otra vez y que escriba por WhatsApp.
-    const huboPago = !!pagoRef;
+function datosCitaPayPal() {
+    const datos = new FormData();
+    datos.append('fecha', window.fechaSeleccionada);
+    datos.append('hora', window.horaSeleccionada);
+    datos.append('animo', window.animoSeleccionado);
+    datos.append('modalidad', window.modalidadSeleccionada);
+    datos.append('tipo_servicio', window.tipoServicioAgendado);
+    if (window.tipoServicioAgendado === 'familiar') datos.append('integrantes_familia', window.integrantesFamilia);
+    return datos;
+}
+
+function guardarCitaSinPago(pagoRef, acciones) {
+    const huboPago = Boolean(pagoRef);
 
     // Mostrar loading
     document.getElementById('step-2-payment').style.display = 'none';
     document.getElementById('step-3-loading').style.display = 'block';
 
     try {
-        let formData = new FormData();
+        const formData = huboPago ? new FormData() : datosCitaPayPal();
+        if (huboPago) formData.append('orden', pagoRef);
 
-        formData.append('fecha', window.fechaSeleccionada);
-        formData.append('hora', window.horaSeleccionada);
-        formData.append('animo', window.animoSeleccionado);
-        formData.append('modalidad', window.modalidadSeleccionada);
-        formData.append('tipo_servicio', window.tipoServicioAgendado);
-        if (window.tipoServicioAgendado === 'familiar') {
-            formData.append('integrantes_familia', window.integrantesFamilia);
-        }
-        if (pagoRef) {
-            formData.append('paypal_order_id', pagoRef);
-        }
-
-        fetch("{% url 'guardar_cita' %}", {
+        return fetch(huboPago ? "{% url 'capturar_orden_cita_paypal' %}" : "{% url 'guardar_cita' %}", {
             method: 'POST',
             headers: {
                 'X-CSRFToken': getCookie('csrftoken')
@@ -2202,6 +2212,11 @@ function guardarCitaSinPago(pagoRef) {
         .then(data => {
 
             document.getElementById('step-3-loading').style.display = 'none';
+
+            if (data.reintentar_metodo && acciones) {
+                document.getElementById('step-2-payment').style.display = 'block';
+                return acciones.restart();
+            }
 
             if (data.status === 'success') {
 
@@ -2221,7 +2236,7 @@ function guardarCitaSinPago(pagoRef) {
             } else {
 
                 mostrarErrorCita(data.message || 'No se pudo guardar tu cita.', {
-                    pagoConfirmado: huboPago,
+                    pagoConfirmado: false,
                     referencia: pagoRef
                 });
 
@@ -2232,8 +2247,10 @@ function guardarCitaSinPago(pagoRef) {
             document.getElementById('step-3-loading').style.display = 'none';
             console.error(error);
 
-            mostrarErrorCita('Error de conexión con el servidor al guardar tu cita.', {
-                pagoConfirmado: huboPago,
+            mostrarErrorCita(huboPago
+                ? 'No pudimos verificar el pago. Consulta tu panel antes de intentar otro cobro. Referencia: ' + pagoRef
+                : 'Error de conexión con el servidor al guardar tu cita.', {
+                pagoConfirmado: false,
                 referencia: pagoRef
             });
 
@@ -2245,7 +2262,7 @@ function guardarCitaSinPago(pagoRef) {
         document.getElementById('step-3-loading').style.display = 'none';
         console.error(error);
         mostrarErrorCita('Ocurrió un problema inesperado al guardar tu cita.', {
-            pagoConfirmado: huboPago,
+            pagoConfirmado: false,
             referencia: pagoRef
         });
     }
@@ -2502,7 +2519,7 @@ function prepararWhatsAppTransferencia(el) {
 
         // 3/11/2026 — Escala emocional del wizard (1 toque, opcional):
         // alimenta window.animoSeleccionado que viaja en el POST de la cita
-        // (PayPal, Clip o comprobante de transferencia).
+        // (PayPal o comprobante de transferencia).
         const moodWizardBtns = document.querySelectorAll('.mood-wizard-btn');
         moodWizardBtns.forEach(btn => {
             btn.addEventListener('click', function () {
@@ -2605,54 +2622,31 @@ document.addEventListener("DOMContentLoaded", function () {
                 return actions.resolve();
             },
 
-            // 2. Preparar el cobro (Precio dinámico, incluye Individual/Pareja/Familiar)
-            createOrder: function(data, actions) {
-                const { total } = calcularPrecioFrontend(window.tipoServicioAgendado || 'individual', window.integrantesFamilia);
-                let montoCobro = total.toFixed(2);
-                
-                return actions.order.create({
-                    purchase_units: [{
-                        amount: {
-                            value: montoCobro
-                        },
-                        description: "Sesión HOPE - " + window.tipoServicioAgendado
-                    }]
+            async createOrder() {
+                const respuesta = await fetch("{% url 'crear_orden_cita_paypal' %}", {
+                    method: 'POST', body: datosCitaPayPal(),
+                    headers: {'X-CSRFToken': getCookie('csrftoken')}
                 });
+                const datos = await respuesta.json();
+                if (!respuesta.ok || !datos.orden) {
+                    mostrarErrorCita(datos.message || 'No pudimos reservar el horario.');
+                    throw new Error('Reserva rechazada');
+                }
+                return datos.orden;
             },
 
-            // 3. SI EL PAGO SE APRUEBA CON ÉXITO
-            onApprove: function(data, actions) {
-                return actions.order.capture().then(function(details) {
-                    // ¡Dinero recibido! Disparamos la función para guardar la cita en Django.
-                    // Le pasamos el ID de la orden para poder avisar por WhatsApp con
-                    // referencia exacta si algo falla DESPUÉS de haber cobrado.
-                    try {
-                        guardarCitaSinPago(details.id || data.orderID);
-                    } catch (e) {
-                        // Red de seguridad final: si guardarCitaSinPago truena de forma
-                        // síncrona (p. ej. porque una función no está definida), el pago
-                        // YA se hizo y el usuario debe saberlo, no ver un mensaje genérico
-                        // de "error con tu banco".
-                        console.error(e);
-                        document.getElementById('step-3-loading').style.display = 'none';
-                        mostrarErrorCita('No se pudo completar el agendado de tu cita.', {
-                            pagoConfirmado: true,
-                            referencia: details.id || data.orderID
-                        });
-                    }
-                }).catch(function(err) {
-                    // Este catch es para errores en la CAPTURA del pago en sí
-                    // (aquí el dinero probablemente NO se movió todavía).
-                    console.error("Error al capturar el pago de PayPal:", err);
-                    mostrarErrorCita('Hubo un error al procesar tu pago con PayPal. Si viste un cargo en tu cuenta, contáctanos por WhatsApp antes de intentar pagar de nuevo.', {
-                        pagoConfirmado: false
-                    });
-                });
+            onApprove(data, actions) {
+                return guardarCitaSinPago(data.orderID, actions);
             },
 
             // 4. SI CANCELA LA VENTANITA
-            onCancel: function (data) {
-                console.log("El paciente cerró la ventana de PayPal.");
+            onCancel(data) {
+                if (!data.orderID) return;
+                const body = new FormData();
+                body.append('orden', data.orderID);
+                return fetch("{% url 'cancelar_reserva_paypal' %}", {
+                    method: 'POST', body, headers: {'X-CSRFToken': getCookie('csrftoken')}
+                });
             },
 
             // 5. SI ALGO EXPLOTA EN PAYPAL (antes de llegar a capturar el pago)

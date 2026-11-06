@@ -1,0 +1,25 @@
+{% if cita_proxima and cita_proxima.correo_confirmacion_enviado is not None %}
+<p role="status">
+    Cita confirmada · {% if cita_proxima.correo_confirmacion_enviado %}Correo enviado{% else %}Correo pendiente{% endif %}
+    {% if cita_proxima.modalidad == 'En línea' and not cita_proxima.enlace_meet %} · Enlace de consulta pendiente{% endif %}
+</p>
+{% endif %}
+{% if otras_citas_proximas %}
+<section style="margin: 1.5rem 0;">
+    <h3>Otras citas confirmadas</h3>
+    <ul>
+        {% for cita in otras_citas_proximas %}
+        <li>
+            {{ cita.fecha|date:"d/m/Y" }} · {{ cita.hora|time:"H:i" }} CDMX · {{ cita.get_tipo_sesion_display }} · {{ cita.modalidad }} · {% if cita.es_beneficios %}TECTUM Beneficios{% elif cita.es_tectum %}TECTUM In-House{% else %}HOPE{% endif %}
+            {% if cita.modalidad == 'Presencial' %}
+            <a href="{% url 'descargar_pase_admision' cita.id %}">Descargar pase</a>
+            {% elif cita.enlace_meet %}
+            <a href="{% url 'formulario_previo_meet' cita.id %}">Entrar a la consulta</a>
+            {% else %}
+            · Enlace pendiente
+            {% endif %}
+        </li>
+        {% endfor %}
+    </ul>
+</section>
+{% endif %}

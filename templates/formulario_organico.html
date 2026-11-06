@@ -254,6 +254,10 @@
         <i class="fas fa-circle-exclamation"></i> <span id="fo-error-texto">Ocurrió un problema.</span>
     </div>
 
+    {% if respondido %}
+    <p role="status">El IPP de esta sesión ya está registrado.</p>
+    <a class="fo-btn-enviar" href="{{ destino_presencial }}">Volver a mi panel</a>
+    {% else %}
     <form id="form-organico">
         {% csrf_token %}
 
@@ -422,7 +426,7 @@
         </div>
 
         <button type="submit" class="fo-btn-enviar" id="fo-btn-submit">
-            {% if modo_doctor %}Guardar IPP de la sesión{% else %}Guardar y entrar a mi sesión{% endif %} <i class="fas fa-arrow-right"></i>
+            {% if presencial %}Guardar IPP de la sesión{% else %}Guardar y entrar a mi sesión{% endif %} <i class="fas fa-arrow-right"></i>
         </button>
 
         <!-- Tarjeta de confirmación y botón directo en la misma pestaña -->
@@ -431,8 +435,9 @@
                 <i class="fas fa-check"></i>
             </div>
             <h3 style="font-family: var(--font-headings); font-size: 1.25rem; font-weight: 800; color: #166534; margin: 0 0 6px;">¡Respuestas guardadas!</h3>
-            {% if modo_doctor %}
-            <p id="fo-success-texto" style="color: #15803d; font-size: 14px; margin: 0 0 16px;">El IPP de esta sesión quedó registrado. Llevándote al panel de grabación experimental de la sesión...</p>
+            {% if presencial %}
+            <p>El IPP de esta sesión quedó registrado.</p>
+            <a id="fo-direct-link" class="fo-btn-enviar" href="{{ destino_presencial }}">Volver a mi panel</a>
             {% else %}
             <p style="color: #15803d; font-size: 14px; margin: 0 0 16px;">Redirigiendo a tu sesión en Google Meet en esta misma pestaña...</p>
             <a id="fo-direct-link" href="#" target="_self" class="fo-btn-enviar" style="text-decoration: none; margin-top: 0; background: linear-gradient(135deg, #16a34a 0%, #15803d 100%); display: inline-flex;">
@@ -512,9 +517,12 @@ document.getElementById('form-organico').addEventListener('submit', function (e)
                 successBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }
 
-            // 2. Redirección en la misma pestaña sin abrir nuevas ventanas:
-            //    paciente → Meet · doctor (sesión presencial) → landing de grabación local.
+            {% if presencial %}
+            btn.hidden = true;
+            this.querySelectorAll('input, textarea').forEach(campo => { campo.disabled = true; });
+            {% else %}
             window.location.replace(data.redirect_url);
+            {% endif %}
         } else {
             btn.disabled = false;
             btn.innerHTML = textoOriginal;
@@ -531,4 +539,5 @@ document.getElementById('form-organico').addEventListener('submit', function (e)
     });
 });
 </script>
+{% endif %}
 {% endblock %}

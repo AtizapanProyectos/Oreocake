@@ -2179,17 +2179,6 @@
       <p id="donImpact" style="color:var(--text-muted);font-style:italic;margin-bottom:30px">"Dona un mes de terapia."
       </p>
       <div id="paypal-button-container-donacion" style="margin-bottom:15px;"></div>
-      <div style="text-align: center;">
-        <div id="clip-button-container" style="margin-top: 10px;">
-          <button id="btn-donar-clip" type="button"
-            style="width: 100%; background: #ffffff; border: 2px solid #e2e8f0; border-radius: 16px; padding: 14px 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.3s ease; box-shadow: 0 4px 10px rgba(0,0,0,0.03);"
-            onmouseover="this.style.borderColor='#FC4C02'; this.style.boxShadow='0 10px 25px rgba(252, 76, 2, 0.15)'; this.style.transform='translateY(-3px)';"
-            onmouseout="this.style.borderColor='#e2e8f0'; this.style.boxShadow='0 4px 10px rgba(0,0,0,0.03)'; this.style.transform='translateY(0)';">
-            <img src="{% static 'img/clip-logo.svg' %}" alt="Clip"
-              style="height: 32px; width: auto; image-rendering: auto;">
-          </button>
-        </div>
-      </div>
     </div>
   </div>
 
@@ -3653,43 +3642,6 @@
           });
       });
     }
-
-    document.getElementById('btn-donar-clip').addEventListener('click', function () {
-      let monto = document.getElementById('donAmount').value;
-
-      if (!monto || monto < 50) {
-        alert("El donativo mínimo es de $50 MXN. ¡Gracias por tu apoyo!");
-        return;
-      }
-
-      let formData = new URLSearchParams();
-      formData.append('monto', monto);
-      formData.append('tipo_servicio', 'donativo'); // Mandamos esta bandera
-      formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
-
-      // Desactivar botón para evitar dobles clics
-      const originalClipBtn = this.innerHTML;
-      this.innerHTML = "Redirigiendo...";
-      this.disabled = true;
-
-      fetch("{% url 'iniciar_pago_clip' %}", {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-Requested-With': 'XMLHttpRequest' },
-        body: formData.toString()
-      })
-        .then(response => response.json())
-        .then(data => {
-          if (data.status === 'success' && data.payment_url) {
-            window.location.href = data.payment_url;
-          } else {
-            alert('Error al procesar el donativo. Intenta de nuevo.');
-            this.innerHTML = originalClipBtn;
-            this.disabled = false;
-          }
-        });
-    });
-
-
 
     function togglePasswordVisibility(inputId, iconId) {
       const input = document.getElementById(inputId);

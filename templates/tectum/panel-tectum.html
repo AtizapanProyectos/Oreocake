@@ -547,6 +547,11 @@ function mostrarErrorCita(mensaje) {
                 </div>
             </div>
 
+            {% if not correo_tectum_verificado %}
+            <p>Confirma una sola vez tu correo para activar la cobertura del convenio.</p>
+            <button type="button" class="btn-brutal" id="enviar-verificacion-tectum">Enviar enlace de verificación</button>
+            <p id="estado-verificacion-tectum" role="status"></p>
+            {% endif %}
             <button type="button" id="btn-confirmar-cita-tectum" onclick="confirmarCitaTectum()" class="btn-brutal" style="width: 100%; background: linear-gradient(135deg, #1e3a8a 0%, #0284c7 100%); color: white; box-shadow: 0 10px 25px rgba(2, 132, 199, 0.25);" disabled>
                 Confirmar Cita <i class="fas fa-arrow-right" style="margin-left: 8px;"></i>
             </button>
@@ -557,7 +562,13 @@ function mostrarErrorCita(mensaje) {
          TAB 2: MIS CITAS
          ===================================================================== -->
     <div id="tab-citas" class="tab-content">
+        {% include 'snippets/otras_citas_confirmadas.html' %}
         {% if cita_proxima %}
+            {% if cita_proxima.modalidad == 'Presencial' and cita_proxima.estado == 'Confirmada' %}
+                <a href="{% url 'formulario_previo_meet' cita_proxima.id %}" class="btn-brutal">
+                    <i class="fas fa-clipboard-check"></i> Contestar IPP presencial
+                </a>
+            {% endif %}
         <div class="chic-card" style="margin-bottom: 30px; border-top: 6px solid #0284c7;">
             <div style="text-align: center; margin-bottom: 25px;">
                 <span class="step-tag" style="background: #e0f2fe; color: #0284c7; border: 1px solid #bae6fd;">
@@ -963,10 +974,17 @@ function actualizarResumenHorario() {
     }
 }
 
+let revisionDisponibilidad = 0;
 function refrescarDisponibilidad(tipo) {
-    fetch("{% url 'disponibilidad_por_tipo' %}?tipo=" + tipo)
+    const revision = ++revisionDisponibilidad;
+    fechaSeleccionada = null;
+    horaSeleccionada = null;
+    document.getElementById('slotsContainerTectum').replaceChildren();
+    fetch("{% url 'disponibilidad_por_tipo' %}?tipo_sesion=" + encodeURIComponent(tipo))
         .then(r => r.json())
         .then(data => {
+            if (revision !== revisionDisponibilidad) return;
+            if (data.status !== 'success') mostrarErrorCita(data.message || 'No pudimos consultar horarios.');
             if (data.status === 'success') {
                 const carousel = document.getElementById('dateCarouselTectum');
                 const slotsBox = document.getElementById('slotsContainerTectum');
@@ -1010,18 +1028,18 @@ function refrescarDisponibilidad(tipo) {
                         grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:20px;color:var(--text-muted);">Sin horarios este día.</div>';
                     } else {
                         horas.forEach(h => {
-                            const [hh, mm] = h.split(':');
-                            const hNum = parseInt(hh, 10);
-                            const ampm = hNum >= 12 ? 'PM' : 'AM';
-                            const h12 = (hNum % 12 || 12) + ':' + mm + ' ' + ampm;
-
+                            const partes = /^(\d{1,2}):(\d{2})\s+(AM|PM)$/i.exec(h);
+                            if (!partes) return;
+                            const horas24 = Number(partes[1]) % 12 + (partes[3].toUpperCase() === 'PM' ? 12 : 0);
+                            const hora24 = String(horas24).padStart(2, '0') + ':' + partes[2];
+                            const h12 = h;
                             const btnSlot = document.createElement('button');
                             btnSlot.type = 'button';
                             btnSlot.className = 'time-slot-btn';
                             btnSlot.dataset.fecha = diaStr;
-                            btnSlot.dataset.hora = h;
+                            btnSlot.dataset.hora = hora24;
                             btnSlot.innerText = h12;
-                            btnSlot.onclick = function() { seleccionarHora(h, h12, this); };
+                            btnSlot.onclick = function() { seleccionarHora(hora24, h12, this); };
                             grid.appendChild(btnSlot);
                         });
                     }
@@ -1037,6 +1055,9 @@ function refrescarDisponibilidad(tipo) {
 
                 aplicarCandadoHorariosTectum();   // 🔒 quita horarios con menos de 2 h de anticipación
             }
+        })
+        .catch(() => {
+            if (revision === revisionDisponibilidad) mostrarErrorCita('No pudimos consultar horarios. Intenta nuevamente.');
         });
 }
 
@@ -1048,6 +1069,23 @@ function mostrarToast(texto) {
     toast.classList.add('show');
     setTimeout(() => { toast.classList.remove('show'); }, 3500);
 }
+
+document.getElementById('enviar-verificacion-tectum')?.addEventListener('click', async function () {
+    const estado = document.getElementById('estado-verificacion-tectum');
+    this.disabled = true;
+    try {
+        const respuesta = await fetch("{% url 'enviar_verificacion_tectum' %}", {
+            method: 'POST',
+            headers: {'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value},
+        });
+        const datos = await respuesta.json();
+        estado.textContent = datos.message;
+    } catch (error) {
+        estado.textContent = 'No pudimos enviar el correo. Intenta nuevamente.';
+    } finally {
+        this.disabled = false;
+    }
+});
 
 function confirmarCitaTectum() {
     if (!fechaSeleccionada || !horaSeleccionada) {
@@ -1069,8 +1107,6 @@ function confirmarCitaTectum() {
     formData.append('modalidad', modalidadSeleccionada);
     formData.append('tipo_servicio', servicioSeleccionado);
     formData.append('animo', document.getElementById('select-animo').value);
-    formData.append('es_tectum', '1');
-    formData.append('paypal_order_id', 'CONVENIO_TECTUM_INHOUSE');
     formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
 
     fetch("{% url 'guardar_cita' %}", {
