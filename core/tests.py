@@ -124,8 +124,16 @@ class SesionPresencialTests(TestCase):
         self.assertTrue(self.cita.nota_clinica.pendiente_revision_audio)
         self.assertFalse(_procesar_reporte_de_una_cita_detallado(self.cita.pk)[0])
         self.assertEqual(self.client.get(estado).json()['estado'], 'completada')
+        Cita.objects.filter(pk=self.cita.pk).update(id_evento_google='evento-antiguo')
+        self.assertEqual(self.client.get(self.url('check_meet_notes')).status_code, 400)
         expediente = self.client.get(reverse('detalle_paciente', args=[self.paciente.pk]))
         self.assertContains(expediente, 'Recomendaciones: llevar un diario.')
+        self.assertContains(expediente, 'Revisar bitácora del audio')
+        self.assertNotContains(expediente, f'id="meet-content-{self.cita.pk}"')
+        transcripcion_url = self.url('descargar_transcripcion_presencial')
+        descarga_texto = self.client.get(transcripcion_url)
+        self.assertContains(descarga_texto, 'Se practicó respiración.')
+        self.assertEqual(descarga_texto['Cache-Control'], 'private, no-store')
         guardado = self.client.post(reverse('guardar_historial'), {
             'paciente_id': self.paciente.pk, 'historial_id': self.cita.nota_clinica.pk,
             'notas_sesion': 'Versión revisada por el psicólogo.',
@@ -135,6 +143,7 @@ class SesionPresencialTests(TestCase):
         self.client.force_login(self.otro)
         self.assertEqual(self.client.get(estado).status_code, 404)
         self.assertEqual(self.client.get(subida.json()['archivo_url']).status_code, 404)
+        self.assertEqual(self.client.get(transcripcion_url).status_code, 404)
 
     @patch('core.grabaciones.transcribir')
     def test_reemplazo_fallido_preserva_bitacora_y_ultima_transcripcion(self, transcribir):

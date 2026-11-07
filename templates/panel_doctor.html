@@ -1246,11 +1246,9 @@ body {
                   <i class="fas fa-video"></i> Iniciar Meet
                 </a>
               {% endif %}
-              {% if cita.modalidad != 'Presencial' %}
-              <a href="{% url 'detalle_paciente' cita.paciente.id %}" class="hbtn hbtn-ghost">
+              <a href="{% url 'detalle_paciente' cita.paciente.id %}#card-c-{{ cita.id }}" class="hbtn hbtn-ghost">
                 <i class="fas fa-folder-open"></i> Expediente
               </a>
-              {% endif %}
             </div>
 
             {% if cita.modalidad == 'Presencial' %}

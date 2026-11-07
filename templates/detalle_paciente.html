@@ -486,11 +486,17 @@
                     <p role="status">Bitácora del audio pendiente de revisión. Revisa y guarda la bitácora antes del Check-In.</p>
                     {% endif %}
                     {% with grabacion=sesion.cita.grabacion_sesion %}
+                    {% if sesion.cita.modalidad == 'Presencial' %}
                     {% if grabacion %}
-                    <details>
+                    <details open>
                         <summary>Grabación presencial · {{ grabacion.get_estado_display }}</summary>
                         <p><a href="{% url 'grabacion_sesion' sesion.cita.id %}">Abrir grabación y ver progreso</a></p>
+                        <audio controls preload="none" src="{% url 'audio_grabacion_sesion' sesion.cita.id %}"></audio>
                         {% if grabacion.transcripcion %}
+                        <p><a href="{% url 'descargar_transcripcion_presencial' sesion.cita.id %}">Descargar transcripción (.txt)</a></p>
+                        {% if sesion.historial.pendiente_revision_audio %}
+                        <button type="button" class="meet-trigger-btn" onclick="editarBitacora({{ sesion.historial.id }})">Revisar bitácora del audio</button>
+                        {% endif %}
                         <details>
                             <summary>Transcripción del último procesamiento completado</summary>
                             {{ grabacion.transcripcion|linebreaksbr }}
@@ -507,6 +513,9 @@
                         </details>
                         {% endif %}
                     </details>
+                    {% else %}
+                    <p><a href="{% url 'grabacion_sesion' sesion.cita.id %}">Abrir grabadora de esta cita presencial</a></p>
+                    {% endif %}
                     {% endif %}
                     {% endwith %}
 
@@ -539,7 +548,7 @@
             <div id="wizard-cita-banner" style="display:none; background:#e0e7ff; border:1px solid #c7d2fe; border-radius:14px; padding:14px 20px; margin-bottom:24px; display:none; align-items:center; gap:12px;">
                 <i class="fas fa-link" style="color:var(--c-indigo); font-size:18px;"></i>
                 <div>
-                    <span style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--c-indigo);">Vinculando a sesión Meet</span>
+                    <span style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--c-indigo);">Vinculando bitácora a esta sesión</span>
                     <p id="wizard-cita-info" style="margin:2px 0 0;font-size:13px;color:#3730a3;font-weight:600;"></p>
                 </div>
                 <button type="button" onclick="abrirWizard()" style="margin-left:auto;background:none;border:none;color:#94a3b8;cursor:pointer;font-size:16px;" title="Crear bitácora sin vincular">
@@ -821,6 +830,13 @@
     // =========================================================================
     // CARGA DE MEET (lazy, solo cuando el usuario lo pide)
     // =========================================================================
+    document.addEventListener('DOMContentLoaded', () => {
+        if (!/^#card-c-\d+$/.test(window.location.hash)) return;
+        const card = document.getElementById(window.location.hash.slice(1));
+        const header = card?.querySelector('.session-header');
+        if (header && !card.querySelector('.session-body').classList.contains('open')) header.click();
+    });
+
     function cargarMeet(citaId, btnObj) {
         const container = document.getElementById('meet-content-' + citaId);
         if (!container) return;
@@ -911,7 +927,7 @@
     // =========================================================================
     // WIZARD
     // =========================================================================
-    // citaId opcional: si viene, la bitácora quedará enlazada a esa cita Meet
+    // citaId opcional: si viene, la bitácora quedará enlazada a esa cita
     function abrirWizard(citaId) {
         document.getElementById('vista-muro').style.display = 'none';
         document.getElementById('vista-wizard').style.display = 'block';

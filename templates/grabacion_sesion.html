@@ -72,7 +72,7 @@
 
     <!-- Acciones finales -->
     <div class="gs-final">
-        <a class="gs-btn-expediente" href="{% url 'detalle_paciente' cita.paciente.id %}">
+        <a class="gs-btn-expediente" href="{% url 'detalle_paciente' cita.paciente.id %}#card-c-{{ cita.id }}">
             <i class="fas fa-folder-open"></i> Ir al expediente del paciente
         </a>
         <a class="gs-btn-agenda" href="{% url 'panel_doctor' %}">

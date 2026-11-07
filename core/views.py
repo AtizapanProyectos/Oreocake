@@ -2804,7 +2804,7 @@ def detalle_paciente(request, paciente_id):
         except Exception:
             pass
  
-        tiene_meet = bool(cita.id_evento_google)
+        tiene_meet = cita.modalidad != 'Presencial' and bool(cita.id_evento_google)
         tiene_historial = historial is not None
  
         sesiones.append({
@@ -3427,6 +3427,8 @@ def check_meet_notes(request, cita_id):
 
     try:
         cita = Cita.objects.get(id=cita_id)
+        if cita.modalidad == 'Presencial':
+            return JsonResponse({'status': 'error', 'message': 'Consulta la grabación presencial en el expediente.'}, status=400)
         if not cita.id_evento_google:
             return JsonResponse({'status': 'error', 'message': 'Esta cita no tiene un enlace de Meet registrado.'})
 
@@ -3661,6 +3663,9 @@ def generar_bitacora_automatica_meet(cita_id, log_func=None, origen='automatico'
         cita = Cita.objects.filter(id=cita_id).select_related('paciente', 'psicologo__usuario').first()
         if not cita:
             return False, f"Cita #{cita_id} no encontrada."
+
+        if cita.modalidad == 'Presencial':
+            return False, 'Consulta la grabación y revisa la bitácora de audio en el expediente.'
 
         # Verificar si ya tiene bitácora con notas
         if hasattr(cita, 'nota_clinica') and cita.nota_clinica and bool(cita.nota_clinica.notas_sesion):
@@ -5400,6 +5405,19 @@ def estado_grabacion_sesion(request, cita_id):
     cita = _cita_grabacion_autorizada(request, cita_id)
     grabacion = get_object_or_404(GrabacionSesion, cita=cita)
     respuesta = JsonResponse({'estado': grabacion.estado, 'mensaje': grabacion.get_estado_display()})
+    respuesta['Cache-Control'] = 'private, no-store'
+    return respuesta
+
+
+def descargar_transcripcion_presencial(request, cita_id):
+    cita = _cita_grabacion_autorizada(request, cita_id)
+    grabacion = get_object_or_404(GrabacionSesion, cita=cita)
+    if not grabacion.transcripcion.strip():
+        raise Http404
+    respuesta = HttpResponse(
+        grabacion.transcripcion.encode('utf-8-sig'), content_type='text/plain; charset=utf-8',
+    )
+    respuesta['Content-Disposition'] = f'attachment; filename="transcripcion-cita-{cita.pk}.txt"'
     respuesta['Cache-Control'] = 'private, no-store'
     return respuesta
 
