@@ -63,6 +63,11 @@ from django.conf import settings
 
 from .models import *
 from .cuestionario_data import CUESTIONARIO_CLINICO
+from .grabaciones import (
+    EN_PROCESO as GRABACION_EN_PROCESO,
+    ESPERA_REINTENTO,
+    disparar_procesamiento,
+)
 from django.utils import timezone
 from django.utils import timezone as tz
 from django.db.models import Count, Avg, Sum, Min, Max, Prefetch
@@ -5265,7 +5270,7 @@ def grabacion_sesion(request, cita_id):
         return redirect('modulo_informativo')
 
     cita = get_object_or_404(
-        Cita.objects.select_related('psicologo__usuario', 'paciente'),
+        Cita.objects.select_related('psicologo__usuario', 'paciente', 'grabacion_sesion'),
         id=cita_id
     )
 
@@ -5277,6 +5282,12 @@ def grabacion_sesion(request, cita_id):
 
     if cita.modalidad != 'Presencial':
         raise Http404
+
+    # Si el audio quedó en cola (deploy/reinicio del contenedor), al abrir la
+    # pantalla se relanza el consumidor local de transcripción.
+    grabacion = getattr(cita, 'grabacion_sesion', None)
+    if grabacion is not None and grabacion.estado == GrabacionSesion.Estado.CARGADA:
+        disparar_procesamiento()
 
     return render(request, 'grabacion_sesion.html', {
         'cita': cita,
@@ -5345,6 +5356,17 @@ def _cerrar_audio_preparado(archivo):
             pass
 
 
+def _disparar_procesamiento_seguro():
+    """Arranca el transcriptor sin tumbar la petición web si algo falla."""
+    try:
+        return disparar_procesamiento()
+    except Exception:
+        logging.getLogger(__name__).exception(
+            'No se pudo iniciar el procesamiento local de grabaciones'
+        )
+        return False
+
+
 def _persistir_grabacion_sesion(cita, preparado, formato, duracion, tamanio):
     """Serializa reemplazos y encola el audio después de guardarlo una vez."""
     with transaction.atomic():
@@ -5370,6 +5392,9 @@ def _persistir_grabacion_sesion(cita, preparado, formato, duracion, tamanio):
         GrabacionSesion.objects.filter(pk=grabacion.pk).update(fecha_subida=grabacion.fecha_subida)
         if anterior and anterior != grabacion.audio.name:
             transaction.on_commit(lambda: grabacion.audio.storage.delete(anterior), robust=True)
+        # La transcripción local arranca cuando el audio ya está confirmado en
+        # disco (on_commit), para que el hilo no lea una fila sin commitear.
+        transaction.on_commit(_disparar_procesamiento_seguro)
         return grabacion
 
 
@@ -5382,10 +5407,42 @@ def _cita_grabacion_autorizada(request, cita_id):
     return cita
 
 
+def _procesamiento_vencido(grabacion):
+    """True si quedó en un estado en curso pero ya nadie lo está procesando."""
+    if grabacion.estado not in GRABACION_EN_PROCESO:
+        return False
+    inicio = grabacion.intento_iniciado
+    return inicio is None or inicio < timezone.now() - ESPERA_REINTENTO
+
+
 def estado_grabacion_sesion(request, cita_id):
     cita = _cita_grabacion_autorizada(request, cita_id)
     grabacion = get_object_or_404(GrabacionSesion, cita=cita)
-    respuesta = JsonResponse({'estado': grabacion.estado, 'mensaje': grabacion.get_estado_display()})
+    # Si el proceso murió (deploy/reinicio), el polling del panel lo relanza.
+    if grabacion.estado == GrabacionSesion.Estado.CARGADA:
+        _disparar_procesamiento_seguro()
+    vencido = _procesamiento_vencido(grabacion)
+    mensajes = {
+        GrabacionSesion.Estado.CARGADA: 'Grabación en cola de transcripción local…',
+        GrabacionSesion.Estado.COMPLETADA: 'Transcripción y notas guardadas en el expediente.',
+        GrabacionSesion.Estado.ERROR: 'No se pudo procesar la grabación. Puedes reintentar la transcripción.',
+    }
+    if vencido:
+        mensaje = 'El procesamiento anterior se interrumpió. Puedes reintentar la transcripción.'
+    else:
+        mensaje = mensajes.get(grabacion.estado, grabacion.get_estado_display())
+    respuesta = JsonResponse({
+        'estado': grabacion.estado,
+        'mensaje': mensaje,
+        'procesando': (
+            grabacion.estado in GRABACION_EN_PROCESO or
+            grabacion.estado == GrabacionSesion.Estado.CARGADA
+        ),
+        'puede_reintentar': grabacion.estado in (
+            GrabacionSesion.Estado.ERROR, GrabacionSesion.Estado.COMPLETADA,
+        ) or vencido,
+        'tiene_transcripcion': bool(grabacion.transcripcion),
+    })
     respuesta['Cache-Control'] = 'private, no-store'
     return respuesta
 
@@ -5499,6 +5556,36 @@ def api_guardar_grabacion_sesion(request, cita_id):
         'tamanio_mb': round(archivo.size / (1024 * 1024), 1),
         'fecha_subida': timezone.localtime(grabacion.fecha_subida).strftime('%d/%m/%Y %H:%M') if grabacion.fecha_subida else '',
         'message': 'Grabación guardada en el servidor.',
+    })
+
+
+@require_POST
+def api_reintentar_transcripcion(request, cita_id):
+    """Reencola la transcripción local de una grabación ya subida.
+
+    No vuelve a subir el audio: reutiliza el archivo privado guardado en
+    GrabacionSesion. Sirve cuando el proceso falló, cuando el contenedor se
+    reinició a mitad del trabajo o para regenerar las notas con el modelo
+    actual. CSRF activo (header X-CSRFToken)."""
+    cita = _cita_grabacion_autorizada(request, cita_id)
+    grabacion = get_object_or_404(GrabacionSesion, cita=cita)
+
+    if (grabacion.estado == GrabacionSesion.Estado.CARGADA or
+            (grabacion.estado in GRABACION_EN_PROCESO and not _procesamiento_vencido(grabacion))):
+        return JsonResponse({
+            'status': 'error',
+            'message': 'La grabación ya se está procesando.',
+        }, status=409)
+
+    GrabacionSesion.objects.filter(pk=grabacion.pk).update(
+        estado=GrabacionSesion.Estado.CARGADA,
+        intento_iniciado=None,
+    )
+    _disparar_procesamiento_seguro()
+    return JsonResponse({
+        'status': 'success',
+        'estado': GrabacionSesion.Estado.CARGADA,
+        'message': 'Transcripción reencolada. El proceso corre en el servidor.',
     })
 
 

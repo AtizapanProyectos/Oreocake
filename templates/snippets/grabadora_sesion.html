@@ -49,6 +49,8 @@
     .gsn-rec-start:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(239, 68, 68, .35); }
     .gsn-rec-stop { background: linear-gradient(135deg, #475569 0%, #334155 100%); box-shadow: 0 6px 16px rgba(71, 85, 105, .25); }
     .gsn-rec-stop:hover:not(:disabled) { transform: translateY(-1px); }
+    .gsn-rec-reintentar { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); box-shadow: 0 6px 16px rgba(217, 119, 6, .22); }
+    .gsn-rec-reintentar:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(217, 119, 6, .32); }
     .gsn-rec-timer { font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 14px; color: #dc2626; font-variant-numeric: tabular-nums; }
     .gsn-rec-pasos { font-size: 12px; padding-left: 22px; }
     .gsn-rec-pasos [data-hecho] { color: #0f766e; }
@@ -78,6 +80,7 @@
 <div class="gsn-rec" data-cita-id="{{ cita.id|default:'' }}"
      data-url-estado="{% url 'estado_grabacion_sesion' cita.id %}"
      data-url-guardar="{% url 'api_guardar_grabacion_sesion' cita.id %}"
+     data-url-reintentar="{% url 'api_reintentar_transcripcion' cita.id %}"
      {% with grabacion=cita.grabacion_sesion %}
      {% if grabacion %}data-guardada="1"
      data-audio-url="{% url 'audio_grabacion_sesion' cita.id %}"
@@ -98,6 +101,7 @@
         <div class="gsn-rec-actions">
             <button type="button" class="gsn-rec-btn gsn-rec-start"><i class="fas fa-circle"></i> Iniciar Grabación</button>
             <button type="button" class="gsn-rec-btn gsn-rec-stop" disabled><i class="fas fa-stop"></i> Detener y Guardar</button>
+            <button type="button" class="gsn-rec-btn gsn-rec-reintentar" hidden><i class="fas fa-rotate-right"></i> Reintentar transcripción</button>
             <span class="gsn-rec-timer" style="display:none;">00:00</span>
         </div>
         <label>
@@ -115,7 +119,7 @@
         <div class="gsn-rec-proceso" role="status" aria-live="polite"></div>
         <div class="gsn-rec-estado">
             {% with grabacion=cita.grabacion_sesion %}
-            {% if grabacion %}Grabación guardada el {{ grabacion.fecha_subida|date:'d/m/Y H:i' }} · {{ grabacion.duracion_legible }} (mm:ss). Puedes grabar de nuevo para reemplazarla.{% else %}Listo para grabar cuando lo necesites. No requiere contestar el IPP.{% endif %}
+            {% if grabacion %}Grabación guardada el {{ grabacion.fecha_subida|date:'d/m/Y H:i' }} · Duración {{ grabacion.duracion_legible }}. Puedes grabar de nuevo para reemplazarla.{% else %}Listo para grabar cuando lo necesites. No requiere contestar el IPP.{% endif %}
             {% endwith %}
         </div>
         <div class="gsn-rec-resultado" style="display:none;">
@@ -134,16 +138,17 @@
 
         var citaId = box.getAttribute('data-cita-id') || '';
         var urlGuardar = box.getAttribute('data-url-guardar');
+        var urlReintentar = box.getAttribute('data-url-reintentar');
         var archivo = box.querySelector('.gsn-rec-archivo');
         var proceso = box.querySelector('.gsn-rec-proceso');
         var consulta = 0;
         var estadosFinales = ['completada', 'error', 'archivada'];
 
-        function mostrarProceso(estadoActual, mensaje) {
+        function mostrarProceso(estadoActual, mensaje, puedeReintentar) {
             var lista = box.querySelector('.gsn-rec-pasos');
-            var pasos = Array.from(lista.querySelectorAll('[data-paso]'));
+            var pasos = lista ? Array.from(lista.querySelectorAll('[data-paso]')) : [];
             var actual = pasos.findIndex(function (paso) { return paso.dataset.paso === estadoActual; });
-            lista.hidden = estadoActual === 'archivada';
+            if (lista) lista.hidden = estadoActual === 'archivada';
             if (actual >= 0) {
                 pasos.forEach(function (paso, indice) {
                     paso.toggleAttribute('data-hecho', indice < actual || estadoActual === 'completada');
@@ -151,8 +156,18 @@
                     else paso.removeAttribute('aria-current');
                 });
             }
-            if (estadoActual === 'error') mensaje += '. Vuelve a cargar el audio para reintentar.';
+            if (estadoActual === 'error') {
+                mensaje += '. Puedes reintentar la transcripción sin volver a subir el audio.';
+            }
             proceso.textContent = mensaje;
+            var reintentable = typeof puedeReintentar === 'boolean'
+                ? puedeReintentar
+                : (estadoActual === 'error' || estadoActual === 'completada');
+            btnReintentar.hidden = !reintentable;
+            btnReintentar.disabled = false;
+            btnReintentar.innerHTML = estadoActual === 'completada'
+                ? '<i class="fas fa-rotate-right"></i> Volver a transcribir'
+                : '<i class="fas fa-rotate-right"></i> Reintentar transcripción';
         }
 
         async function consultarProceso(turno) {
@@ -161,7 +176,7 @@
                 if (!respuesta.ok) throw new Error();
                 var datos = await respuesta.json();
                 if (turno !== consulta) return;
-                mostrarProceso(datos.estado, datos.mensaje);
+                mostrarProceso(datos.estado, datos.mensaje, datos.puede_reintentar);
                 if (!estadosFinales.includes(datos.estado)) {
                     setTimeout(function () { consultarProceso(turno); }, 2500);
                 }
@@ -172,6 +187,7 @@
 
         var btnStart = box.querySelector('.gsn-rec-start');
         var btnStop = box.querySelector('.gsn-rec-stop');
+        var btnReintentar = box.querySelector('.gsn-rec-reintentar');
         var timer = box.querySelector('.gsn-rec-timer');
         var estado = box.querySelector('.gsn-rec-estado');
         var resultado = box.querySelector('.gsn-rec-resultado');
@@ -210,7 +226,7 @@
             linkDesc.href = box.getAttribute('data-audio-url') || '#';
             linkDesc.setAttribute('download', 'grabacion_cita_' + citaId + '.' + (box.dataset.formato || 'webm'));
             resultado.style.display = 'block';
-            iconoGuardada.innerHTML = '<i class="fas fa-circle-check"></i> Guardada en el server el ' + (box.getAttribute('data-fecha-subida') || '') + ' (' + (box.getAttribute('data-duracion') || '') + ' min)';
+            iconoGuardada.innerHTML = '<i class="fas fa-circle-check"></i> Guardada en el server el ' + (box.getAttribute('data-fecha-subida') || '') + ' (' + (box.getAttribute('data-duracion') || '') + ')';
         }
 
         if (box.dataset.guardada === '1') consultarProceso(++consulta);
@@ -220,6 +236,45 @@
             var seleccion = archivo.files[0];
             archivo.value = '';
             subirAudio(seleccion, seleccion.name, 0);
+        });
+
+        btnReintentar.addEventListener('click', function () {
+            if (!urlReintentar) return;
+            var csrf = getCookie('csrftoken');
+            if (!csrf) {
+                setEstado('No se encontró el token de seguridad (csrftoken). Recarga la página.', true);
+                return;
+            }
+            btnReintentar.disabled = true;
+            setEstado('Reencolando la transcripción en el servidor…');
+            fetch(urlReintentar, {
+                method: 'POST',
+                headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRFToken': csrf },
+                credentials: 'same-origin'
+            })
+            .then(function (res) {
+                return res.json().catch(function () { return {}; }).then(function (data) {
+                    return { ok: res.ok, status: res.status, data: data };
+                });
+            })
+            .then(function (r) {
+                if (r.status === 409) {
+                    // Ya estaba procesándose: seguimos consultando el estado.
+                    consultarProceso(++consulta);
+                    return;
+                }
+                if (!r.ok || !r.data || r.data.status !== 'success') {
+                    btnReintentar.disabled = false;
+                    setEstado((r.data && r.data.message) || 'No se pudo reintentar la transcripción.', true);
+                    return;
+                }
+                mostrarProceso('cargada', 'Grabación en cola de transcripción local…');
+                consultarProceso(++consulta);
+            })
+            .catch(function () {
+                btnReintentar.disabled = false;
+                setEstado('Falló la conexión al reintentar. Intenta de nuevo.', true);
+            });
         });
 
         btnStart.addEventListener('click', async function () {
@@ -334,8 +389,8 @@
                     linkDesc.setAttribute('download', 'grabacion_cita_' + citaId + '.' + (data.formato || extensionDe(blob.type)));
                     resultado.style.display = 'block';
                     iconoGuardada.innerHTML = '<i class="fas fa-circle-check"></i> Guardada en el server (' + (data.tamanio_mb ? data.tamanio_mb + ' MB · ' : '') + fmtSegundos(duracion) + ')';
-                    setEstado('Grabación guardada en el servidor.');
-                    mostrarProceso('cargada', 'Grabación cargada');
+                    setEstado('Grabación guardada. La transcripción local corre en el servidor.');
+                    mostrarProceso('cargada', 'Grabación en cola de transcripción local…');
                     var turno = ++consulta;
                     setTimeout(function () { consultarProceso(turno); }, 1200);
                 } else {
@@ -367,6 +422,20 @@
         }
     }
 
-    document.querySelectorAll('.gsn-rec').forEach(initGrabadoraSesion);
+    function iniciarTodas() {
+        document.querySelectorAll('.gsn-rec').forEach(function (box) {
+            initGrabadoraSesion(box);
+        });
+    }
+
+    // Permite inicializar el bloque si el panel lo inserta después de cargar
+    // (innerHTML), y también deja el arranque normal por DOMContentLoaded.
+    window.initGrabadoraSesion = initGrabadoraSesion;
+    window.HopeGrabadoraSesion = iniciarTodas;
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', iniciarTodas);
+    } else {
+        iniciarTodas();
+    }
 })();
 </script>

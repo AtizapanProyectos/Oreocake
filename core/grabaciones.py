@@ -1,23 +1,38 @@
-"""Procesamiento local de grabaciones presenciales, fuera del proceso web."""
+"""Procesamiento local de grabaciones presenciales con faster-whisper.
+
+El audio se transcribe dentro del proceso web (hilo daemon) usando el modelo
+local de faster-whisper. No se llama a Groq ni se necesitan binarios externos
+(ffmpeg / whisper-cli): ffmpeg viene empaquetado en PyAV, dependencia de
+faster-whisper.
+"""
 import datetime
+import logging
 import os
 from pathlib import Path
 import re
 import shutil
-import subprocess
 import tempfile
-import wave
+import threading
 
-from django.db import close_old_connections, transaction
+from django.conf import settings
+from django.db import close_old_connections, connections, transaction
 from django.db.models import Q
 from django.utils import timezone
 
 from .models import Cita, GrabacionSesion, HistorialClinico
 
+logger = logging.getLogger(__name__)
+
 Estado = GrabacionSesion.Estado
 EN_PROCESO = (Estado.AUDIO, Estado.TRANSCRIBIENDO, Estado.NOTAS, Estado.GUARDANDO)
 LIMITE_AUDIO = 12 * 3600
-TIMEOUT_TRANSCRIPCION = 8 * 3600
+# Un intento abandonado (worker reiniciado, deploy, OOM) se puede reclamar
+# después de este tiempo. El reintento manual no espera: pone la fila en
+# 'cargada' y relanza el procesamiento.
+LEASE_PROCESO = datetime.timedelta(hours=6)
+# Un intento en curso puede reintentarse manualmente después de este tiempo
+# (deploy/reinicio del contenedor a mitad de la transcripción).
+ESPERA_REINTENTO = datetime.timedelta(minutes=30)
 CONTENEDORES = {"webm": "matroska", "ogg": "ogg", "m4a": "mov", "wav": "wav", "mp3": "mp3"}
 SECCIONES = {
     "como_llega": r"(?:cómo llega|al inicio|estado inicial)",
@@ -25,6 +40,11 @@ SECCIONES = {
     "como_se_va": r"(?:cómo se va|al cierre|al finalizar|cierre)",
     "recomendaciones": r"(?:recomendaciones|acuerdos|tareas para la próxima sesión)",
 }
+
+_modelo_whisper = None
+_cerrojo_modelo = threading.Lock()
+_hilo_procesamiento = None
+_cerrojo_hilo = threading.Lock()
 
 
 def estructurar_notas(transcripcion):
@@ -49,42 +69,116 @@ def estructurar_notas(transcripcion):
     return {campo: "\n".join(fragmentos) for campo, fragmentos in notas.items()}
 
 
-def transcribir(grabacion, avanzar, ffmpeg, whisper, modelo):
-    contenedor = CONTENEDORES.get(grabacion.formato)
-    if not contenedor:
+def configuracion_modelo():
+    """Nombre del modelo y carpeta de caché (persistente si hay volumen)."""
+    nombre = (os.environ.get("HOPE_WHISPER_MODELO") or "tiny").strip() or "tiny"
+    carpeta = (os.environ.get("HOPE_WHISPER_DIR") or "").strip()
+    if not carpeta:
+        base = getattr(settings, "GRABACIONES_ROOT", None)
+        if not base:
+            base = Path(settings.BASE_DIR) / "grabaciones_privadas"
+        # Dentro del volumen de grabaciones para no re-descargar el modelo en
+        # cada deploy/arranque del contenedor.
+        carpeta = str(Path(str(base)) / "_modelos_whisper")
+    return nombre, carpeta
+
+
+def _entero_env(nombre, defecto):
+    try:
+        return max(1, int(os.environ.get(nombre, defecto)))
+    except (TypeError, ValueError):
+        return defecto
+
+
+def _cargar_modelo():
+    """Carga (y cachea por proceso) el modelo local de faster-whisper."""
+    global _modelo_whisper
+    if _modelo_whisper is not None:
+        return _modelo_whisper
+
+    with _cerrojo_modelo:
+        if _modelo_whisper is not None:
+            return _modelo_whisper
+        try:
+            from faster_whisper import WhisperModel
+        except ImportError as error:
+            raise RuntimeError(
+                "Falta la dependencia faster-whisper. Instala requirements.txt."
+            ) from error
+
+        nombre, carpeta = configuracion_modelo()
+        Path(carpeta).mkdir(parents=True, exist_ok=True)
+        logger.info("Cargando modelo Whisper '%s' desde %s", nombre, carpeta)
+        try:
+            modelo = WhisperModel(
+                nombre,
+                device=os.environ.get("HOPE_WHISPER_DISPOSITIVO", "cpu"),
+                compute_type=os.environ.get("HOPE_WHISPER_PRECISION", "int8"),
+                cpu_threads=_entero_env("HOPE_WHISPER_HILOS", 1),
+                num_workers=1,
+                download_root=carpeta,
+            )
+        except Exception as error:
+            raise RuntimeError(
+                f"No se pudo cargar el modelo Whisper '{nombre}': {error}"
+            ) from error
+        _modelo_whisper = modelo
+        logger.info("Modelo Whisper '%s' listo", nombre)
+        return modelo
+
+
+def transcribir(grabacion, avanzar):
+    """Transcribe el audio de la grabación y devuelve el texto plano."""
+    formato = (grabacion.formato or "").lower()
+    if formato not in CONTENEDORES:
         raise ValueError("Formato de audio no admitido")
+
     with tempfile.TemporaryDirectory(prefix="hope_presencial_") as carpeta:
-        base = Path(carpeta)
-        origen = base / f"origen.{grabacion.formato}"
-        wav = base / "audio.wav"
-        salida = base / "transcripcion"
+        origen = Path(carpeta) / f"audio.{formato}"
         with grabacion.audio.open("rb") as entrada, origen.open("wb") as archivo:
-            shutil.copyfileobj(entrada, archivo)
-        subprocess.run([
-            ffmpeg, "-nostdin", "-protocol_whitelist", "file", "-f", contenedor, "-i", str(origen),
-            "-map", "0:a:0", "-vn", "-t", str(LIMITE_AUDIO + 1),
-            "-ac", "1", "-ar", "16000", "-c:a", "pcm_s16le", str(wav),
-        ], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=1800)
-        with wave.open(str(wav), "rb") as audio:
-            if not 0 < audio.getnframes() <= LIMITE_AUDIO * audio.getframerate():
-                raise ValueError("Duración de audio fuera de rango")
+            shutil.copyfileobj(entrada, archivo, length=1024 * 1024)
+        if origen.stat().st_size == 0:
+            raise ValueError("El audio está vacío")
+
         if not avanzar(Estado.TRANSCRIBIENDO):
             return ""
-        subprocess.run([
-            whisper, "-m", modelo, "-f", str(wav), "-l", "es", "-otxt", "-of", str(salida),
-        ], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=TIMEOUT_TRANSCRIPCION)
-        return salida.with_suffix(".txt").read_text(encoding="utf-8").strip()
+
+        modelo = _cargar_modelo()
+        segmentos, info = modelo.transcribe(
+            str(origen),
+            language="es",
+            beam_size=1,
+            best_of=1,
+            temperature=0.0,
+            vad_filter=True,
+            vad_parameters={"min_silence_duration_ms": 500},
+            condition_on_previous_text=False,
+            without_timestamps=True,
+            initial_prompt="Transcripción de una sesión de psicología en español.",
+        )
+        duracion = float(getattr(info, "duration", 0) or 0)
+        if duracion > LIMITE_AUDIO:
+            raise ValueError("Duración de audio fuera de rango")
+
+        partes = []
+        for segmento in segmentos:
+            texto = (segmento.text or "").strip()
+            if texto:
+                partes.append(texto)
+        return " ".join(partes).strip()
 
 
-def procesar_siguiente(ffmpeg, whisper, modelo):
+def procesar_siguiente():
+    """Toma la siguiente grabación pendiente y la procesa. True si había trabajo."""
     ahora = timezone.now()
-    vencido = ahora - datetime.timedelta(hours=10)
+    vencido = ahora - LEASE_PROCESO
     disponibles = GrabacionSesion.objects.filter(
         Q(estado=Estado.CARGADA) | Q(estado__in=EN_PROCESO, intento_iniciado__lt=vencido)
     )
     grabacion = disponibles.order_by("fecha_subida", "pk").first()
     if grabacion is None:
         return False
+    # Reclamo atómico: dos workers/procesos no procesan la misma fila.
     if not disponibles.filter(pk=grabacion.pk, audio=grabacion.audio.name).update(
         estado=Estado.AUDIO, intento_iniciado=ahora,
     ):
@@ -97,7 +191,7 @@ def procesar_siguiente(ffmpeg, whisper, modelo):
         return intento.update(estado=estado)
 
     try:
-        texto = transcribir(grabacion, avanzar, ffmpeg, whisper, modelo)
+        texto = transcribir(grabacion, avanzar)
         if not texto:
             raise ValueError("Sin texto transcrito")
         if not avanzar(Estado.NOTAS):
@@ -134,15 +228,50 @@ def procesar_siguiente(ffmpeg, whisper, modelo):
             actual.notas_generadas = notas
             actual.estado = Estado.COMPLETADA
             actual.save(update_fields=["transcripcion", "notas_generadas", "estado"])
-    except (OSError, subprocess.SubprocessError, ValueError, wave.Error, EOFError):
-        avanzar(Estado.ERROR)
+    except Exception:
+        logger.exception("Falló el procesamiento de la grabación %s", grabacion.pk)
+        try:
+            avanzar(Estado.ERROR)
+        except Exception:
+            logger.exception("No se pudo marcar como error la grabación %s", grabacion.pk)
     return True
 
 
-def configuracion_motor():
-    ffmpeg = shutil.which(os.environ.get("HOPE_FFMPEG", "ffmpeg"))
-    whisper = shutil.which(os.environ.get("HOPE_WHISPER_CLI", "whisper-cli"))
-    modelo = os.environ.get("HOPE_WHISPER_MODEL", "")
-    if ffmpeg and whisper and modelo and Path(modelo).is_file():
-        return ffmpeg, whisper, str(Path(modelo).resolve())
-    return None
+def _consumir_cola():
+    global _hilo_procesamiento
+    try:
+        while True:
+            close_old_connections()
+            try:
+                if not procesar_siguiente():
+                    break
+            except Exception:
+                logger.exception("Falló el consumidor de grabaciones")
+                break
+    finally:
+        try:
+            connections.close_all()
+        except Exception:
+            pass
+        with _cerrojo_hilo:
+            _hilo_procesamiento = None
+
+
+def disparar_procesamiento():
+    """Arranca (si hace falta) el hilo que vacía la cola de grabaciones.
+
+    Es idempotente por proceso: si ya hay un consumidor vivo no crea otro. En
+    pruebas se desactiva con HOPE_PROCESAR_GRABACIONES=False.
+    """
+    if not getattr(settings, "HOPE_PROCESAR_GRABACIONES", True):
+        return False
+    global _hilo_procesamiento
+    with _cerrojo_hilo:
+        if _hilo_procesamiento is not None and _hilo_procesamiento.is_alive():
+            return False
+        hilo = threading.Thread(
+            target=_consumir_cola, name="hope-grabaciones", daemon=True,
+        )
+        _hilo_procesamiento = hilo
+        hilo.start()
+        return True

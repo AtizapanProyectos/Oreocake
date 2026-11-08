@@ -152,6 +152,11 @@ STATICFILES_DIRS = [
 MEDIA_URL = 'media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 GRABACIONES_ROOT = os.environ.get('HOPE_GRABACIONES_ROOT') or BASE_DIR / 'grabaciones_privadas'
+# Procesamiento en segundo plano de grabaciones presenciales (faster-whisper).
+# Se puede apagar con HOPE_PROCESAR_GRABACIONES=0 (pruebas o mantenimiento).
+HOPE_PROCESAR_GRABACIONES = os.environ.get(
+    'HOPE_PROCESAR_GRABACIONES', '1'
+).strip().lower() not in ('0', 'false', 'no', 'off')
 
 
 # ==========================================

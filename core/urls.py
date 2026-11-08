@@ -221,6 +221,7 @@ urlpatterns = [
     path('api/estado-grabacion-sesion/<int:cita_id>/', views.estado_grabacion_sesion, name='estado_grabacion_sesion'),
     path('audio-grabacion-sesion/<int:cita_id>/', views.audio_grabacion_sesion, name='audio_grabacion_sesion'),
     path('api/guardar-grabacion-sesion/<int:cita_id>/', views.api_guardar_grabacion_sesion, name='api_guardar_grabacion_sesion'),
+    path('api/reintentar-transcripcion/<int:cita_id>/', views.api_reintentar_transcripcion, name='api_reintentar_transcripcion'),
 
     # Panel TECTUM de bienestar emocional (5/11/2026). Solo superusuario.
     # No modifica vistas existentes: la lectura vive en core/panel_bienestar_tectum.py.

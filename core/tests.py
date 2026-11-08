@@ -19,7 +19,7 @@ from .models import (
 from .views import FORMULARIO_ORGANICO_PREGUNTAS, _procesar_reporte_de_una_cita_detallado
 
 
-@override_settings(ALLOWED_HOSTS=['testserver'])
+@override_settings(ALLOWED_HOSTS=['testserver'], HOPE_PROCESAR_GRABACIONES=False)
 class SesionPresencialTests(TestCase):
     def setUp(self):
         carpeta = tempfile.TemporaryDirectory()
@@ -116,8 +116,8 @@ class SesionPresencialTests(TestCase):
             return 'Al inicio, se habló del descanso. Se practicó respiración. Recomendaciones: llevar un diario.'
 
         transcribir.side_effect = motor
-        self.assertTrue(procesar_siguiente('ffmpeg', 'whisper', 'modelo'))
-        self.assertFalse(procesar_siguiente('ffmpeg', 'whisper', 'modelo'))
+        self.assertTrue(procesar_siguiente())
+        self.assertFalse(procesar_siguiente())
         self.cita.refresh_from_db()
         self.assertEqual(self.cita.estado, 'Completada')
         self.assertEqual(self.cita.nota_clinica.notas_sesion, 'Se practicó respiración.')
@@ -141,14 +141,36 @@ class SesionPresencialTests(TestCase):
         self.client.force_login(self.doctor)
         self.assertEqual(self.subir().status_code, 200)
         transcribir.return_value = 'Transcripción original.'
-        procesar_siguiente('ffmpeg', 'whisper', 'modelo')
+        procesar_siguiente()
         historial = HistorialClinico.objects.get(cita=self.cita)
         self.assertEqual(self.subir().status_code, 200)
         transcribir.side_effect = ValueError
-        procesar_siguiente('ffmpeg', 'whisper', 'modelo')
+        procesar_siguiente()
         grabacion = GrabacionSesion.objects.get(cita=self.cita)
         self.assertEqual((grabacion.estado, grabacion.transcripcion), ('error', 'Transcripción original.'))
         self.assertEqual(HistorialClinico.objects.get(cita=self.cita).pk, historial.pk)
+
+    def test_reintentar_transcripcion_reencola_y_respeta_permisos(self):
+        self.client.force_login(self.doctor)
+        self.assertEqual(self.subir().status_code, 200)
+        url = self.url('api_reintentar_transcripcion')
+        GrabacionSesion.objects.filter(cita=self.cita).update(
+            estado='audio', intento_iniciado=timezone.now(),
+        )
+        self.assertEqual(self.client.post(url).status_code, 409)
+        # Un intento abandonado (deploy/reinicio) sí puede reencolarse.
+        GrabacionSesion.objects.filter(cita=self.cita).update(
+            estado='audio', intento_iniciado=timezone.now() - timedelta(hours=1),
+        )
+        self.assertEqual(self.client.post(url).status_code, 200)
+        self.assertEqual(GrabacionSesion.objects.get(cita=self.cita).estado, 'cargada')
+        GrabacionSesion.objects.filter(cita=self.cita).update(estado='error')
+        respuesta = self.client.post(url)
+        self.assertEqual(respuesta.status_code, 200, respuesta.content)
+        self.assertEqual(respuesta.json()['status'], 'success')
+        self.assertEqual(GrabacionSesion.objects.get(cita=self.cita).estado, 'cargada')
+        self.client.force_login(self.otro)
+        self.assertEqual(self.client.post(url).status_code, 404)
 
     @patch('groq.Groq')
     def test_escaneo_distribuye_cinco_campos_y_rechaza_respuesta_invalida(self, groq):
