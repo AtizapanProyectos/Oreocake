@@ -1,6 +1,6 @@
 import json
 import tempfile
-from datetime import timedelta
+from datetime import datetime, time, timedelta
 from types import SimpleNamespace
 from unittest.mock import patch
 
@@ -40,6 +40,31 @@ class SesionPresencialTests(TestCase):
 
     def url(self, nombre):
         return reverse(nombre, args=[self.cita.pk])
+
+    def test_agenda_muestra_citas_de_todo_el_dia_y_limita_las_acciones(self):
+        ahora = timezone.make_aware(datetime(2026, 11, 8, 19))
+        citas = [
+            Cita.objects.create(
+                paciente=self.paciente, psicologo=self.psicologo, fecha=ahora.date(),
+                hora=hora, estado=estado, modalidad='Presencial',
+            )
+            for hora, estado in (
+                (time(9), 'Confirmada'), (time(10), 'Completada'),
+                (time(11), 'Pendiente'), (time(12), 'Cancelada'), (time(20), 'Confirmada'),
+            )
+        ]
+        self.client.force_login(self.doctor)
+        with patch('core.views.timezone.now', return_value=ahora):
+            respuesta = self.client.get(reverse('panel_doctor'))
+        self.assertEqual(respuesta.status_code, 200)
+        visibles = respuesta.context['citas_hoy']
+        self.assertEqual(
+            [(cita.pk, cita.agenda_activa) for cita in visibles],
+            [(cita.pk, activa) for cita, activa in zip(citas[:3] + citas[4:], (False, False, False, True))],
+        )
+        self.assertNotContains(respuesta, 'Día despejado')
+        self.assertContains(respuesta, 'Contestar IPP', count=1)
+        self.assertContains(respuesta, 'Iniciar grabación', count=1)
 
     def respuestas(self):
         return {**{p['id']: 'siempre' for p in FORMULARIO_ORGANICO_PREGUNTAS},

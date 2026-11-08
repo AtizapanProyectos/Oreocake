@@ -1198,7 +1198,8 @@ body {
 
 <div class="cita-info">
               <div class="cita-tags">
-                <span class="ctag ctag-purple"><i class="fas fa-user"></i> Individual</span>
+                <span class="ctag ctag-purple"><i class="fas fa-user"></i> {{ cita.get_tipo_sesion_display }}</span>
+                <span class="ctag ctag-purple">{{ cita.get_estado_display }}</span>
                 {% if cita.modalidad == 'Presencial' %}
                   <span class="ctag badge-presencial"><i class="fas fa-building"></i> Presencial</span>
                 {% else %}
@@ -1231,7 +1232,7 @@ body {
               {% endif %} </div>
 
             <div class="cita-actions">
-              {% if cita.modalidad == 'Presencial' %}
+              {% if cita.agenda_activa and cita.modalidad == 'Presencial' %}
                 <!-- 5/11/2026: botones INDEPENDIENTES. La grabación ya NO
                      requiere contestar el IPP; ambos aparecen siempre. -->
                 <a href="{% url 'formulario_previo_meet' cita.id %}" target="_blank" rel="noopener"
@@ -1241,7 +1242,7 @@ body {
                 {% if cita.evaluacion_servicio %}
                   <span class="pill-badge" style="background:#ccfbf1; color:#0f766e;"><i class="fas fa-clipboard-check"></i> IPP contestado</span>
                 {% endif %}
-              {% elif cita.enlace_meet %}
+              {% elif cita.agenda_activa and cita.enlace_meet %}
                 <a href="{{ cita.enlace_meet }}" target="_blank" class="hbtn hbtn-video"
                    onclick="setTimeout(() => { window.location.href = '{% url 'detalle_paciente' cita.paciente.id %}'; }, 100);">
                   <i class="fas fa-video"></i> Iniciar Meet
@@ -1252,7 +1253,7 @@ body {
               </a>
             </div>
 
-            {% if cita.modalidad == 'Presencial' %}
+            {% if cita.agenda_activa and cita.modalidad == 'Presencial' %}
             <!-- 5/11/2026: la grabadora vive en una fila COMPLETA de la grid
                  (grid-column: 1 / -1), NO dentro de la columna de acciones:
                  si va dentro, el column 'auto' + align-items:flex-end la

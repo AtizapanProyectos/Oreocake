@@ -2509,20 +2509,22 @@ def panel_doctor(request):
     hoy = now_local.date()
     hora_actual = now_local.time().replace(second=0, microsecond=0)
 
-    # ✅ FIX 2: Tolerancia de 60 min — una cita "sigue activa" hasta 1 hora después de su hora
-    from datetime import timedelta as td
-    hora_limite = (now_local - td(hours=1)).time().replace(second=0, microsecond=0)
-
-    # ✅ FIX 3: Citas de hoy que NO han expirado (incluye las que empezaron hace menos de 60 min)
+    # La agenda conserva las citas del día; la ventana de una hora solo
+    # controla los botones para atender una cita confirmada.
+    limite_activo = now_local.replace(second=0, microsecond=0) - timedelta(hours=1)
+    hora_limite = limite_activo.time() if limite_activo.date() == hoy else time.min
     citas_hoy = Cita.objects.filter(
         psicologo=psicologo,
         fecha=hoy,
-        estado='Confirmada',
-        hora__gte=hora_limite  # <- muestra citas desde 1 hora atrás
+    ).exclude(estado='Cancelada').select_related(
+        'paciente', 'paciente__perfil',
     ).prefetch_related(
         'evaluacion_servicio',
         Prefetch('grabacion_sesion', queryset=GrabacionSesion.objects.defer('transcripcion', 'notas_generadas')),
     ).order_by('hora')
+
+    for cita in citas_hoy:
+        cita.agenda_activa = cita.estado == 'Confirmada' and cita.hora >= hora_limite
 
     # 🔥 NUEVO: Talleres/Grupos de hoy que NO han expirado
     talleres_hoy = Taller.objects.filter(
