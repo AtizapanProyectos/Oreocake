@@ -5364,7 +5364,7 @@ def _cerrar_audio_preparado(archivo):
             pass
 
 
-def _persistir_grabacion_sesion(cita, preparado, formato, duracion, tamanio):
+def _persistir_grabacion_sesion(cita, preparado, formato, duracion, tamanio, texto_navegador=False):
     """Serializa reemplazos y encola el audio después de guardarlo una vez."""
     with transaction.atomic():
         psicologo_id = cita.psicologo_id
@@ -5382,7 +5382,7 @@ def _persistir_grabacion_sesion(cita, preparado, formato, duracion, tamanio):
         grabacion.duracion_segundos = duracion
         grabacion.tamanio_bytes = tamanio
         grabacion.audio = preparado
-        grabacion.estado = GrabacionSesion.Estado.CARGADA
+        grabacion.estado = GrabacionSesion.Estado.ARCHIVADA if texto_navegador else GrabacionSesion.Estado.CARGADA
         grabacion.intento_iniciado = None
         grabacion.save()
         grabacion.fecha_subida = timezone.now()
@@ -5565,6 +5565,7 @@ def api_guardar_grabacion_sesion(request, cita_id):
         preparado = _preparar_audio_grabacion(archivo, nombre_archivo)
         grabacion = _persistir_grabacion_sesion(
             cita, preparado, formato, duracion, archivo.size,
+            texto_navegador=request.POST.get('texto_navegador') == '1',
         )
     except Exception as e:
         import logging
@@ -5579,6 +5580,7 @@ def api_guardar_grabacion_sesion(request, cita_id):
     return JsonResponse({
         'status': 'success',
         'grabacion_id': grabacion.id,
+        'version_audio': grabacion.audio.name,
         'archivo_url': reverse('audio_grabacion_sesion', args=[cita.id]),
         'estado': grabacion.estado,
         'formato': formato,

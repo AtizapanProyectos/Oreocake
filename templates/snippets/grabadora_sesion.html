@@ -1,3 +1,4 @@
+{% load static %}
 {% comment %}
 ============================================================================
  GRABADORA DE SESIÓN PRESENCIAL (EXPERIMENTAL, 5/11/2026) — CON SERVIDOR
@@ -76,6 +77,7 @@
 </style>
 
 <div class="gsn-rec" data-cita-id="{{ cita.id|default:'' }}"
+     data-url-texto="{% url 'notas_texto_grabacion' cita.id %}"
      data-url-estado="{% url 'estado_grabacion_sesion' cita.id %}"
      data-url-guardar="{% url 'api_guardar_grabacion_sesion' cita.id %}"
      {% with grabacion=cita.grabacion_sesion %}
@@ -95,6 +97,29 @@
             La transcripción y las notas se guardan en el expediente de esta cita.
             Una grabación nueva reemplaza el audio anterior.
         </p>
+        <section class="gsn-vivo" style="margin:12px 0;padding:14px;background:#f0fdfa;border-radius:12px;">
+            <h4>Transcripción durante la sesión</h4>
+            <label>Motor de transcripción
+                <select aria-label="Motor de transcripción">
+                    <option value="local">Local en el navegador (requiere soporte y español instalado)</option>
+                    <option value="proveedor">Usar servicio de reconocimiento del navegador</option>
+                    <option value="no">Solo grabar audio</option>
+                </select>
+            </label>
+            <p>La opción del proveedor puede enviar audio a su servicio de reconocimiento. El modo local no cambia automáticamente a ese servicio. Mantén esta pestaña abierta durante la sesión.</p>
+            <button type="button" data-vivo-instalar>Preparar español local antes de grabar</button>
+            <p data-vivo-estado role="status" aria-live="polite">La transcripción comenzará junto con la grabación si el motor está disponible.</p>
+            <label>Transcripción confirmada (editable al terminar)
+                <textarea rows="7" style="width:100%;box-sizing:border-box" aria-label="Transcripción de la sesión"></textarea>
+            </label>
+            <p data-vivo-parcial style="color:#64748b"></p>
+            <p><label><input type="checkbox" data-vivo-revisado> Revisé el texto y sus posibles omisiones; enviar a Groq para preparar el borrador.</label></p>
+            <button type="button" data-vivo-descargar>Descargar texto</button>
+            <button type="button" data-vivo-generar disabled>Generar notas con este texto</button>
+            <progress max="100" value="0" hidden style="width:100%" aria-label="Avance del análisis del texto"></progress>
+            <pre data-vivo-notas style="white-space:pre-wrap;overflow-wrap:anywhere"></pre>
+            <a href="{% url 'detalle_paciente' cita.paciente_id %}">Abrir expediente para revisar y guardar las notas</a>
+        </section>
         <div class="gsn-rec-actions">
             <button type="button" class="gsn-rec-btn gsn-rec-start"><i class="fas fa-circle"></i> Iniciar Grabación</button>
             <button type="button" class="gsn-rec-btn gsn-rec-stop" disabled><i class="fas fa-stop"></i> Detener y Guardar</button>
@@ -126,11 +151,14 @@
     </div>
 </div>
 
+<script src="{% static 'js/transcripcion_en_vivo.js' %}"></script>
 <script>
 (function () {
     function initGrabadoraSesion(box) {
         if (box.dataset.recInit === '1') return;
         box.dataset.recInit = '1';
+        var vivo = window.HopeTranscripcion(box);
+        var audioEnVivo = false;
 
         var citaId = box.getAttribute('data-cita-id') || '';
         var urlGuardar = box.getAttribute('data-url-guardar');
@@ -217,6 +245,8 @@
 
         archivo.addEventListener('change', function () {
             if (!archivo.files.length) return;
+            vivo.limpiar();
+            audioEnVivo = false;
             var seleccion = archivo.files[0];
             archivo.value = '';
             subirAudio(seleccion, seleccion.name, 0);
@@ -259,6 +289,8 @@
             recorder.ondataavailable = function (e) { if (e.data && e.data.size > 0) chunks.push(e.data); };
             recorder.onstop = function () { subirAlServidor(); };
             recorder.start();
+            audioEnVivo = box.querySelector('.gsn-vivo select').value !== 'no';
+            vivo.iniciar();
             grabando = true;
             btnStart.disabled = true;
             btnStop.disabled = false;
@@ -281,8 +313,13 @@
             btnStop.disabled = true;
         });
 
-        function subirAlServidor() {
+        async function subirAlServidor() {
             var duracion = segundos(Date.now());
+            grabando = false;
+            pararTimer();
+            btnStart.disabled = true;
+            btnStop.disabled = true;
+            await vivo.detener();
             setEstado('<i class="fas fa-cloud-arrow-up"></i> Subiendo grabación al servidor…');
             try { if (stream) { stream.getTracks().forEach(function (t) { t.stop(); }); stream = null; } } catch (e) {}
 
@@ -309,6 +346,7 @@
             var fd = new FormData();
             fd.append('audio', blob, nombre);
             fd.append('duracion_segundos', String(duracion));
+            if (audioEnVivo) fd.append('texto_navegador', '1');
 
             var csrf = getCookie('csrftoken');
             if (!csrf) {
@@ -327,6 +365,7 @@
             .then(function (data) {
                 marcarListo();
                 if (data && data.status === 'success') {
+                    vivo.guardado(data);
                     if (urlBlob) { URL.revokeObjectURL(urlBlob); urlBlob = null; }
                     urlBlob = URL.createObjectURL(blob);
                     audio.src = urlBlob;
@@ -335,7 +374,7 @@
                     resultado.style.display = 'block';
                     iconoGuardada.innerHTML = '<i class="fas fa-circle-check"></i> Guardada en el server (' + (data.tamanio_mb ? data.tamanio_mb + ' MB · ' : '') + fmtSegundos(duracion) + ')';
                     setEstado('Grabación guardada en el servidor.');
-                    mostrarProceso('cargada', 'Grabación cargada');
+                    mostrarProceso(data.estado, audioEnVivo ? 'Audio guardado. Revisa el texto y pulsa Generar notas con este texto.' : 'Grabación cargada');
                     var turno = ++consulta;
                     setTimeout(function () { consultarProceso(turno); }, 1200);
                 } else {

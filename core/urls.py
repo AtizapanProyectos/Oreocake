@@ -1,6 +1,7 @@
 from django.urls import path
 from . import views
 from . import flujo_clinico
+from .transcripcion_navegador import notas_desde_texto
 from .reportes import reporte_crecimiento_sesiones_view
 from .panel_bienestar_tectum import (
     panel_bienestar_tectum_view,
@@ -220,6 +221,7 @@ urlpatterns = [
     # (tabla hija de Citas, solo para citas 'Presencial').
     path('api/estado-grabacion-sesion/<int:cita_id>/', views.estado_grabacion_sesion, name='estado_grabacion_sesion'),
     path('api/analisis-grabacion/<int:cita_id>/', views.analisis_grabacion_clinica, name='analisis_grabacion_clinica'),
+    path('api/notas-texto-grabacion/<int:cita_id>/', notas_desde_texto, name='notas_texto_grabacion'),
     path('transcripcion-presencial/<int:cita_id>/', views.descargar_transcripcion_presencial, name='descargar_transcripcion_presencial'),
     path('audio-grabacion-sesion/<int:cita_id>/', views.audio_grabacion_sesion, name='audio_grabacion_sesion'),
     path('api/guardar-grabacion-sesion/<int:cita_id>/', views.api_guardar_grabacion_sesion, name='api_guardar_grabacion_sesion'),

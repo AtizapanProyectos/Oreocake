@@ -50,6 +50,46 @@ class SesionPresencialTests(TestCase):
             'audio': SimpleUploadedFile('prueba.wav', b'archivo sintetico', content_type='audio/wav'),
         })
 
+    @patch.dict('os.environ', {'GROQ_API_KEY': 'prueba'})
+    @patch('core.transcripcion_navegador._solicitar')
+    def test_texto_navegador_no_requiere_worker_y_preserva_nota_clinica(self, solicitar):
+        from .models import AnalisisGrabacionClinica
+        self.client.force_login(self.doctor)
+        audio = self.client.post(self.url('api_guardar_grabacion_sesion'), {
+            'audio': SimpleUploadedFile('prueba.wav', b'archivo sintetico', content_type='audio/wav'),
+            'texto_navegador': '1',
+        })
+        self.assertEqual(audio.status_code, 200)
+        grabacion = GrabacionSesion.objects.get(cita=self.cita)
+        self.assertEqual(grabacion.estado, 'archivada')
+        historial = HistorialClinico.objects.create(cita=self.cita, paciente=self.paciente,
+            psicologo=self.psicologo, notas_sesion='Nota manual intacta')
+        datos = {'accion': 'fragmento', 'texto': 'Texto ficticio', 'version_audio': audio.json()['version_audio']}
+        url = self.url('notas_texto_grabacion')
+        solicitar.return_value = 'Evidencia ficticia'
+        self.assertEqual(self.client.post(url, datos, content_type='application/json').json()['evidencia'], 'Evidencia ficticia')
+        datos.update(accion='finalizar', transcripcion='Transcripción ficticia completa')
+        solicitar.return_value = json.dumps({'notas_sesion': 'Borrador revisable'})
+        respuesta = self.client.post(url, datos, content_type='application/json')
+        self.assertEqual(respuesta.status_code, 200, respuesta.content)
+        self.assertIn('no-store', respuesta['Cache-Control'])
+        grabacion.refresh_from_db()
+        historial.refresh_from_db()
+        self.assertEqual(grabacion.transcripcion, datos['transcripcion'])
+        self.assertEqual(grabacion.estado, 'completada')
+        self.assertEqual(historial.notas_sesion, 'Nota manual intacta')
+        self.assertEqual(AnalisisGrabacionClinica.objects.get(grabacion=grabacion).estado, 'listo')
+        solicitar.reset_mock()
+        self.client.force_login(self.otro)
+        self.assertEqual(self.client.post(url, datos, content_type='application/json').status_code, 404)
+        self.client.force_login(self.doctor)
+        self.assertEqual(self.client.post(url, {**datos, 'version_audio': 'vieja'}, content_type='application/json').status_code, 409)
+        self.assertEqual(self.client.post(url, {**datos, 'texto': 'x' * 10001}, content_type='application/json').status_code, 400)
+        seguro = Client(enforce_csrf_checks=True)
+        seguro.force_login(self.doctor)
+        self.assertEqual(seguro.post(url, datos, content_type='application/json').status_code, 403)
+        solicitar.assert_not_called()
+
     def test_paciente_presencial_guarda_ipp_en_ambos_modelos_y_reenvio_no_lo_cambia(self):
         url = self.url('formulario_previo_meet')
         self.assertRedirects(self.client.get(url), reverse('modulo_informativo'), fetch_redirect_response=False)

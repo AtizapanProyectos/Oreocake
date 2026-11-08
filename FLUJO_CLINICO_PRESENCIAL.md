@@ -1,5 +1,17 @@
 # Flujo clínico de citas presenciales
 
+## Alternativa: transcripción en vivo en el navegador
+
+La grabadora compartida ofrece reconocimiento local (`SpeechRecognition.processLocally`) cuando el navegador tiene soporte y el paquete español instalado. El botón de preparación solicita al navegador instalar ese paquete. No se cambia automáticamente al proveedor remoto. La alternativa «Usar servicio de reconocimiento del navegador» requiere selección explícita y avisa que el audio puede enviarse a ese proveedor. Si no hay soporte o se deniega el micrófono, el mensaje lo indica y la grabación de audio conserva su flujo existente.
+
+El texto confirmado se acumula en memoria mientras se graba; los resultados provisionales se muestran aparte. Hay reconexión limitada por errores, espera del resultado final al detener, descarga TXT y aviso al salir. No se promete transcripción completa: interrupciones, suspensión de pestañas, ruido y errores de reconocimiento requieren revisión. No se guarda texto clínico en localStorage. Antes de cerrar, descargarlo o completar el análisis.
+
+Después de guardar el audio, el terapeuta revisa/corrige el texto y solicita «Generar notas con este texto». Cada petición procesa hasta 10.000 caracteres con Groq; luego se consolida la evidencia. La API autentica al terapeuta asignado o administrador, exige CSRF y verifica la versión de audio antes y después del análisis. Guarda la transcripción en `GrabacionSesion` y un borrador en `AnalisisGrabacionClinica`, sin modificar la bitácora revisada ni enviar reportes. La revisión y guardado clínico siguen en el expediente.
+
+Este camino no necesita Whisper, FFmpeg ni un proceso de fondo en Railway; sí requiere el servidor web, `GROQ_API_KEY`, la migración 0074 ya aplicada y el almacenamiento de audio existente. Los audios capturados con modo de texto quedan archivados hasta terminar el análisis para evitar que el consumidor de audio compita con este flujo. Los archivos cargados y el modo «Solo grabar audio» conservan su cola anterior. No transcribe retroactivamente archivos existentes. No modifica la configuración del volumen.
+
+Validación: `node tests/transcripcion_en_vivo.test.cjs` y tests Django aislados `core.tests.SesionPresencialTests`. Es necesaria una prueba de micrófono y sesión prolongada en el navegador de destino; las pruebas automatizadas simulan reconocimiento y Groq y no garantizan su precisión.
+
 ## Trazabilidad
 
 | Entrada | Vista y proceso | Datos y salida |
