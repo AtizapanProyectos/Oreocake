@@ -1,16 +1,12 @@
 # Flujo clínico de citas presenciales
 
-## Alternativa: transcripción en vivo en el navegador
+## Transcripción progresiva mediante Django y Groq
 
-La grabadora compartida ofrece reconocimiento local (`SpeechRecognition.processLocally`) cuando el navegador tiene soporte y el paquete español instalado. El botón de preparación solicita al navegador instalar ese paquete. No se cambia automáticamente al proveedor remoto. La alternativa «Usar servicio de reconocimiento del navegador» requiere selección explícita y avisa que el audio puede enviarse a ese proveedor. Si no hay soporte o se deniega el micrófono, el mensaje lo indica y la grabación de audio conserva su flujo existente.
+La grabadora conserva un MediaRecorder para el audio completo y otro para fragmentos independientes de aproximadamente 20 segundos. Django autoriza cada petición con sesión y CSRF, limita cada fragmento a 8 MB y llama a `whisper-large-v3-turbo` con la clave del servidor. No usa SpeechRecognition, paquetes de idiomas, FFmpeg ni un consumidor de transcripción local.
 
-El texto confirmado se acumula en memoria mientras se graba; los resultados provisionales se muestran aparte. Hay reconexión limitada por errores, espera del resultado final al detener, descarga TXT y aviso al salir. No se promete transcripción completa: interrupciones, suspensión de pestañas, ruido y errores de reconocimiento requieren revisión. No se guarda texto clínico en localStorage. Antes de cerrar, descargarlo o completar el análisis.
+Los fragmentos se envían secuencialmente; un fallo conserva el fragmento y bloquea los posteriores hasta reintentar. El audio completo sigue grabándose. El medidor usa Web Audio. El texto es revisable antes de generar las notas con el endpoint existente. No se sobrescriben las notas manuales. El navegador debe permanecer abierto; descargar audio y texto antes de abandonarlo. Los límites del proveedor y la conexión pueden retrasar el texto. Los cortes entre fragmentos pueden afectar palabras en los límites; la revisión clínica sigue siendo necesaria.
 
-Después de guardar el audio, el terapeuta revisa/corrige el texto y solicita «Generar notas con este texto». Cada petición procesa hasta 10.000 caracteres con Groq; luego se consolida la evidencia. La API autentica al terapeuta asignado o administrador, exige CSRF y verifica la versión de audio antes y después del análisis. Guarda la transcripción en `GrabacionSesion` y un borrador en `AnalisisGrabacionClinica`, sin modificar la bitácora revisada ni enviar reportes. La revisión y guardado clínico siguen en el expediente.
-
-Este camino no necesita Whisper, FFmpeg ni un proceso de fondo en Railway; sí requiere el servidor web, `GROQ_API_KEY`, la migración 0074 ya aplicada y el almacenamiento de audio existente. Los audios capturados con modo de texto quedan archivados hasta terminar el análisis para evitar que el consumidor de audio compita con este flujo. Los archivos cargados y el modo «Solo grabar audio» conservan su cola anterior. No transcribe retroactivamente archivos existentes. No modifica la configuración del volumen.
-
-Validación: `node tests/transcripcion_en_vivo.test.cjs` y tests Django aislados `core.tests.SesionPresencialTests`. Es necesaria una prueba de micrófono y sesión prolongada en el navegador de destino; las pruebas automatizadas simulan reconocimiento y Groq y no garantizan su precisión.
+Requiere `GROQ_API_KEY` y almacenamiento de audio. No hay nuevas migraciones. La validación automatizada simula Groq; quedan pendientes pruebas de micrófono real y sesiones largas en producción.
 
 ## Trazabilidad
 

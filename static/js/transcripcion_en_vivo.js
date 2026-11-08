@@ -2,110 +2,66 @@
     if (window.HopeTranscripcion) return;
     window.HopeTranscripcion = function (box) {
         const panel = box.querySelector('.gsn-vivo');
-        const modo = panel.querySelector('select');
         const texto = panel.querySelector('textarea');
         const estado = panel.querySelector('[data-vivo-estado]');
-        const parcial = panel.querySelector('[data-vivo-parcial]');
         const generar = panel.querySelector('[data-vivo-generar]');
         const salida = panel.querySelector('[data-vivo-notas]');
         const barra = panel.querySelector('progress');
-        const Speech = window.SpeechRecognition || window.webkitSpeechRecognition;
-        let recognition, activo = false, version = '', reinicio, fallos = 0, cierre, cierreTimer;
-        let grabando = false;
-        let pendienteCierre = Promise.resolve();
-        let ocupado = false;
-        function mensaje(value) { estado.textContent = value; }
-        panel.querySelector('[data-vivo-instalar]').onclick = async () => {
-            if (grabando || ocupado) return;
-            if (!Speech?.install) { mensaje('Este navegador no permite instalar reconocimiento local. Puedes elegir explícitamente el servicio del navegador o grabar solo audio.'); return; }
-            mensaje('Preparando el paquete de español local…');
-            try {
-                const listo = await Speech.install({langs:['es-ES'], processLocally:true});
-                mensaje(listo ? 'Español local preparado. Puedes iniciar la grabación.' : 'No se pudo preparar español local en este navegador.');
-            } catch (_) { mensaje('No se pudo instalar el paquete local. Revisa la compatibilidad de tu navegador.'); }
-        };
-        function terminar() {
-            activo = false;
-            clearTimeout(reinicio);
-            if (!recognition) return Promise.resolve();
-            pendienteCierre = new Promise(resolve => {
-                cierre = resolve;
-                cierreTimer = setTimeout(() => {
-                    if (cierre) {
-                        const resolver = cierre; cierre = null;
-                        recognition.abort();
-                        mensaje('El reconocimiento no confirmó el cierre. Revisa si falta el final del texto.');
-                        resolver();
-                    }
-                }, 4000);
-            });
-            try { recognition.stop(); } catch (_) { clearTimeout(cierreTimer); if (cierre) cierre(); cierre = null; }
-            return pendienteCierre;
+        let activo=false, grabando=false, ocupado=false, version='', recorder, timer, context, frame;
+        let cola=[], enviando=false, numero=0, cierre=Promise.resolve();
+        function mensaje(t) { estado.textContent=t; }
+        async function consumir() {
+            if(enviando) return;
+            enviando=true;
+            while(cola.length) {
+                const item=cola[0];
+                mensaje(`Transcribiendo fragmento ${item.numero} · ${cola.length} en espera`);
+                try {
+                    const fd=new FormData(); fd.append('audio',item.blob,'fragmento.webm');
+                    const token=document.cookie.split('; ').find(c=>c.startsWith('csrftoken='))?.slice(10);
+                    const r=await fetch(box.dataset.urlTranscribir,{method:'POST',body:fd,headers:{'X-CSRFToken':token||''},signal:AbortSignal.timeout(28000)});
+                    if(!r.headers.get('content-type')?.includes('application/json')) throw Error('Servidor no disponible');
+                    const d=await r.json(); if(!r.ok) throw Error(d.mensaje||'No se pudo transcribir');
+                    texto.value += (d.texto||'')+'\n'; cola.shift();
+                } catch(e) { mensaje(`Fragmento ${item.numero} pendiente: ${e.message}. Pulsa Reintentar. El audio se conserva.`); break; }
+            }
+            enviando=false;
+            generar.disabled=grabando || cola.length>0 || !version;
+            if(!cola.length) mensaje(grabando?'Micrófono activo · esperando el siguiente fragmento':'Transcripción recibida. Revisa el texto antes de generar notas.');
         }
-        const api = {
-            async iniciar() {
-                grabando = true;
-                recognition = null;
-                panel.querySelector('[data-vivo-revisado]').checked = false;
-                version = ''; texto.value = ''; salida.textContent = ''; parcial.textContent = '';
-                generar.disabled = true; modo.disabled = true; texto.readOnly = true;
-                barra.hidden = true; fallos = 0;
-                if (modo.value === 'no') { mensaje('Solo audio. Puedes añadir una transcripción revisada después.'); return; }
-                if (!Speech) { mensaje('Este navegador no admite transcripción en vivo. El audio sí se graba.'); return; }
-                recognition = new Speech();
-                recognition.lang = 'es-ES'; recognition.continuous = true; recognition.interimResults = true;
-                if (modo.value === 'local') {
-                    if (!('processLocally' in recognition) || !Speech.available) {
-                        mensaje('Reconocimiento local no disponible. Continúa el audio; no se enviará al proveedor.'); return;
-                    }
-                    recognition.processLocally = true;
-                    try {
-                        if (await Speech.available({langs:['es-ES'], processLocally:true}) !== 'available') {
-                            mensaje('Falta el paquete local de español. Continúa solo la grabación de audio.'); return;
-                        }
-                    } catch (_) { mensaje('No se pudo habilitar el reconocimiento local. Continúa solo el audio.'); return; }
-                }
-                if (!grabando) return;
-                activo = true;
-                let confirmados = new Set();
-                recognition.onstart = () => { confirmados = new Set(); };
-                recognition.onresult = event => {
-                    let temporal = '';
-                    for (let i = event.resultIndex; i < event.results.length; i++) {
-                        if (event.results[i].isFinal) {
-                            if (!confirmados.has(i)) texto.value += event.results[i][0].transcript + '\n';
-                            confirmados.add(i);
-                        }
-                        else temporal += event.results[i][0].transcript;
-                    }
-                    parcial.textContent = temporal;
-                    mensaje(`Transcribiendo · ${texto.value.trim().split(/\s+/).filter(Boolean).length} palabras confirmadas. Revisa posibles omisiones al terminar.`);
-                };
-                recognition.onerror = event => {
-                    fallos++;
-                    if (['not-allowed','service-not-allowed','audio-capture','language-not-supported'].includes(event.error) || fallos >= 3) activo = false;
-                    mensaje(`Transcripción interrumpida (${event.error}). El audio continúa. Puede faltar texto; revisa antes de generar notas.`);
-                };
-                recognition.onend = () => {
-                    parcial.textContent = '';
-                    clearTimeout(cierreTimer);
-                    if (cierre) { cierre(); cierre = null; }
-                    if (activo) {
-                        mensaje('Reconectando el reconocimiento; el audio continúa. Revisa posibles huecos.');
-                        reinicio = setTimeout(() => {
-                            try { recognition.start(); } catch (_) { activo = false; mensaje('No se pudo reanudar la transcripción. El audio continúa.'); }
-                        }, 700);
-                    }
-                };
-                try { recognition.start(); mensaje('Iniciando reconocimiento. Esperando voz…'); }
-                catch (_) { activo = false; mensaje('No se pudo iniciar el reconocimiento. El audio continúa.'); }
+        function segmento(stream) {
+            const partes=[];
+            recorder=new MediaRecorder(stream);
+            recorder.ondataavailable=e=>{if(e.data.size) partes.push(e.data);};
+            recorder.onstop=()=>{
+                const blob=new Blob(partes,{type:recorder.mimeType});
+                if(blob.size) cola.push({blob,numero:++numero});
+                if(activo && cola.length<30) segmento(stream);
+                else if(activo) {activo=false; mensaje('Transcripción pausada por acumulación. El audio completo sigue grabándose.');}
+                consumir();
+            };
+            recorder.start(); timer=setTimeout(()=>{if(recorder.state!=='inactive')recorder.stop();},20000);
+        }
+        panel.querySelector('[data-vivo-reintentar]').onclick=consumir;
+        const api={
+            puedeIniciar() {return !enviando && cola.length===0;},
+            iniciar(stream) {
+                grabando=activo=true; version=''; cola=[]; numero=0; texto.value=''; texto.readOnly=true; generar.disabled=true;
+                panel.querySelector('[data-vivo-revisado]').checked=false;
+                mensaje('Capturando audio · primer texto en aproximadamente 20 segundos');
+                try {
+                    context=new (window.AudioContext||window.webkitAudioContext)();
+                    const source=context.createMediaStreamSource(stream), analyser=context.createAnalyser();
+                    source.connect(analyser); analyser.fftSize=256; const data=new Uint8Array(256);
+                    const medir=()=>{analyser.getByteTimeDomainData(data); let sum=0; for(const n of data)sum+=(n-128)**2;
+                        panel.querySelector('meter').value=Math.min(100,Math.sqrt(sum/data.length)*3); frame=requestAnimationFrame(medir);};
+                    context.resume(); medir(); segmento(stream);
+                } catch(e) {activo=false; mensaje('No se pudo iniciar la transcripción: '+e.message+'. La grabación completa continúa.');}
             },
-            async detener() { grabando = false; await terminar(); modo.disabled = false; texto.readOnly = false; },
-            guardado(data) {
-                version = data.version_audio || '';
-                pendienteCierre.then(() => { generar.disabled = !version; });
-            },
-            limpiar() { version = ''; texto.value = ''; generar.disabled = true; panel.querySelector('[data-vivo-revisado]').checked = false; }
+            async detener() {grabando=activo=false; clearTimeout(timer); cancelAnimationFrame(frame); if(context) await context.close();
+                if(recorder && recorder.state!=='inactive') recorder.stop(); texto.readOnly=false;},
+            guardado(data){version=data.version_audio||''; generar.disabled=cola.length>0||enviando||!version;},
+            limpiar(){version=''; texto.value=''; generar.disabled=true;}
         };
         panel.querySelector('[data-vivo-descargar]').onclick = () => {
             const url = URL.createObjectURL(new Blob([texto.value], {type:'text/plain;charset=utf-8'}));
@@ -156,7 +112,7 @@
                 box.querySelector('.gsn-rec-start').disabled = false; box.querySelector('.gsn-rec-archivo').disabled = false; }
         };
         window.addEventListener('beforeunload', event => {
-            if (grabando || activo || ocupado || texto.value) { event.preventDefault(); event.returnValue = ''; }
+            if (grabando || activo || ocupado || cola.length || texto.value) { event.preventDefault(); event.returnValue = ''; }
         });
         return api;
     };

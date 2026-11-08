@@ -14,6 +14,34 @@ from .models import AnalisisGrabacionClinica, GrabacionSesion
 
 @require_POST
 @never_cache
+def transcribir_fragmento(request, cita_id):
+    from .views import _cita_grabacion_autorizada
+    cita = _cita_grabacion_autorizada(request, cita_id)
+    if cita.estado not in ('Confirmada', 'Completada'):
+        return JsonResponse({'mensaje': 'Cita no disponible.'}, status=409)
+    audio = request.FILES.get('audio')
+    if not audio or not 0 < audio.size <= 8 * 1024 * 1024:
+        return JsonResponse({'mensaje': 'Envía un fragmento de hasta 8 MB.'}, status=400)
+    formatos = {'audio/webm': 'webm', 'audio/ogg': 'ogg', 'audio/mp4': 'm4a', 'audio/wav': 'wav'}
+    extension = formatos.get((audio.content_type or '').split(';')[0])
+    if not extension:
+        return JsonResponse({'mensaje': 'Formato de audio no compatible.'}, status=400)
+    if not os.environ.get('GROQ_API_KEY'):
+        return JsonResponse({'mensaje': 'Falta configurar GROQ_API_KEY.'}, status=503)
+    try:
+        from groq import Groq
+        resultado = Groq(api_key=os.environ['GROQ_API_KEY'], timeout=20, max_retries=0).audio.transcriptions.create(
+            file=('fragmento.' + extension, audio.read()), model='whisper-large-v3-turbo',
+            language='es', response_format='json', temperature=0,
+        )
+        return JsonResponse({'texto': resultado.text})
+    except Exception as exc:
+        logging.getLogger(__name__).warning('Transcripción remota falló (%s)', type(exc).__name__)
+        return JsonResponse({'mensaje': 'No se pudo transcribir el fragmento. Reintenta.'}, status=502)
+
+
+@require_POST
+@never_cache
 def notas_desde_texto(request, cita_id):
     from .views import _cita_grabacion_autorizada
     cita = _cita_grabacion_autorizada(request, cita_id)

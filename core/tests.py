@@ -90,6 +90,20 @@ class SesionPresencialTests(TestCase):
         self.assertEqual(seguro.post(url, datos, content_type='application/json').status_code, 403)
         solicitar.assert_not_called()
 
+    @patch.dict('os.environ', {'GROQ_API_KEY': 'prueba'})
+    @patch('groq.Groq')
+    def test_fragmento_remoto_autorizacion_y_error(self, groq):
+        self.client.force_login(self.doctor)
+        url = self.url('transcribir_fragmento')
+        groq.return_value.audio.transcriptions.create.return_value = SimpleNamespace(text='Texto de prueba')
+        def enviar():
+            return self.client.post(url, {'audio': SimpleUploadedFile('audio.webm', b'fake', content_type='audio/webm')})
+        self.assertEqual(enviar().json()['texto'], 'Texto de prueba')
+        groq.return_value.audio.transcriptions.create.side_effect = RuntimeError('fallo simulado')
+        self.assertEqual(enviar().status_code, 502)
+        self.client.force_login(self.otro)
+        self.assertEqual(enviar().status_code, 404)
+
     def test_paciente_presencial_guarda_ipp_en_ambos_modelos_y_reenvio_no_lo_cambia(self):
         url = self.url('formulario_previo_meet')
         self.assertRedirects(self.client.get(url), reverse('modulo_informativo'), fetch_redirect_response=False)

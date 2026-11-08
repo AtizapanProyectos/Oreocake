@@ -1,7 +1,7 @@
 from django.urls import path
 from . import views
 from . import flujo_clinico
-from .transcripcion_navegador import notas_desde_texto
+from .transcripcion_navegador import notas_desde_texto, transcribir_fragmento
 from .reportes import reporte_crecimiento_sesiones_view
 from .panel_bienestar_tectum import (
     panel_bienestar_tectum_view,
@@ -10,6 +10,7 @@ from .panel_bienestar_tectum import (
 
 
 urlpatterns = [
+    path('api/transcribir-fragmento/<int:cita_id>/', transcribir_fragmento, name='transcribir_fragmento'),
     path('', views.inicio, name='inicio'),
     path('tectum/', views.inicio_tectum, name='inicio_tectum'),
     path('convenio-tectum/', views.inicio_tectum, name='convenio_tectum'),
