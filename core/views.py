@@ -2791,7 +2791,7 @@ def detalle_paciente(request, paciente_id):
  
     citas_pasadas = Cita.objects.filter(
         paciente=paciente, psicologo=psicologo, fecha__lte=now_local.date(),
-    ).order_by('-fecha', '-hora').select_related('nota_clinica', 'grabacion_sesion')
+    ).order_by('-fecha', '-hora').select_related('nota_clinica', 'grabacion_sesion__psicologo__usuario')
  
     historiales_vinculados_ids = set()
     sesiones = []
@@ -5381,6 +5381,10 @@ def _persistir_grabacion_sesion(cita, preparado, formato, duracion, tamanio, tex
         grabacion.formato = formato
         grabacion.duracion_segundos = duracion
         grabacion.tamanio_bytes = tamanio
+        # Conserva el último texto si se reemplaza el audio; identifica su origen
+        # para no presentarlo como transcripción de la grabación nueva.
+        if grabacion.transcripcion and not grabacion.transcripcion_audio:
+            grabacion.transcripcion_audio = anterior
         grabacion.audio = preparado
         grabacion.estado = GrabacionSesion.Estado.ARCHIVADA if texto_navegador else GrabacionSesion.Estado.CARGADA
         grabacion.intento_iniciado = None

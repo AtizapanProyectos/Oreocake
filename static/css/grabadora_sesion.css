@@ -1,0 +1,50 @@
+.gsn-rec { --gs-purple: var(--c-purple, #5a3fa3); --gs-border: #e6dcf6; --gs-ink: #302447;
+    font: .875rem/1.55 'Plus Jakarta Sans', sans-serif; color: var(--gs-ink); min-width: 0; }
+.gsn-rec-box { background: linear-gradient(145deg, #f8f4ff, #fff 65%); border: 1px solid var(--gs-border);
+    border-radius: 22px; padding: clamp(14px, 3vw, 26px); box-shadow: 0 8px 28px #39275c12; }
+.gsn-rec-title, .gsn-vivo h4 { font: 700 1.25rem/1.25 'Outfit', sans-serif; color: var(--gs-purple); margin: 0; }
+.gsn-rec-title, .gsn-rec-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.gsn-rec-badge-serv { font: 700 .72rem 'Plus Jakarta Sans', sans-serif; border-radius: 99px; padding: 5px 10px;
+    background: #fff2cc; color: #654b15; }
+.gsn-rec-nota, .gsn-vivo p { margin: 8px 0 12px; }
+.gsn-rec-actions { margin: 10px 0; }
+.gsn-rec-btn { min-height: 42px; display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+    padding: 8px 15px; border: 1px solid transparent; border-radius: 11px; font: inherit; font-weight: 700;
+    cursor: pointer; text-decoration: none; }
+.gsn-rec-start { background: var(--gs-purple); color: white; }
+.gsn-rec-start:hover:not(:disabled) { background: #44307d; color: white; }
+.gsn-rec-stop { background: #fcebf0; color: #8b2544; border-color: #f3ccda; }
+.gsn-rec-sec, .gsn-rec-descargar { background: #f2ebfc; color: #493483; border-color: var(--gs-border); }
+.gsn-rec-sec:hover, .gsn-rec-descargar:hover { background: #e8dcf7; color: #38236a; }
+.gsn-rec-btn:disabled { opacity: .56; cursor: not-allowed; }
+.gsn-rec :focus-visible { outline: 2px solid var(--gs-purple); outline-offset: 3px; }
+.gsn-rec-carga, .gsn-vivo-nivel, .gsn-vivo-texto { display: grid; gap: 6px; font-weight: 700; }
+.gsn-rec-archivo { max-width: 100%; font: inherit; }
+.gsn-rec-archivo::file-selector-button { font: inherit; padding: 7px 12px; margin-right: 8px; border-radius: 8px;
+    border: 1px solid var(--gs-border); background: #f2ebfc; color: #493483; cursor: pointer; }
+.gsn-vivo { margin: 16px 0; padding: clamp(12px, 2.5vw, 20px); border: 1px solid var(--gs-border);
+    border-radius: 17px; background: #fff; min-width: 0; }
+.gsn-vivo textarea { width: 100%; box-sizing: border-box; min-height: 140px; resize: vertical;
+    background: #faf8fd; color: inherit; border: 1px solid var(--gs-border); border-radius: 12px; padding: 12px; font: inherit; font-weight: 400; }
+.gsn-vivo meter, .gsn-vivo progress { width: 100%; accent-color: var(--gs-purple); }
+.gsn-vivo-borrador { border-top: 1px solid var(--gs-border); padding-top: 12px; margin-top: 14px; }
+.gsn-vivo-revision { display: flex; align-items: baseline; gap: 8px; }
+.gsn-vivo input[type="checkbox"] { accent-color: var(--gs-purple); }
+.gsn-vivo pre { white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; padding: 12px; border-radius: 10px; background: #faf8fd; }
+.gsn-vivo pre:empty, .gsn-aviso:empty { display: none; }
+.gsn-aviso, .gsn-rec-estado:not(:empty), .gsn-rec-proceso:not(:empty) { background: #f4effb; color: #4f397e; padding: 9px 12px; border-radius: 10px; margin-top: 8px; }
+.gsn-aviso[data-estado="cargando"], .gsn-aviso[data-estado="pendiente"] { background: #fff3d7; color: #704b0b; }
+.gsn-aviso[data-estado="listo"], .gsn-rec-guardada { background: #e9f7ee; color: #236046; }
+.gsn-aviso[data-estado="error"], .gsn-rec-estado.error, .gsn-rec-proceso[data-estado="error"] { background: #fcecf0; color: #952743; }
+.gsn-rec-timer { color: #952743; font-weight: 800; font-variant-numeric: tabular-nums; }
+.gsn-rec-pasos { padding-left: 23px; }
+.gsn-rec-pasos [data-hecho] { color: #236046; }
+.gsn-rec-pasos [aria-current] { font-weight: 700; }
+.gsn-rec-resultado { margin-top: 12px; }
+.gsn-rec-audio { display: block; width: 100%; margin-bottom: 8px; }
+.gsn-rec-guardada { display: inline-block; border-radius: 8px; padding: 4px 8px; }
+.gsn-rec-guardada:empty { display: none; }
+.gsn-rec-grabando-dot { display: inline-block; width: 8px; height: 8px; margin-right: 7px; border-radius: 50%; background: #b63352; }
+@media (max-width: 540px) {
+    .gsn-rec-actions > .gsn-rec-btn { flex: 1 1 100%; }
+}

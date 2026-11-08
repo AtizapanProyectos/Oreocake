@@ -45,10 +45,56 @@ class SesionPresencialTests(TestCase):
         return {**{p['id']: 'siempre' for p in FORMULARIO_ORGANICO_PREGUNTAS},
                 'sat_1': '2', 'sat_2': '3', 'sat_3': '4', 'comentarios_satisfaccion': 'Comentario de prueba'}
 
-    def subir(self):
+    def subir(self, **campos):
         return self.client.post(self.url('api_guardar_grabacion_sesion'), {
             'audio': SimpleUploadedFile('prueba.wav', b'archivo sintetico', content_type='audio/wav'),
+            **campos,
         })
+
+    @patch('core.transcripcion_navegador._solicitar')
+    def test_transcripcion_se_guarda_sin_ia_y_aparece_en_una_nueva_sesion(self, solicitar):
+        self.doctor.first_name = 'Profesional de prueba'
+        self.doctor.save(update_fields=['first_name'])
+        self.client.force_login(self.doctor)
+        audio = self.subir(texto_navegador='1')
+        self.assertEqual(audio.status_code, 200, audio.content)
+        version = audio.json()['version_audio']
+        url = self.url('notas_texto_grabacion')
+        datos = {'accion': 'guardar', 'version_audio': version,
+                 'transcripcion': 'Primera línea.\nSegunda línea con <texto>.'}
+
+        def guardar(cliente, **cambios):
+            return cliente.post(url, {**datos, **cambios}, content_type='application/json')
+
+        self.assertEqual(guardar(self.client, transcripcion='').status_code, 400)
+        self.assertEqual(guardar(self.client, transcripcion='á' * 500001).status_code, 400)
+        self.assertIn('no-store', guardar(self.client)['Cache-Control'])
+        grabacion = GrabacionSesion.objects.get(cita=self.cita)
+        self.assertEqual(grabacion.transcripcion, datos['transcripcion'])
+        self.assertEqual(grabacion.transcripcion_audio, version)
+        self.assertIsNotNone(grabacion.transcripcion_fecha)
+        fecha = grabacion.transcripcion_fecha
+        self.assertEqual(guardar(self.client, transcripcion='Texto corregido').status_code, 200)
+        grabacion.refresh_from_db()
+        self.assertEqual((grabacion.transcripcion, grabacion.transcripcion_fecha), ('Texto corregido', fecha))
+        self.assertEqual(guardar(self.client).status_code, 200)
+        self.assertFalse(HistorialClinico.objects.filter(cita=self.cita).exists())
+
+        nueva_sesion = Client()
+        nueva_sesion.force_login(self.doctor)
+        expediente = reverse('detalle_paciente', args=[self.paciente.pk])
+        respuesta = nueva_sesion.get(expediente)
+        for texto in ('Ver transcripción', 'Profesional de prueba', 'Segunda línea con &lt;texto&gt;.',
+                      self.url('audio_grabacion_sesion'), self.url('descargar_transcripcion_presencial')):
+            self.assertContains(respuesta, texto)
+
+        self.assertEqual(self.subir().status_code, 200)
+        self.assertEqual(guardar(self.client, transcripcion='Texto retrasado').status_code, 409)
+        self.assertContains(nueva_sesion.get(expediente), 'Ver transcripción anterior')
+        nueva_sesion.force_login(self.otro)
+        self.assertEqual(guardar(nueva_sesion).status_code, 404)
+        self.assertEqual(nueva_sesion.get(self.url('descargar_transcripcion_presencial')).status_code, 404)
+        solicitar.assert_not_called()
 
     @patch.dict('os.environ', {'GROQ_API_KEY': 'prueba'})
     @patch('core.transcripcion_navegador._solicitar')

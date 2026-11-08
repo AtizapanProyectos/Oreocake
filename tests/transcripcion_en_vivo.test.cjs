@@ -2,10 +2,11 @@ const assert = require('node:assert/strict');
 const vm = require('node:vm');
 const fs = require('node:fs');
 const nodos = new Map();
-const nodo = s => { if (!nodos.has(s)) nodos.set(s, {value:'', textContent:'', checked:false}); return nodos.get(s); };
+const nodo = s => { if (!nodos.has(s)) nodos.set(s, {value:'', textContent:'', checked:false, dataset:{}, addEventListener(){}}); return nodos.get(s); };
 const panel = {querySelector:nodo};
-const box = {querySelector:s=>s === '.gsn-vivo' ? panel : nodo(s), dataset:{urlTranscribir:'/audio'}};
-let fallo = true;
+const box = {querySelector:s=>s === '.gsn-vivo' ? panel : nodo(s), dataset:{urlTranscribir:'/audio',urlTexto:'/texto'}};
+let fallo = true, fallaGuardado = true;
+const guardados = [];
 class Recorder {
  constructor(){this.mimeType='audio/webm';}
  start(){this.state='recording';}
@@ -20,7 +21,13 @@ const window = {AudioContext,addEventListener(){}};
 vm.runInNewContext(fs.readFileSync('static/js/transcripcion_en_vivo.js','utf8'),{
  window,MediaRecorder:Recorder,Blob,FormData,AbortSignal,setTimeout,clearTimeout,
  requestAnimationFrame:()=>1,cancelAnimationFrame(){},document:{cookie:'csrftoken=test'},
- fetch:async()=>({ok:!fallo,headers:{get:()=>'application/json'},json:async()=>fallo?{mensaje:'Fallo simulado'}:{texto:'Texto recuperado'}})
+ fetch:async(url, opciones)=>{
+  if (url === '/texto') {
+   guardados.push(JSON.parse(opciones.body));
+   return {ok:!fallaGuardado,headers:{get:()=>'application/json'},json:async()=>({mensaje:'Prueba de guardado'})};
+  }
+  return {ok:!fallo,headers:{get:()=>'application/json'},json:async()=>fallo?{mensaje:'Fallo simulado'}:{texto:'Texto recuperado'}};
+ }
 });
 (async()=>{
  const api=window.HopeTranscripcion(box);
@@ -28,9 +35,17 @@ vm.runInNewContext(fs.readFileSync('static/js/transcripcion_en_vivo.js','utf8'),
  await new Promise(r=>setTimeout(r,10));
  assert.equal(api.puedeIniciar(),false);
  assert.match(nodo('[data-vivo-estado]').textContent,/Fallo simulado/);
+ api.guardado({version_audio:'archivo.wav'});
  fallo=false;
  await nodo('[data-vivo-reintentar]').onclick();
  assert.equal(nodo('textarea').value,'Texto recuperado\n');
+ await new Promise(r=>setTimeout(r,10));
+ assert.deepEqual(guardados, [{accion:'guardar',transcripcion:'Texto recuperado',version_audio:'archivo.wav'}]);
+ assert.equal(nodo('[data-vivo-guardado]').dataset.estado,'error');
+ assert.equal(api.puedeIniciar(),false);
+ fallaGuardado=false;
+ await nodo('[data-vivo-guardar]').onclick();
+ assert.equal(nodo('[data-vivo-guardado]').dataset.estado,'listo');
  assert.equal(api.puedeIniciar(),true);
  console.log('OK: fragmento retenido tras fallo y recuperado mediante reintento.');
 })().catch(e=>{console.error(e);process.exitCode=1;});

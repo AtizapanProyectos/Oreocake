@@ -1601,7 +1601,20 @@ class GrabacionSesion(models.Model):
     estado = models.CharField(max_length=16, choices=Estado.choices, default=Estado.ARCHIVADA, db_index=True)
     intento_iniciado = models.DateTimeField(null=True, blank=True)
     transcripcion = models.TextField(blank=True)
+    transcripcion_audio = models.CharField(max_length=100, blank=True, default='')
+    transcripcion_fecha = models.DateTimeField(null=True, blank=True)
     notas_generadas = models.JSONField(default=dict, blank=True)
+
+    @property
+    def transcripcion_anterior(self):
+        return bool(self.transcripcion_audio and self.transcripcion_audio != self.audio.name)
+
+    def asociar_transcripcion(self, texto):
+        """Asocia el texto al audio vigente y conserva la fecha del primer guardado."""
+        if self.transcripcion_audio != self.audio.name or not self.transcripcion_fecha:
+            self.transcripcion_fecha = timezone.now()
+        self.transcripcion = texto
+        self.transcripcion_audio = self.audio.name
 
     class Meta:
         verbose_name = "Grabación de Sesión (presencial)"

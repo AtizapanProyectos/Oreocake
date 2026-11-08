@@ -505,21 +505,53 @@
                     {% if sesion.cita.modalidad == 'Presencial' %}
                     {% if grabacion %}
                     {% include 'snippets/analisis_grabacion_clinica.html' with cita=sesion.cita historial=sesion.historial %}
-                    <details open>
-                        <summary>Grabación presencial · {{ grabacion.get_estado_display }}</summary>
-                        <p><a href="{% url 'grabacion_sesion' sesion.cita.id %}">Abrir grabación y ver progreso</a></p>
-                        <audio controls preload="none" src="{% url 'audio_grabacion_sesion' sesion.cita.id %}"></audio>
+                    <section class="sesion-archivo" aria-labelledby="archivo-{{ slug }}">
+                        <div class="analisis-cabecera">
+                            <div>
+                                <p class="analisis-etiqueta"><i class="fas fa-folder-open" aria-hidden="true"></i> Archivo de la sesión</p>
+                                <h3 id="archivo-{{ slug }}">Grabación presencial</h3>
+                            </div>
+                            <span class="archivo-estado">{{ grabacion.get_estado_display }}</span>
+                        </div>
+                        <audio controls preload="none" aria-label="Audio de la sesión" src="{% url 'audio_grabacion_sesion' sesion.cita.id %}"></audio>
+                        <div class="archivo-acciones">
+                            {% if grabacion.transcripcion %}
+                            <button type="button" class="analisis-generar" data-abrir-transcripcion="transcripcion-{{ slug }}">
+                                <i class="fas fa-align-left" aria-hidden="true"></i> {% if grabacion.transcripcion_anterior %}Ver transcripción anterior{% else %}Ver transcripción{% endif %}
+                            </button>
+                            {% endif %}
+                            <a class="analisis-revisar" href="{% url 'grabacion_sesion' sesion.cita.id %}">Abrir grabadora</a>
+                        </div>
                         {% if grabacion.transcripcion %}
-                        <p><a href="{% url 'descargar_transcripcion_presencial' sesion.cita.id %}">Descargar transcripción (.txt)</a></p>
+                        <dialog class="archivo-transcripcion" id="transcripcion-{{ slug }}" aria-labelledby="titulo-transcripcion-{{ slug }}">
+                            <div class="transcripcion-cabecera">
+                                <div>
+                                    <p class="analisis-etiqueta">Expediente clínico</p>
+                                    <h3 id="titulo-transcripcion-{{ slug }}">{% if grabacion.transcripcion_anterior %}Transcripción anterior{% else %}Transcripción de la sesión{% endif %}</h3>
+                                </div>
+                                <form method="dialog"><button class="analisis-revisar" autofocus type="submit" aria-label="Cerrar transcripción"><i class="fas fa-xmark" aria-hidden="true"></i></button></form>
+                            </div>
+                            <dl class="transcripcion-meta">
+                                <div><dt>Sesión</dt><dd>{{ sesion.cita.fecha|date:"d/m/Y" }} · {{ sesion.cita.hora|time:"H:i" }}</dd></div>
+                                <div><dt>Fecha de guardado</dt><dd>{{ grabacion.transcripcion_fecha|date:"d/m/Y H:i"|default:"Sin registro" }}</dd></div>
+                                <div><dt>Profesional responsable</dt><dd>{% if grabacion.psicologo and not grabacion.transcripcion_anterior %}{{ grabacion.psicologo.usuario.get_full_name|default:grabacion.psicologo.usuario.username }}{% else %}Sin registro{% endif %}</dd></div>
+                            </dl>
+                            {% if grabacion.transcripcion_anterior %}<p class="archivo-estado">Este texto pertenece al audio anterior de la sesión.</p>{% endif %}
+                            <div class="transcripcion-contenido" tabindex="0" role="region" aria-label="Texto completo">{{ grabacion.transcripcion }}</div>
+                            <div class="archivo-acciones">
+                                <a class="analisis-revisar" href="{% url 'descargar_transcripcion_presencial' sesion.cita.id %}"><i class="fas fa-download" aria-hidden="true"></i> Descargar texto (.txt)</a>
+                            </div>
+                        </dialog>
+                        {% endif %}
+                        {% if not grabacion.transcripcion %}
+                        <p class="archivo-sin-texto">Todavía no hay una transcripción guardada para esta sesión.</p>
+                        {% endif %}
                         {% if sesion.historial.pendiente_revision_audio %}
                         <button type="button" class="meet-trigger-btn" onclick="editarBitacora({{ sesion.historial.id }})">Revisar bitácora del audio</button>
                         {% endif %}
-                        <details>
-                            <summary>Transcripción del último procesamiento completado</summary>
-                            {{ grabacion.transcripcion|linebreaksbr }}
-                        </details>
-                        <details>
-                            <summary>Notas extraídas del audio</summary>
+                        {% if grabacion.notas_generadas.notas_sesion %}
+                        <details class="archivo-notas">
+                            <summary>Notas extraídas del audio{% if grabacion.transcripcion_anterior %} anterior{% endif %}</summary>
                             <dl>
                                 <dt>Cómo llega</dt><dd>{{ grabacion.notas_generadas.como_llega|default:"Sin pasajes identificados"|linebreaksbr }}</dd>
                                 <dt>Notas de la sesión</dt><dd>{{ grabacion.notas_generadas.notas_sesion|linebreaksbr }}</dd>
@@ -529,7 +561,7 @@
                             </dl>
                         </details>
                         {% endif %}
-                    </details>
+                    </section>
                     {% else %}
                     <p><a href="{% url 'grabacion_sesion' sesion.cita.id %}">Abrir grabadora de esta cita presencial</a></p>
                     {% endif %}

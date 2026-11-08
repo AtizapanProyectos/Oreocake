@@ -1,4 +1,9 @@
 (() => {
+    document.addEventListener('click', event => {
+        const boton = event.target.closest('[data-abrir-transcripcion]');
+        if (boton) document.getElementById(boton.dataset.abrirTranscripcion)?.showModal();
+    });
+
     const pendientes = new Set(['pendiente', 'procesando']);
 
     function iniciar(panel) {
@@ -12,7 +17,7 @@
 
         function mostrar(datos) {
             estado.textContent = datos.mensaje;
-            estado.toggleAttribute('data-error', datos.estado === 'error');
+            estado.dataset.estado = datos.estado;
             const ocupado = pendientes.has(datos.estado);
             generar.disabled = ocupado || datos.estado === 'listo';
             generar.setAttribute('aria-busy', String(ocupado));
@@ -54,7 +59,10 @@
         async function consultar(method) {
             clearTimeout(temporizador);
             generar.disabled = true;
-            if (method === 'POST') estado.textContent = 'Solicitando análisis…';
+            if (method === 'POST') {
+                estado.textContent = 'Solicitando análisis…';
+                estado.dataset.estado = 'pendiente';
+            }
             try {
                 const token = document.querySelector('#formBitacoraNueva [name=csrfmiddlewaretoken]').value;
                 const respuesta = await fetch(panel.dataset.url, {
@@ -92,6 +100,7 @@
                 });
             } catch (error) {
                 estado.textContent = 'No se pudo abrir la bitácora para edición.';
+                estado.dataset.estado = 'error';
             } finally {
                 revisar.disabled = false;
             }

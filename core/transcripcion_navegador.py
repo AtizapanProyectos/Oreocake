@@ -4,12 +4,12 @@ import logging
 import os
 
 from django.db import transaction
-from django.http import JsonResponse
+from django.http import Http404, JsonResponse
 from django.views.decorators.http import require_POST
 from django.views.decorators.cache import never_cache
 
 from .analisis_grabacion import CAMPOS, _solicitar, _texto
-from .models import AnalisisGrabacionClinica, GrabacionSesion
+from .models import AnalisisGrabacionClinica, Cita, GrabacionSesion
 
 
 @require_POST
@@ -51,13 +51,37 @@ def notas_desde_texto(request, cita_id):
         datos = json.loads(request.body)
         accion = datos.get('accion')
         texto = datos.get('texto', '')
-        if accion not in ('fragmento', 'finalizar') or not isinstance(texto, str) or not 1 <= len(texto.strip()) <= 10000:
+        if accion not in ('guardar', 'fragmento', 'finalizar'):
+            raise ValueError()
+        if accion != 'guardar' and (not isinstance(texto, str) or not 1 <= len(texto.strip()) <= 10000):
             raise ValueError()
         transcripcion = datos.get('transcripcion', '')
-        if accion == 'finalizar' and (not isinstance(transcripcion, str) or not 1 <= len(transcripcion.strip()) <= 500000):
+        if accion in ('guardar', 'finalizar') and (
+            not isinstance(transcripcion, str) or not transcripcion.strip() or len(transcripcion) > 500000
+        ):
             raise ValueError()
     except (ValueError, TypeError, AttributeError):
         return JsonResponse({'mensaje': 'Texto inválido o demasiado largo.'}, status=400)
+    if accion == 'guardar':
+        # Bloquea en el mismo orden que la carga de audio. Un envío retrasado
+        # nunca puede escribir texto sobre el audio de una grabación nueva.
+        with transaction.atomic():
+            cita = Cita.objects.select_for_update().filter(pk=cita.pk).first()
+            if cita is None:
+                raise Http404
+            if not (request.user.is_superuser or
+                    (cita.psicologo_id and cita.psicologo.usuario_id == request.user.id)):
+                raise Http404
+            if cita.modalidad != 'Presencial' or cita.estado not in ('Confirmada', 'Completada'):
+                return JsonResponse({'mensaje': 'La cita no admite procesamiento.'}, status=409)
+            version = datos.get('version_audio')
+            actual = GrabacionSesion.objects.select_for_update().filter(cita=cita).first()
+            if actual is None or not version or version != actual.audio.name:
+                return JsonResponse({'mensaje': 'La grabación cambió. Conserva tu texto y recarga.'}, status=409)
+            actual.asociar_transcripcion(transcripcion.strip())
+            actual.save(update_fields=['transcripcion', 'transcripcion_audio', 'transcripcion_fecha'])
+        return JsonResponse({'mensaje': 'Transcripción guardada en el expediente.'})
+
     grabacion = GrabacionSesion.objects.filter(cita=cita).first()
     if not grabacion or datos.get('version_audio') != grabacion.audio.name:
         return JsonResponse({'mensaje': 'Guarda el audio actual antes de generar las notas.'}, status=409)
@@ -88,10 +112,12 @@ def notas_desde_texto(request, cita_id):
         actual = GrabacionSesion.objects.select_for_update().get(pk=grabacion.pk)
         if actual.audio.name != datos['version_audio'] or cita.estado not in ('Confirmada', 'Completada'):
             return JsonResponse({'mensaje': 'La grabación cambió. Recarga antes de continuar.'}, status=409)
-        actual.transcripcion = transcripcion.strip()
+        actual.asociar_transcripcion(transcripcion.strip())
         actual.estado = GrabacionSesion.Estado.COMPLETADA
         actual.intento_iniciado = None
-        actual.save(update_fields=['transcripcion', 'estado', 'intento_iniciado'])
+        actual.save(update_fields=[
+            'transcripcion', 'transcripcion_audio', 'transcripcion_fecha', 'estado', 'intento_iniciado',
+        ])
         AnalisisGrabacionClinica.objects.update_or_create(grabacion=actual, defaults={
             'archivo_origen': actual.audio.name, 'estado': AnalisisGrabacionClinica.Estado.LISTO,
             'notas': notas, 'progreso': {'porcentaje': None, 'nivel': '', 'compromiso': '', 'evolucion': ''},

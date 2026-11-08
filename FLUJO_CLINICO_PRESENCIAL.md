@@ -4,9 +4,13 @@
 
 La grabadora conserva un MediaRecorder para el audio completo y otro para fragmentos independientes de aproximadamente 20 segundos. Django autoriza cada petición con sesión y CSRF, limita cada fragmento a 8 MB y llama a `whisper-large-v3-turbo` con la clave del servidor. No usa SpeechRecognition, paquetes de idiomas, FFmpeg ni un consumidor de transcripción local.
 
-Los fragmentos se envían secuencialmente; un fallo conserva el fragmento y bloquea los posteriores hasta reintentar. El audio completo sigue grabándose. El medidor usa Web Audio. El texto es revisable antes de generar las notas con el endpoint existente. No se sobrescriben las notas manuales. El navegador debe permanecer abierto; descargar audio y texto antes de abandonarlo. Los límites del proveedor y la conexión pueden retrasar el texto. Los cortes entre fragmentos pueden afectar palabras en los límites; la revisión clínica sigue siendo necesaria.
+Los fragmentos se envían secuencialmente; un fallo conserva el fragmento y bloquea los posteriores hasta reintentar. El audio completo sigue grabándose. El medidor usa Web Audio. El texto es revisable antes de generar las notas con el endpoint existente. No se sobrescriben las notas manuales. Mantén la página abierta hasta ver «Transcripción guardada en el expediente». Si falla el guardado, puedes reintentar o descargar el texto. Los límites del proveedor y la conexión pueden retrasar el texto. Los cortes entre fragmentos pueden afectar palabras en los límites; la revisión clínica sigue siendo necesaria.
 
-Requiere `GROQ_API_KEY` y almacenamiento de audio. No hay nuevas migraciones. La validación automatizada simula Groq; quedan pendientes pruebas de micrófono real y sesiones largas en producción.
+Al detener la grabación, el navegador guarda el texto disponible en GrabacionSesion una vez que el servidor confirma el audio. Los últimos fragmentos se guardan al llegar, y el botón **Guardar transcripción** persiste las correcciones sin generar notas ni llamar a Groq. Django verifica el permiso y la versión del audio en cada guardado. Al reemplazar un audio, el último texto queda identificado como anterior hasta que haya texto para la grabación nueva.
+
+El expediente muestra el reproductor, un diálogo con el texto completo y la fecha del primer guardado, y la descarga. Las grabaciones antiguas pueden no tener una fecha de transcripción registrada.
+
+Requiere GROQ_API_KEY para transcribir y almacenamiento privado de audio. Aplica **0075_metadatos_transcripcion** antes de servir esta versión. La validación automatizada usa datos ficticios y simula Groq.
 
 ## Trazabilidad
 

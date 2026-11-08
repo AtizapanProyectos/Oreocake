@@ -130,10 +130,13 @@ def procesar_siguiente(ffmpeg, whisper, modelo):
             if cita.estado == "Confirmada":
                 cita.estado = "Completada"
                 cita.save(update_fields=["estado"])
-            actual.transcripcion = texto
+            # El procesamiento de audio no sobrescribe un texto ya guardado
+            # para esta misma versión (sí reemplaza el de un audio anterior).
+            if not actual.transcripcion or actual.transcripcion_audio != actual.audio.name:
+                actual.asociar_transcripcion(texto)
             actual.notas_generadas = notas
             actual.estado = Estado.COMPLETADA
-            actual.save(update_fields=["transcripcion", "notas_generadas", "estado"])
+            actual.save(update_fields=["transcripcion", "transcripcion_audio", "transcripcion_fecha", "notas_generadas", "estado"])
     except (OSError, subprocess.SubprocessError, ValueError, wave.Error, EOFError):
         avanzar(Estado.ERROR)
     return True
