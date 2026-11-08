@@ -5456,6 +5456,9 @@ def analisis_grabacion_clinica(request, cita_id):
                     cita=cita, psicologo_id=cita.psicologo_id,
                 ).values_list('pk', flat=True).first()
                 datos.update(notas=trabajo.notas, progreso=trabajo.progreso, historial_id=historial_id)
+    if trabajo:
+        from .analisis_grabacion import estado_procesamiento
+        datos['procesamiento'] = estado_procesamiento(grabacion, trabajo)
     respuesta = JsonResponse(datos)
     respuesta['Cache-Control'] = 'private, no-store'
     return respuesta

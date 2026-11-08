@@ -11,6 +11,36 @@ from django.utils import timezone
 from .models import AnalisisGrabacionClinica as Analisis, GrabacionSesion
 
 CAMPOS = ('como_llega', 'notas_sesion', 'aprendizaje_paciente', 'como_se_va', 'recomendaciones')
+
+
+def estado_procesamiento(grabacion, trabajo):
+    """Hitos confirmados; no estima segundos restantes ni progreso del motor."""
+    estado = GrabacionSesion.Estado
+    pasos = {
+        estado.AUDIO: (10, 'Preparando el audio'),
+        estado.TRANSCRIBIENDO: (25, 'Transcribiendo el audio'),
+        estado.NOTAS: (65, 'Organizando la transcripción'),
+        estado.GUARDANDO: (75, 'Guardando la transcripción'),
+        estado.COMPLETADA: (80, 'Transcripción lista; esperando análisis IA'),
+    }
+    porcentaje, mensaje = pasos.get(grabacion.estado, (0, 'En cola; la transcripción aún no ha comenzado'))
+    activo = grabacion.estado in (estado.AUDIO, estado.TRANSCRIBIENDO, estado.NOTAS, estado.GUARDANDO)
+    fallo = grabacion.estado == estado.ERROR
+    if trabajo.estado == Analisis.Estado.PROCESANDO:
+        porcentaje, mensaje, activo = 90, 'Generando las notas clínicas con IA', True
+    elif trabajo.estado == Analisis.Estado.LISTO:
+        porcentaje, mensaje, activo, fallo = 100, 'Notas listas para revisión', False, False
+    elif trabajo.estado == Analisis.Estado.ERROR:
+        mensaje, activo, fallo = 'Falló el análisis IA. Puedes reintentar.', False, True
+    elif fallo:
+        mensaje, activo = 'Falló la transcripción. Puedes reintentar.', False
+    segundos = max(0, int((timezone.now() - trabajo.actualizado).total_seconds()))
+    aviso = ''
+    if not activo and not fallo and trabajo.estado == Analisis.Estado.PENDIENTE and segundos >= 120:
+        aviso = 'La solicitud sigue en espera. Si no avanza, administración debe revisar el proceso de transcripción en Railway.'
+    return {'porcentaje': None if fallo else porcentaje, 'activo': activo, 'fallo': fallo,
+            'mensaje': mensaje, 'segundos_estado_analisis': segundos, 'aviso': aviso}
+
 NIVELES = ('Crítico', 'Inicial', 'En progreso', 'Avanzado', 'Consolidado')
 MODELO = 'openai/gpt-oss-120b'
 BLOQUE = 10000

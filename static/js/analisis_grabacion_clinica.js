@@ -16,7 +16,18 @@
             const ocupado = pendientes.has(datos.estado);
             generar.disabled = ocupado || datos.estado === 'listo';
             generar.setAttribute('aria-busy', String(ocupado));
-            generar.querySelector('i').classList.toggle('fa-spin', ocupado);
+            const proceso = datos.procesamiento;
+            generar.querySelector('i').classList.toggle('fa-spin', Boolean(proceso?.activo));
+            const cola = panel.querySelector('.analisis-cola');
+            cola.hidden = !proceso;
+            if (proceso) {
+                const porcentaje = Number.isInteger(proceso.porcentaje) ? `${proceso.porcentaje}% · ` : '';
+                panel.querySelector('.analisis-cola-texto').textContent = porcentaje + proceso.mensaje;
+                const barraProceso = panel.querySelector('.analisis-cola-barra');
+                barraProceso.hidden = !Number.isInteger(proceso.porcentaje);
+                barraProceso.value = proceso.porcentaje ?? 0;
+                panel.querySelector('.analisis-cola-aviso').textContent = proceso.aviso || '';
+            }
             resultados.hidden = datos.estado !== 'listo';
             if (datos.estado === 'listo') {
                 notas = datos.notas;
@@ -25,7 +36,7 @@
                     campo.textContent = notas[campo.dataset.nota] || 'Sin evidencia en la transcripción.';
                 });
                 const progreso = datos.progreso;
-                const barra = panel.querySelector('progress');
+                const barra = panel.querySelector('.analisis-progreso progress');
                 barra.hidden = !Number.isInteger(progreso.porcentaje);
                 if (!barra.hidden) barra.value = progreso.porcentaje;
                 panel.querySelector('[data-progreso-nivel]').textContent = progreso.nivel || '';
@@ -50,6 +61,11 @@
                     method, credentials: 'same-origin',
                     headers: method === 'POST' ? {'X-CSRFToken': token} : {},
                 });
+                if (!respuesta.headers.get('content-type')?.includes('application/json')) {
+                    throw new Error(respuesta.status >= 500
+                        ? 'El servidor no pudo consultar el análisis. Administración debe revisar las migraciones y los registros de Railway.'
+                        : 'No se pudo acceder al análisis. Actualiza la página y verifica tu sesión.');
+                }
                 const datos = await respuesta.json();
                 if (!respuesta.ok) throw new Error(datos.mensaje || 'No se pudo consultar el análisis.');
                 mostrar(datos);

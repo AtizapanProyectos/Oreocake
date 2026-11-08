@@ -50,3 +50,8 @@
     .analisis-progreso progress:not([hidden]) { animation: none; }
 }
 .sesion-revision { background: #fff0d6; color: #87520d; }
+.analisis-cola { background: #f3eefb; padding: 14px; border-radius: 12px; margin-bottom: 14px; }
+.analisis-cola-barra { display: block; width: 100%; height: 14px; accent-color: #5a3fa3; margin: 10px 0; }
+.analisis-cola [hidden] { display: none; }
+.analisis-cola small { color: #655875; }
+.analisis-cola-aviso { color: #87520d; margin-bottom: 0; }

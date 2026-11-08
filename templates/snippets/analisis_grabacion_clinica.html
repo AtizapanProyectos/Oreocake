@@ -11,6 +11,12 @@
         </button>
     </div>
     <p class="analisis-estado" role="status" aria-live="polite">{{ grabacion.get_estado_display }}</p>
+    <div class="analisis-cola" hidden aria-live="polite">
+        <strong class="analisis-cola-texto"></strong>
+        <progress class="analisis-cola-barra" max="100" value="0" aria-label="Avance del procesamiento por etapas"></progress>
+        <small>Avance por etapas, no porcentaje de audio transcrito. No hay tiempo restante calculado.</small>
+        <p class="analisis-cola-aviso"></p>
+    </div>
     <div class="analisis-resultados" hidden>
         <div class="analisis-progreso">
             <div class="analisis-progreso-titulo">
