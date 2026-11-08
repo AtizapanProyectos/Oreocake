@@ -4,6 +4,8 @@
 {% block title %}Expediente - {{ paciente.first_name }} | HOPE{% endblock %}
 
 {% block content %}
+<link rel="stylesheet" href="{% static 'css/analisis_grabacion_clinica.css' %}">
+<script src="{% static 'js/analisis_grabacion_clinica.js' %}" defer></script>
 <!-- 🔥 Librería Chart.js para dibujar la gráfica de evolución IPP -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
@@ -347,8 +349,22 @@
                         </div>
                         <div class="session-header-meta">
                             <div class="session-header-title">Sesión · {{ hora_display }} hrs</div>
+                            {% if sesion.cita %}
+                            <p class="sesion-meta">
+                                <span><i class="fas fa-location-dot" aria-hidden="true"></i> {{ sesion.cita.modalidad }}</span>
+                                <span><i class="fas fa-user-doctor" aria-hidden="true"></i> {{ sesion.cita.psicologo.usuario.get_full_name|default:sesion.cita.psicologo.usuario.username }}</span>
+                                {% if sesion.cita.grabacion_sesion.duracion_segundos %}
+                                <span><i class="fas fa-clock" aria-hidden="true"></i> Audio {{ sesion.cita.grabacion_sesion.duracion_legible }} (min:s)</span>
+                                {% else %}
+                                <span><i class="fas fa-clock" aria-hidden="true"></i> Duración sin registro</span>
+                                {% endif %}
+                                <span>{{ sesion.cita.estado }}</span>
+                            </p>
+                            {% endif %}
                             <div class="session-header-sub">
-                                {% if sesion.tiene_historial %}
+                                {% if sesion.historial.pendiente_revision_audio %}
+                                <span class="session-badge sesion-revision"><i class="fas fa-clipboard-check" aria-hidden="true"></i> Bitácora por revisar</span>
+                                {% elif sesion.tiene_historial %}
                                 <span class="session-badge badge-bitacora"><i class="fas fa-book"></i> Bitácora</span>
                                 {% endif %}
                                 {% if sesion.tiene_meet %}
@@ -488,6 +504,7 @@
                     {% with grabacion=sesion.cita.grabacion_sesion %}
                     {% if sesion.cita.modalidad == 'Presencial' %}
                     {% if grabacion %}
+                    {% include 'snippets/analisis_grabacion_clinica.html' with cita=sesion.cita historial=sesion.historial %}
                     <details open>
                         <summary>Grabación presencial · {{ grabacion.get_estado_display }}</summary>
                         <p><a href="{% url 'grabacion_sesion' sesion.cita.id %}">Abrir grabación y ver progreso</a></p>
@@ -1128,7 +1145,7 @@
 
 
 function editarBitacora(historialId) {
-        fetch(`/obtener-bitacora/${historialId}/`)
+        return fetch(`/obtener-bitacora/${historialId}/`)
             .then(r => r.json())
             .then(data => {
                 if (data.status === 'success') {
@@ -1150,9 +1167,10 @@ function editarBitacora(historialId) {
                     document.getElementById('vista-muro').style.display = 'none';
                     document.getElementById('vista-wizard').style.display = 'block';
                     nextStep(1);
-                } else {
-                    alert("No se pudo cargar la bitácora para edición.");
+                    return true;
                 }
+                alert("No se pudo cargar la bitácora para edición.");
+                return false;
             });
     }
 

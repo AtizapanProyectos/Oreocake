@@ -5409,6 +5409,58 @@ def estado_grabacion_sesion(request, cita_id):
     return respuesta
 
 
+def analisis_grabacion_clinica(request, cita_id):
+    from .models import AnalisisGrabacionClinica
+
+    if request.method not in ('GET', 'POST'):
+        return JsonResponse({'mensaje': 'Método no permitido.'}, status=405)
+    cita = _cita_grabacion_autorizada(request, cita_id)
+    with transaction.atomic():
+        grabaciones = GrabacionSesion.objects.filter(cita=cita)
+        if request.method == 'POST':
+            grabaciones = grabaciones.select_for_update()
+        grabacion = get_object_or_404(grabaciones)
+        if not grabacion.audio:
+            raise Http404
+        if request.method == 'POST':
+            if cita.estado not in ('Confirmada', 'Completada'):
+                return JsonResponse({'mensaje': 'Esta cita no admite procesamiento.'}, status=409)
+            trabajo, _ = AnalisisGrabacionClinica.objects.get_or_create(
+                grabacion=grabacion, defaults={'archivo_origen': grabacion.audio.name},
+            )
+            if trabajo.archivo_origen != grabacion.audio.name or trabajo.estado == trabajo.Estado.ERROR:
+                trabajo.archivo_origen = grabacion.audio.name
+                trabajo.estado = trabajo.Estado.PENDIENTE
+                trabajo.notas = {}
+                trabajo.progreso = {}
+                trabajo.save()
+            if grabacion.estado in (grabacion.Estado.ARCHIVADA, grabacion.Estado.ERROR):
+                grabacion.estado = grabacion.Estado.CARGADA
+                grabacion.intento_iniciado = None
+                grabacion.save(update_fields=['estado', 'intento_iniciado'])
+        else:
+            trabajo = AnalisisGrabacionClinica.objects.filter(
+                grabacion=grabacion, archivo_origen=grabacion.audio.name,
+            ).first()
+
+        datos = {'estado': 'disponible', 'mensaje': 'Grabación disponible para analizar.'}
+        if trabajo:
+            datos = {'estado': trabajo.estado, 'mensaje': trabajo.get_estado_display()}
+            if trabajo.estado == trabajo.Estado.PENDIENTE:
+                datos['mensaje'] = ('En espera de análisis IA' if grabacion.estado == grabacion.Estado.COMPLETADA
+                                    else grabacion.get_estado_display())
+                if grabacion.estado == grabacion.Estado.ERROR:
+                    datos.update(estado='error', mensaje='No se pudo transcribir el audio. Puedes reintentar.')
+            elif trabajo.estado == trabajo.Estado.LISTO:
+                historial_id = HistorialClinico.objects.filter(
+                    cita=cita, psicologo_id=cita.psicologo_id,
+                ).values_list('pk', flat=True).first()
+                datos.update(notas=trabajo.notas, progreso=trabajo.progreso, historial_id=historial_id)
+    respuesta = JsonResponse(datos)
+    respuesta['Cache-Control'] = 'private, no-store'
+    return respuesta
+
+
 def descargar_transcripcion_presencial(request, cita_id):
     cita = _cita_grabacion_autorizada(request, cita_id)
     grabacion = get_object_or_404(GrabacionSesion, cita=cita)

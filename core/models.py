@@ -1632,3 +1632,19 @@ class PagoCitaPayPal(models.Model):
     captura = models.CharField(max_length=64, unique=True, null=True, blank=True)
     vence = models.DateTimeField(db_index=True)
     captura_iniciada = models.BooleanField(default=False)
+
+class AnalisisGrabacionClinica(models.Model):
+    class Estado(models.TextChoices):
+        PENDIENTE = 'pendiente', 'En espera'
+        PROCESANDO = 'procesando', 'Analizando transcripción'
+        LISTO = 'listo', 'Borrador listo para revisar'
+        ERROR = 'error', 'Análisis pendiente de reintento'
+
+    grabacion = models.OneToOneField(
+        GrabacionSesion, on_delete=models.CASCADE, related_name='analisis_clinico',
+    )
+    archivo_origen = models.CharField(max_length=100)
+    estado = models.CharField(max_length=12, choices=Estado.choices, default=Estado.PENDIENTE, db_index=True)
+    actualizado = models.DateTimeField(auto_now=True)
+    notas = models.JSONField(default=dict, blank=True)
+    progreso = models.JSONField(default=dict, blank=True)

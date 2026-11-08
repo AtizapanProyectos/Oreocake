@@ -1,0 +1,52 @@
+.sesion-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 14px;
+    margin: 7px 0;
+    font-size: .8rem;
+    color: #645c77;
+}
+.analisis-grabacion {
+    margin: 18px 0;
+    padding: clamp(16px, 3vw, 26px);
+    border-radius: 18px;
+    border: 1px solid #e6dcf6;
+    background: linear-gradient(145deg, #faf7ff, #fff 68%);
+    box-shadow: 0 8px 24px #3e2a7510;
+}
+.analisis-cabecera, .analisis-progreso-titulo {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+.analisis-cabecera h3, .analisis-grabacion h4 { margin: 0; color: #3e2a75; }
+.analisis-grabacion p { margin: 7px 0; }
+.analisis-etiqueta { color: #5a3fa3; font-weight: 700; font-size: .8rem; }
+.analisis-generar, .analisis-revisar {
+    border: 1px solid transparent;
+    border-radius: 10px;
+    padding: 11px 15px;
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+}
+.analisis-generar { background: #5a3fa3; color: #fff; transition: transform .18s, background .18s; }
+.analisis-generar:hover:not(:disabled) { background: #473080; transform: translateY(-2px); }
+.analisis-generar:disabled { opacity: .7; cursor: wait; }
+.analisis-revisar { color: #493483; background: #f2ebfc; border-color: #ded0f2; }
+.analisis-estado { color: #51446a; font-size: .88rem; }
+.analisis-estado[data-error] { color: #9c2039; }
+.analisis-progreso { background: #f3eefb; border-radius: 13px; padding: 15px; margin: 15px 0; }
+.analisis-progreso progress { width: 100%; height: 12px; accent-color: #5a3fa3; transform-origin: left; }
+.analisis-progreso progress:not([hidden]) { animation: revelar-progreso .55s ease-out; }
+.analisis-notas { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr)); gap: 12px; margin-bottom: 12px; }
+.analisis-notas > div { padding: 12px; border: 1px solid #e8e0f2; background: #fff; border-radius: 10px; }
+.analisis-notas p { white-space: pre-wrap; overflow-wrap: anywhere; }
+@keyframes revelar-progreso { from { transform: scaleX(0); } }
+@media (prefers-reduced-motion: reduce) {
+    .analisis-generar { transition: none; }
+    .analisis-progreso progress:not([hidden]) { animation: none; }
+}
+.sesion-revision { background: #fff0d6; color: #87520d; }

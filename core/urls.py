@@ -219,6 +219,7 @@ urlpatterns = [
     # header X-CSRFToken; el audio queda archivado en `GrabacionSesion`
     # (tabla hija de Citas, solo para citas 'Presencial').
     path('api/estado-grabacion-sesion/<int:cita_id>/', views.estado_grabacion_sesion, name='estado_grabacion_sesion'),
+    path('api/analisis-grabacion/<int:cita_id>/', views.analisis_grabacion_clinica, name='analisis_grabacion_clinica'),
     path('transcripcion-presencial/<int:cita_id>/', views.descargar_transcripcion_presencial, name='descargar_transcripcion_presencial'),
     path('audio-grabacion-sesion/<int:cita_id>/', views.audio_grabacion_sesion, name='audio_grabacion_sesion'),
     path('api/guardar-grabacion-sesion/<int:cita_id>/', views.api_guardar_grabacion_sesion, name='api_guardar_grabacion_sesion'),

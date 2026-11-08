@@ -3,6 +3,7 @@ import time
 from django.core.management.base import BaseCommand, CommandError
 from django.db import close_old_connections
 
+from core.analisis_grabacion import procesar_analisis_pendiente
 from core.grabaciones import configuracion_motor, procesar_siguiente
 
 
@@ -19,7 +20,10 @@ class Command(BaseCommand):
         while True:
             close_old_connections()
             procesada = procesar_siguiente(*motor)
+            # El análisis de texto se ejecuta fuera de la petición web.
+            close_old_connections()
+            analizada = procesar_analisis_pendiente() if not (options["una_vez"] and procesada) else False
             if options["una_vez"]:
                 return
-            if not procesada:
+            if not procesada and not analizada:
                 time.sleep(3)

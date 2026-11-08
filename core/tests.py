@@ -145,6 +145,60 @@ class SesionPresencialTests(TestCase):
         self.assertEqual(self.client.get(subida.json()['archivo_url']).status_code, 404)
         self.assertEqual(self.client.get(transcripcion_url).status_code, 404)
 
+    @patch('core.analisis_grabacion._solicitar')
+    def test_analisis_usa_toda_la_transcripcion_y_no_inventa_avance(self, solicitar):
+        from .analisis_grabacion import BLOQUE, generar_borrador
+
+        texto = 'a' * BLOQUE + 'b' * BLOQUE + 'cierre'
+        solicitar.side_effect = [
+            'Evidencia inicial', 'Evidencia intermedia', 'Evidencia de cierre',
+            json.dumps({'notas_sesion': 'Borrador', 'progreso': {
+                'porcentaje': 80, 'evolucion': 'Sin comparativo previo.',
+            }}),
+        ]
+        notas, progreso = generar_borrador(object(), texto, [])
+        fragmentos = [llamada.args[2] for llamada in solicitar.call_args_list[:-1]]
+        self.assertEqual(''.join(fragmentos), texto)
+        self.assertEqual(notas['notas_sesion'], 'Borrador')
+        self.assertIsNone(progreso['porcentaje'])
+
+    @patch('groq.Groq')
+    @patch('core.analisis_grabacion.generar_borrador')
+    def test_analisis_de_audio_se_guarda_aparte_de_la_bitacora(self, generar, groq):
+        from .analisis_grabacion import procesar_analisis_pendiente
+
+        self.client.force_login(self.doctor)
+        self.assertEqual(self.subir().status_code, 200)
+        url = self.url('analisis_grabacion_clinica')
+        csrf_client = Client(enforce_csrf_checks=True)
+        csrf_client.force_login(self.doctor)
+        self.assertEqual(csrf_client.post(url).status_code, 403)
+        self.assertEqual(self.client.post(url).json()['estado'], 'pendiente')
+        self.assertFalse(procesar_analisis_pendiente())
+        groq.assert_not_called()
+
+        grabacion = GrabacionSesion.objects.get(cita=self.cita)
+        grabacion.transcripcion = 'Texto ficticio de toda la sesión.'
+        grabacion.estado = GrabacionSesion.Estado.COMPLETADA
+        grabacion.save(update_fields=['transcripcion', 'estado'])
+        historial = HistorialClinico.objects.create(
+            cita=self.cita, paciente=self.paciente, psicologo=self.psicologo,
+            notas_sesion='Nota revisada por el psicólogo.',
+        )
+        generar.return_value = ({'notas_sesion': 'Borrador independiente.'}, {'porcentaje': None})
+        self.assertTrue(procesar_analisis_pendiente())
+        generar.assert_called_once_with(groq.return_value, grabacion.transcripcion, [])
+        datos = self.client.get(url).json()
+        self.assertEqual(datos['estado'], 'listo')
+        self.assertEqual(datos['historial_id'], historial.pk)
+        self.assertEqual(datos['notas']['notas_sesion'], 'Borrador independiente.')
+        historial.refresh_from_db()
+        self.assertEqual(historial.notas_sesion, 'Nota revisada por el psicólogo.')
+        self.assertEqual(self.client.post(url).json()['estado'], 'listo')
+        self.assertFalse(procesar_analisis_pendiente())
+        self.client.force_login(self.otro)
+        self.assertEqual(self.client.get(url).status_code, 404)
+
     @patch('core.grabaciones.transcribir')
     def test_reemplazo_fallido_preserva_bitacora_y_ultima_transcripcion(self, transcribir):
         self.client.force_login(self.doctor)
