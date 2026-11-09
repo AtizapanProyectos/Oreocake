@@ -384,7 +384,7 @@
                 </label>
               </div>
               {% if not paypal_disponible %}
-                <p class="hpa-pago-aviso" id="hpa-paypal-no-disponible">PayPal está pendiente de habilitación. Puedes continuar por transferencia.</p>
+                <p class="hpa-pago-aviso" id="hpa-paypal-no-disponible">PayPal está pendiente de habilitación. Puedes continuar por transferencia. Revisa en Railway <strong>{{ paypal_variables_pendientes|join:", " }}</strong>.</p>
               {% endif %}
               <div id="hpa-detalle-transferencia" class="hpa-oculto" style="margin-top:12px; padding:14px; border-radius:18px; background:rgba(255,255,255,.94); color:var(--ink);">
                 <p style="margin:0 0 8px; font-weight:800; font-size:13px; color:var(--purple);">Recibimos el pago en:</p>
@@ -483,10 +483,9 @@ document.addEventListener('DOMContentLoaded', function () {
     const mensajeVerificacion = document.getElementById('hpa-paypal-verificacion-msg');
     const botonVerificar = document.getElementById('hpa-paypal-verificar');
     const datosBloqueables = document.querySelectorAll('#hpa-modos, #hpa-form .hpa-col:not(.hpa-aside), #hpa-card-animo');
-    const paypalCapturaSdk = {{ paypal_sdk_recepcion|yesno:"true,false" }};
     const claveVerificacion = 'hope.recepcion.paypal';
     let animo = '';
-    let precioActual = null;
+    let precioActual = false;
     let paypalOcupado = false;
     let paypalRenderizado = false;
     let ordenPendiente = null;
@@ -893,7 +892,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function fetchPrecio() {
         const consulta = ++consultaPrecio;
-        precioActual = null;
+        precioActual = false;
         actualizarResumen();
         const params = new URLSearchParams({ tipo_sesion: tipoSesion });
         if (tipoSesion === 'familiar') {
@@ -904,7 +903,7 @@ document.addEventListener('DOMContentLoaded', function () {
             .then(function (data) {
                 if (consulta !== consultaPrecio) return;
                 if (data.status === 'success') {
-                    precioActual = Number(data.total);
+                    precioActual = true;
                     document.getElementById('hpa-precio-subtotal').textContent = formatoMoneda(data.subtotal);
                     document.getElementById('hpa-precio-comision').textContent = formatoMoneda(data.comision);
                     document.getElementById('hpa-precio-total').textContent = formatoMoneda(data.total);
@@ -1014,9 +1013,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function datosOrden(orden) {
-        const datos = new URLSearchParams({ orden: orden.id, paciente_id: orden.paciente });
-        if (orden.captura) datos.set('captura_sdk', orden.captura);
-        return datos;
+        return new URLSearchParams({ orden: orden.id, paciente_id: orden.paciente });
     }
 
     function guardarVerificacion(orden) {
@@ -1065,12 +1062,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     botonVerificar.addEventListener('click', function () {
-        if (!ordenPendiente) return;
-        if (ordenPendiente.sdk && !ordenPendiente.captura) {
-            mensajeVerificacion.textContent = 'Consulta la orden ' + ordenPendiente.id + ' en PayPal antes de volver a cobrar.';
-            return;
-        }
-        verificarPago(ordenPendiente, null, citaLista());
+        if (ordenPendiente) verificarPago(ordenPendiente, null, citaLista());
     });
 
     function actualizarPayPal(visible) {
@@ -1095,46 +1087,18 @@ document.addEventListener('DOMContentLoaded', function () {
                 msgBox.classList.remove('activo', 'error');
                 return actions.resolve();
             },
-            createOrder: async function (data, actions) {
+            createOrder: async function () {
                 if (!citaLista() || metodoPago !== 'paypal' || !precioActual || ordenPendiente) {
                     throw new Error('Selecciona un horario y estado de ánimo antes de pagar.');
                 }
                 const paciente = pacienteId;
                 bloquearDatosPayPal(true);
-                const datosCita = armarDatosComunes(new FormData());
-                if (paypalCapturaSdk) {
-                    const id = await actions.order.create({
-                        purchase_units: [{amount: {currency_code: 'MXN', value: precioActual.toFixed(2)}}]
-                    });
-                    datosCita.set('orden_sdk', id);
-                }
-                const datos = await enviarPayPal("{% url 'crear_orden_cita_paypal' %}", datosCita);
+                const datos = await enviarPayPal("{% url 'crear_orden_cita_paypal' %}", armarDatosComunes(new FormData()));
                 if (datos.status !== 'success') throw new Error(datos.message || 'No se pudo reservar el horario.');
-                orden = { id: datos.orden, paciente: paciente, monto: datos.monto };
-                if (paypalCapturaSdk && orden.monto !== precioActual.toFixed(2)) {
-                    await enviarPayPal("{% url 'cancelar_reserva_paypal' %}", datosOrden(orden));
-                    fetchPrecio();
-                    throw new Error('El importe de la cita cambió. Revisa el total antes de pagar.');
-                }
+                orden = { id: datos.orden, paciente: paciente };
                 return orden.id;
             },
-            onApprove: async function (data, actions) {
-                if (paypalCapturaSdk) {
-                    const datos = datosOrden(orden);
-                    datos.set('preparar_sdk', '1');
-                    const preparada = await enviarPayPal("{% url 'capturar_orden_cita_paypal' %}", datos);
-                    if (preparada.status !== 'success') throw new Error(preparada.message);
-                    if (preparada.cita_id) return verificarPago(orden, null, true);
-                    guardarVerificacion({ ...orden, sdk: true });
-                    const pago = await actions.order.capture();
-                    const captura = pago.purchase_units?.[0]?.payments?.captures?.[0];
-                    if (pago.id !== orden.id || pago.status !== 'COMPLETED' ||
-                        captura?.status !== 'COMPLETED' || !captura.id ||
-                        captura.amount?.currency_code !== 'MXN' || captura.amount?.value !== orden.monto) {
-                        throw new Error('PayPal aún no confirmó el cargo. Revisa la orden antes de volver a cobrar.');
-                    }
-                    return verificarPago({ ...orden, sdk: true, captura: captura.id }, null, true);
-                }
+            onApprove: function (data, actions) {
                 return verificarPago({ id: data.orderID, paciente: orden.paciente }, actions, true);
             },
             onCancel: async function () {

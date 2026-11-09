@@ -118,9 +118,9 @@ class PagosRecepcionTests(TestCase):
             self.assertContains(respuesta, 'mood-wizard-btn" data-animo=', count=5)
             self.assertContains(respuesta, 'Transferencia bancaria BBVA')
 
-    @override_settings(PAYPAL_CLIENT_ID='sb')
+    @override_settings(PAYPAL_CLIENT_SECRET='')
     @patch('core.pagos_paypal.crear_orden')
-    def test_sin_id_paypal_inactivo_y_transferencia_disponible(self, crear):
+    def test_sin_secreto_paypal_inactivo_y_transferencia_disponible(self, crear):
         respuesta = self.client.get(reverse('recepcion_agendar_cita'))
         self.assertContains(respuesta, 'value="paypal" disabled')
         self.assertContains(respuesta, 'Puedes continuar por transferencia.')
@@ -129,36 +129,15 @@ class PagosRecepcionTests(TestCase):
         with self.assertLogs('core.views', level='ERROR') as registro:
             respuesta = self.client.post(reverse('crear_orden_cita_paypal'), self.datos)
         self.assertEqual(respuesta.status_code, 503)
-        self.assertIn('PAYPAL_CLIENT_ID', registro.output[0])
+        self.assertIn('PAYPAL_CLIENT_SECRET', registro.output[0])
+        self.assertEqual(respuesta.json()['variables_paypal'], ['PAYPAL_CLIENT_SECRET'])
         self.assertFalse(Cita.objects.exists())
         crear.assert_not_called()
 
-    @override_settings(PAYPAL_CLIENT_SECRET='')
-    @patch('core.pagos_paypal.crear_orden')
     @patch('core.pagos_paypal.capturar_orden')
-    def test_recepcion_captura_con_el_sdk_sin_secreto(self, capturar, crear):
-        pagina = self.client.get(reverse('recepcion_agendar_cita'))
-        self.assertContains(pagina, 'const paypalCapturaSdk = true;')
-        self.assertContains(pagina, 'enable-funding=card')
-        self.assertNotContains(pagina, 'value="paypal" disabled')
-
-        orden = 'ORDENSDK'
-        url = reverse('capturar_orden_cita_paypal')
-        datos = {'orden': orden, 'paciente_id': self.paciente.pk}
-        respuesta = self.client.post(reverse('crear_orden_cita_paypal'), {**self.datos, 'orden_sdk': orden})
-        self.assertEqual(respuesta.json().get('orden'), orden, respuesta.content)
-        pago = PagoCitaPayPal.objects.get(orden=orden)
-        self.assertEqual(pago.cita.estado, 'Pendiente')
-        self.assertEqual(self.client.post(url, {**datos, 'captura_sdk': 'CAPTURASDK'}).status_code, 409)
-
-        self.client.force_login(self.paciente)
-        self.assertEqual(self.client.post(url, {'orden': orden, 'preparar_sdk': '1'}).status_code, 403)
-        self.client.force_login(self.recepcion)
-        self.assertEqual(self.client.post(url, {**datos, 'preparar_sdk': '1'}).json()['status'], 'success')
-        for _ in range(2):
-            respuesta = self.client.post(url, {**datos, 'captura_sdk': 'CAPTURASDK'})
-            self.assertEqual(respuesta.json().get('status'), 'success', respuesta.content)
-        pago.refresh_from_db()
-        self.assertEqual((pago.captura, pago.cita.estado), ('CAPTURASDK', 'Confirmada'))
-        crear.assert_not_called()
+    def test_recepcion_rechaza_captura_recibida_del_navegador(self, capturar):
+        respuesta = self.client.post(reverse('capturar_orden_cita_paypal'), {
+            'paciente_id': self.paciente.pk, 'orden': 'ORDENSDK', 'captura_sdk': 'CAPTURASDK',
+        })
+        self.assertEqual(respuesta.status_code, 400)
         capturar.assert_not_called()

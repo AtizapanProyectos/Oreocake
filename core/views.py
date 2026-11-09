@@ -2027,25 +2027,21 @@ def _error_acceso_paypal(request):
     )
 
 
-def _referencia_paypal_valida(referencia):
-    return 1 <= len(referencia) <= 64 and referencia.isascii() and referencia.isalnum()
-
-
 @require_POST
 def crear_orden_cita_paypal(request):
     from .pagos_paypal import ErrorPayPal, crear_orden, variables_paypal_invalidas
 
+    if 'orden_sdk' in request.POST:
+        return JsonResponse({'status': 'error', 'message': 'Actualiza la página para iniciar el pago con PayPal.'}, status=400)
+
     invalidas = list(variables_paypal_invalidas())
-    orden_sdk = request.POST.get('orden_sdk', '')
-    usa_sdk = bool(orden_sdk) and request.user.is_superuser and 'paciente_id' in request.POST and invalidas == ['PAYPAL_CLIENT_SECRET']
-    if usa_sdk and not _referencia_paypal_valida(orden_sdk):
-        return JsonResponse({'status': 'error', 'message': 'La referencia de PayPal es inválida.'}, status=400)
-    if invalidas and not usa_sdk:
+    if invalidas:
         logging.getLogger(__name__).error('PayPal: revisa la configuración de %s.', ', '.join(invalidas))
-        return JsonResponse({
-            'status': 'error',
-            'message': 'PayPal no está disponible por el momento. Puedes continuar por transferencia.',
-        }, status=503)
+        datos = {'status': 'error', 'message': 'PayPal no está disponible por el momento.'}
+        if request.user.is_superuser:
+            datos['variables_paypal'] = invalidas
+            datos['message'] += ' Revisa en Railway: ' + ', '.join(invalidas) + '.'
+        return JsonResponse(datos, status=503)
     paciente_id = _paciente_paypal_id(request)
     if paciente_id is None:
         return _error_acceso_paypal(request)
@@ -2068,10 +2064,8 @@ def crear_orden_cita_paypal(request):
             if pago.cita.estado != 'Pendiente':
                 return JsonResponse({'status': 'error', 'message': 'La reserva ya no está disponible.'}, status=409)
             if not pago.orden:
-                pago.orden = orden_sdk if usa_sdk else crear_orden(pago, permitir_tarjetas=paciente_recepcion is not None)
+                pago.orden = crear_orden(pago, permitir_tarjetas=paciente_recepcion is not None)
                 pago.save(update_fields=['orden'])
-    except IntegrityError:
-        return JsonResponse({'status': 'error', 'message': 'Esta orden de PayPal ya está vinculada a una cita.'}, status=409)
     except ErrorPayPal as error:
         causa = error.__cause__
         respuesta = getattr(causa, 'response', None)
@@ -2080,27 +2074,19 @@ def crear_orden_cita_paypal(request):
             pago.pk, getattr(respuesta, 'status_code', None),
         )
         return JsonResponse({'status': 'error', 'message': 'No se pudo abrir PayPal. Intenta nuevamente en el mismo horario.'}, status=502)
-    return JsonResponse({'status': 'success', 'orden': pago.orden, 'monto': f'{pago.monto:.2f}'})
+    return JsonResponse({'status': 'success', 'orden': pago.orden})
 
 
 @require_POST
 def capturar_orden_cita_paypal(request):
-    from .pagos_paypal import ErrorPayPal, capturar_orden, variables_paypal_invalidas
+    from .pagos_paypal import ErrorPayPal, capturar_orden
 
     paciente_id = _paciente_paypal_id(request)
     if paciente_id is None:
         return _error_acceso_paypal(request)
+    if 'captura_sdk' in request.POST or 'preparar_sdk' in request.POST:
+        return JsonResponse({'status': 'error', 'message': 'El servidor debe verificar el pago con PayPal.'}, status=400)
     orden = request.POST.get('orden', '')
-    captura_sdk = request.POST.get('captura_sdk')
-    preparar_sdk = request.POST.get('preparar_sdk') == '1'
-    usa_sdk = preparar_sdk or captura_sdk is not None
-    if usa_sdk and (not request.user.is_superuser or 'paciente_id' not in request.POST):
-        return _error_acceso_paypal(request)
-    if usa_sdk and list(variables_paypal_invalidas()) != ['PAYPAL_CLIENT_SECRET']:
-        return JsonResponse({'status': 'error', 'message': 'Verifica la orden mediante la captura de servidor.'}, status=409)
-    if captura_sdk is not None and not _referencia_paypal_valida(captura_sdk):
-        return JsonResponse({'status': 'error', 'message': 'La captura de PayPal es inválida.'}, status=400)
-
     with transaction.atomic():
         pago = PagoCitaPayPal.objects.select_for_update().filter(orden=orden, cita__paciente_id=paciente_id).first()
         if not pago:
@@ -2109,18 +2095,14 @@ def capturar_orden_cita_paypal(request):
             return _respuesta_cita(pago.cita, request)
         if pago.cita.estado != 'Pendiente' or (pago.vence <= timezone.now() and not pago.captura_iniciada):
             return JsonResponse({'status': 'error', 'message': 'La reserva venció. Selecciona de nuevo el horario.'}, status=409)
-        if captura_sdk is not None and not pago.captura_iniciada:
-            return JsonResponse({'status': 'error', 'message': 'La orden no está preparada para capturarse.'}, status=409)
         pago.captura_iniciada = True
         pago.save(update_fields=['captura_iniciada'])
-        if preparar_sdk:
-            return JsonResponse({'status': 'success'})
 
     try:
         with transaction.atomic():
             pago = PagoCitaPayPal.objects.select_for_update().get(pk=pago.pk)
             if not pago.captura:
-                captura = captura_sdk if usa_sdk else capturar_orden(pago, solo_consultar=pago.vence <= timezone.now())
+                captura = capturar_orden(pago, solo_consultar=pago.vence <= timezone.now())
                 cita = Cita.objects.select_for_update().get(pk=pago.cita_id, estado='Pendiente')
                 _registrar_tratamiento_cita(cita)
                 pago.captura = captura
@@ -2128,8 +2110,6 @@ def capturar_orden_cita_paypal(request):
                 cita.estado = 'Confirmada'
                 cita.save(update_fields=['estado'])
                 transaction.on_commit(lambda: _notificar_cita_paciente(cita, request), robust=True)
-    except IntegrityError:
-        return JsonResponse({'status': 'error', 'message': 'No se pudo registrar esta captura. Revisa la referencia antes de cobrar de nuevo.'}, status=502)
     except ErrorPayPal as error:
         if error.detalle in ('INSTRUMENT_DECLINED', 'ORDER_NOT_APPROVED'):
             PagoCitaPayPal.objects.filter(pk=pago.pk, captura__isnull=True).update(captura_iniciada=False)
@@ -12017,8 +11997,8 @@ def recepcion_agendar_cita(request):
             'min_integrantes_familiar': MIN_INTEGRANTES_FAMILIAR,
         }),
         # 🪑 Marca de recepción: preset de modalidad y botón de regreso
-        'paypal_disponible': not paypal_invalidas or paypal_invalidas == ['PAYPAL_CLIENT_SECRET'],
-        'paypal_sdk_recepcion': paypal_invalidas == ['PAYPAL_CLIENT_SECRET'],
+        'paypal_disponible': not paypal_invalidas,
+        'paypal_variables_pendientes': paypal_invalidas,
         'paypal_client_id': settings.PAYPAL_CLIENT_ID,
         'origen_recepcion': True,
         'modalidad_inicial': modalidad_inicial,
