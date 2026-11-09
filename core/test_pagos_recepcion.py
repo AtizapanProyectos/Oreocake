@@ -117,3 +117,18 @@ class PagosRecepcionTests(TestCase):
             self.assertContains(respuesta, 'enable-funding=card')
             self.assertContains(respuesta, 'mood-wizard-btn" data-animo=', count=5)
             self.assertContains(respuesta, 'Transferencia bancaria BBVA')
+
+    @override_settings(PAYPAL_CLIENT_SECRET='')
+    @patch('core.pagos_paypal.crear_orden')
+    def test_sin_secreto_paypal_inactivo_y_transferencia_disponible(self, crear):
+        respuesta = self.client.get(reverse('recepcion_agendar_cita'))
+        self.assertContains(respuesta, 'value="paypal" disabled')
+        self.assertContains(respuesta, 'Puedes continuar por transferencia.')
+        self.assertNotContains(respuesta, 'www.paypal.com/sdk/js')
+        self.assertContains(respuesta, 'value="transferencia" checked')
+        with self.assertLogs('core.views', level='ERROR') as registro:
+            respuesta = self.client.post(reverse('crear_orden_cita_paypal'), self.datos)
+        self.assertEqual(respuesta.status_code, 503)
+        self.assertIn('PAYPAL_CLIENT_SECRET', registro.output[0])
+        self.assertFalse(Cita.objects.exists())
+        crear.assert_not_called()

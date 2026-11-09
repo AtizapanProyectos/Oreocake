@@ -4,7 +4,9 @@
 {% block title %}Agendar cita (Recepción) - HOPE{% endblock %}
 
 {% block content %}
+{% if paypal_disponible %}
 {% include 'includes/paypal_sdk_citas.html' with paypal_tarjetas=True %}
+{% endif %}
 {% comment %}
   Agendador administrativo HOPE · rediseño visual (sistema DESIGN.md / panel de recepción v3).
   Misma plantilla, mismas URLs, mismos endpoints y mismos nombres de parámetros que la versión anterior:
@@ -155,26 +157,31 @@
 .hpa-select:focus{outline:none;border-color:var(--purple)}
 .hpa-ayuda{margin-top:10px;font-size:12.5px;font-weight:600;color:var(--muted)}
 
-.hpa-resumen{position:relative;overflow:hidden;padding:26px;border-radius:34px;background:var(--deep);color:#fff;border:0}
-.hpa-resumen::after{content:"";position:absolute;right:-22px;bottom:-30px;width:90px;height:90px;border-radius:50%;background:var(--orange);pointer-events:none}
-.hpa-resumen .hpa-deco2{position:absolute;right:40px;top:-24px;width:160px;height:160px;color:var(--teal);pointer-events:none}
-.hpa-resumen>*{position:relative;z-index:1}
-.hpa-resumen h2{color:#fff;margin-bottom:14px}
+.hpa-resumen{position:relative;overflow:hidden;padding:26px;border-radius:34px;background:#fff;color:var(--ink);border:1px solid var(--line)}
+.hpa-resumen h2{color:var(--ink);margin-bottom:14px}
 .hpa-resumen dl{display:grid;gap:10px;margin:0}
 .hpa-resumen dl div{display:flex;flex-direction:column;gap:1px}
 .hpa-resumen dt,.hpa-resumen dd{margin:0}
-.hpa-resumen dt{font-weight:700;font-size:13px;color:#D9CFFF}
+.hpa-resumen dt{font-weight:700;font-size:13px;color:var(--muted)}
 .hpa-resumen dd{font-weight:800;font-size:16px;overflow-wrap:anywhere}
-.hpa-resumen dd.hpa-hh{font:800 30px/1.1 var(--fh);color:var(--yellow)}
-.hpa-resumen dd.hpa-hh.sin{font:800 16px var(--fb);color:#fff}
-.hpa-ref{margin-top:16px;padding:12px 14px;border-radius:22px;background:rgba(255,255,255,.12);font-size:13px;font-weight:600;color:#EEE8FF}
+.hpa-resumen dd.hpa-hh{font:800 30px/1.1 var(--fh);color:var(--md)}
+.hpa-resumen dd.hpa-hh.sin{font:800 16px var(--fb);color:var(--muted)}
+.hpa-ref{margin-top:16px;padding:12px 14px;border-radius:22px;background:var(--ms);font-size:13px;font-weight:600;color:var(--ink)}
 .hpa-precio-row{display:flex;justify-content:space-between;gap:10px;padding:2px 0}
-.hpa-precio-row.total{border-top:2px dashed rgba(255,255,255,.3);margin-top:6px;padding-top:8px;font-weight:800}
-.hpa-nota-admin{margin-top:8px;font-size:12.5px;color:#D9CFFF}
+.hpa-precio-row.total{border-top:1px solid var(--line);margin-top:6px;padding-top:8px;font-weight:800}
+.hpa-nota-admin{margin-top:8px;font-size:12.5px;color:var(--muted)}
 .hpa-btn-confirmar{width:100%;margin-top:18px;display:inline-flex;align-items:center;justify-content:center;gap:10px;background:var(--yellow);color:var(--ink);font:800 16px var(--fb);padding:15px 20px;border-radius:99px;border:3.5px solid var(--yellow);cursor:pointer;transition:transform .15s,background .15s}
 .hpa-btn-confirmar:hover:not(:disabled){transform:translateY(-2px);background:#FFE15C}
 .hpa-btn-confirmar:disabled{opacity:.45;cursor:not-allowed}
-.hpa-faltante{margin-top:10px;text-align:center;font-size:13px;font-weight:700;color:#D9CFFF}
+.hpa-faltante{margin-top:10px;text-align:center;font-size:13px;font-weight:700;color:var(--muted)}
+.hpa-pago{margin-top:16px;padding:14px;border-radius:18px;background:#FBFAFD;border:1px solid var(--line)}
+.hpa-pago-titulo{margin:0 0 10px;font:800 14px var(--fh);color:var(--ink)}
+.hpa-pago-opciones{display:grid;gap:8px}
+.hpa-pago-opcion{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;background:#fff;border:1px solid var(--line);font-size:14px;font-weight:700;cursor:pointer}
+.hpa-pago-opcion:has(input:checked){border-color:var(--md);background:var(--ms)}
+.hpa-pago-opcion:has(input:disabled){cursor:default;color:var(--muted)}
+.hpa-pago-opcion input{accent-color:var(--md);flex-shrink:0}
+.hpa-pago-aviso{margin:8px 0 0;font-size:12.5px;line-height:1.45;color:var(--muted)}
 .hpa-msg{display:none;border-radius:22px;padding:14px 16px;font-size:14px;font-weight:700;line-height:1.45;margin-top:14px}
 .hpa-msg.ok{background:var(--teal-s);color:#0A5F5F}
 .hpa-msg.error{background:var(--pink-s);color:var(--pink-d)}
@@ -348,7 +355,6 @@
           </section>
 
           <section class="hpa-card hpa-resumen hpa-disabled" id="hpa-card-resumen" aria-labelledby="hpa-tres">
-            <svg class="hpa-deco2" aria-hidden="true"><use href="#hpa-lazo-f"/></svg>
             <h2 id="hpa-tres">Resumen de la cita</h2>
             <dl>
               <div><dt>Modalidad</dt><dd id="hpa-resumen-modalidad">En línea</dd></div>
@@ -365,18 +371,21 @@
               <div class="hpa-nota-admin" id="hpa-nota-cobro">Convenio activo: esta cita no genera cobro.</div>
             </div>
 
-            <div id="hpa-pago-box" style="margin-top:16px; padding:16px; border-radius:22px; background:rgba(255,255,255,.08); border:2px dashed rgba(255,255,255,.35);">
-              <p style="margin:0 0 10px; font:800 14px var(--fh); color:#fff;">Forma de pago</p>
-              <div style="display:grid; gap:10px;">
-                <label style="display:flex; align-items:center; gap:10px; padding:12px 14px; border-radius:16px; background:rgba(255,255,255,.1); border:2px solid rgba(255,255,255,.25); cursor:pointer;">
-                  <input type="radio" name="hpa-metodo" id="hpa-metodo-transferencia" value="transferencia" checked style="accent-color:var(--yellow);">
-                  <span style="font-weight:700; font-size:14px;">Transferencia bancaria BBVA</span>
+            <div id="hpa-pago-box" class="hpa-pago">
+              <p class="hpa-pago-titulo">Forma de pago</p>
+              <div class="hpa-pago-opciones">
+                <label class="hpa-pago-opcion">
+                  <input type="radio" name="hpa-metodo" id="hpa-metodo-transferencia" value="transferencia" checked>
+                  <span>Transferencia bancaria BBVA</span>
                 </label>
-                <label style="display:flex; align-items:center; gap:10px; padding:12px 14px; border-radius:16px; background:rgba(255,255,255,.1); border:2px solid rgba(255,255,255,.25); cursor:pointer;">
-                  <input type="radio" name="hpa-metodo" value="paypal" style="accent-color:var(--yellow);">
-                  <span style="font-weight:700; font-size:14px;">PayPal · tarjeta de crédito o débito</span>
+                <label class="hpa-pago-opcion">
+                  <input type="radio" name="hpa-metodo" value="paypal"{% if not paypal_disponible %} disabled aria-describedby="hpa-paypal-no-disponible"{% endif %}>
+                  <span>PayPal · tarjeta de crédito o débito</span>
                 </label>
               </div>
+              {% if not paypal_disponible %}
+                <p class="hpa-pago-aviso" id="hpa-paypal-no-disponible">PayPal está pendiente de habilitación. Puedes continuar por transferencia.</p>
+              {% endif %}
               <div id="hpa-detalle-transferencia" class="hpa-oculto" style="margin-top:12px; padding:14px; border-radius:18px; background:rgba(255,255,255,.94); color:var(--ink);">
                 <p style="margin:0 0 8px; font-weight:800; font-size:13px; color:var(--purple);">Recibimos el pago en:</p>
                 <p style="margin:0; font-size:12.5px; line-height:1.55;">
@@ -468,7 +477,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const detallePayPal = document.getElementById('hpa-detalle-paypal');
     const paypalButtons = document.getElementById('hpa-paypal-buttons');
     const paypalEstado = document.getElementById('hpa-paypal-estado');
-    const radiosPago = document.querySelectorAll('input[name="hpa-metodo"]');
+    const radiosPago = document.querySelectorAll('input[name="hpa-metodo"]:not(:disabled)');
     const caritas = document.querySelectorAll('#hpa-card-animo .mood-wizard-btn');
     const seccionVerificacion = document.getElementById('hpa-paypal-verificacion');
     const mensajeVerificacion = document.getElementById('hpa-paypal-verificacion-msg');

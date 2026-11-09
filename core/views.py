@@ -2029,12 +2029,15 @@ def _error_acceso_paypal(request):
 
 @require_POST
 def crear_orden_cita_paypal(request):
-    from .pagos_paypal import ErrorPayPal, crear_orden
+    from .pagos_paypal import ErrorPayPal, crear_orden, variables_paypal_invalidas
 
-    if (not settings.PAYPAL_CLIENT_SECRET or not settings.PAYPAL_CLIENT_ID
-            or settings.PAYPAL_CLIENT_ID == 'sb' or settings.PAYPAL_MODE not in ('live', 'sandbox')):
-        logging.getLogger(__name__).error('PayPal: configuración incompleta o modo inválido al crear orden.')
-        return JsonResponse({'status': 'error', 'message': 'PayPal no está disponible en este momento.'}, status=503)
+    invalidas = list(variables_paypal_invalidas())
+    if invalidas:
+        logging.getLogger(__name__).error('PayPal: revisa la configuración de %s.', ', '.join(invalidas))
+        return JsonResponse({
+            'status': 'error',
+            'message': 'PayPal no está disponible por el momento. Puedes continuar por transferencia.',
+        }, status=503)
     paciente_id = _paciente_paypal_id(request)
     if paciente_id is None:
         return _error_acceso_paypal(request)
@@ -11968,6 +11971,8 @@ def recepcion_agendar_cita(request):
     template. Vista de recepción != vista de administración: son dos
     pantallas distintas que comparten la lógica probada del backend.
     """
+    from .pagos_paypal import variables_paypal_invalidas
+
     modalidad_param = (request.GET.get('modalidad') or request.GET.get('m') or '').strip().lower()
     if modalidad_param in ('presencial', 'presenciales', 'sede', 'en-sede'):
         modalidad_inicial = 'presencial'
@@ -11985,6 +11990,7 @@ def recepcion_agendar_cita(request):
             'min_integrantes_familiar': MIN_INTEGRANTES_FAMILIAR,
         }),
         # 🪑 Marca de recepción: preset de modalidad y botón de regreso
+        'paypal_disponible': not any(variables_paypal_invalidas()),
         'paypal_client_id': settings.PAYPAL_CLIENT_ID,
         'origen_recepcion': True,
         'modalidad_inicial': modalidad_inicial,

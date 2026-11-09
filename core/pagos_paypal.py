@@ -9,6 +9,16 @@ class ErrorPayPal(Exception):
         self.detalle = detalle
 
 
+def variables_paypal_invalidas():
+    client_id = getattr(settings, "PAYPAL_CLIENT_ID", "").strip()
+    if not client_id or client_id == "sb":
+        yield "PAYPAL_CLIENT_ID"
+    if not getattr(settings, "PAYPAL_CLIENT_SECRET", "").strip():
+        yield "PAYPAL_CLIENT_SECRET"
+    if getattr(settings, "PAYPAL_MODE", "") not in ("live", "sandbox"):
+        yield "PAYPAL_MODE"
+
+
 def _cliente():
     if settings.PAYPAL_MODE not in ("live", "sandbox") or not settings.PAYPAL_CLIENT_SECRET:
         raise ErrorPayPal()
