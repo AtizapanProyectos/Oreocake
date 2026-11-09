@@ -407,6 +407,12 @@ class SesionPresencialTests(TestCase):
             return self.client.post(url, {'archivo': SimpleUploadedFile('foto.jpg', b'imagen')})
 
         self.assertEqual(escaneo().json()['data'], campos)
+        texto = 'La paciente llegó tranquila.'
+        archivo = SimpleUploadedFile('transcripcion.TXT', texto.encode('utf-8-sig'), content_type='text/plain')
+        self.assertEqual(self.client.post(url, {'archivo': archivo}).json()['data'], campos)
+        self.assertEqual(groq.return_value.chat.completions.create.call_args.kwargs['messages'][-1]['content'], texto)
+        archivo = SimpleUploadedFile('invalido.txt', bytes([255]), content_type='text/plain')
+        self.assertEqual(self.client.post(url, {'archivo': archivo}).status_code, 422)
         self.assertFalse(HistorialClinico.objects.exists())
         mensaje.content = 'Respuesta sin estructura'
         self.assertEqual(escaneo().status_code, 502)

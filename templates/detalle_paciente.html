@@ -631,14 +631,15 @@
                     </div>
                     <div class="upload-zona-body" id="uploadZonaBody">
                         <div class="upload-drop-area" id="uploadDropArea">
-                            <input type="file" name="archivo_adjunto" id="archivoNota" accept=".jpg,.jpeg,.png,.webp,.pdf,.docx" onchange="archivoSeleccionado(event)">
+                            <input type="file" name="archivo_adjunto" id="archivoNota" accept=".jpg,.jpeg,.png,.webp,.pdf,.docx,.txt" onchange="archivoSeleccionado(event)">
                             <div class="upload-drop-icon"><i class="fas fa-cloud-arrow-up"></i></div>
                             <div class="upload-drop-title">Arrastra aquí o haz clic para seleccionar</div>
                             <div class="upload-drop-sub">Tus notas escritas a mano o documentos clínicos</div>
                             <div class="upload-chips">
-                                <span class="upload-chip">📷 JPG / PNG</span>
-                                <span class="upload-chip">📄 PDF</span>
-                                <span class="upload-chip">📝 DOC / DOCX</span>
+                                <span class="upload-chip">JPG / PNG / WEBP</span>
+                                <span class="upload-chip">PDF</span>
+                                <span class="upload-chip">DOCX</span>
+                                <span class="upload-chip">TXT</span>
                             </div>
                         </div>
                         <div class="upload-preview" id="uploadPreview">
@@ -1068,7 +1069,7 @@
         if (archivo.type.startsWith('image/')) icon.classList.add('img');
         else if (archivo.type === 'application/pdf') icon.classList.add('pdf');
         else icon.classList.add('doc');
-        icon.innerHTML = archivo.type.startsWith('image/') ? '<i class="fas fa-file-image"></i>' : archivo.type === 'application/pdf' ? '<i class="fas fa-file-pdf"></i>' : '<i class="fas fa-file-word"></i>';
+        icon.innerHTML = archivo.type.startsWith('image/') ? '<i class="fas fa-file-image"></i>' : archivo.type === 'application/pdf' ? '<i class="fas fa-file-pdf"></i>' : /\.txt$/i.test(archivo.name) ? '<i class="fas fa-file-lines"></i>' : '<i class="fas fa-file-word"></i>';
         preview.classList.add('show');
         btn.classList.add('show');
     }

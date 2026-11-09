@@ -3280,8 +3280,8 @@ def procesar_archivo_ia(request):
 
     extension = archivo.name.rsplit('.', 1)[-1].lower()
 
-    if extension not in ('jpg', 'jpeg', 'png', 'webp', 'pdf', 'docx'):
-        return JsonResponse({'error': 'Usa JPG, PNG, WebP, PDF o DOCX.'}, status=400)
+    if extension not in ('jpg', 'jpeg', 'png', 'webp', 'pdf', 'docx', 'txt'):
+        return JsonResponse({'error': 'Usa JPG, PNG, WebP, PDF, DOCX o TXT.'}, status=400)
     if archivo.size > 10 * 1024 * 1024:
         return JsonResponse({'error': 'El archivo supera los 10 MB.'}, status=400)
 
@@ -3327,7 +3327,7 @@ def procesar_archivo_ia(request):
             )
             texto_respuesta = response.choices[0].message.content.strip()
 
-        # ── PDF O WORD ──
+        # ── PDF, WORD O TEXTO PLANO ──
         else:
             texto_raw = ""
             if extension == 'pdf':
@@ -3355,6 +3355,13 @@ def procesar_archivo_ia(request):
                 import docx
                 doc_word = docx.Document(archivo)
                 texto_raw = "\n".join(p.text for p in doc_word.paragraphs if p.text.strip())
+            elif extension == 'txt':
+                try:
+                    texto_raw = archivo.read().decode('utf-8-sig')
+                except UnicodeDecodeError:
+                    return JsonResponse({'error': 'Guarda el archivo TXT con codificación UTF-8.'}, status=422)
+                if '\x00' in texto_raw:
+                    return JsonResponse({'error': 'El archivo TXT debe contener texto plano en UTF-8.'}, status=422)
 
             if not texto_raw.strip():
                 return JsonResponse({'error': 'El documento no contiene texto extraíble.'}, status=422)
