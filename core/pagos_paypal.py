@@ -46,15 +46,17 @@ def _orden(ruta, identificador, datos=None):
         raise ErrorPayPal() from error
 
 
-def crear_orden(pago):
-    contenido = _orden("", f"hope-cita-{pago.pk}-orden", {
+def crear_orden(pago, *, permitir_tarjetas=False):
+    datos = {
         "intent": "CAPTURE",
         "purchase_units": [{
             "reference_id": str(pago.cita_id),
             "amount": {"currency_code": "MXN", "value": f"{pago.monto:.2f}"},
         }],
-        "payment_source": {"paypal": {"experience_context": {"shipping_preference": "NO_SHIPPING"}}},
-    })
+    }
+    if not permitir_tarjetas:
+        datos["payment_source"] = {"paypal": {"experience_context": {"shipping_preference": "NO_SHIPPING"}}}
+    contenido = _orden("", f"hope-cita-{pago.pk}-orden", datos)
     orden = contenido.get("id")
     if not isinstance(orden, str) or not orden.isascii() or not orden.isalnum() or len(orden) > 64:
         raise ErrorPayPal()

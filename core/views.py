@@ -1737,16 +1737,18 @@ def guardar_cita_ajax(request):
 
 
 @transaction.atomic
-def _guardar_cita_paciente(request, reservar_pago=False):
+def _guardar_cita_paciente(request, reservar_pago=False, paciente_recepcion=None):
     if request.method == 'POST':
         if not request.user.is_authenticated:
             return JsonResponse({'status': 'error', 'message': 'Debes iniciar sesión.'}, status=401)
 
-        convenio = _convenio_cita(request)
+        es_recepcion = paciente_recepcion is not None
+        paciente = paciente_recepcion if es_recepcion else request.user
+        convenio = 'hope' if es_recepcion else _convenio_cita(request)
         es_beneficios = convenio == 'beneficios'
         es_tectum_cita = convenio == 'inhouse'
 
-        if not _tiene_consentimiento(request.user):
+        if not es_recepcion and not _tiene_consentimiento(paciente):
             return JsonResponse({
                 'status': 'error',
                 'message': 'Firma el consentimiento informado antes de agendar.',
@@ -1772,8 +1774,13 @@ def _guardar_cita_paciente(request, reservar_pago=False):
         fecha_str = request.POST.get('fecha')
         hora_str = request.POST.get('hora')
         animo = request.POST.get('animo', 'No especificó')
+        if es_recepcion and animo not in ESTADOS_ANIMO_RECEPCION:
+            return _error_animo_recepcion()
+
         modalidad_str = request.POST.get('modalidad', 'En línea')
         if modalidad_str not in MODALIDADES_CITA_VALIDAS:
+            if es_recepcion:
+                return JsonResponse({'status': 'error', 'message': 'Selecciona una modalidad válida.'}, status=400)
             modalidad_str = 'En línea'  # mismo comportamiento histórico ante valores raros
         tipo_sesion_str = request.POST.get('tipo_servicio', 'individual')
         if tipo_sesion_str not in TIPOS_SESION_VALIDOS:
@@ -1795,46 +1802,51 @@ def _guardar_cita_paciente(request, reservar_pago=False):
             inicio = timezone.make_aware(datetime.combine(fecha_obj, hora_obj))
             if inicio < ahora + timedelta(hours=2) or fecha_obj > ahora.date() + timedelta(days=90):
                 return JsonResponse({'status': 'error', 'message': 'Elige un horario con dos horas de anticipación dentro de los próximos 90 días.'}, status=400)
-            User.objects.select_for_update().get(pk=request.user.pk)
+            User.objects.select_for_update().get(pk=paciente.pk)
             _liberar_reservas_vencidas(fecha=fecha_obj, hora=hora_obj)
             if reservar_pago:
-                pendiente = PagoCitaPayPal.objects.filter(
-                    cita__paciente=request.user, cita__estado='Pendiente',
+                pendiente = PagoCitaPayPal.objects.select_for_update().filter(
+                    cita__paciente=paciente, cita__estado='Pendiente',
                     cita__fecha=fecha_obj, cita__hora=hora_obj, cita__tipo_sesion=tipo_sesion_str,
                     cita__modalidad=modalidad_str, cita__es_beneficios=es_beneficios,
                     cita__integrantes_familia=integrantes_familia,
                 ).filter(Q(vence__gt=ahora) | Q(captura_iniciada=True)).first()
                 if pendiente:
+                    if es_recepcion and not pendiente.captura_iniciada:
+                        Cita.objects.filter(pk=pendiente.cita_id).update(estado_animo=animo)
                     return pendiente
                 if PagoCitaPayPal.objects.filter(
-                    cita__paciente=request.user, cita__estado='Pendiente', captura_iniciada=True,
+                    cita__paciente=paciente, cita__estado='Pendiente', captura_iniciada=True,
                 ).exists():
                     return JsonResponse({'status': 'error', 'message': 'Hay un pago pendiente de verificar. Retoma ese horario o contacta a soporte.'}, status=409)
                 anteriores = PagoCitaPayPal.objects.select_for_update().filter(
-                    cita__paciente=request.user, cita__estado='Pendiente', captura_iniciada=False,
+                    cita__paciente=paciente, cita__estado='Pendiente', captura_iniciada=False,
                 )
                 for intento in anteriores:
                     Cita.objects.filter(pk=intento.cita_id, estado='Pendiente').update(estado='Cancelada', psicologo=None)
-            if Cita.objects.filter(paciente=request.user, fecha=fecha_obj, hora=hora_obj, estado__in=('Confirmada', 'Pendiente')).exists():
+            if Cita.objects.filter(paciente=paciente, fecha=fecha_obj, hora=hora_obj, estado__in=('Confirmada', 'Pendiente')).exists():
                 return JsonResponse({'status': 'error', 'message': 'Ya tienes una cita o reserva a esa hora.'}, status=409)
-            perfil = getattr(request.user, 'perfil', None)
+            perfil = getattr(paciente, 'perfil', None)
             if perfil is None:
                 return JsonResponse({'status': 'error', 'message': 'Abre tu panel para completar tu perfil.'}, status=409)
 
             # 🏢 Validación en SERVIDOR de la regla presencial (además de la que
             # corre en disponibilidad): un paciente que ya llevó sesiones en
             # línea no agendar presencial desde el wizard.
-            if modalidad_str == 'Presencial' and Cita.objects.filter(
-                paciente=request.user, modalidad='En línea'
+            if not es_recepcion and modalidad_str == 'Presencial' and Cita.objects.filter(
+                paciente=paciente, modalidad='En línea'
             ).exists():
                 return JsonResponse({'status': 'error', 'message': MENSAJE_PRESENCIAL_CONTACTA})
 
             # 🔥 MULTISERVICIO: Buscamos si ya tiene psicólogo asignado a este servicio específico
             tratamiento = TratamientoPaciente.objects.filter(
-                paciente=request.user, tipo_servicio=tipo_sesion_str, activo=True
+                paciente=paciente, tipo_servicio=tipo_sesion_str, activo=True
             ).select_related('psicologo_asignado').first()
 
             psicologo = tratamiento.psicologo_asignado if (tratamiento and tratamiento.psicologo_asignado) else None
+
+            if es_recepcion and not psicologo:
+                psicologo = perfil.psicologo_asignado
 
             # Si el doctor de este tratamiento ya no atiende esta modalidad, permitimos reasignar un especialista
             if psicologo and not getattr(psicologo, campo_capacidad, False):
@@ -1846,7 +1858,7 @@ def _guardar_cita_paciente(request, reservar_pago=False):
             # presencial no se asume que "su" psicólogo atiende presencial:
             # si no lo hace, cae al pool compatible y se reasigna el especialista.
             if psicologo and not psicologo_atiende_modalidad(psicologo, modalidad_str):
-                if modalidad_str == 'Presencial':
+                if modalidad_str == 'Presencial' and not es_recepcion:
                     return JsonResponse({'status': 'error', 'message': 'Contacta a tu psicólogo para agendar una cita presencial'})
                 psicologo = None
 
@@ -1855,10 +1867,10 @@ def _guardar_cita_paciente(request, reservar_pago=False):
                 preferencia = ""
                 try:
                     cuestionario = CuestionarioRegistro.objects.filter(
-                        paciente=request.user, flujo_elegido=tipo_sesion_str
+                        paciente=paciente, flujo_elegido=tipo_sesion_str
                     ).order_by('-fecha_completado').first()
                     if not cuestionario:
-                        cuestionario = CuestionarioRegistro.objects.filter(paciente=request.user).order_by('-fecha_completado').first()
+                        cuestionario = CuestionarioRegistro.objects.filter(paciente=paciente).order_by('-fecha_completado').first()
                     if cuestionario:
                         preferencia = cuestionario.respuestas.get('preferencia_terapeuta', '')
                 except:
@@ -1910,7 +1922,7 @@ def _guardar_cita_paciente(request, reservar_pago=False):
                 return JsonResponse({'status': 'error', 'message': 'Ese horario ya no está disponible. Elige otro.'}, status=409)
 
             cita = Cita.objects.create(
-                paciente=request.user, psicologo=psicologo, fecha=fecha_obj, hora=hora_obj,
+                paciente=paciente, psicologo=psicologo, fecha=fecha_obj, hora=hora_obj,
                 estado_animo=animo, modalidad=modalidad_str, tipo_sesion=tipo_sesion_str,
                 integrantes_familia=integrantes_familia, es_tectum=es_tectum_cita,
                 es_beneficios=es_beneficios, estado='Pendiente' if reservar_pago else 'Confirmada',
@@ -1986,6 +1998,35 @@ def _liberar_reservas_vencidas(**horario):
                 Cita.objects.filter(pk=pago.cita_id, estado='Pendiente').update(estado='Cancelada', psicologo=None)
 
 
+ESTADOS_ANIMO_RECEPCION = {'Muy mal', 'Triste', 'Normal', 'Bien', 'Excelente'}
+
+
+def _error_animo_recepcion():
+    return JsonResponse({'status': 'error', 'message': 'Selecciona el estado de ánimo antes de continuar.'}, status=400)
+
+
+def _paciente_paypal_id(request):
+    if not request.user.is_authenticated:
+        return None
+    if 'paciente_id' not in request.POST:
+        return request.user.pk
+    if request.user.is_superuser:
+        try:
+            paciente_id = int(request.POST['paciente_id'])
+        except ValueError:
+            return None
+        if 0 < paciente_id <= 2**63 - 1:
+            return paciente_id
+    return None
+
+
+def _error_acceso_paypal(request):
+    return JsonResponse(
+        {'status': 'error', 'message': 'No tienes acceso a esta operación de PayPal.'},
+        status=403 if request.user.is_authenticated else 401,
+    )
+
+
 @require_POST
 def crear_orden_cita_paypal(request):
     from .pagos_paypal import ErrorPayPal, crear_orden
@@ -1994,8 +2035,18 @@ def crear_orden_cita_paypal(request):
             or settings.PAYPAL_CLIENT_ID == 'sb' or settings.PAYPAL_MODE not in ('live', 'sandbox')):
         logging.getLogger(__name__).error('PayPal: configuración incompleta o modo inválido al crear orden.')
         return JsonResponse({'status': 'error', 'message': 'PayPal no está disponible en este momento.'}, status=503)
+    paciente_id = _paciente_paypal_id(request)
+    if paciente_id is None:
+        return _error_acceso_paypal(request)
+    paciente_recepcion = None
+    if 'paciente_id' in request.POST:
+        paciente_recepcion = User.objects.filter(pk=paciente_id, perfil__isnull=False).first()
+        if paciente_recepcion is None:
+            return JsonResponse({'status': 'error', 'message': 'Paciente no encontrado o sin perfil.'}, status=404)
+        if request.POST.get('es_tectum') == '1':
+            return JsonResponse({'status': 'error', 'message': 'Esta cita por convenio no requiere pago.'}, status=400)
     try:
-        pago = _guardar_cita_paciente(request, reservar_pago=True)
+        pago = _guardar_cita_paciente(request, reservar_pago=True, paciente_recepcion=paciente_recepcion)
     except IntegrityError:
         return JsonResponse({'status': 'error', 'message': 'El horario acaba de ocuparse. Elige otro.'}, status=409)
     if not isinstance(pago, PagoCitaPayPal):
@@ -2006,7 +2057,7 @@ def crear_orden_cita_paypal(request):
             if pago.cita.estado != 'Pendiente':
                 return JsonResponse({'status': 'error', 'message': 'La reserva ya no está disponible.'}, status=409)
             if not pago.orden:
-                pago.orden = crear_orden(pago)
+                pago.orden = crear_orden(pago, permitir_tarjetas=paciente_recepcion is not None)
                 pago.save(update_fields=['orden'])
     except ErrorPayPal as error:
         causa = error.__cause__
@@ -2023,11 +2074,12 @@ def crear_orden_cita_paypal(request):
 def capturar_orden_cita_paypal(request):
     from .pagos_paypal import ErrorPayPal, capturar_orden
 
-    if not request.user.is_authenticated:
-        return JsonResponse({'status': 'error', 'message': 'Inicia sesión para verificar tu pago.'}, status=401)
+    paciente_id = _paciente_paypal_id(request)
+    if paciente_id is None:
+        return _error_acceso_paypal(request)
     orden = request.POST.get('orden', '')
     with transaction.atomic():
-        pago = PagoCitaPayPal.objects.select_for_update().filter(orden=orden, cita__paciente=request.user).first()
+        pago = PagoCitaPayPal.objects.select_for_update().filter(orden=orden, cita__paciente_id=paciente_id).first()
         if not pago:
             return JsonResponse({'status': 'error', 'message': 'No encontramos esa orden en tu cuenta.'}, status=404)
         if pago.captura:
@@ -2063,10 +2115,11 @@ def capturar_orden_cita_paypal(request):
 @require_POST
 @transaction.atomic
 def cancelar_reserva_paypal(request):
-    if not request.user.is_authenticated:
-        return JsonResponse({'status': 'error'}, status=401)
+    paciente_id = _paciente_paypal_id(request)
+    if paciente_id is None:
+        return _error_acceso_paypal(request)
     pago = PagoCitaPayPal.objects.select_for_update().filter(
-        orden=request.POST.get('orden', ''), cita__paciente=request.user,
+        orden=request.POST.get('orden', ''), cita__paciente_id=paciente_id,
     ).first()
     if pago and not pago.captura_iniciada:
         Cita.objects.filter(pk=pago.cita_id, estado='Pendiente').update(estado='Cancelada', psicologo=None)
@@ -2159,6 +2212,8 @@ def subir_comprobante_transferencia_ajax(request):
     # del paciente (panel HOPE) no cambia en nada con esta rama.
     es_recepcion = request.user.is_superuser and bool(request.POST.get('paciente_id'))
     if es_recepcion:
+        if request.POST.get('animo') not in ESTADOS_ANIMO_RECEPCION:
+            return _error_animo_recepcion()
         try:
             usuario = User.objects.get(id=request.POST.get('paciente_id'))
         except (User.DoesNotExist, ValueError, TypeError):
@@ -4610,7 +4665,7 @@ def admin_disponibilidad_ajax(request):
 
 @user_passes_test(es_admin, login_url='/')
 @transaction.atomic
-def admin_guardar_cita_ajax(request):
+def admin_guardar_cita_ajax(request, recepcion=False):
     """
     Versión admin de guardar_cita_ajax: crea la Cita para el paciente_id que
     el admin eligió (no para request.user). Mantiene íntegra la lógica de
@@ -4618,6 +4673,9 @@ def admin_guardar_cita_ajax(request):
     """
     if request.method != 'POST':
         return JsonResponse({'status': 'error', 'message': 'Método no permitido.'}, status=405)
+
+    if recepcion and request.POST.get('animo') not in ESTADOS_ANIMO_RECEPCION:
+        return _error_animo_recepcion()
 
     paciente_id = request.POST.get('paciente_id')
     if not paciente_id:
@@ -11927,6 +11985,7 @@ def recepcion_agendar_cita(request):
             'min_integrantes_familiar': MIN_INTEGRANTES_FAMILIAR,
         }),
         # 🪑 Marca de recepción: preset de modalidad y botón de regreso
+        'paypal_client_id': settings.PAYPAL_CLIENT_ID,
         'origen_recepcion': True,
         'modalidad_inicial': modalidad_inicial,
         'volver_panel_url': reverse('panel_recepcion'),

@@ -202,6 +202,7 @@ urlpatterns = [
     path('recep-59/', views.panel_recepcion, name='panel_recepcion'),
     path('recep-59/agregar-paciente/', views.recepcion_agregar_paciente, name='recepcion_agregar_paciente'),
     path('recep-59/agendar/', views.recepcion_agendar_cita, name='recepcion_agendar_cita'),
+    path('recep-59/agendar/confirmar/', views.admin_guardar_cita_ajax, {'recepcion': True}, name='recepcion_confirmar_cita'),
     path('recep-59/agendar-online/', views.recepcion_agendar_online, name='recepcion_agendar_online'),
     path('recep-59/agendar-presencial/', views.recepcion_agendar_presencial, name='recepcion_agendar_presencial'),
     path('recep-59/citas/', views.recepcion_citas, name='recepcion_citas'),

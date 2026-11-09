@@ -4,6 +4,7 @@
 {% block title %}Agendar cita (Recepción) - HOPE{% endblock %}
 
 {% block content %}
+{% include 'includes/paypal_sdk_citas.html' with paypal_tarjetas=True %}
 {% comment %}
   Agendador administrativo HOPE · rediseño visual (sistema DESIGN.md / panel de recepción v3).
   Misma plantilla, mismas URLs, mismos endpoints y mismos nombres de parámetros que la versión anterior:
@@ -234,7 +235,7 @@
     <div class="hpa-wrap">
       <p class="hpa-saludo"><svg class="hpa-ic" aria-hidden="true"><use href="#hpa-i-heart"/></svg>Agendar cita desde recepción</p>
       <h1 id="hpa-frase">Todo lo que sientes importa, tú nos importas</h1>
-      <p class="hpa-sub">Elige la modalidad, busca al paciente, reserva su día y hora y procesa su pago (transferencia). El convenio TECTUM In-House no paga.</p>
+      <p class="hpa-sub">Elige la modalidad, busca al paciente, reserva su día y hora y procesa su pago por transferencia o PayPal. El convenio TECTUM In-House no paga.</p>
     </div>
   </section>
 
@@ -260,6 +261,10 @@
       <circle cx="640" cy="24" r="4" fill="#E8397A" stroke="none"/><circle cx="880" cy="6" r="3.5" fill="#F2703F" stroke="none"/>
     </svg>
 
+    <section class="hpa-card hpa-oculto" id="hpa-paypal-verificacion" aria-label="Verificación de pago PayPal">
+      <p id="hpa-paypal-verificacion-msg" role="status"></p>
+      <button type="button" class="hpa-btn sec" id="hpa-paypal-verificar">Verificar pago PayPal</button>
+    </section>
     <form id="hpa-form">
       {% csrf_token %}
       <div class="hpa-grid">
@@ -338,14 +343,8 @@
           </section>
 
           <section class="hpa-card hpa-disabled" id="hpa-card-animo" aria-labelledby="hpa-tanimo">
-            <h2 id="hpa-tanimo" style="font-size:18px;margin-bottom:12px">Estado de ánimo <span style="font:600 13px var(--fb);color:var(--muted)">(opcional)</span></h2>
-            <select class="hpa-select" id="hpa-animo" aria-labelledby="hpa-tanimo">
-              <option value="No especificó">No especificó</option>
-              <option value="Tranquilo">Tranquilo</option>
-              <option value="Bien">Bien</option>
-              <option value="Ansioso">Ansioso</option>
-              <option value="Triste">Triste</option>
-            </select>
+            <h2 id="hpa-tanimo" style="font-size:18px;margin-bottom:12px">Estado de ánimo (obligatorio)</h2>
+            {% include 'includes/escala_animo_cita.html' with coloreado=True etiqueta_animo='hpa-tanimo' %}
           </section>
 
           <section class="hpa-card hpa-resumen hpa-disabled" id="hpa-card-resumen" aria-labelledby="hpa-tres">
@@ -373,6 +372,10 @@
                   <input type="radio" name="hpa-metodo" id="hpa-metodo-transferencia" value="transferencia" checked style="accent-color:var(--yellow);">
                   <span style="font-weight:700; font-size:14px;">Transferencia bancaria BBVA</span>
                 </label>
+                <label style="display:flex; align-items:center; gap:10px; padding:12px 14px; border-radius:16px; background:rgba(255,255,255,.1); border:2px solid rgba(255,255,255,.25); cursor:pointer;">
+                  <input type="radio" name="hpa-metodo" value="paypal" style="accent-color:var(--yellow);">
+                  <span style="font-weight:700; font-size:14px;">PayPal · tarjeta de crédito o débito</span>
+                </label>
               </div>
               <div id="hpa-detalle-transferencia" class="hpa-oculto" style="margin-top:12px; padding:14px; border-radius:18px; background:rgba(255,255,255,.94); color:var(--ink);">
                 <p style="margin:0 0 8px; font-weight:800; font-size:13px; color:var(--purple);">Recibimos el pago en:</p>
@@ -384,6 +387,10 @@
                 <p style="margin:10px 0 6px; font-weight:700; font-size:13px;">Comprobante de pago:</p>
                 <input type="file" id="hpa-comprobante" accept="image/jpeg,image/png,image/webp,application/pdf" style="width:100%; font-size:12.5px;">
                 <p style="margin:8px 0 0; font-size:11.5px; color:var(--muted);">JPG, PNG, WebP o PDF · hasta 8 MB. Al confirmar, la cita queda agendada y el comprobante archivado para revisión.</p>
+              </div>
+              <div id="hpa-detalle-paypal" class="hpa-oculto" style="margin-top:12px;">
+                <p id="hpa-paypal-estado" role="status"></p>
+                <div id="hpa-paypal-buttons" class="hpa-oculto"></div>
               </div>
             </div>
 
@@ -429,7 +436,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const URL_BUSCAR_PACIENTES = "{% url 'admin_buscar_pacientes' %}";
     const URL_DISPONIBILIDAD = "{% url 'admin_disponibilidad_paciente' %}";
     const URL_PRECIO = "{% url 'calcular_precio_sesion' %}";
-    const URL_GUARDAR = "{% url 'admin_guardar_cita_paciente' %}";
+    const URL_GUARDAR = "{% url 'recepcion_confirmar_cita' %}";
 
     // 💳 3/11/2026 — Pasarela de pagos de recepción
     const URL_SUBIR_COMPROBANTE = "{% url 'subir_comprobante_transferencia' %}";
@@ -452,11 +459,44 @@ document.addEventListener('DOMContentLoaded', function () {
     const BTN_AGENDANDO_HTML = 'Agendando… <span class="hpa-spin" aria-hidden="true"></span>';
 
     // 💳 3/11/2026 — Estado de la forma de pago elegida en recepción.
-    // 'tarjeta' | 'transferencia' (solo HOPE) · 'tectum' (sin cobro por convenio)
+    // 'paypal' | 'transferencia' (HOPE) · 'tectum' (sin cobro por convenio)
     let metodoPago = 'transferencia';
     const pagoBox = document.getElementById('hpa-pago-box');
     const notaCobro = document.getElementById('hpa-nota-cobro');
     const detalleTransferencia = document.getElementById('hpa-detalle-transferencia');
+
+    const detallePayPal = document.getElementById('hpa-detalle-paypal');
+    const paypalButtons = document.getElementById('hpa-paypal-buttons');
+    const paypalEstado = document.getElementById('hpa-paypal-estado');
+    const radiosPago = document.querySelectorAll('input[name="hpa-metodo"]');
+    const caritas = document.querySelectorAll('#hpa-card-animo .mood-wizard-btn');
+    const seccionVerificacion = document.getElementById('hpa-paypal-verificacion');
+    const mensajeVerificacion = document.getElementById('hpa-paypal-verificacion-msg');
+    const botonVerificar = document.getElementById('hpa-paypal-verificar');
+    const datosBloqueables = document.querySelectorAll('#hpa-modos, #hpa-form .hpa-col:not(.hpa-aside), #hpa-card-animo');
+    const claveVerificacion = 'hope.recepcion.paypal';
+    let animo = '';
+    let precioActual = false;
+    let paypalOcupado = false;
+    let paypalRenderizado = false;
+    let ordenPendiente = null;
+
+    function seleccionarAnimo(valor) {
+        animo = valor;
+        caritas.forEach(function (btn) {
+            const elegido = btn.dataset.animo === animo;
+            btn.classList.toggle('selected', elegido);
+            btn.setAttribute('aria-pressed', elegido);
+        });
+    }
+
+    caritas.forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            if (!pacienteId) return;
+            seleccionarAnimo(btn.dataset.animo);
+            actualizarResumen();
+        });
+    });
 
     const cardsDependientes = ['hpa-card-convenio', 'hpa-card-tipo', 'hpa-card-calendario', 'hpa-card-animo', 'hpa-card-resumen'];
 
@@ -509,22 +549,21 @@ document.addEventListener('DOMContentLoaded', function () {
             if (lblHope) lblHope.classList.add('activo');
             if (lblTectum) lblTectum.classList.remove('activo');
             if (resumenConvenio) resumenConvenio.textContent = 'Espacio HOPE (general)';
-            // 💳 HOPE: exige cobro antes de confirmar (transferencia).
+            // HOPE: exige el pago antes de confirmar.
             metodoPago = 'transferencia';
+            document.getElementById('hpa-metodo-transferencia').checked = true;
             pagoBox.classList.remove('hpa-oculto');
-            notaCobro.textContent = 'El pago se procesa antes de confirmar: transferencia.';
+            notaCobro.textContent = 'El pago se procesa antes de confirmar.';
         }
-        detalleTransferencia.classList.toggle('hpa-oculto', metodoPago !== 'transferencia');
-        actualizarBotonConfirmar();
+        actualizarResumen();
     };
 
     // 💳 Cambio de forma de pago (radio dentro de la caja de pago)
-    document.querySelectorAll('input[name="hpa-metodo"]').forEach(function (rb) {
+    radiosPago.forEach(function (rb) {
         rb.addEventListener('change', function () {
             if (esTectumSeleccionado) return;
             metodoPago = rb.value;
-            detalleTransferencia.classList.toggle('hpa-oculto', metodoPago !== 'transferencia');
-            actualizarBotonConfirmar();
+            msgBox.classList.remove('activo', 'ok', 'error');
             actualizarResumen();
         });
     });
@@ -635,6 +674,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     function elegirPaciente(p) {
+        seleccionarAnimo('');
         pacienteId = p.id;
         nombrePaciente = p.nombre || '';
         document.getElementById('hpa-paciente-nombre').textContent = p.nombre;
@@ -659,6 +699,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     document.getElementById('hpa-cambiar-paciente').addEventListener('click', function () {
         pacienteId = null;
+        seleccionarAnimo('');
         nombrePaciente = '';
         pacienteElegidoBox.classList.remove('activo');
         cardsDependientes.forEach(function (id) { document.getElementById(id).classList.add('hpa-disabled'); });
@@ -760,19 +801,27 @@ document.addEventListener('DOMContentLoaded', function () {
         const horaEl = document.getElementById('hpa-resumen-hora');
         horaEl.textContent = horaSeleccionada || 'Sin seleccionar';
         horaEl.classList.toggle('sin', !horaSeleccionada);
-        btnConfirmar.disabled = !(pacienteId && fechaSeleccionada && horaSeleccionada);
+        const listo = citaLista();
+        const usaPayPal = metodoPago === 'paypal';
+        btnConfirmar.disabled = !listo || usaPayPal;
+        btnConfirmar.classList.toggle('hpa-oculto', usaPayPal);
+        pagoBox.inert = !listo;
+        detalleTransferencia.classList.toggle('hpa-oculto', metodoPago !== 'transferencia');
+        detallePayPal.classList.toggle('hpa-oculto', !usaPayPal);
         actualizarBotonConfirmar();
+        actualizarPayPal(listo && usaPayPal);
 
         const faltan = [];
         if (!pacienteId) faltan.push('paciente');
         if (!fechaSeleccionada) faltan.push('día');
         if (!horaSeleccionada) faltan.push('hora');
+        if (!animo) faltan.push('estado de ánimo');
         if (faltan.length) {
             faltanteEl.textContent = 'Falta elegir: ' + faltan.join(', ') + '.';
         } else if (!esTectumSeleccionado) {
             faltanteEl.textContent = metodoPago === 'transferencia'
                 ? 'Todo listo: se agendará al subir el comprobante de transferencia.'
-                : 'Importe de la transferencia: ' + document.getElementById('hpa-precio-total').textContent + '.';
+                : 'Completa el pago para confirmar la cita.';
         } else {
             faltanteEl.textContent = 'Todo listo para confirmar (sin cobro, convenio TECTUM).';
         }
@@ -781,8 +830,14 @@ document.addEventListener('DOMContentLoaded', function () {
     // ------------------------------------------------------------------
     // Disponibilidad del paciente elegido (endpoint admin)
     // ------------------------------------------------------------------
+    let consultaDisponibilidad = 0;
+
     function fetchDisponibilidad() {
+        const consulta = ++consultaDisponibilidad;
         if (!pacienteId) return;
+        fechaSeleccionada = null;
+        horaSeleccionada = null;
+        actualizarResumen();
         diasScroll.innerHTML = '<div class="hpa-vacio hpa-cargando"><span class="hpa-spin" aria-hidden="true"></span>Buscando horarios…</div>';
         horasGrid.innerHTML = '';
         avisoBox.classList.remove('activo');
@@ -797,6 +852,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 });
             })
             .then(function (data) {
+                if (consulta !== consultaDisponibilidad || !pacienteId) return;
                 console.log('[disponibilidad] Payload recibido:', data);
                 if (data.status === 'success') {
                     diasDisponibles = data.dias || {};
@@ -817,12 +873,18 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             })
             .catch(function (err) {
+                if (consulta !== consultaDisponibilidad || !pacienteId) return;
                 console.error('[disponibilidad] Excepción en fetch:', err);
                 diasScroll.innerHTML = '<div class="hpa-vacio">No pudimos conectarnos para ver los horarios. Revisa tu conexión e intenta de nuevo.</div>';
             });
     }
 
+    let consultaPrecio = 0;
+
     function fetchPrecio() {
+        const consulta = ++consultaPrecio;
+        precioActual = false;
+        actualizarResumen();
         const params = new URLSearchParams({ tipo_sesion: tipoSesion });
         if (tipoSesion === 'familiar') {
             params.set('integrantes_familia', integrantesFamilia);
@@ -830,11 +892,14 @@ document.addEventListener('DOMContentLoaded', function () {
         fetch(URL_PRECIO + '?' + params.toString())
             .then(function (r) { return r.json(); })
             .then(function (data) {
+                if (consulta !== consultaPrecio) return;
                 if (data.status === 'success') {
+                    precioActual = true;
                     document.getElementById('hpa-precio-subtotal').textContent = formatoMoneda(data.subtotal);
                     document.getElementById('hpa-precio-comision').textContent = formatoMoneda(data.comision);
                     document.getElementById('hpa-precio-total').textContent = formatoMoneda(data.total);
                 }
+                actualizarResumen();
             })
             .catch(function (err) { console.error('[precio] Excepción en fetch:', err); });
     }
@@ -877,22 +942,19 @@ document.addEventListener('DOMContentLoaded', function () {
     // ------------------------------------------------------------------
     document.getElementById('hpa-form').addEventListener('submit', function (e) {
         e.preventDefault();
-        if (!pacienteId || !fechaSeleccionada || !horaSeleccionada) return;
+        if (!citaLista() || metodoPago === 'paypal') return;
 
         msgBox.classList.remove('activo', 'ok', 'error');
 
         if (esTectumSeleccionado) { agendarSinCobro(); return; }
-        if (metodoPago === 'transferencia') { agendarConComprobante(); return; }
-
-        msgBox.textContent = 'Elige la forma de pago (transferencia) antes de confirmar.';
-        msgBox.classList.add('activo', 'error');
+        if (metodoPago === 'transferencia') agendarConComprobante();
     });
 
     function armarDatosComunes(formData) {
         formData.append('paciente_id', pacienteId);
         formData.append('fecha', fechaSeleccionada);
         formData.append('hora', convertirHoraA24(horaSeleccionada));
-        formData.append('animo', document.getElementById('hpa-animo').value);
+        formData.append('animo', animo);
         formData.append('modalidad', modalidad);
         formData.append('tipo_servicio', tipoSesion);
         formData.append('es_tectum', esTectumSeleccionado ? '1' : '0');
@@ -907,15 +969,148 @@ document.addEventListener('DOMContentLoaded', function () {
         btnConfirmar.innerHTML = texto + '… <span class="hpa-spin" aria-hidden="true"></span>';
     }
 
-    function mostrarExito(texto) {
+    function mostrarExito(texto, mostrarResumen = true) {
         document.getElementById('hpa-exito-texto').textContent = texto;
-        document.getElementById('hpa-exito-datos').innerHTML =
+        document.getElementById('hpa-exito-datos').innerHTML = mostrarResumen ?
             '<span>' + esc(nombrePaciente) + '</span><span>' + esc(modalidad) + '</span><span>' +
-            esc(fechaHumana(fechaSeleccionada)) + '</span><span>' + esc(horaSeleccionada) + '</span>';
+            esc(fechaHumana(fechaSeleccionada)) + '</span><span>' + esc(horaSeleccionada) + '</span>' : '';
         document.getElementById('hpa-form').style.display = 'none';
         document.getElementById('hpa-modos').classList.add('hpa-oculto');
         document.getElementById('hpa-exito').classList.add('activo');
         document.getElementById('hpa-exito').scrollIntoView({ block: 'center' });
+    }
+
+    function citaLista() {
+        return Boolean(pacienteId && fechaSeleccionada && horaSeleccionada && animo);
+    }
+
+    function mostrarErrorPayPal(mensaje) {
+        msgBox.textContent = mensaje;
+        msgBox.classList.add('activo', 'error');
+    }
+
+    function bloquearDatosPayPal(ocupado) {
+        paypalOcupado = ocupado;
+        datosBloqueables.forEach(function (elemento) { elemento.inert = ocupado; });
+        radiosPago.forEach(function (radio) { radio.disabled = ocupado; });
+    }
+
+    async function enviarPayPal(url, body) {
+        const respuesta = await fetch(url, {
+            method: 'POST', headers: { 'X-CSRFToken': csrfToken }, body: body
+        });
+        const datos = await respuesta.json();
+        return { http: respuesta.status, ...datos };
+    }
+
+    function datosOrden(orden) {
+        return new URLSearchParams({ orden: orden.id, paciente_id: orden.paciente });
+    }
+
+    function guardarVerificacion(orden) {
+        ordenPendiente = orden;
+        try {
+            if (orden) sessionStorage.setItem(claveVerificacion, JSON.stringify(orden));
+            else sessionStorage.removeItem(claveVerificacion);
+        } catch (error) {
+            console.warn('No se pudo conservar la referencia de PayPal en esta pestaña.', error);
+        }
+        seccionVerificacion.classList.toggle('hpa-oculto', !orden);
+        if (orden) mensajeVerificacion.textContent = 'Verifica el pago de la orden ' + orden.id + ' antes de hacer otro cobro.';
+    }
+
+    async function verificarPago(orden, actions, mostrarResumen) {
+        guardarVerificacion(orden);
+        botonVerificar.disabled = true;
+        try {
+            const datos = await enviarPayPal("{% url 'capturar_orden_cita_paypal' %}", datosOrden(orden));
+            if (datos.status === 'success') {
+                guardarVerificacion(null);
+                mostrarExito(datos.modalidad === 'Presencial'
+                    ? 'Pago confirmado. El paciente recibirá su pase de acceso por correo.'
+                    : 'Pago confirmado. El paciente recibirá la confirmación de su cita en línea por correo.',
+                    mostrarResumen);
+                return;
+            }
+            if (datos.reintentar_metodo && actions) {
+                guardarVerificacion(null);
+                return actions.restart();
+            }
+            if (datos.http < 500) {
+                guardarVerificacion(null);
+                bloquearDatosPayPal(false);
+                mostrarErrorPayPal(datos.message || 'No se pudo confirmar el pago.');
+                if (datos.http === 409 && !datos.reintentar_metodo) fetchDisponibilidad();
+                return;
+            }
+            mensajeVerificacion.textContent = datos.message;
+        } catch (error) {
+            mensajeVerificacion.textContent = 'No pudimos verificar la orden ' + orden.id + '. Verifica su estado antes de volver a pagar.';
+        } finally {
+            botonVerificar.disabled = false;
+            actualizarResumen();
+        }
+    }
+
+    botonVerificar.addEventListener('click', function () {
+        if (ordenPendiente) verificarPago(ordenPendiente, null, citaLista());
+    });
+
+    function actualizarPayPal(visible) {
+        const mostrarBotones = visible && precioActual && !ordenPendiente;
+        paypalButtons.classList.toggle('hpa-oculto', !mostrarBotones);
+        if (!mostrarBotones) {
+            paypalEstado.textContent = visible && !ordenPendiente ? 'Consultando el importe…' : '';
+            return;
+        }
+        if (paypalRenderizado) return;
+        if (!window.paypal) {
+            paypalEstado.textContent = 'No se pudo cargar PayPal. Recarga la página o usa transferencia.';
+            return;
+        }
+        paypalRenderizado = true;
+        paypalEstado.textContent = 'Cargando pago seguro…';
+        let orden;
+        window.paypal.Buttons({
+            onClick: function (data, actions) {
+                if (!citaLista() || metodoPago !== 'paypal' || !precioActual || paypalOcupado) return actions.reject();
+                orden = null;
+                msgBox.classList.remove('activo', 'error');
+                return actions.resolve();
+            },
+            createOrder: async function () {
+                if (!citaLista() || metodoPago !== 'paypal' || !precioActual || ordenPendiente) {
+                    throw new Error('Selecciona un horario y estado de ánimo antes de pagar.');
+                }
+                const paciente = pacienteId;
+                bloquearDatosPayPal(true);
+                const datos = await enviarPayPal("{% url 'crear_orden_cita_paypal' %}", armarDatosComunes(new FormData()));
+                if (datos.status !== 'success') throw new Error(datos.message || 'No se pudo reservar el horario.');
+                orden = { id: datos.orden, paciente: paciente };
+                return orden.id;
+            },
+            onApprove: function (data, actions) {
+                return verificarPago({ id: data.orderID, paciente: orden.paciente }, actions, true);
+            },
+            onCancel: async function () {
+                try {
+                    if (orden) await enviarPayPal("{% url 'cancelar_reserva_paypal' %}", datosOrden(orden));
+                } catch (error) {
+                    mostrarErrorPayPal('PayPal se cerró. Si el horario sigue reservado, inténtalo de nuevo en ese horario.');
+                } finally {
+                    orden = null;
+                    bloquearDatosPayPal(false);
+                }
+            },
+            onError: function (error) {
+                if (!ordenPendiente) bloquearDatosPayPal(false);
+                mostrarErrorPayPal(error.message || 'No se pudo abrir el pago en PayPal. Intenta de nuevo.');
+            }
+        }).render('#hpa-paypal-buttons').then(function () {
+            paypalEstado.textContent = '';
+        }).catch(function () {
+            paypalEstado.textContent = 'No se pudo cargar PayPal. Recarga la página o usa transferencia.';
+        });
     }
 
     // ------------------------------------------------------------------
@@ -1003,6 +1198,16 @@ document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('hpa-otra-cita').addEventListener('click', function () {
         window.location.href = window.location.pathname + '?modalidad=' + (modalidad === 'Presencial' ? 'presencial' : 'online');
     });
+
+    try {
+        const ordenGuardada = JSON.parse(sessionStorage.getItem(claveVerificacion));
+        if (ordenGuardada) {
+            guardarVerificacion(ordenGuardada);
+            bloquearDatosPayPal(true);
+        }
+    } catch (error) {
+        console.warn('No se pudo recuperar la referencia de PayPal.', error);
+    }
 
     actualizarResumen();
 });

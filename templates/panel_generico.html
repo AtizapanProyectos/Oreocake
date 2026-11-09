@@ -6,7 +6,7 @@
 {% block content %}
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 <link rel="stylesheet" type="text/css" href="https://npmcdn.com/flatpickr/dist/themes/airbnb.css">
-<script src="https://www.paypal.com/sdk/js?client-id={{ paypal_client_id }}&currency=MXN" defer></script>
+{% include 'includes/paypal_sdk_citas.html' %}
 {{ dias_disponibles_json|json_script:"dias-data" }}
 {% csrf_token %}
 
@@ -1053,17 +1053,7 @@ function mostrarErrorCita(mensaje, opts) {
                     <p style="margin: 0 0 10px; font-size: 13.5px; font-weight: 700; color: var(--text-main); font-family: var(--font-body);">
                         ¿Cómo te sientes hoy? <span style="font-weight: 500; color: var(--text-muted);">(opcional)</span>
                     </p>
-                    <div id="mood-wizard-row" style="display: flex; align-items: center; justify-content: center; gap: 26px; flex-wrap: wrap;">
-                        <button type="button" class="mood-wizard-btn" data-animo="Muy mal" title="Muy mal" style="font-size: 30px; background: none; border: none; cursor: pointer; color: #cbd5e1; transition: 0.25s; line-height: 1;"><i class="fas fa-sad-cry"></i></button>
-                        <button type="button" class="mood-wizard-btn" data-animo="Triste" title="Triste" style="font-size: 30px; background: none; border: none; cursor: pointer; color: #cbd5e1; transition: 0.25s; line-height: 1;"><i class="fas fa-frown"></i></button>
-                        <button type="button" class="mood-wizard-btn" data-animo="Normal" title="Normal" style="font-size: 30px; background: none; border: none; cursor: pointer; color: #cbd5e1; transition: 0.25s; line-height: 1;"><i class="fas fa-meh"></i></button>
-                        <button type="button" class="mood-wizard-btn" data-animo="Bien" title="Bien" style="font-size: 30px; background: none; border: none; cursor: pointer; color: #cbd5e1; transition: 0.25s; line-height: 1;"><i class="fas fa-smile"></i></button>
-                        <button type="button" class="mood-wizard-btn" data-animo="Excelente" title="Excelente" style="font-size: 30px; background: none; border: none; cursor: pointer; color: #cbd5e1; transition: 0.25s; line-height: 1;"><i class="fas fa-grin-stars"></i></button>
-                    </div>
-                    <style>
-                        #mood-wizard-row .mood-wizard-btn:hover { transform: scale(1.25); color: var(--c-yellow); }
-                        #mood-wizard-row .mood-wizard-btn.selected { transform: scale(1.25); color: var(--c-purple); }
-                    </style>
+                    {% include 'includes/escala_animo_cita.html' %}
                 </div>
 
                     <!-- El selector de modalidad ahora vive en el paso 1 (encima del
