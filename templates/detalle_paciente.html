@@ -520,7 +520,7 @@
                                 <i class="fas fa-align-left" aria-hidden="true"></i> {% if grabacion.transcripcion_anterior %}Ver transcripción anterior{% else %}Ver transcripción{% endif %}
                             </button>
                             {% endif %}
-                            <a class="analisis-revisar" href="{% url 'grabacion_sesion' sesion.cita.id %}">Abrir grabadora</a>
+                            <a class="analisis-revisar" href="{% url 'grabacion_sesion' sesion.cita.id %}#transcripcion-en-vivo-{{ sesion.cita.id }}">{% if grabacion.transcripcion and not grabacion.transcripcion_anterior %}Preparar notas desde el texto{% else %}Abrir grabadora{% endif %}</a>
                         </div>
                         {% if grabacion.transcripcion %}
                         <dialog class="archivo-transcripcion" id="transcripcion-{{ slug }}" aria-labelledby="titulo-transcripcion-{{ slug }}">

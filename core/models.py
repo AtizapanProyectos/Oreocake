@@ -6,7 +6,7 @@ from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 
-from .almacen_grabaciones import almacen_grabaciones
+from .almacen_grabaciones import almacen_grabaciones, almacen_transcripciones
 
 
 def _sumar_meses(fecha, meses):
@@ -381,7 +381,10 @@ class HistorialClinico(models.Model):
     recomendaciones = models.TextField(blank=True, null=True, verbose_name="5. Recomendaciones generales")
     archivo_adjunto = models.FileField(upload_to='bitacoras_adjuntos/', blank=True, null=True, verbose_name="Documento Escaneado o Foto")
     pendiente_revision_audio = models.BooleanField(default=False)
-    transcripcion_meet = models.FileField(upload_to='transcripciones_meet/', blank=True, null=True, verbose_name="Transcripción de Meet")
+    transcripcion_meet = models.FileField(
+        upload_to='transcripciones_meet/', storage=almacen_transcripciones,
+        blank=True, null=True, verbose_name="Transcripción de Meet",
+    )
     diagnostico_temporal = models.CharField(max_length=250, blank=True, null=True)
     fecha_registro = models.DateTimeField(auto_now_add=True, db_index=True) # 🔥 OPTIMIZADO: list_filter rápido
 

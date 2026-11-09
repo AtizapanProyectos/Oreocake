@@ -10,6 +10,8 @@
         let activo=false, grabando=false, ocupado=false, version='', recorder, timer, context, frame;
         const estadoGuardado = panel.querySelector('[data-vivo-guardado]');
         const guardar = panel.querySelector('[data-vivo-guardar]');
+        const restaurar = panel.querySelector('[data-vivo-restaurar]');
+        restaurar.hidden = box.dataset.guardada !== '1';
         let cola=[], enviando=false, numero=0, esperandoUltimo=false;
         let textoGuardado='', guardados=Promise.resolve(true);
         function estadoPersistencia(mensaje, tipo) {
@@ -19,6 +21,8 @@
         function actualizarAcciones() {
             generar.disabled = ocupado || grabando || esperandoUltimo || enviando || cola.length > 0 || !version;
             guardar.disabled = ocupado || grabando || !version || !texto.value.trim();
+            restaurar.disabled = ocupado || grabando || esperandoUltimo || enviando || cola.length > 0
+                || texto.value.trim() !== textoGuardado;
         }
         function guardarTexto() {
             const actual = texto.value.trim(), origen = version;
@@ -86,7 +90,7 @@
         }
         panel.querySelector('[data-vivo-reintentar]').onclick=consumir;
         const api={
-            puedeIniciar() {return !esperandoUltimo && !enviando && cola.length===0 && (!version || texto.value.trim()===textoGuardado);},
+            puedeIniciar() {return !ocupado && !esperandoUltimo && !enviando && cola.length===0 && (!version || texto.value.trim()===textoGuardado);},
             iniciar(stream) {
                 grabando=activo=true; cola=[]; numero=0; texto.readOnly=true;
                 api.limpiar();
@@ -120,6 +124,31 @@
             const enlace = document.createElement('a'); enlace.href = url; enlace.download = 'transcripcion.txt'; enlace.click();
             setTimeout(() => URL.revokeObjectURL(url), 1000);
         };
+        restaurar.onclick = async () => {
+            ocupado = true;
+            actualizarAcciones();
+            texto.readOnly = true;
+            estadoPersistencia('Cargando texto guardado…', 'cargando');
+            try {
+                const res = await fetch(box.dataset.urlTexto, {
+                    cache:'no-store', signal:AbortSignal.timeout(12000),
+                });
+                if (!res.headers.get('content-type')?.includes('application/json')) throw Error('No se pudo consultar la transcripción.');
+                const datos = await res.json();
+                if (!res.ok) throw Error(datos.mensaje);
+                version = datos.version_audio;
+                texto.value = datos.transcripcion;
+                textoGuardado = texto.value.trim();
+                panel.querySelector('[data-vivo-revisado]').checked = false;
+                estadoPersistencia('Transcripción recuperada del expediente.', 'listo');
+            } catch (error) {
+                estadoPersistencia(error.message, 'error');
+            } finally {
+                texto.readOnly = false;
+                ocupado = false;
+                actualizarAcciones();
+            }
+        };
         async function enviar(datos, origen = version) {
             const token = document.cookie.split('; ').find(c => c.startsWith('csrftoken='))?.slice(10);
             const res = await fetch(box.dataset.urlTexto, {method:'POST', credentials:'same-origin',
@@ -137,30 +166,14 @@
             ocupado = true; actualizarAcciones(); texto.readOnly = true;
             box.querySelector('.gsn-rec-start').disabled = true; box.querySelector('.gsn-rec-archivo').disabled = true;
             barra.hidden = false; barra.value = 0;
-            const completo = texto.value;
             try {
                 if (!(await guardarTexto())) {
-                    mensaje('Guarda la transcripción antes de generar las notas.');
+                    mensaje('Guarda la transcripción antes de generar las notas.', 'error');
                     return;
                 }
-                let evidencia = [];
-                const bloques = Math.ceil(completo.length / 10000);
-                for (let i = 0; i < bloques; i++) {
-                    mensaje(`Analizando texto ${i+1} de ${bloques} · ${Math.round(70*i/bloques)}%`);
-                    evidencia.push((await enviar({accion:'fragmento',texto:completo.slice(i*10000,(i+1)*10000)})).evidencia);
-                    barra.value = Math.round(70*(i+1)/bloques);
-                }
-                let resumen = evidencia.join('\n');
-                while (resumen.length > 10000) {
-                    mensaje('Consolidando evidencia de toda la sesión · 80%', 'cargando'); barra.value = 80;
-                    let reducidos = [];
-                    for (let i = 0; i < resumen.length; i += 10000) reducidos.push((await enviar({accion:'fragmento',texto:resumen.slice(i,i+10000)})).evidencia);
-                    const siguiente = reducidos.join('\n');
-                    if (siguiente.length >= resumen.length) throw Error('No se pudo consolidar el texto. Conserva la transcripción y reintenta.');
-                    resumen = siguiente;
-                }
-                mensaje('Generando borrador clínico · 90%', 'cargando'); barra.value = 90;
-                const datos = await enviar({accion:'finalizar', texto:resumen, transcripcion:completo});
+                mensaje('Generando borrador con los pasajes relevantes…', 'cargando');
+                barra.value = 30;
+                const datos = await enviar({accion:'generar'});
                 salida.textContent = Object.entries(datos.notas).map(([campo, valor]) => `${campo.replaceAll('_',' ')}\n${valor || 'Sin evidencia'}\n`).join('\n');
                 barra.value = 100; mensaje('100% · Borrador guardado. Abre o recarga el expediente para revisar y guardar las notas clínicas.', 'listo');
             } catch (error) { mensaje(error.name === 'TimeoutError' ? 'El paso tardó demasiado. Tu texto sigue disponible; puedes reintentar.' : error.message, 'error'); }

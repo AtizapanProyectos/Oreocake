@@ -5470,6 +5470,24 @@ def analisis_grabacion_clinica(request, cita_id):
     return respuesta
 
 
+def descargar_transcripcion_historial(request, nombre):
+    if not request.user.is_authenticated:
+        raise Http404
+    historiales = HistorialClinico.objects.filter(transcripcion_meet=nombre)
+    if not request.user.is_superuser:
+        historiales = historiales.filter(psicologo__usuario=request.user)
+    historial = historiales.only('transcripcion_meet').first()
+    if historial is None:
+        raise Http404
+    try:
+        archivo = historial.transcripcion_meet.open('rb')
+    except FileNotFoundError as error:
+        raise Http404 from error
+    respuesta = FileResponse(archivo, as_attachment=True)
+    respuesta['Cache-Control'] = 'private, no-store'
+    return respuesta
+
+
 def descargar_transcripcion_presencial(request, cita_id):
     cita = _cita_grabacion_autorizada(request, cita_id)
     grabacion = get_object_or_404(GrabacionSesion, cita=cita)

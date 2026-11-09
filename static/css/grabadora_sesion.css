@@ -16,6 +16,7 @@
 .gsn-rec-stop { background: #fcebf0; color: #8b2544; border-color: #f3ccda; }
 .gsn-rec-sec, .gsn-rec-descargar { background: #f2ebfc; color: #493483; border-color: var(--gs-border); }
 .gsn-rec-sec:hover, .gsn-rec-descargar:hover { background: #e8dcf7; color: #38236a; }
+.gsn-rec-btn[hidden] { display: none; }
 .gsn-rec-btn:disabled { opacity: .56; cursor: not-allowed; }
 .gsn-rec :focus-visible { outline: 2px solid var(--gs-purple); outline-offset: 3px; }
 .gsn-rec-carga, .gsn-vivo-nivel, .gsn-vivo-texto { display: grid; gap: 6px; font-weight: 700; }

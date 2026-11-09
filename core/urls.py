@@ -223,6 +223,7 @@ urlpatterns = [
     path('api/estado-grabacion-sesion/<int:cita_id>/', views.estado_grabacion_sesion, name='estado_grabacion_sesion'),
     path('api/analisis-grabacion/<int:cita_id>/', views.analisis_grabacion_clinica, name='analisis_grabacion_clinica'),
     path('api/notas-texto-grabacion/<int:cita_id>/', notas_desde_texto, name='notas_texto_grabacion'),
+    path('transcripcion-historial/<path:nombre>/', views.descargar_transcripcion_historial, name='descargar_transcripcion_historial'),
     path('transcripcion-presencial/<int:cita_id>/', views.descargar_transcripcion_presencial, name='descargar_transcripcion_presencial'),
     path('audio-grabacion-sesion/<int:cita_id>/', views.audio_grabacion_sesion, name='audio_grabacion_sesion'),
     path('api/guardar-grabacion-sesion/<int:cita_id>/', views.api_guardar_grabacion_sesion, name='api_guardar_grabacion_sesion'),

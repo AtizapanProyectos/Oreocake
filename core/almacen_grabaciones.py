@@ -2,6 +2,7 @@ import os
 
 from django.conf import settings
 from django.core.files.storage import FileSystemStorage, default_storage
+from django.urls import reverse
 from django.utils.deconstruct import deconstructible
 
 
@@ -31,4 +32,11 @@ class AlmacenGrabaciones(FileSystemStorage):
         raise NotImplementedError("La descarga requiere autorización.")
 
 
+@deconstructible
+class AlmacenTranscripciones(AlmacenGrabaciones):
+    def url(self, name):
+        return reverse('descargar_transcripcion_historial', args=[name])
+
+
 almacen_grabaciones = AlmacenGrabaciones()
+almacen_transcripciones = AlmacenTranscripciones()

@@ -162,6 +162,56 @@ class SesionPresencialTests(TestCase):
         solicitar.assert_not_called()
 
     @patch.dict('os.environ', {'GROQ_API_KEY': 'prueba'})
+    @patch('core.transcripcion_navegador._solicitar')
+    def test_reabrir_texto_reintentar_y_archivar_borrador_privado(self, solicitar):
+        self.client.force_login(self.doctor)
+        version = self.subir(texto_navegador='1').json()['version_audio']
+        url = self.url('notas_texto_grabacion')
+        transcripcion = (
+            'Al inicio: me siento tranquila.\n'
+            + '\n'.join(f'Conversación de prueba {i} con contexto neutro.' for i in range(400))
+            + '\nAprendí una técnica.\nPara la próxima sesión acordamos practicar.'
+        )
+        self.assertEqual(self.client.post(url, {
+            'accion': 'guardar', 'version_audio': version, 'transcripcion': transcripcion,
+        }, content_type='application/json').status_code, 200)
+        self.client.logout()
+        self.client.force_login(self.doctor)
+        recuperada = self.client.get(url)
+        self.assertEqual(recuperada.json(), {'transcripcion': transcripcion, 'version_audio': version})
+        self.assertIn('no-store', recuperada['Cache-Control'])
+
+        def generar():
+            return self.client.post(url, {'accion': 'generar', 'version_audio': version},
+                                    content_type='application/json')
+
+        solicitar.side_effect = ValueError('Respuesta incompleta del modelo')
+        self.assertEqual(generar().status_code, 502)
+        self.assertEqual(self.client.get(url).json()['transcripcion'], transcripcion)
+        self.assertFalse(HistorialClinico.objects.filter(cita=self.cita).exists())
+        solicitar.reset_mock()
+        solicitar.side_effect = [ValueError(), json.dumps({'notas_sesion': 'Borrador para revisar'})]
+        respuesta = generar()
+        self.assertEqual(respuesta.status_code, 200, respuesta.content)
+        self.assertEqual(solicitar.call_count, 2)
+        evidencia = solicitar.call_args.args[2]
+        self.assertLessEqual(len(evidencia), 9000)
+        self.assertIn('Al inicio', evidencia)
+        self.assertIn('acordamos practicar', evidencia)
+        historial = HistorialClinico.objects.get(cita=self.cita)
+        self.assertTrue(historial.pendiente_revision_audio)
+        self.assertEqual(historial.notas_sesion, 'Borrador para revisar')
+        self.cita.refresh_from_db()
+        self.assertEqual(self.cita.estado, 'Confirmada')
+        archivo = historial.transcripcion_meet.url
+        descarga = self.client.get(archivo)
+        self.assertEqual(descarga.status_code, 200)
+        self.assertEqual(b''.join(descarga.streaming_content).decode('utf-8-sig'), transcripcion)
+        self.client.force_login(self.otro)
+        self.assertEqual(self.client.get(archivo).status_code, 404)
+        self.assertEqual(self.client.get(url).status_code, 404)
+
+    @patch.dict('os.environ', {'GROQ_API_KEY': 'prueba'})
     @patch('groq.Groq')
     def test_fragmento_remoto_autorizacion_y_error(self, groq):
         self.client.force_login(self.doctor)

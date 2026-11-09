@@ -47,7 +47,7 @@
             Cargar grabación
             <input type="file" class="gsn-rec-archivo" accept=".webm,.ogg,.wav,.mp3,.m4a,.mp4">
         </label>
-        <section class="gsn-vivo">
+        <section class="gsn-vivo" id="transcripcion-en-vivo-{{ cita.id }}">
             <h4><i class="fas fa-align-left" aria-hidden="true"></i> Transcripción en vivo</h4>
             <p>El texto aparece por fragmentos mientras se conserva la grabación completa.</p>
             <label class="gsn-vivo-nivel">Nivel del micrófono <meter min="0" max="100" value="0"></meter></label>
@@ -57,6 +57,7 @@
             </label>
             <p class="gsn-aviso" data-vivo-guardado role="status"></p>
             <div class="gsn-rec-actions">
+                <button type="button" class="gsn-rec-btn gsn-rec-sec" data-vivo-restaurar hidden>Cargar texto guardado</button>
                 <button type="button" class="gsn-rec-btn gsn-rec-sec" data-vivo-reintentar>Reintentar fragmentos</button>
                 <button type="button" class="gsn-rec-btn gsn-rec-sec" data-vivo-descargar>Descargar texto</button>
                 <button type="button" class="gsn-rec-btn gsn-rec-sec" data-vivo-guardar disabled>Guardar transcripción</button>
