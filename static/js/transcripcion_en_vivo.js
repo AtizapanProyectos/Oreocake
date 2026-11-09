@@ -7,30 +7,38 @@
         const generar = panel.querySelector('[data-vivo-generar]');
         const salida = panel.querySelector('[data-vivo-notas]');
         const barra = panel.querySelector('progress');
-        let activo=false, grabando=false, ocupado=false, version='', recorder, timer, context, frame;
+        let activo=false, grabando=false, ocupado=false, version=box.dataset.versionAudio || '', recorder, timer, context, frame;
         const estadoGuardado = panel.querySelector('[data-vivo-guardado]');
         const guardar = panel.querySelector('[data-vivo-guardar]');
         const restaurar = panel.querySelector('[data-vivo-restaurar]');
         restaurar.hidden = box.dataset.guardada !== '1';
         let cola=[], enviando=false, numero=0, esperandoUltimo=false;
-        let textoGuardado='', guardados=Promise.resolve(true);
+        let textoGuardado='', guardados=Promise.resolve(true), guardadoManual=false;
         function estadoPersistencia(mensaje, tipo) {
             estadoGuardado.textContent = mensaje;
             estadoGuardado.dataset.estado = tipo;
         }
         function actualizarAcciones() {
-            generar.disabled = ocupado || grabando || esperandoUltimo || enviando || cola.length > 0 || !version;
-            guardar.disabled = ocupado || grabando || !version || !texto.value.trim();
+            generar.disabled = ocupado || grabando || esperandoUltimo || enviando || cola.length > 0 || !version || !texto.value.trim();
+            guardar.disabled = ocupado || grabando || guardadoManual;
             restaurar.disabled = ocupado || grabando || esperandoUltimo || enviando || cola.length > 0
                 || texto.value.trim() !== textoGuardado;
         }
-        function guardarTexto() {
+        function guardarTexto(manual = false) {
             const actual = texto.value.trim(), origen = version;
-            if (!actual || !origen || grabando) return Promise.resolve(false);
+            if (!actual || !origen || grabando) {
+                if (manual) estadoPersistencia(
+                    !actual ? 'Agrega o carga una transcripción antes de guardar.'
+                        : 'Detén la grabación y espera a que el audio se guarde antes de guardar el texto.', 'pendiente');
+                return Promise.resolve(false);
+            }
             // Serializa instantáneas: un fragmento tardío no pisa uno más nuevo.
             guardados = guardados.then(async () => {
                 if (origen !== version) return false;
-                if (actual === textoGuardado) return true;
+                if (actual === textoGuardado) {
+                    if (manual) estadoPersistencia('Esta transcripción ya está guardada en el expediente.', 'listo');
+                    return true;
+                }
                 estadoPersistencia('Guardando transcripción…', 'cargando');
                 try {
                     if (actual.length > 500000) throw Error('La transcripción supera el límite de 500.000 caracteres.');
@@ -48,7 +56,16 @@
             });
             return guardados;
         }
-        guardar.onclick = guardarTexto;
+        guardar.onclick = async () => {
+            guardadoManual = true;
+            actualizarAcciones();
+            try {
+                await guardarTexto(true);
+            } finally {
+                guardadoManual = false;
+                actualizarAcciones();
+            }
+        };
         texto.addEventListener('input', () => {
             actualizarAcciones();
             if (version && texto.value.trim() !== textoGuardado) estadoPersistencia('Hay cambios sin guardar.', 'pendiente');
@@ -110,6 +127,7 @@
                 if(recorder && recorder.state!=='inactive') recorder.stop(); texto.readOnly=false;},
             guardado(data){
                 version=data.version_audio||'';
+                restaurar.hidden = !version;
                 actualizarAcciones();
                 if (texto.value.trim()) guardarTexto();
             },
@@ -183,6 +201,7 @@
         window.addEventListener('beforeunload', event => {
             if (grabando || activo || ocupado || esperandoUltimo || cola.length || texto.value.trim() !== textoGuardado) { event.preventDefault(); event.returnValue = ''; }
         });
+        actualizarAcciones();
         return api;
     };
 })();

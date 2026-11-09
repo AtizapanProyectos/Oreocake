@@ -31,6 +31,8 @@ vm.runInNewContext(fs.readFileSync('static/js/transcripcion_en_vivo.js','utf8'),
 });
 (async()=>{
  const api=window.HopeTranscripcion(box);
+ await nodo('[data-vivo-guardar]').onclick();
+ assert.match(nodo('[data-vivo-guardado]').textContent,/Agrega o carga/);
  api.iniciar({}); await api.detener();
  await new Promise(r=>setTimeout(r,10));
  assert.equal(api.puedeIniciar(),false);
@@ -47,5 +49,19 @@ vm.runInNewContext(fs.readFileSync('static/js/transcripcion_en_vivo.js','utf8'),
  await nodo('[data-vivo-guardar]').onclick();
  assert.equal(nodo('[data-vivo-guardado]').dataset.estado,'listo');
  assert.equal(api.puedeIniciar(),true);
- console.log('OK: fragmento retenido tras fallo y recuperado mediante reintento.');
+ await nodo('[data-vivo-guardar]').onclick();
+ assert.match(nodo('[data-vivo-guardado]').textContent,/ya está guardada/);
+ assert.equal(guardados.length, 2);
+
+ // Recargar la página no exige grabar de nuevo para guardar un texto editado.
+ box.dataset.versionAudio = 'archivo.wav';
+ nodo('textarea').value = 'Texto corregido después de recargar';
+ window.HopeTranscripcion(box);
+ assert.equal(nodo('[data-vivo-guardar]').disabled, false);
+ await nodo('[data-vivo-guardar]').onclick();
+ assert.deepEqual(guardados.at(-1), {
+  accion:'guardar', transcripcion:'Texto corregido después de recargar', version_audio:'archivo.wav',
+ });
+ assert.equal(nodo('[data-vivo-guardado]').dataset.estado,'listo');
+ console.log('OK: guardado manual, reintento y confirmación después de recargar.');
 })().catch(e=>{console.error(e);process.exitCode=1;});

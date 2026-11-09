@@ -23,6 +23,7 @@
      data-url-guardar="{% url 'api_guardar_grabacion_sesion' cita.id %}"
      {% with grabacion=cita.grabacion_sesion %}
      {% if grabacion %}data-guardada="1"
+     data-version-audio="{{ grabacion.audio.name }}"
      data-audio-url="{% url 'audio_grabacion_sesion' cita.id %}"
      data-formato="{{ grabacion.formato }}"
      data-fecha-subida="{{ grabacion.fecha_subida|date:'d/m/Y H:i' }}"
