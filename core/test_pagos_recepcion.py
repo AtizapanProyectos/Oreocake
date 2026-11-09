@@ -8,7 +8,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from .models import (
-    Cita, ComprobanteTransferencia, DiaFestivo, EsquemaHorarioPsicologo, PagoCitaPayPal,
+    Cita, ComprobanteTransferencia, DiaFestivo, EsquemaHorarioPsicologo, EventoAuditoria, PagoCitaPayPal,
     PerfilPsicologo, TratamientoPaciente, UsuarioPerfil,
 )
 
@@ -120,11 +120,11 @@ class PagosRecepcionTests(TestCase):
 
     @override_settings(PAYPAL_CLIENT_SECRET='')
     @patch('core.pagos_paypal.crear_orden')
-    def test_sin_secreto_paypal_inactivo_y_transferencia_disponible(self, crear):
+    def test_sin_secreto_muestra_checkout_manual_y_transferencia(self, crear):
         respuesta = self.client.get(reverse('recepcion_agendar_cita'))
-        self.assertContains(respuesta, 'value="paypal" disabled')
-        self.assertContains(respuesta, 'Puedes continuar por transferencia.')
-        self.assertNotContains(respuesta, 'www.paypal.com/sdk/js')
+        self.assertContains(respuesta, 'const paypalManual = true;')
+        self.assertContains(respuesta, 'enable-funding=card')
+        self.assertNotContains(respuesta, 'value="paypal" disabled')
         self.assertContains(respuesta, 'value="transferencia" checked')
         with self.assertLogs('core.views', level='ERROR') as registro:
             respuesta = self.client.post(reverse('crear_orden_cita_paypal'), self.datos)
@@ -141,3 +141,64 @@ class PagosRecepcionTests(TestCase):
         })
         self.assertEqual(respuesta.status_code, 400)
         capturar.assert_not_called()
+
+    @override_settings(PAYPAL_CLIENT_SECRET='')
+    @patch('core.views._notificar_cita_paciente')
+    def test_checkout_manual_reserva_y_solo_recepcion_confirma(self, notificar):
+        reservar = reverse('recepcion_reservar_paypal_manual')
+        preparar = reverse('recepcion_preparar_paypal_manual')
+        respuesta = self.client.post(reservar, {**self.datos, 'orden': 'ORDENMANUAL', 'modalidad': 'Presencial'})
+        self.assertEqual(respuesta.json()['status'], 'success', respuesta.content)
+        referencia = respuesta.json()['referencia']
+        pago = PagoCitaPayPal.objects.get(orden=referencia)
+        datos_orden = {'orden': referencia, 'paciente_id': self.paciente.pk}
+        conciliar = reverse('recepcion_conciliar_paypal_manual', args=[pago.pk])
+        verificacion = {'decision': 'confirmar', 'transaccion': 'TRANSACCIONREAL', 'revisado': '1'}
+        self.assertEqual(self.client.post(conciliar, verificacion).status_code, 404)
+        self.assertEqual(self.client.post(preparar, datos_orden).json()['status'], 'success')
+        self.assertEqual(self.client.post(preparar, datos_orden).status_code, 409)
+        self.assertEqual(self.client.post(reverse('capturar_orden_cita_paypal'), datos_orden).status_code, 409)
+        self.assertEqual(pago.cita.estado, 'Pendiente')
+        self.assertIsNone(pago.captura)
+        notificar.assert_not_called()
+
+        pagina = self.client.get(reverse('recepcion_agendar_cita'))
+        self.assertContains(pagina, 'Pagos de PayPal por verificar')
+        self.assertContains(pagina, 'ORDENMANUAL')
+        self.assertEqual(self.client.post(conciliar, {**verificacion, 'revisado': ''}).status_code, 400)
+
+        self.client.force_login(self.paciente)
+        for url, datos in ((reservar, self.datos), (preparar, datos_orden), (conciliar, verificacion)):
+            self.assertEqual(self.client.post(url, datos).status_code, 403)
+
+        self.client.force_login(self.recepcion)
+        with self.captureOnCommitCallbacks(execute=True):
+            for _ in range(2):
+                respuesta = self.client.post(conciliar, verificacion)
+                self.assertEqual(respuesta.json()['status'], 'success', respuesta.content)
+        pago.refresh_from_db()
+        self.assertEqual(pago.cita.estado, 'Confirmada')
+        self.assertEqual(pago.captura, 'TRANSACCIONREAL')
+        evento = EventoAuditoria.objects.get(accion='recepcion_paypal_confirmar')
+        self.assertEqual(evento.usuario, self.recepcion)
+        self.assertEqual(evento.detalles['orden'], 'ORDENMANUAL')
+        notificar.assert_called_once()
+
+    def test_liberar_orden_revisada_suelta_el_horario(self):
+        respuesta = self.client.post(reverse('recepcion_reservar_paypal_manual'), {
+            **self.datos, 'orden': 'ORDENCANCELADA',
+        })
+        referencia = respuesta.json()['referencia']
+        pago = PagoCitaPayPal.objects.get(orden=referencia)
+        respuesta = self.client.post(reverse('recepcion_preparar_paypal_manual'), {
+            'orden': referencia, 'paciente_id': self.paciente.pk,
+        })
+        self.assertEqual(respuesta.status_code, 200)
+        respuesta = self.client.post(reverse('recepcion_conciliar_paypal_manual', args=[pago.pk]), {
+            'decision': 'liberar', 'revisado': '1',
+        })
+        self.assertEqual(respuesta.json()['status'], 'success')
+        pago.refresh_from_db()
+        self.assertEqual(pago.cita.estado, 'Cancelada')
+        self.assertIsNone(pago.cita.psicologo_id)
+        self.assertIsNone(pago.captura)

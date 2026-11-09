@@ -1427,7 +1427,7 @@ def panel_generico(request):
 
     orden_pendiente = PagoCitaPayPal.objects.filter(
         cita__paciente=request.user, cita__estado='Pendiente', captura_iniciada=True,
-    ).values_list('orden', flat=True).first()
+    ).exclude(orden__startswith=PREFIJO_PAYPAL_MANUAL).values_list('orden', flat=True).first()
 
     return render(request, plantilla_panel, {
         'dias_disponibles_json': dias_json,
@@ -1998,6 +1998,10 @@ def _liberar_reservas_vencidas(**horario):
                 Cita.objects.filter(pk=pago.cita_id, estado='Pendiente').update(estado='Cancelada', psicologo=None)
 
 
+# Las órdenes de conciliación manual se distinguen de las órdenes REST
+# en el mismo registro de pago, sin cambiar el esquema de la base.
+PREFIJO_PAYPAL_MANUAL = 'recepcion:'
+
 ESTADOS_ANIMO_RECEPCION = {'Muy mal', 'Triste', 'Normal', 'Bien', 'Excelente'}
 
 
@@ -2063,6 +2067,8 @@ def crear_orden_cita_paypal(request):
             pago = PagoCitaPayPal.objects.select_for_update().get(pk=pago.pk)
             if pago.cita.estado != 'Pendiente':
                 return JsonResponse({'status': 'error', 'message': 'La reserva ya no está disponible.'}, status=409)
+            if (pago.orden or '').startswith(PREFIJO_PAYPAL_MANUAL):
+                return JsonResponse({'status': 'error', 'message': 'Esta orden se verifica desde recepción.'}, status=409)
             if not pago.orden:
                 pago.orden = crear_orden(pago, permitir_tarjetas=paciente_recepcion is not None)
                 pago.save(update_fields=['orden'])
@@ -2087,6 +2093,8 @@ def capturar_orden_cita_paypal(request):
     if 'captura_sdk' in request.POST or 'preparar_sdk' in request.POST:
         return JsonResponse({'status': 'error', 'message': 'El servidor debe verificar el pago con PayPal.'}, status=400)
     orden = request.POST.get('orden', '')
+    if orden.startswith(PREFIJO_PAYPAL_MANUAL):
+        return JsonResponse({'status': 'error', 'message': 'Esta orden se verifica desde recepción.'}, status=409)
     with transaction.atomic():
         pago = PagoCitaPayPal.objects.select_for_update().filter(orden=orden, cita__paciente_id=paciente_id).first()
         if not pago:
@@ -2127,12 +2135,110 @@ def cancelar_reserva_paypal(request):
     paciente_id = _paciente_paypal_id(request)
     if paciente_id is None:
         return _error_acceso_paypal(request)
+    orden = request.POST.get('orden', '')
+    if orden.startswith(PREFIJO_PAYPAL_MANUAL) and not request.user.is_superuser:
+        return _error_acceso_paypal(request)
     pago = PagoCitaPayPal.objects.select_for_update().filter(
-        orden=request.POST.get('orden', ''), cita__paciente_id=paciente_id,
+        orden=orden, cita__paciente_id=paciente_id,
     ).first()
     if pago and not pago.captura_iniciada:
         Cita.objects.filter(pk=pago.cita_id, estado='Pendiente').update(estado='Cancelada', psicologo=None)
     return JsonResponse({'status': 'success'})
+
+
+def _id_paypal_valido(valor, maximo=64):
+    return 1 <= len(valor) <= maximo and valor.isascii() and valor.isalnum()
+
+
+@require_POST
+def recepcion_reservar_paypal_manual(request):
+    from .pagos_paypal import variables_paypal_invalidas
+
+    if not request.user.is_superuser:
+        return _error_acceso_paypal(request)
+    if 'PAYPAL_CLIENT_ID' in variables_paypal_invalidas():
+        return JsonResponse({'status': 'error', 'message': 'Configura el Client ID de PayPal.'}, status=503)
+    paciente = User.objects.filter(pk=_paciente_paypal_id(request), perfil__isnull=False).first()
+    if paciente is None or 'paciente_id' not in request.POST or request.POST.get('es_tectum') == '1':
+        return JsonResponse({'status': 'error', 'message': 'Selecciona un paciente y una cita de pago.'}, status=400)
+    orden = request.POST.get('orden', '')
+    if not _id_paypal_valido(orden, 64 - len(PREFIJO_PAYPAL_MANUAL)):
+        return JsonResponse({'status': 'error', 'message': 'Orden PayPal inválida.'}, status=400)
+    referencia = PREFIJO_PAYPAL_MANUAL + orden
+    try:
+        with transaction.atomic():
+            pago = _guardar_cita_paciente(request, reservar_pago=True, paciente_recepcion=paciente)
+            if not isinstance(pago, PagoCitaPayPal):
+                return pago
+            es_manual = (pago.orden or '').startswith(PREFIJO_PAYPAL_MANUAL)
+            if pago.captura_iniciada or (pago.orden and not es_manual):
+                return JsonResponse({'status': 'error', 'message': 'Verifica la orden pendiente antes de intentar otro cobro.'}, status=409)
+            pago.orden = referencia
+            pago.save(update_fields=['orden'])
+    except IntegrityError:
+        return JsonResponse({'status': 'error', 'message': 'La orden o el horario ya están en uso.'}, status=409)
+    return JsonResponse({'status': 'success', 'referencia': referencia, 'monto': f'{pago.monto:.2f}'})
+
+
+@require_POST
+@transaction.atomic
+def recepcion_preparar_paypal_manual(request):
+    if not request.user.is_superuser:
+        return _error_acceso_paypal(request)
+    pago = PagoCitaPayPal.objects.select_for_update().filter(
+        orden=request.POST.get('orden', ''), orden__startswith=PREFIJO_PAYPAL_MANUAL,
+        cita__paciente_id=_paciente_paypal_id(request), cita__estado='Pendiente',
+    ).first()
+    if not pago or pago.captura_iniciada or pago.vence <= timezone.now():
+        return JsonResponse({'status': 'error', 'message': 'El horario venció o ya hay un intento de cobro para verificar.'}, status=409)
+    # A partir de este punto la captura podría ocurrir aunque el navegador se cierre.
+    pago.captura_iniciada = True
+    pago.save(update_fields=['captura_iniciada'])
+    return JsonResponse({'status': 'success'})
+
+
+@require_POST
+def recepcion_conciliar_paypal_manual(request, pago_id):
+    if not request.user.is_superuser:
+        return _error_acceso_paypal(request)
+    decision = request.POST.get('decision')
+    captura = request.POST.get('transaccion', '').strip()
+    if request.POST.get('revisado') != '1' or decision not in ('confirmar', 'liberar'):
+        return JsonResponse({'status': 'error', 'message': 'Confirma que revisaste el movimiento en PayPal.'}, status=400)
+    if decision == 'confirmar' and not _id_paypal_valido(captura):
+        return JsonResponse({'status': 'error', 'message': 'Introduce el ID de transacción que figura en PayPal.'}, status=400)
+
+    try:
+        with transaction.atomic():
+            pago = PagoCitaPayPal.objects.select_for_update().filter(
+                pk=pago_id, orden__startswith=PREFIJO_PAYPAL_MANUAL, captura_iniciada=True,
+            ).first()
+            if pago is None:
+                return JsonResponse({'status': 'error', 'message': 'Orden pendiente no encontrada.'}, status=404)
+            cita = Cita.objects.select_for_update().get(pk=pago.cita_id)
+            if decision == 'confirmar' and pago.captura == captura and cita.estado == 'Confirmada':
+                return _respuesta_cita(cita, request)
+            if cita.estado != 'Pendiente' or pago.captura:
+                return JsonResponse({'status': 'error', 'message': 'Esta orden ya fue revisada.'}, status=409)
+            if decision == 'confirmar':
+                _registrar_tratamiento_cita(cita)
+                pago.captura = captura
+                pago.save(update_fields=['captura'])
+                cita.estado = 'Confirmada'
+                cita.save(update_fields=['estado'])
+                transaction.on_commit(lambda: _notificar_cita_paciente(cita, request), robust=True)
+            else:
+                cita.estado = 'Cancelada'
+                cita.psicologo = None
+                cita.save(update_fields=['estado', 'psicologo'])
+            EventoAuditoria.objects.create(
+                usuario=request.user, accion='recepcion_paypal_' + decision,
+                detalles={'cita_id': cita.pk, 'orden': pago.orden.removeprefix(PREFIJO_PAYPAL_MANUAL),
+                          'captura': pago.captura, 'monto': str(pago.monto), 'moneda': 'MXN'},
+            )
+    except IntegrityError:
+        return JsonResponse({'status': 'error', 'message': 'Esa transacción ya está registrada en otra cita.'}, status=409)
+    return _respuesta_cita(cita, request) if decision == 'confirmar' else JsonResponse({'status': 'success'})
 
 
 # ======================================================================
@@ -11988,6 +12094,12 @@ def recepcion_agendar_cita(request):
         modalidad_inicial = None  # el template usa su default (En línea)
 
     paypal_invalidas = list(variables_paypal_invalidas())
+    pendientes_paypal = PagoCitaPayPal.objects.filter(
+        orden__startswith=PREFIJO_PAYPAL_MANUAL, captura_iniciada=True, cita__estado='Pendiente',
+    ).select_related('cita__paciente__perfil').order_by('cita__fecha', 'cita__hora')
+    for pago in pendientes_paypal:
+        pago.orden_visible = pago.orden.removeprefix(PREFIJO_PAYPAL_MANUAL)
+        pago.nombre_paciente = _recepcion_nombre_paciente(pago.cita)
     contexto = {
         # Mismo contrato de precios que el agendador admin (para el resumen referencial)
         'precios_config_json': json.dumps({
@@ -11997,8 +12109,9 @@ def recepcion_agendar_cita(request):
             'min_integrantes_familiar': MIN_INTEGRANTES_FAMILIAR,
         }),
         # 🪑 Marca de recepción: preset de modalidad y botón de regreso
-        'paypal_disponible': not paypal_invalidas,
-        'paypal_variables_pendientes': paypal_invalidas,
+        'paypal_disponible': 'PAYPAL_CLIENT_ID' not in paypal_invalidas,
+        'paypal_manual': bool(paypal_invalidas) and 'PAYPAL_CLIENT_ID' not in paypal_invalidas,
+        'paypal_pendientes': pendientes_paypal,
         'paypal_client_id': settings.PAYPAL_CLIENT_ID,
         'origen_recepcion': True,
         'modalidad_inicial': modalidad_inicial,

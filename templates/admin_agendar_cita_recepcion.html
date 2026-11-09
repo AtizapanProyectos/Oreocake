@@ -175,6 +175,8 @@
 .hpa-btn-confirmar:disabled{opacity:.45;cursor:not-allowed}
 .hpa-faltante{margin-top:10px;text-align:center;font-size:13px;font-weight:700;color:var(--muted)}
 .hpa-pago{margin-top:16px;padding:14px;border-radius:18px;background:#FBFAFD;border:1px solid var(--line)}
+.hpa-conciliar{display:grid;gap:8px}
+.hpa-conciliar .hpa-select{border:1px solid var(--line);background:#fff}
 .hpa-pago-titulo{margin:0 0 10px;font:800 14px var(--fh);color:var(--ink)}
 .hpa-pago-opciones{display:grid;gap:8px}
 .hpa-pago-opcion{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;background:#fff;border:1px solid var(--line);font-size:14px;font-weight:700;cursor:pointer}
@@ -272,6 +274,27 @@
       <p id="hpa-paypal-verificacion-msg" role="status"></p>
       <button type="button" class="hpa-btn sec" id="hpa-paypal-verificar">Verificar pago PayPal</button>
     </section>
+    {% if paypal_pendientes %}
+    <section class="hpa-card" id="pagos-paypal-pendientes" aria-labelledby="pagos-paypal-titulo">
+      <h2 id="pagos-paypal-titulo">Pagos de PayPal por verificar</h2>
+      <p class="hpa-ayuda">Revisa cada orden en la actividad de la cuenta de PayPal del negocio. Confirma la cita solo si el pago está completado y coincide con el importe en MXN.</p>
+      {% for pago in paypal_pendientes %}
+      <form class="hpa-pago hpa-conciliar" method="post" action="{% url 'recepcion_conciliar_paypal_manual' pago.id %}">
+        {% csrf_token %}
+        <p class="hpa-pago-titulo">{{ pago.nombre_paciente }} · {{ pago.cita.modalidad }} · {{ pago.cita.fecha|date:"d/m/Y" }} {{ pago.cita.hora|time:"H:i" }}</p>
+        <p class="hpa-pago-aviso">Orden <strong>{{ pago.orden_visible }}</strong> · <strong>${{ pago.monto|floatformat:2 }} MXN</strong></p>
+        <label class="hpa-pago-aviso" for="hpa-transaccion-{{ pago.id }}">ID de transacción del vendedor (para confirmar)</label>
+        <input class="hpa-select" id="hpa-transaccion-{{ pago.id }}" name="transaccion" maxlength="64" autocomplete="off">
+        <label class="hpa-pago-aviso"><input type="checkbox" name="revisado" value="1" required> Revisé esta orden en PayPal y verifiqué el resultado.</label>
+        <div class="hpa-acciones">
+          <button class="hpa-btn pri" type="submit" name="decision" value="confirmar">Confirmar pago y cita</button>
+          <button class="hpa-btn sec" type="submit" name="decision" value="liberar">Liberar horario sin cobro</button>
+        </div>
+        <p class="hpa-pago-aviso" role="status"></p>
+      </form>
+      {% endfor %}
+    </section>
+    {% endif %}
     <form id="hpa-form">
       {% csrf_token %}
       <div class="hpa-grid">
@@ -384,7 +407,7 @@
                 </label>
               </div>
               {% if not paypal_disponible %}
-                <p class="hpa-pago-aviso" id="hpa-paypal-no-disponible">PayPal está pendiente de habilitación. Puedes continuar por transferencia. Revisa en Railway <strong>{{ paypal_variables_pendientes|join:", " }}</strong>.</p>
+                <p class="hpa-pago-aviso" id="hpa-paypal-no-disponible">PayPal está pendiente de habilitación. Puedes continuar por transferencia. Revisa en Railway <strong>PAYPAL_CLIENT_ID</strong>.</p>
               {% endif %}
               <div id="hpa-detalle-transferencia" class="hpa-oculto" style="margin-top:12px; padding:14px; border-radius:18px; background:rgba(255,255,255,.94); color:var(--ink);">
                 <p style="margin:0 0 8px; font-weight:800; font-size:13px; color:var(--purple);">Recibimos el pago en:</p>
@@ -398,6 +421,9 @@
                 <p style="margin:8px 0 0; font-size:11.5px; color:var(--muted);">JPG, PNG, WebP o PDF · hasta 8 MB. Al confirmar, la cita queda agendada y el comprobante archivado para revisión.</p>
               </div>
               <div id="hpa-detalle-paypal" class="hpa-oculto" style="margin-top:12px;">
+                {% if paypal_manual %}
+                  <p class="hpa-pago-aviso">Después del checkout, recepción verificará el cargo en PayPal antes de confirmar la cita.</p>
+                {% endif %}
                 <p id="hpa-paypal-estado" role="status"></p>
                 <div id="hpa-paypal-buttons" class="hpa-oculto"></div>
               </div>
@@ -483,9 +509,10 @@ document.addEventListener('DOMContentLoaded', function () {
     const mensajeVerificacion = document.getElementById('hpa-paypal-verificacion-msg');
     const botonVerificar = document.getElementById('hpa-paypal-verificar');
     const datosBloqueables = document.querySelectorAll('#hpa-modos, #hpa-form .hpa-col:not(.hpa-aside), #hpa-card-animo');
+    const paypalManual = {{ paypal_manual|yesno:"true,false" }};
     const claveVerificacion = 'hope.recepcion.paypal';
     let animo = '';
-    let precioActual = false;
+    let precioActual = null;
     let paypalOcupado = false;
     let paypalRenderizado = false;
     let ordenPendiente = null;
@@ -892,7 +919,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function fetchPrecio() {
         const consulta = ++consultaPrecio;
-        precioActual = false;
+        precioActual = null;
         actualizarResumen();
         const params = new URLSearchParams({ tipo_sesion: tipoSesion });
         if (tipoSesion === 'familiar') {
@@ -903,7 +930,7 @@ document.addEventListener('DOMContentLoaded', function () {
             .then(function (data) {
                 if (consulta !== consultaPrecio) return;
                 if (data.status === 'success') {
-                    precioActual = true;
+                    precioActual = Number(data.total);
                     document.getElementById('hpa-precio-subtotal').textContent = formatoMoneda(data.subtotal);
                     document.getElementById('hpa-precio-comision').textContent = formatoMoneda(data.comision);
                     document.getElementById('hpa-precio-total').textContent = formatoMoneda(data.total);
@@ -1065,6 +1092,37 @@ document.addEventListener('DOMContentLoaded', function () {
         if (ordenPendiente) verificarPago(ordenPendiente, null, citaLista());
     });
 
+    document.querySelectorAll('.hpa-conciliar').forEach(function (formulario) {
+        formulario.addEventListener('submit', async function (event) {
+            event.preventDefault();
+            const boton = event.submitter;
+            const estado = formulario.querySelector('[role="status"]');
+            const datos = new FormData(formulario, boton);
+            const confirmar = boton.value === 'confirmar';
+            const pregunta = confirmar
+                ? '¿El cargo figura como completado en PayPal y coincide con la orden y el importe en MXN?'
+                : '¿Confirmas que PayPal indica que el cobro falló o fue cancelado?';
+            if (!window.confirm(pregunta)) return;
+            const botones = formulario.querySelectorAll('button');
+            botones.forEach(function (item) { item.disabled = true; });
+            let resuelto = false;
+            try {
+                const respuesta = await enviarPayPal(formulario.action, datos);
+                if (respuesta.status !== 'success') {
+                    estado.textContent = respuesta.message || 'No pudimos registrar la verificación.';
+                    return;
+                }
+                resuelto = true;
+                formulario.querySelectorAll('input, button').forEach(function (item) { item.disabled = true; });
+                estado.textContent = confirmar ? 'Pago registrado y cita confirmada.' : 'Horario liberado.';
+            } catch (error) {
+                estado.textContent = 'No pudimos comprobar el resultado. Recarga la página antes de repetir la acción.';
+            } finally {
+                if (!resuelto) botones.forEach(function (item) { item.disabled = false; });
+            }
+        });
+    });
+
     function actualizarPayPal(visible) {
         const mostrarBotones = visible && precioActual && !ordenPendiente;
         paypalButtons.classList.toggle('hpa-oculto', !mostrarBotones);
@@ -1087,18 +1145,47 @@ document.addEventListener('DOMContentLoaded', function () {
                 msgBox.classList.remove('activo', 'error');
                 return actions.resolve();
             },
-            createOrder: async function () {
+            createOrder: async function (data, actions) {
                 if (!citaLista() || metodoPago !== 'paypal' || !precioActual || ordenPendiente) {
                     throw new Error('Selecciona un horario y estado de ánimo antes de pagar.');
                 }
                 const paciente = pacienteId;
                 bloquearDatosPayPal(true);
-                const datos = await enviarPayPal("{% url 'crear_orden_cita_paypal' %}", armarDatosComunes(new FormData()));
+                const datosCita = armarDatosComunes(new FormData());
+                if (paypalManual) {
+                    const monto = precioActual.toFixed(2);
+                    const id = await actions.order.create({
+                        purchase_units: [{amount: {currency_code: 'MXN', value: monto}}]
+                    });
+                    datosCita.set('orden', id);
+                    const reserva = await enviarPayPal("{% url 'recepcion_reservar_paypal_manual' %}", datosCita);
+                    if (reserva.status !== 'success') throw new Error(reserva.message);
+                    orden = { id: reserva.referencia, paciente: paciente };
+                    if (reserva.monto !== monto) {
+                        await enviarPayPal("{% url 'cancelar_reserva_paypal' %}", datosOrden(orden));
+                        fetchPrecio();
+                        throw new Error('El importe cambió. Revisa el total antes de pagar.');
+                    }
+                    return id;
+                }
+                const datos = await enviarPayPal("{% url 'crear_orden_cita_paypal' %}", datosCita);
                 if (datos.status !== 'success') throw new Error(datos.message || 'No se pudo reservar el horario.');
                 orden = { id: datos.orden, paciente: paciente };
                 return orden.id;
             },
-            onApprove: function (data, actions) {
+            onApprove: async function (data, actions) {
+                if (paypalManual) {
+                    const preparada = await enviarPayPal("{% url 'recepcion_preparar_paypal_manual' %}", datosOrden(orden));
+                    if (preparada.status !== 'success') throw new Error(preparada.message);
+                    try {
+                        await actions.order.capture();
+                    } finally {
+                        // La respuesta del navegador no registra ni confirma el pago en HOPE.
+                        window.history.replaceState(null, '', '#pagos-paypal-pendientes');
+                        window.location.reload();
+                    }
+                    return;
+                }
                 return verificarPago({ id: data.orderID, paciente: orden.paciente }, actions, true);
             },
             onCancel: async function () {
