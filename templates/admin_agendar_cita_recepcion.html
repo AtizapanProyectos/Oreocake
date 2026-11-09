@@ -483,9 +483,10 @@ document.addEventListener('DOMContentLoaded', function () {
     const mensajeVerificacion = document.getElementById('hpa-paypal-verificacion-msg');
     const botonVerificar = document.getElementById('hpa-paypal-verificar');
     const datosBloqueables = document.querySelectorAll('#hpa-modos, #hpa-form .hpa-col:not(.hpa-aside), #hpa-card-animo');
+    const paypalCapturaSdk = {{ paypal_sdk_recepcion|yesno:"true,false" }};
     const claveVerificacion = 'hope.recepcion.paypal';
     let animo = '';
-    let precioActual = false;
+    let precioActual = null;
     let paypalOcupado = false;
     let paypalRenderizado = false;
     let ordenPendiente = null;
@@ -892,7 +893,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function fetchPrecio() {
         const consulta = ++consultaPrecio;
-        precioActual = false;
+        precioActual = null;
         actualizarResumen();
         const params = new URLSearchParams({ tipo_sesion: tipoSesion });
         if (tipoSesion === 'familiar') {
@@ -903,7 +904,7 @@ document.addEventListener('DOMContentLoaded', function () {
             .then(function (data) {
                 if (consulta !== consultaPrecio) return;
                 if (data.status === 'success') {
-                    precioActual = true;
+                    precioActual = Number(data.total);
                     document.getElementById('hpa-precio-subtotal').textContent = formatoMoneda(data.subtotal);
                     document.getElementById('hpa-precio-comision').textContent = formatoMoneda(data.comision);
                     document.getElementById('hpa-precio-total').textContent = formatoMoneda(data.total);
@@ -1013,7 +1014,9 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function datosOrden(orden) {
-        return new URLSearchParams({ orden: orden.id, paciente_id: orden.paciente });
+        const datos = new URLSearchParams({ orden: orden.id, paciente_id: orden.paciente });
+        if (orden.captura) datos.set('captura_sdk', orden.captura);
+        return datos;
     }
 
     function guardarVerificacion(orden) {
@@ -1062,7 +1065,12 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     botonVerificar.addEventListener('click', function () {
-        if (ordenPendiente) verificarPago(ordenPendiente, null, citaLista());
+        if (!ordenPendiente) return;
+        if (ordenPendiente.sdk && !ordenPendiente.captura) {
+            mensajeVerificacion.textContent = 'Consulta la orden ' + ordenPendiente.id + ' en PayPal antes de volver a cobrar.';
+            return;
+        }
+        verificarPago(ordenPendiente, null, citaLista());
     });
 
     function actualizarPayPal(visible) {
@@ -1087,18 +1095,46 @@ document.addEventListener('DOMContentLoaded', function () {
                 msgBox.classList.remove('activo', 'error');
                 return actions.resolve();
             },
-            createOrder: async function () {
+            createOrder: async function (data, actions) {
                 if (!citaLista() || metodoPago !== 'paypal' || !precioActual || ordenPendiente) {
                     throw new Error('Selecciona un horario y estado de ánimo antes de pagar.');
                 }
                 const paciente = pacienteId;
                 bloquearDatosPayPal(true);
-                const datos = await enviarPayPal("{% url 'crear_orden_cita_paypal' %}", armarDatosComunes(new FormData()));
+                const datosCita = armarDatosComunes(new FormData());
+                if (paypalCapturaSdk) {
+                    const id = await actions.order.create({
+                        purchase_units: [{amount: {currency_code: 'MXN', value: precioActual.toFixed(2)}}]
+                    });
+                    datosCita.set('orden_sdk', id);
+                }
+                const datos = await enviarPayPal("{% url 'crear_orden_cita_paypal' %}", datosCita);
                 if (datos.status !== 'success') throw new Error(datos.message || 'No se pudo reservar el horario.');
-                orden = { id: datos.orden, paciente: paciente };
+                orden = { id: datos.orden, paciente: paciente, monto: datos.monto };
+                if (paypalCapturaSdk && orden.monto !== precioActual.toFixed(2)) {
+                    await enviarPayPal("{% url 'cancelar_reserva_paypal' %}", datosOrden(orden));
+                    fetchPrecio();
+                    throw new Error('El importe de la cita cambió. Revisa el total antes de pagar.');
+                }
                 return orden.id;
             },
-            onApprove: function (data, actions) {
+            onApprove: async function (data, actions) {
+                if (paypalCapturaSdk) {
+                    const datos = datosOrden(orden);
+                    datos.set('preparar_sdk', '1');
+                    const preparada = await enviarPayPal("{% url 'capturar_orden_cita_paypal' %}", datos);
+                    if (preparada.status !== 'success') throw new Error(preparada.message);
+                    if (preparada.cita_id) return verificarPago(orden, null, true);
+                    guardarVerificacion({ ...orden, sdk: true });
+                    const pago = await actions.order.capture();
+                    const captura = pago.purchase_units?.[0]?.payments?.captures?.[0];
+                    if (pago.id !== orden.id || pago.status !== 'COMPLETED' ||
+                        captura?.status !== 'COMPLETED' || !captura.id ||
+                        captura.amount?.currency_code !== 'MXN' || captura.amount?.value !== orden.monto) {
+                        throw new Error('PayPal aún no confirmó el cargo. Revisa la orden antes de volver a cobrar.');
+                    }
+                    return verificarPago({ ...orden, sdk: true, captura: captura.id }, null, true);
+                }
                 return verificarPago({ id: data.orderID, paciente: orden.paciente }, actions, true);
             },
             onCancel: async function () {
