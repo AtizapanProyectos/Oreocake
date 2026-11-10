@@ -66,6 +66,33 @@ class SesionPresencialTests(TestCase):
         self.assertContains(respuesta, 'Contestar IPP', count=1)
         self.assertContains(respuesta, 'Iniciar grabación', count=1)
 
+    def test_agenda_muestra_meet_en_citas_en_linea_con_enlace(self):
+        ahora = timezone.make_aware(datetime(2026, 11, 8, 19))
+        casos = (
+            (time(9), 'Confirmada', 'En línea', 'abc-defg-hij'),
+            (time(10), 'Completada', 'En línea', 'bcd-efgh-ijk'),
+            (time(11), 'Pendiente', 'En línea', 'cde-fghi-jkl'),
+            (time(12), 'Cancelada', 'En línea', 'def-ghij-klm'),
+            (time(13), 'Confirmada', 'Presencial', 'efg-hijk-lmn'),
+            (time(20), 'Confirmada', 'En línea', ''),
+        )
+        enlaces = []
+        for hora, estado, modalidad, codigo in casos:
+            enlace = f'https://meet.google.com/{codigo}' if codigo else ''
+            Cita.objects.create(
+                paciente=self.paciente, psicologo=self.psicologo, fecha=ahora.date(),
+                hora=hora, estado=estado, modalidad=modalidad, enlace_meet=enlace,
+            )
+            enlaces.append(enlace)
+
+        self.client.force_login(self.doctor)
+        with patch('core.views.timezone.now', return_value=ahora):
+            respuesta = self.client.get(reverse('panel_doctor'))
+
+        self.assertContains(respuesta, 'Iniciar Meet', count=3)
+        for enlace in enlaces[:3]:
+            self.assertContains(respuesta, f'href="{enlace}"')
+
     def respuestas(self):
         return {**{p['id']: 'siempre' for p in FORMULARIO_ORGANICO_PREGUNTAS},
                 'sat_1': '2', 'sat_2': '3', 'sat_3': '4', 'comentarios_satisfaccion': 'Comentario de prueba'}

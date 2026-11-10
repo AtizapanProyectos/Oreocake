@@ -2680,7 +2680,7 @@ def panel_doctor(request):
     hora_actual = now_local.time().replace(second=0, microsecond=0)
 
     # La agenda conserva las citas del día; la ventana de una hora solo
-    # controla los botones para atender una cita confirmada.
+    # controla las acciones presenciales para una cita confirmada.
     limite_activo = now_local.replace(second=0, microsecond=0) - timedelta(hours=1)
     hora_limite = limite_activo.time() if limite_activo.date() == hoy else time.min
     citas_hoy = Cita.objects.filter(

@@ -1242,7 +1242,7 @@ body {
                 {% if cita.evaluacion_servicio %}
                   <span class="pill-badge" style="background:#ccfbf1; color:#0f766e;"><i class="fas fa-clipboard-check"></i> IPP contestado</span>
                 {% endif %}
-              {% elif cita.agenda_activa and cita.enlace_meet %}
+              {% elif cita.modalidad != 'Presencial' and cita.enlace_meet %}
                 <a href="{{ cita.enlace_meet }}" target="_blank" class="hbtn hbtn-video"
                    onclick="setTimeout(() => { window.location.href = '{% url 'detalle_paciente' cita.paciente.id %}'; }, 100);">
                   <i class="fas fa-video"></i> Iniciar Meet
