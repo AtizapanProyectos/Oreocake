@@ -524,7 +524,7 @@ class AgendamientoSeguroTests(TestCase):
         con_csrf = Client(enforce_csrf_checks=True)
         con_csrf.force_login(admin)
         self.assertEqual(con_csrf.post(url, datos).status_code, 403)
-        for cambio in ({'modalidad': 'En línea'}, {'es_tectum': '1'}, {'metodo_pago_presencial': 'otro'}):
+        for cambio in ({'modalidad': 'Inválida'}, {'es_tectum': '1'}, {'metodo_pago_presencial': 'otro'}):
             self.assertEqual(self.client.post(url, {**datos, **cambio}).status_code, 400)
         cita = Cita.objects.create(
             paciente=self.paciente, psicologo=self.doctor, fecha=self.fecha, hora='10:00',

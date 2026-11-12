@@ -47,6 +47,8 @@ class PagosRecepcionTests(TestCase):
                 orden = f'ORDEN{i}'
                 crear.return_value = {'id': orden}
                 datos = dict(self.datos, modalidad=modalidad, hora=f'{10 + i}:00')
+                if modalidad == 'En línea':
+                    datos.pop('animo')
                 respuesta = self.client.post(reverse('crear_orden_cita_paypal'), datos)
                 self.assertEqual(respuesta.json().get('orden'), orden, respuesta.content)
                 pago = PagoCitaPayPal.objects.get(orden=orden)
@@ -68,19 +70,45 @@ class PagosRecepcionTests(TestCase):
                 cita = pago.cita
                 self.assertEqual(cita.paciente_id, self.paciente.pk)
                 self.assertEqual(cita.estado, 'Confirmada')
-                self.assertEqual(cita.estado_animo, 'Bien')
+                self.assertEqual(cita.estado_animo, 'Bien' if modalidad == 'Presencial' else 'No especificó')
                 self.assertEqual(cita.integrantes_familia, 4)
                 self.assertEqual(TratamientoPaciente.objects.get(paciente=self.paciente).psicologo_asignado, self.doctor)
         self.assertEqual(capturar.call_count, 2)
         self.assertEqual(notificar.call_count, 2)
 
-    def test_requiere_animo_en_los_tres_metodos(self):
-        datos = dict(self.datos, animo='')
+    def test_rechaza_una_carita_invalida_en_recepcion(self):
+        datos = dict(self.datos, animo='Valor inválido')
         for ruta in ('crear_orden_cita_paypal', 'subir_comprobante_transferencia', 'recepcion_confirmar_cita'):
             respuesta = self.client.post(reverse(ruta), datos)
             self.assertEqual(respuesta.status_code, 400)
             self.assertIn('estado de ánimo', respuesta.json()['message'])
         self.assertFalse(Cita.objects.exists())
+
+    @patch('core.views.generar_link_meet', return_value={'link': 'https://meet.google.com/abc-defg-hij', 'id_evento': 'prueba'})
+    def test_citas_en_linea_con_efectivo_y_tarjeta_sin_carita(self, generar_meet):
+        from django.core import mail
+
+        url = reverse('recepcion_confirmar_cita')
+        datos = {**self.datos, 'modalidad': 'En línea', 'es_tectum': '0'}
+        datos.pop('animo')
+        for hora, metodo in (('10:00', 'efectivo'), ('11:00', 'clip_presencial')):
+            with self.subTest(metodo=metodo):
+                cuerpo = {**datos, 'hora': hora, 'metodo_pago_presencial': metodo}
+                with self.captureOnCommitCallbacks(execute=True) as callbacks:
+                    primera = self.client.post(url, cuerpo)
+                    reintento = self.client.post(url, cuerpo)
+                self.assertEqual(primera.status_code, 200, primera.content)
+                self.assertEqual(primera.json(), reintento.json())
+                self.assertNotIn('pase_url', primera.json())
+                self.assertEqual(len(callbacks), 1)
+                cita = Cita.objects.get(pk=primera.json()['cita_id'])
+                self.assertEqual((cita.estado, cita.metodo_pago_presencial), ('Confirmada', metodo))
+                self.assertEqual(cita.estado_animo, 'No especificó')
+                self.assertEqual(cita.enlace_meet, 'https://meet.google.com/abc-defg-hij')
+                self.assertIn(reverse('formulario_previo_meet', args=[cita.pk]), mail.outbox[-1].alternatives[0].content)
+        self.assertEqual(generar_meet.call_count, 2)
+        self.assertEqual(len(mail.outbox), 2)
+        self.assertFalse(PagoCitaPayPal.objects.exists())
 
     @patch('core.pagos_paypal.crear_orden')
     def test_ignora_horario_bloqueado_y_rechaza_suplantacion(self, crear):
@@ -102,13 +130,13 @@ class PagosRecepcionTests(TestCase):
     def test_transferencia_sigue_archivando_comprobante_y_confirmando(self, notificar):
         archivo = SimpleUploadedFile('comprobante.pdf', b'%PDF-1.7 comprobante')
         respuesta = self.client.post(reverse('subir_comprobante_transferencia'), {
-            **self.datos, 'modalidad': 'Presencial', 'comprobante': archivo,
+            **self.datos, 'animo': '', 'modalidad': 'Presencial', 'comprobante': archivo,
         })
         self.assertEqual(respuesta.json().get('status'), 'success', respuesta.content)
         comprobante = ComprobanteTransferencia.objects.get()
         self.assertEqual(comprobante.usuario_id, self.paciente.pk)
         self.assertEqual(comprobante.cita.estado, 'Confirmada')
-        self.assertEqual(comprobante.cita.estado_animo, 'Bien')
+        self.assertEqual(comprobante.cita.estado_animo, 'No especificó')
         notificar.assert_called_once()
 
     def test_agendador_reutiliza_checkout_y_caritas(self):
@@ -116,6 +144,7 @@ class PagosRecepcionTests(TestCase):
             respuesta = self.client.get(reverse(ruta), follow=True)
             self.assertContains(respuesta, 'enable-funding=card')
             self.assertContains(respuesta, 'mood-wizard-btn" data-animo=', count=5)
+            self.assertContains(respuesta, 'Estado de ánimo (opcional)')
             self.assertContains(respuesta, 'Transferencia bancaria BBVA')
 
     @override_settings(PAYPAL_CLIENT_SECRET='')

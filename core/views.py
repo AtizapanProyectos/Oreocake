@@ -1773,8 +1773,8 @@ def _guardar_cita_paciente(request, reservar_pago=False, paciente_recepcion=None
 
         fecha_str = request.POST.get('fecha')
         hora_str = request.POST.get('hora')
-        animo = request.POST.get('animo', 'No especificó')
-        if es_recepcion and animo not in ESTADOS_ANIMO_RECEPCION:
+        animo = request.POST.get('animo')
+        if es_recepcion and animo and animo not in ESTADOS_ANIMO_RECEPCION:
             return _error_animo_recepcion()
 
         modalidad_str = request.POST.get('modalidad', 'En línea')
@@ -1803,7 +1803,7 @@ def _guardar_cita_paciente(request, reservar_pago=False, paciente_recepcion=None
             if pago_presencial:
                 User.objects.select_for_update().get(pk=paciente.pk)
                 existente = Cita.objects.select_for_update().filter(
-                    paciente=paciente, fecha=fecha_obj, hora=hora_obj, modalidad='Presencial',
+                    paciente=paciente, fecha=fecha_obj, hora=hora_obj, modalidad=modalidad_str,
                     tipo_sesion=tipo_sesion_str, integrantes_familia=integrantes_familia,
                     estado__in=('Confirmada', 'Completada'), metodo_pago_presencial=pago_presencial,
                 ).first()
@@ -1822,7 +1822,7 @@ def _guardar_cita_paciente(request, reservar_pago=False, paciente_recepcion=None
                     cita__integrantes_familia=integrantes_familia,
                 ).filter(Q(vence__gt=ahora) | Q(captura_iniciada=True)).first()
                 if pendiente:
-                    if es_recepcion and not pendiente.captura_iniciada:
+                    if es_recepcion and animo and not pendiente.captura_iniciada:
                         Cita.objects.filter(pk=pendiente.cita_id).update(estado_animo=animo)
                     return pendiente
                 if PagoCitaPayPal.objects.filter(
@@ -1933,7 +1933,8 @@ def _guardar_cita_paciente(request, reservar_pago=False, paciente_recepcion=None
 
             cita = Cita.objects.create(
                 paciente=paciente, psicologo=psicologo, fecha=fecha_obj, hora=hora_obj,
-                estado_animo=animo, modalidad=modalidad_str, tipo_sesion=tipo_sesion_str,
+                estado_animo='No especificó' if animo is None or (es_recepcion and not animo) else animo,
+                modalidad=modalidad_str, tipo_sesion=tipo_sesion_str,
                 integrantes_familia=integrantes_familia, es_tectum=es_tectum_cita,
                 es_beneficios=es_beneficios, estado='Pendiente' if reservar_pago else 'Confirmada',
                 metodo_pago_presencial=pago_presencial or Cita.MetodoPagoPresencial.SITIO_WEB,
@@ -1968,6 +1969,7 @@ def _respuesta_cita(cita, request):
     datos = {'status': 'success', 'cita_id': cita.pk, 'modalidad': cita.modalidad, 'estado': cita.estado}
     if cita.modalidad == 'Presencial':
         datos['pase_url'] = reverse('descargar_pase_admision', args=[cita.pk])
+    if cita.modalidad == 'Presencial' or cita.metodo_pago_presencial != Cita.MetodoPagoPresencial.SITIO_WEB:
         datos['metodo_pago_presencial'] = cita.get_metodo_pago_presencial_display()
     return JsonResponse(datos)
 
@@ -2018,7 +2020,7 @@ ESTADOS_ANIMO_RECEPCION = {'Muy mal', 'Triste', 'Normal', 'Bien', 'Excelente'}
 
 
 def _error_animo_recepcion():
-    return JsonResponse({'status': 'error', 'message': 'Selecciona el estado de ánimo antes de continuar.'}, status=400)
+    return JsonResponse({'status': 'error', 'message': 'Elige una carita válida o deja el estado de ánimo sin seleccionar.'}, status=400)
 
 
 def _paciente_paypal_id(request):
@@ -2339,7 +2341,7 @@ def subir_comprobante_transferencia_ajax(request):
     # del paciente (panel HOPE) no cambia en nada con esta rama.
     es_recepcion = request.user.is_superuser and bool(request.POST.get('paciente_id'))
     if es_recepcion:
-        if request.POST.get('animo') not in ESTADOS_ANIMO_RECEPCION:
+        if request.POST.get('animo') and request.POST['animo'] not in ESTADOS_ANIMO_RECEPCION:
             return _error_animo_recepcion()
         try:
             usuario = User.objects.get(id=request.POST.get('paciente_id'))
@@ -4801,15 +4803,15 @@ def admin_guardar_cita_ajax(request, recepcion=False):
     if request.method != 'POST':
         return JsonResponse({'status': 'error', 'message': 'Método no permitido.'}, status=405)
 
-    if recepcion and request.POST.get('animo') not in ESTADOS_ANIMO_RECEPCION:
+    if recepcion and request.POST.get('animo') and request.POST['animo'] not in ESTADOS_ANIMO_RECEPCION:
         return _error_animo_recepcion()
 
     pago_presencial = request.POST.get('metodo_pago_presencial')
     if pago_presencial is not None and (
         not recepcion or pago_presencial not in (Cita.MetodoPagoPresencial.EFECTIVO, Cita.MetodoPagoPresencial.CLIP)
-        or request.POST.get('modalidad') != 'Presencial' or request.POST.get('es_tectum') != '0'
+        or request.POST.get('modalidad') not in MODALIDADES_CITA_VALIDAS or request.POST.get('es_tectum') != '0'
     ):
-        return JsonResponse({'status': 'error', 'message': 'Elige un método válido para una cita presencial con cobro.'}, status=400)
+        return JsonResponse({'status': 'error', 'message': 'Elige un método válido para una cita con cobro en recepción.'}, status=400)
 
     paciente_id = request.POST.get('paciente_id')
     if not paciente_id:
@@ -4830,6 +4832,8 @@ def admin_guardar_cita_ajax(request, recepcion=False):
     fecha_str = request.POST.get('fecha')
     hora_str = request.POST.get('hora')
     animo = request.POST.get('animo', 'No especificó')
+    if recepcion and not animo:
+        animo = 'No especificó'
     modalidad_str = request.POST.get('modalidad', 'En línea')
     if modalidad_str not in MODALIDADES_CITA_VALIDAS:
         modalidad_str = 'En línea'
