@@ -14,7 +14,7 @@
     background: linear-gradient(145deg, #faf7ff, #fff 68%);
     box-shadow: 0 8px 24px #3e2a7510;
 }
-.analisis-cabecera, .analisis-progreso-titulo {
+.analisis-cabecera {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
@@ -38,23 +38,13 @@
 .analisis-revisar { color: #493483; background: #f2ebfc; border-color: #ded0f2; }
 .analisis-estado { color: #51446a; font-size: .88rem; }
 .analisis-estado[data-error] { color: #9c2039; }
-.analisis-progreso { background: #f3eefb; border-radius: 13px; padding: 15px; margin: 15px 0; }
-.analisis-progreso progress { width: 100%; height: 12px; accent-color: #5a3fa3; transform-origin: left; }
-.analisis-progreso progress:not([hidden]) { animation: revelar-progreso .55s ease-out; }
 .analisis-notas { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr)); gap: 12px; margin-bottom: 12px; }
 .analisis-notas > div { padding: 12px; border: 1px solid #e8e0f2; background: #fff; border-radius: 10px; }
 .analisis-notas p { white-space: pre-wrap; overflow-wrap: anywhere; }
-@keyframes revelar-progreso { from { transform: scaleX(0); } }
 @media (prefers-reduced-motion: reduce) {
     .analisis-generar { transition: none; }
-    .analisis-progreso progress:not([hidden]) { animation: none; }
 }
 .sesion-revision { background: #fff0d6; color: #87520d; }
-.analisis-cola { background: #f3eefb; padding: 14px; border-radius: 12px; margin-bottom: 14px; }
-.analisis-cola-barra { display: block; width: 100%; height: 14px; accent-color: #5a3fa3; margin: 10px 0; }
-.analisis-cola [hidden] { display: none; }
-.analisis-cola small { color: #655875; }
-.analisis-cola-aviso { color: #87520d; margin-bottom: 0; }
 
 .sesion-archivo { margin: 16px 0; padding: clamp(14px, 3vw, 24px); border: 1px solid #e6dcf6;
     border-radius: 18px; background: #fff; box-shadow: 0 8px 24px #3e2a7510; }
@@ -73,6 +63,13 @@
     padding: clamp(14px, 4vw, 28px); margin: auto; color: #302447; background: #fff; border: 1px solid #e6dcf6;
     border-radius: 20px; box-shadow: 0 20px 75px #21153e50; }
 .archivo-transcripcion::backdrop { background: #201532a8; }
+.archivo-transcripcion textarea {
+    display: block; width: 100%; box-sizing: border-box; resize: vertical;
+    min-height: 220px; margin: 12px 0; padding: 14px;
+    border: 1px solid #d8c8ef; border-radius: 12px; background: #faf8fd;
+    font: inherit; line-height: 1.6; color: #302447;
+}
+.texto-confirmacion { display: block; margin: 18px 0; line-height: 1.5; }
 .transcripcion-cabecera { justify-content: space-between; flex-wrap: nowrap; }
 .transcripcion-cabecera p { margin: 0 0 4px; }
 .transcripcion-meta { display: flex; flex-wrap: wrap; gap: 8px 18px; background: #f6f0fc;

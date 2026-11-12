@@ -3,6 +3,8 @@ import json
 import logging
 import os
 import re
+from hashlib import sha256
+from pathlib import Path
 from textwrap import wrap
 from uuid import uuid4
 
@@ -55,6 +57,42 @@ PISTAS = (
 PATRONES = tuple(re.compile(pista, re.IGNORECASE) for pista in PISTAS)
 
 
+def version_audio(grabacion):
+    return grabacion.audio.name if grabacion and grabacion.audio else '__sin_audio__'
+
+
+def revision_texto(texto):
+    return sha256(texto.encode('utf-8')).hexdigest()
+
+
+def texto_del_expediente(cita, grabacion):
+    """Busca solo fuentes vinculadas a esta cita y este paciente."""
+    if grabacion and grabacion.transcripcion.strip():
+        return grabacion.transcripcion, 'grabacion', grabacion.transcripcion_anterior
+    historial = HistorialClinico.objects.filter(cita=cita, paciente_id=cita.paciente_id).first()
+    if not historial or not historial.transcripcion_meet:
+        return '', '', False
+    archivo = historial.transcripcion_meet
+    with archivo.open('rb') as contenido:
+        datos = contenido.read()
+    extension = Path(archivo.name).suffix.lower()
+    if extension == '.pdf':
+        import fitz
+        with fitz.open(stream=datos, filetype='pdf') as documento:
+            texto = '\n'.join(pagina.get_text() for pagina in documento)
+    elif extension == '.docx':
+        from io import BytesIO
+        from docx import Document
+        texto = '\n'.join(parrafo.text for parrafo in Document(BytesIO(datos)).paragraphs)
+    elif extension == '.txt':
+        texto = datos.decode('utf-16' if datos.startswith((b'\xff\xfe', b'\xfe\xff')) else 'utf-8-sig')
+    else:
+        raise ValueError('Formato de transcripción no compatible')
+    if not texto.strip():
+        raise ValueError('El archivo vinculado no contiene texto extraíble')
+    return texto, 'bitacora', False
+
+
 def seleccionar_evidencia(texto, limite=9000):
     """Combina indicios de cada campo con muestras distribuidas cronológicamente."""
     partes = list(dict.fromkeys(
@@ -105,6 +143,24 @@ def notas_desde_texto(request, cita_id):
     cita = _cita_grabacion_autorizada(request, cita_id)
     if request.method == 'GET':
         grabacion = GrabacionSesion.objects.filter(cita=cita).first()
+        if request.GET.get('expediente') == '1':
+            try:
+                texto, fuente, anterior = texto_del_expediente(cita, grabacion)
+            except Exception as error:
+                logging.getLogger(__name__).warning('No se pudo leer la transcripción de cita %s (%s)', cita.pk, type(error).__name__)
+                return JsonResponse({'mensaje': 'La bitácora tiene una transcripción vinculada, pero no pudimos leer su archivo. Reintenta o revisa el adjunto de esta sesión.'}, status=422)
+            historial = HistorialClinico.objects.filter(cita=cita, paciente_id=cita.paciente_id).first()
+            borrador = AnalisisGrabacionClinica.objects.filter(
+                grabacion=grabacion, archivo_origen=grabacion.audio.name,
+                estado=AnalisisGrabacionClinica.Estado.LISTO,
+            ).first() if grabacion else None
+            return JsonResponse({
+                'transcripcion': texto, 'fuente': fuente, 'anterior': anterior,
+                'version_audio': version_audio(grabacion),
+                'revision': revision_texto(texto),
+                'notas': borrador.notas if borrador else {},
+                'historial_id': historial.pk if historial else None,
+            })
         if not grabacion or not grabacion.transcripcion.strip() or grabacion.transcripcion_anterior:
             return JsonResponse({'mensaje': 'No hay texto guardado para el audio actual.'}, status=404)
         return JsonResponse({
@@ -135,16 +191,29 @@ def notas_desde_texto(request, cita_id):
     if accion == 'guardar':
         with transaction.atomic():
             cita, actual = _bloquear_grabacion(request, cita_id)
-            if not actual or not version or version != actual.audio.name or not _admite_notas(cita):
+            if not version or version != version_audio(actual) or not _admite_notas(cita):
                 return _grabacion_cambio()
+            if 'revision' in datos:
+                try:
+                    vigente, _, _ = texto_del_expediente(cita, actual)
+                except Exception as error:
+                    logging.getLogger(__name__).warning('No se pudo comprobar la transcripción de cita %s (%s)', cita.pk, type(error).__name__)
+                    return JsonResponse({'mensaje': 'No pudimos comprobar el texto vinculado. Recarga e intenta de nuevo.'}, status=409)
+                if datos['revision'] != revision_texto(vigente):
+                    return _grabacion_cambio()
+            if actual is None:
+                actual = GrabacionSesion.objects.create(cita=cita, psicologo=cita.psicologo)
             actual.asociar_transcripcion(transcripcion.strip())
             actual.save(update_fields=['transcripcion', 'transcripcion_audio', 'transcripcion_fecha'])
-        return JsonResponse({'mensaje': 'Transcripción guardada en el expediente.'})
+        return JsonResponse({'mensaje': 'Transcripción guardada en el expediente.',
+                             'revision': revision_texto(actual.transcripcion)})
 
     grabacion = GrabacionSesion.objects.filter(cita=cita).first()
-    if not grabacion or not version or version != grabacion.audio.name:
+    if not grabacion or not version or version != version_audio(grabacion):
         return _grabacion_cambio()
     texto_guardado = grabacion.transcripcion
+    if 'revision' in datos and datos['revision'] != revision_texto(texto_guardado):
+        return _grabacion_cambio()
     if accion == 'generar':
         if not texto_guardado.strip() or grabacion.transcripcion_anterior:
             return JsonResponse({'mensaje': 'Guarda la transcripción del audio actual antes de generar las notas.'}, status=409)
@@ -169,7 +238,7 @@ def notas_desde_texto(request, cita_id):
     try:
         with transaction.atomic():
             cita, actual = _bloquear_grabacion(request, cita_id)
-            if (not actual or actual.audio.name != version or actual.transcripcion != texto_guardado
+            if (not actual or version_audio(actual) != version or actual.transcripcion != texto_guardado
                     or not _admite_notas(cita)):
                 return _grabacion_cambio()
 
@@ -194,7 +263,7 @@ def notas_desde_texto(request, cita_id):
                 'transcripcion', 'transcripcion_audio', 'transcripcion_fecha', 'estado', 'intento_iniciado',
             ])
             AnalisisGrabacionClinica.objects.update_or_create(grabacion=actual, defaults={
-                'archivo_origen': version, 'estado': AnalisisGrabacionClinica.Estado.LISTO,
+                'archivo_origen': actual.audio.name, 'estado': AnalisisGrabacionClinica.Estado.LISTO,
                 'notas': notas, 'progreso': {'porcentaje': None, 'nivel': '', 'compromiso': '', 'evolucion': ''},
             })
     except Http404:
@@ -207,7 +276,8 @@ def notas_desde_texto(request, cita_id):
                 logging.getLogger(__name__).warning('No se pudo limpiar el adjunto de transcripción')
         logging.getLogger(__name__).warning('Falló el guardado del borrador clínico (%s)', type(exc).__name__)
         return JsonResponse({'mensaje': 'No se pudo guardar el borrador. Puedes reintentar con el texto guardado.'}, status=500)
-    return JsonResponse({'notas': notas, 'mensaje': 'Borrador guardado. Revisa las notas en el expediente.'})
+    return JsonResponse({'notas': notas, 'historial_id': historial.pk,
+                         'mensaje': 'Borrador guardado. Revisa las notas en el expediente.'})
 
 
 def _admite_notas(cita):

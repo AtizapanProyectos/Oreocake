@@ -1,119 +1,152 @@
 (() => {
-    document.addEventListener('click', event => {
-        const boton = event.target.closest('[data-abrir-transcripcion]');
-        if (boton) document.getElementById(boton.dataset.abrirTranscripcion)?.showModal();
-    });
+    document.querySelectorAll('.analisis-grabacion').forEach(panel => {
+        const modal = panel.querySelector('dialog');
+        const texto = panel.querySelector('[data-texto-contenido]');
+        const estado = panel.querySelector('[data-texto-estado]');
+        const revisado = panel.querySelector('[data-texto-revisado]');
+        const guardar = panel.querySelector('[data-texto-guardar]');
+        const generar = panel.querySelector('[data-texto-generar]');
+        const resultados = panel.querySelector('[data-texto-resultados]');
+        let version, revision, guardado = '', notas = {}, historialId;
+        let ocupado = false, cargado = false, anterior = false;
 
-    const pendientes = new Set(['pendiente', 'procesando']);
-
-    function iniciar(panel) {
-        const generar = panel.querySelector('.analisis-generar');
-        const revisar = panel.querySelector('.analisis-revisar');
-        const estado = panel.querySelector('.analisis-estado');
-        const resultados = panel.querySelector('.analisis-resultados');
-        let temporizador;
-        let notas = {};
-        let historialId;
-
-        function mostrar(datos) {
-            estado.textContent = datos.mensaje;
-            estado.dataset.estado = datos.estado;
-            const ocupado = pendientes.has(datos.estado);
-            generar.disabled = ocupado || datos.estado === 'listo';
-            generar.setAttribute('aria-busy', String(ocupado));
-            const proceso = datos.procesamiento;
-            generar.querySelector('i').classList.toggle('fa-spin', Boolean(proceso?.activo));
-            const cola = panel.querySelector('.analisis-cola');
-            cola.hidden = !proceso;
-            if (proceso) {
-                const porcentaje = Number.isInteger(proceso.porcentaje) ? `${proceso.porcentaje}% · ` : '';
-                panel.querySelector('.analisis-cola-texto').textContent = porcentaje + proceso.mensaje;
-                const barraProceso = panel.querySelector('.analisis-cola-barra');
-                barraProceso.hidden = !Number.isInteger(proceso.porcentaje);
-                barraProceso.value = proceso.porcentaje ?? 0;
-                panel.querySelector('.analisis-cola-aviso').textContent = proceso.aviso || '';
-            }
-            resultados.hidden = datos.estado !== 'listo';
-            if (datos.estado === 'listo') {
-                notas = datos.notas;
-                historialId = datos.historial_id;
-                panel.querySelectorAll('[data-nota]').forEach(campo => {
-                    campo.textContent = notas[campo.dataset.nota] || 'Sin evidencia en la transcripción.';
-                });
-                const progreso = datos.progreso;
-                const barra = panel.querySelector('.analisis-progreso progress');
-                barra.hidden = !Number.isInteger(progreso.porcentaje);
-                if (!barra.hidden) barra.value = progreso.porcentaje;
-                panel.querySelector('[data-progreso-nivel]').textContent = progreso.nivel || '';
-                panel.querySelector('[data-progreso-valor]').textContent = barra.hidden
-                    ? 'Sin evidencia suficiente para estimar un porcentaje.'
-                    : `${progreso.porcentaje}% estimado`;
-                panel.querySelector('[data-progreso-compromiso]').textContent =
-                    'Compromiso: ' + (progreso.compromiso || 'Sin evidencia suficiente.');
-                panel.querySelector('[data-progreso-evolucion]').textContent =
-                    'Evolución: ' + (progreso.evolucion || 'Sin evidencia suficiente.');
-            }
-            if (ocupado) temporizador = setTimeout(() => consultar('GET'), 5000);
+        function actualizar() {
+            texto.disabled = ocupado || !cargado;
+            guardar.disabled = ocupado || !cargado || !texto.value.trim() || (anterior && !revisado.checked);
+            generar.disabled = guardar.disabled || !revisado.checked;
+            revisado.disabled = ocupado;
+            panel.querySelector('[data-texto-aplicar]').disabled = ocupado;
         }
 
-        async function consultar(method) {
-            clearTimeout(temporizador);
-            generar.disabled = true;
-            if (method === 'POST') {
-                estado.textContent = 'Solicitando análisis…';
-                estado.dataset.estado = 'pendiente';
-            }
-            try {
+        async function solicitar(datos) {
+            const opciones = { credentials: 'same-origin', signal: AbortSignal.timeout(30000) };
+            if (datos) {
                 const token = document.querySelector('#formBitacoraNueva [name=csrfmiddlewaretoken]').value;
-                const respuesta = await fetch(panel.dataset.url, {
-                    method, credentials: 'same-origin',
-                    headers: method === 'POST' ? {'X-CSRFToken': token} : {},
+                Object.assign(opciones, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': token },
+                    body: JSON.stringify({ ...datos, version_audio: version, revision })
                 });
-                if (!respuesta.headers.get('content-type')?.includes('application/json')) {
-                    throw new Error(respuesta.status >= 500
-                        ? 'El servidor no pudo consultar el análisis. Administración debe revisar las migraciones y los registros de Railway.'
-                        : 'No se pudo acceder al análisis. Actualiza la página y verifica tu sesión.');
-                }
-                const datos = await respuesta.json();
-                if (!respuesta.ok) throw new Error(datos.mensaje || 'No se pudo consultar el análisis.');
-                mostrar(datos);
+            }
+            const respuesta = await fetch(panel.dataset.url + (datos ? '' : '?expediente=1'), opciones);
+            if (!respuesta.headers.get('content-type')?.includes('application/json')) {
+                throw Error('No se pudo recuperar la respuesta. Comprueba tu conexión y tu sesión.');
+            }
+            const contenido = await respuesta.json();
+            if (!respuesta.ok) throw Error(contenido.mensaje || 'No se pudo completar la operación.');
+            return contenido;
+        }
+
+        function mostrarNotas(datos) {
+            notas = datos.notas || {};
+            historialId = datos.historial_id;
+            resultados.hidden = !Object.keys(notas).length;
+            panel.querySelectorAll('[data-nota]').forEach(campo => {
+                campo.textContent = notas[campo.dataset.nota] || 'Sin evidencia en la transcripción.';
+            });
+        }
+
+        async function abrir() {
+            modal.showModal();
+            if (cargado && texto.value.trim() !== guardado) return;
+            ocupado = true;
+            cargado = false;
+            estado.textContent = 'Recuperando la transcripción de esta sesión…';
+            actualizar();
+            try {
+                const datos = await solicitar();
+                version = datos.version_audio;
+                revision = datos.revision;
+                anterior = datos.anterior;
+                texto.value = datos.transcripcion;
+                guardado = texto.value.trim();
+                revisado.checked = false;
+                cargado = true;
+                mostrarNotas(datos);
+                estado.textContent = anterior
+                    ? 'Este texto pertenece al audio anterior. Revisa su correspondencia antes de guardarlo para el audio actual.'
+                    : datos.fuente === 'bitacora'
+                        ? 'Transcripción recuperada del archivo de esta bitácora.'
+                        : guardado ? 'Transcripción recuperada.' : 'Puedes pegar y guardar la transcripción de esta sesión.';
             } catch (error) {
-                mostrar({estado: 'error', mensaje: error.message || 'No se pudo consultar el análisis. Intenta de nuevo.'});
+                estado.textContent = error.message;
+            } finally {
+                ocupado = false;
+                actualizar();
             }
         }
 
-        generar.addEventListener('click', () => consultar('POST'));
-        revisar.addEventListener('click', async () => {
-            revisar.disabled = true;
+        async function guardarTexto() {
+            const datos = await solicitar({ accion: 'guardar', transcripcion: texto.value.trim() });
+            revision = datos.revision;
+            guardado = texto.value.trim();
+            anterior = false;
+            estado.textContent = datos.mensaje;
+        }
+
+        async function procesar(conNotas) {
+            ocupado = true;
+            actualizar();
+            try {
+                estado.textContent = 'Guardando transcripción…';
+                await guardarTexto();
+                if (conNotas) {
+                    estado.textContent = 'Generando el borrador con el texto revisado…';
+                    const datos = await solicitar({ accion: 'generar' });
+                    mostrarNotas(datos);
+                    estado.textContent = datos.mensaje;
+                }
+            } catch (error) {
+                estado.textContent = error.name === 'TimeoutError'
+                    ? 'La respuesta tardó demasiado. Tu texto sigue aquí. Puedes consultar de nuevo al reabrir.'
+                    : error.message;
+            } finally {
+                ocupado = false;
+                actualizar();
+            }
+        }
+
+        panel.querySelectorAll('[data-texto-abrir]').forEach(boton => boton.addEventListener('click', abrir));
+        panel.querySelector('[data-texto-cerrar]').addEventListener('click', () => {
+            if (!ocupado) modal.close();
+        });
+        modal.addEventListener('cancel', event => { if (ocupado) event.preventDefault(); });
+        guardar.addEventListener('click', () => procesar(false));
+        generar.addEventListener('click', () => procesar(true));
+        revisado.addEventListener('change', actualizar);
+        texto.addEventListener('input', () => {
+            revisado.checked = false;
+            resultados.hidden = true;
+            estado.textContent = 'Hay cambios sin guardar.';
+            actualizar();
+        });
+        window.addEventListener('beforeunload', event => {
+            if (ocupado || (cargado && texto.value.trim() !== guardado)) {
+                event.preventDefault();
+                event.returnValue = '';
+            }
+        });
+        panel.querySelector('[data-texto-aplicar]').addEventListener('click', async () => {
+            if (!window.confirm('¿Llevar este borrador al formulario de bitácora para revisarlo y guardarlo?')) return;
+            ocupado = true;
+            actualizar();
             try {
                 if (historialId) {
-                    if (!window.confirm('¿Usar el borrador en el formulario de edición? Los cambios se aplicarán al guardar.')) return;
                     if (!await editarBitacora(historialId)) return;
                 } else {
                     abrirWizard(panel.dataset.cita);
                 }
                 const formulario = document.getElementById('formBitacoraNueva');
-                Object.entries(notas).forEach(([nombre, contenido]) => {
-                    if (contenido && formulario.elements.namedItem(nombre)) {
-                        formulario.elements.namedItem(nombre).value = contenido;
-                    }
+                Object.entries(notas).forEach(([campo, valor]) => {
+                    if (formulario.elements.namedItem(campo)) formulario.elements.namedItem(campo).value = valor;
                 });
+                modal.close();
             } catch (error) {
-                estado.textContent = 'No se pudo abrir la bitácora para edición.';
-                estado.dataset.estado = 'error';
+                estado.textContent = 'No se pudo abrir la bitácora. El borrador sigue disponible.';
             } finally {
-                revisar.disabled = false;
+                ocupado = false;
+                actualizar();
             }
         });
-        consultar('GET');
-    }
-
-    const observador = new IntersectionObserver(entradas => {
-        entradas.forEach(entrada => {
-            if (!entrada.isIntersecting) return;
-            observador.unobserve(entrada.target);
-            iniciar(entrada.target);
-        });
     });
-    document.querySelectorAll('.analisis-grabacion').forEach(panel => observador.observe(panel));
 })();

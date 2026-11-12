@@ -73,14 +73,6 @@
                 <pre data-vivo-notas></pre>
             </div>
         </section>
-        <ol class="gsn-rec-pasos" hidden>
-            <li data-paso="cargada">Grabación cargada</li>
-            <li data-paso="audio">Procesando audio</li>
-            <li data-paso="transcribiendo">Transcribiendo</li>
-            <li data-paso="notas">Generando notas</li>
-            <li data-paso="guardando">Guardando información</li>
-            <li data-paso="completada">Proceso completado</li>
-        </ol>
         <div class="gsn-rec-proceso" role="status" aria-live="polite"></div>
         <div class="gsn-rec-estado" role="status">
             {% with grabacion=cita.grabacion_sesion %}
@@ -108,41 +100,6 @@
         var urlGuardar = box.getAttribute('data-url-guardar');
         var archivo = box.querySelector('.gsn-rec-archivo');
         var proceso = box.querySelector('.gsn-rec-proceso');
-        var consulta = 0;
-        var estadosFinales = ['completada', 'error', 'archivada'];
-
-        function mostrarProceso(estadoActual, mensaje) {
-            var lista = box.querySelector('.gsn-rec-pasos');
-            var pasos = Array.from(lista.querySelectorAll('[data-paso]'));
-            var actual = pasos.findIndex(function (paso) { return paso.dataset.paso === estadoActual; });
-            lista.hidden = estadoActual === 'archivada';
-            if (actual >= 0) {
-                pasos.forEach(function (paso, indice) {
-                    paso.toggleAttribute('data-hecho', indice < actual || estadoActual === 'completada');
-                    if (indice === actual) paso.setAttribute('aria-current', 'step');
-                    else paso.removeAttribute('aria-current');
-                });
-            }
-            if (estadoActual === 'error') mensaje += '. Vuelve a cargar el audio para reintentar.';
-            proceso.textContent = mensaje;
-            proceso.dataset.estado = estadoActual;
-        }
-
-        async function consultarProceso(turno) {
-            try {
-                var respuesta = await fetch(box.dataset.urlEstado, { cache: 'no-store' });
-                if (!respuesta.ok) throw new Error();
-                var datos = await respuesta.json();
-                if (turno !== consulta) return;
-                mostrarProceso(datos.estado, datos.mensaje);
-                if (!estadosFinales.includes(datos.estado)) {
-                    setTimeout(function () { consultarProceso(turno); }, 2500);
-                }
-            } catch (error) {
-                if (turno === consulta) proceso.textContent = 'Estado temporalmente no disponible. Recarga para consultarlo.';
-            }
-        }
-
         var btnStart = box.querySelector('.gsn-rec-start');
         var btnStop = box.querySelector('.gsn-rec-stop');
         var timer = box.querySelector('.gsn-rec-timer');
@@ -186,7 +143,7 @@
             iconoGuardada.innerHTML = '<i class="fas fa-circle-check"></i> Guardada en el servidor el ' + (box.getAttribute('data-fecha-subida') || '') + ' (' + (box.getAttribute('data-duracion') || '') + ' min)';
         }
 
-        if (box.dataset.guardada === '1') consultarProceso(++consulta);
+
 
         archivo.addEventListener('change', function () {
             if (!archivo.files.length) return;
@@ -325,9 +282,7 @@
                     resultado.style.display = 'block';
                     iconoGuardada.innerHTML = '<i class="fas fa-circle-check"></i> Guardada en el servidor (' + (data.tamanio_mb ? data.tamanio_mb + ' MB · ' : '') + fmtSegundos(duracion) + ')';
                     setEstado('Grabación guardada en el servidor.');
-                    mostrarProceso(data.estado, audioEnVivo ? 'Audio guardado. Puedes revisar la transcripción y generar notas.' : 'Grabación cargada');
-                    var turno = ++consulta;
-                    setTimeout(function () { consultarProceso(turno); }, 1200);
+                    proceso.textContent = 'Audio guardado. Revisa o pega la transcripción para generar las notas.';
                 } else {
                     mostrarCopiaLocal(blob, nombre, data.message || 'El servidor no guardó la grabación.');
                 }

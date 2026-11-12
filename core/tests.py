@@ -11,7 +11,6 @@ from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 
-from .grabaciones import procesar_siguiente
 from .models import (
     Cita, EvaluacionSesionPaciente, GrabacionSesion, HistorialClinico, PerfilPsicologo,
     RespuestaFormularioOrganica, UsuarioPerfil,
@@ -97,6 +96,75 @@ class SesionPresencialTests(TestCase):
         return {**{p['id']: 'siempre' for p in FORMULARIO_ORGANICO_PREGUNTAS},
                 'sat_1': '2', 'sat_2': '3', 'sat_3': '4', 'comentarios_satisfaccion': 'Comentario de prueba'}
 
+    @patch.dict('os.environ', {'GROQ_API_KEY': 'prueba'})
+    @patch('core.transcripcion_navegador._solicitar')
+    def test_expediente_recupera_adjunto_sin_audio_y_genera_desde_texto(self, solicitar):
+        from django.core.files.base import ContentFile
+        historial = HistorialClinico.objects.create(
+            cita=self.cita, paciente=self.paciente, psicologo=self.psicologo,
+            notas_sesion='Bitácora revisada.',
+        )
+        historial.transcripcion_meet.save('sesion.txt', ContentFile('Texto clínico de esta cita.'.encode('utf-8-sig')))
+        self.client.force_login(self.doctor)
+        url = self.url('notas_texto_grabacion')
+        respuesta = self.client.get(url + '?expediente=1')
+        self.assertEqual(respuesta.status_code, 200)
+        datos = respuesta.json()
+        self.assertEqual(datos['transcripcion'], 'Texto clínico de esta cita.')
+        self.assertEqual(datos['fuente'], 'bitacora')
+        self.assertFalse(GrabacionSesion.objects.filter(cita=self.cita).exists())
+        expediente = self.client.get(reverse('detalle_paciente', args=[self.paciente.pk]))
+        self.assertContains(expediente, 'Ver transcripción')
+        self.assertNotContains(expediente, 'Generar Notas Automáticas')
+        cuerpo = {'accion': 'guardar', 'transcripcion': datos['transcripcion'],
+                  'version_audio': datos['version_audio'], 'revision': datos['revision']}
+        guardado = self.client.post(url, cuerpo, content_type='application/json')
+        self.assertEqual(guardado.status_code, 200, guardado.content)
+        solicitar.return_value = json.dumps({'notas_sesion': 'Borrador del texto revisado.'})
+        generado = self.client.post(url, {
+            'accion': 'generar', 'version_audio': datos['version_audio'],
+            'revision': guardado.json()['revision'],
+        }, content_type='application/json')
+        self.assertEqual(generado.status_code, 200, generado.content)
+        historial.refresh_from_db()
+        self.assertEqual(historial.notas_sesion, 'Bitácora revisada.')
+        self.assertEqual(self.client.get(url + '?expediente=1').json()['notas']['notas_sesion'],
+                         'Borrador del texto revisado.')
+        self.assertEqual(self.subir().status_code, 200)
+        self.assertTrue(self.client.get(url + '?expediente=1').json()['anterior'])
+
+    def test_expediente_aisla_sesiones_y_rechaza_edicion_desactualizada(self):
+        self.client.force_login(self.doctor)
+        self.subir()
+        grabacion = GrabacionSesion.objects.get(cita=self.cita)
+        grabacion.asociar_transcripcion('Texto de la primera cita.')
+        grabacion.save()
+        segunda = Cita.objects.create(paciente=self.paciente, psicologo=self.psicologo,
+            fecha=self.cita.fecha, hora=time(23), modalidad='Presencial')
+        GrabacionSesion.objects.create(cita=segunda, transcripcion='Texto de la segunda cita.')
+        url = self.url('notas_texto_grabacion')
+        datos = self.client.get(url + '?expediente=1').json()
+        self.assertEqual(datos['transcripcion'], 'Texto de la primera cita.')
+        otro = self.client.get(reverse('notas_texto_grabacion', args=[segunda.pk]) + '?expediente=1').json()
+        self.assertEqual(otro['transcripcion'], 'Texto de la segunda cita.')
+        grabacion.transcripcion = 'Corrección más reciente.'
+        grabacion.save()
+        respuesta = self.client.post(url, {'accion': 'guardar', 'version_audio': datos['version_audio'],
+            'revision': datos['revision'], 'transcripcion': 'Edición antigua.'}, content_type='application/json')
+        self.assertEqual(respuesta.status_code, 409)
+        grabacion.refresh_from_db()
+        self.assertEqual(grabacion.transcripcion, 'Corrección más reciente.')
+        self.client.force_login(self.otro)
+        self.assertEqual(self.client.get(url + '?expediente=1').status_code, 404)
+
+    def test_adjunto_inaccesible_informa_error_y_no_ausencia_de_texto(self):
+        HistorialClinico.objects.create(cita=self.cita, paciente=self.paciente,
+            psicologo=self.psicologo, notas_sesion='Nota', transcripcion_meet='archivo-inexistente.txt')
+        self.client.force_login(self.doctor)
+        respuesta = self.client.get(self.url('notas_texto_grabacion') + '?expediente=1')
+        self.assertEqual(respuesta.status_code, 422)
+        self.assertIn('transcripción vinculada', respuesta.json()['mensaje'])
+
     def subir(self, **campos):
         return self.client.post(self.url('api_guardar_grabacion_sesion'), {
             'audio': SimpleUploadedFile('prueba.wav', b'archivo sintetico', content_type='audio/wav'),
@@ -136,13 +204,14 @@ class SesionPresencialTests(TestCase):
         nueva_sesion.force_login(self.doctor)
         expediente = reverse('detalle_paciente', args=[self.paciente.pk])
         respuesta = nueva_sesion.get(expediente)
-        for texto in ('Ver transcripción', 'Profesional de prueba', 'Segunda línea con &lt;texto&gt;.',
+        for texto in ('Ver transcripción', 'Profesional de prueba',
                       self.url('audio_grabacion_sesion'), self.url('descargar_transcripcion_presencial')):
             self.assertContains(respuesta, texto)
+        self.assertEqual(nueva_sesion.get(url + '?expediente=1').json()['transcripcion'], datos['transcripcion'])
 
         self.assertEqual(self.subir().status_code, 200)
         self.assertEqual(guardar(self.client, transcripcion='Texto retrasado').status_code, 409)
-        self.assertContains(nueva_sesion.get(expediente), 'Ver transcripción anterior')
+        self.assertTrue(nueva_sesion.get(url + '?expediente=1').json()['anterior'])
         nueva_sesion.force_login(self.otro)
         self.assertEqual(guardar(nueva_sesion).status_code, 404)
         self.assertEqual(nueva_sesion.get(self.url('descargar_transcripcion_presencial')).status_code, 404)
@@ -296,129 +365,6 @@ class SesionPresencialTests(TestCase):
         grabacion = GrabacionSesion.objects.get(cita=self.cita)
         with grabacion.audio.open('rb') as audio:
             self.assertEqual(audio.read(), contenido)
-
-    @patch('core.grabaciones.transcribir')
-    def test_audio_vincula_cita_y_expediente_y_exige_revision_antes_del_checkin(self, transcribir):
-        self.client.force_login(self.paciente)
-        self.assertEqual(self.subir().status_code, 403)
-        self.client.force_login(self.doctor)
-        self.assertContains(self.client.get(self.url('grabacion_sesion')), 'Cargar grabación')
-        subida = self.subir()
-        self.assertEqual(subida.status_code, 200, subida.content)
-        estado = self.url('estado_grabacion_sesion')
-        self.assertEqual(self.client.get(estado).json()['estado'], 'cargada')
-        descarga = self.client.get(subida.json()['archivo_url'])
-        self.assertEqual(b''.join(descarga.streaming_content), b'archivo sintetico')
-        descarga.close()
-
-        def motor(grabacion, avanzar, *args):
-            self.assertEqual(GrabacionSesion.objects.get(cita=self.cita).estado, 'audio')
-            avanzar(GrabacionSesion.Estado.TRANSCRIBIENDO)
-            self.assertEqual(GrabacionSesion.objects.get(cita=self.cita).estado, 'transcribiendo')
-            return 'Al inicio, se habló del descanso. Se practicó respiración. Recomendaciones: llevar un diario.'
-
-        transcribir.side_effect = motor
-        self.assertTrue(procesar_siguiente('ffmpeg', 'whisper', 'modelo'))
-        self.assertFalse(procesar_siguiente('ffmpeg', 'whisper', 'modelo'))
-        self.cita.refresh_from_db()
-        self.assertEqual(self.cita.estado, 'Completada')
-        self.assertEqual(self.cita.nota_clinica.notas_sesion, 'Se practicó respiración.')
-        self.assertTrue(self.cita.nota_clinica.pendiente_revision_audio)
-        self.assertFalse(_procesar_reporte_de_una_cita_detallado(self.cita.pk)[0])
-        self.assertEqual(self.client.get(estado).json()['estado'], 'completada')
-        Cita.objects.filter(pk=self.cita.pk).update(id_evento_google='evento-antiguo')
-        self.assertEqual(self.client.get(self.url('check_meet_notes')).status_code, 400)
-        expediente = self.client.get(reverse('detalle_paciente', args=[self.paciente.pk]))
-        self.assertContains(expediente, 'Recomendaciones: llevar un diario.')
-        self.assertContains(expediente, 'Revisar bitácora del audio')
-        self.assertNotContains(expediente, f'id="meet-content-{self.cita.pk}"')
-        transcripcion_url = self.url('descargar_transcripcion_presencial')
-        descarga_texto = self.client.get(transcripcion_url)
-        self.assertContains(descarga_texto, 'Se practicó respiración.')
-        self.assertEqual(descarga_texto['Cache-Control'], 'private, no-store')
-        guardado = self.client.post(reverse('guardar_historial'), {
-            'paciente_id': self.paciente.pk, 'historial_id': self.cita.nota_clinica.pk,
-            'notas_sesion': 'Versión revisada por el psicólogo.',
-        })
-        self.assertEqual(guardado.json()['status'], 'success')
-        self.assertFalse(HistorialClinico.objects.get(cita=self.cita).pendiente_revision_audio)
-        self.client.force_login(self.otro)
-        self.assertEqual(self.client.get(estado).status_code, 404)
-        self.assertEqual(self.client.get(subida.json()['archivo_url']).status_code, 404)
-        self.assertEqual(self.client.get(transcripcion_url).status_code, 404)
-
-    @patch('core.analisis_grabacion._solicitar')
-    def test_analisis_usa_toda_la_transcripcion_y_no_inventa_avance(self, solicitar):
-        from .analisis_grabacion import BLOQUE, generar_borrador
-
-        texto = 'a' * BLOQUE + 'b' * BLOQUE + 'cierre'
-        solicitar.side_effect = [
-            'Evidencia inicial', 'Evidencia intermedia', 'Evidencia de cierre',
-            json.dumps({'notas_sesion': 'Borrador', 'progreso': {
-                'porcentaje': 80, 'evolucion': 'Sin comparativo previo.',
-            }}),
-        ]
-        notas, progreso = generar_borrador(object(), texto, [])
-        fragmentos = [llamada.args[2] for llamada in solicitar.call_args_list[:-1]]
-        self.assertEqual(''.join(fragmentos), texto)
-        self.assertEqual(notas['notas_sesion'], 'Borrador')
-        self.assertIsNone(progreso['porcentaje'])
-
-    @patch('groq.Groq')
-    @patch('core.analisis_grabacion.generar_borrador')
-    def test_analisis_de_audio_se_guarda_aparte_de_la_bitacora(self, generar, groq):
-        from .analisis_grabacion import procesar_analisis_pendiente
-
-        self.client.force_login(self.doctor)
-        self.assertEqual(self.subir().status_code, 200)
-        url = self.url('analisis_grabacion_clinica')
-        csrf_client = Client(enforce_csrf_checks=True)
-        csrf_client.force_login(self.doctor)
-        self.assertEqual(csrf_client.post(url).status_code, 403)
-        pendiente = self.client.post(url).json()
-        self.assertEqual(pendiente['estado'], 'pendiente')
-        self.assertEqual(pendiente['procesamiento']['porcentaje'], 0)
-        self.assertFalse(pendiente['procesamiento']['activo'])
-        self.assertFalse(procesar_analisis_pendiente())
-        groq.assert_not_called()
-
-        grabacion = GrabacionSesion.objects.get(cita=self.cita)
-        grabacion.transcripcion = 'Texto ficticio de toda la sesión.'
-        grabacion.estado = GrabacionSesion.Estado.COMPLETADA
-        grabacion.save(update_fields=['transcripcion', 'estado'])
-        historial = HistorialClinico.objects.create(
-            cita=self.cita, paciente=self.paciente, psicologo=self.psicologo,
-            notas_sesion='Nota revisada por el psicólogo.',
-        )
-        generar.return_value = ({'notas_sesion': 'Borrador independiente.'}, {'porcentaje': None})
-        self.assertTrue(procesar_analisis_pendiente())
-        generar.assert_called_once_with(groq.return_value, grabacion.transcripcion, [])
-        datos = self.client.get(url).json()
-        self.assertEqual(datos['estado'], 'listo')
-        self.assertEqual(datos['procesamiento']['porcentaje'], 100)
-        self.assertFalse(datos['procesamiento']['activo'])
-        self.assertEqual(datos['historial_id'], historial.pk)
-        self.assertEqual(datos['notas']['notas_sesion'], 'Borrador independiente.')
-        historial.refresh_from_db()
-        self.assertEqual(historial.notas_sesion, 'Nota revisada por el psicólogo.')
-        self.assertEqual(self.client.post(url).json()['estado'], 'listo')
-        self.assertFalse(procesar_analisis_pendiente())
-        self.client.force_login(self.otro)
-        self.assertEqual(self.client.get(url).status_code, 404)
-
-    @patch('core.grabaciones.transcribir')
-    def test_reemplazo_fallido_preserva_bitacora_y_ultima_transcripcion(self, transcribir):
-        self.client.force_login(self.doctor)
-        self.assertEqual(self.subir().status_code, 200)
-        transcribir.return_value = 'Transcripción original.'
-        procesar_siguiente('ffmpeg', 'whisper', 'modelo')
-        historial = HistorialClinico.objects.get(cita=self.cita)
-        self.assertEqual(self.subir().status_code, 200)
-        transcribir.side_effect = ValueError
-        procesar_siguiente('ffmpeg', 'whisper', 'modelo')
-        grabacion = GrabacionSesion.objects.get(cita=self.cita)
-        self.assertEqual((grabacion.estado, grabacion.transcripcion), ('error', 'Transcripción original.'))
-        self.assertEqual(HistorialClinico.objects.get(cita=self.cita).pk, historial.pk)
 
     @patch('groq.Groq')
     def test_escaneo_distribuye_cinco_campos_y_rechaza_respuesta_invalida(self, groq):

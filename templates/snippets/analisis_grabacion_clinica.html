@@ -1,40 +1,36 @@
-<section class="analisis-grabacion" data-url="{% url 'analisis_grabacion_clinica' cita.id %}"
-         data-cita="{{ cita.id }}">
-    <div class="analisis-cabecera">
-        <div>
-            <p class="analisis-etiqueta"><i class="fas fa-wave-square" aria-hidden="true"></i> Audio de la sesión</p>
-            <h3>Notas automáticas</h3>
-            <p>Transcribe la grabación y prepara un borrador para tu revisión.</p>
+<section class="analisis-grabacion" data-url="{% url 'notas_texto_grabacion' cita.id %}" data-cita="{{ cita.id }}">
+    <div class="archivo-acciones">
+        <button type="button" class="analisis-generar" data-texto-abrir>Ver transcripción</button>
+        <button type="button" class="analisis-generar" data-texto-abrir>Generar notas con este texto</button>
+    </div>
+    <dialog class="archivo-transcripcion" aria-labelledby="titulo-texto-{{ cita.id }}">
+        <div class="transcripcion-cabecera">
+            <h3 id="titulo-texto-{{ cita.id }}">Transcripción · {{ cita.fecha|date:"d/m/Y" }} · {{ cita.hora|time:"H:i" }}</h3>
+            <button type="button" class="analisis-revisar" data-texto-cerrar>Cerrar</button>
         </div>
-        <button type="button" class="analisis-generar" title="Procesa la grabación y prepara notas para revisar">
-            <i class="fas fa-wand-magic-sparkles" aria-hidden="true"></i> Generar Notas Automáticas
-        </button>
-    </div>
-    <p class="analisis-estado" role="status" aria-live="polite">{{ grabacion.get_estado_display }}</p>
-    <div class="analisis-cola" hidden aria-live="polite">
-        <strong class="analisis-cola-texto"></strong>
-        <progress class="analisis-cola-barra" max="100" value="0" aria-label="Avance del procesamiento por etapas"></progress>
-        <small>Avance por etapas, no porcentaje de audio transcrito. No hay tiempo restante calculado.</small>
-        <p class="analisis-cola-aviso"></p>
-    </div>
-    <div class="analisis-resultados" hidden>
-        <div class="analisis-progreso">
-            <div class="analisis-progreso-titulo">
-                <h4>Progreso Terapéutico</h4><strong data-progreso-nivel></strong>
+        <p data-texto-estado role="status"></p>
+        <label for="texto-sesion-{{ cita.id }}">Texto de esta sesión</label>
+        <textarea id="texto-sesion-{{ cita.id }}" data-texto-contenido rows="14" maxlength="500000"
+                  placeholder="Pega aquí la transcripción de esta sesión." disabled></textarea>
+        <div class="archivo-acciones">
+            <button type="button" class="analisis-revisar" data-texto-guardar disabled>Guardar transcripción</button>
+            <a class="analisis-revisar" href="{% url 'descargar_transcripcion_presencial' cita.id %}">Descargar texto guardado</a>
+        </div>
+        <label class="texto-confirmacion">
+            <input type="checkbox" data-texto-revisado>
+            Revisé el texto y confirmo que corresponde a esta sesión y a su audio actual, si lo tiene.
+        </label>
+        <button type="button" class="analisis-generar" data-texto-generar disabled>Generar notas con este texto</button>
+        <div data-texto-resultados hidden>
+            <h4>Borrador para revisión</h4>
+            <div class="analisis-notas">
+                <div><h4>Cómo llega</h4><p data-nota="como_llega"></p></div>
+                <div><h4>Notas de la sesión</h4><p data-nota="notas_sesion"></p></div>
+                <div><h4>Qué se lleva</h4><p data-nota="aprendizaje_paciente"></p></div>
+                <div><h4>Cómo se va</h4><p data-nota="como_se_va"></p></div>
+                <div><h4>Recomendaciones y tareas</h4><p data-nota="recomendaciones"></p></div>
             </div>
-            <p data-progreso-valor></p>
-            <progress aria-label="Progreso terapéutico estimado" max="100" value="0" hidden></progress>
-            <p data-progreso-compromiso></p>
-            <p data-progreso-evolucion></p>
-            <small>Estimación orientativa basada en el texto disponible. Requiere revisión clínica.</small>
+            <button type="button" class="analisis-revisar" data-texto-aplicar>Llevar borrador a la bitácora</button>
         </div>
-        <div class="analisis-notas">
-            <div><h4>¿Cómo llega tu paciente hoy?</h4><p data-nota="como_llega"></p></div>
-            <div><h4>Notas privadas</h4><p data-nota="notas_sesion"></p></div>
-            <div><h4>¿Qué te llevas de esta sesión?</h4><p data-nota="aprendizaje_paciente"></p></div>
-            <div><h4>¿Cómo se va el paciente?</h4><p data-nota="como_se_va"></p></div>
-            <div><h4>Recomendaciones y tareas</h4><p data-nota="recomendaciones"></p></div>
-        </div>
-        <button type="button" class="analisis-revisar">Llevar borrador a la bitácora</button>
-    </div>
+    </dialog>
 </section>
