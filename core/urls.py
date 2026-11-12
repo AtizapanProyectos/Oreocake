@@ -1,6 +1,7 @@
 from django.urls import path
 from . import views
 from . import flujo_clinico
+from .transcripcion_navegador import notas_desde_texto, transcribir_fragmento
 from .reportes import reporte_crecimiento_sesiones_view
 from .panel_bienestar_tectum import (
     panel_bienestar_tectum_view,
@@ -9,6 +10,7 @@ from .panel_bienestar_tectum import (
 
 
 urlpatterns = [
+    path('api/transcribir-fragmento/<int:cita_id>/', transcribir_fragmento, name='transcribir_fragmento'),
     path('', views.inicio, name='inicio'),
     path('tectum/', views.inicio_tectum, name='inicio_tectum'),
     path('convenio-tectum/', views.inicio_tectum, name='convenio_tectum'),
@@ -200,6 +202,10 @@ urlpatterns = [
     path('recep-59/', views.panel_recepcion, name='panel_recepcion'),
     path('recep-59/agregar-paciente/', views.recepcion_agregar_paciente, name='recepcion_agregar_paciente'),
     path('recep-59/agendar/', views.recepcion_agendar_cita, name='recepcion_agendar_cita'),
+    path('recep-59/paypal/reservar/', views.recepcion_reservar_paypal_manual, name='recepcion_reservar_paypal_manual'),
+    path('recep-59/paypal/preparar/', views.recepcion_preparar_paypal_manual, name='recepcion_preparar_paypal_manual'),
+    path('recep-59/paypal/<int:pago_id>/conciliar/', views.recepcion_conciliar_paypal_manual, name='recepcion_conciliar_paypal_manual'),
+    path('recep-59/agendar/confirmar/', views.admin_guardar_cita_ajax, {'recepcion': True}, name='recepcion_confirmar_cita'),
     path('recep-59/agendar-online/', views.recepcion_agendar_online, name='recepcion_agendar_online'),
     path('recep-59/agendar-presencial/', views.recepcion_agendar_presencial, name='recepcion_agendar_presencial'),
     path('recep-59/citas/', views.recepcion_citas, name='recepcion_citas'),
@@ -219,9 +225,12 @@ urlpatterns = [
     # header X-CSRFToken; el audio queda archivado en `GrabacionSesion`
     # (tabla hija de Citas, solo para citas 'Presencial').
     path('api/estado-grabacion-sesion/<int:cita_id>/', views.estado_grabacion_sesion, name='estado_grabacion_sesion'),
+    path('api/notas-texto-grabacion/<int:cita_id>/', notas_desde_texto, name='notas_texto_grabacion'),
+    path('adjunto-historial/<path:nombre>/', views.descargar_adjunto_historial, name='descargar_adjunto_historial'),
+    path('transcripcion-historial/<path:nombre>/', views.descargar_transcripcion_historial, name='descargar_transcripcion_historial'),
+    path('transcripcion-presencial/<int:cita_id>/', views.descargar_transcripcion_presencial, name='descargar_transcripcion_presencial'),
     path('audio-grabacion-sesion/<int:cita_id>/', views.audio_grabacion_sesion, name='audio_grabacion_sesion'),
     path('api/guardar-grabacion-sesion/<int:cita_id>/', views.api_guardar_grabacion_sesion, name='api_guardar_grabacion_sesion'),
-    path('api/reintentar-transcripcion/<int:cita_id>/', views.api_reintentar_transcripcion, name='api_reintentar_transcripcion'),
 
     # Panel TECTUM de bienestar emocional (5/11/2026). Solo superusuario.
     # No modifica vistas existentes: la lectura vive en core/panel_bienestar_tectum.py.

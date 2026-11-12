@@ -9,6 +9,16 @@ class ErrorPayPal(Exception):
         self.detalle = detalle
 
 
+def variables_paypal_invalidas():
+    client_id = getattr(settings, "PAYPAL_CLIENT_ID", "").strip()
+    if not client_id or client_id == "sb":
+        yield "PAYPAL_CLIENT_ID"
+    if not getattr(settings, "PAYPAL_CLIENT_SECRET", "").strip():
+        yield "PAYPAL_CLIENT_SECRET"
+    if getattr(settings, "PAYPAL_MODE", "") not in ("live", "sandbox"):
+        yield "PAYPAL_MODE"
+
+
 def _cliente():
     if settings.PAYPAL_MODE not in ("live", "sandbox") or not settings.PAYPAL_CLIENT_SECRET:
         raise ErrorPayPal()
@@ -46,15 +56,17 @@ def _orden(ruta, identificador, datos=None):
         raise ErrorPayPal() from error
 
 
-def crear_orden(pago):
-    contenido = _orden("", f"hope-cita-{pago.pk}-orden", {
+def crear_orden(pago, *, permitir_tarjetas=False):
+    datos = {
         "intent": "CAPTURE",
         "purchase_units": [{
             "reference_id": str(pago.cita_id),
             "amount": {"currency_code": "MXN", "value": f"{pago.monto:.2f}"},
         }],
-        "payment_source": {"paypal": {"experience_context": {"shipping_preference": "NO_SHIPPING"}}},
-    })
+    }
+    if not permitir_tarjetas:
+        datos["payment_source"] = {"paypal": {"experience_context": {"shipping_preference": "NO_SHIPPING"}}}
+    contenido = _orden("", f"hope-cita-{pago.pk}-orden", datos)
     orden = contenido.get("id")
     if not isinstance(orden, str) or not orden.isascii() or not orden.isalnum() or len(orden) > 64:
         raise ErrorPayPal()

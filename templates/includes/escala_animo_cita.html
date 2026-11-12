@@ -1,0 +1,19 @@
+<div id="mood-wizard-row" class="mood-wizard-row{% if coloreado %} mood-wizard-colores{% endif %}" role="group" {% if etiqueta_animo %}aria-labelledby="{{ etiqueta_animo }}"{% else %}aria-label="Estado de ánimo"{% endif %} style="display: flex; align-items: center; justify-content: center; gap: 26px; flex-wrap: wrap;">
+    <button type="button" class="mood-wizard-btn" data-animo="Muy mal" {% if coloreado %}aria-pressed="false"{% endif %} title="Muy mal" style="font-size: 30px; background: none; border: none; cursor: pointer; color: #cbd5e1; transition: 0.25s; line-height: 1;"><i class="fas fa-sad-cry"></i></button>
+    <button type="button" class="mood-wizard-btn" data-animo="Triste" {% if coloreado %}aria-pressed="false"{% endif %} title="Triste" style="font-size: 30px; background: none; border: none; cursor: pointer; color: #cbd5e1; transition: 0.25s; line-height: 1;"><i class="fas fa-frown"></i></button>
+    <button type="button" class="mood-wizard-btn" data-animo="Normal" {% if coloreado %}aria-pressed="false"{% endif %} title="Normal" style="font-size: 30px; background: none; border: none; cursor: pointer; color: #cbd5e1; transition: 0.25s; line-height: 1;"><i class="fas fa-meh"></i></button>
+    <button type="button" class="mood-wizard-btn" data-animo="Bien" {% if coloreado %}aria-pressed="false"{% endif %} title="Bien" style="font-size: 30px; background: none; border: none; cursor: pointer; color: #cbd5e1; transition: 0.25s; line-height: 1;"><i class="fas fa-smile"></i></button>
+    <button type="button" class="mood-wizard-btn" data-animo="Excelente" {% if coloreado %}aria-pressed="false"{% endif %} title="Excelente" style="font-size: 30px; background: none; border: none; cursor: pointer; color: #cbd5e1; transition: 0.25s; line-height: 1;"><i class="fas fa-grin-stars"></i></button>
+</div>
+<style>
+    .mood-wizard-row .mood-wizard-btn:hover { transform: scale(1.25); color: var(--c-yellow); }
+    .mood-wizard-row .mood-wizard-btn.selected { transform: scale(1.25); color: var(--c-purple); }
+    .mood-wizard-colores { padding: 12px 0; }
+    .mood-wizard-colores .mood-wizard-btn { color: var(--mood-color) !important; }
+    .mood-wizard-colores [data-animo="Muy mal"] { --mood-color: #dc2626; }
+    .mood-wizard-colores [data-animo="Triste"] { --mood-color: #ea580c; }
+    .mood-wizard-colores [data-animo="Normal"] { --mood-color: #a16207; }
+    .mood-wizard-colores [data-animo="Bien"] { --mood-color: #0f766e; }
+    .mood-wizard-colores [data-animo="Excelente"] { --mood-color: #7c3aed; }
+    .mood-wizard-colores .mood-wizard-btn.selected { outline: 2px solid currentColor; outline-offset: 4px; border-radius: 50%; }
+</style>

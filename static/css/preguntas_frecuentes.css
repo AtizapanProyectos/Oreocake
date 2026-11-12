@@ -3,6 +3,15 @@
     padding: clamp(3.5rem, 8vw, 7rem) 1.25rem;
     background: #f8fafc;
     color: var(--navy-900, var(--c-dark, #0f172a));
+    scroll-margin-top: 95px;
+}
+
+.hope-faq-mobile-link {
+    color: var(--c-purple);
+    font-size: .85rem;
+    font-weight: 700;
+    text-align: center;
+    padding: .5rem;
 }
 
 .hope-faq__inner {

@@ -6,7 +6,7 @@ from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 
-from .almacen_grabaciones import almacen_grabaciones
+from .almacen_grabaciones import almacen_adjuntos_clinicos, almacen_grabaciones, almacen_transcripciones
 
 
 def _sumar_meses(fecha, meses):
@@ -337,6 +337,15 @@ class Cita(models.Model):
         ('No registrado', 'No registrado'), ('Vino', 'Vino'), ('No Vino', 'No Vino'),
     ], db_index=True, verbose_name="Registro de llegada en recepción")
     fecha_registro_llegada = models.DateTimeField(blank=True, null=True, verbose_name="Fecha en que se registró la llegada")
+    class MetodoPagoPresencial(models.TextChoices):
+        SITIO_WEB = 'sitio_web', 'Sitio web'
+        EFECTIVO = 'efectivo', 'Pago con efectivo'
+        CLIP = 'clip_presencial', 'Pago con Clip (presencial)'
+
+    metodo_pago_presencial = models.CharField(
+        max_length=16, choices=MetodoPagoPresencial.choices,
+        default=MetodoPagoPresencial.SITIO_WEB,
+    )
 
     class Meta:
         unique_together = [['psicologo', 'fecha', 'hora']]
@@ -379,9 +388,15 @@ class HistorialClinico(models.Model):
     aprendizaje_paciente = models.TextField(blank=True, null=True, verbose_name="3. ¿Qué te llevas de esta sesión?")
     como_se_va = models.TextField(blank=True, null=True, verbose_name="4. Cierre y Alta de sesión")
     recomendaciones = models.TextField(blank=True, null=True, verbose_name="5. Recomendaciones generales")
-    archivo_adjunto = models.FileField(upload_to='bitacoras_adjuntos/', blank=True, null=True, verbose_name="Documento Escaneado o Foto")
+    archivo_adjunto = models.FileField(
+        upload_to='adjuntos/', storage=almacen_adjuntos_clinicos,
+        blank=True, null=True, verbose_name="Documento Escaneado o Foto",
+    )
     pendiente_revision_audio = models.BooleanField(default=False)
-    transcripcion_meet = models.FileField(upload_to='transcripciones_meet/', blank=True, null=True, verbose_name="Transcripción de Meet")
+    transcripcion_meet = models.FileField(
+        upload_to='transcripciones/', storage=almacen_transcripciones,
+        blank=True, null=True, verbose_name="Transcripción de Meet",
+    )
     diagnostico_temporal = models.CharField(max_length=250, blank=True, null=True)
     fecha_registro = models.DateTimeField(auto_now_add=True, db_index=True) # 🔥 OPTIMIZADO: list_filter rápido
 
@@ -1601,7 +1616,20 @@ class GrabacionSesion(models.Model):
     estado = models.CharField(max_length=16, choices=Estado.choices, default=Estado.ARCHIVADA, db_index=True)
     intento_iniciado = models.DateTimeField(null=True, blank=True)
     transcripcion = models.TextField(blank=True)
+    transcripcion_audio = models.CharField(max_length=100, blank=True, default='')
+    transcripcion_fecha = models.DateTimeField(null=True, blank=True)
     notas_generadas = models.JSONField(default=dict, blank=True)
+
+    @property
+    def transcripcion_anterior(self):
+        return bool(self.transcripcion_audio and self.transcripcion_audio != self.audio.name)
+
+    def asociar_transcripcion(self, texto):
+        """Asocia el texto al audio vigente y conserva la fecha del primer guardado."""
+        if self.transcripcion_audio != self.audio.name or not self.transcripcion_fecha:
+            self.transcripcion_fecha = timezone.now()
+        self.transcripcion = texto
+        self.transcripcion_audio = self.audio.name
 
     class Meta:
         verbose_name = "Grabación de Sesión (presencial)"
@@ -1632,3 +1660,19 @@ class PagoCitaPayPal(models.Model):
     captura = models.CharField(max_length=64, unique=True, null=True, blank=True)
     vence = models.DateTimeField(db_index=True)
     captura_iniciada = models.BooleanField(default=False)
+
+class AnalisisGrabacionClinica(models.Model):
+    class Estado(models.TextChoices):
+        PENDIENTE = 'pendiente', 'En espera'
+        PROCESANDO = 'procesando', 'Analizando transcripción'
+        LISTO = 'listo', 'Borrador listo para revisar'
+        ERROR = 'error', 'Análisis pendiente de reintento'
+
+    grabacion = models.OneToOneField(
+        GrabacionSesion, on_delete=models.CASCADE, related_name='analisis_clinico',
+    )
+    archivo_origen = models.CharField(max_length=100)
+    estado = models.CharField(max_length=12, choices=Estado.choices, default=Estado.PENDIENTE, db_index=True)
+    actualizado = models.DateTimeField(auto_now=True)
+    notas = models.JSONField(default=dict, blank=True)
+    progreso = models.JSONField(default=dict, blank=True)

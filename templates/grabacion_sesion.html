@@ -4,6 +4,7 @@
 {% block title %}Grabación de la sesión{% if cita.es_tectum %} - TECTUM{% else %} - HOPE{% endif %}{% endblock %}
 
 {% block content %}
+<link rel="stylesheet" href="{% static 'css/grabadora_sesion.css' %}">
 <style>
     body { background-color: #f8fafc; font-family: 'Plus Jakarta Sans', sans-serif; }
 
@@ -72,7 +73,7 @@
 
     <!-- Acciones finales -->
     <div class="gs-final">
-        <a class="gs-btn-expediente" href="{% url 'detalle_paciente' cita.paciente.id %}">
+        <a class="gs-btn-expediente" href="{% url 'detalle_paciente' cita.paciente.id %}#card-c-{{ cita.id }}">
             <i class="fas fa-folder-open"></i> Ir al expediente del paciente
         </a>
         <a class="gs-btn-agenda" href="{% url 'panel_doctor' %}">

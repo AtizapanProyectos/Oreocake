@@ -1,3 +1,4 @@
+{% load static %}
 {% comment %}
 ============================================================================
  GRABADORA DE SESIÓN PRESENCIAL (EXPERIMENTAL, 5/11/2026) — CON SERVIDOR
@@ -13,76 +14,16 @@
    versión archivada; grabar de nuevo la REMPLAZA en el servidor.
  ============================================================================
 {% endcomment %}
-<style>
-    .gsn-rec { font-family: 'Plus Jakarta Sans', 'Outfit', sans-serif; }
-    .gsn-rec-box {
-        background: #fefffb;
-        border: 1px dashed #a7d7c5;
-        border-radius: 18px;
-        padding: 16px 18px;
-        box-shadow: 0 4px 14px rgba(13, 148, 136, 0.06);
-        width: 100%;
-    }
-    .gsn-rec-title {
-        display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
-        font-family: 'Outfit', sans-serif; font-size: 14px; font-weight: 800;
-        color: #0f766e; margin-bottom: 6px;
-    }
-    .gsn-rec-badge {
-        font-size: 9px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase;
-        background: #ccfbf1; color: #0f766e; padding: 3px 8px; border-radius: 20px;
-    }
-    .gsn-rec-badge-serv {
-        font-size: 9px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase;
-        background: #e0e7ff; color: #3730a3; padding: 3px 8px; border-radius: 20px;
-    }
-    .gsn-rec-nota { font-size: 11px; color: #64748b; line-height: 1.45; margin: 0 0 12px; }
-    .gsn-rec-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-    .gsn-rec-btn {
-        border: none; cursor: pointer; border-radius: 100px;
-        font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 13px;
-        padding: 10px 18px; display: inline-flex; align-items: center; gap: 8px;
-        transition: all .2s ease; color: #fff;
-    }
-    .gsn-rec-btn:disabled { background: #e2e8f0 !important; color: #94a3b8 !important; cursor: not-allowed; box-shadow: none !important; transform: none !important; }
-    .gsn-rec-start { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); box-shadow: 0 6px 16px rgba(239, 68, 68, .25); }
-    .gsn-rec-start:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(239, 68, 68, .35); }
-    .gsn-rec-stop { background: linear-gradient(135deg, #475569 0%, #334155 100%); box-shadow: 0 6px 16px rgba(71, 85, 105, .25); }
-    .gsn-rec-stop:hover:not(:disabled) { transform: translateY(-1px); }
-    .gsn-rec-reintentar { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); box-shadow: 0 6px 16px rgba(217, 119, 6, .22); }
-    .gsn-rec-reintentar:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(217, 119, 6, .32); }
-    .gsn-rec-timer { font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 14px; color: #dc2626; font-variant-numeric: tabular-nums; }
-    .gsn-rec-pasos { font-size: 12px; padding-left: 22px; }
-    .gsn-rec-pasos [data-hecho] { color: #0f766e; }
-    .gsn-rec-pasos [aria-current="step"] { font-weight: 700; }
-    .gsn-rec-estado { font-size: 11.5px; color: #64748b; margin-top: 10px; line-height: 1.4; }
-    .gsn-rec-estado.error { color: #b91c1c; font-weight: 700; }
-    .gsn-rec-resultado { margin-top: 12px; }
-    .gsn-rec-audio { width: 100%; height: 36px; margin-bottom: 10px; outline: none; }
-    .gsn-rec-descargar {
-        display: inline-flex; align-items: center; gap: 8px; text-decoration: none;
-        background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%); color: #fff;
-        font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 12.5px;
-        padding: 10px 16px; border-radius: 100px; box-shadow: 0 6px 16px rgba(13, 148, 136, .22);
-        transition: all .2s ease;
-    }
-    .gsn-rec-descargar:hover { transform: translateY(-1px); }
-    .gsn-rec-guardada {
-        font-size: 11px; color: #0f766e; font-weight: 700; display: inline-flex; align-items: center; gap: 6px;
-    }
-    .gsn-rec-grabando-dot {
-        width: 10px; height: 10px; border-radius: 50%; background: #ef4444;
-        display: inline-block; margin-right: 6px; animation: gsn-rec-parpadeo 1.2s infinite;
-    }
-    @keyframes gsn-rec-parpadeo { 0%, 100% { opacity: 1; } 50% { opacity: .25; } }
-</style>
+
 
 <div class="gsn-rec" data-cita-id="{{ cita.id|default:'' }}"
+     data-url-transcribir="{% url 'transcribir_fragmento' cita.id %}"
+     data-url-texto="{% url 'notas_texto_grabacion' cita.id %}"
      data-url-estado="{% url 'estado_grabacion_sesion' cita.id %}"
      data-url-guardar="{% url 'api_guardar_grabacion_sesion' cita.id %}"
-     data-url-reintentar="{% url 'api_reintentar_transcripcion' cita.id %}"
      {% with grabacion=cita.grabacion_sesion %}
      {% if grabacion %}data-guardada="1"
+     data-version-audio="{{ grabacion.audio.name }}"
      data-audio-url="{% url 'audio_grabacion_sesion' cita.id %}"
      data-formato="{{ grabacion.formato }}"
      data-fecha-subida="{{ grabacion.fecha_subida|date:'d/m/Y H:i' }}"
@@ -91,103 +32,76 @@
     <div class="gsn-rec-box">
         <div class="gsn-rec-title">
             <i class="fas fa-microphone-lines"></i> Grabación de la sesión
-            <span class="gsn-rec-badge-serv"><i class="fas fa-cloud"></i> Se guarda en el server</span>
+            <span class="gsn-rec-badge-serv"><i class="fas fa-cloud"></i> Expediente clínico</span>
         </div>
         <p class="gsn-rec-nota">
             Graba aquí o selecciona un archivo de audio al terminar la sesión.
-            La transcripción y las notas se guardan en el expediente de esta cita.
+            El texto se guarda al terminar la grabación. Puedes revisarlo antes de generar las notas.
             Una grabación nueva reemplaza el audio anterior.
         </p>
         <div class="gsn-rec-actions">
-            <button type="button" class="gsn-rec-btn gsn-rec-start"><i class="fas fa-circle"></i> Iniciar Grabación</button>
-            <button type="button" class="gsn-rec-btn gsn-rec-stop" disabled><i class="fas fa-stop"></i> Detener y Guardar</button>
-            <button type="button" class="gsn-rec-btn gsn-rec-reintentar" hidden><i class="fas fa-rotate-right"></i> Reintentar transcripción</button>
+            <button type="button" class="gsn-rec-btn gsn-rec-start"><i class="fas fa-circle" aria-hidden="true"></i> Iniciar grabación</button>
+            <button type="button" class="gsn-rec-btn gsn-rec-stop" disabled><i class="fas fa-stop" aria-hidden="true"></i> Detener y guardar</button>
             <span class="gsn-rec-timer" style="display:none;">00:00</span>
         </div>
-        <label>
+        <label class="gsn-rec-carga">
             Cargar grabación
             <input type="file" class="gsn-rec-archivo" accept=".webm,.ogg,.wav,.mp3,.m4a,.mp4">
         </label>
-        <ol class="gsn-rec-pasos" hidden>
-            <li data-paso="cargada">Grabación cargada</li>
-            <li data-paso="audio">Procesando audio</li>
-            <li data-paso="transcribiendo">Transcribiendo</li>
-            <li data-paso="notas">Generando notas</li>
-            <li data-paso="guardando">Guardando información</li>
-            <li data-paso="completada">Proceso completado</li>
-        </ol>
+        <section class="gsn-vivo" id="transcripcion-en-vivo-{{ cita.id }}">
+            <h4><i class="fas fa-align-left" aria-hidden="true"></i> Transcripción en vivo</h4>
+            <p>El texto aparece por fragmentos mientras se conserva la grabación completa.</p>
+            <label class="gsn-vivo-nivel">Nivel del micrófono <meter min="0" max="100" value="0"></meter></label>
+            <p class="gsn-aviso" data-vivo-estado role="status">La transcripción comienza junto con la grabación.</p>
+            <label class="gsn-vivo-texto">Transcripción de la sesión
+                <textarea rows="7" placeholder="Aquí aparecerá el texto de la sesión. Podrás editarlo al terminar."></textarea>
+            </label>
+            <p class="gsn-aviso" data-vivo-guardado role="status"></p>
+            <div class="gsn-rec-actions">
+                <button type="button" class="gsn-rec-btn gsn-rec-sec" data-vivo-restaurar hidden>Cargar texto guardado</button>
+                <button type="button" class="gsn-rec-btn gsn-rec-sec" data-vivo-reintentar>Reintentar fragmentos</button>
+                <button type="button" class="gsn-rec-btn gsn-rec-sec" data-vivo-descargar>Descargar texto</button>
+                <button type="button" class="gsn-rec-btn gsn-rec-sec" data-vivo-guardar disabled>Guardar transcripción</button>
+            </div>
+            <div class="gsn-vivo-borrador">
+                <label class="gsn-vivo-revision"><input type="checkbox" data-vivo-revisado> Revisé el texto y sus posibles omisiones; enviar el texto a Groq para preparar el borrador.</label>
+                <div class="gsn-rec-actions">
+                    <button type="button" class="gsn-rec-btn gsn-rec-start" data-vivo-generar disabled>Generar notas con este texto</button>
+                    <a class="gsn-rec-btn gsn-rec-sec" href="{% url 'detalle_paciente' cita.paciente_id %}">Abrir expediente</a>
+                </div>
+                <progress max="100" value="0" hidden aria-label="Avance del análisis del texto"></progress>
+                <pre data-vivo-notas></pre>
+            </div>
+        </section>
         <div class="gsn-rec-proceso" role="status" aria-live="polite"></div>
-        <div class="gsn-rec-estado">
+        <div class="gsn-rec-estado" role="status">
             {% with grabacion=cita.grabacion_sesion %}
-            {% if grabacion %}Grabación guardada el {{ grabacion.fecha_subida|date:'d/m/Y H:i' }} · Duración {{ grabacion.duracion_legible }}. Puedes grabar de nuevo para reemplazarla.{% else %}Listo para grabar cuando lo necesites. No requiere contestar el IPP.{% endif %}
+            {% if grabacion %}Grabación guardada el {{ grabacion.fecha_subida|date:'d/m/Y H:i' }} · {{ grabacion.duracion_legible }} (mm:ss). Puedes grabar de nuevo para reemplazarla.{% else %}Listo para grabar cuando lo necesites. No requiere contestar el IPP.{% endif %}
             {% endwith %}
         </div>
         <div class="gsn-rec-resultado" style="display:none;">
             <audio controls class="gsn-rec-audio"></audio>
-            <a class="gsn-rec-descargar" href="#"><i class="fas fa-download"></i> Descargar audio</a>
-            <span class="gsn-rec-guardada" style="margin-left:10px;"><i class="fas fa-circle-check"></i></span>
+            <a class="gsn-rec-btn gsn-rec-descargar" href="#"><i class="fas fa-download"></i> Descargar audio</a>
+            <span class="gsn-rec-guardada"><i class="fas fa-circle-check"></i></span>
         </div>
     </div>
 </div>
 
+<script src="{% static 'js/transcripcion_en_vivo.js' %}"></script>
 <script>
 (function () {
     function initGrabadoraSesion(box) {
         if (box.dataset.recInit === '1') return;
         box.dataset.recInit = '1';
+        var vivo = window.HopeTranscripcion(box);
+        var audioEnVivo = false;
 
         var citaId = box.getAttribute('data-cita-id') || '';
         var urlGuardar = box.getAttribute('data-url-guardar');
-        var urlReintentar = box.getAttribute('data-url-reintentar');
         var archivo = box.querySelector('.gsn-rec-archivo');
         var proceso = box.querySelector('.gsn-rec-proceso');
-        var consulta = 0;
-        var estadosFinales = ['completada', 'error', 'archivada'];
-
-        function mostrarProceso(estadoActual, mensaje, puedeReintentar) {
-            var lista = box.querySelector('.gsn-rec-pasos');
-            var pasos = lista ? Array.from(lista.querySelectorAll('[data-paso]')) : [];
-            var actual = pasos.findIndex(function (paso) { return paso.dataset.paso === estadoActual; });
-            if (lista) lista.hidden = estadoActual === 'archivada';
-            if (actual >= 0) {
-                pasos.forEach(function (paso, indice) {
-                    paso.toggleAttribute('data-hecho', indice < actual || estadoActual === 'completada');
-                    if (indice === actual) paso.setAttribute('aria-current', 'step');
-                    else paso.removeAttribute('aria-current');
-                });
-            }
-            if (estadoActual === 'error') {
-                mensaje += '. Puedes reintentar la transcripción sin volver a subir el audio.';
-            }
-            proceso.textContent = mensaje;
-            var reintentable = typeof puedeReintentar === 'boolean'
-                ? puedeReintentar
-                : (estadoActual === 'error' || estadoActual === 'completada');
-            btnReintentar.hidden = !reintentable;
-            btnReintentar.disabled = false;
-            btnReintentar.innerHTML = estadoActual === 'completada'
-                ? '<i class="fas fa-rotate-right"></i> Volver a transcribir'
-                : '<i class="fas fa-rotate-right"></i> Reintentar transcripción';
-        }
-
-        async function consultarProceso(turno) {
-            try {
-                var respuesta = await fetch(box.dataset.urlEstado, { cache: 'no-store' });
-                if (!respuesta.ok) throw new Error();
-                var datos = await respuesta.json();
-                if (turno !== consulta) return;
-                mostrarProceso(datos.estado, datos.mensaje, datos.puede_reintentar);
-                if (!estadosFinales.includes(datos.estado)) {
-                    setTimeout(function () { consultarProceso(turno); }, 2500);
-                }
-            } catch (error) {
-                if (turno === consulta) proceso.textContent = 'Estado temporalmente no disponible. Recarga para consultarlo.';
-            }
-        }
-
         var btnStart = box.querySelector('.gsn-rec-start');
         var btnStop = box.querySelector('.gsn-rec-stop');
-        var btnReintentar = box.querySelector('.gsn-rec-reintentar');
         var timer = box.querySelector('.gsn-rec-timer');
         var estado = box.querySelector('.gsn-rec-estado');
         var resultado = box.querySelector('.gsn-rec-resultado');
@@ -226,59 +140,28 @@
             linkDesc.href = box.getAttribute('data-audio-url') || '#';
             linkDesc.setAttribute('download', 'grabacion_cita_' + citaId + '.' + (box.dataset.formato || 'webm'));
             resultado.style.display = 'block';
-            iconoGuardada.innerHTML = '<i class="fas fa-circle-check"></i> Guardada en el server el ' + (box.getAttribute('data-fecha-subida') || '') + ' (' + (box.getAttribute('data-duracion') || '') + ')';
+            iconoGuardada.innerHTML = '<i class="fas fa-circle-check"></i> Guardada en el servidor el ' + (box.getAttribute('data-fecha-subida') || '') + ' (' + (box.getAttribute('data-duracion') || '') + ' min)';
         }
 
-        if (box.dataset.guardada === '1') consultarProceso(++consulta);
+
 
         archivo.addEventListener('change', function () {
             if (!archivo.files.length) return;
+            if (!vivo.puedeIniciar()) {
+                archivo.value = '';
+                setEstado('Guarda el texto y reintenta los fragmentos pendientes antes de reemplazar el audio.', true);
+                return;
+            }
+            vivo.limpiar();
+            audioEnVivo = false;
             var seleccion = archivo.files[0];
             archivo.value = '';
             subirAudio(seleccion, seleccion.name, 0);
         });
 
-        btnReintentar.addEventListener('click', function () {
-            if (!urlReintentar) return;
-            var csrf = getCookie('csrftoken');
-            if (!csrf) {
-                setEstado('No se encontró el token de seguridad (csrftoken). Recarga la página.', true);
-                return;
-            }
-            btnReintentar.disabled = true;
-            setEstado('Reencolando la transcripción en el servidor…');
-            fetch(urlReintentar, {
-                method: 'POST',
-                headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRFToken': csrf },
-                credentials: 'same-origin'
-            })
-            .then(function (res) {
-                return res.json().catch(function () { return {}; }).then(function (data) {
-                    return { ok: res.ok, status: res.status, data: data };
-                });
-            })
-            .then(function (r) {
-                if (r.status === 409) {
-                    // Ya estaba procesándose: seguimos consultando el estado.
-                    consultarProceso(++consulta);
-                    return;
-                }
-                if (!r.ok || !r.data || r.data.status !== 'success') {
-                    btnReintentar.disabled = false;
-                    setEstado((r.data && r.data.message) || 'No se pudo reintentar la transcripción.', true);
-                    return;
-                }
-                mostrarProceso('cargada', 'Grabación en cola de transcripción local…');
-                consultarProceso(++consulta);
-            })
-            .catch(function () {
-                btnReintentar.disabled = false;
-                setEstado('Falló la conexión al reintentar. Intenta de nuevo.', true);
-            });
-        });
-
         btnStart.addEventListener('click', async function () {
             if (grabando) return;
+            if (!vivo.puedeIniciar()) { setEstado('Guarda el texto y reintenta los fragmentos pendientes antes de iniciar otra grabación.', true); return; }
             btnStart.disabled = true;
             archivo.disabled = true;
             setEstado('');
@@ -314,6 +197,8 @@
             recorder.ondataavailable = function (e) { if (e.data && e.data.size > 0) chunks.push(e.data); };
             recorder.onstop = function () { subirAlServidor(); };
             recorder.start();
+            audioEnVivo = true;
+            vivo.iniciar(stream);
             grabando = true;
             btnStart.disabled = true;
             btnStop.disabled = false;
@@ -336,8 +221,13 @@
             btnStop.disabled = true;
         });
 
-        function subirAlServidor() {
+        async function subirAlServidor() {
             var duracion = segundos(Date.now());
+            grabando = false;
+            pararTimer();
+            btnStart.disabled = true;
+            btnStop.disabled = true;
+            await vivo.detener();
             setEstado('<i class="fas fa-cloud-arrow-up"></i> Subiendo grabación al servidor…');
             try { if (stream) { stream.getTracks().forEach(function (t) { t.stop(); }); stream = null; } } catch (e) {}
 
@@ -364,6 +254,7 @@
             var fd = new FormData();
             fd.append('audio', blob, nombre);
             fd.append('duracion_segundos', String(duracion));
+            if (audioEnVivo) fd.append('texto_navegador', '1');
 
             var csrf = getCookie('csrftoken');
             if (!csrf) {
@@ -382,17 +273,16 @@
             .then(function (data) {
                 marcarListo();
                 if (data && data.status === 'success') {
+                    vivo.guardado(data);
                     if (urlBlob) { URL.revokeObjectURL(urlBlob); urlBlob = null; }
                     urlBlob = URL.createObjectURL(blob);
                     audio.src = urlBlob;
                     linkDesc.href = data.archivo_url || urlBlob;   // preferimos la copia del server
                     linkDesc.setAttribute('download', 'grabacion_cita_' + citaId + '.' + (data.formato || extensionDe(blob.type)));
                     resultado.style.display = 'block';
-                    iconoGuardada.innerHTML = '<i class="fas fa-circle-check"></i> Guardada en el server (' + (data.tamanio_mb ? data.tamanio_mb + ' MB · ' : '') + fmtSegundos(duracion) + ')';
-                    setEstado('Grabación guardada. La transcripción local corre en el servidor.');
-                    mostrarProceso('cargada', 'Grabación en cola de transcripción local…');
-                    var turno = ++consulta;
-                    setTimeout(function () { consultarProceso(turno); }, 1200);
+                    iconoGuardada.innerHTML = '<i class="fas fa-circle-check"></i> Guardada en el servidor (' + (data.tamanio_mb ? data.tamanio_mb + ' MB · ' : '') + fmtSegundos(duracion) + ')';
+                    setEstado('Grabación guardada en el servidor.');
+                    proceso.textContent = 'Audio guardado. Revisa o pega la transcripción para generar las notas.';
                 } else {
                     mostrarCopiaLocal(blob, nombre, data.message || 'El servidor no guardó la grabación.');
                 }
@@ -422,20 +312,7 @@
         }
     }
 
-    function iniciarTodas() {
-        document.querySelectorAll('.gsn-rec').forEach(function (box) {
-            initGrabadoraSesion(box);
-        });
-    }
-
-    // Permite inicializar el bloque si el panel lo inserta después de cargar
-    // (innerHTML), y también deja el arranque normal por DOMContentLoaded.
-    window.initGrabadoraSesion = initGrabadoraSesion;
-    window.HopeGrabadoraSesion = iniciarTodas;
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', iniciarTodas);
-    } else {
-        iniciarTodas();
-    }
+    if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded',()=>document.querySelectorAll('.gsn-rec').forEach(initGrabadoraSesion));
+    else document.querySelectorAll('.gsn-rec').forEach(initGrabadoraSesion);
 })();
 </script>

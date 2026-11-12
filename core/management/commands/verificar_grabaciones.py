@@ -1,11 +1,10 @@
-"""Diagnóstico de solo lectura del almacenamiento de grabaciones y del modelo."""
+"""Diagnóstico de solo lectura del almacenamiento de grabaciones y del texto."""
 import os
 from pathlib import Path
 
 from django.conf import settings
 from django.core.management.base import BaseCommand
 
-from core.grabaciones import configuracion_modelo
 from core.models import GrabacionSesion
 
 
@@ -86,21 +85,7 @@ class Command(BaseCommand):
                 f"audio={'OK' if existe else 'FALTA'} | {grabacion.audio.name}"
             )
 
-        nombre, carpeta = configuracion_modelo()
-        ruta_modelo = Path(carpeta)
         self.stdout.write("")
-        self.stdout.write("== Modelo faster-whisper ==")
-        self.stdout.write(f"Modelo configurado: {nombre}")
-        self.stdout.write(f"Carpeta de modelos: {ruta_modelo} | Existe: {ruta_modelo.exists()}")
-        if ruta_modelo.exists():
-            archivos_modelo = [
-                ruta for ruta in ruta_modelo.rglob("*") if ruta.is_file()
-            ]
-            peso = sum(ruta.stat().st_size for ruta in archivos_modelo) / (1024 * 1024)
-            self.stdout.write(
-                f"Archivos del modelo: {len(archivos_modelo)} ({peso:.1f} MB)"
-            )
-        self.stdout.write(
-            "El modelo se descarga la primera vez; si esta carpeta vive en el "
-            "volumen, se conserva entre deploys."
-        )
+        self.stdout.write("== Transcripción en vivo ==")
+        clave = "configurada" if os.environ.get("GROQ_API_KEY") else "no configurada"
+        self.stdout.write(f"GROQ_API_KEY: {clave}")

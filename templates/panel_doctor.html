@@ -4,6 +4,7 @@
 {% block title %}Panel de Terapeuta — HOPE{% endblock %}
 
 {% block content %}
+<link rel="stylesheet" href="{% static 'css/grabadora_sesion.css' %}">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700;900&family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap" rel="stylesheet">
@@ -1197,7 +1198,8 @@ body {
 
 <div class="cita-info">
               <div class="cita-tags">
-                <span class="ctag ctag-purple"><i class="fas fa-user"></i> Individual</span>
+                <span class="ctag ctag-purple"><i class="fas fa-user"></i> {{ cita.get_tipo_sesion_display }}</span>
+                <span class="ctag ctag-purple">{{ cita.get_estado_display }}</span>
                 {% if cita.modalidad == 'Presencial' %}
                   <span class="ctag badge-presencial"><i class="fas fa-building"></i> Presencial</span>
                 {% else %}
@@ -1230,7 +1232,7 @@ body {
               {% endif %} </div>
 
             <div class="cita-actions">
-              {% if cita.modalidad == 'Presencial' %}
+              {% if cita.agenda_activa and cita.modalidad == 'Presencial' %}
                 <!-- 5/11/2026: botones INDEPENDIENTES. La grabación ya NO
                      requiere contestar el IPP; ambos aparecen siempre. -->
                 <a href="{% url 'formulario_previo_meet' cita.id %}" target="_blank" rel="noopener"
@@ -1240,20 +1242,18 @@ body {
                 {% if cita.evaluacion_servicio %}
                   <span class="pill-badge" style="background:#ccfbf1; color:#0f766e;"><i class="fas fa-clipboard-check"></i> IPP contestado</span>
                 {% endif %}
-              {% elif cita.enlace_meet %}
+              {% elif cita.modalidad != 'Presencial' and cita.enlace_meet %}
                 <a href="{{ cita.enlace_meet }}" target="_blank" class="hbtn hbtn-video"
                    onclick="setTimeout(() => { window.location.href = '{% url 'detalle_paciente' cita.paciente.id %}'; }, 100);">
                   <i class="fas fa-video"></i> Iniciar Meet
                 </a>
               {% endif %}
-              {% if cita.modalidad != 'Presencial' %}
-              <a href="{% url 'detalle_paciente' cita.paciente.id %}" class="hbtn hbtn-ghost">
+              <a href="{% url 'detalle_paciente' cita.paciente.id %}#card-c-{{ cita.id }}" class="hbtn hbtn-ghost">
                 <i class="fas fa-folder-open"></i> Expediente
               </a>
-              {% endif %}
             </div>
 
-            {% if cita.modalidad == 'Presencial' %}
+            {% if cita.agenda_activa and cita.modalidad == 'Presencial' %}
             <!-- 5/11/2026: la grabadora vive en una fila COMPLETA de la grid
                  (grid-column: 1 / -1), NO dentro de la columna de acciones:
                  si va dentro, el column 'auto' + align-items:flex-end la

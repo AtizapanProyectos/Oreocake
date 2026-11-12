@@ -1,0 +1,36 @@
+<section class="analisis-grabacion" data-url="{% url 'notas_texto_grabacion' cita.id %}" data-cita="{{ cita.id }}">
+    <div class="archivo-acciones">
+        <button type="button" class="analisis-generar" data-texto-abrir>Ver transcripción</button>
+        <button type="button" class="analisis-generar" data-texto-abrir>Generar notas con este texto</button>
+    </div>
+    <dialog class="archivo-transcripcion" aria-labelledby="titulo-texto-{{ cita.id }}">
+        <div class="transcripcion-cabecera">
+            <h3 id="titulo-texto-{{ cita.id }}">Transcripción · {{ cita.fecha|date:"d/m/Y" }} · {{ cita.hora|time:"H:i" }}</h3>
+            <button type="button" class="analisis-revisar" data-texto-cerrar>Cerrar</button>
+        </div>
+        <p data-texto-estado role="status"></p>
+        <label for="texto-sesion-{{ cita.id }}">Texto de esta sesión</label>
+        <textarea id="texto-sesion-{{ cita.id }}" data-texto-contenido rows="14" maxlength="500000"
+                  placeholder="Pega aquí la transcripción de esta sesión." disabled></textarea>
+        <div class="archivo-acciones">
+            <button type="button" class="analisis-revisar" data-texto-guardar disabled>Guardar transcripción</button>
+            <a class="analisis-revisar" href="{% url 'descargar_transcripcion_presencial' cita.id %}">Descargar texto guardado</a>
+        </div>
+        <label class="texto-confirmacion">
+            <input type="checkbox" data-texto-revisado>
+            Revisé el texto y confirmo que corresponde a esta sesión y a su audio actual, si lo tiene.
+        </label>
+        <button type="button" class="analisis-generar" data-texto-generar disabled>Generar notas con este texto</button>
+        <div data-texto-resultados hidden>
+            <h4>Borrador para revisión</h4>
+            <div class="analisis-notas">
+                <div><h4>Cómo llega</h4><p data-nota="como_llega"></p></div>
+                <div><h4>Notas de la sesión</h4><p data-nota="notas_sesion"></p></div>
+                <div><h4>Qué se lleva</h4><p data-nota="aprendizaje_paciente"></p></div>
+                <div><h4>Cómo se va</h4><p data-nota="como_se_va"></p></div>
+                <div><h4>Recomendaciones y tareas</h4><p data-nota="recomendaciones"></p></div>
+            </div>
+            <button type="button" class="analisis-revisar" data-texto-aplicar>Llevar borrador a la bitácora</button>
+        </div>
+    </dialog>
+</section>
