@@ -226,7 +226,14 @@
         font-family: var(--font-h);
     }
 
-    .taller-badge-online {
+    .taller-modalidades {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-bottom: 32px;
+    }
+
+    .taller-badge-modalidad {
         display: inline-flex;
         align-items: center;
         gap: 12px;
@@ -239,15 +246,14 @@
         font-size: .88rem;
         text-transform: uppercase;
         letter-spacing: 1px;
-        margin-bottom: 32px;
         box-shadow: 0 15px 30px rgba(248, 91, 140, .3);
     }
 
-    .taller-badge-online i {
+    .taller-badge-modalidad > i {
         font-size: 1.1rem;
     }
 
-    .taller-badge-online small {
+    .taller-badge-modalidad small {
         display: block;
         font-weight: 600;
         text-transform: none;
@@ -256,6 +262,26 @@
         margin-top: 2px;
         opacity: .95;
     }
+
+    .taller-badge-presencial {
+        background: var(--c-purple);
+        box-shadow: 0 15px 30px rgba(90, 63, 163, .3);
+    }
+
+    .taller-badge-presencial .taller-ubicacion {
+        display: table;
+        margin-top: 5px;
+        padding: 5px 10px;
+        border-radius: 8px;
+        background: #fff;
+        color: var(--c-purple);
+        font-size: .8rem;
+        letter-spacing: 0;
+        text-transform: none;
+    }
+
+    .taller-ubicacion:hover { text-decoration: underline; }
+    .taller-ubicacion:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
 
     .taller-hero-actions {
         display: flex;
@@ -687,12 +713,14 @@
             box-sizing: border-box;
         }
 
-        .taller-badge-online {
+        .taller-badge-modalidad {
             width: 100%;
             box-sizing: border-box;
             justify-content: center;
             text-align: center;
         }
+
+        .taller-badge-presencial .taller-ubicacion { margin-inline: auto; }
 
         .taller-cta-btn {
             width: 100%;
@@ -759,10 +787,18 @@
             </div>
         </div>
 
-        <div>
-            <span class="taller-badge-online">
-                <i class="fas fa-video"></i>
+        <div class="taller-modalidades">
+            <span class="taller-badge-modalidad">
+                <i class="fas fa-video" aria-hidden="true"></i>
                 <span>En línea vía Google Meet<small>Acceso privado desde la comodidad de tu hogar</small></span>
+            </span>
+            <span class="taller-badge-modalidad taller-badge-presencial">
+                <i class="fas fa-location-dot" aria-hidden="true"></i>
+                <span>O presencial en sede HOPE
+                    <a class="taller-ubicacion" href="https://maps.app.goo.gl/MUVCAVMi3DTprEsf7" target="_blank" rel="noopener noreferrer">
+                        Ver ubicación en Google Maps <i class="fas fa-arrow-up-right-from-square" aria-hidden="true"></i>
+                    </a>
+                </span>
             </span>
         </div>
 
