@@ -4168,11 +4168,15 @@ def generar_sintesis_ajax(request, paciente_id):
         psicologo = request.user.perfil_psicologo
 
         # 1. Obtener Cuestionario Inicial
-        cuestionario_texto = "El paciente no tiene cuestionario inicial registrado."
-        if hasattr(paciente, 'cuestionario_inicial'):
-            respuestas = paciente.cuestionario_inicial.respuestas
-            # Formatear el JSON del cuestionario a texto legible
-            cuestionario_texto = "\n".join([f"- {k.replace('_', ' ').capitalize()}: {v}" for k, v in respuestas.items()])
+        cuestionario = paciente.cuestionario_inicial
+        respuestas = cuestionario.respuestas if cuestionario is not None else None
+        contexto_inicial = ""
+        if isinstance(respuestas, dict) and respuestas:
+            cuestionario_texto = "\n".join(
+                f"- {campo.replace('_', ' ').capitalize()}: {valor}"
+                for campo, valor in respuestas.items()
+            )
+            contexto_inicial = f"CUESTIONARIO INICIAL (Contexto):\n{cuestionario_texto}\n\n"
 
         # 2. Obtener TODAS las bitácoras en orden cronológico
         historiales = HistorialClinico.objects.filter(paciente=paciente, psicologo=psicologo, pendiente_revision_audio=False).order_by('fecha_registro')
@@ -4192,9 +4196,10 @@ def generar_sintesis_ajax(request, paciente_id):
         # 3. El Prompt para Groq
         prompt = (
             f"Eres un supervisor clínico experto de altísimo nivel. A continuación te presento los datos de un paciente llamado {paciente.first_name}.\n\n"
-            f"CUESTIONARIO INICIAL (Contexto):\n{cuestionario_texto}\n\n"
+            f"{contexto_inicial}"
             f"BITÁCORAS DE SESIONES (Evolución cronológica):\n{bitacoras_texto}\n\n"
-            "Analiza todo cruzando la información y genera una SÍNTESIS INTEGRAL MAESTRA profunda y estructurada con los siguientes 4 puntos:\n"
+            "Usa únicamente la información proporcionada. Si falta contexto inicial, basa la síntesis en las bitácoras sin inferir antecedentes.\n"
+            "Genera una SÍNTESIS INTEGRAL MAESTRA profunda y estructurada con los siguientes 4 puntos:\n"
             "1. Situación actual del paciente.\n"
             "2. Contexto inicial y evolución a través de las sesiones.\n"
             "3. Puntos clínicos relevantes identificados (patrones, alertas, logros).\n"
