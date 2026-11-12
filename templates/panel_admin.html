@@ -800,7 +800,10 @@ body {
     </div>
     
     <!-- Contenedor para agrupar el botón y el indicador -->
-    <div style="display: flex; gap: 14px; align-items: center;">
+    <div style="display: flex; gap: 14px; align-items: center; flex-wrap: wrap;">
+      <a href="{% url 'panel_codigos_qr' %}" class="btn-agendar">
+        <i class="fas fa-qrcode" aria-hidden="true"></i> Códigos QR
+      </a>
       
       <!-- Botón al nuevo Reporte de Crecimiento y Sesiones -->
       <a href="{% url 'reporte_crecimiento_sesiones' %}" class="btn-agendar" style="background: linear-gradient(135deg, var(--teal), #1CA6A6); color: #0E3A3A;">

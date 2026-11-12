@@ -1,5 +1,6 @@
 import calendar
 from datetime import date
+from uuid import uuid4
 
 from django.db import models
 from django.contrib.auth.models import User
@@ -7,6 +8,28 @@ from django.core.exceptions import ValidationError
 from django.utils import timezone
 
 from .almacen_grabaciones import almacen_grabaciones, almacen_transcripciones
+
+
+class CodigoQRHope(models.Model):
+    class Color(models.TextChoices):
+        MORADO = 'morado', 'Morado HOPE'
+        PETROLEO = 'petroleo', 'Verde petróleo'
+        NEGRO = 'negro', 'Negro'
+
+    codigo = models.UUIDField(default=uuid4, unique=True, editable=False)
+    nombre = models.CharField(max_length=120)
+    destino = models.URLField(max_length=2048)
+    color = models.CharField(max_length=12, choices=Color.choices, default=Color.MORADO)
+    escaneos = models.PositiveBigIntegerField(default=0)
+    visitas_directas = models.PositiveBigIntegerField(default=0)
+    activo = models.BooleanField(default=True)
+    creado = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-creado', '-pk']
+
+    def __str__(self):
+        return self.nombre
 
 
 def _sumar_meses(fecha, meses):
