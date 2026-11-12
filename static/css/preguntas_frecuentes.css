@@ -1,0 +1,73 @@
+.hope-faq {
+    --faq-accent: var(--c-purple, var(--blue-600, #1d4ed8));
+    padding: clamp(3.5rem, 8vw, 7rem) 1.25rem;
+    background: #f8fafc;
+    color: var(--navy-900, var(--c-dark, #0f172a));
+    scroll-margin-top: 95px;
+}
+
+.hope-faq-mobile-link {
+    color: var(--c-purple);
+    font-size: .85rem;
+    font-weight: 700;
+    text-align: center;
+    padding: .5rem;
+}
+
+.hope-faq__inner {
+    max-width: 72rem;
+    margin-inline: auto;
+}
+
+.hope-faq h2 {
+    margin: 0 0 2rem;
+    font: 800 clamp(2rem, 5vw, 3.25rem)/1.1 var(--font-h);
+    text-align: center;
+}
+
+.hope-faq__groups {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 25rem), 1fr));
+    align-items: start;
+    gap: 1.25rem;
+}
+
+.hope-faq__group {
+    padding: clamp(1rem, 3vw, 1.5rem);
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 1.25rem;
+}
+
+.hope-faq h3 {
+    margin: 0 0 .75rem;
+    color: var(--faq-accent);
+    font: 800 1.25rem/1.3 var(--font-h);
+}
+
+.hope-faq details + details {
+    border-top: 1px solid #e2e8f0;
+}
+
+.hope-faq summary {
+    padding: .85rem .25rem;
+    font-weight: 700;
+    line-height: 1.45;
+    cursor: pointer;
+}
+
+.hope-faq summary::marker,
+.hope-faq a {
+    color: var(--faq-accent);
+}
+
+.hope-faq summary:focus-visible {
+    outline: 2px solid var(--faq-accent);
+    outline-offset: 2px;
+}
+
+.hope-faq details p {
+    margin: 0 0 .9rem;
+    color: #475569;
+    line-height: 1.65;
+}

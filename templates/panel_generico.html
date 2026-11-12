@@ -563,7 +563,7 @@ function mostrarErrorCita(mensaje, opts) {
         {% if orden_paypal_pendiente %}
         <p>
             Hay un pago pendiente de verificar.
-            <button type="button" onclick="guardarCitaSinPago('{{ orden_paypal_pendiente|escapejs }}')">Verificar mi pago</button>
+            <button type="button" onclick="guardarCitaSinPago('{{ orden_paypal_pendiente|escapejs }}', null, true)">Verificar mi pago</button>
         </p>
         {% endif %}
 
@@ -1399,6 +1399,8 @@ function mostrarErrorCita(mensaje, opts) {
     </div>
 </div>
 
+{% include 'snippets/donar_terapia_confirmacion.html' %}
+
 <div id="alerta-exito-cita" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); backdrop-filter: blur(8px); z-index: 999999; justify-content: center; align-items: center;">
     <div class="chic-card alerta-animada" style="height: auto; width: 90%; max-width: 500px; text-align: center; padding: 50px; border-top: 6px solid var(--c-teal);">
         <i class="fas fa-check-circle" style="font-size: 65px; color: var(--c-teal); margin-bottom: 20px;"></i>
@@ -2184,7 +2186,7 @@ function datosCitaPayPal() {
     return datos;
 }
 
-function guardarCitaSinPago(pagoRef, acciones) {
+function guardarCitaSinPago(pagoRef, acciones, recuperarPago = false) {
     const huboPago = Boolean(pagoRef);
 
     // Mostrar loading
@@ -2192,10 +2194,11 @@ function guardarCitaSinPago(pagoRef, acciones) {
     document.getElementById('step-3-loading').style.display = 'block';
 
     try {
-        const formData = datosCitaPayPal();
-        if (huboPago) formData.append('paypal_order_id', pagoRef);
+        const formData = recuperarPago ? new FormData() : datosCitaPayPal();
+        if (huboPago) formData.append(recuperarPago ? 'orden' : 'paypal_order_id', pagoRef);
+        const url = recuperarPago ? "{% url 'capturar_orden_cita_paypal' %}" : "{% url 'guardar_cita' %}";
 
-        return fetch("{% url 'guardar_cita' %}", {
+        return fetch(url, {
             method: 'POST',
             headers: {
                 'X-CSRFToken': getCookie('csrftoken')
@@ -2226,6 +2229,7 @@ function guardarCitaSinPago(pagoRef, acciones) {
                 }
 
                 document.getElementById('alerta-exito-cita').style.display = 'flex';
+                if (huboPago && ['Confirmada', 'Completada'].includes(data.estado)) mostrarDonacionTerapia(data.cita_id);
 
             } else {
 

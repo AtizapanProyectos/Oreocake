@@ -396,6 +396,13 @@
 
             <div id="hpa-pago-box" class="hpa-pago">
               <p class="hpa-pago-titulo">Forma de pago</p>
+              <div id="hpa-pago-presencial" class="hpa-oculto" style="margin-bottom:12px;">
+                <p class="hpa-pago-aviso">Registra el pago recibido en caja o terminal.</p>
+                <div class="hpa-pago-opciones">
+                  <button type="button" class="hpa-btn sec" data-pago-presencial="efectivo" disabled>Pago con efectivo</button>
+                  <button type="button" class="hpa-btn sec" data-pago-presencial="clip_presencial" disabled>Pago con Clip (presencial)</button>
+                </div>
+              </div>
               <div class="hpa-pago-opciones">
                 <label class="hpa-pago-opcion">
                   <input type="radio" name="hpa-metodo" id="hpa-metodo-transferencia" value="transferencia" checked>
@@ -516,6 +523,9 @@ document.addEventListener('DOMContentLoaded', function () {
     let paypalOcupado = false;
     let paypalRenderizado = false;
     let ordenPendiente = null;
+    let guardandoCita = false;
+    const pagosPresenciales = document.getElementById('hpa-pago-presencial');
+    const botonesPresenciales = pagosPresenciales.querySelectorAll('[data-pago-presencial]');
 
     function seleccionarAnimo(valor) {
         animo = valor;
@@ -839,9 +849,10 @@ document.addEventListener('DOMContentLoaded', function () {
         horaEl.classList.toggle('sin', !horaSeleccionada);
         const listo = citaLista();
         const usaPayPal = metodoPago === 'paypal';
-        btnConfirmar.disabled = !listo || usaPayPal;
+        btnConfirmar.disabled = !listo || usaPayPal || guardandoCita;
         btnConfirmar.classList.toggle('hpa-oculto', usaPayPal);
-        pagoBox.inert = !listo;
+        pagoBox.inert = !listo || guardandoCita;
+        actualizarPagosPresenciales();
         detalleTransferencia.classList.toggle('hpa-oculto', metodoPago !== 'transferencia');
         detallePayPal.classList.toggle('hpa-oculto', !usaPayPal);
         actualizarBotonConfirmar();
@@ -978,7 +989,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // ------------------------------------------------------------------
     document.getElementById('hpa-form').addEventListener('submit', function (e) {
         e.preventDefault();
-        if (!citaLista() || metodoPago === 'paypal') return;
+        if (!citaLista() || metodoPago === 'paypal' || guardandoCita) return;
 
         msgBox.classList.remove('activo', 'ok', 'error');
 
@@ -1020,6 +1031,41 @@ document.addEventListener('DOMContentLoaded', function () {
         return Boolean(pacienteId && fechaSeleccionada && horaSeleccionada && animo);
     }
 
+    function actualizarPagosPresenciales() {
+        const visible = modalidad === 'Presencial' && !esTectumSeleccionado;
+        pagosPresenciales.classList.toggle('hpa-oculto', !visible);
+        botonesPresenciales.forEach(boton => {
+            boton.disabled = !visible || !citaLista() || guardandoCita || paypalOcupado || Boolean(ordenPendiente);
+        });
+    }
+
+    botonesPresenciales.forEach(boton => boton.addEventListener('click', async () => {
+        if (boton.disabled) return;
+        const datos = armarDatosComunes(new FormData());
+        datos.append('metodo_pago_presencial', boton.dataset.pagoPresencial);
+        guardandoCita = true;
+        bloquearDatosPayPal(true);
+        actualizarResumen();
+        msgBox.classList.remove('activo', 'ok', 'error');
+        try {
+            const respuesta = await fetch(URL_GUARDAR, {
+                method: 'POST', headers: { 'X-CSRFToken': csrfToken }, body: datos
+            });
+            const cita = await respuesta.json();
+            if (!respuesta.ok || cita.status !== 'success') {
+                mostrarErrorPayPal(cita.message || 'No se pudo confirmar la cita.');
+                return;
+            }
+            mostrarExito('Cita confirmada. ' + cita.metodo_pago_presencial + ' registrado.');
+        } catch (error) {
+            mostrarErrorPayPal('No se pudo verificar el registro. Reintenta con el mismo horario y método sin volver a cobrar.');
+        } finally {
+            guardandoCita = false;
+            bloquearDatosPayPal(false);
+            actualizarResumen();
+        }
+    }));
+
     function mostrarErrorPayPal(mensaje) {
         msgBox.textContent = mensaje;
         msgBox.classList.add('activo', 'error');
@@ -1029,6 +1075,7 @@ document.addEventListener('DOMContentLoaded', function () {
         paypalOcupado = ocupado;
         datosBloqueables.forEach(function (elemento) { elemento.inert = ocupado; });
         radiosPago.forEach(function (radio) { radio.disabled = ocupado; });
+        actualizarPagosPresenciales();
     }
 
     async function enviarPayPal(url, body) {
@@ -1261,6 +1308,8 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
         botonCargando('Subiendo comprobante');
+        guardandoCita = true;
+        actualizarPagosPresenciales();
 
         const formData = armarDatosComunes(new FormData());
         formData.set('es_tectum', '0');
@@ -1288,6 +1337,10 @@ document.addEventListener('DOMContentLoaded', function () {
             msgBox.classList.add('activo', 'error');
             btnConfirmar.disabled = false;
             actualizarBotonConfirmar();
+        })
+        .finally(function () {
+            guardandoCita = false;
+            actualizarPagosPresenciales();
         });
     }
 

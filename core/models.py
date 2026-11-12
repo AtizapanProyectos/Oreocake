@@ -337,6 +337,15 @@ class Cita(models.Model):
         ('No registrado', 'No registrado'), ('Vino', 'Vino'), ('No Vino', 'No Vino'),
     ], db_index=True, verbose_name="Registro de llegada en recepción")
     fecha_registro_llegada = models.DateTimeField(blank=True, null=True, verbose_name="Fecha en que se registró la llegada")
+    class MetodoPagoPresencial(models.TextChoices):
+        SITIO_WEB = 'sitio_web', 'Sitio web'
+        EFECTIVO = 'efectivo', 'Pago con efectivo'
+        CLIP = 'clip_presencial', 'Pago con Clip (presencial)'
+
+    metodo_pago_presencial = models.CharField(
+        max_length=16, choices=MetodoPagoPresencial.choices,
+        default=MetodoPagoPresencial.SITIO_WEB,
+    )
 
     class Meta:
         unique_together = [['psicologo', 'fecha', 'hora']]

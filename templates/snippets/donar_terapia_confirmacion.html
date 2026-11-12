@@ -1,0 +1,101 @@
+<dialog id="donar-terapia-confirmacion" aria-labelledby="titulo-donar-terapia">
+    <form method="dialog" class="donacion-cerrar">
+        <button type="submit" aria-label="Cerrar invitación" autofocus>×</button>
+    </form>
+    <span class="donacion-icono" aria-hidden="true"><i class="fas fa-hand-holding-heart"></i></span>
+    <h2 id="titulo-donar-terapia">Ayuda a HOPE: Dona una terapia para otra persona</h2>
+    <p>Con un aporte voluntario de <strong>$100 MXN</strong>, ayudas a que una persona en situación de vulnerabilidad reciba una sesión de apoyo psicológico.</p>
+    <div id="paypal-donar-terapia"></div>
+    <p id="estado-donar-terapia" role="status"></p>
+</dialog>
+<style>
+    #donar-terapia-confirmacion {
+        width: min(450px, calc(100% - 32px)); max-height: 90vh; box-sizing: border-box;
+        margin: auto; padding: clamp(24px, 6vw, 38px); border: 1px solid #e9dcfb; border-radius: 24px;
+        background: #fff; color: var(--text-main); box-shadow: 0 20px 60px #39265b55;
+    }
+    #donar-terapia-confirmacion::backdrop { background: #21152b99; }
+    #donar-terapia-confirmacion h2 { font: 800 1.65rem/1.2 var(--font-headings); margin: 12px 0; }
+    #donar-terapia-confirmacion p { color: var(--text-muted); line-height: 1.55; margin: 0 0 16px; }
+    #donar-terapia-confirmacion p:empty { margin: 0; }
+    .donacion-cerrar { display: flex; justify-content: flex-end; }
+    .donacion-cerrar button {
+        width: 42px; height: 42px; border: 0; border-radius: 50%;
+        background: #f3edf9; color: #4a3277; font-size: 1.5rem; cursor: pointer;
+    }
+    .donacion-icono {
+        display: inline-grid; place-items: center; width: 48px; height: 48px;
+        border-radius: 14px; background: #f3edf9; color: #5a3fa3; font-size: 1.3rem;
+    }
+</style>
+<script>
+document.getElementById('donar-terapia-confirmacion').addEventListener('close', () => {
+    document.querySelector('#alerta-exito-cita button')?.focus();
+});
+
+async function mostrarDonacionTerapia(citaId) {
+    const seccion = document.getElementById('donar-terapia-confirmacion');
+    if (!citaId || seccion.dataset.cita === String(citaId)) return;
+    const clave = 'hope.donacion.mostrada.' + citaId;
+    try {
+        if (sessionStorage.getItem(clave)) return;
+        sessionStorage.setItem(clave, '1');
+    } catch (error) {
+        // El modal sigue disponible cuando el navegador bloquea el almacenamiento.
+    }
+    seccion.dataset.cita = citaId;
+    seccion.showModal();
+    if (seccion.dataset.paypalInicializado) return;
+    seccion.dataset.paypalInicializado = '1';
+
+    const contenedor = document.getElementById('paypal-donar-terapia');
+    const estado = document.getElementById('estado-donar-terapia');
+    const errorPayPal = 'PayPal no está disponible para la donación en este momento.';
+
+    try {
+        const botones = window.paypal.Buttons({
+            fundingSource: window.paypal.FUNDING.PAYPAL,
+            style: { label: 'donate', shape: 'pill' },
+            createOrder(data, actions) {
+                estado.textContent = '';
+                return actions.order.create({
+                    purchase_units: [{
+                        description: 'Donación de una sesión de terapia HOPE',
+                        amount: { currency_code: 'MXN', value: '100.00' }
+                    }],
+                    application_context: { shipping_preference: 'NO_SHIPPING' }
+                });
+            },
+            async onApprove(data, actions) {
+                contenedor.hidden = true;
+                estado.textContent = 'Confirmando tu donación…';
+                try {
+                    const orden = await actions.order.capture();
+                    const captura = orden.purchase_units?.[0]?.payments?.captures?.[0];
+                    if (captura?.status === 'COMPLETED') {
+                        estado.textContent = 'Gracias por donar una terapia y ayudar a otra persona.';
+                        return;
+                    }
+                } catch (error) {
+                    console.error('Error al confirmar la donación con PayPal:', error);
+                }
+                estado.textContent = 'Consulta el estado en PayPal antes de volver a donar. Referencia: ' + data.orderID;
+            },
+            onCancel() {
+                estado.textContent = 'Puedes cerrar esta invitación o retomar la donación cuando quieras.';
+            },
+            onError() {
+                estado.textContent = errorPayPal;
+            }
+        });
+
+        if (botones.isEligible()) {
+            await botones.render(contenedor);
+        } else {
+            estado.textContent = errorPayPal;
+        }
+    } catch (error) {
+        estado.textContent = errorPayPal;
+    }
+}
+</script>

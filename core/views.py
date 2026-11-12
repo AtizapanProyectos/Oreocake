@@ -1737,7 +1737,7 @@ def guardar_cita_ajax(request):
 
 
 @transaction.atomic
-def _guardar_cita_paciente(request, reservar_pago=False, paciente_recepcion=None):
+def _guardar_cita_paciente(request, reservar_pago=False, paciente_recepcion=None, pago_presencial=None):
     if request.method == 'POST':
         if not request.user.is_authenticated:
             return JsonResponse({'status': 'error', 'message': 'Debes iniciar sesión.'}, status=401)
@@ -1765,7 +1765,7 @@ def _guardar_cita_paciente(request, reservar_pago=False, paciente_recepcion=None
             not reservar_pago and convenio == 'hope' and 1 <= len(referencia_paypal) <= 64
             and referencia_paypal.isascii() and referencia_paypal.isalnum()
         )
-        if es_tectum_cita == reservar_pago and not pago_legacy_hope:
+        if es_tectum_cita == reservar_pago and not (pago_legacy_hope or pago_presencial):
             return JsonResponse({
                 'status': 'error',
                 'message': 'Actualiza tu panel para continuar con el método de confirmación de tu convenio.',
@@ -1800,9 +1800,19 @@ def _guardar_cita_paciente(request, reservar_pago=False, paciente_recepcion=None
             hora_obj = parsear_hora_flexible(hora_str)
             ahora = timezone.localtime()
             inicio = timezone.make_aware(datetime.combine(fecha_obj, hora_obj))
+            if pago_presencial:
+                User.objects.select_for_update().get(pk=paciente.pk)
+                existente = Cita.objects.select_for_update().filter(
+                    paciente=paciente, fecha=fecha_obj, hora=hora_obj, modalidad='Presencial',
+                    tipo_sesion=tipo_sesion_str, integrantes_familia=integrantes_familia,
+                    estado__in=('Confirmada', 'Completada'), metodo_pago_presencial=pago_presencial,
+                ).first()
+                if existente:
+                    return _respuesta_cita(existente, request)
             if inicio < ahora + timedelta(hours=2) or fecha_obj > ahora.date() + timedelta(days=90):
                 return JsonResponse({'status': 'error', 'message': 'Elige un horario con dos horas de anticipación dentro de los próximos 90 días.'}, status=400)
-            User.objects.select_for_update().get(pk=paciente.pk)
+            if not pago_presencial:
+                User.objects.select_for_update().get(pk=paciente.pk)
             _liberar_reservas_vencidas(fecha=fecha_obj, hora=hora_obj)
             if reservar_pago:
                 pendiente = PagoCitaPayPal.objects.select_for_update().filter(
@@ -1926,6 +1936,7 @@ def _guardar_cita_paciente(request, reservar_pago=False, paciente_recepcion=None
                 estado_animo=animo, modalidad=modalidad_str, tipo_sesion=tipo_sesion_str,
                 integrantes_familia=integrantes_familia, es_tectum=es_tectum_cita,
                 es_beneficios=es_beneficios, estado='Pendiente' if reservar_pago else 'Confirmada',
+                metodo_pago_presencial=pago_presencial or Cita.MetodoPagoPresencial.SITIO_WEB,
                 correo_confirmacion_enviado=False,
                 motivo='Sesión de Seguimiento' if perfil.psicologo_asignado else 'Primera Sesión',
                 codigo_pase=_generar_codigo_pase() if modalidad_str == 'Presencial' else None,
@@ -1954,9 +1965,10 @@ def _registrar_tratamiento_cita(cita):
 
 
 def _respuesta_cita(cita, request):
-    datos = {'status': 'success', 'cita_id': cita.pk, 'modalidad': cita.modalidad}
+    datos = {'status': 'success', 'cita_id': cita.pk, 'modalidad': cita.modalidad, 'estado': cita.estado}
     if cita.modalidad == 'Presencial':
         datos['pase_url'] = reverse('descargar_pase_admision', args=[cita.pk])
+        datos['metodo_pago_presencial'] = cita.get_metodo_pago_presencial_display()
     return JsonResponse(datos)
 
 
@@ -4792,6 +4804,13 @@ def admin_guardar_cita_ajax(request, recepcion=False):
     if recepcion and request.POST.get('animo') not in ESTADOS_ANIMO_RECEPCION:
         return _error_animo_recepcion()
 
+    pago_presencial = request.POST.get('metodo_pago_presencial')
+    if pago_presencial is not None and (
+        not recepcion or pago_presencial not in (Cita.MetodoPagoPresencial.EFECTIVO, Cita.MetodoPagoPresencial.CLIP)
+        or request.POST.get('modalidad') != 'Presencial' or request.POST.get('es_tectum') != '0'
+    ):
+        return JsonResponse({'status': 'error', 'message': 'Elige un método válido para una cita presencial con cobro.'}, status=400)
+
     paciente_id = request.POST.get('paciente_id')
     if not paciente_id:
         return JsonResponse({'status': 'error', 'message': 'Selecciona un paciente antes de confirmar.'})
@@ -4801,6 +4820,12 @@ def admin_guardar_cita_ajax(request, recepcion=False):
         perfil = paciente_user.perfil
     except Exception:
         return JsonResponse({'status': 'error', 'message': 'Paciente no encontrado o sin perfil.'})
+
+    if pago_presencial:
+        try:
+            return _guardar_cita_paciente(request, paciente_recepcion=paciente_user, pago_presencial=pago_presencial)
+        except IntegrityError:
+            return JsonResponse({'status': 'error', 'message': 'Ese horario acaba de ocuparse. Elige otro.'}, status=409)
 
     fecha_str = request.POST.get('fecha')
     hora_str = request.POST.get('hora')

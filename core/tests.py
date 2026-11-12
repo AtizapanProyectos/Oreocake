@@ -486,6 +486,56 @@ class AgendamientoSeguroTests(TestCase):
         cliente.force_login(self.paciente)
         self.assertEqual(cliente.post(reverse('crear_orden_cita_paypal'), self.datos).status_code, 403)
 
+    @patch('core.views._notificar_cita_paciente')
+    def test_recepcion_confirma_efectivo_y_clip_sin_pasarela_y_sin_duplicados(self, notificar):
+        from .models import PagoCitaPayPal
+
+        self.doctor.modalidad_atencion = 'Mixto'
+        self.doctor.save(update_fields=['modalidad_atencion'])
+        admin = User.objects.create_superuser('recepcion')
+        self.client.force_login(admin)
+        url = reverse('recepcion_confirmar_cita')
+        datos = {**self.datos, 'paciente_id': self.paciente.pk, 'animo': 'Normal',
+                 'modalidad': 'Presencial', 'es_tectum': '0'}
+        for hora, metodo in (('10:00', 'efectivo'), ('11:00', 'clip_presencial')):
+            cuerpo = {**datos, 'hora': hora, 'metodo_pago_presencial': metodo}
+            with self.captureOnCommitCallbacks(execute=True) as correos:
+                primera = self.client.post(url, cuerpo)
+                segunda = self.client.post(url, cuerpo)
+            self.assertEqual(primera.status_code, 200, primera.content)
+            self.assertEqual(primera.json(), segunda.json())
+            cita = Cita.objects.get(pk=primera.json()['cita_id'])
+            self.assertEqual((cita.estado, cita.metodo_pago_presencial), ('Confirmada', metodo))
+            self.assertTrue(cita.codigo_pase)
+            self.assertEqual(len(correos), 1)
+        self.assertEqual(notificar.call_count, 2)
+        self.assertFalse(PagoCitaPayPal.objects.exists())
+        self.assertEqual(self.client.post(url, {**datos, 'metodo_pago_presencial': 'clip_presencial'}).status_code, 409)
+
+    def test_recepcion_valida_metodo_permiso_y_reserva_activa(self):
+        from .models import PagoCitaPayPal
+
+        url = reverse('recepcion_confirmar_cita')
+        datos = {**self.datos, 'paciente_id': self.paciente.pk, 'animo': 'Normal',
+                 'modalidad': 'Presencial', 'es_tectum': '0', 'metodo_pago_presencial': 'efectivo'}
+        self.assertEqual(self.client.post(url, datos).status_code, 302)
+        admin = User.objects.create_superuser('recepcion')
+        self.client.force_login(admin)
+        con_csrf = Client(enforce_csrf_checks=True)
+        con_csrf.force_login(admin)
+        self.assertEqual(con_csrf.post(url, datos).status_code, 403)
+        for cambio in ({'modalidad': 'En línea'}, {'es_tectum': '1'}, {'metodo_pago_presencial': 'otro'}):
+            self.assertEqual(self.client.post(url, {**datos, **cambio}).status_code, 400)
+        cita = Cita.objects.create(
+            paciente=self.paciente, psicologo=self.doctor, fecha=self.fecha, hora='10:00',
+            modalidad='Presencial', estado='Pendiente',
+        )
+        pago = PagoCitaPayPal.objects.create(cita=cita, monto=110, vence=timezone.now() + timedelta(minutes=10))
+        self.assertEqual(self.client.post(url, datos).status_code, 409)
+        cita.refresh_from_db()
+        self.assertEqual((cita.estado, cita.metodo_pago_presencial), ('Pendiente', 'sitio_web'))
+        self.assertTrue(PagoCitaPayPal.objects.filter(pk=pago.pk).exists())
+
     @patch('core.pagos_paypal.capturar_orden', return_value='CAPTURA1')
     @patch('core.pagos_paypal.crear_orden', return_value='ORDEN1')
     def test_reserva_y_captura_autorizada_idempotente(self, crear, capturar):
