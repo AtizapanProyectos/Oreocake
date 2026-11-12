@@ -1,0 +1,122 @@
+.hope-qr-panel {
+    --qr-morado: #50358c;
+    --qr-texto: #261d38;
+    --qr-secundario: #62566e;
+    --qr-borde: #e6def1;
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 110px 22px 60px;
+    color: var(--qr-texto);
+    font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+.hope-qr-panel h1, .hope-qr-panel h2, .hope-qr-panel h3 {
+    font-family: 'Outfit', sans-serif;
+    margin: 0;
+    line-height: 1.15;
+}
+
+.hope-qr-hero {
+    border-radius: 24px;
+    padding: clamp(24px, 5vw, 52px);
+    background: linear-gradient(120deg, #f0eafa, #fbf8ff);
+    border: 1px solid var(--qr-borde);
+}
+
+.hope-qr-hero a, .hope-qr-paginas a { color: var(--qr-morado); font-weight: 700; }
+.hope-qr-hero h1 { margin-top: 16px; font-size: clamp(2.5rem, 6vw, 4rem); }
+.hope-qr-hero p { max-width: 590px; margin: 12px 0 0; color: var(--qr-secundario); }
+
+.hope-qr-totales {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin: 18px 0 30px;
+}
+
+.hope-qr-totales > div, .hope-qr-formulario, .hope-qr-tarjeta, .hope-qr-vacio {
+    background: #fff;
+    border: 1px solid var(--qr-borde);
+    border-radius: 18px;
+    padding: 20px;
+}
+
+.hope-qr-totales span, .hope-qr-lista-cabecera p, .hope-qr-destino, .hope-qr-metricas dt {
+    color: var(--qr-secundario);
+    font-size: .88rem;
+}
+
+.hope-qr-totales strong { display: block; margin-top: 5px; font-size: 1.75rem; }
+.hope-qr-layout { display: grid; grid-template-columns: minmax(245px, 1fr) minmax(0, 2.4fr); gap: 24px; align-items: start; }
+.hope-qr-formulario form { margin-top: 18px; }
+.hope-qr-campo { margin-bottom: 15px; }
+.hope-qr-panel label { display: block; margin-bottom: 5px; font-size: .86rem; font-weight: 700; }
+
+.hope-qr-panel input, .hope-qr-panel select {
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    border: 1px solid #d5c6e6;
+    border-radius: 9px;
+    padding: 10px 12px;
+    font: inherit;
+    color: inherit;
+    background: #fff;
+}
+
+.hope-qr-panel .errorlist { color: #a12b49; font-size: .85rem; margin: 6px 0; padding-left: 18px; }
+.hope-qr-boton {
+    display: inline-block;
+    border: 1px solid var(--qr-borde);
+    border-radius: 9px;
+    background: #f7f2fc;
+    color: var(--qr-morado);
+    text-decoration: none;
+    font: inherit;
+    font-size: .8rem;
+    font-weight: 700;
+    padding: 9px 12px;
+    cursor: pointer;
+}
+
+.hope-qr-boton:hover { background: #ece1fa; }
+.hope-qr-boton-primario { background: var(--qr-morado); color: #fff; width: 100%; }
+.hope-qr-boton-primario:hover { background: #402870; }
+.hope-qr-panel :focus-visible { outline: 2px solid var(--qr-morado); outline-offset: 3px; }
+.hope-qr-lista-cabecera p { margin: 5px 0; }
+.hope-qr-lista-cabecera { margin-bottom: 14px; }
+
+.hope-qr-tarjeta {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 20px;
+    margin-bottom: 12px;
+    scroll-margin-top: 105px;
+}
+
+.hope-qr-tarjeta:target { border-color: #9776cb; }
+.hope-qr-imagen { display: grid; align-content: start; justify-items: center; gap: 8px; }
+.hope-qr-imagen img { border-radius: 12px; border: 1px solid var(--qr-borde); }
+.hope-qr-tarjeta-cabecera { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
+.hope-qr-tarjeta h3, .hope-qr-destino { overflow-wrap: anywhere; }
+.hope-qr-activo, .hope-qr-pausado { border-radius: 50px; padding: 4px 8px; font-size: .72rem; font-weight: 700; }
+.hope-qr-activo { color: #14534c; background: #e2f5ee; }
+.hope-qr-pausado { color: #674819; background: #fff1d7; }
+.hope-qr-destino { margin: 6px 0 12px; }
+.hope-qr-metricas { display: flex; flex-wrap: wrap; gap: 14px 28px; margin: 0 0 13px; }
+.hope-qr-metricas dd { margin: 2px 0 0; font-size: 1.2rem; font-weight: 800; }
+.hope-qr-compartir { display: flex; gap: 8px; }
+.hope-qr-compartir button { flex-shrink: 0; }
+.hope-qr-acciones, .hope-qr-paginas { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-top: 12px; }
+.hope-qr-acciones form { margin-left: auto; }
+.hope-qr-acciones span { color: var(--qr-secundario); font-size: .8rem; }
+
+@media (max-width: 760px) {
+    .hope-qr-layout { grid-template-columns: minmax(0, 1fr); }
+}
+
+@media (max-width: 480px) {
+    .hope-qr-panel { padding-inline: 14px; }
+    .hope-qr-tarjeta { grid-template-columns: minmax(0, 1fr); gap: 14px; }
+    .hope-qr-totales > div, .hope-qr-tarjeta, .hope-qr-formulario { padding: 14px; }
+}

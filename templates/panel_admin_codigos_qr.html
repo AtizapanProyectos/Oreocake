@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Códigos QR · Espacio HOPE{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/panel_codigos_qr.css' %}">{% endblock %}
+{% block extra_js %}<script src="{% static 'js/panel_codigos_qr.js' %}" defer></script>{% endblock %}
+
+{% block content %}
+<main class="hope-qr-panel" data-estadisticas="{% url 'estadisticas_codigos_qr' %}">
+    <header class="hope-qr-hero">
+        <a href="{% url 'panel_admin' %}"><i class="fas fa-arrow-left" aria-hidden="true"></i> Volver a administración</a>
+        <h1>Códigos QR</h1>
+        <p>Crea códigos para citas, donaciones y campañas. Consulta las aperturas de cada enlace en el mismo panel.</p>
+    </header>
+
+    <div class="hope-qr-totales">
+        <div><span>Escaneos del QR</span><strong data-total="escaneos">{{ totales.escaneos }}</strong></div>
+        <div><span>Visitas por enlace directo</span><strong data-total="visitas_directas">{{ totales.visitas_directas }}</strong></div>
+    </div>
+
+    <div class="hope-qr-layout">
+        <section class="hope-qr-formulario" aria-labelledby="hope-qr-crear">
+            <h2 id="hope-qr-crear">Crear código QR</h2>
+            <form method="post">
+                {% csrf_token %}
+                {{ formulario.non_field_errors }}
+                {% for campo in formulario %}
+                    <div class="hope-qr-campo">
+                        {{ campo.label_tag }}
+                        {{ campo }}
+                        {{ campo.errors }}
+                    </div>
+                {% endfor %}
+                <button type="submit" class="hope-qr-boton hope-qr-boton-primario">Generar QR</button>
+            </form>
+        </section>
+
+        <section class="hope-qr-campanas" aria-labelledby="hope-qr-lista">
+            <header class="hope-qr-lista-cabecera">
+                <h2 id="hope-qr-lista">Mis códigos</h2>
+                <p data-estado-estadisticas>Actualización cada 10 segundos mientras el panel está visible.</p>
+                <p>Los contadores registran aperturas y pueden incluir visitas repetidas.</p>
+            </header>
+            {% for item in pagina %}
+                <article class="hope-qr-tarjeta" id="qr-{{ item.codigo }}" data-qr-id="{{ item.codigo }}">
+                    <div class="hope-qr-imagen">
+                        <img src="{% url 'imagen_codigo_qr' item.codigo %}" alt="Código QR para {{ item.nombre }}" width="124" height="124" loading="lazy">
+                        <a class="hope-qr-boton" href="{% url 'imagen_codigo_qr' item.codigo %}?descargar=1">
+                            <i class="fas fa-download" aria-hidden="true"></i> Descargar PNG
+                        </a>
+                    </div>
+                    <div class="hope-qr-info">
+                        <div class="hope-qr-tarjeta-cabecera">
+                            <h3>{{ item.nombre }}</h3>
+                            {% if item.activo %}<span class="hope-qr-activo">Activo</span>{% else %}<span class="hope-qr-pausado">En pausa</span>{% endif %}
+                        </div>
+                        <p class="hope-qr-destino">{{ item.destino }}</p>
+                        <dl class="hope-qr-metricas">
+                            <div><dt>Escaneos</dt><dd data-metrica="escaneos">{{ item.escaneos }}</dd></div>
+                            <div><dt>Visitas directas</dt><dd data-metrica="visitas_directas">{{ item.visitas_directas }}</dd></div>
+                        </dl>
+                        <label for="directo-{{ item.codigo }}">Enlace directo para compartir</label>
+                        <div class="hope-qr-compartir">
+                            <input id="directo-{{ item.codigo }}" type="url" value="{{ item.enlace_directo }}" readonly>
+                            <button class="hope-qr-boton" type="button" data-copiar="directo-{{ item.codigo }}">Copiar enlace</button>
+                        </div>
+                        <div class="hope-qr-acciones">
+                            <span data-estado-copia role="status"></span>
+                            <form method="post" action="{% url 'estado_codigo_qr' item.codigo %}">
+                                {% csrf_token %}
+                                <button type="submit" name="activo" value="{{ item.activo|yesno:'0,1' }}" class="hope-qr-boton">
+                                    {{ item.activo|yesno:'Pausar enlaces,Reactivar enlaces' }}
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </article>
+            {% empty %}
+                <p class="hope-qr-vacio">Aquí aparecerán tus códigos cuando generes el primero.</p>
+            {% endfor %}
+
+            {% if pagina.has_other_pages %}
+                <nav class="hope-qr-paginas" aria-label="Páginas de códigos QR">
+                    {% if pagina.has_previous %}<a href="?pagina={{ pagina.previous_page_number }}">Anterior</a>{% endif %}
+                    <span>Página {{ pagina.number }} de {{ pagina.paginator.num_pages }}</span>
+                    {% if pagina.has_next %}<a href="?pagina={{ pagina.next_page_number }}">Siguiente</a>{% endif %}
+                </nav>
+            {% endif %}
+        </section>
+    </div>
+</main>
+{% endblock %}

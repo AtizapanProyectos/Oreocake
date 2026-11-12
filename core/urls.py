@@ -1,6 +1,7 @@
 from django.urls import path
 from . import views
 from . import flujo_clinico
+from . import codigos_qr
 from .transcripcion_navegador import notas_desde_texto, transcribir_fragmento
 from .reportes import reporte_crecimiento_sesiones_view
 from .panel_bienestar_tectum import (
@@ -36,6 +37,12 @@ urlpatterns = [
     path('guardar-historial/', views.guardar_historial_ajax, name='guardar_historial'),
     path('paciente/<int:paciente_id>/', views.detalle_paciente, name='detalle_paciente'),
     path('panel-admin/', views.panel_admin, name='panel_admin'),
+    path('panel-admin/codigos-qr/', codigos_qr.panel, name='panel_codigos_qr'),
+    path('panel-admin/codigos-qr/estadisticas/', codigos_qr.estadisticas, name='estadisticas_codigos_qr'),
+    path('panel-admin/codigos-qr/<uuid:codigo>/imagen/', codigos_qr.imagen, name='imagen_codigo_qr'),
+    path('panel-admin/codigos-qr/<uuid:codigo>/estado/', codigos_qr.cambiar_estado, name='estado_codigo_qr'),
+    path('qr/<uuid:codigo>/', codigos_qr.abrir, name='qr_hope_escaneo'),
+    path('qr/<uuid:codigo>/directo/', codigos_qr.abrir, {'directo': True}, name='qr_hope_directo'),
     path('inscribir-taller/', views.inscribir_taller_ajax, name='inscribir_taller'),
     path('enviar-mood/', views.enviar_mood_ajax, name='enviar_mood'),
     path('panel-doctor/', views.panel_doctor, name='panel_doctor'),
