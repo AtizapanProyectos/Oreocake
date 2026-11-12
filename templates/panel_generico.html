@@ -68,7 +68,11 @@ function mostrarErrorCita(mensaje, opts) {
             + 'No te preocupes, tu dinero está bien — solo hubo un problema técnico al agendar la cita automáticamente. '
             + '<strong>Por favor, NO vuelvas a pagar.</strong> Escríbenos por WhatsApp con tu comprobante y te la agendamos manualmente en minutos.';
     }
-    cont.innerHTML = html;
+    if (opts.pagoConfirmado) {
+        cont.innerHTML = html;
+    } else {
+        cont.textContent = mensaje;
+    }
 
     // Insertamos (o reutilizamos) el botón de WhatsApp dentro del modal de error
     let waBtn = document.getElementById('btn-whatsapp-error-cita');
@@ -1406,7 +1410,7 @@ function mostrarErrorCita(mensaje, opts) {
 </div>
 
 <div id="alerta-exito-cita" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); backdrop-filter: blur(8px); z-index: 999999; justify-content: center; align-items: center;">
-    <div class="chic-card alerta-animada" style="height: auto; width: 90%; max-width: 500px; text-align: center; padding: 50px; border-top: 6px solid var(--c-teal);">
+    <div class="chic-card alerta-animada" style="height: auto; max-height: 90vh; overflow-y: auto; box-sizing: border-box; width: 90%; max-width: 500px; text-align: center; padding: clamp(20px, 5vw, 50px); border-top: 6px solid var(--c-teal);">
         <i class="fas fa-check-circle" style="font-size: 65px; color: var(--c-teal); margin-bottom: 20px;"></i>
         <h2 style="font-family: var(--font-headings); font-size: 2.2rem; color: var(--text-main); margin-bottom: 10px;">¡Todo listo!</h2>
         <p id="texto-exito-dinamico" style="font-size: 16px; color: var(--text-muted); margin-bottom: 30px;">Tu sesión ha sido confirmada y agendada con éxito en tu panel.</p>
@@ -1419,6 +1423,7 @@ function mostrarErrorCita(mensaje, opts) {
         <a id="btn-descargar-pase-exito" href="#" style="display: none; width: 100%; box-sizing: border-box; margin-bottom: 12px; background: linear-gradient(135deg, var(--c-purple) 0%, #3B2474 100%); color: white; padding: 14px 20px; border-radius: 14px; font-weight: 800; font-size: 14px; text-decoration: none; font-family: var(--font-headings); box-shadow: 0 10px 26px rgba(90,63,163,0.35); letter-spacing: 1px;">
             <i class="fas fa-qrcode" style="margin-right: 8px;"></i> DESCARGAR MI PASE DE ACCESO A HOPE
         </a>
+        {% include 'snippets/donar_terapia_confirmacion.html' %}
         <button onclick="location.reload()" class="btn-brutal" style="width: 100%; background: var(--c-teal); color: white;">
             Excelente <i class="fas fa-arrow-right" style="margin-left: 8px;"></i>
         </button>
@@ -2232,6 +2237,7 @@ function guardarCitaSinPago(pagoRef, acciones) {
                 }
 
                 document.getElementById('alerta-exito-cita').style.display = 'flex';
+                if (huboPago) mostrarDonacionTerapia();
 
             } else {
 
@@ -2602,6 +2608,7 @@ function prepararWhatsAppTransferencia(el) {
 // --- PAYPAL SMART BUTTONS ---
 document.addEventListener("DOMContentLoaded", function () {
     if (document.getElementById('paypal-button-container')) {
+        let errorReserva = null;
         paypal.Buttons({
             
             // 1. Validaciones ANTES de abrir la ventana de PayPal
@@ -2623,14 +2630,21 @@ document.addEventListener("DOMContentLoaded", function () {
             },
 
             async createOrder() {
+                errorReserva = null;
                 const respuesta = await fetch("{% url 'crear_orden_cita_paypal' %}", {
                     method: 'POST', body: datosCitaPayPal(),
                     headers: {'X-CSRFToken': getCookie('csrftoken')}
                 });
-                const datos = await respuesta.json();
-                if (!respuesta.ok || !datos.orden) {
-                    mostrarErrorCita(datos.message || 'No pudimos reservar el horario.');
-                    throw new Error('Reserva rechazada');
+                const datos = await respuesta.json().catch(() => null);
+                if (!respuesta.ok || !datos?.orden) {
+                    const mensaje = typeof datos?.message === 'string' && datos.message
+                        ? datos.message
+                        : respuesta.status === 403
+                            ? 'Recarga el panel e inicia sesión de nuevo para continuar.'
+                            : 'No pudimos iniciar la reserva. Intenta de nuevo.';
+                    console.warn('No se creó la orden de PayPal. HTTP', respuesta.status);
+                    errorReserva = mensaje;
+                    throw new Error(mensaje);
                 }
                 return datos.orden;
             },
@@ -2651,6 +2665,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
             // 5. SI ALGO EXPLOTA EN PAYPAL (antes de llegar a capturar el pago)
             onError: function (err) {
+                if (errorReserva) {
+                    mostrarErrorCita(errorReserva);
+                    errorReserva = null;
+                    return;
+                }
                 console.error("Error PayPal:", err);
                 mostrarErrorCita('Hubo un error de conexión con tu banco o PayPal. Si el cargo sí se realizó en tu cuenta, no vuelvas a pagar y contáctanos por WhatsApp.', {
                     pagoConfirmado: false

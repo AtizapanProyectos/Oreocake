@@ -1702,6 +1702,7 @@
       }
     }
   </style>
+  <link rel="stylesheet" href="{% static 'css/preguntas_frecuentes.css' %}">
 </head>
 
 <body>
@@ -2058,6 +2059,8 @@
     </section>
 
     <!-- FOOTER -->
+    {% include 'snippets/preguntas_frecuentes.html' with convenio_faq='hope' only %}
+
     <footer class="footer">
       <div class="footer-top">
         <div class="footer-brand">

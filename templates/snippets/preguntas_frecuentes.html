@@ -1,0 +1,131 @@
+<section class="hope-faq" id="preguntas-frecuentes" aria-labelledby="hope-faq-title">
+  <div class="hope-faq__inner">
+    <h2 id="hope-faq-title">Preguntas frecuentes</h2>
+    <div class="hope-faq__groups">
+      <section class="hope-faq__group">
+        <h3>Sobre HOPE</h3>
+        <details>
+          <summary>¿Quiénes somos?</summary>
+          <p>HOPE es un espacio de atención psicológica profesional que busca acercar la salud mental a más personas mediante un modelo accesible, humano y profesional.</p>
+        </details>
+        <details>
+          <summary>¿A quién está dirigido HOPE?</summary>
+          <p>Nuestro enfoque principal está dirigido a adolescentes y jóvenes. Sin embargo, atendemos a cualquier persona que busque apoyo psicológico, sin importar su edad.</p>
+        </details>
+        <details>
+          <summary>¿Las sesiones son profesionales?</summary>
+          <p>Sí. Todos los psicólogos de HOPE cuentan con cédula profesional y están capacitados para brindarte atención psicológica de calidad.</p>
+        </details>
+        <details>
+          <summary>¿Qué tipo de enfoque se maneja en HOPE?</summary>
+          <p>En HOPE trabajamos principalmente con el modelo cognitivo-conductual (TCC), un enfoque basado en evidencia científica que ayuda a identificar y modificar pensamientos, emociones y conductas que pueden estar generando malestar.</p>
+        </details>
+        <details>
+          <summary>¿Cómo ofrece HOPE sesiones a un costo accesible?</summary>
+          <p>Gracias al apoyo de empresarios, instituciones, fundaciones y personas comprometidas con la salud mental, podemos ofrecer atención psicológica profesional a un costo accesible.</p>
+        </details>
+        <details>
+          <summary>¿Qué servicios encontraré en HOPE?</summary>
+          <p>En HOPE encontrarás terapia psicológica individual, de pareja, familiar y grupal, además de talleres diseñados para fortalecer tu bienestar emocional.</p>
+        </details>
+      </section>
+      <section class="hope-faq__group">
+        <h3>Agendar una cita</h3>
+        <details>
+          <summary>¿Cómo puedo agendar una cita?</summary>
+          <p>Desde esta página, crea tu cuenta o inicia sesión y elige el horario que te acomode.{% if convenio_faq != 'inhouse' %} Completa el pago para confirmar tu cita.{% endif %}</p>
+        </details>
+        <details>
+          <summary>¿Cuánto cuesta cada sesión?</summary>
+          <p>{% if convenio_faq == 'inhouse' %}
+              Las sesiones cubiertas por el convenio TECTUM In-House no tienen costo para el colaborador.
+            {% elif convenio_faq == 'beneficios' %}
+              El importe depende del servicio. El panel de TECTUM Beneficios muestra el total en MXN antes de pagar.
+            {% else %}
+              Las tarifas de referencia para atención individual son $100 MXN en México, $15 USD en Estados Unidos y Latinoamérica, y €15 EUR en Europa. El panel muestra el total en MXN antes de pagar. Consulta con el equipo de atención si necesitas confirmar una tarifa internacional.
+            {% endif %}</p>
+        </details>
+        <details>
+          <summary>¿Puedo elegir el día y la hora de mi cita?</summary>
+          <p>Sí. Durante el proceso de registro podrás seleccionar el día y la hora que mejor se adapten a ti. Si resides en otro país o región, recuerda que los horarios de HOPE están basados en la Zona Centro de México (UTC-6).</p>
+        </details>
+        <details>
+          <summary>¿Qué hago si me equivoqué al agendar?</summary>
+          <p>Puedes comunicarte con nuestro equipo de atención para ayudarte a resolverlo, vía WA: +52 (1) 561199 2220 o por mensaje directo en Facebook e Instagram.</p>
+        </details>
+        <details>
+          <summary>¿Puedo cambiar la fecha de mi cita?</summary>
+          <p>Sí, siempre que nos contactes con anticipación y exista disponibilidad.</p>
+        </details>
+        <details>
+          <summary>¿Puedo cambiar de terapeuta?</summary>
+          <p>¡Por supuesto! Si después de tu primera sesión sientes que no hubo la conexión que esperabas con tu terapeuta, podemos ayudarte a encontrar otro especialista con quien te sientas más cómodo/a y en confianza.</p>
+        </details>
+        <details>
+          <summary>{% if convenio_faq == 'inhouse' %}¿Debo pagar para confirmar mi cita?{% else %}¿Qué pasa si no realizo el pago?{% endif %}</summary>
+          <p>{% if convenio_faq == 'inhouse' %}Las citas cubiertas por tu convenio se confirman al agendarlas.{% else %}Tu cita no quedará confirmada hasta que se complete el pago.{% endif %}</p>
+        </details>
+      </section>
+      <section class="hope-faq__group">
+        <h3>Sobre las sesiones</h3>
+        <details>
+          <summary>¿Las sesiones son en línea o presenciales?</summary>
+          <p>Nuestras terapias psicológicas pueden ser en línea desde cualquier parte del mundo o presenciales en CDMX. Nos ubicamos en Lago Margarita 47, Col. Granada.</p>
+        </details>
+        <details>
+          <summary>¿Cuánto dura una sesión?</summary>
+          <p>Las sesiones tienen una duración aproximada de 50 a 60 minutos.</p>
+        </details>
+        <details>
+          <summary>¿Puedo tomar terapia si vivo fuera de México?</summary>
+          <p>Sí. Atendemos personas en México, Estados Unidos, Europa y Latinoamérica.</p>
+        </details>
+        <details>
+          <summary>¿Puedo tomar terapia en pareja?</summary>
+          <p>Sí. HOPE ofrece terapia individual, terapia de parejas, familiar y grupal.</p>
+        </details>
+        <details>
+          <summary>¿Qué temas puedo trabajar en terapia?</summary>
+          <p>Ansiedad, estrés, autoestima, relaciones, manejo emocional, toma de decisiones, procesos de cambio, adicciones y otros temas relacionados con tu bienestar emocional y el de tu familia.</p>
+        </details>
+      </section>
+      <section class="hope-faq__group">
+        <h3>Asistencia y cancelaciones</h3>
+        <details>
+          <summary>¿Qué pasa si llego tarde a mi sesión?</summary>
+          <p>Tu terapeuta hará lo posible por atenderte dentro del tiempo disponible de la cita programada.</p>
+        </details>
+        <details>
+          <summary>¿Qué pasa si no me presento a mi cita?</summary>
+          <p>La sesión se considerará realizada y no será reembolsable.</p>
+        </details>
+      </section>
+      <section class="hope-faq__group">
+        <h3>Contacto</h3>
+        <details>
+          <summary>¿Cómo puedo comunicarme con HOPE?</summary>
+          <p>A través de nuestro WA: +52 (1) 56 1199 2220 y redes sociales.</p>
+        </details>
+        <details>
+          <summary>¿Cuál es el horario de atención?</summary>
+          <p>Atendemos los 7 días de la semana de 9:00 a 20:00 hrs. (Zona Centro de México UTC/ GMT -6).</p>
+        </details>
+        <details>
+          <summary>¿Cómo puedo contactar a soporte para cuestiones de la plataforma?</summary>
+          <p>A través de nuestro WA: +52 (1) 55 2113 0230 y redes sociales.</p>
+        </details>
+      </section>
+      <section class="hope-faq__group">
+        <h3>Apoyo y donativos</h3>
+        <details>
+          <summary>¿Cómo puedo apoyar el trabajo de HOPE?</summary>
+          <p>Puedes apoyar a través de la opción <a href="{% url 'donaciones' %}">Dona una terapia</a> de HOPE.</p>
+        </details>
+        <details>
+          <summary>¿Qué significa becar a un joven o ayudar a alguien más?</summary>
+          <p>Tu aportación ayuda a que adolescentes y jóvenes, así como otras personas de cualquier edad, puedan acceder a atención psicológica profesional cuando el costo les representa una barrera.</p>
+        </details>
+      </section>
+    </div>
+  </div>
+</section>

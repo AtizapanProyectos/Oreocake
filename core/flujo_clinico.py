@@ -93,6 +93,9 @@ def evaluar(cita):
     logs = list(cita.logs_automatizacion.all())
     ultimos = {}
     for log in sorted(logs, key=lambda l: (l.fecha, l.pk), reverse=True):
+        if (log.etapa in ('reporte', 'correo') and log.estado == 'conflicto'
+                and (log.detalle or '').startswith('Primero complete la cita #')):
+            continue  # El bloqueo histórico se conserva en la bitácora.
         ultimos.setdefault(log.etapa, log)
     automatica = any(l.etapa == 'escritura' and l.estado == 'exitoso' for l in logs)
     fuente = ('Nota clínica existente (autoría histórica no verificable)' if escrita and not automatica

@@ -99,14 +99,18 @@ class FlujoClinicoTests(TestCase):
             self.assertEqual(result['status'],'error')
             generar.assert_not_called()
 
-    def test_orden_cronologico_aunque_anterior_fuera_del_filtro(self):
-        self.nota();self.ipp()
-        anterior=Cita.objects.create(paciente=self.paciente,psicologo=self.doctor,fecha=self.cita.fecha-timedelta(days=10),hora=time(10))
-        with patch('core.views._procesar_reporte_de_una_cita_detallado') as generar:
-            result=self.paso('reporte').json()
-            self.assertIn(f'#{anterior.pk}',result['mensaje'])
-            generar.assert_not_called()
-        self.pdf('paciente',True,anterior);self.pdf('psicologo',True,anterior)
+    def test_reporte_independiente_con_cita_anterior_pendiente(self):
+        self.nota()
+        self.ipp()
+        anterior = Cita.objects.create(
+            paciente=self.paciente, psicologo=self.doctor,
+            fecha=self.cita.fecha - timedelta(days=10), hora=time(10),
+        )
+        LogAutomatizacionNotas.objects.create(
+            cita=self.cita, etapa='reporte', estado='conflicto',
+            detalle=f'Primero complete la cita #{anterior.pk}.',
+        )
+        self.assertEqual(evaluar(_base().get(pk=self.cita.pk))['pasos'][-2]['estado'], 'pendiente')
         with patch('core.views._procesar_reporte_de_una_cita_detallado',return_value=(True,'Generados',{})) as generar:
             self.assertEqual(self.paso('reporte').json()['status'],'success')
             generar.assert_called_once_with(self.cita.pk,forzar=True,solo_generar=True)

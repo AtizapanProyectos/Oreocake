@@ -52,15 +52,13 @@ en lugar de atribuir automáticamente al psicólogo todo historial sin logs.
 
 ## Orden y protección de los envíos
 
-Los lotes se ordenan por fecha, hora e ID. Antes de generar PDF o enviar correo,
-el servidor busca citas previas confirmadas/completadas del paciente, incluso fuera
-del filtro, organización o página. Si alguna carece de envío a ambos destinatarios,
-se muestra su ID y se bloquea la cita posterior. No se omite silenciosamente esa cita.
-Falta de IPP bloquea reportes y correo en este panel, sin sustituirlo por otro histórico.
+Los lotes se ordenan por fecha, hora e ID. Cada cita se procesa de forma
+independiente, aunque haya sesiones anteriores pendientes. La falta de IPP de
+la propia cita bloquea sus reportes y correo en este panel.
 
 Los pasos del panel bloquean la fila de paciente y cita durante cada petición para
-serializar ejecuciones entre workers. Esta protección y el orden cronológico se
-aplican a este panel; **los comandos, el gestor de reportes y el monitor IPP original
+serializar ejecuciones entre workers. Esta protección se
+aplica a este panel; **los comandos, el gestor de reportes y el monitor IPP original
 no se modificaron**. No ejecutar en paralelo reenvíos desde esas otras herramientas.
 
 El SMTP y la BD no forman una transacción distribuida: una caída después de la
