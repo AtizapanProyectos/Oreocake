@@ -373,7 +373,7 @@
           </section>
 
           <section class="hpa-card hpa-disabled" id="hpa-card-animo" aria-labelledby="hpa-tanimo">
-            <h2 id="hpa-tanimo" style="font-size:18px;margin-bottom:12px">Estado de ánimo (obligatorio)</h2>
+            <h2 id="hpa-tanimo" style="font-size:18px;margin-bottom:12px">Estado de ánimo (opcional)</h2>
             {% include 'includes/escala_animo_cita.html' with coloreado=True etiqueta_animo='hpa-tanimo' %}
           </section>
 
@@ -539,7 +539,7 @@ document.addEventListener('DOMContentLoaded', function () {
     caritas.forEach(function (btn) {
         btn.addEventListener('click', function () {
             if (!pacienteId) return;
-            seleccionarAnimo(btn.dataset.animo);
+            seleccionarAnimo(animo === btn.dataset.animo ? '' : btn.dataset.animo);
             actualizarResumen();
         });
     });
@@ -862,7 +862,6 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!pacienteId) faltan.push('paciente');
         if (!fechaSeleccionada) faltan.push('día');
         if (!horaSeleccionada) faltan.push('hora');
-        if (!animo) faltan.push('estado de ánimo');
         if (faltan.length) {
             faltanteEl.textContent = 'Falta elegir: ' + faltan.join(', ') + '.';
         } else if (!esTectumSeleccionado) {
@@ -1001,7 +1000,7 @@ document.addEventListener('DOMContentLoaded', function () {
         formData.append('paciente_id', pacienteId);
         formData.append('fecha', fechaSeleccionada);
         formData.append('hora', convertirHoraA24(horaSeleccionada));
-        formData.append('animo', animo);
+        if (animo) formData.append('animo', animo);
         formData.append('modalidad', modalidad);
         formData.append('tipo_servicio', tipoSesion);
         formData.append('es_tectum', esTectumSeleccionado ? '1' : '0');
@@ -1028,14 +1027,17 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function citaLista() {
-        return Boolean(pacienteId && fechaSeleccionada && horaSeleccionada && animo);
+        return Boolean(pacienteId && fechaSeleccionada && horaSeleccionada);
     }
 
     function actualizarPagosPresenciales() {
-        const visible = modalidad === 'Presencial' && !esTectumSeleccionado;
+        const visible = !esTectumSeleccionado;
         pagosPresenciales.classList.toggle('hpa-oculto', !visible);
         botonesPresenciales.forEach(boton => {
             boton.disabled = !visible || !citaLista() || guardandoCita || paypalOcupado || Boolean(ordenPendiente);
+            if (boton.dataset.pagoPresencial === 'clip_presencial') {
+                boton.textContent = modalidad === 'Presencial' ? 'Pago con Clip (presencial)' : 'Pago con tarjeta (Clip)';
+            }
         });
     }
 
@@ -1056,7 +1058,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 mostrarErrorPayPal(cita.message || 'No se pudo confirmar la cita.');
                 return;
             }
-            mostrarExito('Cita confirmada. ' + cita.metodo_pago_presencial + ' registrado.');
+            mostrarExito('Cita confirmada. ' + boton.textContent + ' registrado.');
         } catch (error) {
             mostrarErrorPayPal('No se pudo verificar el registro. Reintenta con el mismo horario y método sin volver a cobrar.');
         } finally {
