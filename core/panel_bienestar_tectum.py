@@ -13,7 +13,6 @@ import time
 from calendar import monthrange
 from collections import Counter, defaultdict
 
-from django.contrib.auth.decorators import user_passes_test
 from django.core.cache import cache
 from django.db.models import Count, Q
 from django.http import JsonResponse
@@ -22,6 +21,7 @@ from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_GET
 
+from core.acceso_bienestar_tectum import requiere_bienestar_tectum
 from core.models import Cita, EvaluacionSesionPaciente, HistorialClinico, UsuarioPerfil, RespuestaFormularioOrganica, CuestionarioRegistro
 
 logger = logging.getLogger(__name__)
@@ -111,9 +111,6 @@ ALIASES = {
     "conflictos laborales": "Conflictos laborales", "conflicto laboral": "Conflictos laborales",
     "bienestar positivo": "Bienestar positivo", "bienestar": "Bienestar positivo",
 }
-
-_solo_superuser = user_passes_test(lambda u: u.is_superuser, login_url="/")
-
 
 def _qs_tectum():
     return (Cita.objects.exclude(estado="Cancelada")
@@ -923,7 +920,7 @@ def _json(datos):
 
 
 @require_GET
-@_solo_superuser
+@requiere_bienestar_tectum()
 def panel_bienestar_tectum_view(request):
     anio, mes = _periodo(request)
     data = construir_operacion(anio, mes)
@@ -950,7 +947,7 @@ def panel_bienestar_tectum_view(request):
 
 
 @require_GET
-@_solo_superuser
+@requiere_bienestar_tectum(json=True)
 def panel_bienestar_tectum_sentimiento_view(request):
     anio, mes = _periodo(request)
     citas = _citas_mes(anio, mes)

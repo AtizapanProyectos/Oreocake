@@ -12,6 +12,7 @@ INSTALLED_APPS = ['django.contrib.admin', 'django.contrib.auth', 'django.contrib
 MIDDLEWARE = ['django.contrib.sessions.middleware.SessionMiddleware',
               'django.middleware.csrf.CsrfViewMiddleware',
               'django.contrib.auth.middleware.AuthenticationMiddleware',
+              'core.acceso_bienestar_tectum.AccesoExclusivoTectumMiddleware',
               'django.contrib.messages.middleware.MessageMiddleware']
 ROOT_URLCONF = 'hope_project.urls'
 TEMPLATES = [{'BACKEND': 'django.template.backends.django.DjangoTemplates',

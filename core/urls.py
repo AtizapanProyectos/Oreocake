@@ -4,6 +4,7 @@ from . import flujo_clinico
 from . import codigos_qr
 from .transcripcion_navegador import notas_desde_texto, transcribir_fragmento
 from .reportes import reporte_crecimiento_sesiones_view
+from .acceso_bienestar_tectum import panel_bienestar_tectum_login, panel_bienestar_tectum_logout
 from .panel_bienestar_tectum import (
     panel_bienestar_tectum_view,
     panel_bienestar_tectum_sentimiento_view,
@@ -243,5 +244,7 @@ urlpatterns = [
     # No modifica vistas existentes: la lectura vive en core/panel_bienestar_tectum.py.
     path('panel-admin/tectum-bienestar/', panel_bienestar_tectum_view, name='panel_bienestar_tectum'),
     path('panel-admin/tectum-bienestar/sentimiento/', panel_bienestar_tectum_sentimiento_view, name='panel_bienestar_tectum_sentimiento'),
+    path('panel-admin/tectum-bienestar/login/', panel_bienestar_tectum_login, name='panel_bienestar_tectum_login'),
+    path('panel-admin/tectum-bienestar/logout/', panel_bienestar_tectum_logout, name='panel_bienestar_tectum_logout'),
 ]
 
