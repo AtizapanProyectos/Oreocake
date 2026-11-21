@@ -39,6 +39,26 @@ revisar el pago externamente, marcar la casilla de revisión y confirmar con su 
 o liberar la reserva. Las decisiones quedan registradas en `EventoAuditoria`.
 El registro de planes en Django admin es de solo lectura.
 
+### Calendario y continuidad de atención
+
+El modal comparte la identidad del banner: encabezado con franja turquesa, superficies
+blancas y lilas, cuatro tarjetas numeradas y un calendario mensual con navegación,
+fechas disponibles y botones de hora. Al elegir una hora se incorpora la sesión al
+resumen. Las fechas siguientes se filtran para conservar un terapeuta común y el periodo
+de 30 días. Cambiar servicio, modalidad o integrantes limpia la selección anterior.
+
+La modalidad inicial procede de la última sesión atendida del servicio seleccionado;
+si no hay historial de ese servicio, usa la última sesión atendida general y, en su
+ausencia, En línea. Se consideran Completada y Confirmada con llegada Vino; no se usan
+reservas, cancelaciones ni citas futuras solo confirmadas. En historial mixto se permite
+continuar presencial cuando ya consta asistencia presencial.
+
+La asignación por TratamientoPaciente tiene prioridad. Para individual también se
+consulta la asignación heredada del perfil. Cuando existe una asignación, disponibilidad
+y reserva se limitan a ese profesional; si es incompatible o no tiene horarios, no se
+ofrecen otros terapeutas automáticamente. El pool general se usa cuando no hay asignación
+para el servicio. Estos ajustes del modal no requieren una nueva migración.
+
 La captura PayPal continúa en el navegador, igual que en el panel HOPE actual.
 **No se añadió validación definitiva del cargo mediante la API/ID dinámico de PayPal.**
 La referencia guardada y su unicidad aportan trazabilidad y evitan reutilizarla entre

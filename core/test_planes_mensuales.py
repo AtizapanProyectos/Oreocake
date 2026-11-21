@@ -282,3 +282,110 @@ class PlanMensualTests(TestCase):
         self.assertContains(respuesta, 'Otras citas confirmadas', count=1)
         self.assertNotContains(respuesta, 'Tus siguientes espacios')
         self.assertEqual(len(respuesta.context['otras_citas_proximas']), 3)
+
+    def _historial(self, modalidad, dias=10, servicio='individual', estado='Completada', llegada='No registrado'):
+        return Cita.objects.create(
+            paciente=self.paciente, psicologo=self.doctor, fecha=timezone.localdate() - timedelta(days=dias),
+            hora='12:00', modalidad=modalidad, tipo_sesion=servicio, estado=estado, registro_llegada=llegada,
+        )
+
+    def _competidor(self, modalidad='Mixto'):
+        doctor = PerfilPsicologo.objects.create(
+            usuario=User.objects.create_user('competidor'), cedula_profesional='competidor',
+            modalidad_atencion=modalidad, atiende_pareja=True,
+        )
+        EsquemaHorarioPsicologo.objects.create(
+            psicologo=doctor, fecha_inicio=self.inicio, fecha_fin=self.inicio + timedelta(days=90),
+            hora_inicio='19:00', hora_fin='22:00',
+        )
+        return doctor
+
+    def test_modalidad_inicial_sin_historial_es_online(self):
+        data = self.client.get(reverse('plan_mensual_estado')).json()
+        self.assertEqual(data['modalidad_predeterminada'], 'En línea')
+
+    def test_modalidad_inicial_presencial_por_sesion_atendida(self):
+        self._historial('Presencial')
+        data = self.client.get(reverse('plan_mensual_estado')).json()
+        self.assertEqual(data['modalidad_predeterminada'], 'Presencial')
+
+    def test_historial_mixto_toma_ultima_atendida_e_ignora_futuras(self):
+        self._historial('En línea', dias=20)
+        self._historial('Presencial', dias=5)
+        self._historial('En línea', dias=-10, estado='Confirmada')
+        self._historial('En línea', dias=1, estado='Cancelada')
+        data = self.client.get(reverse('plan_mensual_estado')).json()
+        self.assertEqual(data['modalidad_predeterminada'], 'Presencial')
+        respuesta = self.reservar(modalidad='Presencial')
+        self.assertEqual(respuesta.status_code, 200)
+
+    def test_historial_mixto_ultima_online_predetermina_online(self):
+        self._historial('Presencial', dias=20)
+        self._historial('En línea', dias=5)
+        data = self.client.get(reverse('plan_mensual_estado')).json()
+        self.assertEqual(data['modalidad_predeterminada'], 'En línea')
+
+    def test_llegada_presencial_confirmada_cuenta_como_asistida(self):
+        self._historial('Presencial', estado='Confirmada', llegada='Vino')
+        self.assertEqual(self.client.get(reverse('plan_mensual_estado')).json()['modalidad_predeterminada'], 'Presencial')
+
+    def test_default_respeta_historial_del_servicio(self):
+        self._historial('Presencial', dias=20)
+        self._historial('En línea', dias=5, servicio='pareja')
+        self.assertEqual(self.client.get(reverse('plan_mensual_estado')).json()['modalidad_predeterminada'], 'Presencial')
+        data = self.client.get(reverse('plan_mensual_estado'), {'tipo_servicio':'pareja'}).json()
+        self.assertEqual(data['modalidad_predeterminada'], 'En línea')
+
+    def test_asignacion_del_perfil_filtra_ambas_modalidades(self):
+        self._competidor()
+        UsuarioPerfil.objects.filter(usuario=self.paciente).update(psicologo_asignado=self.doctor)
+        for modalidad in ['Presencial', 'En línea']:
+            with self.subTest(modalidad=modalidad):
+                data = self.client.get(reverse('plan_mensual_disponibilidad'), {'modalidad':modalidad}).json()
+                self.assertEqual([doc['id'] for doc in data['terapeutas']], [self.doctor.pk])
+                self.assertEqual(data['psicologo_asignado']['id'], self.doctor.pk)
+                horas = [hora for dia in data['terapeutas'][0]['dias'].values() for hora in dia]
+                self.assertNotIn('07:00 PM', horas)
+
+    def test_asignado_incompatible_no_muestra_ni_reserva_con_otro(self):
+        for modalidad_doc, modalidad_cita in [('En línea','Presencial'), ('Presencial','En línea')]:
+            with self.subTest(modalidad=modalidad_cita):
+                self.doctor.modalidad_atencion = modalidad_doc
+                self.doctor.save(update_fields=['modalidad_atencion'])
+                UsuarioPerfil.objects.filter(usuario=self.paciente).update(psicologo_asignado=self.doctor)
+                competidor = self._competidor(modalidad_cita)
+                data = self.client.get(reverse('plan_mensual_disponibilidad'), {'modalidad':modalidad_cita}).json()
+                self.assertEqual(data['terapeutas'], [])
+                seleccion = [{**c,'hora':'07:00 PM'} for c in self.seleccion]
+                self.assertEqual(self.reservar(modalidad=modalidad_cita, citas=json.dumps(seleccion)).status_code, 409)
+                competidor.esquemas_horarios.all().delete()
+                competidor.delete()
+                User.objects.filter(username='competidor').delete()
+        self.assertFalse(PlanMensual.objects.exists())
+
+    def test_tratamiento_tiene_prioridad_sobre_perfil(self):
+        competidor = self._competidor()
+        UsuarioPerfil.objects.filter(usuario=self.paciente).update(psicologo_asignado=competidor)
+        TratamientoPaciente.objects.create(paciente=self.paciente, tipo_servicio='individual', psicologo_asignado=self.doctor)
+        data = self.client.get(reverse('plan_mensual_disponibilidad')).json()
+        self.assertEqual([doc['id'] for doc in data['terapeutas']], [self.doctor.pk])
+
+    def test_asignacion_individual_no_se_reutiliza_en_pareja(self):
+        self.doctor.atiende_pareja = False
+        self.doctor.save(update_fields=['atiende_pareja'])
+        UsuarioPerfil.objects.filter(usuario=self.paciente).update(psicologo_asignado=self.doctor)
+        competidor = self._competidor()
+        data = self.client.get(reverse('plan_mensual_disponibilidad'), {'tipo_servicio':'pareja'}).json()
+        self.assertEqual([doc['id'] for doc in data['terapeutas']], [competidor.pk])
+
+    def test_asignado_sin_horarios_no_cae_al_pool(self):
+        self._competidor()
+        UsuarioPerfil.objects.filter(usuario=self.paciente).update(psicologo_asignado=self.doctor)
+        self.doctor.esquemas_horarios.all().delete()
+        data = self.client.get(reverse('plan_mensual_disponibilidad')).json()
+        self.assertEqual(data['terapeutas'], [])
+
+    def test_disponibilidad_no_ofrece_filas_que_rompen_unicidad(self):
+        Cita.objects.create(paciente=self.paciente, psicologo=self.doctor, fecha=self.inicio, hora='11:00', estado='Cancelada')
+        data = self.client.get(reverse('plan_mensual_disponibilidad')).json()
+        self.assertNotIn('11:00 AM', data['terapeutas'][0]['dias'][self.inicio.isoformat()])

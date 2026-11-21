@@ -98,8 +98,39 @@ def _reglas_paciente(request, paciente, modalidad):
         return
     if not _tiene_consentimiento(paciente):
         raise ErrorPlan('Firma el consentimiento informado antes de reservar tu plan.')
-    if modalidad == 'Presencial' and Cita.objects.filter(paciente=paciente, modalidad='En línea').exists():
+    if modalidad == 'Presencial' and _presencial_requiere_contacto(paciente):
         raise ErrorPlan(MENSAJE_PRESENCIAL_CONTACTA)
+
+
+def _sesiones_atendidas(paciente):
+    return Cita.objects.filter(paciente=paciente).filter(
+        Q(estado='Completada') | Q(registro_llegada='Vino', estado='Confirmada'),
+    ).filter(modalidad__in=['Presencial', 'En línea']).order_by('-fecha', '-hora', '-pk')
+
+
+def modalidad_predeterminada(paciente, servicio='individual'):
+    atendidas = _sesiones_atendidas(paciente)
+    return (atendidas.filter(tipo_sesion=servicio).values_list('modalidad', flat=True).first()
+            or atendidas.values_list('modalidad', flat=True).first() or 'En línea')
+
+
+def _presencial_requiere_contacto(paciente):
+    # Conservar la restricción histórica para quien nunca ha asistido presencial.
+    # Un paciente con historial mixto sí debe poder continuar sus sesiones presenciales.
+    return (Cita.objects.filter(paciente=paciente, modalidad='En línea').exists()
+            and not _sesiones_atendidas(paciente).filter(modalidad='Presencial').exists())
+
+
+def _asignado(paciente, servicio):
+    tratamiento = TratamientoPaciente.objects.filter(
+        paciente=paciente, tipo_servicio=servicio, activo=True,
+    ).select_related('psicologo_asignado__usuario').first()
+    if tratamiento and tratamiento.psicologo_asignado_id:
+        return tratamiento.psicologo_asignado
+    # El perfil es la asignación individual heredada; no reutilizarla para otro servicio.
+    if servicio == 'individual' and paciente.perfil.psicologo_asignado_id:
+        return PerfilPsicologo.objects.select_related('usuario').get(pk=paciente.perfil.psicologo_asignado_id)
+    return None
 
 
 def _terapeutas(paciente, servicio, modalidad):
@@ -110,11 +141,11 @@ def _terapeutas(paciente, servicio, modalidad):
         esta_activo=True, modalidad_atencion__in=COMPATIBILIDAD_MODALIDAD_PSICOLOGO[modalidad],
         **{capacidad: True},
     )
-    asignado = TratamientoPaciente.objects.filter(
-        paciente=paciente, tipo_servicio=servicio, activo=True,
-    ).values_list('psicologo_asignado_id', flat=True).first()
-    if asignado and doctores.filter(pk=asignado).exists():
-        return doctores.filter(pk=asignado)
+    asignado = _asignado(paciente, servicio)
+    if asignado:
+        # No sustituir silenciosamente al terapeuta asignado cuando no es compatible
+        # o no tiene disponibilidad. La misma regla se usa al reservar las cuatro citas.
+        return doctores.filter(pk=asignado.pk)
     cuestionario = CuestionarioRegistro.objects.filter(paciente=paciente, flujo_elegido=servicio).order_by('-fecha_completado').first()
     if not cuestionario:
         cuestionario = CuestionarioRegistro.objects.filter(paciente=paciente).order_by('-fecha_completado').first()
@@ -171,7 +202,7 @@ def disponibilidad(request):
     try:
         paciente = _paciente(request, request.GET)
         servicio, modalidad, integrantes, monto = _configuracion(request.GET)
-        if not request.user.is_superuser and modalidad == 'Presencial' and Cita.objects.filter(paciente=paciente, modalidad='En línea').exists():
+        if not request.user.is_superuser and modalidad == 'Presencial' and _presencial_requiere_contacto(paciente):
             from .views import MENSAJE_PRESENCIAL_CONTACTA
             raise ErrorPlan(MENSAJE_PRESENCIAL_CONTACTA)
         liberar_planes_vencidos()
@@ -184,15 +215,27 @@ def disponibilidad(request):
         doctores = []
         for doctor in _terapeutas(paciente, servicio, modalidad).select_related('usuario'):
             dias = obtener_slots_psicologo(doctor, hoy, limite, tipo_sesion=servicio, modalidad=modalidad)
+            # La unicidad histórica de Cita incluye filas canceladas que aún
+            # conservan psicólogo. No ofrecer un slot que reservar() rechazaría.
+            no_reutilizables = set(Cita.objects.filter(
+                psicologo=doctor, fecha__gte=hoy, fecha__lte=limite,
+            ).values_list('fecha', 'hora'))
             from .views import parsear_hora_flexible
             dias = {fecha: [hora for hora in horas if (
                 timezone.make_aware(datetime.combine(date.fromisoformat(fecha), parsear_hora_flexible(hora))) >= ahora
                 and (date.fromisoformat(fecha), parsear_hora_flexible(hora)) not in ocupadas
+                and (date.fromisoformat(fecha), parsear_hora_flexible(hora)) not in no_reutilizables
             )] for fecha, horas in dias.items()}
             dias = {fecha: horas for fecha, horas in dias.items() if horas}
             if dias:
                 doctores.append({'id': doctor.pk, 'dias': dias})
-        return JsonResponse({'status': 'success', 'terapeutas': doctores, 'monto': str(monto), 'por_sesion': str(monto / 4)})
+        asignado = _asignado(paciente, servicio)
+        return JsonResponse({
+            'status': 'success', 'terapeutas': doctores, 'monto': str(monto), 'por_sesion': str(monto / 4),
+            'hoy': hoy.isoformat(), 'fecha_limite': limite.isoformat(),
+            'modalidad_predeterminada': modalidad_predeterminada(paciente, servicio),
+            'psicologo_asignado': {'id': asignado.pk, 'nombre': asignado.usuario.get_full_name() or asignado.usuario.username} if asignado else None,
+        })
     except ErrorPlan as error:
         return _error(error)
 
@@ -303,7 +346,10 @@ def estado(request):
         if request.GET.get('plan_id'):
             return JsonResponse(_serializar(_plan_accesible(request, request.GET)))
         planes = PlanMensual.objects.filter(paciente=paciente, estado__in=['reservado', 'procesando']).order_by('-creado')
-        return JsonResponse({'status': 'success', 'planes': [_serializar(plan) for plan in planes]})
+        return JsonResponse({
+            'status': 'success', 'planes': [_serializar(plan) for plan in planes],
+            'modalidad_predeterminada': modalidad_predeterminada(paciente, request.GET.get('tipo_servicio', 'individual')),
+        })
     except ErrorPlan as error:
         return _error(error)
 
