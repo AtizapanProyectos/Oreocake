@@ -2,6 +2,7 @@ from django.urls import path
 from . import views
 from . import flujo_clinico
 from . import codigos_qr
+from . import planes_mensuales
 from .transcripcion_navegador import notas_desde_texto, transcribir_fragmento
 from .reportes import reporte_crecimiento_sesiones_view
 from .acceso_bienestar_tectum import panel_bienestar_tectum_login, panel_bienestar_tectum_logout
@@ -12,6 +13,10 @@ from .panel_bienestar_tectum import (
 
 
 urlpatterns = [
+    path('api/planes-mensuales/disponibilidad/', planes_mensuales.disponibilidad, name='plan_mensual_disponibilidad'),
+    path('api/planes-mensuales/reservar/', planes_mensuales.reservar, name='plan_mensual_reservar'),
+    path('api/planes-mensuales/estado/', planes_mensuales.estado, name='plan_mensual_estado'),
+    path('api/planes-mensuales/actualizar/', planes_mensuales.actualizar, name='plan_mensual_actualizar'),
     path('api/transcribir-fragmento/<int:cita_id>/', transcribir_fragmento, name='transcribir_fragmento'),
     path('', views.inicio, name='inicio'),
     path('tectum/', views.inicio_tectum, name='inicio_tectum'),

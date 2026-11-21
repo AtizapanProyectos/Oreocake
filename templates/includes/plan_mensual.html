@@ -1,0 +1,93 @@
+{% load static %}
+<link rel="stylesheet" href="{% static 'css/plan_mensual.css' %}">
+<section class="pm-banner" aria-labelledby="pm-banner-titulo">
+    <div class="pm-banner-main">
+        <div class="pm-banner-copy">
+            <span class="pm-plan-badge">PLAN MENSUAL</span>
+            <h2 id="pm-banner-titulo">Apartar mi horario</h2>
+            <p class="pm-banner-subtitle">Dale continuidad a eso que estás construyendo.</p>
+            <p class="pm-banner-benefits">4 sesiones · Un mismo terapeuta{% if not plan_admin %} · Un solo pago{% endif %}</p>
+            <span class="pm-banner-underline" aria-hidden="true"></span>
+        </div>
+        <div class="pm-banner-art">
+            <img class="pm-banner-logo" src="{% static 'img/logo_hope_principal.png' %}" alt="HOPE · Oportunidad, Prevención, Esperanza" width="600" height="228">
+            <div class="pm-calendar-grid" aria-hidden="true">
+                <div class="pm-calendar pm-calendar-filled"><span class="pm-calendar-rings"></span><strong>01</strong><span>SESIÓN</span></div>
+                <div class="pm-calendar"><span class="pm-calendar-rings"></span><strong>02</strong><span>SESIÓN</span></div>
+                <div class="pm-calendar"><span class="pm-calendar-rings"></span><strong>03</strong><span>SESIÓN</span></div>
+                <div class="pm-calendar pm-calendar-filled"><span class="pm-calendar-rings"></span><strong>04</strong><span>SESIÓN</span></div>
+                <svg class="pm-calendar-spark" viewBox="0 0 28 55" fill="none"><path d="M9 5L21 15M4 28L18 31M9 50L21 42" stroke="currentColor" stroke-width="7" stroke-linecap="round"/></svg>
+            </div>
+        </div>
+    </div>
+    <div class="pm-banner-footer">
+        <div class="pm-banner-price"><strong>$440<span> MXN</span></strong><span>Individual</span></div>
+        <div class="pm-banner-details">
+            <p>Pareja <strong>$860</strong> · Familiar desde <strong>$860</strong></p>
+            <small>Cuatro fechas distintas dentro de 30 días. Comisión incluida.{% if plan_admin %} Importe referencial; se agenda sin cobro.{% endif %}</small>
+        </div>
+        <div class="pm-acciones">
+            {% if plan_admin %}
+            <button type="button" class="pm-btn" data-pm-abrir="admin">Agendar cuatro citas sin cobro</button>
+            {% else %}
+            <button type="button" class="pm-btn" data-pm-abrir="paypal">Elegir fechas y pagar con PayPal</button>
+            <button type="button" class="pm-btn pm-btn-claro" data-pm-abrir="transferencia">Pagar por transferencia</button>
+            {% endif %}
+        </div>
+    </div>
+    <p id="pm-pendiente-aviso" class="pm-banner-pending" hidden>Tienes un plan pendiente. <button type="button" class="pm-link" data-pm-abrir="recuperar">Retomar mi plan</button></p>
+</section>
+<dialog id="pm-dialog" class="pm-dialog" aria-labelledby="pm-titulo"
+    data-admin="{{ plan_admin|yesno:'true,false' }}" data-usuario="{{ request.user.pk }}"
+    data-disponibilidad="{% url 'plan_mensual_disponibilidad' %}"
+    data-reservar="{% url 'plan_mensual_reservar' %}"
+    data-estado="{% url 'plan_mensual_estado' %}"
+    data-actualizar="{% url 'plan_mensual_actualizar' %}">
+    <header class="pm-dialog-header">
+        <div><span class="pm-eyebrow">TU PLAN MENSUAL</span><h2 id="pm-titulo">Cuatro espacios para ti</h2></div>
+        <button type="button" id="pm-cerrar" class="pm-cerrar" aria-label="Cerrar plan mensual">✕</button>
+    </header>
+    <p id="pm-paciente" hidden></p>
+    <div id="pm-config">
+        <div class="pm-campos">
+            <label>Servicio<select id="pm-servicio"><option value="individual">Individual</option><option value="pareja">En pareja</option><option value="familiar">Familiar</option></select></label>
+            <label>Modalidad<select id="pm-modalidad"><option>En línea</option><option>Presencial</option></select></label>
+            <label id="pm-integrantes-label" hidden>Integrantes<input id="pm-integrantes" type="number" min="2" max="32767" value="2"></label>
+        </div>
+        <p>Elige cuatro fechas distintas dentro de 30 días. Todas tus sesiones serán con el mismo terapeuta. Horarios de Ciudad de México.</p>
+        <div class="pm-campos">
+            <label>Fecha<select id="pm-fecha" aria-label="Fecha de la sesión"></select></label>
+            <label>Hora<select id="pm-hora" aria-label="Hora de la sesión"></select></label>
+            <button type="button" id="pm-agregar" class="pm-btn">Añadir fecha</button>
+        </div>
+    </div>
+    <section aria-labelledby="pm-contador"><h3 id="pm-contador">0 de 4 citas</h3><ol id="pm-seleccion" class="pm-seleccion"></ol></section>
+    <div class="pm-resumen"><strong id="pm-total">Calculando total…</strong><span id="pm-por-sesion"></span></div>
+    <p id="pm-sin-cobro" {% if not plan_admin %}hidden{% endif %}>Importe referencial: administración agenda este plan sin generar cobro.</p>
+    <p id="pm-mensaje" role="status" aria-live="polite"></p>
+    <div id="pm-espera" hidden role="status" aria-live="polite"><span class="pm-spinner" aria-hidden="true"></span><span id="pm-espera-texto">Preparando tus horarios…</span></div>
+    <div id="pm-pago" class="pm-acciones">
+        {% if plan_admin %}
+        <button type="button" id="pm-admin-confirmar" class="pm-btn" disabled>Confirmar cuatro citas sin cobro</button>
+        {% else %}
+        <div id="pm-paypal" hidden><p>Un solo pago para tus cuatro sesiones.</p><div id="pm-paypal-botones"></div></div>
+        <a id="pm-whatsapp" class="pm-btn pm-btn-claro" target="_blank" rel="noopener" hidden>Enviar mis cuatro fechas por WhatsApp</a>
+        <p id="pm-transferencia-aviso" hidden>Envía tu comprobante al equipo. Tus horarios quedan sujetos a disponibilidad y se confirman después de revisar la transferencia.</p>
+        {% endif %}
+    </div>
+    <div class="pm-acciones">
+        <button type="button" id="pm-reintentar" class="pm-btn pm-btn-claro" hidden>Consultar y retomar mi plan</button>
+        <button type="button" id="pm-confirmar-recuperado" class="pm-btn" hidden>Completar confirmación del pago</button>
+        <button type="button" id="pm-cancelar-reserva" class="pm-link" hidden>Cancelar esta reserva</button>
+        <button type="button" id="pm-recargar" class="pm-btn" hidden>Ver mis citas</button>
+    </div>
+    {% if plan_admin %}
+    <fieldset id="pm-revision" hidden><legend>Revisión de un pago pendiente</legend>
+        <p>Confirma el resultado del pago fuera de este formulario antes de resolver este plan.</p>
+        <label><input id="pm-revisado" type="checkbox"> Revisé el pago y sus cuatro citas</label>
+        <label>Referencia PayPal<input id="pm-referencia" maxlength="64" autocomplete="off"></label>
+        <div class="pm-acciones"><button id="pm-revision-confirmar" type="button" class="pm-btn">Confirmar pago revisado</button><button id="pm-revision-cancelar" type="button" class="pm-link">Liberar reserva tras revisión</button></div>
+    </fieldset>
+    {% endif %}
+</dialog>
+<script src="{% static 'js/plan_mensual.js' %}" defer></script>

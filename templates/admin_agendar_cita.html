@@ -19,8 +19,8 @@
         color:#1a1035; 
         
         /* 🚨 MAGIA ANTI-DESBORDAMIENTO */
-        height: 100vh;
-        overflow: hidden;
+        min-height: 100vh;
+        overflow: clip;
         display: flex;
         flex-direction: column;
     }
@@ -39,32 +39,32 @@
     .hpa-header p { font-size:15px; color:#7c6fa0; margin:0; }
 
     /* =========================================================
-       2. GRID Y COLUMNAS CON SCROLL INDEPENDIENTE
+       2. GRID RESPONSIVO Y DESPLAZAMIENTO VERTICAL DE LA PÁGINA
        ========================================================= */
     #hpa-form {
         display: flex;
         flex-direction: column;
         flex: 1;
-        min-height: 0; /* Necesario para que flexbox contenga el grid */
-        overflow: hidden;
+        min-height: 0;
+        overflow: visible;
     }
 
     .hpa-grid { 
         position:relative; 
         z-index:1; 
         display:grid; 
-        grid-template-columns:1.6fr 1fr; 
+        grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);
         gap:24px; 
         align-items:start; 
         flex: 1;
-        min-height: 0; /* Clave para activar el scroll interno */
+        min-height: 0;
     }
     @media(max-width:860px){ .hpa-grid{ grid-template-columns:1fr; } }
 
     /* Contenedor de las columnas para evitar que rompan la pantalla */
     .hpa-scroll-col {
-        max-height: 100%;
-        overflow-y: auto;
+        min-width: 0;
+        overflow: visible;
         padding-right: 12px; /* Espacio para que el scroll no muerda el contenido */
         padding-bottom: 20px;
         scrollbar-width: thin;
@@ -72,6 +72,11 @@
     }
     .hpa-scroll-col::-webkit-scrollbar { width: 6px; }
     .hpa-scroll-col::-webkit-scrollbar-thumb { background: #5a3fa3; border-radius: 10px; }
+    .hpa-wrap::before,.hpa-wrap::after { pointer-events:none; }
+    .hpa-footer { position:relative; z-index:1; padding:4px 0 24px; }
+    .hpa-card,.hpa-buscador input { box-sizing:border-box; min-width:0; }
+    .hpa-wrap .pm-banner { flex-shrink:0; z-index:1; }
+    @media(max-width:520px){ .hpa-card{padding:20px;} .hpa-header h1{font-size:25px;} }
 
     /* =========================================================
        3. TARJETAS Y ELEMENTOS UI (Tus estilos intactos)
@@ -177,12 +182,13 @@
         <p>Búscalo, elige día y hora, y nosotros nos encargamos de la asignación de terapeuta y del Meet. No se cobra nada aquí.</p>
     </div>
 
+    {% include 'includes/plan_mensual.html' with plan_admin=True %}
     <form id="hpa-form">
         {% csrf_token %}
         <div class="hpa-grid">
 
             <!-- =====================================
-                 COLUMNA IZQUIERDA (CON SCROLL)
+                 COLUMNA IZQUIERDA
                  ===================================== -->
             <div class="hpa-scroll-col">
                 <div class="hpa-card">
@@ -270,7 +276,7 @@
             </div>
 
             <!-- =====================================
-                 COLUMNA DERECHA (CON SCROLL)
+                 COLUMNA DERECHA
                  ===================================== -->
             <div class="hpa-scroll-col">
                 <div class="hpa-card hpa-disabled" id="hpa-card-animo">
@@ -298,23 +304,24 @@
                         <p>🕐 Hora: <strong id="hpa-resumen-hora">Sin seleccionar</strong></p>
                     </div>
 
-                    <button type="submit" class="hpa-btn-confirmar" id="hpa-btn-confirmar" disabled>
-                        Confirmar cita <i class="fas fa-arrow-right"></i>
-                    </button>
-
-                    <div class="hpa-msg" id="hpa-msg"></div>
                 </div>
 
-                <div class="hpa-card hpa-exito" id="hpa-exito">
-                    <i class="fas fa-circle-check"></i>
-                    <h3>¡Cita agendada!</h3>
-                    <p id="hpa-exito-texto">Se le notificó al paciente por correo, junto con el Meet si aplica.</p>
-                    <a href="{% url 'panel_admin' %}">Volver al panel admin</a>
-                </div>
             </div>
 
         </div>
+        <div class="hpa-footer">
+            <button type="submit" class="hpa-btn-confirmar" id="hpa-btn-confirmar" disabled>
+                Confirmar cita <i class="fas fa-arrow-right"></i>
+            </button>
+            <div class="hpa-msg" id="hpa-msg" role="status" aria-live="polite"></div>
+        </div>
     </form>
+    <div class="hpa-card hpa-exito" id="hpa-exito">
+        <i class="fas fa-circle-check"></i>
+        <h3>¡Cita agendada!</h3>
+        <p id="hpa-exito-texto">Se le notificó al paciente por correo, junto con el Meet si aplica.</p>
+        <a href="{% url 'panel_admin' %}">Volver al panel admin</a>
+    </div>
 </div>
 
 <script>
@@ -350,6 +357,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const MES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
 
     let esTectumSeleccionado = false;
+    window.contextoPlanMensualAdmin = () => ({pacienteId, nombre: document.getElementById('hpa-paciente-nombre').textContent, tipoSesion, modalidad, integrantesFamilia, esTectum: esTectumSeleccionado});
 
     window.cambiarConvenioAdmin = function(tipo) {
         const radioHope = document.querySelector('input[name="convenio_tipo"][value="hope"]');

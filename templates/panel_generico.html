@@ -707,6 +707,8 @@ function mostrarErrorCita(mensaje, opts) {
                     </a>
                     <p style="font-size: 10px; color: #94a3b8; text-align: center; margin-top: 8px;">Soporte técnico vía WhatsApp</p>
                 </div>
+            {% elif cita_proxima.plan_mensual_id %}
+                <p role="status" style="padding: 20px; border-radius: 16px; background: #f1ebfa; color: var(--c-purple);">Tu cita del Plan Mensual está confirmada. Estamos preparando el enlace de tu consulta. No necesitas repetir el pago.</p>
             {% else %}
                 <div style="background: #fffaf0; border: 2px solid #ffedd5; padding: 25px; border-radius: 20px; color: var(--c-orange); max-width: 500px; margin: 0 auto; text-align: center;">
                     <i class="fas fa-file-invoice-dollar" style="font-size: 30px; margin-bottom: 12px;"></i>
@@ -872,6 +874,7 @@ function mostrarErrorCita(mensaje, opts) {
         <!-- ==========================================================================
              🌟 HUB MULTISERVICIO: AGENDAR NUEVAS SESIONES (INDIVIDUAL, PAREJA, FAMILIAR)
              ========================================================================== -->
+        {% include 'includes/plan_mensual.html' %}
         <div id="contenedor-agendador-multiservicio" {% if cita_proxima %}style="display: none;" class="agendador-encapsulado"{% endif %}>
             {% if cita_proxima %}
             <div style="display: flex; align-items: center; justify-content: space-between; background: #f0fdfa; border: 1.5px solid #ccfbf1; padding: 14px 24px; border-radius: 20px; margin-bottom: 25px; box-shadow: 0 4px 15px rgba(37,184,184,0.06);">
@@ -2621,28 +2624,38 @@ document.addEventListener("DOMContentLoaded", function () {
             },
 
             createOrder(data, actions) {
+                mostrarCarga('Preparando tu pago…');
                 const { total } = calcularPrecioFrontend(window.tipoServicioAgendado || 'individual', window.integrantesFamilia);
                 return actions.order.create({
                     purchase_units: [{amount: {currency_code: 'MXN', value: total.toFixed(2)}}]
-                });
+                }).finally(ocultarCarga);
             },
 
             async onApprove(data, actions) {
-                const pago = await actions.order.capture();
-                if (pago.status !== 'COMPLETED') {
-                    mostrarErrorCita('PayPal todavía no confirmó el pago. Revisa su estado antes de volver a pagar.');
-                    return;
+                mostrarCarga('Procesando tu pago. Estamos preparando tu sesión…');
+                try {
+                    const pago = await actions.order.capture();
+                    if (pago.status !== 'COMPLETED') {
+                        mostrarErrorCita('PayPal todavía no confirmó el pago. Revisa su estado antes de volver a pagar.');
+                        return;
+                    }
+                    return await guardarCitaSinPago(pago.id || data.orderID);
+                } catch (error) {
+                    mostrarErrorCita('No pudimos completar la confirmación. Si recibiste el cargo, no vuelvas a pagar y contacta al equipo.');
+                } finally {
+                    ocultarCarga();
                 }
-                return guardarCitaSinPago(pago.id || data.orderID);
             },
 
             // 5. SI ALGO EXPLOTA EN PAYPAL (antes de llegar a capturar el pago)
             onError: function (err) {
+                ocultarCarga();
                 console.error("Error PayPal:", err);
                 mostrarErrorCita('Hubo un error de conexión con tu banco o PayPal. Si el cargo sí se realizó en tu cuenta, no vuelvas a pagar y contáctanos por WhatsApp.', {
                     pagoConfirmado: false
                 });
-            }
+            },
+            onCancel: function () { ocultarCarga(); }
             
         }).render('#paypal-button-container').then(function() {
             // Ya está listo el botón real de PayPal: quitamos el mensaje de "cargando".

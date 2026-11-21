@@ -322,6 +322,9 @@ class TratamientoPaciente(models.Model):
 # 3. CITAS
 # ==========================================
 class Cita(models.Model):
+    plan_mensual = models.ForeignKey(
+        'PlanMensual', on_delete=models.PROTECT, null=True, blank=True, related_name='citas',
+    )
     paciente = models.ForeignKey(User, on_delete=models.CASCADE, related_name='citas_como_paciente')
     psicologo = models.ForeignKey(PerfilPsicologo, on_delete=models.CASCADE, related_name='citas_agendadas', null=True)
     fecha = models.DateField(verbose_name='Fecha de la sesión', db_index=True) # 🔥 OPTIMIZADO
@@ -1674,6 +1677,31 @@ class GrabacionSesion(models.Model):
 
 
 
+
+
+class PlanMensual(models.Model):
+    class Estado(models.TextChoices):
+        RESERVADO = 'reservado', 'Reservado por 15 minutos'
+        PROCESANDO = 'procesando', 'Pago pendiente de resolver'
+        CONFIRMADO = 'confirmado', 'Confirmado'
+        CANCELADO = 'cancelado', 'Cancelado'
+        EXPIRADO = 'expirado', 'Reserva vencida'
+
+    clave = models.UUIDField(default=uuid4, unique=True, editable=False)
+    paciente = models.ForeignKey(User, on_delete=models.PROTECT, related_name='planes_mensuales')
+    creado_por = models.ForeignKey(User, on_delete=models.PROTECT, related_name='planes_mensuales_creados')
+    tipo_servicio = models.CharField(max_length=20)
+    modalidad = models.CharField(max_length=20)
+    integrantes_familia = models.PositiveSmallIntegerField(null=True, blank=True)
+    monto = models.DecimalField(max_digits=10, decimal_places=2)
+    origen = models.CharField(max_length=10, choices=[('paypal', 'PayPal'), ('admin', 'Administración sin cobro')])
+    estado = models.CharField(max_length=12, choices=Estado.choices, default=Estado.RESERVADO, db_index=True)
+    referencia = models.CharField(max_length=64, unique=True, null=True, blank=True)
+    vence = models.DateTimeField(db_index=True)
+    creado = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f'Plan #{self.pk} · {self.get_estado_display()} · {self.monto} MXN'
 
 
 class PagoCitaPayPal(models.Model):

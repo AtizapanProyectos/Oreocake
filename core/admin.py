@@ -5,6 +5,20 @@ from import_export.admin import ImportExportModelAdmin
 from django.db.models import Count
 from .models import *
 
+
+@admin.register(PlanMensual)
+class PlanMensualAdmin(admin.ModelAdmin):
+    list_display = ('id', 'paciente', 'tipo_servicio', 'modalidad', 'monto', 'origen', 'estado', 'creado', 'vence')
+    list_filter = ('estado', 'origen', 'tipo_servicio', 'modalidad')
+    search_fields = ('paciente__username', 'paciente__email', 'referencia')
+    readonly_fields = tuple(field.name for field in PlanMensual._meta.fields)
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
 # =================================================================
 # 1. FORMULARIOS (Python lo lee primero y ya sabe qué es)
 # =================================================================

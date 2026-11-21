@@ -2001,6 +2001,8 @@ def _notificar_cita_paciente(cita, request):
 
 
 def _liberar_reservas_vencidas(**horario):
+    from .planes_mensuales import liberar_planes_vencidos
+    liberar_planes_vencidos()
     pagos = PagoCitaPayPal.objects.filter(
         vence__lte=timezone.now(), captura_iniciada=False, cita__estado='Pendiente',
         **{f'cita__{campo}': valor for campo, valor in horario.items()},
