@@ -59,6 +59,11 @@ y reserva se limitan a ese profesional; si es incompatible o no tiene horarios, 
 ofrecen otros terapeutas automáticamente. El pool general se usa cuando no hay asignación
 para el servicio. Estos ajustes del modal no requieren una nueva migración.
 
+El CSS y JavaScript del componente usan URLs versionadas por contenido mediante
+`versioned_static`. Esto evita combinar HTML nuevo con archivos guardados por el
+navegador durante las cuatro horas de caché del servidor. Funciona también cuando
+DEBUG está habilitado y el tag static devuelve una URL sin hash de manifest.
+
 La captura PayPal continúa en el navegador, igual que en el panel HOPE actual.
 **No se añadió validación definitiva del cargo mediante la API/ID dinámico de PayPal.**
 La referencia guardada y su unicidad aportan trazabilidad y evitan reutilizarla entre

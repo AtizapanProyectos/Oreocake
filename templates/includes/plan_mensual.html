@@ -1,5 +1,5 @@
-{% load static %}
-<link rel="stylesheet" href="{% static 'css/plan_mensual.css' %}">
+{% load static hope_assets %}
+<link rel="stylesheet" href="{% versioned_static 'css/plan_mensual.css' %}">
 <section class="pm-banner" aria-labelledby="pm-banner-titulo">
     <div class="pm-banner-main">
         <div class="pm-banner-copy">
@@ -45,8 +45,8 @@
     data-actualizar="{% url 'plan_mensual_actualizar' %}">
     <header class="pm-dialog-header">
         <div class="pm-dialog-title"><span class="pm-plan-badge">PLAN MENSUAL</span><h2 id="pm-titulo">Tu mes, tu espacio</h2><p>Cuatro encuentros para darle continuidad a tu proceso.</p></div>
-        <img class="pm-modal-logo" src="{% static 'img/logo_hope_principal.png' %}" alt="HOPE" width="600" height="228">
-        <button type="button" id="pm-cerrar" class="pm-cerrar" aria-label="Cerrar plan mensual"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button>
+        <img class="pm-modal-logo" src="{% static 'img/logo_hope_principal.png' %}" alt="HOPE" width="125" height="48">
+        <button type="button" id="pm-cerrar" class="pm-cerrar" aria-label="Cerrar plan mensual"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button>
     </header>
     <p id="pm-paciente" class="pm-patient" hidden></p>
     <div class="pm-modal-layout">
@@ -58,15 +58,15 @@
             <fieldset class="pm-modality"><legend>¿Dónde nos encontramos?</legend>
                 <input type="hidden" id="pm-modalidad" value="En línea">
                 <div class="pm-modality-options">
-                    <button type="button" data-pm-modalidad="Presencial" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s7-6 7-12a7 7 0 1 0-14 0c0 6 7 12 7 12Z"/><circle cx="12" cy="9" r="2.5"/></svg><span>Presencial<small>Nos vemos en HOPE</small></span></button>
-                    <button type="button" data-pm-modalidad="En línea" aria-pressed="true"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="12" height="14" rx="3"/><path d="m15 10 6-4v12l-6-4"/></svg><span>En línea<small>Desde tu espacio</small></span></button>
+                    <button type="button" data-pm-modalidad="Presencial" aria-pressed="false"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M12 21s7-6 7-12a7 7 0 1 0-14 0c0 6 7 12 7 12Z"/><circle cx="12" cy="9" r="2.5"/></svg><span>Presencial<small>Nos vemos en HOPE</small></span></button>
+                    <button type="button" data-pm-modalidad="En línea" aria-pressed="true"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="3" y="5" width="12" height="14" rx="3"/><path d="m15 10 6-4v12l-6-4"/></svg><span>En línea<small>Desde tu espacio</small></span></button>
                 </div>
             </fieldset>
             <p id="pm-terapeuta" class="pm-therapist"></p>
             <section class="pm-date-picker" aria-labelledby="pm-calendario-titulo">
                 <div class="pm-calendar-heading"><div><span class="pm-step-label">ELIGE TUS FECHAS</span><h3 id="pm-calendario-titulo">Un espacio en tu agenda</h3></div><span class="pm-timezone">Hora CDMX</span></div>
                 <div class="pm-date-columns"><div class="pm-date-month">
-                <div class="pm-month-nav"><button id="pm-mes-anterior" type="button" aria-label="Mes anterior"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14 6-6 6 6 6"/></svg></button><strong id="pm-mes" aria-live="polite"></strong><button id="pm-mes-siguiente" type="button" aria-label="Mes siguiente"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m10 6 6 6-6 6"/></svg></button></div>
+                <div class="pm-month-nav"><button id="pm-mes-anterior" type="button" aria-label="Mes anterior"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="m14 6-6 6 6 6"/></svg></button><strong id="pm-mes" aria-live="polite"></strong><button id="pm-mes-siguiente" type="button" aria-label="Mes siguiente"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="m10 6 6 6-6 6"/></svg></button></div>
                 <div class="pm-weekdays" aria-hidden="true"><span>L</span><span>M</span><span>M</span><span>J</span><span>V</span><span>S</span><span>D</span></div>
                 <div id="pm-dias" class="pm-days" aria-label="Fechas disponibles"></div>
                 <div class="pm-calendar-legend"><span><i class="pm-dot-available"></i>Disponible</span><span><i class="pm-dot-selected"></i>Elegida</span></div>
@@ -112,4 +112,4 @@
         </aside>
     </div>
 </dialog>
-<script src="{% static 'js/plan_mensual.js' %}" defer></script>
+<script src="{% versioned_static 'js/plan_mensual.js' %}" defer></script>

@@ -1,4 +1,7 @@
 import json
+from hashlib import sha256
+from pathlib import Path
+from tempfile import TemporaryDirectory
 from datetime import timedelta
 from decimal import Decimal
 from unittest.mock import patch
@@ -6,12 +9,30 @@ from uuid import uuid4
 
 from django.contrib.auth.models import User
 from django.db import IntegrityError
-from django.test import Client, TestCase, override_settings
+from django.template import Context, Template
+from django.test import Client, SimpleTestCase, TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 
 from .models import Cita, ConsentimientoInformado, EsquemaHorarioPsicologo, EventoAuditoria, PerfilPsicologo, PlanMensual, TratamientoPaciente, UsuarioPerfil
 from .planes_mensuales import liberar_planes_vencidos
+
+
+class VersionEstáticosPlanTests(SimpleTestCase):
+    def test_url_cambia_al_cambiar_archivo_sin_reiniciar_proceso(self):
+        with TemporaryDirectory() as carpeta, override_settings(STATICFILES_DIRS=[carpeta]):
+            archivo = Path(carpeta) / 'version-prueba.css'
+            archivo.write_text('body{color:red}', encoding='utf-8')
+            plantilla = Template("{% load hope_assets %}{% versioned_static 'version-prueba.css' %}")
+            anterior = plantilla.render(Context())
+            archivo.write_text('body{color:purple}', encoding='utf-8')
+            nuevo = plantilla.render(Context())
+        self.assertIn('?v=', anterior)
+        self.assertNotEqual(anterior, nuevo)
+
+    def test_version_estable_para_el_mismo_contenido(self):
+        plantilla = Template("{% load hope_assets %}{% versioned_static 'css/plan_mensual.css' %}")
+        self.assertEqual(plantilla.render(Context()), plantilla.render(Context()))
 
 
 class PlanMensualTests(TestCase):
@@ -267,6 +288,10 @@ class PlanMensualTests(TestCase):
         respuesta = self.client.get(reverse('panel_admin_agendar_cita'))
         self.assertContains(respuesta, 'Apartar mi horario')
         self.assertContains(respuesta, 'Dale continuidad a eso que estás construyendo.')
+        for recurso in ['css/plan_mensual.css', 'js/plan_mensual.js']:
+            fuente = Path(__file__).resolve().parent.parent / 'static' / recurso
+            version = sha256(fuente.read_bytes()).hexdigest()[:16]
+            self.assertContains(respuesta, recurso + '?v=' + version)
         contenido = respuesta.content.decode()
         self.assertLess(contenido.index('hpa-card-resumen'), contenido.index('class="hpa-footer"'))
         self.assertLess(contenido.index('</form>'), contenido.index('id="hpa-exito"'))
