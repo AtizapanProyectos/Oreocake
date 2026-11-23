@@ -2902,55 +2902,95 @@ def guardar_expediente_global_ajax(request):
 # 📝 GUARDAR BITÁCORA DE SESIÓN (Línea del tiempo)
 # =========================================================================
 def guardar_historial_ajax(request):
-    if request.method == 'POST' and request.user.is_authenticated:
+    if request.method != 'POST':
+        return JsonResponse({'status': 'error', 'message': 'Método no permitido.'}, status=405)
+    if not request.user.is_authenticated:
+        return JsonResponse({'status': 'error', 'message': 'Tu sesión terminó. Inicia sesión de nuevo.'}, status=401)
+    if not hasattr(request.user, 'perfil_psicologo'):
+        return JsonResponse({'status': 'error', 'message': 'Solo el psicólogo puede guardar la bitácora.'}, status=403)
+    try:
+        from django.core.exceptions import RequestDataTooBig
+        from .documentos_clinicos import ErrorDocumento
         paciente_id = request.POST.get('paciente_id')
-        cita_id = request.POST.get('cita_id')
-        historial_id = request.POST.get('historial_id') # 🔥 NUEVO: Atrapamos el ID
-        
-        try:
-            paciente = User.objects.get(id=paciente_id)
-            psicologo = request.user.perfil_psicologo
-            archivo = request.FILES.get('archivo_adjunto')
-            
+        cita_id = (request.POST.get('cita_id') or '').strip()
+        historial_id = (request.POST.get('historial_id') or '').strip()
+        if not str(paciente_id or '').isdigit() or any(v and not v.isdigit() for v in (cita_id, historial_id)):
+            return JsonResponse({'status': 'error', 'message': 'El paciente o la sesión no son válidos. Abre la bitácora desde el expediente.'}, status=400)
+        psicologo = request.user.perfil_psicologo
+        paciente = User.objects.filter(pk=paciente_id).first()
+        if not paciente:
+            return JsonResponse({'status': 'error', 'message': 'No se encontró el paciente.'}, status=404)
+        tiene_acceso = (
+            TratamientoPaciente.objects.filter(paciente=paciente, psicologo_asignado=psicologo).exists()
+            or Cita.objects.filter(paciente=paciente, psicologo=psicologo).exists()
+            or UsuarioPerfil.objects.filter(usuario=paciente, psicologo_asignado=psicologo).exists()
+            or HistorialClinico.objects.filter(paciente=paciente, psicologo=psicologo).exists()
+        )
+        if not tiene_acceso:
+            return JsonResponse({'status': 'error', 'message': 'No tienes acceso al expediente de este paciente.'}, status=403)
+        archivos = {}
+        for campo, extensiones in (
+            ('archivo_adjunto', ('jpg', 'jpeg', 'png', 'webp', 'pdf', 'docx', 'txt')),
+            ('transcripcion_meet', ('pdf', 'docx', 'txt')),
+        ):
+            archivo = request.FILES.get(campo)
+            if archivo:
+                extension = archivo.name.rsplit('.', 1)[-1].lower()
+                if extension not in extensiones or not 0 < archivo.size <= 10 * 1024 * 1024:
+                    return JsonResponse({'status': 'error', 'message': 'Usa un archivo compatible de hasta 10 MB (PDF, DOCX, TXT o imagen para el reporte).'}, status=400)
+                if extension == 'pdf':
+                    import fitz
+                    try:
+                        with fitz.open(stream=archivo.read(), filetype='pdf') as pdf:
+                            if pdf.needs_pass or not 0 < len(pdf) <= 20:
+                                raise ErrorDocumento('Usa un PDF desbloqueado de entre 1 y 20 páginas.')
+                    except (RuntimeError, ValueError) as exc:
+                        raise ErrorDocumento('Usa un PDF válido, desbloqueado y de hasta 20 páginas.') from exc
+                    finally:
+                        archivo.seek(0)
+                archivos[campo] = archivo
+        campos = {campo: request.POST.get(campo, '') for campo in (
+            'como_llega', 'notas_sesion', 'aprendizaje_paciente', 'como_se_va', 'recomendaciones',
+        )}
+        if 'aprendizaje_paciente' not in request.POST:
+            campos['aprendizaje_paciente'] = request.POST.get('aprendizaje', '')
+        with transaction.atomic():
+            cita = None
+            if cita_id:
+                cita = Cita.objects.select_for_update().filter(pk=cita_id, psicologo=psicologo, paciente=paciente).first()
+                if not cita:
+                    return JsonResponse({'status': 'error', 'message': 'La cita no pertenece a este paciente y psicólogo.'}, status=404)
             if historial_id:
-                # MODO EDICIÓN: Actualizamos la existente
-                historial = HistorialClinico.objects.get(id=historial_id, psicologo=psicologo, paciente=paciente)
-                historial.como_llega = request.POST.get('como_llega', '')
-                historial.notas_sesion = request.POST.get('notas_sesion', '')
-                historial.aprendizaje_paciente = request.POST.get('aprendizaje_paciente', '')
-                historial.como_se_va = request.POST.get('como_se_va', '')
-                historial.recomendaciones = request.POST.get('recomendaciones', '')
-                if archivo:
-                    historial.archivo_adjunto = archivo
-                if historial.notas_sesion.strip():
-                    historial.pendiente_revision_audio = False
-                historial.save()
+                historial = HistorialClinico.objects.select_for_update().filter(pk=historial_id, psicologo=psicologo, paciente=paciente).first()
+                if not historial or (cita and historial.cita_id != cita.pk):
+                    return JsonResponse({'status': 'error', 'message': 'No se encontró la bitácora de esta sesión.'}, status=404)
             else:
-                # MODO CREACIÓN: Lo que ya tenías
-                historial = HistorialClinico(
-                    paciente=paciente, psicologo=psicologo,
-                    como_llega=request.POST.get('como_llega', ''),
-                    notas_sesion=request.POST.get('notas_sesion', ''),
-                    aprendizaje_paciente=request.POST.get('aprendizaje_paciente', ''),
-                    como_se_va=request.POST.get('como_se_va', ''),
-                    recomendaciones=request.POST.get('recomendaciones', ''),
-                    archivo_adjunto=archivo
-                )
-                with transaction.atomic():
-                    if cita_id and cita_id.strip():
-                        historial.cita = Cita.objects.select_for_update().filter(
-                            id=cita_id, psicologo=psicologo, paciente=paciente,
-                        ).first()
-                    historial.save()
-                    if historial.cita:
-                        historial.cita.estado = 'Completada'
-                        historial.cita.save(update_fields=['estado'])
+                existente = HistorialClinico.objects.filter(cita=cita).first() if cita else None
+                if existente:
+                    if not archivos and all((getattr(existente, c) or '') == valor for c, valor in campos.items()):
+                        return JsonResponse({'status': 'success', 'historial_id': existente.pk, 'message': 'La bitácora ya estaba guardada.'})
+                    return JsonResponse({'status': 'error', 'message': 'Esta sesión ya tiene una bitácora. Abre Editar para actualizarla; tu texto sigue en el formulario.'}, status=409)
+                historial = HistorialClinico(paciente=paciente, psicologo=psicologo, cita=cita)
+            for campo, valor in {**campos, **archivos}.items():
+                setattr(historial, campo, valor)
+            if historial.notas_sesion.strip():
+                historial.pendiente_revision_audio = False
+            historial.save()
+            if not historial_id and cita:
+                cita.estado = 'Completada'
+                cita.save(update_fields=['estado'])
+        return JsonResponse({'status': 'success', 'historial_id': historial.pk, 'message': 'Bitácora guardada con éxito.'})
+    except ErrorDocumento as error:
+        return JsonResponse({'status': 'error', 'message': str(error)}, status=422)
+    except RequestDataTooBig:
+        return JsonResponse({'status': 'error', 'message': 'La solicitud supera el tamaño permitido.'}, status=413)
+    except OSError as error:
+        logging.getLogger(__name__).warning('No se pudo archivar el documento de la bitácora (%s)', type(error).__name__)
+        return JsonResponse({'status': 'error', 'message': 'No se pudo archivar el documento en el servidor. La bitácora no se guardó; conserva el formulario e intenta de nuevo.'}, status=503)
+    except Exception as error:
+        logging.getLogger(__name__).warning('No se pudo guardar la bitácora (%s)', type(error).__name__)
+        return JsonResponse({'status': 'error', 'message': 'No se pudo guardar la bitácora. Tu información sigue en el formulario; intenta de nuevo.'}, status=500)
 
-            return JsonResponse({'status': 'success', 'message': 'Bitácora guardada con éxito.'})
-        except Exception as e:
-            return JsonResponse({'status': 'error', 'message': str(e)})
-            
-    return JsonResponse({'status': 'error'})
 
 # =========================================================================
 # 📂 NUEVA VISTA: EXPEDIENTE COMPLETO DEL PACIENTE
@@ -3487,8 +3527,12 @@ def _extraer_json_groq(texto):
     except:
         return {"notas_sesion": texto} 
 
-@user_passes_test(lambda u: hasattr(u, 'perfil_psicologo'))
 def procesar_archivo_ia(request):
+    from .documentos_clinicos import ErrorDocumento
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'Tu sesión terminó. Inicia sesión de nuevo.'}, status=401)
+    if not hasattr(request.user, 'perfil_psicologo'):
+        return JsonResponse({'error': 'No tienes permiso para procesar documentos clínicos.'}, status=403)
     if request.method != 'POST':
         return JsonResponse({'error': 'Método no permitido'}, status=405)
 
@@ -3520,7 +3564,7 @@ def procesar_archivo_ia(request):
 
     try:
         from groq import Groq
-        client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
+        client = Groq(api_key=os.environ.get("GROQ_API_KEY"), timeout=25, max_retries=0)
 
         # ── IMAGEN ──
         if extension in ['jpg', 'jpeg', 'png', 'webp']:
@@ -3530,7 +3574,7 @@ def procesar_archivo_ia(request):
             mime = 'image/jpeg' if extension in ('jpg', 'jpeg') else f'image/{extension}'
 
             response = client.chat.completions.create(
-                model="meta-llama/llama-4-scout-17b-16e-instruct",  # ✅ nuevo, # 🔥 Modelo de visión super potente
+                model=os.environ.get("GROQ_VISION_MODEL", "qwen/qwen3.8-27b"),
                 messages=[
                     {
                         "role": "user",
@@ -3540,58 +3584,25 @@ def procesar_archivo_ia(request):
                         ]
                     }
                 ],
-                max_tokens=2000,
+                max_completion_tokens=4000,
                 temperature=0.1
             )
             texto_respuesta = response.choices[0].message.content.strip()
 
         # ── PDF, WORD O TEXTO PLANO ──
         else:
-            texto_raw = ""
-            if extension == 'pdf':
-                import fitz
-                with fitz.open(stream=archivo.read(), filetype="pdf") as doc_pdf:
-                    if len(doc_pdf) > 20:
-                        return JsonResponse({'error': 'El PDF supera las 20 páginas.'}, status=400)
-                    paginas = []
-                    for pagina in doc_pdf:
-                        texto = pagina.get_text()
-                        if not texto.strip():
-                            try:
-                                ocr = pagina.get_textpage_ocr(
-                                    language='spa', dpi=150, full=True,
-                                    tessdata=os.environ.get('TESSDATA_PREFIX'),
-                                )
-                                texto = pagina.get_text(textpage=ocr)
-                            except (RuntimeError, ValueError):
-                                return JsonResponse({
-                                    'error': 'El PDF requiere OCR en español. Sube una imagen JPG o PNG si el servidor no tiene OCR disponible.'
-                                }, status=422)
-                        paginas.append(texto)
-                    texto_raw = "\n".join(paginas)
-            elif extension == 'docx':
-                import docx
-                doc_word = docx.Document(archivo)
-                texto_raw = "\n".join(p.text for p in doc_word.paragraphs if p.text.strip())
-            elif extension == 'txt':
-                try:
-                    texto_raw = archivo.read().decode('utf-8-sig')
-                except UnicodeDecodeError:
-                    return JsonResponse({'error': 'Guarda el archivo TXT con codificación UTF-8.'}, status=422)
-                if '\x00' in texto_raw:
-                    return JsonResponse({'error': 'El archivo TXT debe contener texto plano en UTF-8.'}, status=422)
-
-            if not texto_raw.strip():
-                return JsonResponse({'error': 'El documento no contiene texto extraíble.'}, status=422)
+            from .documentos_clinicos import leer_documento
+            texto_raw = leer_documento(archivo.read(), extension, client)
 
             response = client.chat.completions.create(
                 model="openai/gpt-oss-120b",  # ✅ nuevo, # 🔥 Modelo de texto líder en razonamiento
                 messages=[
                     {"role": "system", "content": prompt_instrucciones},
-                    {"role": "user", "content": texto_raw[:8000]}
+                    {"role": "user", "content": texto_raw}
                 ],
-                max_tokens=2000,
+                max_completion_tokens=4000,
                 temperature=0.1,
+                reasoning_effort='low',
             )
             texto_respuesta = response.choices[0].message.content.strip()
 
@@ -3607,6 +3618,8 @@ def procesar_archivo_ia(request):
             return JsonResponse({'error': 'El análisis no encontró contenido clínico en el documento.'}, status=422)
         return JsonResponse({'status': 'success', 'data': {campo: datos[campo] for campo in campos}})
 
+    except ErrorDocumento as error:
+        return JsonResponse({'error': str(error)}, status=422)
     except Exception as e:
         logging.getLogger(__name__).warning('Falló el análisis de un documento clínico (%s)', type(e).__name__)
         return JsonResponse({'error': 'No se pudo analizar el documento.'}, status=502)
@@ -4181,6 +4194,7 @@ def obtener_bitacora(request, historial_id):
         return JsonResponse({
             'status': 'success',
             'data': {
+                'cita_id': h.cita_id,
                 'como_llega': h.como_llega or '',
                 'notas_sesion': h.notas_sesion or '',
                 'aprendizaje_paciente': h.aprendizaje_paciente or '',

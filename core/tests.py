@@ -453,13 +453,14 @@ class SesionPresencialTests(TestCase):
 
     @patch('groq.Groq')
     @patch.object(fitz.Page, 'get_textpage_ocr', side_effect=RuntimeError)
-    def test_pdf_sin_texto_intenta_ocr_y_devuelve_error_si_no_esta_disponible(self, ocr, groq):
+    def test_pdf_vacio_no_inventa_texto_si_no_hay_ocr(self, ocr, groq):
         self.client.force_login(self.doctor)
         with fitz.open() as pdf:
             pdf.new_page()
             archivo = SimpleUploadedFile('escaneo.pdf', pdf.tobytes())
         respuesta = self.client.post(reverse('procesar_archivo_ia'), {'archivo': archivo})
-        self.assertContains(respuesta, 'requiere OCR', status_code=422)
+        self.assertEqual(respuesta.status_code, 422)
+        self.assertIn('vacío', respuesta.json()['error'])
         ocr.assert_called_once()
         groq.return_value.chat.completions.create.assert_not_called()
 

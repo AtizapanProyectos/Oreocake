@@ -1,9 +1,10 @@
 {% extends 'base.html' %}
-{% load static %}
+{% load static hope_assets %}
 
 {% block title %}Expediente - {{ paciente.first_name }} | HOPE{% endblock %}
 
 {% block content %}
+<script src="{% versioned_static 'js/solicitudes_clinicas.js' %}"></script>
 <link rel="stylesheet" href="{% static 'css/analisis_grabacion_clinica.css' %}">
 <script src="{% static 'js/analisis_grabacion_clinica.js' %}" defer></script>
 <!-- 🔥 Librería Chart.js para dibujar la gráfica de evolución IPP -->
@@ -610,6 +611,12 @@
                                 <span class="upload-chip">TXT</span>
                             </div>
                         </div>
+                        <label for="destinoArchivo">Guardar documento como</label>
+                        <select id="destinoArchivo" onchange="const archivo = document.getElementById('archivoNota'); archivo.name = this.value; archivo.accept = this.value === 'transcripcion_meet' ? '.pdf,.docx,.txt' : '.jpg,.jpeg,.png,.webp,.pdf,.docx,.txt';">
+                            <option value="archivo_adjunto">Reporte adjunto</option>
+                            <option value="transcripcion_meet">Transcripción (PDF, DOCX o TXT)</option>
+                        </select>
+                        <p style="font-size:12px;color:var(--text-muted);">PDF de texto o escaneado: hasta 20 páginas y 10 MB. Revisa el texto que genere la IA antes de guardar.</p>
                         <div class="upload-preview" id="uploadPreview">
                             <div class="upload-preview-icon img" id="previewIcon"><i class="fas fa-file-image"></i></div>
                             <div class="upload-preview-info">
@@ -984,20 +991,21 @@
         document.getElementById('step-' + step).classList.add('active');
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
-    function guardarBitacora(e) {
+    async function guardarBitacora(e) {
         e.preventDefault();
         const btn = e.target.querySelector('button[type="submit"]');
         const originalText = btn.innerHTML;
         btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
         btn.disabled = true;
-        fetch("{% url 'guardar_historial' %}", {
-            method: 'POST',
-            body: new FormData(e.target),
-            headers: {'X-Requested-With': 'XMLHttpRequest'}
-        }).then(r => r.json()).then(data => {
-            if (data.status === 'success') { location.reload(); }
-            else { alert('Error al guardar: ' + data.message); btn.innerHTML = originalText; btn.disabled = false; }
-        }).catch(() => { alert("Error de conexión"); btn.innerHTML = originalText; btn.disabled = false; });
+        try {
+            await solicitudClinica("{% url 'guardar_historial' %}", new FormData(e.target), e.target);
+            location.reload();
+        } catch (error) {
+            alert(error.message);
+        } finally {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        }
     }
 
     // =========================================================================
@@ -1045,6 +1053,9 @@
     function limpiarArchivo() {
         archivoActual = null;
         document.getElementById('archivoNota').value = '';
+        document.getElementById('archivoNota').name = 'archivo_adjunto';
+        document.getElementById('archivoNota').accept = '.jpg,.jpeg,.png,.webp,.pdf,.docx,.txt';
+        document.getElementById('destinoArchivo').value = 'archivo_adjunto';
         document.getElementById('uploadPreview').classList.remove('show');
         document.getElementById('btnProcesarIA').classList.remove('show');
         mostrarStatus('', '');
@@ -1072,11 +1083,7 @@
         formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
 
         try {
-            const resp = await fetch("{% url 'procesar_archivo_ia' %}", {
-                method: 'POST', body: formData,
-                headers: {'X-Requested-With': 'XMLHttpRequest'}
-            });
-            const rawData = await resp.json();
+            const rawData = await solicitudClinica("{% url 'procesar_archivo_ia' %}", formData, document.getElementById('formBitacoraNueva'));
             if (archivoActual !== archivoEnviado) return;
             if (rawData.status === 'success') {
                 const jsonIA = rawData.data;
@@ -1101,7 +1108,7 @@
         } catch (err) {
             if (archivoActual !== archivoEnviado) return;
             console.error(err);
-            mostrarStatus('error', 'Error de conexión. Verifica la red e intenta de nuevo.');
+            mostrarStatus('error', err.message);
             btn.disabled = false;
             btn.innerHTML = '<i class="fas fa-wand-magic-sparkles"></i> Procesar con IA y extraer texto';
         }
@@ -1154,6 +1161,7 @@ function editarBitacora(historialId) {
                     
                     // Llenar los campos con los datos de la base de datos
                     document.getElementById('wizardHistorialId').value = historialId;
+                    document.getElementById('wizardCitaId').value = h.cita_id || '';
                     document.querySelector('[name="como_llega"]').value = h.como_llega;
                     document.querySelector('[name="notas_sesion"]').value = h.notas_sesion;
                     document.querySelector('[name="aprendizaje_paciente"]').value = h.aprendizaje_paciente;

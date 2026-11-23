@@ -77,9 +77,13 @@ def texto_del_expediente(cita, grabacion):
         datos = contenido.read()
     extension = Path(archivo.name).suffix.lower()
     if extension == '.pdf':
-        import fitz
-        with fitz.open(stream=datos, filetype='pdf') as documento:
-            texto = '\n'.join(pagina.get_text() for pagina in documento)
+        from django.core.cache import cache
+        from .documentos_clinicos import leer_pdf
+        clave = 'transcripcion-pdf:' + sha256(datos).hexdigest()
+        texto = cache.get(clave)
+        if texto is None:
+            texto = leer_pdf(datos)
+            cache.set(clave, texto, 600)
     elif extension == '.docx':
         from io import BytesIO
         from docx import Document

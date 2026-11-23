@@ -1,9 +1,10 @@
 {% extends 'base.html' %}
-{% load static %}
+{% load static hope_assets %}
 
 {% block title %}Panel de Terapeuta — HOPE{% endblock %}
 
 {% block content %}
+<script src="{% versioned_static 'js/solicitudes_clinicas.js' %}"></script>
 <link rel="stylesheet" href="{% static 'css/grabadora_sesion.css' %}">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1582,7 +1583,7 @@ body {
               <label class="h-label" style="color:var(--orange); margin-top:14px;">
                 <i class="fas fa-star" style="color:var(--yellow)"></i> ¿Qué se lleva el paciente de esta sesión?
               </label>
-              <textarea name="aprendizaje" required class="h-input"
+              <textarea name="aprendizaje_paciente" required class="h-input"
                 style="min-height:80px;background:var(--orange-light);border-color:rgba(242,124,33,0.3);"
                 placeholder="Respuesta literal del paciente..."></textarea>
               <button type="submit" class="hbtn hbtn-orange hbtn-full" style="margin-top:16px;padding:14px;">
@@ -1848,18 +1849,14 @@ function guardarGlobal(e) {
 /* =====================================================
    GUARDAR BITÁCORA
    ===================================================== */
-function guardarBitacora(e) {
+async function guardarBitacora(e) {
   e.preventDefault();
   const btn = e.target.querySelector('button[type="submit"]');
   const orig = btn.innerHTML;
   btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
-  fetch("{% url 'guardar_historial' %}", {
-    method: 'POST',
-    body: new FormData(e.target),
-    headers: { 'X-Requested-With': 'XMLHttpRequest' }
-  })
-    .then(r => r.json())
-    .then(d => {
+  btn.disabled = true;
+  try {
+      const d = await solicitudClinica("{% url 'guardar_historial' %}", new FormData(e.target), e.target);
       btn.innerHTML = orig;
       if (d.status === 'success') {
         btn.innerHTML = '<i class="fas fa-check"></i> ¡Guardada!';
@@ -1873,7 +1870,12 @@ function guardarBitacora(e) {
       } else {
         alert('Error: ' + d.message);
       }
-    });
+  } catch (error) {
+      alert(error.message);
+  } finally {
+      btn.innerHTML = orig;
+      btn.disabled = false;
+  }
 }
 </script>
 
