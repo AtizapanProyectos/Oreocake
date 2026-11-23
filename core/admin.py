@@ -2,7 +2,7 @@ from django import forms
 from django.contrib import admin
 from django.utils import timezone
 from import_export.admin import ImportExportModelAdmin
-from django.db.models import Count
+from django.db.models import Count, Q
 from .models import *
 from . import admin_donaciones  # Registro de consulta y exportación de donativos.
 
@@ -134,6 +134,35 @@ class ContactoVenezuelaAdmin(ImportExportModelAdmin):
     list_filter = ('horario_preferencia',)
 
     
+class ReservasInactivasFilter(admin.SimpleListFilter):
+    title = 'reservas canceladas sin asignar'
+    parameter_name = 'reservas_inactivas'
+
+    def lookups(self, request, model_admin):
+        return (('todas', 'Incluir reservas canceladas'), ('solo', 'Solo reservas canceladas'))
+
+    def choices(self, changelist):
+        for indice, choice in enumerate(super().choices(changelist)):
+            if indice == 0:
+                choice['display'] = 'Ocultar reservas canceladas'
+            yield choice
+
+    def queryset(self, request, queryset):
+        # Mantener visibles citas clínicas y pagos cuyo resultado necesita revisión.
+        inactivas = Q(estado='Cancelada', psicologo__isnull=True) & (
+            Q(pago_paypal__captura_iniciada=False, pago_paypal__captura__isnull=True) |
+            Q(plan_mensual__estado__in=['cancelado', 'expirado'])
+        )
+        if self.value() == 'todas':
+            return queryset
+        if self.value() == 'solo':
+            return queryset.filter(inactivas)
+        # Un filtro explícito de estado debe seguir mostrando todas sus citas.
+        if request.GET.get('estado__exact'):
+            return queryset
+        return queryset.exclude(inactivas)
+
+
 @admin.register(Cita)
 class CitaAdmin(admin.ModelAdmin):
     # 1. Mostramos los campos directamente en vez de evaluar el pesado __str__
@@ -146,7 +175,7 @@ class CitaAdmin(admin.ModelAdmin):
     list_per_page = 25
     
     # Extras útiles para que el panel quede funcional
-    list_filter = ('estado', 'modalidad', 'tipo_sesion', 'fecha')
+    list_filter = (ReservasInactivasFilter, 'estado', 'modalidad', 'tipo_sesion', 'fecha')
     search_fields = ('paciente__first_name', 'paciente__username', 'psicologo__usuario__first_name')
 
 admin.site.register(HistorialClinico)

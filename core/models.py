@@ -1791,7 +1791,7 @@ class Donacion(models.Model):
 
 
 class PagoCitaPayPal(models.Model):
-    cita = models.OneToOneField(Cita, on_delete=models.PROTECT, related_name='pago_paypal')
+    cita = models.OneToOneField(Cita, on_delete=models.SET_NULL, null=True, blank=True, related_name='pago_paypal')
     monto = models.DecimalField(max_digits=10, decimal_places=2)
     orden = models.CharField(max_length=64, unique=True, null=True, blank=True)
     captura = models.CharField(max_length=64, unique=True, null=True, blank=True)

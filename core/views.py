@@ -2067,7 +2067,7 @@ def crear_orden_cita_paypal(request):
     try:
         with transaction.atomic():
             pago = PagoCitaPayPal.objects.select_for_update().get(pk=pago.pk)
-            if pago.cita.estado != 'Pendiente':
+            if not pago.cita_id or pago.cita.estado != 'Pendiente':
                 return JsonResponse({'status': 'error', 'message': 'La reserva ya no está disponible.'}, status=409)
             if (pago.orden or '').startswith(PREFIJO_PAYPAL_MANUAL):
                 return JsonResponse({'status': 'error', 'message': 'Esta orden se verifica desde recepción.'}, status=409)
@@ -2111,6 +2111,8 @@ def capturar_orden_cita_paypal(request):
     try:
         with transaction.atomic():
             pago = PagoCitaPayPal.objects.select_for_update().get(pk=pago.pk)
+            if not pago.cita_id:
+                return JsonResponse({'status': 'error', 'message': 'La cita fue eliminada por administración. No se iniciará otro cobro.'}, status=409)
             if not pago.captura:
                 captura = capturar_orden(pago, solo_consultar=pago.vence <= timezone.now())
                 cita = Cita.objects.select_for_update().get(pk=pago.cita_id, estado='Pendiente')
@@ -2215,7 +2217,7 @@ def recepcion_conciliar_paypal_manual(request, pago_id):
             pago = PagoCitaPayPal.objects.select_for_update().filter(
                 pk=pago_id, orden__startswith=PREFIJO_PAYPAL_MANUAL, captura_iniciada=True,
             ).first()
-            if pago is None:
+            if pago is None or not pago.cita_id:
                 return JsonResponse({'status': 'error', 'message': 'Orden pendiente no encontrada.'}, status=404)
             cita = Cita.objects.select_for_update().get(pk=pago.cita_id)
             if decision == 'confirmar' and pago.captura == captura and cita.estado == 'Confirmada':
