@@ -72,6 +72,36 @@ class BloqueosAgendaTests(TestCase):
         with self.assertRaises(ValidationError):
             self.bloqueo.full_clean()
 
+    def test_calendario_muestra_solo_bloqueos_propios_activos_sin_crear_registros(self):
+        import json
+        BloqueoAgendaPsicologo.objects.create(
+            psicologo=self.psicologo, fecha=self.fecha, hora_inicio=time(12), hora_fin=time(13),
+            motivo='Co-Visión', activo=False,
+        )
+        self.client.force_login(self.psicologo.usuario)
+        respuesta = self.client.get(reverse('panel_doctor'))
+        self.assertEqual(respuesta.status_code, 200)
+        eventos = json.loads(respuesta.context['eventos_calendario_json'])
+        self.assertEqual(len(eventos), 1)
+        self.assertEqual(eventos[0]['title'], '🍃 Co-Visión')
+        self.assertEqual(eventos[0]['start'], f'{self.fecha}T10:00:00')
+        self.assertEqual(eventos[0]['end'], f'{self.fecha}T11:00:00')
+        self.assertEqual(eventos[0]['backgroundColor'], '#27864A')
+        self.assertFalse(Cita.objects.exists())
+        self.assertEqual(BloqueoAgendaPsicologo.objects.count(), 2)
+        self.client.force_login(self.otro.usuario)
+        respuesta = self.client.get(reverse('panel_doctor'))
+        self.assertEqual(json.loads(respuesta.context['eventos_calendario_json']), [])
+
+        self.bloqueo.hora_inicio = time(11)
+        self.bloqueo.hora_fin = time(12)
+        self.bloqueo.save()
+        self.client.force_login(self.psicologo.usuario)
+        respuesta = self.client.get(reverse('panel_doctor'))
+        eventos = json.loads(respuesta.context['eventos_calendario_json'])
+        self.assertEqual(len(eventos), 1)
+        self.assertEqual(eventos[0]['start'], f'{self.fecha}T11:00:00')
+
     @patch('core.views.generar_link_meet')
     def test_admin_y_recepcion_no_reservan_bloqueo_con_terapeuta_asignado(self, meet):
         paciente = User.objects.create_user('paciente')

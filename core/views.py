@@ -2803,6 +2803,20 @@ def panel_doctor(request):
             'borderColor': '#B5992D' if taller.fecha >= hoy else '#D1D5DB'
         })
 
+    # Representación visual de los bloqueos existentes; no crea citas ni eventos en BD.
+    for bloqueo in BloqueoAgendaPsicologo.objects.filter(psicologo=psicologo, activo=True):
+        eventos_calendario.append({
+            'id': f'bloqueo-agenda-{bloqueo.pk}',
+            'title': '🍃 Co-Visión' if bloqueo.motivo.startswith('Co-Visión') else f'🍃 {bloqueo.motivo}',
+            'start': f'{bloqueo.fecha.isoformat()}T{bloqueo.hora_inicio:%H:%M:%S}',
+            'end': f'{bloqueo.fecha.isoformat()}T{bloqueo.hora_fin:%H:%M:%S}',
+            'backgroundColor': '#27864A',
+            'borderColor': '#27864A',
+            'textColor': '#FFFFFF',
+            'display': 'block',
+            'extendedProps': {'tipo': 'bloqueo_agenda', 'motivo': bloqueo.motivo},
+        })
+
     return render(request, 'panel_doctor.html', {
         'psicologo': psicologo,
         'citas_hoy': citas_hoy,

@@ -10,6 +10,11 @@ con un bloqueo activo del psicólogo. Aplica a todos los servicios y modalidades
 reservas de paciente, recepción, administración, transferencia, reagendamientos
 y plan mensual. Las citas ya existentes no se modifican.
 
+El calendario del doctor también representa sus bloqueos activos existentes en
+verde, con una hoja y el texto «Co-Visión». Usa directamente la fecha y horas del
+registro, sin crear citas ni duplicar bloqueos. Los cambios del administrador se
+reflejan al recargar el panel; cada doctor solo ve sus propios bloqueos.
+
 ## Calendario aprobado
 
 | Fechas de 2026 | Horario | Usuarios de acceso |
