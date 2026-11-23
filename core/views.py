@@ -428,6 +428,11 @@ def obtener_slots_psicologo(psicologo, fecha_inicio, fecha_fin, tipo_sesion="ind
     # La Co-Visión es la reunión quincenal de psicólogos: martes 8:00 am y
     # miércoles 7:00 pm, dura 1.5 h (bloquea los slots de 1 h que se solapen).
     bloqueos_globales = _calcular_bloqueos_covision(fecha_inicio, fecha_fin)
+    bloqueos_individuales = {}
+    for fecha_bloqueo, inicio, fin in BloqueoAgendaPsicologo.objects.filter(
+        psicologo=psicologo, activo=True, fecha__range=(fecha_inicio, fecha_fin),
+    ).values_list('fecha', 'hora_inicio', 'hora_fin'):
+        bloqueos_individuales.setdefault(fecha_bloqueo, []).append((inicio, fin))
 
     while dia_actual <= fecha_fin and dias_procesados < max_iteraciones:
         esquema = _esquema_del_dia(dia_actual)
@@ -467,9 +472,15 @@ def obtener_slots_psicologo(psicologo, fecha_inicio, fecha_fin, tipo_sesion="ind
 
                 # 🔥 NUEVO: Verificamos si la fecha y hora actuales están en la lista de bloqueos
                 es_bloqueado_global = (dia_actual, hora_slot) in bloqueos_globales
+                fin_slot = slot_actual + timedelta(hours=1)
+                es_bloqueado_individual = any(
+                    slot_actual < datetime.combine(dia_actual, fin)
+                    and fin_slot > datetime.combine(dia_actual, inicio)
+                    for inicio, fin in bloqueos_individuales.get(dia_actual, [])
+                )
 
                 # 🔥 MODIFICADO: Agregamos "not es_bloqueado_global" a la condición
-                if not es_hora_comida and not es_bloqueado_global and (dia_actual, hora_slot) not in citas_ocupadas:
+                if not es_hora_comida and not es_bloqueado_global and not es_bloqueado_individual and (dia_actual, hora_slot) not in citas_ocupadas:
                     slots_del_dia.append(hora_slot.strftime('%I:%M %p'))
 
                 slot_actual += timedelta(hours=1)
@@ -2434,6 +2445,11 @@ def subir_comprobante_transferencia_ajax(request):
             psicologo = None
 
         # Asignación automática idéntica a guardar_cita_ajax (mismo orden y desempate aleatorio)
+        if psicologo and hora_obj.strftime('%I:%M %p') not in obtener_slots_psicologo_para_dia(
+            psicologo, fecha_obj, tipo_sesion=tipo_sesion_str, modalidad=modalidad_str,
+        ):
+            return JsonResponse({'status': 'error', 'message': 'Ese horario ya no está disponible. Elige otro.'}, status=409)
+
         if not psicologo:
             preferencia = ''
             try:
@@ -4880,6 +4896,11 @@ def admin_guardar_cita_ajax(request, recepcion=False):
             psicologo = None
 
         # Asignación automática (misma lógica que guardar_cita_ajax)
+        if psicologo and hora_obj.strftime('%I:%M %p') not in obtener_slots_psicologo_para_dia(
+            psicologo, fecha_obj, tipo_sesion=tipo_sesion_str, modalidad=modalidad_str,
+        ):
+            return JsonResponse({'status': 'error', 'message': 'Ese horario ya no está disponible. Elige otro.'}, status=409)
+
         if not psicologo:
             preferencia = ""
             try:

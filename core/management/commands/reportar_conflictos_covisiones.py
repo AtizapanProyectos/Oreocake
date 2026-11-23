@@ -3,7 +3,8 @@ from datetime import timedelta
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 
-from core.models import Cita, ReglaCoVision
+from core.models import BloqueoAgendaPsicologo, Cita, ReglaCoVision
+from core.covisiones import citas_en_conflicto
 
 
 class Command(BaseCommand):
@@ -52,9 +53,20 @@ class Command(BaseCommand):
         self._log(f"   Ventana analizada: {hoy.strftime('%d/%m/%Y')} -> {fecha_limite.strftime('%d/%m/%Y')}")
         self._log("=" * 80)
 
+        bloqueos = BloqueoAgendaPsicologo.objects.filter(
+            activo=True, fecha__range=(hoy, fecha_limite),
+        ).select_related('psicologo__usuario')
+        conflictos_individuales = set()
+        for bloqueo in bloqueos:
+            self._log(f"Bloqueo individual: {bloqueo} | {bloqueo.motivo}")
+            for cita in citas_en_conflicto(bloqueo):
+                conflictos_individuales.add(cita.pk)
+                self._log(f"  CONFLICTO: cita #{cita.pk} ({cita.estado}); no se modifica.", self.style.WARNING)
+        self._log(f"Bloqueos individuales: {len(bloqueos)} | Citas en conflicto: {len(conflictos_individuales)}")
+
         reglas = ReglaCoVision.objects.filter(activo=True)
         if not reglas:
-            self._log("⚠️ No hay reglas de Co-Visión activas. Actívalas desde el admin Django.", self.style.WARNING)
+            self._log("No hay reglas globales activas. Los bloqueos individuales se reportaron arriba.")
             return
 
         # 1. Calculamos las ocurrencias de cada regla dentro de la ventana

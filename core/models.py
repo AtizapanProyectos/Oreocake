@@ -554,6 +554,33 @@ class DiaLibrePsicologo(models.Model):
     def __str__(self):
         return f"{self.psicologo} - {self.fecha.strftime('%d/%m/%Y')}"
 
+class BloqueoAgendaPsicologo(models.Model):
+    psicologo = models.ForeignKey(
+        PerfilPsicologo, on_delete=models.CASCADE, related_name='bloqueos_agenda',
+    )
+    fecha = models.DateField(db_index=True)
+    hora_inicio = models.TimeField()
+    hora_fin = models.TimeField()
+    motivo = models.CharField(max_length=150)
+    activo = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ['fecha', 'hora_inicio', 'psicologo_id']
+        verbose_name = 'Bloqueo de agenda por psicólogo'
+        verbose_name_plural = 'Bloqueos de agenda por psicólogo'
+        constraints = [
+            models.CheckConstraint(condition=models.Q(hora_fin__gt=models.F('hora_inicio')), name='bloqueo_agenda_fin_posterior'),
+            models.UniqueConstraint(fields=['psicologo', 'fecha', 'hora_inicio', 'hora_fin', 'motivo'], name='bloqueo_agenda_unico'),
+        ]
+
+    def clean(self):
+        if self.hora_inicio and self.hora_fin and self.hora_fin <= self.hora_inicio:
+            raise ValidationError({'hora_fin': 'El fin debe ser posterior al inicio, dentro del mismo día.'})
+
+    def __str__(self):
+        return f'{self.psicologo} · {self.fecha} · {self.hora_inicio:%H:%M}–{self.hora_fin:%H:%M}'
+
+
 class ReglaCoVision(models.Model):
     """
     🔥 NUEVO: Regla de bloqueo quincenal para las sesiones de Co-Visión

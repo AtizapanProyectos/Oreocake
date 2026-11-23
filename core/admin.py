@@ -250,6 +250,17 @@ class EncuestaFinalRespuestaAdmin(ImportExportModelAdmin):
 # ==========================================
 # 🔥 NUEVO: REGLAS DE CO-VISIÓN (bloqueo quincenal)
 # ==========================================
+@admin.register(BloqueoAgendaPsicologo)
+class BloqueoAgendaPsicologoAdmin(admin.ModelAdmin):
+    list_display = ('psicologo', 'fecha', 'hora_inicio', 'hora_fin', 'motivo', 'activo')
+    list_filter = ('activo', 'fecha', 'psicologo')
+    search_fields = ('psicologo__usuario__username', 'psicologo__usuario__email', 'motivo')
+    list_select_related = ('psicologo__usuario',)
+    list_editable = ('activo',)
+    date_hierarchy = 'fecha'
+    autocomplete_fields = ('psicologo',)
+
+
 @admin.register(ReglaCoVision)
 class ReglaCoVisionAdmin(admin.ModelAdmin):
     list_display = ('nombre', 'get_dia_semana_display', 'hora_inicio', 'duracion_minutos', 'fecha_ancla', 'cada_n_dias', 'activo')
