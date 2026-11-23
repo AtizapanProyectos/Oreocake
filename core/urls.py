@@ -3,6 +3,7 @@ from . import views
 from . import flujo_clinico
 from . import codigos_qr
 from . import planes_mensuales
+from . import donaciones
 from .transcripcion_navegador import notas_desde_texto, transcribir_fragmento
 from .reportes import reporte_crecimiento_sesiones_view
 from .acceso_bienestar_tectum import panel_bienestar_tectum_login, panel_bienestar_tectum_logout
@@ -13,6 +14,9 @@ from .panel_bienestar_tectum import (
 
 
 urlpatterns = [
+    path('api/donaciones/iniciar/', donaciones.iniciar, name='donacion_iniciar'),
+    path('api/donaciones/estado/', donaciones.estado, name='donacion_estado'),
+    path('api/donaciones/actualizar/', donaciones.actualizar, name='donacion_actualizar'),
     path('api/planes-mensuales/disponibilidad/', planes_mensuales.disponibilidad, name='plan_mensual_disponibilidad'),
     path('api/planes-mensuales/reservar/', planes_mensuales.reservar, name='plan_mensual_reservar'),
     path('api/planes-mensuales/estado/', planes_mensuales.estado, name='plan_mensual_estado'),

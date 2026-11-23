@@ -1,0 +1,4 @@
+{% load hope_assets %}
+<div id="hope-donaciones-config" hidden data-iniciar="{% url 'donacion_iniciar' %}" data-estado="{% url 'donacion_estado' %}" data-actualizar="{% url 'donacion_actualizar' %}" data-usuario="{{ request.user.pk|default:'visitante' }}">{% csrf_token %}</div>
+<link rel="stylesheet" href="{% versioned_static 'css/donaciones_registro.css' %}">
+<script src="{% versioned_static 'js/donaciones_registro.js' %}" defer></script>

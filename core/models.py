@@ -1704,6 +1704,65 @@ class PlanMensual(models.Model):
         return f'Plan #{self.pk} · {self.get_estado_display()} · {self.monto} MXN'
 
 
+class Donacion(models.Model):
+    class Estado(models.TextChoices):
+        PENDIENTE = 'Pendiente', 'Pendiente'
+        COMPLETADA = 'Completada', 'Completada'
+        CANCELADA = 'Cancelada', 'Cancelada'
+
+    class Origen(models.TextChoices):
+        INICIO = 'inicio', 'Inicio HOPE'
+        DONACIONES = 'donaciones', 'Legado de Esperanza'
+        VENEZUELA = 'venezuela', 'Venezuela'
+        COLOMBIA = 'colombia', 'Colombia'
+        POST_CITA = 'post_cita', 'Después de agendar'
+
+    folio = models.UUIDField(default=uuid4, unique=True, editable=False)
+    propietario = models.UUIDField(editable=False, db_index=True)
+    usuario = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='donaciones')
+    cita = models.ForeignKey(Cita, on_delete=models.SET_NULL, null=True, blank=True, related_name='donaciones_originadas')
+    nombre_paypal = models.CharField(max_length=200, blank=True)
+    correo_paypal = models.EmailField(blank=True)
+    monto = models.DecimalField(max_digits=10, decimal_places=2)
+    moneda = models.CharField(max_length=3, default='MXN', editable=False)
+    medio = models.CharField(max_length=10, default='PayPal', editable=False)
+    origen = models.CharField(max_length=20, choices=Origen.choices, db_index=True)
+    estado = models.CharField(max_length=12, choices=Estado.choices, default=Estado.PENDIENTE, db_index=True)
+    orden_paypal = models.CharField(max_length=64, unique=True, null=True, blank=True)
+    captura_paypal = models.CharField(max_length=64, unique=True, null=True, blank=True)
+    captura_iniciada = models.BooleanField(default=False)
+    confirmacion = models.CharField(max_length=20, default='navegador', editable=False,
+        choices=[('navegador', 'Informada por el navegador; sin verificación API')])
+    incidencia = models.CharField(max_length=40, blank=True)
+    creada = models.DateTimeField(auto_now_add=True, db_index=True)
+    actualizada = models.DateTimeField(auto_now=True)
+    completada = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['-creada']
+        verbose_name = 'Donación'
+        verbose_name_plural = 'Donaciones'
+
+    @property
+    def donante(self):
+        if self.nombre_paypal:
+            return self.nombre_paypal
+        if self.usuario_id:
+            return self.usuario.get_full_name() or self.usuario.username
+        return self.correo_paypal or 'Donante sin identificar'
+
+    @property
+    def concepto(self):
+        return {
+            'inicio': 'Donación HOPE', 'donaciones': 'Donación HOPE - Legado de Esperanza',
+            'venezuela': 'Donación HOPE - Venezuela', 'colombia': 'Donación HOPE Colombia',
+            'post_cita': 'Donación de una sesión de terapia HOPE',
+        }[self.origen]
+
+    def __str__(self):
+        return f'{self.donante} · {self.monto} {self.moneda} · {self.estado}'
+
+
 class PagoCitaPayPal(models.Model):
     cita = models.OneToOneField(Cita, on_delete=models.PROTECT, related_name='pago_paypal')
     monto = models.DecimalField(max_digits=10, decimal_places=2)

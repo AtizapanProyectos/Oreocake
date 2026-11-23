@@ -4,6 +4,7 @@
 {% block title %}Dona - Movimiento por Venezuela - HOPE{% endblock %}
 
 {% block content %}
+{% include 'includes/donaciones_runtime.html' %}
 <script src="https://www.paypal.com/sdk/js?client-id={{ paypal_client_id }}&currency=MXN&locale=es_MX" defer></script>
 {% csrf_token %}
 
@@ -286,27 +287,14 @@ document.addEventListener('DOMContentLoaded', function () {
     function renderPayPalVz() {
         if (typeof paypal === 'undefined') { setTimeout(renderPayPalVz, 200); return; }
 
-        paypal.Buttons({
-            style: { layout: 'vertical', color: 'blue', shape: 'rect', label: 'donate' },
-            createOrder: function (data, actions) {
-                let monto = donAmountVz.value || '400';
-                return actions.order.create({
-                    purchase_units: [{
-                        description: 'Donación HOPE - Venezuela',
-                        amount: { currency_code: 'MXN', value: parseFloat(monto).toFixed(2) }
-                    }]
-                });
-            },
-            onApprove: function (data, actions) {
-                return actions.order.capture().then(function () {
-                    containerVz.innerHTML = '<div style="background:#10B981; color:white; padding:15px; border-radius:100px; text-align:center; font-weight:700;">¡Gracias por tu apoyo! 🤍</div>';
-                    setTimeout(function () { window.location.href = "{% url 'inicio' %}"; }, 2500);
-                });
-            },
-            onError: function (err) {
-                console.error('Error PayPal donación:', err);
+        paypal.Buttons(HopeDonaciones.opciones({
+            origen: 'venezuela', contenedor: containerVz,
+            monto: () => donAmountVz.value || '400',
+            alCompletar: () => {
+                containerVz.innerHTML = '<div style="background:#10B981;color:white;padding:15px;border-radius:100px;text-align:center;font-weight:700;">Gracias por tu apoyo.</div>';
+                setTimeout(() => { window.location.href = "{% url 'inicio' %}"; }, 2500);
             }
-        }).render('#paypal-button-container-donacion-vz').then(function () {
+        })).render('#paypal-button-container-donacion-vz').then(function () {
             const placeholder = document.getElementById('paypal-placeholder-vz');
             if (placeholder) placeholder.remove();
         });

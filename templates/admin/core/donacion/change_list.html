@@ -1,0 +1,12 @@
+{% extends 'admin/change_list.html' %}
+{% block object-tools-items %}
+{{ block.super }}
+<li><a href="{{ exportar_url }}">Exportar CSV con estos filtros</a></li>
+{% endblock %}
+{% block result_list %}
+<section style="padding:18px 20px;margin-bottom:20px;border:1px solid var(--hairline-color);border-radius:12px;background:var(--darkened-bg);color:var(--body-fg);" aria-label="Resumen de donaciones">
+    <strong>Donaciones completadas: {{ cantidad_completadas }} · Total aportado (bruto): ${{ total_completadas|floatformat:2 }} MXN</strong>
+    <p style="margin-bottom:0;">Solo suma registros Completada dentro de los filtros actuales. Confirmación informada por el navegador; sin verificación adicional con la API de PayPal. Los intentos pendientes y cancelados no se suman.</p>
+</section>
+{{ block.super }}
+{% endblock %}

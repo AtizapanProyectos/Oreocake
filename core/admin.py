@@ -4,6 +4,7 @@ from django.utils import timezone
 from import_export.admin import ImportExportModelAdmin
 from django.db.models import Count
 from .models import *
+from . import admin_donaciones  # Registro de consulta y exportación de donativos.
 
 
 @admin.register(PlanMensual)

@@ -2,6 +2,7 @@
 {% load static %}
 
 {% block content %}
+{% include 'includes/donaciones_runtime.html' %}
 <!DOCTYPE html>
 <html lang="es">
 
@@ -804,19 +805,14 @@
     function renderButtons() {
       const container = document.getElementById('paypal-button-container-donacion');
       if (container.children.length > 0) return;
-      paypal.Buttons({
-        style: { layout: 'vertical', color: 'blue', shape: 'rect', label: 'donate' },
-        createOrder: function (data, actions) {
-          let monto = document.getElementById('donAmount').value || '400';
-          return actions.order.create({ purchase_units: [{ description: 'Donación HOPE Colombia', amount: { currency_code: 'MXN', value: parseFloat(monto).toFixed(2) } }] });
-        },
-        onApprove: function (data, actions) {
-          return actions.order.capture().then(function () {
-            container.innerHTML = '<div style="background:#10B981;color:white;padding:15px;border-radius:100px;text-align:center;">Gracias por tu apoyo.</div>';
-            setTimeout(() => { cerrarModal('modalDonacion'); location.reload(); }, 2000);
-          });
+      paypal.Buttons(HopeDonaciones.opciones({
+        origen: 'colombia', contenedor: container,
+        monto: () => document.getElementById('donAmount').value || '400',
+        alCompletar: () => {
+          container.innerHTML = '<div style="background:#10B981;color:white;padding:15px;border-radius:100px;text-align:center;">Gracias por tu apoyo.</div>';
+          setTimeout(() => { cerrarModal('modalDonacion'); location.reload(); }, 2000);
         }
-      }).render('#paypal-button-container-donacion');
+      })).render('#paypal-button-container-donacion');
     }
 
   </script>

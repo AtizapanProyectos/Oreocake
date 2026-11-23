@@ -4,6 +4,7 @@
 {% block title %}Donaciones - Legado de Esperanza | HOPE{% endblock %}
 
 {% block content %}
+{% include 'includes/donaciones_runtime.html' %}
 <script src="https://www.paypal.com/sdk/js?client-id={{ paypal_client_id }}&currency=MXN&locale=es_MX" defer></script>
 {% csrf_token %}
 
@@ -647,42 +648,21 @@ document.addEventListener('DOMContentLoaded', function () {
 
         if (paypalLoading) paypalLoading.style.display = 'none';
 
-        paypal.Buttons({
-            style: {
-                layout: 'vertical',
-                color: 'blue',
-                shape: 'rect',
-                label: 'donate',
-                height: 48
+        paypal.Buttons(HopeDonaciones.opciones({
+            origen: 'donaciones',
+            contenedor: document.getElementById('paypal-button-container-donacion'),
+            style: {layout:'vertical', color:'blue', shape:'rect', label:'donate', height:48},
+            monto: () => {
+                let valor = Number(donAmount.value);
+                if (!Number.isFinite(valor) || valor <= 0) { valor = 400; donAmount.value = '400'; }
+                return valor;
             },
-            createOrder: function (data, actions) {
-                let montoVal = parseFloat(donAmount.value);
-                if (!montoVal || montoVal <= 0) {
-                    montoVal = 400.00;
-                    donAmount.value = '400';
-                }
-                return actions.order.create({
-                    purchase_units: [{
-                        description: 'Donación HOPE - Legado de Esperanza',
-                        amount: {
-                            currency_code: 'MXN',
-                            value: montoVal.toFixed(2)
-                        }
-                    }]
-                });
-            },
-            onApprove: function (data, actions) {
-                return actions.order.capture().then(function (details) {
-                    document.getElementById('donacion-box').style.display = 'none';
-                    document.getElementById('donacion-exito').style.display = 'block';
-                    document.getElementById('donacion-exito').scrollIntoView({ behavior: 'smooth', block: 'center' });
-                });
-            },
-            onError: function (err) {
-                console.error('Error PayPal Donación:', err);
-                alert('Hubo un inconveniente al conectar con PayPal. Por favor intenta nuevamente.');
+            alCompletar: () => {
+                document.getElementById('donacion-box').style.display = 'none';
+                document.getElementById('donacion-exito').style.display = 'block';
+                document.getElementById('donacion-exito').scrollIntoView({behavior:'smooth', block:'center'});
             }
-        }).render('#paypal-button-container-donacion');
+        })).render('#paypal-button-container-donacion');
     }
 
     initPayPalButtons();
