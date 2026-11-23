@@ -4,6 +4,7 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'solo-pruebas-locales-sin-datos-reales'
 DEBUG = False
+CSRF_FAILURE_VIEW = 'hope_project.error_views.error_csrf'
 ALLOWED_HOSTS = ['testserver', 'localhost', '127.0.0.1']
 DATABASES = {'default': {'ENGINE': 'django.db.backends.sqlite3', 'NAME': ':memory:'}}
 INSTALLED_APPS = ['django.contrib.admin', 'django.contrib.auth', 'django.contrib.contenttypes',

@@ -1,14 +1,21 @@
 import posixpath
+import re
 from pathlib import Path
+from urllib.parse import urlsplit
 
 from django.contrib import admin
 from django.http import Http404
 from django.views.static import serve
 
 from core.almacen_grabaciones import almacen_adjuntos_clinicos
-from django.urls import path, include
+from django.urls import path, include, re_path
 from django.conf import settings
 from django.conf.urls.static import static
+
+handler400 = 'hope_project.error_views.error_400'
+handler403 = 'hope_project.error_views.error_403'
+handler404 = 'hope_project.error_views.error_404'
+handler500 = 'hope_project.error_views.error_500'
 
 urlpatterns = [
     path('error-59/', admin.site.urls),
@@ -27,10 +34,17 @@ def servir_media(request, path, document_root):
     return serve(request, path, document_root=document_root)
 
 
-# Configuración correcta para archivos estáticos y multimedia en desarrollo
+# Los enlaces multimedia existentes también funcionan con DEBUG desactivado.
+# La vista conserva el bloqueo del almacén clínico y la validación de rutas.
+media_url = urlsplit(settings.MEDIA_URL)
+if not media_url.scheme and not media_url.netloc and media_url.path.strip('/'):
+    urlpatterns += [re_path(
+        r'^' + re.escape(media_url.path.lstrip('/')) + r'(?P<path>.*)$',
+        servir_media, {'document_root': settings.MEDIA_ROOT},
+    )]
+
+# Los estáticos de producción los sirve WhiteNoise.
 if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, view=servir_media,
-                          document_root=settings.MEDIA_ROOT)
     urlpatterns += static(settings.STATIC_URL,
                           document_root=settings.STATIC_ROOT)
 

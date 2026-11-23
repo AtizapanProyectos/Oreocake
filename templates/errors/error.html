@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="es-MX">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex, nofollow">
+    <title>{{ titulo }} · {{ marca }}</title>
+    <style>
+        :root {
+            color-scheme: light;
+            --purple: #5a3fa3;
+            --ink: #241a47;
+            --muted: #645c86;
+            --line: #e9e2f4;
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            min-height: 100vh;
+            min-height: 100svh;
+            background: #f5f1fa;
+            color: var(--ink);
+            font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+            -webkit-font-smoothing: antialiased;
+            display: flex;
+            flex-direction: column;
+        }
+        .brand {
+            display: inline-block;
+            color: var(--ink);
+            text-decoration: none;
+            width: fit-content;
+        }
+        .brand img { display: block; width: auto; max-width: 100%; height: 56px; object-fit: contain; }
+        header { width: min(1100px, 100%); padding: 32px 36px; margin: 0 auto; }
+        main { flex: 1; display: grid; grid-template-columns: minmax(0, 1fr); place-items: center; padding: 24px 28px 48px; }
+        .card {
+            position: relative;
+            width: min(980px, 100%);
+            display: grid;
+            grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+            align-items: center;
+            gap: 24px;
+            padding: 64px;
+            background: #fff;
+            border: 1px solid var(--line);
+            border-radius: 32px;
+            box-shadow: 0 18px 40px -18px rgb(62 42 117 / 20%);
+            overflow: hidden;
+            animation: llegar .5s ease-out;
+        }
+        .card > div { min-width: 0; }
+        .eyebrow {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            color: var(--purple);
+            font-size: 11px;
+            line-height: 1.6;
+            font-weight: 750;
+            letter-spacing: .14em;
+            text-transform: uppercase;
+            margin: 0 0 22px;
+        }
+        .eyebrow::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: #25b8b8; flex-shrink: 0; }
+        h1 { font-size: clamp(30px, 3.5vw, 43px); line-height: 1.12; letter-spacing: -.04em; margin: 0 0 20px; font-weight: 750; text-wrap: balance; }
+        .message { margin: 0; color: var(--muted); font-size: 16px; line-height: 1.8; max-width: 39ch; }
+        .button {
+            display: inline-flex;
+            gap: 16px;
+            justify-content: center;
+            align-items: center;
+            min-height: 52px;
+            margin-top: 30px;
+            padding: 14px 24px;
+            border-radius: 14px;
+            background: var(--purple);
+            color: #fff;
+            font-size: 15px;
+            font-weight: 650;
+            text-decoration: none;
+        }
+        .button:hover { background: #452d85; }
+        a:focus-visible { outline: 3px solid #157c7c; outline-offset: 5px; }
+        .button svg { width: 20px; height: 20px; }
+        .art { position: relative; width: 100%; max-width: 320px; justify-self: center; }
+        .art svg { display: block; width: 100%; height: auto; }
+        .error-number { position: absolute; inset: 28% 0 auto; text-align: center; font-size: clamp(60px, 9vw, 100px); font-weight: 800; letter-spacing: -.07em; color: var(--purple); line-height: 1.1; }
+        .note { display: flex; gap: 10px; align-items: center; margin-top: 32px; padding-top: 22px; border-top: 1px solid var(--line); font-size: 12px; line-height: 1.6; color: var(--muted); }
+        .note svg { flex-shrink: 0; width: 17px; height: 17px; color: var(--purple); }
+        footer { padding: 0 24px 28px; text-align: center; color: var(--muted); font-size: 12px; line-height: 1.6; }
+        @keyframes llegar { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @media (max-width: 680px) {
+            header { padding: 24px; }
+            main { padding: 8px 18px 32px; }
+            .card { grid-template-columns: minmax(0, 1fr); gap: 12px; padding: 28px; border-radius: 26px; }
+            .art { grid-row: 1; width: 185px; }
+            .error-number { font-size: 64px; }
+            .eyebrow { font-size: 10px; margin-bottom: 16px; }
+            h1 { font-size: 31px; }
+            .message { font-size: 15px; }
+            .button { width: 100%; margin-top: 24px; }
+            .note { margin-top: 24px; padding-top: 18px; }
+        }
+        @media (prefers-reduced-motion: reduce) { .card { animation: none; } }
+    </style>
+</head>
+<body>
+    <header>
+        <a class="brand" href="/" aria-label="{{ marca }}, ir al inicio">
+            <img src="{{ logo_url }}" alt="{{ marca }}">
+        </a>
+    </header>
+    <main>
+        <section class="card" aria-labelledby="error-title">
+            <div>
+                <p class="eyebrow">{{ etiqueta }}</p>
+                <h1 id="error-title">{{ titulo }}</h1>
+                <p class="message">{{ mensaje }}</p>
+                <a class="button" href="/">
+                    Ir al inicio
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6"/></svg>
+                </a>
+                <div class="note">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21S3 15.5 3 8.8A4.8 4.8 0 0 1 12 6a4.8 4.8 0 0 1 9 2.8C21 15.5 12 21 12 21Z"/></svg>
+                    <span>Un paso a la vez. Estamos para acompañarte.</span>
+                </div>
+            </div>
+            <div class="art" aria-hidden="true">
+                <svg viewBox="0 0 320 310" fill="none">
+                    <circle cx="270" cy="66" r="25" fill="#F8D33D"/>
+                    <path d="M61 251V126a99 99 0 0 1 198 0v125" fill="#F0EBF9"/>
+                    <path d="M82 251V128a78 78 0 0 1 156 0v123" stroke="#D9CDEE" stroke-width="2"/>
+                    <path d="M35 253h247" stroke="#D9CDEE" stroke-width="2" stroke-linecap="round"/>
+                    <path d="m109 212 34-15 21 13 33-27 21 8" stroke="#8F63D9" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                    <circle cx="218" cy="191" r="5" fill="#5A3FA3"/>
+                    <path d="M265 252v-58m0 35c-25 0-30-23-30-23 24-1 30 23 30 23Zm0-14c24-3 26-27 26-27-22 3-26 27-26 27Z" stroke="#157C7C" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M42 81v18m-9-9h18" stroke="#8F63D9" stroke-width="3" stroke-linecap="round"/>
+                    <circle cx="39" cy="187" r="6" fill="#F85B8C"/>
+                    <path d="M113 277c28 6 66 6 94 0" stroke="#E9E2F4" stroke-width="3" stroke-linecap="round"/>
+                </svg>
+                <span class="error-number">{{ codigo }}</span>
+            </div>
+        </section>
+    </main>
+    <footer>{{ marca }} · Atención psicológica con sentido humano</footer>
+</body>
+</html>
