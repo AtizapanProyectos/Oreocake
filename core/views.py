@@ -1087,55 +1087,21 @@ def _es_colaborador_tectum(user):
     return (user.email or '').strip().lower() in COLABORADORES_TECTUM
 
 
-def _correo_tectum_verificado(usuario):
-    correo = (usuario.email or '').strip().lower()
-    return bool(correo and getattr(getattr(usuario, 'perfil', None), 'correo_tectum_verificado', '') == correo)
-
-
 @require_POST
 def enviar_verificacion_tectum(request):
-    from django.core import signing
-
-    usuario = request.user
-    if not usuario.is_authenticated or not _es_colaborador_tectum(usuario):
+    # Compatibilidad con paneles abiertos antes de retirar la verificación.
+    if not request.user.is_authenticated or not _es_colaborador_tectum(request.user):
         return JsonResponse({'status': 'error', 'message': 'Tu correo no figura en el padrón de In-House.'}, status=403)
-    llave = f'verificacion-tectum-{usuario.pk}'
-    if not cache.add(llave, True, 90):
-        return JsonResponse({'status': 'success', 'message': 'Revisa tu correo. Ya te enviamos el enlace.'})
-    correo = usuario.email.strip().lower()
-    token = signing.dumps([usuario.pk, correo], salt='correo-tectum')
-    enlace = request.build_absolute_uri(reverse('verificar_correo_tectum', args=[token]))
-    try:
-        entregado = send_mail(
-            'Verifica tu correo para TECTUM In-House',
-            f'Abre este enlace e inicia sesión para activar tu cobertura de TECTUM In-House: {enlace}',
-            settings.DEFAULT_FROM_EMAIL, [correo],
-        )
-    except Exception:
-        entregado = 0
-    if not entregado:
-        cache.delete(llave)
-        return JsonResponse({'status': 'error', 'message': 'No pudimos enviar el correo. Intenta nuevamente.'}, status=502)
-    return JsonResponse({'status': 'success', 'message': 'Revisa tu correo para activar la cobertura.'})
+    return JsonResponse({'status': 'success', 'message': 'Tu cobertura In-House ya está activa. Actualiza tu panel para agendar.'})
 
 
 def verificar_correo_tectum(request, token):
-    from django.core import signing
-
-    try:
-        usuario_id, correo = signing.loads(token, salt='correo-tectum', max_age=3600)
-    except signing.BadSignature as error:
-        raise Http404('El enlace venció. Solicita otro desde tu panel.') from error
+    # Los enlaces antiguos llevan al panel; el padrón sigue controlando el acceso.
     if not request.user.is_authenticated:
-        request.session['verificacion_tectum_pendiente'] = token
         return redirect('modulo_informativo')
-    if (request.user.pk != usuario_id or correo != request.user.email.strip().lower() or
-            not _es_colaborador_tectum(request.user)):
-        raise Http404
-    if request.method == 'POST':
-        UsuarioPerfil.objects.filter(usuario=request.user).update(correo_tectum_verificado=correo)
-        return redirect('panel_tectum')
-    return render(request, 'tectum/verificar_correo.html', {'correo': correo})
+    if not _es_colaborador_tectum(request.user):
+        return render(request, 'tectum/verificar_correo.html', {'fuera_padron': True}, status=403)
+    return redirect('panel_tectum')
 
 
 # =========================================================================
@@ -1284,9 +1250,7 @@ def login_usuario(request):
     else:
         redirect_url = reverse('panel_generico')
 
-    verificacion = request.session.pop('verificacion_tectum_pendiente', None)
-    if verificacion:
-        return JsonResponse({'status': 'success', 'redirect_url': reverse('verificar_correo_tectum', args=[verificacion])})
+    request.session.pop('verificacion_tectum_pendiente', None)
 
     cita_pendiente = request.session.pop('ipp_presencial_pendiente', None)
     if cita_pendiente and Cita.objects.filter(
@@ -1482,7 +1446,6 @@ def panel_generico(request):
         'paypal_client_id': settings.PAYPAL_CLIENT_ID,
         'psicologo_asignado': psicologo_asignado,
         'es_usuario_tectum': es_usuario_tectum,
-        'correo_tectum_verificado': _correo_tectum_verificado(request.user),
         'es_tectum_beneficios': es_beneficios,
         # 3/11/2026 — flag gradual del método "sube tu comprobante de transferencia"
         # (solo HOPE; TECTUM In-House no paga y Beneficios usa su propio template)
@@ -1781,10 +1744,6 @@ def _guardar_cita_paciente(request, reservar_pago=False, paciente_recepcion=None
                 'requiere_consentimiento': True,
             }, status=400)
 
-        if es_tectum_cita and not _correo_tectum_verificado(request.user):
-            return JsonResponse({
-                'status': 'error', 'message': 'Verifica tu correo del padrón para activar la cobertura.',
-            }, status=403)
         # Compatibilidad temporal: el panel HOPE captura en el navegador.
         referencia_paypal = (request.POST.get('paypal_order_id') or '').strip()
         pago_legacy_hope = (

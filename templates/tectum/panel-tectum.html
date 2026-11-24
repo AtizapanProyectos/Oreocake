@@ -548,11 +548,6 @@ function mostrarErrorCita(mensaje) {
                 </div>
             </div>
 
-            {% if not correo_tectum_verificado %}
-            <p>Confirma una sola vez tu correo para activar la cobertura del convenio.</p>
-            <button type="button" class="btn-brutal" id="enviar-verificacion-tectum">Enviar enlace de verificación</button>
-            <p id="estado-verificacion-tectum" role="status"></p>
-            {% endif %}
             <button type="button" id="btn-confirmar-cita-tectum" onclick="confirmarCitaTectum()" class="btn-brutal" style="width: 100%; background: linear-gradient(135deg, #1e3a8a 0%, #0284c7 100%); color: white; box-shadow: 0 10px 25px rgba(2, 132, 199, 0.25);" disabled>
                 Confirmar Cita <i class="fas fa-arrow-right" style="margin-left: 8px;"></i>
             </button>
@@ -1071,23 +1066,6 @@ function mostrarToast(texto) {
     toast.classList.add('show');
     setTimeout(() => { toast.classList.remove('show'); }, 3500);
 }
-
-document.getElementById('enviar-verificacion-tectum')?.addEventListener('click', async function () {
-    const estado = document.getElementById('estado-verificacion-tectum');
-    this.disabled = true;
-    try {
-        const respuesta = await fetch("{% url 'enviar_verificacion_tectum' %}", {
-            method: 'POST',
-            headers: {'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value},
-        });
-        const datos = await respuesta.json();
-        estado.textContent = datos.message;
-    } catch (error) {
-        estado.textContent = 'No pudimos enviar el correo. Intenta nuevamente.';
-    } finally {
-        this.disabled = false;
-    }
-});
 
 function confirmarCitaTectum() {
     if (!fechaSeleccionada || !horaSeleccionada) {

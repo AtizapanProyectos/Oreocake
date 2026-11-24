@@ -585,17 +585,76 @@ class AgendamientoSeguroTests(TestCase):
         self.assertIsNone(cita.psicologo_id)
 
     @patch('core.views.COLABORADORES_TECTUM', {'pago@example.test'})
-    def test_inhouse_exige_correo_verificado_y_limita_servicio(self):
+    def test_inhouse_activa_cobertura_por_padron_sin_verificacion_y_limita_servicio(self):
         sesion = self.client.session
         sesion['convenio_tectum'] = True
         sesion.save()
         url = reverse('guardar_cita')
-        self.assertEqual(self.client.post(url, self.datos).status_code, 403)
-        UsuarioPerfil.objects.filter(usuario=self.paciente).update(correo_tectum_verificado=self.paciente.email)
+        self.assertEqual(self.paciente.perfil.correo_tectum_verificado, '')
         self.assertEqual(self.client.post(url, {**self.datos, 'tipo_servicio': 'pareja'}).status_code, 400)
         respuesta = self.client.post(url, self.datos)
         self.assertEqual(respuesta.json().get('status'), 'success', respuesta.content)
         self.assertTrue(Cita.objects.get(estado='Confirmada').es_tectum)
+
+    def test_norma_recibe_cobertura_con_correo_en_mayusculas_sin_verificar(self):
+        from .views import _convenio_cita
+        from django.test import RequestFactory
+
+        self.paciente.email = 'Norma.tovar@gmail.com'
+        self.paciente.save(update_fields=['email'])
+        solicitud = RequestFactory().get('/panel-tectum/')
+        solicitud.user, solicitud.session = self.paciente, {}
+        self.assertEqual(_convenio_cita(solicitud), 'inhouse')
+        self.assertEqual(self.paciente.perfil.correo_tectum_verificado, '')
+
+        solicitud.path = '/panel-beneficios/'
+        self.assertEqual(_convenio_cita(solicitud), 'beneficios')
+
+    def test_fuera_del_padron_no_entra_ni_agenda_con_cobertura(self):
+        self.assertEqual(self.client.get(reverse('panel_tectum')).status_code, 403)
+        sesion = self.client.session
+        sesion['convenio_tectum'] = True
+        sesion.save()
+        respuesta = self.client.post(reverse('guardar_cita'), self.datos)
+        self.assertEqual(respuesta.status_code, 400)
+        self.assertFalse(Cita.objects.filter(estado='Confirmada').exists())
+
+    @patch('core.views.COLABORADORES_TECTUM', {'pago@example.test'})
+    def test_colaborador_en_beneficios_sigue_requiriendo_pago(self):
+        sesion = self.client.session
+        sesion['convenio_tectum_beneficios'] = True
+        sesion.save()
+        respuesta = self.client.post(reverse('guardar_cita'), self.datos)
+        self.assertEqual(respuesta.status_code, 400)
+        self.assertFalse(Cita.objects.filter(estado='Confirmada').exists())
+
+    @patch('core.views.send_mail')
+    def test_login_norma_entra_directo_sin_verificacion(self, enviar):
+        self.paciente.email = 'Norma.tovar@gmail.com'
+        self.paciente.set_password('clave-prueba')
+        self.paciente.save()
+        self.client.logout()
+        sesion = self.client.session
+        sesion['verificacion_tectum_pendiente'] = 'enlace-antiguo'
+        sesion.save()
+        respuesta = self.client.post(reverse('login_usuario'), {
+            'email': 'norma.tovar@gmail.com', 'password': 'clave-prueba', 'convenio': 'tectum',
+        })
+        self.assertEqual(respuesta.json()['redirect_url'], reverse('panel_tectum'))
+        self.assertNotIn('verificacion_tectum_pendiente', self.client.session)
+        self.paciente.perfil.refresh_from_db()
+        self.assertTrue(self.paciente.perfil.es_tectum)
+        self.assertEqual(self.paciente.perfil.correo_tectum_verificado, '')
+        enviar.assert_not_called()
+
+    @patch('core.views.send_mail')
+    @patch('core.views.COLABORADORES_TECTUM', {'pago@example.test'})
+    def test_enlaces_antiguos_no_exigen_verificar_ni_envian_correo(self, enviar):
+        respuesta = self.client.post(reverse('enviar_verificacion_tectum'))
+        self.assertEqual(respuesta.json()['status'], 'success')
+        respuesta = self.client.get(reverse('verificar_correo_tectum', args=['enlace-antiguo']))
+        self.assertRedirects(respuesta, reverse('panel_tectum'), fetch_redirect_response=False)
+        enviar.assert_not_called()
 
     @patch('core.pagos_paypal.crear_orden', return_value='ORDENVENCIDA')
     @patch('core.pagos_paypal.capturar_orden')

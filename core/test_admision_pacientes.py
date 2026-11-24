@@ -159,16 +159,15 @@ class AdmisionPacientesTests(TestCase):
         from .views import _guardar_cita_paciente
 
         self.asignar()
-        with patch('core.views._correo_tectum_verificado', return_value=True):
-            for convenio in ('inhouse', 'beneficios'):
-                with self.subTest(convenio=convenio), patch('core.views._convenio_cita', return_value=convenio):
-                    Cita.objects.all().delete()
-                    solicitud = RequestFactory().post('/guardar-cita/', self.datos)
-                    solicitud.user, solicitud.session = self.paciente, {}
-                    resultado = _guardar_cita_paciente(solicitud, reservar_pago=convenio == 'beneficios')
-                    if convenio == 'inhouse':
-                        self.assertEqual(json.loads(resultado.content)['status'], 'success')
-                    self.assertEqual(Cita.objects.get().psicologo_id, self.doctor.pk)
+        for convenio in ('inhouse', 'beneficios'):
+            with self.subTest(convenio=convenio), patch('core.views._convenio_cita', return_value=convenio):
+                Cita.objects.all().delete()
+                solicitud = RequestFactory().post('/guardar-cita/', self.datos)
+                solicitud.user, solicitud.session = self.paciente, {}
+                resultado = _guardar_cita_paciente(solicitud, reservar_pago=convenio == 'beneficios')
+                if convenio == 'inhouse':
+                    self.assertEqual(json.loads(resultado.content)['status'], 'success')
+                self.assertEqual(Cita.objects.get().psicologo_id, self.doctor.pk)
 
     def test_admin_recepcion_y_transferencia_conservan_asignado_cerrado(self):
         tratamiento = self.asignar()
