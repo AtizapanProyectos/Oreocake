@@ -1793,6 +1793,25 @@
       </div>
       <div class="slide slide-2" style="background:none;">
         <div
+          style="position:absolute;inset:0;background-image:url('{% static 'img/slider_3.jpg' %}');background-size:cover;background-position:center;z-index:0;">
+        </div>
+        <div
+          style="position:absolute;inset:0;background:linear-gradient(135deg,rgba(10,5,20,.8) 0%,rgba(37,184,184,.55) 100%);z-index:1;">
+        </div>
+
+        <div class="slide-content" style="position:relative;z-index:2;">
+          <h1 style="color:#fff;text-shadow:0 4px 20px rgba(0,0,0,.4)">Dona una terapia.<br>Regala <span
+              style="color:var(--c-yellow)">esperanza.</span></h1>
+          <p style="color:rgba(255,255,255,.9)">Tu donación puede acercar a un joven al apoyo psicológico que necesita.
+            Ayúdanos a acompañar más historias y construir un futuro con bienestar.</p>
+          <div class="hero-buttons">
+            <button class="btn-primary" style="background:var(--c-teal);box-shadow:0 15px 30px rgba(37,184,184,.3)"
+              onclick="abrirDonacion()">Dona una terapia <i class="fas fa-hand-holding-heart"></i></button>
+          </div>
+        </div>
+      </div>
+      <div class="slide slide-3" style="background:none;">
+        <div
           style="position:absolute;inset:0;background-image:url('{% static 'img/slider_2.jpg' %}');background-size:cover;background-position:center;z-index:0;">
         </div>
 
@@ -1812,52 +1831,10 @@
           </div>
         </div>
       </div>
-      <div class="slide slide-3" style="background:none;">
-
-        <div
-          style="position:absolute;inset:0;background-image:url('{% static 'img/slider_4.jpeg' %}');background-size:cover;background-position:center;z-index:0;">
-        </div>
-
-
-        <div class="slide-content" style="position:relative;z-index:2;">
-          <h1 style="color: white;"><span style="color:var(--c-teal)"></span></h1>
-          <p style="color: white;"></p>
-          <div class="hero-buttons">
-            <button class="btn-primary" style="background:var(--c-teal);box-shadow:0 15px 30px rgba(37,184,184,.2)"
-              onclick="window.location.href='{% url 'formulario_venezuela' %}'">
-              Unete a Nuestra Familia HOPE<i class="fas fa-heart"></i>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <div class="slide slide-4" style="background:none;">
-
-        <div
-          style="position:absolute;inset:0;background-image:url('{% static 'img/slider5.jpeg' %}');background-size:cover;background-position:center;z-index:0;">
-        </div>
-        <div
-          style="position:absolute;inset:0;background:linear-gradient(135deg,rgba(10,5,20,.55) 0%,rgba(242,124,33,.35) 100%);z-index:1;">
-        </div>
-
-        <div class="slide-content" style="position:relative;z-index:2;">
-          <h1 style="color: white;text-shadow:0 4px 20px rgba(0,0,0,.4)">Todo lo que <span
-              style="color:var(--c-orange)">vives</span> importa.</h1>
-          <p style="color: rgba(255,255,255,.9)">Sabemos lo que significa empezar de nuevo. HOPE también te acompaña
-            desde Colombia, con el mismo cuidado y la misma calidez de siempre.</p>
-          <div class="hero-buttons">
-            <button class="btn-primary" style="background:var(--c-orange);box-shadow:0 15px 30px rgba(242,124,33,.3)"
-              onclick="window.location.href='https://espaciohope.com/colombia'">
-              Descubre HOPE Colombia<i class="fas fa-heart"></i>
-            </button>
-          </div>
-        </div>
-      </div>
       <div class="slider-controls">
         <div class="dot active" onclick="goToSlide(0)"></div>
         <div class="dot" onclick="goToSlide(1)"></div>
         <div class="dot" onclick="goToSlide(2)"></div>
-        <div class="dot" onclick="goToSlide(3)"></div>
 
       </div>
     </section>
@@ -3177,7 +3154,7 @@
     let currentSlide = 0;
     const slides = document.querySelectorAll('.slide');
     const dots = document.querySelectorAll('.dot');
-    const COLORS = ['var(--c-pink)', 'var(--c-purple)', 'var(--c-teal)', 'var(--c-orange)'];
+    const COLORS = ['var(--c-pink)', 'var(--c-teal)', 'var(--c-purple)'];
     let slideInterval;
 
     function goToSlide(idx) {
