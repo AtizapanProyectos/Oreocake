@@ -380,7 +380,7 @@
       <span class="lg-morada"><i class="fa-solid fa-hourglass-half" style="font-size:8px;color:var(--c-morada)"></i> Primera cita pendiente</span>
       <span class="lg-azul"><i class="fa-solid fa-seedling" style="font-size:8px;color:var(--c-azul)"></i> Nuevo (cero citas)</span>
       <span class="lg-amarilla"><i class="fa-solid fa-triangle-exclamation" style="font-size:8px;color:var(--c-amarilla)"></i> En riesgo</span>
-      <span class="lg-roja"><i class="fa-solid fa-moon" style="font-size:8px;color:var(--c-roja)"></i> Inactivo</span>
+      <span class="lg-roja"><i class="fa-solid fa-moon" style="font-size:8px;color:var(--c-roja)"></i> No acepta pacientes nuevos</span>
       <span style="padding:4px 11px;border-radius:999px;background:#FFF0F5;color:#C64C74;border:1.5px solid rgba(248,91,140,.3)"><span class="chip-pref pref-Mujer" style="width:13px;height:13px;font-size:7.5px">M</span> pidió Mujer</span>
       <span style="padding:4px 11px;border-radius:999px;background:#F1EEFB;color:#5A3FA3;border:1.5px solid rgba(90,63,163,.3)"><span class="chip-pref pref-Hombre" style="width:13px;height:13px;font-size:7.5px">H</span> pidió Hombre</span>
       <span style="padding:4px 11px;border-radius:999px;background:var(--teal-l);color:#157B7B;border:1.5px solid rgba(37,184,184,.3)"><span class="chip-pref pref-Indistinto" style="width:13px;height:13px;font-size:7.5px">I</span> Indistinto</span>
@@ -661,7 +661,7 @@ function cardHTML(p, esPseudo) {
     head += '<div class="dist-name">' + esc(p.nombre) + '</div>' +
       '<div class="dist-meta">' +
       '<span class="dist-badge ' + (p.esta_activo ? 'dist-b-ok' : 'dist-b-bad') + '">' +
-      (p.esta_activo ? '<i class="fa-solid fa-circle-check"></i> Aceptando' : '<i class="fa-solid fa-moon"></i> Inactivo') + '</span>' +
+      (p.esta_activo ? '<i class="fa-solid fa-circle-check"></i> Aceptando' : '<i class="fa-solid fa-moon"></i> No acepta pacientes nuevos') + '</span>' +
       '<span class="dist-badge dist-b-azul" title="Citas próximas agendadas en los próximos 7 días"><i class="fa-solid fa-calendar-week"></i> ' + p.proximas_7d + ' próx.</span>' +
       (p.especialidad ? '<span>' + esc(p.especialidad) + '</span>' : '') +
       '</div>';

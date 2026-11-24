@@ -759,7 +759,7 @@ function renderTabla(vista, data) {
       var badgePos = '<span class="ic-badge" style="' + (colorPos ? 'background:var(--p-lgt);color:' + colorPos : 'background:var(--surf);color:var(--ink3)') + ';width:34px;justify-content:center">' + r.posicion + '</span>';
       h += '<tr>' +
         '<td>' + badgePos + '</td>' +
-        '<td>' + celdaUser(r.nombre, r.esta_activo ? 'Aceptando nuevos pacientes' : 'Inactivo en agenda') + '</td>' +
+        '<td>' + celdaUser(r.nombre, r.esta_activo ? 'Aceptando nuevos pacientes' : 'No acepta pacientes nuevos') + '</td>' +
         '<td><b>' + r.pacientes_totales + '</b></td>' +
         '<td>' + r.pacientes_activos + '</td>' +
         '<td>' + r.pacientes_en_riesgo + '</td>' +

@@ -1,5 +1,29 @@
 # DOCUMENTACIÓN EXHAUSTIVA — ESPACIO HOPE (Django monolítico)
 
+## Regla vigente: “Aceptar pacientes nuevos” (23/11/2026)
+
+- `PerfilPsicologo.esta_activo` controla únicamente nuevas asignaciones,
+  incluidas las reasignaciones automáticas. `False` no bloquea la agenda de
+  pacientes ya asignados ni exige un mínimo de sesiones previas.
+- La asignación se resuelve por servicio con `_psicologo_asignado_servicio`:
+  prevalece el `TratamientoPaciente` explícito; solo si está activo se utiliza
+  su terapeuta. Sin tratamiento explícito, individual puede usar la asignación
+  histórica de `UsuarioPerfil`. Un tratamiento inactivo o sin terapeuta no
+  habilita ese fallback; el historial de citas tampoco restaura asignaciones.
+- Tener un servicio asignado no permite iniciar otro servicio con un terapeuta
+  que cerró admisiones. Los servicios activos existentes conservan su terapeuta.
+- `psicologo_atiende_modalidad` y los helpers de slots validan compatibilidad y
+  disponibilidad real sin interpretar `esta_activo` como bloqueo. Las búsquedas
+  globales y pools de nueva asignación conservan el filtro `esta_activo=True`,
+  revalidado bajo bloqueo transaccional al reservar.
+- Aplica a paneles HOPE/TECTUM, administración, recepción, transferencias,
+  reservas de pago y planes mensuales. Reagendar una cita conserva al terapeuta
+  de esa cita. Un horario ocupado o bloqueado se rechaza sin cambiar terapeuta.
+- Se mantienen capacidades, modalidades, esquemas, festivos, descansos y
+  bloqueos de agenda. No requiere migraciones ni reparación de asignaciones
+  históricas. Pruebas: `core.test_admision_pacientes`, exclusivamente con
+  `--settings=hope_project.settings_flujo_test` (SQLite aislado de Railway).
+
 > **FINALIDAD DE ESTE DOCUMENTO:** preservar el comportamiento actual del sistema. Es una
 > radiografía de **cómo funciona HOY**, sin mejoras, sin refactor sugerido y sin lógica corregida.
 > Todo desarrollador / analista / agente de IA debe asumir que el sistema funciona correctamente y

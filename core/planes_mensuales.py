@@ -122,15 +122,9 @@ def _presencial_requiere_contacto(paciente):
 
 
 def _asignado(paciente, servicio):
-    tratamiento = TratamientoPaciente.objects.filter(
-        paciente=paciente, tipo_servicio=servicio, activo=True,
-    ).select_related('psicologo_asignado__usuario').first()
-    if tratamiento and tratamiento.psicologo_asignado_id:
-        return tratamiento.psicologo_asignado
-    # El perfil es la asignación individual heredada; no reutilizarla para otro servicio.
-    if servicio == 'individual' and paciente.perfil.psicologo_asignado_id:
-        return PerfilPsicologo.objects.select_related('usuario').get(pk=paciente.perfil.psicologo_asignado_id)
-    return None
+    from .views import _psicologo_asignado_servicio
+
+    return _psicologo_asignado_servicio(paciente, servicio)
 
 
 def _terapeutas(paciente, servicio, modalidad):
@@ -138,7 +132,7 @@ def _terapeutas(paciente, servicio, modalidad):
 
     capacidad = CAPACIDAD_POR_TIPO_SESION[servicio]
     doctores = PerfilPsicologo.objects.filter(
-        esta_activo=True, modalidad_atencion__in=COMPATIBILIDAD_MODALIDAD_PSICOLOGO[modalidad],
+        modalidad_atencion__in=COMPATIBILIDAD_MODALIDAD_PSICOLOGO[modalidad],
         **{capacidad: True},
     )
     asignado = _asignado(paciente, servicio)
@@ -146,6 +140,7 @@ def _terapeutas(paciente, servicio, modalidad):
         # No sustituir silenciosamente al terapeuta asignado cuando no es compatible
         # o no tiene disponibilidad. La misma regla se usa al reservar las cuatro citas.
         return doctores.filter(pk=asignado.pk)
+    doctores = doctores.filter(esta_activo=True)
     cuestionario = CuestionarioRegistro.objects.filter(paciente=paciente, flujo_elegido=servicio).order_by('-fecha_completado').first()
     if not cuestionario:
         cuestionario = CuestionarioRegistro.objects.filter(paciente=paciente).order_by('-fecha_completado').first()
@@ -291,12 +286,15 @@ def reservar(request):
             if any(Cita.objects.filter(paciente=paciente, fecha=f, hora=h, estado__in=['Confirmada', 'Pendiente']).exists() for f, h in fechas):
                 raise ErrorPlan('Ya tienes una cita o reserva en uno de esos horarios.', 409)
             doctor = None
+            asignado = _asignado(paciente, servicio)
             candidatos = list(_terapeutas(paciente, servicio, modalidad).values_list('pk', flat=True))
             # El orden de los bloqueos no depende de la carga ni de preferencias:
             # dos pacientes que compiten por varios doctores no se bloquean al revés.
             bloqueados = {doc.pk: doc for doc in PerfilPsicologo.objects.select_for_update().filter(pk__in=candidatos).order_by('pk')}
             for candidato_id in candidatos:
                 bloqueado = bloqueados[candidato_id]
+                if not bloqueado.esta_activo and (asignado is None or asignado.pk != bloqueado.pk):
+                    continue
                 if all(h.strftime('%I:%M %p') in obtener_slots_psicologo_para_dia(bloqueado, f, servicio, modalidad) for f, h in fechas):
                     # La restricción única histórica también cuenta canceladas que
                     # todavía conservan terapeuta; no reutilizar esas filas.

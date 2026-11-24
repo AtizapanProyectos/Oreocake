@@ -174,16 +174,34 @@ PASE_SEDE = {
     'maps_url': 'https://maps.app.goo.gl/MUVCAVMi3DTprEsf7',
 }
 
+def _psicologo_asignado_servicio(paciente, tipo_servicio):
+    """La asignación vigente permite continuidad aunque cierre nuevas admisiones.
+
+    Un tratamiento explícito, incluso inactivo o sin terapeuta, prevalece sobre
+    el perfil individual heredado. No inferir asignaciones a partir del historial.
+    """
+    tratamiento = TratamientoPaciente.objects.filter(
+        paciente=paciente, tipo_servicio=tipo_servicio,
+    ).select_related('psicologo_asignado__usuario').first()
+    if tratamiento is not None:
+        return tratamiento.psicologo_asignado if tratamiento.activo else None
+    if tipo_servicio == 'individual':
+        return getattr(getattr(paciente, 'perfil', None), 'psicologo_asignado', None)
+    return None
+
+
 def psicologo_atiende_modalidad(psicologo, modalidad):
     """
     True si el psicólogo puede atender la modalidad solicitada de la cita.
+    La admisión de pacientes nuevos se valida al seleccionar candidatos,
+    independientemente de esta compatibilidad.
     - 'Mixto' responde a ambas modalidades.
     - El default de los registros históricos ('En línea') hace que el
       comportamiento en línea sea idéntico al de antes del cambio.
     - 'Mixto' como modalidad de cita no está habilitado aún (solo En línea /
       Presencial), pero se devuelve conservadoramente.
     """
-    if psicologo is None or not psicologo.esta_activo:
+    if psicologo is None:
         return False
     modalidad = modalidad or 'En línea'
     modalidades_permitidas = COMPATIBILIDAD_MODALIDAD_PSICOLOGO.get(modalidad, ['En línea', 'Mixto'])
@@ -368,6 +386,8 @@ def _calcular_bloqueos_covision(fecha_inicio, fecha_fin):
 def obtener_slots_psicologo(psicologo, fecha_inicio, fecha_fin, tipo_sesion="individual", modalidad="En línea"):
     """
     🔥 BÚSQUEDA POR PSICÓLOGO: usada una vez que el paciente YA tiene un psicólogo asignado.
+    Calcula disponibilidad real aunque el psicólogo cierre nuevas admisiones;
+    los pools de nueva asignación deben filtrar esta_activo=True.
 
     🏢 MODALIDAD (31/10/2026): si la modalidad pedida es 'Presencial' y el
     psicólogo NO está configurado como Presencial/Mixto, devuelve{}
@@ -377,7 +397,7 @@ def obtener_slots_psicologo(psicologo, fecha_inicio, fecha_fin, tipo_sesion="ind
     """
     modalidad = modalidad if modalidad in MODALIDADES_CITA_VALIDAS else 'En línea'
     campo_capacidad = CAPACIDAD_POR_TIPO_SESION.get(tipo_sesion, 'atiende_individual')
-    if not psicologo.esta_activo or not getattr(psicologo, campo_capacidad, False):
+    if not getattr(psicologo, campo_capacidad, False):
         return {}
 
     if not psicologo_atiende_modalidad(psicologo, modalidad):
@@ -1363,8 +1383,7 @@ def panel_generico(request):
     tipo_sesion_inicial = tipo_servicio if tipo_servicio in TIPOS_SESION_VALIDOS else 'individual'
 
     # Buscamos si tiene psicólogo asignado específicamente para la modalidad inicial
-    tratamiento_inicial = tratamientos.filter(tipo_servicio=tipo_sesion_inicial).first()
-    psicologo_inicial = tratamiento_inicial.psicologo_asignado if tratamiento_inicial else None
+    psicologo_inicial = _psicologo_asignado_servicio(request.user, tipo_sesion_inicial)
     if psicologo_inicial and (
             not getattr(psicologo_inicial, CAPACIDAD_POR_TIPO_SESION[tipo_sesion_inicial], False)
             or not psicologo_atiende_modalidad(psicologo_inicial, 'En línea')):
@@ -1668,11 +1687,7 @@ def obtener_disponibilidad_por_tipo_ajax(request):
     campo_capacidad = CAPACIDAD_POR_TIPO_SESION.get(tipo_sesion, 'atiende_individual')
 
     # Buscamos si tiene psicólogo asignado específicamente en TratamientoPaciente para esta modalidad
-    tratamiento = TratamientoPaciente.objects.filter(
-        paciente=request.user, tipo_servicio=tipo_sesion, activo=True
-    ).select_related('psicologo_asignado__usuario').first()
-
-    psicologo_asignado = tratamiento.psicologo_asignado if (tratamiento and tratamiento.psicologo_asignado) else None
+    psicologo_asignado = _psicologo_asignado_servicio(request.user, tipo_sesion)
 
     if psicologo_asignado and getattr(psicologo_asignado, campo_capacidad, False) and psicologo_atiende_modalidad(psicologo_asignado, modalidad):
         dias_json = obtener_slots_psicologo(psicologo_asignado, hoy, fecha_limite, tipo_sesion=tipo_sesion, modalidad=modalidad)
@@ -1860,14 +1875,7 @@ def _guardar_cita_paciente(request, reservar_pago=False, paciente_recepcion=None
                 return JsonResponse({'status': 'error', 'message': MENSAJE_PRESENCIAL_CONTACTA})
 
             # 🔥 MULTISERVICIO: Buscamos si ya tiene psicólogo asignado a este servicio específico
-            tratamiento = TratamientoPaciente.objects.filter(
-                paciente=paciente, tipo_servicio=tipo_sesion_str, activo=True
-            ).select_related('psicologo_asignado').first()
-
-            psicologo = tratamiento.psicologo_asignado if (tratamiento and tratamiento.psicologo_asignado) else None
-
-            if es_recepcion and not psicologo:
-                psicologo = perfil.psicologo_asignado
+            psicologo = _psicologo_asignado_servicio(paciente, tipo_sesion_str)
 
             # Si el doctor de este tratamiento ya no atiende esta modalidad, permitimos reasignar un especialista
             if psicologo and not getattr(psicologo, campo_capacidad, False):
@@ -1883,6 +1891,8 @@ def _guardar_cita_paciente(request, reservar_pago=False, paciente_recepcion=None
                     return JsonResponse({'status': 'error', 'message': 'Contacta a tu psicólogo para agendar una cita presencial'})
                 psicologo = None
 
+            # La excepción de admisión solo aplica al terapeuta vigente compatible.
+            es_nueva_asignacion = psicologo is None
             # Si no tiene psicólogo asignado para esta modalidad, asignamos automáticamente
             if not psicologo:
                 preferencia = ""
@@ -1919,7 +1929,7 @@ def _guardar_cita_paciente(request, reservar_pago=False, paciente_recepcion=None
 
                 # 2. Bloqueamos para evitar empalmes y anotamos carga histórica
                 psicologos_libres = PerfilPsicologo.objects.filter(
-                    id__in=doctores_con_slot_valido
+                    id__in=doctores_con_slot_valido, esta_activo=True
                 ).select_for_update().annotate(
                     carga_historica=Count('citas_agendadas', filter=~Q(citas_agendadas__estado='Cancelada'))
                 )
@@ -1937,6 +1947,8 @@ def _guardar_cita_paciente(request, reservar_pago=False, paciente_recepcion=None
                     psicologo = psicologos_libres.order_by('carga_historica', '?').first()
 
             psicologo = PerfilPsicologo.objects.select_for_update().get(pk=psicologo.pk)
+            if es_nueva_asignacion and not psicologo.esta_activo:
+                return JsonResponse({'status': 'error', 'message': 'Este terapeuta ya no acepta pacientes nuevos. Elige otro horario.'}, status=409)
             if (hora_obj.strftime('%I:%M %p') not in obtener_slots_psicologo_para_dia(
                     psicologo, fecha_obj, tipo_sesion=tipo_sesion_str, modalidad=modalidad_str)
                     or Cita.objects.filter(psicologo=psicologo, fecha=fecha_obj, hora=hora_obj).exists()):
@@ -2432,11 +2444,7 @@ def subir_comprobante_transferencia_ajax(request):
         perfil = usuario.perfil
 
         # 🔥 MULTISERVICIO: psicólogo ya asignado a este servicio (idéntico a guardar_cita_ajax)
-        tratamiento = TratamientoPaciente.objects.filter(
-            paciente=usuario, tipo_servicio=tipo_sesion_str, activo=True
-        ).select_related('psicologo_asignado').first()
-
-        psicologo = tratamiento.psicologo_asignado if (tratamiento and tratamiento.psicologo_asignado) else None
+        psicologo = _psicologo_asignado_servicio(usuario, tipo_sesion_str)
 
         if psicologo and not getattr(psicologo, campo_capacidad, False):
             psicologo = None
@@ -2483,7 +2491,7 @@ def subir_comprobante_transferencia_ajax(request):
                     doctores_con_slot_valido.append(psicologo_temp.id)
 
             psicologos_libres = PerfilPsicologo.objects.filter(
-                id__in=doctores_con_slot_valido
+                id__in=doctores_con_slot_valido, esta_activo=True
             ).select_for_update().annotate(
                 carga_historica=Count('citas_agendadas', filter=~Q(citas_agendadas__estado='Cancelada'))
             )
@@ -4823,15 +4831,7 @@ def admin_disponibilidad_ajax(request):
     campo_capacidad = CAPACIDAD_POR_TIPO_SESION.get(tipo_sesion, 'atiende_individual')
 
     # 🔥 MULTISERVICIO: Buscamos si ya tiene psicólogo para esta modalidad en TratamientoPaciente
-    tratamiento = TratamientoPaciente.objects.filter(
-        paciente=paciente, tipo_servicio=tipo_sesion, activo=True
-    ).select_related('psicologo_asignado__usuario').first()
-
-    psicologo_asignado = tratamiento.psicologo_asignado if (tratamiento and tratamiento.psicologo_asignado) else None
-
-    if not psicologo_asignado and perfil_paciente.psicologo_asignado:
-        if getattr(perfil_paciente.psicologo_asignado, campo_capacidad, False):
-            psicologo_asignado = perfil_paciente.psicologo_asignado
+    psicologo_asignado = _psicologo_asignado_servicio(paciente, tipo_sesion)
 
     if psicologo_asignado and getattr(psicologo_asignado, campo_capacidad, False) and psicologo_atiende_modalidad(psicologo_asignado, modalidad):
         dias_json = obtener_slots_psicologo(psicologo_asignado, hoy, fecha_limite, tipo_sesion=tipo_sesion, modalidad=modalidad)
@@ -4907,11 +4907,7 @@ def admin_guardar_cita_ajax(request, recepcion=False):
         hora_obj = parsear_hora_flexible(hora_str)
 
         # 🔥 MULTISERVICIO: Buscamos psicólogo asignado a este servicio específico
-        tratamiento = TratamientoPaciente.objects.filter(
-            paciente=paciente_user, tipo_servicio=tipo_sesion_str, activo=True
-        ).select_related('psicologo_asignado').first()
-
-        psicologo = tratamiento.psicologo_asignado if (tratamiento and tratamiento.psicologo_asignado) else None
+        psicologo = _psicologo_asignado_servicio(paciente_user, tipo_sesion_str)
 
         if psicologo and not getattr(psicologo, campo_capacidad, False):
             psicologo = None
@@ -4961,7 +4957,7 @@ def admin_guardar_cita_ajax(request, recepcion=False):
                     doctores_con_slot_valido.append(psicologo_temp.id)
 
             psicologos_libres = PerfilPsicologo.objects.filter(
-                id__in=doctores_con_slot_valido
+                id__in=doctores_con_slot_valido, esta_activo=True
             ).select_for_update().annotate(
                 carga_historica=Count('citas_agendadas', filter=~Q(citas_agendadas__estado='Cancelada'))
             )
