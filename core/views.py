@@ -1516,6 +1516,10 @@ def guardar_consentimiento_ajax(request):
     nombre_firmante = request.POST.get('nombre_firmante', '').strip()
     acepta_telepsicologia = request.POST.get('acepta_telepsicologia', '').lower() in ['true', '1', 'yes']
     declaracion_consentimiento = request.POST.get('declaracion_consentimiento', '').lower() in ['true', '1', 'yes']
+    # HOPE firma el nuevo Word; paneles anteriores conservan su texto y versión.
+    version_documento = request.POST.get('version_documento', '1.0')
+    if version_documento not in ('1.0', '2.0'):
+        return JsonResponse({'status': 'error', 'message': 'Actualiza la página para leer la versión vigente del consentimiento.'}, status=400)
 
     if not acepta_telepsicologia or not declaracion_consentimiento:
         return JsonResponse({'status': 'error', 'message': 'Confirma ambas declaraciones del consentimiento.'}, status=400)
@@ -1553,7 +1557,7 @@ def guardar_consentimiento_ajax(request):
                 firma_base64=firma_base64,
                 ip_registro=ip,
                 user_agent=user_agent[:500] if user_agent else '',
-                version="1.0"
+                version=version_documento
             )
 
             # Generar PDF oficial

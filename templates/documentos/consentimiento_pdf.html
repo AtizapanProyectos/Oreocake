@@ -162,6 +162,11 @@
     .page-break {
       page-break-before: always;
     }
+    {% if consentimiento.version == '2.0' %}
+    body { font-size: 10.5pt; line-height: 1.45; }
+    h2.section-title { font-size: 10.5pt; break-after: avoid; }
+    li { break-inside: avoid; }
+    {% endif %}
   </style>
 </head>
 <body>
@@ -182,6 +187,9 @@
     </div>
   </div>
 
+  {% if consentimiento.version == '2.0' %}
+  {% include 'documentos/consentimiento_contenido_v2.html' %}
+  {% else %}
   <h2 class="section-title">1. Objetivo del Documento</h2>
   <p>El presente consentimiento informado tiene como finalidad brindar información clara sobre las características, alcances, beneficios, riesgos, derechos y responsabilidades relacionadas con el proceso de atención psicológica.</p>
   <p>La firma de este documento indica que el consultante ha recibido información suficiente sobre el servicio y acepta participar de manera voluntaria en el proceso terapéutico.</p>
@@ -241,6 +249,8 @@
     <li>Comprendo los alcances y límites de la confidencialidad, así como los beneficios y riesgos potenciales del proceso.</li>
     <li>Acepto participar voluntariamente en el proceso de atención psicológica en Espacio HOPE.</li>
   </ul>
+
+  {% endif %}
 
   <!-- BLOQUE DE FIRMA DIGITAL -->
   <div class="signature-card">
