@@ -1,82 +1,25 @@
+{% load hope_assets %}
 {% include 'includes/donaciones_runtime.html' %}
-<dialog id="donar-terapia-confirmacion" aria-labelledby="titulo-donar-terapia">
+<link rel="stylesheet" href="{% versioned_static 'css/invitacion_donacion.css' %}">
+<dialog id="donar-terapia-confirmacion" aria-labelledby="titulo-donar-terapia" aria-describedby="descripcion-donar-terapia">
     <form method="dialog" class="donacion-cerrar">
         <button type="submit" aria-label="Cerrar invitación" autofocus>×</button>
     </form>
-    <span class="donacion-icono" aria-hidden="true"><i class="fas fa-hand-holding-heart"></i></span>
-    <h2 id="titulo-donar-terapia">Ayuda a HOPE: Dona una terapia para otra persona</h2>
-    <p>Con un aporte voluntario de <strong>$100 MXN</strong>, ayudas a que una persona en situación de vulnerabilidad reciba una sesión de apoyo psicológico.</p>
+    <h2 id="titulo-donar-terapia">Legado de Esperanza</h2>
+    <p id="descripcion-donar-terapia">Dona una terapia a una persona.<br>Apoya su tratamiento psicológico.</p>
+    <div class="donacion-corazon" aria-hidden="true">🤍</div>
+    <div class="donacion-cantidades" role="group" aria-label="Elige tu aportación en pesos mexicanos">
+        <button type="button" data-monto="100" aria-pressed="false">$100</button>
+        <button type="button" data-monto="400" aria-pressed="true">$400</button>
+        <button type="button" data-monto="1200" aria-pressed="false">$1,200</button>
+        <button type="button" data-monto="7200" aria-pressed="false">$7,200</button>
+        <button type="button" data-monto="14500" aria-pressed="false">$14,500</button>
+        <button type="button" data-monto="" aria-pressed="false">Otro</button>
+    </div>
+    <label class="donacion-label" for="donar-terapia-monto">Importe voluntario en MXN</label>
+    <input id="donar-terapia-monto" type="number" inputmode="decimal" min="0.01" max="99999999.99" step="0.01" value="400" placeholder="Ingresa un monto" aria-describedby="donar-terapia-impacto">
+    <p id="donar-terapia-impacto">“Dona un mes de terapia.”</p>
     <div id="paypal-donar-terapia"></div>
     <p id="estado-donar-terapia" role="status"></p>
 </dialog>
-<style>
-    #donar-terapia-confirmacion {
-        width: min(450px, calc(100% - 32px)); max-height: 90vh; box-sizing: border-box;
-        margin: auto; padding: clamp(24px, 6vw, 38px); border: 1px solid #e9dcfb; border-radius: 24px;
-        background: #fff; color: var(--text-main); box-shadow: 0 20px 60px #39265b55;
-    }
-    #donar-terapia-confirmacion::backdrop { background: #21152b99; }
-    #donar-terapia-confirmacion h2 { font: 800 1.65rem/1.2 var(--font-headings); margin: 12px 0; }
-    #donar-terapia-confirmacion p { color: var(--text-muted); line-height: 1.55; margin: 0 0 16px; }
-    #donar-terapia-confirmacion p:empty { margin: 0; }
-    .donacion-cerrar { display: flex; justify-content: flex-end; }
-    .donacion-cerrar button {
-        width: 42px; height: 42px; border: 0; border-radius: 50%;
-        background: #f3edf9; color: #4a3277; font-size: 1.5rem; cursor: pointer;
-    }
-    .donacion-icono {
-        display: inline-grid; place-items: center; width: 48px; height: 48px;
-        border-radius: 14px; background: #f3edf9; color: #5a3fa3; font-size: 1.3rem;
-    }
-</style>
-<script>
-document.getElementById('donar-terapia-confirmacion').addEventListener('close', () => {
-    document.querySelector('#alerta-exito-cita button')?.focus();
-});
-
-async function mostrarDonacionTerapia(citaId) {
-    const seccion = document.getElementById('donar-terapia-confirmacion');
-    if (!citaId || seccion.dataset.cita === String(citaId)) return;
-    const clave = 'hope.donacion.mostrada.' + citaId;
-    try {
-        if (sessionStorage.getItem(clave)) return;
-        sessionStorage.setItem(clave, '1');
-    } catch (error) {
-        // El modal sigue disponible cuando el navegador bloquea el almacenamiento.
-    }
-    seccion.dataset.cita = citaId;
-    seccion.showModal();
-    if (seccion.dataset.paypalInicializado) {
-        document.getElementById('paypal-donar-terapia').hidden = false;
-        await HopeDonaciones.refrescar(document.getElementById('paypal-donar-terapia'));
-        return;
-    }
-    seccion.dataset.paypalInicializado = '1';
-
-    const contenedor = document.getElementById('paypal-donar-terapia');
-    const estado = document.getElementById('estado-donar-terapia');
-    const errorPayPal = 'PayPal no está disponible para la donación en este momento.';
-
-    try {
-        const botones = window.paypal.Buttons(HopeDonaciones.opciones({
-            origen: 'post_cita', contenedor, estado,
-            citaId: () => seccion.dataset.cita,
-            monto: () => '100.00',
-            fundingSource: window.paypal.FUNDING.PAYPAL,
-            style: {label:'donate', shape:'pill'},
-            alCompletar: () => {
-                contenedor.hidden = true;
-                estado.textContent = 'Gracias por donar una terapia y ayudar a otra persona.';
-            }
-        }));
-
-        if (botones.isEligible()) {
-            await botones.render(contenedor);
-        } else {
-            estado.textContent = errorPayPal;
-        }
-    } catch (error) {
-        estado.textContent = errorPayPal;
-    }
-}
-</script>
+<script src="{% versioned_static 'js/invitacion_donacion.js' %}" defer></script>

@@ -124,11 +124,14 @@ test('cancelar antes de captura no registra una donación completada',async()=>{
   assert.equal(srv.donacion.estado,'Cancelada');assert.equal(srv.capturas,0);assert.equal(ui.exitos,0);
 });
 
-test('la invitación conserva el origen y la cita y evita doble clic',async()=>{
-  const srv=servidor(),ui=navegador(srv,{origen:'post_cita',cita:'42',monto:'100'});
+test('la invitación admite monto libre, conserva la cita y evita doble clic',async()=>{
+  const srv=servidor(),ui=navegador(srv,{origen:'post_cita',cita:'42',monto:'235.50'});
   await ui.opts.onInit({},srv.actions);
   assert.equal(await ui.opts.onClick({},srv.actions),true);
   assert.equal(await ui.opts.onClick({},srv.actions),false);
   await ui.opts.createOrder({},srv.actions);
-  assert.equal(srv.donacion.origen,'post_cita');assert.equal(srv.donacion.cita_id,'42');assert.equal(srv.donacion.monto,'100.00');
+  assert.equal(srv.donacion.origen,'post_cita');assert.equal(srv.donacion.cita_id,'42');assert.equal(srv.donacion.monto,'235.50');
+  await ui.opts.onApprove({orderID:'ORDEN123'},srv.actions);
+  assert.equal(srv.donacion.estado,'Completada');assert.equal(srv.capturas,1);
+  assert.equal(srv.payload.purchase_units[0].amount.value,'235.50');
 });

@@ -70,13 +70,16 @@ class DonacionesTests(TestCase):
         self.assertEqual(respuesta.json()['cita_id'], self.cita.pk)
         self.assertEqual(respuesta.json()['descripcion'], 'Donación de una sesión de terapia HOPE')
 
-    def test_post_cita_exige_propietario_y_monto(self):
+    def test_post_cita_exige_propietario_y_permite_importe_voluntario(self):
         self.assertEqual(self.iniciar(origen='post_cita', cita_id=self.cita.pk, monto='100').status_code, 403)
         otro = User.objects.create_user('otro')
         self.client.force_login(otro)
         self.assertEqual(self.iniciar(origen='post_cita', cita_id=self.cita.pk, monto='100').status_code, 403)
         self.client.force_login(self.usuario)
-        self.assertEqual(self.iniciar(origen='post_cita', cita_id=self.cita.pk, monto='1').status_code, 400)
+        for monto in ['100', '400', '1200', '7200', '14500', '235.50']:
+            respuesta = self.iniciar(folio=str(uuid4()), origen='post_cita', cita_id=self.cita.pk, monto=monto)
+            self.assertEqual(respuesta.status_code, 200, respuesta.content)
+            self.assertEqual(respuesta.json()['monto'], f'{Decimal(monto):.2f}')
 
     def test_importes_no_validos(self):
         for monto in ['0','-1','NaN','Infinity','1.001','100000000','texto','']:
@@ -226,7 +229,12 @@ class DonacionesTests(TestCase):
                 html = render_to_string(archivo, {'request':request,'user':self.usuario,'paypal_client_id':'prueba'})
                 self.assertIn('donaciones_registro.js?v=',html)
                 self.assertIn('donaciones_registro.css?v=',html)
-                self.assertIn('HopeDonaciones.opciones',html)
+                if archivo == 'snippets/donar_terapia_confirmacion.html':
+                    self.assertRegex(html, r'invitacion_donacion\.js\?v=[a-f0-9]{16}')
+                    self.assertRegex(html, r'invitacion_donacion\.css\?v=[a-f0-9]{16}')
+                    self.assertIn('Dona una terapia a una persona.', html)
+                else:
+                    self.assertIn('HopeDonaciones.opciones',html)
                 self.assertNotIn('actions.order.capture()',html)
                 # Los callbacks compartidos viven en el archivo versionado.
         fuente = (Path(__file__).resolve().parent.parent/'static/js/donaciones_registro.js').read_text(encoding='utf-8')

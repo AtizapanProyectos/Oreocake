@@ -33,7 +33,7 @@ fechas y datos disponibles del donante. El folio se envía a PayPal como
 
 Orígenes: inicio, página de donaciones/Legado de Esperanza, Venezuela, Colombia e
 invitación después de agendar. Esta última conserva la cita de origen, valida que
-pertenezca al usuario autenticado y mantiene el importe fijo de $100 MXN.
+pertenezca al usuario autenticado y permite elegir el importe voluntario (opciones predefinidas y monto libre).
 
 ## Flujo y recuperación
 

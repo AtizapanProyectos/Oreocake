@@ -1786,7 +1786,7 @@
               onclick="abrirRegistroDirecto('individual', 'terapia_individual'); return false;">Iniciar mi Proceso <i
                 class="fas fa-arrow-right"></i></button>
 
-            <button class="btn-outline" onclick="abrirDonacion()">Dona una terapia a alguien<i
+            <button class="btn-outline" onclick="abrirDonacion()">Dona una terapia a una persona<i
                 class="fas fa-hand-holding-heart"></i></button>
           </div>
         </div>
@@ -1800,13 +1800,13 @@
         </div>
 
         <div class="slide-content" style="position:relative;z-index:2;">
-          <h1 style="color:#fff;text-shadow:0 4px 20px rgba(0,0,0,.4)">Dona una terapia.<br>Regala <span
+          <h1 style="color:#fff;text-shadow:0 4px 20px rgba(0,0,0,.4)">Dona una terapia a una persona.<br>Regala <span
               style="color:var(--c-yellow)">esperanza.</span></h1>
           <p style="color:rgba(255,255,255,.9)">Tu donación puede acercar a una persona al apoyo psicológico que necesita.
             Ayúdanos a acompañar más historias y acercar la terapia a quien la necesita.</p>
           <div class="hero-buttons">
             <button class="btn-primary" style="background:var(--c-teal);box-shadow:0 15px 30px rgba(37,184,184,.3)"
-              onclick="abrirDonacion()">Dona una terapia <i class="fas fa-hand-holding-heart"></i></button>
+              onclick="abrirDonacion()">Dona una terapia a una persona <i class="fas fa-hand-holding-heart"></i></button>
           </div>
         </div>
       </div>
@@ -2148,7 +2148,7 @@
       <button class="modal-close" onclick="cerrarModal('modalDonacion')"><i class="fas fa-times"></i></button>
       <h2 style="font-family:var(--font-h);font-size:2.8rem;color:var(--c-dark);margin-bottom:10px">Legado de Esperanza
       </h2>
-      <p style="color:var(--text-muted);margin-bottom:25px">Apoya el tratamiento psicológico de un joven.</p>
+      <p style="color:var(--text-muted);margin-bottom:25px">Dona una terapia a una persona. Apoya su tratamiento psicológico.</p>
       <div id="donEmoji" class="emoji-reaction">🤍</div>
       <div class="donation-chips">
         <div class="chip" onclick="selectAmount(100,this)">$100</div>
@@ -3181,7 +3181,7 @@
     const donEmoji = document.getElementById('donEmoji');
 
     const IMPACT_MAP = [
-      [100, '"Dona una terapia."', '🤍'],
+      [100, '"Dona una terapia a una persona."', '🤍'],
       [400, '"Dona un mes de terapia."', '😊'],
       [1200, '"Terapia para 1 persona."', '💖'],
       [7200, '"½ beca de terapia."', '🌟'],

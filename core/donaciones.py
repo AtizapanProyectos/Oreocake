@@ -123,8 +123,6 @@ def iniciar(request):
                 cita = Cita.objects.get(pk=int(request.POST.get('cita_id')), paciente=request.user)
             except (Cita.DoesNotExist, ValueError, TypeError, OverflowError):
                 raise ErrorDonacion('La cita no corresponde a tu cuenta.', 403)
-            if monto != Decimal('100.00'):
-                raise ErrorDonacion('La invitación después de agendar corresponde a $100 MXN.')
         elif request.POST.get('cita_id'):
             raise ErrorDonacion('Esta donación no necesita vincular una cita.')
         existente = Donacion.objects.filter(folio=folio).first()
