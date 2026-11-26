@@ -171,6 +171,39 @@ class OrquestadorTests(TestCase):
         self.assertEqual(response.json()['total'],1)
         self.assertEqual(self.client.get(reverse('orquestacion_datos'),{'desde':'bad'}).status_code,400)
 
+    def test_liga_ipp_solo_paciente_y_admite_cita_completada_sin_meet(self):
+        from .views import FORMULARIO_ORGANICO_PREGUNTAS
+        self.cita.estado = 'Completada'
+        self.cita.save(update_fields=['estado'])
+        detalle = reverse('orquestacion_historial', args=[self.cita.pk])
+        ipp = self.client.get(detalle).json()['ipp']
+        self.assertFalse(ipp['respondido'])
+        url = ipp['url']
+        self.assertEqual(self.client.get(url).status_code, 404)
+        invitado = Client()
+        self.assertRedirects(invitado.get(url), reverse('modulo_informativo'), fetch_redirect_response=False)
+        self.assertEqual(invitado.session['ipp_compartido_pendiente'], self.cita.pk)
+        self.pac.set_password('clave-de-prueba')
+        self.pac.save(update_fields=['password'])
+        login = invitado.post(reverse('login_usuario'), {'email':self.pac.email, 'password':'clave-de-prueba'})
+        self.assertEqual(login.json()['redirect_url'], url)
+        self.assertContains(invitado.get(url), 'Guardar IPP de la sesión')
+        respuestas = {p['id']: 'siempre' for p in FORMULARIO_ORGANICO_PREGUNTAS}
+        respuesta = invitado.post(url, {**respuestas, 'sat_1': 2, 'sat_2': 3, 'sat_3': 4})
+        self.assertEqual(respuesta.json()['status'], 'success')
+        self.assertTrue(self.client.get(detalle).json()['ipp']['respondido'])
+
+    def test_historico_ambiguo_valida_ipp_y_bloquea_en_correo(self):
+        self.nota(); self.ipp()
+        self.cita.reporte_enviado = True
+        self.cita.save(update_fields=['reporte_enviado'])
+        motor.solicitar(self.cita, self.admin)
+        with self.mocks(), patch('core.views._enviar_email_reporte_paciente_con_pdf') as enviar:
+            motor.correr()
+        self.assertEqual(TrabajoProceso.objects.get(cita=self.cita, etapa='ipp').estado, 'completado')
+        self.assertEqual(TrabajoProceso.objects.get(cita=self.cita, etapa='correo_paciente').error, 'historico_ambiguo')
+        enviar.assert_not_called()
+
     def test_detalle_refleja_estado_del_intento_y_la_incidencia(self):
         motor.registrar(self.cita)
         trabajo = TrabajoProceso.objects.get(cita=self.cita, etapa='meet')

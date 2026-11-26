@@ -1258,6 +1258,12 @@ def login_usuario(request):
     ).exists():
         redirect_url = reverse('formulario_previo_meet', args=[cita_pendiente])
 
+    ipp_compartido = request.session.pop('ipp_compartido_pendiente', None)
+    if ipp_compartido and Cita.objects.filter(
+        pk=ipp_compartido, paciente=user, estado__in=('Confirmada', 'Completada'),
+    ).exists():
+        redirect_url = reverse('ipp_cita_paciente', args=[ipp_compartido])
+
     return JsonResponse({'status': 'success', 'redirect_url': redirect_url})
 
 
@@ -5326,11 +5332,19 @@ def _enviar_correo_ipp_async(psicologo_email, paciente_nombre, ipt_actual, ipt_a
         import logging
         logging.getLogger(__name__).error(f"Error enviando correo IPP al doctor: {e}")
 
-def formulario_previo_meet(request, cita_id):
+def formulario_previo_meet(request, cita_id, solo_ipp=False):
 
+    if solo_ipp and not request.user.is_authenticated:
+        request.session['ipp_compartido_pendiente'] = cita_id
+        return redirect('modulo_informativo')
+
+    estados = Q(estado='Confirmada') | Q(modalidad='Presencial', estado='Completada')
+    citas = Cita.objects.select_related('psicologo__usuario', 'paciente')
+    if solo_ipp:
+        citas = citas.filter(paciente=request.user)
+        estados = Q(estado__in=('Confirmada', 'Completada'))
     cita = get_object_or_404(
-        Cita.objects.select_related('psicologo__usuario', 'paciente'),
-        Q(estado='Confirmada') | Q(modalidad='Presencial', estado='Completada'),
+        citas, estados,
         id=cita_id,
     )
     paciente = cita.paciente
@@ -5344,10 +5358,10 @@ def formulario_previo_meet(request, cita_id):
     if request.user.is_authenticated and request.user.id != cita.paciente_id and not es_doctor_visita:
         raise Http404
 
-    meet_url = '' if presencial else (cita.enlace_meet or '').strip()
+    meet_url = '' if presencial or solo_ipp else (cita.enlace_meet or '').strip()
     if meet_url and not meet_url.startswith(('http://', 'https://')):
         meet_url = 'https://' + meet_url
-    if not presencial:
+    if not presencial and not solo_ipp:
         if not meet_url:
             messages.error(request, 'Aún no se ha generado el enlace de tu sesión. Contáctanos por WhatsApp.')
             return redirect('panel_generico')
@@ -5364,6 +5378,11 @@ def formulario_previo_meet(request, cita_id):
         destino_presencial = reverse('panel_generico')
 
     def ya_respondio():
+        if solo_ipp:
+            return (
+                EvaluacionSesionPaciente.objects.filter(cita=cita, paciente=paciente).exclude(respuestas_ipp={}).exists()
+                or RespuestaFormularioOrganica.objects.filter(cita=cita, paciente=paciente).exclude(respuestas={}).exists()
+            )
         return (
             EvaluacionSesionPaciente.objects.filter(cita=cita).exists() or
             RespuestaFormularioOrganica.objects.filter(paciente=paciente, cita=cita).exists()
@@ -5411,7 +5430,9 @@ def formulario_previo_meet(request, cita_id):
         try:
             with transaction.atomic():
                 bloqueada = Cita.objects.select_for_update().get(id=cita.id)
-                if bloqueada.estado != 'Confirmada' and not (presencial and bloqueada.estado == 'Completada'):
+                estado_valido = bloqueada.estado == 'Confirmada' or (
+                    (presencial or solo_ipp) and bloqueada.estado == 'Completada')
+                if not estado_valido or (solo_ipp and bloqueada.paciente_id != request.user.pk):
                     return JsonResponse({'status': 'error', 'message': 'La cita ya no está disponible.'}, status=409)
                 if ya_respondio():
                     return respuesta_guardada()
@@ -5421,7 +5442,9 @@ def formulario_previo_meet(request, cita_id):
                 ).exclude(cita=cita).order_by('-fecha_respuesta').first()
 
                 # Guardado en RespuestaFormularioOrganica para retrocompatibilidad
-                RespuestaFormularioOrganica.objects.get_or_create(
+                guardar_legacy = (RespuestaFormularioOrganica.objects.update_or_create if solo_ipp
+                                  else RespuestaFormularioOrganica.objects.get_or_create)
+                guardar_legacy(
                     paciente=paciente,
                     cita=cita,
                     defaults={'respuestas': respuestas_dict, 'puntaje': puntaje}
@@ -5474,6 +5497,7 @@ def formulario_previo_meet(request, cita_id):
         'escala': ESCALA_IPP,
         'modo_doctor': es_doctor_visita,
         'presencial': presencial,
+        'solo_ipp': solo_ipp,
         'respondido': respondido,
         'destino_presencial': destino_presencial,
         'es_tectum': getattr(cita, 'es_tectum', False) or 'tectuminhause' in request.get_host().lower() or 'tectum' in request.get_host().lower(),

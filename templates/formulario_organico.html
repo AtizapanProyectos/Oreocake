@@ -237,7 +237,11 @@
 <div class="fo-wrapper">
     <!-- ENCABEZADO CÁLIDO Y HUMANO -->
     <div class="fo-header">
-        {% if modo_doctor %}
+        {% if solo_ipp %}
+        <i class="fas fa-heart-pulse"></i>
+        <h1>Cuestionario de tu sesión</h1>
+        <p>Responde con calma las preguntas de seguimiento de esta cita.</p>
+        {% elif modo_doctor %}
         <i class="fas fa-clipboard-check"></i>
         <h1>Contestar IPP de la sesión</h1>
         <p>Registro previo de <strong>{{ cita.paciente.first_name|title }} {{ cita.paciente.last_name|title }}</strong>
@@ -426,7 +430,7 @@
         </div>
 
         <button type="submit" class="fo-btn-enviar" id="fo-btn-submit">
-            {% if presencial %}Guardar IPP de la sesión{% else %}Guardar y entrar a mi sesión{% endif %} <i class="fas fa-arrow-right"></i>
+            {% if presencial or solo_ipp %}Guardar IPP de la sesión{% else %}Guardar y entrar a mi sesión{% endif %} <i class="fas fa-arrow-right"></i>
         </button>
 
         <!-- Tarjeta de confirmación y botón directo en la misma pestaña -->
@@ -435,7 +439,7 @@
                 <i class="fas fa-check"></i>
             </div>
             <h3 style="font-family: var(--font-headings); font-size: 1.25rem; font-weight: 800; color: #166534; margin: 0 0 6px;">¡Respuestas guardadas!</h3>
-            {% if presencial %}
+            {% if presencial or solo_ipp %}
             <p>El IPP de esta sesión quedó registrado.</p>
             <a id="fo-direct-link" class="fo-btn-enviar" href="{{ destino_presencial }}">Volver a mi panel</a>
             {% else %}
@@ -517,7 +521,7 @@ document.getElementById('form-organico').addEventListener('submit', function (e)
                 successBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }
 
-            {% if presencial %}
+            {% if presencial or solo_ipp %}
             btn.hidden = true;
             this.querySelectorAll('input, textarea').forEach(campo => { campo.disabled = true; });
             {% else %}

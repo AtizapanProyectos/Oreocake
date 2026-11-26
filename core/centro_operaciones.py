@@ -5,8 +5,9 @@ from django.db.models.functions import Coalesce
 from django.http import JsonResponse
 from django.shortcuts import render, get_object_or_404
 from django.utils import timezone
+from django.urls import reverse
 from django.views.decorators.http import require_POST
-from .flujo_clinico import solo_admin
+from .flujo_clinico import solo_admin, _ipp
 from .models import Cita, TrabajoProceso, EjecucionProceso, ControlOrquestador, LogEnvioReporteIPP, ReporteClinicoPDF
 from . import orquestador as motor
 
@@ -144,10 +145,11 @@ def datos(request):
 
 @solo_admin
 def historial(request, cita_id):
-    cita = get_object_or_404(Cita.objects.select_related('paciente', 'psicologo__usuario').prefetch_related(
-        Prefetch('trabajos_proceso', queryset=TrabajoProceso.objects.defer('resultado'))), pk=cita_id)
+    cita = get_object_or_404(Cita.objects.select_related('paciente', 'psicologo__usuario', 'evaluacion_servicio').prefetch_related(
+        'respuestas_formulario_organico', Prefetch('trabajos_proceso', queryset=TrabajoProceso.objects.defer('resultado'))), pk=cita_id)
     eventos = EjecucionProceso.objects.filter(trabajo__cita_id=cita_id).select_related('responsable','trabajo').order_by('-inicio')[:100]
-    return JsonResponse({'fila':fila(cita), 'eventos':[{'etapa': ETIQUETAS[e.trabajo.etapa], 'estado':LABELS[e.estado], 'error':e.error,
+    ipp = {'respondido': bool(_ipp(cita)), 'url': reverse('ipp_cita_paciente', args=[cita.pk]) if motor.elegible(cita) else None}
+    return JsonResponse({'fila':fila(cita), 'ipp':ipp, 'eventos':[{'etapa': ETIQUETAS[e.trabajo.etapa], 'estado':LABELS[e.estado], 'error':e.error,
         'inicio':e.inicio.isoformat(), 'duracion_ms':e.duracion_ms,
         'responsable':e.responsable.get_username() if e.responsable else 'Programación automática'} for e in eventos]})
 

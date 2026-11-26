@@ -119,8 +119,6 @@ def ejecutar(trabajo, token):
     if flujo.DESTINATARIOS.issubset(enviados):
         Cita.objects.filter(pk=cita.pk).update(reporte_enviado=True)
         return {'omitido': 'Entregas acreditadas'}
-    if cita.reporte_enviado and not enviados:
-        raise Incidencia('historico_ambiguo', 'Marca histórica sin evidencia de entrega; revisar antes de enviar.', 'revision_manual')
     if etapa in ETAPAS[:4] and nota_valida(cita):
         return {'omitido': 'Nota existente conservada'}
     if etapa in ETAPAS[:4] and not nota_valida(cita):
@@ -177,6 +175,8 @@ def ejecutar(trabajo, token):
         raise Incidencia('ipp', 'Falta el IPP de esta sesión.', 'espera_dependencia')
     if etapa == 'ipp':
         return {'validado': True}
+    if etapa.startswith('correo_') and cita.reporte_enviado and not enviados:
+        raise Incidencia('historico_ambiguo', 'Marca histórica sin evidencia de entrega; revisar antes de enviar.', 'revision_manual')
     huella = hashlib.sha256(json.dumps({c:getattr(nota,c) for c in flujo.CAMPOS}, sort_keys=True).encode()).hexdigest()
     destinatario = etapa.split('_', 1)[1]
     if destinatario in enviados:

@@ -29,9 +29,12 @@
  <dialog id="oc-detail"><header><h2 id="oc-detail-title">Detalle de sesión</h2><button id="oc-close" type="button" aria-label="Cerrar detalle">Cerrar ×</button></header>
   <p id="oc-detail-status" role="status">Consultando avance…</p>
   <div class="oc-actions">
+   <button id="oc-copy-ipp" type="button" hidden>Copiar liga del IPP</button>
    <button id="oc-test-pdf" type="button">Generar PDF sin enviar</button>
    <button id="oc-test-full" type="button">Solicitar flujo completo</button>
   </div>
+  <p id="oc-ipp-status" role="status"></p>
+  <input id="oc-ipp-link" aria-label="Liga del IPP" type="text" readonly hidden>
   <p>El maestro toma la solicitud en su próximo ciclo.</p>
   <div id="oc-detail-body"></div>
  </dialog>

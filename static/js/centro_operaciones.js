@@ -80,6 +80,10 @@
    $('oc-detail-title').textContent = `Sesión #${row.id} · ${row.paciente}`;
    $('oc-detail-status').textContent = 'Consultando avance…';
    $('oc-detail-body').replaceChildren();
+   $('oc-copy-ipp').hidden = true;
+   $('oc-ipp-link').hidden = true;
+   $('oc-ipp-link').value = '';
+   $('oc-ipp-status').textContent = '';
    $('oc-test-pdf').disabled = $('oc-test-full').disabled = true;
    $('oc-detail').showModal();
    refreshDetail();
@@ -89,10 +93,20 @@
    if (!id || detailRequest === id) return;
    detailRequest = id;
    try {
-     const {fila, eventos} = await request(`${root.dataset.url}${id}/`, {cache: 'no-store'});
+     const {fila, eventos, ipp} = await request(`${root.dataset.url}${id}/`, {cache: 'no-store'});
      if (detailId !== id) return;
      $('oc-detail-status').textContent = `${fila.estado_label} · ${fila.siguiente}${fila.mensaje ? ' · ' + fila.mensaje : ''}`;
      $('oc-test-pdf').disabled = $('oc-test-full').disabled = !fila.elegible || ['procesando', 'completado'].includes(fila.estado);
+     if (ipp.url) {
+       const liga = new URL(ipp.url, window.location.origin).href;
+       const estado = ipp.respondido ? 'IPP respondido.' : 'IPP pendiente. El paciente deberá iniciar sesión para responder.';
+       if ($('oc-ipp-link').value !== liga || $('oc-copy-ipp').hidden !== ipp.respondido) {
+         $('oc-ipp-status').textContent = estado;
+       }
+       $('oc-ipp-link').value = liga;
+       $('oc-copy-ipp').hidden = ipp.respondido;
+       if (ipp.respondido) $('oc-ipp-link').hidden = true;
+     }
      const flujo = node('ol', null, 'oc-flow');
      for (const paso of fila.pasos) {
        const tarjeta = node('li', null, `oc-flow-step ${paso.estado}`);
@@ -140,6 +154,17 @@
  }catch(e){$('oc-sync').textContent='Actualización interrumpida';$('oc-message').textContent=e.message;}finally{loading=false;}}
  form.addEventListener('submit',e=>{e.preventDefault();page=1;refresh();});$('oc-prev').onclick=()=>{page--;refresh();};$('oc-next').onclick=()=>{page++;refresh();};$('oc-close').onclick=()=>$('oc-detail').close();$('oc-detail').addEventListener('close', () => { detailId = null; });
  $('oc-test-pdf').onclick = () => submit(detailId, 'pdf_psicologo');
+ $('oc-copy-ipp').onclick = async () => {
+   const campo = $('oc-ipp-link');
+   try {
+     await navigator.clipboard.writeText(campo.value);
+     $('oc-ipp-status').textContent = 'Liga copiada. Compártela con el paciente de esta cita.';
+   } catch {
+     campo.hidden = false;
+     campo.select();
+     $('oc-ipp-status').textContent = 'Selecciona y copia la liga que aparece abajo.';
+   }
+ };
  $('oc-test-full').onclick = () => {
    if (window.confirm('El flujo completo puede enviar correos reales a los destinatarios de esta cita. ¿Continuar?')) {
      submit(detailId, 'completo');
