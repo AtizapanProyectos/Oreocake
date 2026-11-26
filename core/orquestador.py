@@ -29,6 +29,15 @@ def activo():
     return getattr(settings, 'ORQUESTADOR_ACTIVO', False)
 
 
+def modo_automatico():
+    return ControlOrquestador.objects.filter(clave='modo', token='automatico').exists()
+
+
+def citas_automaticas(ahora):
+    corte = timezone.localtime(ahora - timedelta(hours=2), ZoneInfo('America/Mexico_City'))
+    return Q(fecha__lt=corte.date()) | Q(fecha=corte.date(), hora__lte=corte.time().replace(tzinfo=None))
+
+
 def inicio(cita):
     return datetime.combine(cita.fecha, cita.hora, tzinfo=ZoneInfo('America/Mexico_City'))
 
@@ -234,7 +243,9 @@ def procesar(trabajo):
     ahora = timezone.now()
     with transaction.atomic():
         trabajo = TrabajoProceso.objects.select_for_update().get(pk=trabajo.pk)
-        if not trabajo.manual or not trabajo.habilitado or trabajo.estado not in ('pendiente', 'espera_reintento', 'espera_dependencia') or trabajo.proximo_intento > ahora:
+        if not trabajo.habilitado or trabajo.estado not in ('pendiente', 'espera_reintento', 'espera_dependencia') or trabajo.proximo_intento > ahora:
+            return False
+        if not trabajo.manual and (not modo_automatico() or inicio(trabajo.cita) + timedelta(hours=2) > ahora):
             return False
         trabajo.estado, trabajo.token, trabajo.vence = 'procesando', token, ahora + timedelta(minutes=10)
         trabajo.intentos += 1
@@ -311,15 +322,23 @@ def correr(limite=25, segundos=240, cita_id=None):
         control.save()
     total, reloj = 0, time.monotonic()
     try:
+        automatico = modo_automatico()
         for viejo in TrabajoProceso.objects.filter(estado='procesando', vence__lte=ahora):
             incierto = viejo.error == 'entrega_incierta'
             recuperado = 'revision_manual' if incierto or viejo.intentos >= 5 else 'espera_reintento'
             TrabajoProceso.objects.filter(pk=viejo.pk, token=viejo.token).update(
                 estado=recuperado, proximo_intento=ahora, vence=None)
             EjecucionProceso.objects.filter(token=viejo.token, fin__isnull=True).update(fin=ahora, estado=recuperado, error='ejecucion_interrumpida')
+        if automatico and cita_id is None:
+            nuevas = Cita.objects.filter(citas_automaticas(ahora), estado__in=['Confirmada', 'Completada'],
+                trabajos_proceso__isnull=True).exclude(modalidad='Presencial', registro_llegada='No Vino')
+            for cita in nuevas.order_by('fecha', 'hora', 'pk')[:limite]:
+                registrar(cita)
         orden = Case(*[When(etapa=e, then=i) for i,e in enumerate(ETAPAS)], output_field=IntegerField())
         primera = TrabajoProceso.objects.filter(cita_id=OuterRef('cita_id'), version=1).exclude(estado='completado').annotate(orden=orden).order_by('orden').values('pk')[:1]
-        pendientes = TrabajoProceso.objects.filter(pk=Subquery(primera), habilitado=True, manual=True)
+        pendientes = TrabajoProceso.objects.filter(pk=Subquery(primera), habilitado=True)
+        if not automatico:
+            pendientes = pendientes.filter(manual=True)
         pendientes = pendientes.filter(cita__estado__in=['Confirmada','Completada']).exclude(
             cita__modalidad='Presencial', cita__registro_llegada='No Vino')
         ipp = EvaluacionSesionPaciente.objects.filter(cita_id=OuterRef('cita_id'), paciente_id=OuterRef('cita__paciente_id')).exclude(respuestas_ipp={})
@@ -333,11 +352,13 @@ def correr(limite=25, segundos=240, cita_id=None):
             Q(estado__in=['revision_manual','bloqueado'], etapa__in=ETAPAS[:4],
               cita__nota_clinica__notas_sesion__gt='', cita__nota_clinica__pendiente_revision_audio=False)).exclude(error='historico_ambiguo')
         # Ignore blocked earlier stages so they cannot starve later appointments.
-        candidatos = pendientes.filter(proximo_intento__lte=ahora).order_by('cita__fecha', 'cita__hora', 'cita_id')
+        candidatos = pendientes.filter(proximo_intento__lte=ahora).order_by('-manual', 'cita__fecha', 'cita__hora', 'cita_id')
         ids = list(candidatos.values_list('cita_id', flat=True)[:limite])
         for pk in ids:
             cita = flujo._base().get(pk=pk)
             if not elegible(cita):
+                continue
+            if not TrabajoProceso.objects.filter(cita=cita, manual=True).exists() and not modo_automatico():
                 continue
             if nota_valida(cita):
                 TrabajoProceso.objects.filter(cita=cita, etapa__in=ETAPAS[:4]).exclude(estado__in=['procesando', 'completado']).update(

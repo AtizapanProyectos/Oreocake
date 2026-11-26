@@ -2,8 +2,13 @@
 {% block title %}Centro de operaciones · HOPE{% endblock %}
 {% block extra_css %}<link rel="stylesheet" href="{% static 'css/centro_operaciones.css' %}">{% endblock %}
 {% block content %}
-<main id="operations" data-url="{% url 'orquestacion_datos' %}">
- <header class="oc-header"><div><p class="oc-eyebrow">HOPE · Modo manual</p><h1>Centro de orquestación</h1><p>Elige una cita y sigue su recorrido.</p></div><div class="oc-live"><span id="oc-sync">Conectando…</span><p id="oc-capacity">Consultando el maestro…</p></div></header>
+<main id="operations" data-url="{% url 'orquestacion_datos' %}" data-modo="{% url 'orquestacion_modo' %}">
+ <header class="oc-header"><div><h1>Centro de orquestación</h1><p id="oc-mode-description">Consultando el modo de trabajo…</p></div><div class="oc-live">
+  <label for="oc-mode">Modo del maestro</label>
+  <select id="oc-mode" disabled><option value="manual">Manual</option><option value="automatico">Automático</option></select>
+  <span id="oc-sync">Conectando…</span><p id="oc-capacity">Consultando el maestro…</p>
+ </div></header>
+ <section id="oc-deliveries" class="oc-deliveries" aria-label="Estado de las citas según los filtros"></section>
  <section id="oc-kpis" class="oc-kpis" aria-label="Indicadores de ejecuciones de hoy"></section>
  <form id="oc-filters" class="oc-filters">
   <label>Organización<select name="org"><option value="">Todas</option><option value="hope">HOPE</option><option value="tectum_inhouse">TECTUM In-House</option><option value="tectum_beneficios">TECTUM Beneficios</option></select></label>

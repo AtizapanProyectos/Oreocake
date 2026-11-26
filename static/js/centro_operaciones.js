@@ -4,9 +4,54 @@
  const $=id=>document.getElementById(id), form=$('oc-filters');
  let page=1,pages=1,busy=false,loading=false,rows=[];
  let detailId=null, detailRequest=null;
+ let modoActual = 'manual', cambiandoModo = false;
  const node=(tag,text,cls)=>{const e=document.createElement(tag);e.textContent=text??'';if(cls)e.className=cls;return e;};
  const params=()=>{const p=new URLSearchParams(new FormData(form));p.set('page',page);return p;};
  const fmt=value=>value?new Date(value).toLocaleString('es-MX',{timeZone:'America/Mexico_City'}):'Sin registro';
+ function mostrarModo(modo, activo) {
+   modoActual = modo;
+   $('oc-mode').value = modo;
+   $('oc-mode').disabled = cambiandoModo || !activo;
+   $('oc-mode-description').textContent = modo === 'automatico'
+     ? 'El maestro busca citas elegibles y prioriza tus solicitudes.'
+     : 'El maestro solo atiende las citas que solicites.';
+ }
+ function mostrarEntregas(conteo) {
+   const grupos = [
+     ['enviadas', 'Verde · Enviadas', 'Paciente y profesional tienen envío registrado'],
+     ['faltan', 'Amarillo · Pendientes', 'Queda trabajo o al menos un envío pendiente'],
+     ['problemas', 'Rojo · Con problemas', 'Hay una incidencia por resolver'],
+   ];
+   $('oc-deliveries').replaceChildren(...grupos.map(([clave, titulo, texto]) => {
+     const tarjeta = node('article', null, `oc-delivery ${clave}`);
+     tarjeta.append(node('h2', titulo), node('strong', conteo[clave]), node('p', texto));
+     return tarjeta;
+   }));
+ }
+ $('oc-mode').addEventListener('change', async () => {
+   const modo = $('oc-mode').value;
+   if (modo === 'automatico' && !window.confirm('Automático puede procesar citas pendientes y enviar correos reales. ¿Activarlo?')) {
+     $('oc-mode').value = modoActual;
+     return;
+   }
+   cambiandoModo = true;
+   $('oc-mode').disabled = true;
+   try {
+     const respuesta = await request(root.dataset.modo, {
+       method: 'POST', credentials: 'same-origin',
+       headers: {'X-CSRFToken': root.querySelector('[name=csrfmiddlewaretoken]').value},
+       body: new URLSearchParams({modo}),
+     });
+     mostrarModo(respuesta.modo, true);
+     $('oc-message').textContent = 'Modo guardado.';
+   } catch (error) {
+     $('oc-mode').value = modoActual;
+     $('oc-message').textContent = error.message;
+   } finally {
+     cambiandoModo = false;
+     $('oc-mode').disabled = false;
+   }
+ });
  async function request(url,options){const r=await fetch(url,options);if(!r.headers.get('content-type')?.includes('application/json'))throw Error('La sesión o conexión no está disponible.');const d=await r.json();if(!r.ok)throw Error(d.mensaje||'No se pudo completar la solicitud.');return d;}
  async function submit(id, etapa) {
    if (!id || busy) return;
@@ -73,6 +118,8 @@
    }
  }
  async function refresh(){if(loading)return;loading=true;try{const d=await request(root.dataset.url+'?'+params());rows=d.filas;pages=d.paginas;page=d.pagina;$('oc-sync').textContent=`Actualizado ${fmt(d.actualizado)}`;$('oc-capacity').textContent=d.activo?`Capacidad: ${d.capacidad} · ${d.ejecucion_activa?'Ejecución en curso':'En espera · último intento: '+fmt(d.ultimo_intento)}`:'Motor desactivado';$('oc-total').textContent=`· ${d.total}`;$('oc-page').textContent=`Página ${page} de ${pages}`;$('oc-prev').disabled=page<=1;$('oc-next').disabled=page>=pages;
+ if (!cambiandoModo) mostrarModo(d.modo, d.activo);
+ mostrarEntregas(d.resumen_citas);
  const k=d.kpi;$('oc-kpis').replaceChildren();[['Etapas terminadas hoy',k.ejecuciones],['Etapas exitosas',k.exitos],['Intentos con incidencia',k.incidencias],['Tasa de éxito',k.tasa===null?'Sin datos':k.tasa+'%'],['Duración promedio',k.duracion===null?'Sin datos':(k.duracion/1000).toFixed(1)+' s'],['Resolución promedio',k.resolucion===null?'Sin datos':(k.resolucion/60000).toFixed(1)+' min']].forEach(([label,value])=>{const a=node('article');a.append(node('small',label),node('strong',value));$('oc-kpis').append(a);});
  const tarjetas = rows.map(cita => {
    const tarjeta = node('article', null, 'oc-card');

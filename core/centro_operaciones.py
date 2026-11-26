@@ -7,7 +7,7 @@ from django.shortcuts import render, get_object_or_404
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 from .flujo_clinico import solo_admin
-from .models import Cita, TrabajoProceso, EjecucionProceso, ControlOrquestador
+from .models import Cita, TrabajoProceso, EjecucionProceso, ControlOrquestador, LogEnvioReporteIPP, ReporteClinicoPDF
 from . import orquestador as motor
 
 LABELS = {'sin_solicitud': 'Sin solicitud', 'pendiente': 'Solicitud registrada',
@@ -39,7 +39,8 @@ def filtrar(params):
     abiertos = TrabajoProceso.objects.filter(cita_id=OuterRef('pk')).exclude(estado='completado').annotate(orden=orden).order_by('orden')
     qs = qs.annotate(estado_proceso=Subquery(abiertos.values('estado')[:1]),
         tiene_trabajos=Exists(TrabajoProceso.objects.filter(cita_id=OuterRef('pk'))),
-        manual_proceso=Subquery(abiertos.values('manual')[:1]))
+        manual_proceso=Subquery(abiertos.values('manual')[:1]),
+        error_proceso=Subquery(abiertos.values('error')[:1]))
     qs = qs.annotate(estado_visual=Case(
         When(modalidad='Presencial', registro_llegada='No Vino', then=Value('revision_manual')),
         When(tiene_trabajos=True, estado_proceso__isnull=True, then=Value('completado')),
@@ -116,10 +117,22 @@ def datos(request):
         medidas = ejecuciones.aggregate(duracion=Avg('duracion_ms'), resolucion=Avg('resolucion_ms'))
         control = ControlOrquestador.objects.filter(clave='maestro', vence__gt=timezone.now()).exists()
         ultimo_intento = EjecucionProceso.objects.order_by('-pk').values_list('inicio', flat=True).first()
+        entregado = {}
+        for tipo in ('paciente', 'psicologo'):
+            reportes = ReporteClinicoPDF.objects.filter(cita_id=OuterRef('pk'), tipo_destinatario=tipo, correo_enviado=True)
+            logs = LogEnvioReporteIPP.objects.filter(cita_id=OuterRef('pk'), tipo_destinatario=tipo, resultado='Exitoso')
+            entregado[tipo] = Exists(reportes) | Exists(logs)
+        conteo = qs.annotate(envio_paciente=entregado['paciente'], envio_psicologo=entregado['psicologo'])
+        enviada = Q(envio_paciente=True, envio_psicologo=True)
+        problema = (Q(estado_visual__in=['bloqueado', 'revision_manual', 'espera_reintento']) |
+                    (Q(estado_visual='espera_dependencia') & ~Q(error_proceso__in=['', 'pausa_manual'])))
+        estados = conteo.aggregate(enviadas=Count('pk', filter=enviada), problemas=Count('pk', filter=~enviada & problema), total=Count('pk'))
+        estados['faltan'] = estados['total'] - estados['enviadas'] - estados['problemas']
         return JsonResponse({'filas':[fila(c) for c in pagina], 'total':pagina.paginator.count, 'pagina':pagina.number,
             'paginas':pagina.paginator.num_pages, 'actualizado':timezone.localtime().isoformat(), 'activo':motor.activo(),
             'capacidad':1, 'ejecucion_activa':control,
             'ultimo_intento':ultimo_intento,
+            'modo':'automatico' if motor.modo_automatico() else 'manual', 'resumen_citas':estados,
             'kpi': {'ejecuciones':terminadas, 'exitos':exitos, 'incidencias':terminadas-exitos,
                 'tasa':round(100*exitos/terminadas,1) if terminadas else None, **medidas},
             'servicios':list(qs.values('tipo_sesion').annotate(total=Count('pk')).order_by('-total')),
@@ -137,6 +150,18 @@ def historial(request, cita_id):
     return JsonResponse({'fila':fila(cita), 'eventos':[{'etapa': ETIQUETAS[e.trabajo.etapa], 'estado':LABELS[e.estado], 'error':e.error,
         'inicio':e.inicio.isoformat(), 'duracion_ms':e.duracion_ms,
         'responsable':e.responsable.get_username() if e.responsable else 'Programación automática'} for e in eventos]})
+
+
+@solo_admin
+@require_POST
+def cambiar_modo(request):
+    modo = request.POST.get('modo')
+    if modo not in ('manual', 'automatico'):
+        return JsonResponse({'mensaje': 'Modo inválido.'}, status=400)
+    if not motor.activo():
+        return JsonResponse({'mensaje': 'El motor está desactivado.'}, status=409)
+    ControlOrquestador.objects.update_or_create(clave='modo', defaults={'token': modo})
+    return JsonResponse({'modo': modo})
 
 
 @solo_admin

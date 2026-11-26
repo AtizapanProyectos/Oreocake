@@ -269,6 +269,33 @@ class OrquestadorTests(TestCase):
         self.assertFalse(EjecucionProceso.objects.filter(trabajo__cita=self.cita).exists())
         self.assertEqual(self.client.post(reverse('api_lote_automatizacion')).status_code, 400)
 
+    def test_selector_persiste_y_automatico_excluye_cita_futura(self):
+        futura = Cita.objects.create(paciente=self.pac, psicologo=self.doc,
+            fecha=timezone.localdate()+timedelta(days=1), hora=time(11))
+        self.nota(); self.ipp()
+        self.nota(futura); self.ipp(futura)
+        url = reverse('orquestacion_modo')
+        self.assertFalse(motor.modo_automatico())
+        self.assertEqual(self.client.post(url, {'modo':'automatico'}).json()['modo'], 'automatico')
+        with self.mocks(): motor.correr()
+        self.assertEqual(ReporteClinicoPDF.objects.filter(cita=self.cita).count(), 2)
+        self.assertFalse(TrabajoProceso.objects.filter(cita=futura).exists())
+        self.assertEqual(self.client.post(url, {'modo':'manual'}).status_code, 200)
+        self.assertFalse(motor.modo_automatico())
+
+    def test_resumen_separa_entregas_parciales_y_problemas(self):
+        pendiente = Cita.objects.create(paciente=self.pac, psicologo=self.doc,
+            fecha=self.cita.fecha, hora=time(11))
+        bloqueada = Cita.objects.create(paciente=self.pac, psicologo=self.doc,
+            fecha=self.cita.fecha, hora=time(12))
+        motor.solicitar(bloqueada, self.admin)
+        TrabajoProceso.objects.filter(cita=bloqueada, etapa='meet').update(estado='bloqueado')
+        for cita, tipo in ((self.cita, 'paciente'), (self.cita, 'psicologo'), (pendiente, 'paciente')):
+            ReporteClinicoPDF.objects.create(cita=cita, paciente=self.pac, psicologo=self.doc,
+                tipo_destinatario=tipo, correo_enviado=True)
+        datos = self.client.get(reverse('orquestacion_datos')).json()
+        self.assertEqual(datos['resumen_citas'], {'enviadas':1, 'faltan':1, 'problemas':1, 'total':3})
+
     def test_cien_citas_completas_en_cuatro_lotes_sin_duplicar(self):
         citas=[self.cita]
         for i in range(99):

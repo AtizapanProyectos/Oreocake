@@ -25,3 +25,13 @@
 .oc-flow-step:is(.bloqueado,.revision_manual,.espera_reintento) .oc-flow-dot {background:#aa422b; color:white;}
 @keyframes oc-pulso {50% {box-shadow:0 0 0 7px #237e7045;}}
 @media (prefers-reduced-motion: reduce) {.oc-flow-dot,.oc-card {animation:none!important; transition:none!important;}}
+.oc-deliveries {display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; margin-bottom:24px;}
+.oc-delivery {border:1px solid currentColor; border-radius:22px; padding:19px 22px;}
+.oc-delivery h2,.oc-delivery p {font-size:13px; margin:0;}
+.oc-delivery strong {display:block; font-size:40px; line-height:1.15; margin:8px 0;}
+.oc-delivery.enviadas,.oc-badge.completado {background:#e0f3e9; color:#176044;}
+.oc-delivery.faltan,.oc-badge:is(.pendiente,.sin_solicitud,.espera_dependencia) {background:#fff3cd; color:#704d03;}
+.oc-delivery.problemas,.oc-badge.espera_reintento {background:#fae6de; color:#923c29;}
+.oc-live label {display:block; font-weight:700; margin-bottom:5px;}
+.oc-live select {margin-bottom:10px;}
+@media(max-width:560px) {.oc-deliveries {grid-template-columns:1fr;}}

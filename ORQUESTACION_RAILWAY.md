@@ -8,8 +8,10 @@ El panel conserva `/panel-admin/automatizacion-notas/`; el indicador usa hora CD
 `orquestar_procesos` sustituye a los dos comandos anteriores, eliminados del código.
 Retira sus programaciones durante el corte y activa únicamente el cron maestro.
 
-El maestro procesa únicamente las citas solicitadas individualmente. Las citas
-confirmadas y completadas pueden solicitarse sin una ventana de espera por fecha.
+El selector del panel comparte el modo con el servicio cron. En Manual, el modo
+predeterminado, el maestro atiende únicamente solicitudes individuales. En Automático
+también busca citas elegibles desde dos horas después de su inicio y procesa pendientes
+históricos. Las solicitudes individuales conservan prioridad y no tienen espera por fecha.
 Si ya tienen bitácora válida e IPP, pasan a la preparación del reporte.
 El motor no modifica su estado. Inasistencias presenciales se muestran pero no se procesan.
 Una etapa manual ejecuta sus prerrequisitos y deja detenidas las etapas posteriores:
@@ -73,8 +75,8 @@ almacenamiento y backups, y confirmar `max_allowed_packet` para el tamaño real 
 Las referencias locales antiguas siguen siendo legibles donde exista el archivo.
 
 El panel muestra las incidencias y los intentos por cita. Las etapas transitorias de
-una cita solicitada pueden reintentarse con su límite habitual. El cron termina sin
-procesar citas cuando no hay solicitudes listas.
+una cita solicitada pueden reintentarse con su límite habitual. Cambiar a Manual evita
+reclamar nuevas etapas automáticas. Una etapa externa que ya arrancó puede terminar.
 Los cron previos no deben reactivarse en paralelo. Para detener, apagar primero el cron,
 esperar su terminación y cambiar la bandera; no borrar trabajos ni volver a reenviar históricos.
 
