@@ -41,6 +41,7 @@ class OrquestadorTests(TestCase):
         TrabajoProceso.objects.filter(estado__in=['espera_reintento','espera_dependencia']).update(proximo_intento=timezone.now()-timedelta(seconds=1))
 
     def test_nota_existente_flujo_sin_google_y_estado_intacto(self):
+        motor.solicitar(self.cita,self.admin)
         self.nota();self.ipp()
         with self.mocks(),patch('core.flujo_clinico._leer_meet') as google,patch('core.views._generar_bitacora_con_ia_de_texto') as ia:
             motor.correr()
@@ -63,27 +64,26 @@ class OrquestadorTests(TestCase):
             self.assertFalse(motor.elegible(self.cita))
         self.cita.estado='Confirmada'
         self.cita.fecha=timezone.localdate()+timedelta(days=1)
-        self.assertFalse(motor.elegible(self.cita))
+        self.assertTrue(motor.elegible(self.cita))
 
-    def test_ventana_dos_horas(self):
-        comienzo=motor.inicio(self.cita)
-        with patch('core.orquestador.timezone.now',return_value=comienzo+timedelta(minutes=119)):
-            self.assertFalse(motor.elegible(self.cita))
-        with patch('core.orquestador.timezone.now',return_value=comienzo+timedelta(hours=2)):
-            self.assertTrue(motor.elegible(self.cita))
+    def test_cita_reciente_con_nota_y_ipp_avanza_al_solicitar(self):
+        self.cita.fecha = timezone.localdate() + timedelta(days=1)
+        self.cita.save(update_fields=['fecha'])
+        self.nota(); self.ipp()
+        motor.solicitar(self.cita, self.admin, 'pdf_psicologo')
+        with self.mocks(): motor.correr()
+        self.assertEqual(ReporteClinicoPDF.objects.filter(cita=self.cita).count(), 2)
 
-    def test_72_horas_y_nota_posterior_reanuda(self):
+    def test_cita_antigua_solicitada_intenta_meet(self):
         self.cita.fecha=timezone.localdate()-timedelta(days=4);self.cita.save()
-        with patch('core.flujo_clinico._leer_meet') as google:
+        motor.solicitar(self.cita, self.admin)
+        with patch('core.flujo_clinico._leer_meet', return_value=[]) as google:
             motor.correr()
-        google.assert_not_called()
-        self.assertEqual(TrabajoProceso.objects.get(cita=self.cita,etapa='meet').estado,'revision_manual')
-        self.nota();self.ipp();self.vencer()
-        TrabajoProceso.objects.filter(cita=self.cita).update(proximo_intento=timezone.now())
-        with self.mocks():motor.correr()
-        self.cita.refresh_from_db();self.assertTrue(self.cita.reporte_enviado)
+        google.assert_called_once()
+        self.assertEqual(TrabajoProceso.objects.get(cita=self.cita,etapa='meet').error,'sin_documentos')
 
     def test_permiso_bloquea_sin_ia(self):
+        motor.solicitar(self.cita,self.admin)
         from .flujo_clinico import PasoBloqueado
         with patch('core.flujo_clinico._leer_meet',side_effect=PasoBloqueado('Sin permiso','sin_permisos')) as google,patch('core.views._generar_bitacora_con_ia_de_texto') as ia:
             motor.correr();motor.correr()
@@ -92,19 +92,20 @@ class OrquestadorTests(TestCase):
         self.assertFalse(ControlOrquestador.objects.filter(clave='google',token='bloqueado').exists())
 
     def test_configuracion_ausente_pausa_integracion(self):
+        motor.solicitar(self.cita,self.admin)
         from .flujo_clinico import PasoBloqueado
         with patch('core.flujo_clinico._leer_meet',side_effect=PasoBloqueado('Falta conexión','sin_permisos','google_configuracion')):
             motor.correr()
         self.assertTrue(ControlOrquestador.objects.filter(clave='google',token='bloqueado').exists())
 
-    def test_bloqueo_de_acceso_a_72_horas_pide_nota_manual(self):
+    def test_bloqueo_de_acceso_se_conserva_por_edad(self):
         motor.registrar(self.cita)
         self.cita.fecha=timezone.localdate()-timedelta(days=4);self.cita.save()
         TrabajoProceso.objects.filter(etapa='meet').update(estado='bloqueado',error='google_acceso')
         with patch('core.flujo_clinico._leer_meet') as google:motor.correr()
         google.assert_not_called()
         trabajo=TrabajoProceso.objects.get(etapa='meet')
-        self.assertEqual(trabajo.estado,'revision_manual');self.assertEqual(trabajo.error,'nota_manual')
+        self.assertEqual(trabajo.estado,'bloqueado');self.assertEqual(trabajo.error,'google_acceso')
 
     def test_descarga_faltante_no_genera_ia_en_get(self):
         with patch('core.views._construir_datos_checkin_paciente') as ia:
@@ -112,6 +113,7 @@ class OrquestadorTests(TestCase):
         self.assertEqual(response.status_code,404);ia.assert_not_called()
 
     def test_pdf_reintento_reutiliza_sintesis(self):
+        motor.solicitar(self.cita,self.admin)
         self.nota();self.ipp()
         with self.mocks(),patch('core.views._construir_datos_checkin_paciente',return_value={'sesion_numero':1}) as sintesis,patch('core.views.convertir_html_a_pdf',side_effect=RuntimeError('fallo')):
             motor.correr()
@@ -123,6 +125,7 @@ class OrquestadorTests(TestCase):
         self.assertEqual(ReporteClinicoPDF.objects.count(),2)
 
     def test_smtp_temporal_solo_destinatario_pendiente(self):
+        motor.solicitar(self.cita,self.admin)
         self.nota();self.ipp()
         with self.mocks(),patch('core.views._enviar_email_reporte_paciente_con_pdf') as pac,patch('core.views._enviar_email_reporte_psicologo_con_pdf',side_effect=smtplib.SMTPDataError(451,b'temporary')):
             motor.correr()
@@ -134,6 +137,7 @@ class OrquestadorTests(TestCase):
         pac.assert_not_called();psi.assert_called_once();pdf.assert_not_called()
 
     def test_smtp_incierto_no_se_reenvia_por_solicitud(self):
+        motor.solicitar(self.cita,self.admin)
         self.nota();self.ipp()
         with self.mocks(),patch('core.views._enviar_email_reporte_paciente_con_pdf',side_effect=TimeoutError):motor.correr()
         trabajo=TrabajoProceso.objects.get(etapa='correo_paciente')
@@ -202,6 +206,7 @@ class OrquestadorTests(TestCase):
         self.assertEqual(self.client.get(url).status_code,302)
 
     def test_limite_cinco_intentos(self):
+        motor.solicitar(self.cita,self.admin)
         with patch('core.flujo_clinico._leer_meet',side_effect=TimeoutError) as google:
             for _ in range(8):
                 motor.correr();self.vencer()
@@ -209,7 +214,7 @@ class OrquestadorTests(TestCase):
         self.assertEqual(TrabajoProceso.objects.get(etapa='meet').estado,'revision_manual')
 
     def test_nota_concurrente_conserva_campos(self):
-        motor.registrar(self.cita)
+        motor.solicitar(self.cita,self.admin)
         EstadoFlujoSesion.objects.create(cita=self.cita,datos_clinicos={c:'Texto IA' for c in motor.flujo.CAMPOS})
         self.nota(como_llega='Observación manual')
         trabajo=TrabajoProceso.objects.get(etapa='escritura')
@@ -233,7 +238,7 @@ class OrquestadorTests(TestCase):
         motor.registrar(self.cita)
         TrabajoProceso.objects.filter(etapa='meet').update(estado='bloqueado',error='google_acceso')
         otra=Cita.objects.create(paciente=self.pac,psicologo=self.doc,fecha=self.cita.fecha,hora=time(11))
-        self.nota(otra);self.ipp(otra)
+        self.nota(otra);self.ipp(otra);motor.solicitar(otra,self.admin)
         with self.mocks():motor.correr(limite=1)
         otra.refresh_from_db();self.assertTrue(otra.reporte_enviado)
 
@@ -254,19 +259,22 @@ class OrquestadorTests(TestCase):
         enviar.assert_not_called()
         self.assertEqual(TrabajoProceso.objects.get(etapa='correo_paciente').error,'nota_modificada')
 
-    def test_lote_100_solo_25_citas(self):
-        for i in range(99):
-            Cita.objects.create(paciente=self.pac,psicologo=self.doc,fecha=self.cita.fecha-timedelta(days=i+1),hora=time(10))
-        motor.correr(limite=25)
-        self.assertEqual(TrabajoProceso.objects.values('cita_id').distinct().count(),25)
-        self.assertEqual(EjecucionProceso.objects.count(),25)
+    def test_ciclo_omite_citas_sin_solicitud_y_lote_desactivado(self):
+        motor.registrar(self.cita)
+        otra = Cita.objects.create(paciente=self.pac, psicologo=self.doc, fecha=self.cita.fecha, hora=time(11))
+        self.nota(); self.ipp(); self.nota(otra); self.ipp(otra)
+        motor.solicitar(otra, self.admin, 'pdf_psicologo')
+        with self.mocks(): motor.correr()
+        self.assertEqual(set(ReporteClinicoPDF.objects.values_list('cita_id', flat=True)), {otra.pk})
+        self.assertFalse(EjecucionProceso.objects.filter(trabajo__cita=self.cita).exists())
+        self.assertEqual(self.client.post(reverse('api_lote_automatizacion')).status_code, 400)
 
     def test_cien_citas_completas_en_cuatro_lotes_sin_duplicar(self):
         citas=[self.cita]
         for i in range(99):
             citas.append(Cita.objects.create(paciente=self.pac,psicologo=self.doc,
                 fecha=self.cita.fecha-timedelta(days=i+1),hora=time(10)))
-        for cita in citas:self.nota(cita);self.ipp(cita)
+        for cita in citas:self.nota(cita);self.ipp(cita);motor.solicitar(cita,self.admin)
         with self.mocks(),patch('core.views._enviar_email_reporte_paciente_con_pdf') as pac,patch('core.views._enviar_email_reporte_psicologo_con_pdf') as psi:
             for _ in range(5):motor.correr(limite=25)
         self.assertEqual(pac.call_count,100);self.assertEqual(psi.call_count,100)
@@ -275,7 +283,7 @@ class OrquestadorTests(TestCase):
         self.assertEqual(TrabajoProceso.objects.exclude(estado='completado').count(),0)
 
     def test_nota_manual_desbloquea_permiso_sin_volver_a_google(self):
-        motor.registrar(self.cita)
+        motor.solicitar(self.cita,self.admin)
         TrabajoProceso.objects.filter(etapa='meet').update(estado='bloqueado',error='google_acceso')
         self.nota();self.ipp()
         with self.mocks(),patch('core.flujo_clinico._leer_meet') as google:motor.correr()
@@ -306,7 +314,8 @@ class ConcurrenciaOrquestadorTests(TransactionTestCase):
     def test_dos_workers_comparten_reserva_global(self):
         from threading import Thread, Event
         pac=User.objects.create_user('concurrencia')
-        Cita.objects.create(paciente=pac,fecha=timezone.localdate()-timedelta(days=1),hora=time(10))
+        cita = Cita.objects.create(paciente=pac,fecha=timezone.localdate()-timedelta(days=1),hora=time(10))
+        motor.solicitar(cita,pac)
         iniciado, liberar = Event(), Event()
         resultados, errores = [], []
 

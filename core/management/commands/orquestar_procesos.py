@@ -4,7 +4,7 @@ from core.orquestador import correr, reconciliar
 
 
 class Command(BaseCommand):
-    help = 'Procesa un lote acotado del centro de orquestación; desactivado por defecto.'
+    help = 'Atiende solicitudes manuales del centro de orquestación.'
 
     def add_arguments(self, parser):
         parser.add_argument('--limite', type=int, default=25)

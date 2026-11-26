@@ -11,7 +11,7 @@ import random
 from django.conf import settings
 from django.core.files.base import ContentFile
 from django.db import transaction
-from django.db.models import Q, Max, Min, Case, When, IntegerField, OuterRef, Subquery, Exists
+from django.db.models import Q, Case, When, IntegerField, OuterRef, Subquery, Exists
 from django.template.loader import render_to_string
 from django.utils import timezone
 
@@ -35,8 +35,7 @@ def inicio(cita):
 
 def elegible(cita):
     return (cita.estado in ('Confirmada', 'Completada') and
-            not (cita.modalidad == 'Presencial' and cita.registro_llegada == 'No Vino') and
-            inicio(cita) + timedelta(hours=2) <= timezone.now())
+            not (cita.modalidad == 'Presencial' and cita.registro_llegada == 'No Vino'))
 
 
 def nota_valida(cita):
@@ -57,25 +56,19 @@ def registrar(cita, usuario=None):
 @transaction.atomic
 def solicitar(cita, usuario, etapa='completo'):
     trabajos = registrar(cita, usuario)
+    if any(trabajo.estado == 'procesando' for trabajo in trabajos.select_for_update()):
+        return False
     # Explicit requests may reopen blocked access, but never ambiguous deliveries.
     indice = len(ETAPAS)-1 if etapa == 'completo' else ETAPAS.index(etapa)
     seleccion = trabajos.filter(etapa__in=ETAPAS[:indice+1])
     seleccion.exclude(estado__in=['completado', 'procesando']).exclude(error='entrega_incierta').update(
         estado='pendiente', proximo_intento=timezone.now(), manual=True, responsable=usuario,
         intentos=0, error='', habilitado=True, mensaje='Solicitud manual registrada.')
-    trabajos.filter(etapa__in=ETAPAS[indice+1:]).exclude(estado__in=['completado','procesando']).update(
+    trabajos.filter(etapa__in=ETAPAS[indice+1:]).exclude(estado__in=['completado','procesando']).exclude(error='entrega_incierta').update(
         habilitado=False, estado='espera_dependencia', error='pausa_manual', mensaje='Etapa posterior al alcance solicitado. Solicitar flujo completo para continuar.')
     if etapa in ('completo', 'meet', 'lectura'):
         ControlOrquestador.objects.filter(clave='google', token='bloqueado').update(token='', vence=None)
-
-
-def descubrir(limite):
-    # SQL limit, oldest first; existing work is discovered separately by the worker.
-    corte = timezone.localtime(timezone.now() - timedelta(hours=2), ZoneInfo('America/Mexico_City'))
-    qs = Cita.objects.filter(estado__in=['Confirmada', 'Completada'], trabajos_proceso__isnull=True).filter(
-        Q(fecha__lt=corte.date()) | Q(fecha=corte.date(), hora__lte=corte.time().replace(tzinfo=None)))
-    for cita in qs.order_by('fecha', 'hora', 'pk')[:limite]:
-        registrar(cita)
+    return True
 
 
 def reconciliar(limite=100, despues=0):
@@ -122,7 +115,7 @@ def ejecutar(trabajo, token):
     if etapa in ETAPAS[:4] and nota_valida(cita):
         return {'omitido': 'Nota existente conservada'}
     if etapa in ETAPAS[:4] and not nota_valida(cita):
-        if cita.modalidad == 'Presencial' or inicio(cita) + timedelta(hours=72) <= timezone.now():
+        if cita.modalidad == 'Presencial' or not cita.id_evento_google:
             raise Incidencia('nota_manual', 'Se requiere una nota clínica del profesional.', 'revision_manual')
     estado, _ = EstadoFlujoSesion.objects.get_or_create(cita=cita)
     if etapa in ('meet', 'lectura') and ControlOrquestador.objects.filter(clave='google', token='bloqueado').exists():
@@ -241,7 +234,7 @@ def procesar(trabajo):
     ahora = timezone.now()
     with transaction.atomic():
         trabajo = TrabajoProceso.objects.select_for_update().get(pk=trabajo.pk)
-        if not trabajo.habilitado or trabajo.estado not in ('pendiente', 'espera_reintento', 'espera_dependencia') or trabajo.proximo_intento > ahora:
+        if not trabajo.manual or not trabajo.habilitado or trabajo.estado not in ('pendiente', 'espera_reintento', 'espera_dependencia') or trabajo.proximo_intento > ahora:
             return False
         trabajo.estado, trabajo.token, trabajo.vence = 'procesando', token, ahora + timedelta(minutes=10)
         trabajo.intentos += 1
@@ -275,7 +268,9 @@ def procesar(trabajo):
             if trabajo.etapa in ('meet', 'lectura'):
                 ControlOrquestador.objects.update_or_create(clave='google', defaults={'token':'bloqueado', 'vence':None})
     fin = timezone.now()
-    if estado == 'espera_reintento' and codigo != 'sin_documentos' and trabajo.intentos >= (2 if codigo == 'ia_invalida' else 5):
+    if estado == 'completado':
+        mensaje = resultado.get('omitido') or 'Etapa completada.'
+    if estado == 'espera_reintento' and trabajo.intentos >= (2 if codigo == 'ia_invalida' else 5):
         estado = 'revision_manual'
     demora = ESPERAS[min(max(trabajo.intentos-1, 0), len(ESPERAS)-1)]
     if estado == 'espera_dependencia':
@@ -283,9 +278,6 @@ def procesar(trabajo):
     proximo = fin + timedelta(minutes=demora, seconds=random.uniform(0, 30))
     if retry_after:
         proximo = max(proximo, fin+timedelta(seconds=retry_after))
-    if codigo == 'sin_documentos':
-        proximo = next((inicio(trabajo.cita)+timedelta(hours=h) for h in (6,12,24,48,72)
-                        if inicio(trabajo.cita)+timedelta(hours=h)>fin), fin+timedelta(hours=24))
     with transaction.atomic():
         actual = TrabajoProceso.objects.select_for_update().get(pk=trabajo.pk)
         if actual.token != token or actual.estado != 'procesando' or not actual.vence or actual.vence <= fin:
@@ -325,19 +317,9 @@ def correr(limite=25, segundos=240, cita_id=None):
             TrabajoProceso.objects.filter(pk=viejo.pk, token=viejo.token).update(
                 estado=recuperado, proximo_intento=ahora, vence=None)
             EjecucionProceso.objects.filter(token=viejo.token, fin__isnull=True).update(fin=ahora, estado=recuperado, error='ejecucion_interrumpida')
-        if cita_id:
-            registrar(Cita.objects.get(pk=cita_id))
-        else:
-            descubrir(limite)
-        corte_manual = timezone.localtime(ahora-timedelta(hours=72), ZoneInfo('America/Mexico_City'))
-        nota_disponible = HistorialClinico.objects.filter(cita_id=OuterRef('cita_id'), pendiente_revision_audio=False).exclude(notas_sesion='')
-        TrabajoProceso.objects.filter(estado='bloqueado', etapa__in=ETAPAS[:4]).exclude(error='historico_ambiguo').filter(
-            Q(cita__fecha__lt=corte_manual.date()) | Q(cita__fecha=corte_manual.date(), cita__hora__lte=corte_manual.time().replace(tzinfo=None))
-        ).annotate(tiene_nota=Exists(nota_disponible)).filter(tiene_nota=False).update(
-            estado='revision_manual', error='nota_manual', mensaje='Se cumplieron 72 horas; solicitar nota al profesional.', actualizado=ahora)
         orden = Case(*[When(etapa=e, then=i) for i,e in enumerate(ETAPAS)], output_field=IntegerField())
         primera = TrabajoProceso.objects.filter(cita_id=OuterRef('cita_id'), version=1).exclude(estado='completado').annotate(orden=orden).order_by('orden').values('pk')[:1]
-        pendientes = TrabajoProceso.objects.filter(pk=Subquery(primera), habilitado=True)
+        pendientes = TrabajoProceso.objects.filter(pk=Subquery(primera), habilitado=True, manual=True)
         pendientes = pendientes.filter(cita__estado__in=['Confirmada','Completada']).exclude(
             cita__modalidad='Presencial', cita__registro_llegada='No Vino')
         ipp = EvaluacionSesionPaciente.objects.filter(cita_id=OuterRef('cita_id'), paciente_id=OuterRef('cita__paciente_id')).exclude(respuestas_ipp={})
@@ -351,9 +333,8 @@ def correr(limite=25, segundos=240, cita_id=None):
             Q(estado__in=['revision_manual','bloqueado'], etapa__in=ETAPAS[:4],
               cita__nota_clinica__notas_sesion__gt='', cita__nota_clinica__pendiente_revision_audio=False)).exclude(error='historico_ambiguo')
         # Ignore blocked earlier stages so they cannot starve later appointments.
-        candidatos = pendientes.filter(proximo_intento__lte=ahora).values('cita_id').annotate(
-            prioridad=Max('manual'), fecha=Min('cita__fecha'), hora=Min('cita__hora')).order_by('-prioridad','fecha','hora','cita_id')
-        ids = [r['cita_id'] for r in candidatos[:limite]]
+        candidatos = pendientes.filter(proximo_intento__lte=ahora).order_by('cita__fecha', 'cita__hora', 'cita_id')
+        ids = list(candidatos.values_list('cita_id', flat=True)[:limite])
         for pk in ids:
             cita = flujo._base().get(pk=pk)
             if not elegible(cita):

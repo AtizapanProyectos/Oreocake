@@ -2,8 +2,8 @@
 {% block title %}Centro de operaciones · HOPE{% endblock %}
 {% block extra_css %}<link rel="stylesheet" href="{% static 'css/centro_operaciones.css' %}">{% endblock %}
 {% block content %}
-<main id="operations" data-url="{% url 'orquestacion_datos' %}" data-batch="{% url 'api_lote_automatizacion' %}">
- <header class="oc-header"><div><p class="oc-eyebrow">HOPE / INTELIGENCIA OPERATIVA</p><h1>Cada sesión,<br><em>con seguimiento.</em></h1><p>Centro de orquestación · Atención clínica y entregas</p></div><div class="oc-live"><span id="oc-indicator">●</span> <span id="oc-sync">Conectando…</span><p id="oc-capacity">Capacidad configurada: 1 ejecución simultánea</p></div></header>
+<main id="operations" data-url="{% url 'orquestacion_datos' %}">
+ <header class="oc-header"><div><p class="oc-eyebrow">HOPE · Modo manual</p><h1>Centro de orquestación</h1><p>Elige una cita y sigue su recorrido.</p></div><div class="oc-live"><span id="oc-sync">Conectando…</span><p id="oc-capacity">Consultando el maestro…</p></div></header>
  <section id="oc-kpis" class="oc-kpis" aria-label="Indicadores de ejecuciones de hoy"></section>
  <form id="oc-filters" class="oc-filters">
   <label>Organización<select name="org"><option value="">Todas</option><option value="hope">HOPE</option><option value="tectum_inhouse">TECTUM In-House</option><option value="tectum_beneficios">TECTUM Beneficios</option></select></label>
@@ -15,9 +15,9 @@
   <label>Paciente<input name="paciente" placeholder="Nombre o correo"></label><label>Profesional<input name="psicologo" placeholder="Nombre o correo"></label>
   <label>Cita<input name="cita" type="number" min="1" placeholder="#"></label><button>Aplicar filtros</button>
  </form>
- <section class="oc-work"><header><div><p class="oc-eyebrow">MATRIZ MAESTRA</p><h2>Bandeja de procesamiento <span id="oc-total"></span></h2><p>Solicitudes manuales primero · Después, pendientes por antigüedad</p></div><div class="oc-actions"><select id="oc-stage" aria-label="Etapa a solicitar"><option value="completo">Flujo completo</option>{% for etapa,etiqueta in etapas.items %}<option value="{{ etapa }}">{{ etiqueta }}</option>{% endfor %}</select><button id="oc-batch" type="button">Procesar lote · 25</button></div></header>
+ <section class="oc-work"><header><h2>Citas <span id="oc-total"></span></h2></header>
  <p id="oc-message" role="status" aria-live="polite"></p>
- <div class="oc-table-wrap"><table><thead><tr><th>Sesión / Organización</th><th>Profesional / Servicio</th><th>Fecha / Antigüedad</th><th>Situación / Siguiente acción</th><th>Seguimiento</th></tr></thead><tbody id="oc-rows"></tbody></table></div>
+ <div class="oc-cards" id="oc-rows"></div>
  <footer class="oc-pagination"><button id="oc-prev" type="button">← Anterior</button><span id="oc-page"></span><button id="oc-next" type="button">Siguiente →</button></footer>
  </section>
  <section class="oc-bottom"><article><p class="oc-eyebrow">DISTRIBUCIÓN</p><h2>Actividad por servicio y organización</h2><div id="oc-activity"></div></article><article><p class="oc-eyebrow">ATENCIÓN PRESENCIAL</p><h2>Recepción y profesionales</h2><div id="oc-onsite"></div></article></section>
@@ -27,7 +27,7 @@
    <button id="oc-test-pdf" type="button">Generar PDF sin enviar</button>
    <button id="oc-test-full" type="button">Solicitar flujo completo</button>
   </div>
-  <p>Las solicitudes se guardan para el siguiente ciclo del maestro.</p>
+  <p>El maestro toma la solicitud en su próximo ciclo.</p>
   <div id="oc-detail-body"></div>
  </dialog>
  <div hidden>{% csrf_token %}</div>

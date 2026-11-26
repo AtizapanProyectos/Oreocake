@@ -8,7 +8,9 @@ El panel conserva `/panel-admin/automatizacion-notas/`; el indicador usa hora CD
 `orquestar_procesos` sustituye a los dos comandos anteriores, eliminados del código.
 Retira sus programaciones durante el corte y activa únicamente el cron maestro.
 
-Las citas confirmadas y completadas son equivalentes para elegibilidad a inicio + 2 h.
+El maestro procesa únicamente las citas solicitadas individualmente. Las citas
+confirmadas y completadas pueden solicitarse sin una ventana de espera por fecha.
+Si ya tienen bitácora válida e IPP, pasan a la preparación del reporte.
 El motor no modifica su estado. Inasistencias presenciales se muestran pero no se procesan.
 Una etapa manual ejecuta sus prerrequisitos y deja detenidas las etapas posteriores:
 seleccionar **Flujo completo** permite continuar. Nunca se repite una entrega acreditada.
@@ -70,9 +72,9 @@ Así comparten persistencia entre web y cron sin exponer URLs de media. Dimensio
 almacenamiento y backups, y confirmar `max_allowed_packet` para el tamaño real de PDF.
 Las referencias locales antiguas siguen siendo legibles donde exista el archivo.
 
-No hay correos automáticos adicionales de alerta: las incidencias, prioridad a las 48 h
-y solicitud de nota manual a las 72 h se muestran en el centro. Los indicadores cuentan
-etapas e intentos, no citas, salvo la matriz y la distribución por servicio/organización.
+El panel muestra las incidencias y los intentos por cita. Las etapas transitorias de
+una cita solicitada pueden reintentarse con su límite habitual. El cron termina sin
+procesar citas cuando no hay solicitudes listas.
 Los cron previos no deben reactivarse en paralelo. Para detener, apagar primero el cron,
 esperar su terminación y cambiar la bandera; no borrar trabajos ni volver a reenviar históricos.
 

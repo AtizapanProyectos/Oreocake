@@ -1,4 +1,4 @@
-from datetime import date, timedelta
+from datetime import date
 from django.core.paginator import Paginator
 from django.db.models import Avg, Count, Q, Exists, OuterRef, Case, When, IntegerField, Subquery, Prefetch, Value, CharField
 from django.db.models.functions import Coalesce
@@ -10,7 +10,7 @@ from .flujo_clinico import solo_admin
 from .models import Cita, TrabajoProceso, EjecucionProceso, ControlOrquestador
 from . import orquestador as motor
 
-LABELS = {'pendiente': 'Pendientes de ejecución', 'programado': 'Procesos programados',
+LABELS = {'sin_solicitud': 'Sin solicitud', 'pendiente': 'Solicitud registrada',
           'espera_dependencia': 'En preparación', 'espera_reintento': 'Reintento programado',
           'procesando': 'Ejecuciones en curso', 'completado': 'Completadas',
           'bloqueado': 'Con incidencia', 'revision_manual': 'Requieren intervención'}
@@ -37,16 +37,14 @@ def filtrar(params):
     qs = Cita.objects.filter(estado__in=['Confirmada', 'Completada'])
     orden = Case(*[When(etapa=e, then=i) for i,e in enumerate(motor.ETAPAS)], output_field=IntegerField())
     abiertos = TrabajoProceso.objects.filter(cita_id=OuterRef('pk')).exclude(estado='completado').annotate(orden=orden).order_by('orden')
-    corte = timezone.localtime(timezone.now()-timedelta(hours=2))
-    programado = Q(fecha__gt=corte.date()) | Q(fecha=corte.date(),hora__gt=corte.time().replace(tzinfo=None))
     qs = qs.annotate(estado_proceso=Subquery(abiertos.values('estado')[:1]),
         tiene_trabajos=Exists(TrabajoProceso.objects.filter(cita_id=OuterRef('pk'))),
         manual_proceso=Subquery(abiertos.values('manual')[:1]))
     qs = qs.annotate(estado_visual=Case(
         When(modalidad='Presencial', registro_llegada='No Vino', then=Value('revision_manual')),
-        When(programado, then=Value('programado')),
         When(tiene_trabajos=True, estado_proceso__isnull=True, then=Value('completado')),
-        default=Coalesce('estado_proceso',Value('pendiente')),output_field=CharField()))
+        When(estado_proceso='pendiente', manual_proceso=False, then=Value('sin_solicitud')),
+        default=Coalesce('estado_proceso',Value('sin_solicitud')),output_field=CharField()))
     for key, lookup in [('fecha','fecha'), ('desde','fecha__gte'), ('hasta','fecha__lte'), ('creada','fecha_creacion__date')]:
         if params.get(key):
             qs = qs.filter(**{lookup: date.fromisoformat(params[key])})
@@ -74,9 +72,9 @@ def filtrar(params):
 def fila(cita):
     trabajos = {t.etapa: t for t in cita.trabajos_proceso.all()}
     pendiente = next((trabajos[e] for e in motor.ETAPAS if e in trabajos and trabajos[e].estado != 'completado'), None)
-    estado = pendiente.estado if pendiente else 'completado' if trabajos else 'pendiente'
-    if motor.inicio(cita)+timedelta(hours=2) > timezone.now():
-        estado = 'programado'
+    estado = pendiente.estado if pendiente else 'completado' if trabajos else 'sin_solicitud'
+    if pendiente and estado == 'pendiente' and not pendiente.manual:
+        estado = 'sin_solicitud'
     edad = max(0, int((timezone.now()-motor.inicio(cita)).total_seconds()/3600))
     no_vino = cita.modalidad == 'Presencial' and cita.registro_llegada == 'No Vino'
     if no_vino:
@@ -89,16 +87,16 @@ def fila(cita):
         'fecha': f'{cita.fecha} {cita.hora:%H:%M}', 'creada': timezone.localtime(cita.fecha_creacion).isoformat(),
         'estado': estado, 'estado_label': LABELS[estado], 'edad': edad, 'prioridad': 'Alta' if edad >=48 or estado in ('bloqueado','revision_manual') else 'Normal',
         'actualizado': max((t.actualizado.isoformat() for t in trabajos.values()), default=None),
-        'siguiente': 'Revisar inasistencia' if no_vino else ETIQUETAS[pendiente.etapa] if pendiente else 'Descubrir pendientes' if not trabajos else 'Entregas completas',
+        'siguiente': 'Revisar inasistencia' if no_vino else 'Selecciona una acción' if estado == 'sin_solicitud' else ETIQUETAS[pendiente.etapa] if pendiente else 'Entregas completas',
         'mensaje': pendiente.mensaje if pendiente else '', 'elegible': motor.elegible(cita),
         'pasos': [{'etapa':e, 'etiqueta':ETIQUETAS[e], 'estado':trabajos[e].estado if e in trabajos else 'pendiente',
-                   'estado_label':LABELS[trabajos[e].estado] if e in trabajos else LABELS['pendiente'],
+                   'estado_label':LABELS[trabajos[e].estado] if e in trabajos and (trabajos[e].manual or trabajos[e].estado != 'pendiente') else 'Pendiente',
                    'intentos': trabajos[e].intentos if e in trabajos else 0,
                    'error': trabajos[e].error if e in trabajos else '',
                    'accion': ACCIONES.get(trabajos[e].error, 'Revisar la integración y el historial de esta etapa.') if e in trabajos and trabajos[e].error else '',
                    'impacto': 'Esta sesión espera; las demás continúan.' if e in trabajos and trabajos[e].error else '',
                    'mensaje': trabajos[e].mensaje if e in trabajos else '',
-                   'proximo': trabajos[e].proximo_intento.isoformat() if e in trabajos and trabajos[e].habilitado and trabajos[e].estado in ('pendiente','espera_reintento') else None} for e in motor.ETAPAS]}
+                   'proximo': trabajos[e].proximo_intento.isoformat() if e in trabajos and trabajos[e].manual and trabajos[e].habilitado and trabajos[e].estado in ('pendiente','espera_reintento') else None} for e in motor.ETAPAS]}
 
 
 @solo_admin
@@ -146,6 +144,8 @@ def historial(request, cita_id):
 def solicitar(request, cita_id=None):
     if not motor.activo():
         return JsonResponse({'mensaje':'El motor está desactivado.'}, status=409)
+    if cita_id is None:
+        return JsonResponse({'mensaje':'Selecciona una cita individual en el panel.'}, status=400)
     etapa = request.POST.get('tipo') or 'completo'
     etapa = {'reporte':'pdf_psicologo', 'correo':'correo_psicologo',
              'paciente':'correo_paciente', 'psicologo':'correo_psicologo'}.get(etapa, etapa)
@@ -153,16 +153,9 @@ def solicitar(request, cita_id=None):
         etapa = 'pdf_psicologo'
     if etapa not in ('completo', *motor.ETAPAS):
         return JsonResponse({'mensaje':'Etapa inválida.'},status=400)
-    try:
-        qs = filtrar(request.POST)
-        if cita_id:
-            qs = qs.filter(pk=cita_id)
-        limite = min(100, max(1, int(request.POST.get('limite',25))))
-        count = 0
-        for cita in qs[:limite]:
-            if motor.elegible(cita):
-                motor.solicitar(cita, request.user, etapa)
-                count += 1
-        return JsonResponse({'status':'success', 'mensaje':f'{count} solicitud(es) registradas. El servidor continuará el procesamiento.'},status=202)
-    except (ValueError, TypeError):
-        return JsonResponse({'mensaje':'Filtros o límite inválidos.'},status=400)
+    cita = get_object_or_404(Cita, pk=cita_id)
+    if not motor.elegible(cita):
+        return JsonResponse({'mensaje':'La cita debe estar confirmada o completada y sin inasistencia registrada.'}, status=409)
+    if not motor.solicitar(cita, request.user, etapa):
+        return JsonResponse({'mensaje':'La cita ya tiene una etapa en ejecución.'}, status=409)
+    return JsonResponse({'status':'success', 'mensaje':'Solicitud registrada para el próximo ciclo del maestro.'}, status=202)
