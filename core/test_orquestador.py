@@ -167,6 +167,21 @@ class OrquestadorTests(TestCase):
         self.assertEqual(response.json()['total'],1)
         self.assertEqual(self.client.get(reverse('orquestacion_datos'),{'desde':'bad'}).status_code,400)
 
+    def test_detalle_refleja_estado_del_intento_y_la_incidencia(self):
+        motor.registrar(self.cita)
+        trabajo = TrabajoProceso.objects.get(cita=self.cita, etapa='meet')
+        trabajo.estado = 'procesando'
+        trabajo.save(update_fields=['estado'])
+        intento = EjecucionProceso.objects.create(trabajo=trabajo, token='prueba-detalle')
+        url = reverse('orquestacion_historial', args=[self.cita.pk])
+        self.assertEqual(self.client.get(url).json()['fila']['estado'], 'procesando')
+
+        TrabajoProceso.objects.filter(pk=trabajo.pk).update(estado='bloqueado', error='google_acceso')
+        EjecucionProceso.objects.filter(pk=intento.pk).update(estado='bloqueado', error='google_acceso')
+        datos = self.client.get(url).json()
+        self.assertEqual(datos['fila']['pasos'][0]['error'], 'google_acceso')
+        self.assertEqual(datos['eventos'][0]['estado'], 'Con incidencia')
+
     def test_reserva_global_impide_segunda_ejecucion(self):
         ControlOrquestador.objects.create(clave='maestro',token='otro',vence=timezone.now()+timedelta(minutes=5))
         self.assertTrue(motor.correr()['ocupado'])

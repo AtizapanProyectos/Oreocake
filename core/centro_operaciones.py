@@ -117,9 +117,11 @@ def datos(request):
         exitos = ejecuciones.filter(estado='completado').count()
         medidas = ejecuciones.aggregate(duracion=Avg('duracion_ms'), resolucion=Avg('resolucion_ms'))
         control = ControlOrquestador.objects.filter(clave='maestro', vence__gt=timezone.now()).exists()
+        ultimo_intento = EjecucionProceso.objects.order_by('-pk').values_list('inicio', flat=True).first()
         return JsonResponse({'filas':[fila(c) for c in pagina], 'total':pagina.paginator.count, 'pagina':pagina.number,
             'paginas':pagina.paginator.num_pages, 'actualizado':timezone.localtime().isoformat(), 'activo':motor.activo(),
             'capacidad':1, 'ejecucion_activa':control,
+            'ultimo_intento':ultimo_intento,
             'kpi': {'ejecuciones':terminadas, 'exitos':exitos, 'incidencias':terminadas-exitos,
                 'tasa':round(100*exitos/terminadas,1) if terminadas else None, **medidas},
             'servicios':list(qs.values('tipo_sesion').annotate(total=Count('pk')).order_by('-total')),
@@ -131,9 +133,10 @@ def datos(request):
 
 @solo_admin
 def historial(request, cita_id):
-    get_object_or_404(Cita, pk=cita_id)
+    cita = get_object_or_404(Cita.objects.select_related('paciente', 'psicologo__usuario').prefetch_related(
+        Prefetch('trabajos_proceso', queryset=TrabajoProceso.objects.defer('resultado'))), pk=cita_id)
     eventos = EjecucionProceso.objects.filter(trabajo__cita_id=cita_id).select_related('responsable','trabajo').order_by('-inicio')[:100]
-    return JsonResponse({'eventos':[{'etapa': e.trabajo.etapa, 'estado':e.estado, 'error':e.error,
+    return JsonResponse({'fila':fila(cita), 'eventos':[{'etapa': ETIQUETAS[e.trabajo.etapa], 'estado':LABELS[e.estado], 'error':e.error,
         'inicio':e.inicio.isoformat(), 'duracion_ms':e.duracion_ms,
         'responsable':e.responsable.get_username() if e.responsable else 'Programación automática'} for e in eventos]})
 

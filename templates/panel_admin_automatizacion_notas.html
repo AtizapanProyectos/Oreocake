@@ -4,6 +4,7 @@
 {% block extra_css %}<link rel="stylesheet" href="{% static 'css/flujo_clinico.css' %}">{% endblock %}
 {% block content %}
 <main class="flow-app" id="flow-app" data-batch-url="{% url 'api_lote_automatizacion' %}">
+  <p class="flow-alert" role="status">Estás en el panel anterior. Para abrir el Centro de Orquestación, configura ORQUESTADOR_ACTIVO=1 en el servicio web y aplica el despliegue después de la migración.</p>
   <header class="flow-header">
     <div><a class="flow-back" href="{% url 'panel_admin_ipp_email_monitor' %}">Operación / Reportes y notas</a><h1>Flujo clínico<span class="flow-live">Control manual</span></h1><p>De la sesión al seguimiento. Cada paso, a la vista.</p></div>
     <a class="flow-link" href="{% url 'gestor_envio_reporte_cita' %}">Gestor de reportes <span aria-hidden="true">↗</span></a>

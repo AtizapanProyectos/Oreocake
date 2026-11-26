@@ -21,7 +21,15 @@
  <footer class="oc-pagination"><button id="oc-prev" type="button">← Anterior</button><span id="oc-page"></span><button id="oc-next" type="button">Siguiente →</button></footer>
  </section>
  <section class="oc-bottom"><article><p class="oc-eyebrow">DISTRIBUCIÓN</p><h2>Actividad por servicio y organización</h2><div id="oc-activity"></div></article><article><p class="oc-eyebrow">ATENCIÓN PRESENCIAL</p><h2>Recepción y profesionales</h2><div id="oc-onsite"></div></article></section>
- <dialog id="oc-detail"><header><h2 id="oc-detail-title">Detalle de sesión</h2><button id="oc-close" type="button" aria-label="Cerrar detalle">Cerrar ×</button></header><div id="oc-detail-body"></div></dialog>
+ <dialog id="oc-detail"><header><h2 id="oc-detail-title">Detalle de sesión</h2><button id="oc-close" type="button" aria-label="Cerrar detalle">Cerrar ×</button></header>
+  <p id="oc-detail-status" role="status">Consultando avance…</p>
+  <div class="oc-actions">
+   <button id="oc-test-pdf" type="button">Generar PDF sin enviar</button>
+   <button id="oc-test-full" type="button">Solicitar flujo completo</button>
+  </div>
+  <p>Las solicitudes se guardan para el siguiente ciclo del maestro.</p>
+  <div id="oc-detail-body"></div>
+ </dialog>
  <div hidden>{% csrf_token %}</div>
 </main>
 <script src="{% static 'js/centro_operaciones.js' %}" defer></script>
