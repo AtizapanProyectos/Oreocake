@@ -1,6 +1,6 @@
 from django.urls import path
 from . import views
-from . import flujo_clinico
+from . import flujo_clinico, centro_operaciones
 from . import codigos_qr
 from . import planes_mensuales
 from . import donaciones
@@ -14,6 +14,9 @@ from .panel_bienestar_tectum import (
 
 
 urlpatterns = [
+    path('panel-admin/api/orquestacion/', centro_operaciones.datos, name='orquestacion_datos'),
+    path('panel-admin/api/orquestacion/<int:cita_id>/', centro_operaciones.historial, name='orquestacion_historial'),
+
     path('api/donaciones/iniciar/', donaciones.iniciar, name='donacion_iniciar'),
     path('api/donaciones/estado/', donaciones.estado, name='donacion_estado'),
     path('api/donaciones/actualizar/', donaciones.actualizar, name='donacion_actualizar'),

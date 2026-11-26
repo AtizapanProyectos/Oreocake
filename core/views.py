@@ -3679,49 +3679,9 @@ def check_meet_notes(request, cita_id):
 
 
 def _extraer_texto_de_google_doc(file_url, creds=None):
-    """
-    Descarga el contenido de un Google Doc en texto plano.
-    Soporta URLs públicas directamente y también descarga autenticada si hay credenciales.
-    """
-    import re
-    import requests
-    
-    # Extraer el ID del documento
-    match = re.search(r'/document/d/([a-zA-Z0-9-_]+)', file_url)
-    if not match:
-        # Si la URL no es de Google Docs directa o es un enlace de Drive
-        match = re.search(r'/file/d/([a-zA-Z0-9-_]+)', file_url)
-    
-    doc_id = match.group(1) if match else None
-    
-    # 1. Intentar descarga en formato texto vía export
-    if doc_id:
-        export_url = f"https://docs.google.com/document/d/{doc_id}/export?format=txt"
-        headers = {}
-        if creds and hasattr(creds, 'token') and creds.token:
-            headers['Authorization'] = f"Bearer {creds.token}"
-        try:
-            resp = requests.get(export_url, headers=headers, timeout=15)
-            if resp.status_code == 200 and len(resp.text.strip()) > 20:
-                return resp.text.strip()
-        except Exception as e:
-            pass
-
-    # 2. Intentar GET directo a la URL (para docs públicos)
-    try:
-        resp = requests.get(file_url, timeout=15)
-        if resp.status_code == 200:
-            texto = resp.text.strip()
-            # Limpiar etiquetas HTML básicas si devolvió HTML
-            if '<html' in texto.lower():
-                from bs4 import BeautifulSoup
-                soup = BeautifulSoup(texto, 'html.parser')
-                return soup.get_text(separator='\n').strip()
-            return texto
-    except Exception:
-        pass
-
-    return ""
+    # Nunca descargar documentos clínicos mediante acceso público.
+    from .flujo_clinico import _leer_documentos
+    return _leer_documentos([{'fileUrl': file_url}])
 
 
 def _generar_bitacora_con_ia_de_texto(texto_notas, paciente_nombre="", telemetria=None):
@@ -3731,7 +3691,7 @@ def _generar_bitacora_con_ia_de_texto(texto_notas, paciente_nombre="", telemetri
     si se provee, se llena con modelo, tokens y no cambia el comportamiento.
     """
     from groq import Groq
-    client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
+    client = Groq(api_key=os.environ.get("GROQ_API_KEY"), timeout=45, max_retries=0)
 
     prompt_instrucciones = (
         f"Eres un psicólogo clínico supervisor y experto. A continuación tienes las notas de sesión y/o resumen "
@@ -3849,6 +3809,11 @@ def _reg_log_auto(cita=None, etapa='completo', estado='exitoso', servicio='siste
 
 
 def generar_bitacora_automatica_meet(cita_id, log_func=None, origen='automatico', usuario=None):
+    from .orquestador import activo, solicitar
+    if activo():
+        cita = Cita.objects.get(pk=cita_id)
+        solicitar(cita, usuario, 'escritura')
+        return True, 'Solicitud registrada en el centro de orquestación.'
     """
     Recupera los attachments de Google Meet de la cita dada,
     extrae el texto de las notas de Google Docs, procesa con Groq y
@@ -4044,6 +4009,13 @@ def api_generar_bitacora_automatica_meet(request, cita_id):
     Endpoint manual para que el psicólogo pueda solicitar generar la bitácora
     con IA a partir de las notas de Google Meet en cualquier momento.
     """
+    from .orquestador import activo
+    if activo():
+        if request.method != 'POST':
+            return JsonResponse({'status':'error','message':'Utilice POST para solicitar una ejecución.'},status=405)
+        cita = get_object_or_404(Cita, pk=cita_id)
+        if not request.user.is_superuser and (not hasattr(request.user, 'perfil_psicologo') or cita.psicologo_id != request.user.perfil_psicologo.pk):
+            return JsonResponse({'status':'error','message':'No autorizado para esta sesión.'},status=403)
     exito, mensaje = generar_bitacora_automatica_meet(
         cita_id,
         origen='manual',
@@ -4055,6 +4027,10 @@ def api_generar_bitacora_automatica_meet(request, cita_id):
 
 
 def procesar_bitacoras_historicas_meet(log_func=None, limite=None):
+    from .orquestador import activo, correr
+    if activo():
+        resultado = correr(limite=limite or 25)
+        return {'creadas_con_exito': resultado['etapas'], 'total_analizadas': resultado['etapas']}
     """
     Escanea todas las citas pasadas que NO tengan bitácora escrita por psicólogo
     e intenta generarlas automáticamente desde las notas de Google Meet con IA.
@@ -6873,7 +6849,7 @@ def _construir_datos_checkin_paciente(paciente, cita=None):
     groq_api_key = os.environ.get("GROQ_API_KEY")
     if groq_api_key:
         try:
-            client = Groq(api_key=groq_api_key)
+            client = Groq(api_key=groq_api_key, timeout=45, max_retries=0)
             response = client.chat.completions.create(
                 model="llama-3.3-70b-versatile",
                 messages=[{"role": "user", "content": prompt}],
@@ -7103,7 +7079,7 @@ def _construir_datos_checkin_psicologo(paciente, cita=None):
     groq_api_key = os.environ.get("GROQ_API_KEY")
     if groq_api_key:
         try:
-            client = Groq(api_key=groq_api_key)
+            client = Groq(api_key=groq_api_key, timeout=45, max_retries=0)
             response = client.chat.completions.create(
                 model="llama-3.3-70b-versatile",
                 messages=[{"role": "user", "content": prompt}],
@@ -7238,7 +7214,8 @@ def _enviar_email_reporte_paciente_con_pdf(paciente, datos, pdf_bytes, filename,
     )
     email.attach_alternative(cuerpo_html, 'text/html')
     email.attach(filename, pdf_bytes, 'application/pdf')
-    email.send(fail_silently=False)
+    if email.send(fail_silently=False) != 1:
+        raise RuntimeError("SMTP no confirmó la aceptación del mensaje.")
 
 
 def _enviar_email_reporte_psicologo_con_pdf(psicologo, paciente, datos, pdf_bytes, filename, es_tectum=False):
@@ -7272,7 +7249,8 @@ def _enviar_email_reporte_psicologo_con_pdf(psicologo, paciente, datos, pdf_byte
     )
     email.attach_alternative(cuerpo_html, 'text/html')
     email.attach(filename, pdf_bytes, 'application/pdf')
-    email.send(fail_silently=False)
+    if email.send(fail_silently=False) != 1:
+        raise RuntimeError("SMTP no confirmó la aceptación del mensaje.")
 
 
 # ------------------------------------------------------------------------
@@ -7321,6 +7299,10 @@ def _log_envio_ipp_seguro(cita, tipo, accion, resultado, detalle, usuario=None):
 
 
 def _procesar_reporte_de_una_cita_detallado(cita_id, log_func=None, forzar=False, solo_generar=False):
+    from .orquestador import activo, solicitar
+    if activo():
+        solicitar(Cita.objects.get(pk=cita_id), None, 'pdf_psicologo' if solo_generar else 'completo')
+        return True, 'Solicitud registrada; consulte el centro de orquestación.', {'cita_id': cita_id, 'etapas': [], 'archivos': {}, 'errores': []}
     """
     Versión con reporte minucioso de cada fase (extracción, renderizado paciente/psicólogo,
     almacenamiento en BD, y despacho de correos con detalles de errores SMTP).
@@ -7471,8 +7453,6 @@ def _procesar_reporte_de_una_cita_detallado(cita_id, log_func=None, forzar=False
             _log("   ℹ️ Modo simulación / solo generar activo. Se omitió el despacho de correos.")
             detalles['etapas'].append({'etapa': 'Despacho de Correos', 'ok': True, 'detalle': 'Omitido intencionalmente (modo solo generar PDF activado).'})
             _log_envio_ipp_seguro(cita, 'general', 'Envío automático (pipeline)', 'Omitido', 'Modo "solo generar": PDFs archivados según lo esperado, correos omitidos intencionalmente.')
-            cita.reporte_enviado = True
-            cita.save(update_fields=['reporte_enviado'])
             return True, "PDFs generados y guardados con éxito en base de datos (sin enviar correo)", detalles
 
         email_pac_ok = False
@@ -7517,7 +7497,7 @@ def _procesar_reporte_de_una_cita_detallado(cita_id, log_func=None, forzar=False
             detalles['etapas'].append({'etapa': 'Envío Correo Psicólogo', 'ok': False, 'detalle': 'El psicólogo tratante no tiene correo registrado.'})
             _log_envio_ipp_seguro(cita, 'psicologo', 'Envío automático (pipeline)', 'Advertencia', 'Correo del psicólogo vacío: no hay destinatario al cual enviar.')
 
-        cita.reporte_enviado = True
+        cita.reporte_enviado = email_pac_ok and email_psi_ok
         cita.save(update_fields=['reporte_enviado'])
 
         if email_pac_ok and email_psi_ok:
@@ -7539,6 +7519,9 @@ def _procesar_reporte_de_una_cita(cita_id, log_func=None, forzar=False, solo_gen
 
 
 def procesar_citas_pendientes_de_reporte(log_func=None):
+    from .orquestador import activo, correr
+    if activo():
+        return correr()['etapas']
     """
     Revisa todas las citas confirmadas/completadas que aún no tienen su
     reporte enviado. Proporciona logs diagnósticos detallados por cada cita evaluada.
@@ -7730,7 +7713,7 @@ def api_info_reporte_cita(request, cita_id):
             'id': r.id,
             'tipo': r.tipo_destinatario,
             'archivo_nombre': os.path.basename(r.archivo_pdf.name) if r.archivo_pdf else '',
-            'archivo_url': r.archivo_pdf.url if r.archivo_pdf else '',
+            'archivo_url': f'/panel-admin/descargar-reporte-pdf/{cita.id}/{r.tipo_destinatario}/' if r.archivo_pdf else '',
             'correo_enviado': r.correo_enviado,
             'fecha': r.fecha_generacion.strftime('%d/%m/%Y %H:%M') if r.fecha_generacion else '',
         })
@@ -7818,6 +7801,10 @@ def api_info_reporte_cita(request, cita_id):
 @user_passes_test(es_admin, login_url='/')
 @require_POST
 def api_ejecutar_envio_reporte(request, cita_id):
+    from .orquestador import activo
+    if activo():
+        from .centro_operaciones import solicitar
+        return solicitar(request, cita_id)
     forzar = request.POST.get('forzar') in ['true', 'True', '1', True]
     solo_generar = request.POST.get('solo_generar') in ['true', 'True', '1', True]
 
@@ -7838,11 +7825,15 @@ def descargar_reporte_pdf_cita(request, cita_id, tipo):
         raise Http404("Tipo de reporte no válido")
 
     reporte_db = ReporteClinicoPDF.objects.filter(cita_id=cita_id, tipo_destinatario=tipo).order_by('-id').first()
-    if reporte_db and reporte_db.archivo_pdf and os.path.exists(reporte_db.archivo_pdf.path):
+    if reporte_db and reporte_db.archivo_pdf and reporte_db.archivo_pdf.storage.exists(reporte_db.archivo_pdf.name):
         filename = os.path.basename(reporte_db.archivo_pdf.name)
-        response = FileResponse(open(reporte_db.archivo_pdf.path, 'rb'), content_type='application/pdf')
+        response = FileResponse(reporte_db.archivo_pdf.open('rb'), content_type='application/pdf')
         response['Content-Disposition'] = f'inline; filename="{filename}"'
         return response
+
+    from .orquestador import activo
+    if activo():
+        raise Http404('El PDF todavía no está disponible. Solicite su generación desde el centro de operaciones.')
 
     cita = get_object_or_404(
         Cita.objects.select_related('paciente', 'paciente__perfil', 'psicologo__usuario', 'nota_clinica'),
@@ -10501,7 +10492,7 @@ def _ipp_evaluar_cita(cita, rows, logs, ahora):
 
     def _pdf_vivo(row):
         try:
-            return bool(row and row.archivo_pdf and row.archivo_pdf.path and os.path.exists(row.archivo_pdf.path))
+            return bool(row and row.archivo_pdf and row.archivo_pdf.storage.exists(row.archivo_pdf.name))
         except Exception:
             # El archivo no es accesible vía storage local (media efímero, redeploy, etc.)
             return False
@@ -10561,7 +10552,7 @@ def _ipp_evaluar_cita(cita, rows, logs, ahora):
                     "automática de Meet; tras 24 h genera el reporte aunque falte bitácora.")
         return ("no_enviado",
                 "Reporte PDF inexistente: la sesión ya cumple la ventana y tiene bitácora, pero el pipeline "
-                "aún no la procesa (se ejecuta con el comando enviar_reportes_citas o el botón de procesar reportes).")
+                "aún no la procesa. Consulte el centro de orquestación.")
 
     if sub_pac['estado'] == 'enviado' and sub_psi['estado'] == 'enviado':
         estado = 'enviado'
@@ -10717,6 +10708,10 @@ def panel_admin_ipp_email_monitor_view(request):
 @user_passes_test(es_admin, login_url='/')
 @require_POST
 def api_reintentar_envio_ipp(request, cita_id):
+    from .orquestador import activo
+    if activo():
+        from .centro_operaciones import solicitar
+        return solicitar(request, cita_id)
     """
     POST /panel-admin/api/reintentar-envio-ipp/<cita_id>/
     Body: tipo = '' (ambos pendientes por defecto) | 'paciente' | 'psicologo'
@@ -10818,8 +10813,8 @@ def api_reintentar_envio_ipp(request, cita_id):
 
         # 4) Validación: archivo PDF disponible
         try:
-            existe_archivo = bool(row.archivo_pdf and row.archivo_pdf.path and os.path.exists(row.archivo_pdf.path))
-            ruta_pdf = row.archivo_pdf.path if existe_archivo else None
+            existe_archivo = bool(row.archivo_pdf and row.archivo_pdf.storage.exists(row.archivo_pdf.name))
+            ruta_pdf = row.archivo_pdf.name if existe_archivo else None
         except Exception:
             existe_archivo = False
             ruta_pdf = None
@@ -10840,7 +10835,7 @@ def api_reintentar_envio_ipp(request, cita_id):
 
         # 5) Reintento de envío con las mismas funciones de correo del pipeline
         try:
-            with open(ruta_pdf, 'rb') as fh:
+            with row.archivo_pdf.open('rb') as fh:
                 pdf_bytes = fh.read()
         except Exception as e:
             detalle = f"No se pudo leer el archivo PDF: {e}"
@@ -11024,12 +11019,12 @@ def _amn_evaluar_cita(cita):
             return {'estado': 'pendiente', 'detalle': f'Solo hay reporte de uno de los destinatarios (falta {faltante}).', 'log': None, 'historico': False}
         if not tiene_bitacora:
             return {'estado': 'pendiente', 'detalle': 'En espera de bitácora: el pipeline genera el reporte ~2 h después de la sesión con bitácora.', 'log': None, 'historico': False}
-        return {'estado': 'pendiente', 'detalle': 'Con bitácora y fuera de la ventana de 2 h: el pipeline aún no la procesa (ejecutar enviar_reportes_citas o procesar reportes).', 'log': None, 'historico': False}
+        return {'estado': 'pendiente', 'detalle': 'La sesión ya tiene bitácora y cumplió la espera de 2 horas. Consulte su avance en el centro de orquestación.', 'log': None, 'historico': False}
 
     def _paso_correo():
         def _vivo(row):
             try:
-                return bool(row and row.archivo_pdf and row.archivo_pdf.path and os.path.exists(row.archivo_pdf.path))
+                return bool(row and row.archivo_pdf and row.archivo_pdf.storage.exists(row.archivo_pdf.name))
             except Exception:
                 return False
 
@@ -11188,7 +11183,7 @@ def _amn_salud():
     items.append({
         'nombre': 'Pipeline de reportes',
         'estado': 'ok' if pendientes_pipeline <= 25 else ('advertencia' if pendientes_pipeline <= 200 else 'error'),
-        'detalle': f'{pendientes_pipeline} sesiones pasadas aún sin reporte (se atenúan al correr enviar_reportes_citas).',
+        'detalle': f'{pendientes_pipeline} sesiones pasadas aún sin reporte. Consulte el centro de orquestación.',
     })
 
     # 7. Automatización de notas (errores en 8 h de CUALQUIER etapa)

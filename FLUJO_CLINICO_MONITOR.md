@@ -6,7 +6,7 @@ Solo superusuarios. Lecturas sin efectos secundarios; ejecuciones mediante POST 
 
 ## Lo verificado en el código existente
 
-- `enviar_reportes_citas` llama al pipeline de `core/views.py`. La ventana se calcula
+- `orquestar_procesos` ejecuta el flujo clínico programado. La ventana se calcula
   desde **el inicio** de la cita: 60 minutos de sesión + 60 minutos de espera.
 - Calendar entrega referencias a documentos. La aplicación recupera el texto; Groq
   estructura los cinco campos de la bitácora. Groq no consulta Google Docs por sí mismo.

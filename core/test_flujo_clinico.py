@@ -189,7 +189,7 @@ class FlujoClinicoTests(TestCase):
             self.assertEqual(ReporteClinicoPDF.objects.count(),2)
             pac.assert_not_called();psi.assert_not_called()
         self.cita.refresh_from_db()
-        self.assertTrue(self.cita.reporte_enviado)  # Se respeta la semántica legacy.
+        self.assertFalse(self.cita.reporte_enviado)  # Generar no acredita entrega.
         self.assertEqual(evaluar(_base().get(pk=self.cita.pk))['pasos'][-1]['estado'],'pendiente')
 
     def test_html_de_login_no_se_acepta_como_texto(self):

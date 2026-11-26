@@ -8,6 +8,7 @@ from django.core.exceptions import ValidationError
 from django.utils import timezone
 
 from .almacen_grabaciones import almacen_adjuntos_clinicos, almacen_grabaciones, almacen_transcripciones
+from .almacen_reportes import almacen_reportes
 
 
 class CodigoQRHope(models.Model):
@@ -1124,7 +1125,7 @@ class ReporteClinicoPDF(models.Model):
     tipo_destinatario = models.CharField(max_length=20, choices=TIPO_DESTINATARIO, verbose_name="Tipo de Reporte", db_index=True)
     numero_sesion = models.PositiveIntegerField(default=1, verbose_name="Número de sesión")
 
-    archivo_pdf = models.FileField(upload_to='reportes_sesiones/%Y/%m/', verbose_name="Archivo PDF generado")
+    archivo_pdf = models.FileField(upload_to='reportes_sesiones/%Y/%m/', storage=almacen_reportes, verbose_name="Archivo PDF generado")
     datos_ia_snapshot = models.JSONField(default=dict, blank=True, verbose_name="Resumen de datos clínicos e IA")
 
     correo_enviado = models.BooleanField(default=False, verbose_name="¿Enviado por correo?")
@@ -1385,6 +1386,55 @@ class LogEnvioReporteIPP(models.Model):
 
     def __str__(self):
         return f"[{self.fecha.strftime('%d/%m/%Y %H:%M')}] Cita #{self.cita_id} · {self.accion} · {self.resultado}"
+
+
+class TrabajoProceso(models.Model):
+    cita = models.ForeignKey(Cita, on_delete=models.CASCADE, related_name='trabajos_proceso')
+    etapa = models.CharField(max_length=30)
+    version = models.PositiveIntegerField(default=1)
+    estado = models.CharField(max_length=24, default='pendiente', db_index=True)
+    intentos = models.PositiveIntegerField(default=0)
+    proximo_intento = models.DateTimeField(default=timezone.now, db_index=True)
+    token = models.CharField(max_length=36, blank=True)
+    vence = models.DateTimeField(null=True, blank=True)
+    manual = models.BooleanField(default=False)
+    habilitado = models.BooleanField(default=True)
+    responsable = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL)
+    resultado = models.JSONField(default=dict, blank=True)
+    error = models.CharField(max_length=80, blank=True)
+    mensaje = models.CharField(max_length=400, blank=True)
+    incidencia_desde = models.DateTimeField(null=True, blank=True)
+    creado = models.DateTimeField(auto_now_add=True)
+    actualizado = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=['cita', 'etapa', 'version'], name='proceso_etapa_version_unica')]
+        indexes = [models.Index(fields=['estado', 'proximo_intento'], name='proceso_pendientes_idx')]
+
+
+class EjecucionProceso(models.Model):
+    trabajo = models.ForeignKey(TrabajoProceso, on_delete=models.CASCADE, related_name='ejecuciones')
+    token = models.CharField(max_length=36, unique=True)
+    inicio = models.DateTimeField(default=timezone.now)
+    fin = models.DateTimeField(null=True, blank=True)
+    duracion_ms = models.PositiveIntegerField(null=True, blank=True)
+    resolucion_ms = models.PositiveBigIntegerField(null=True, blank=True)
+    estado = models.CharField(max_length=24, default='procesando')
+    error = models.CharField(max_length=80, blank=True)
+    responsable = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL)
+
+
+class ControlOrquestador(models.Model):
+    clave = models.CharField(max_length=40, primary_key=True)
+    token = models.CharField(max_length=36, blank=True)
+    vence = models.DateTimeField(null=True, blank=True)
+
+
+class ArchivoProceso(models.Model):
+    """PDF privado compartido entre web y cron; nunca expuesto por MEDIA_URL."""
+    nombre = models.CharField(max_length=200, unique=True)
+    contenido = models.BinaryField()
+    creado = models.DateTimeField(auto_now_add=True)
 
 
 class EstadoFlujoSesion(models.Model):

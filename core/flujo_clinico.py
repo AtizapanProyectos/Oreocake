@@ -39,9 +39,10 @@ def solo_admin(view):
 
 
 class PasoBloqueado(Exception):
-    def __init__(self, mensaje, estado='pendiente'):
+    def __init__(self, mensaje, estado='pendiente', codigo=None):
         super().__init__(mensaje)
         self.estado = estado
+        self.codigo = codigo
 
 
 def _inicio(cita):
@@ -209,6 +210,10 @@ def _filas(params):
 
 @solo_admin
 def panel(request):
+    from .orquestador import activo
+    if activo():
+        from . import centro_operaciones
+        return centro_operaciones.panel(request)
     error = ''
     try:
         filas = list(_filas(request.GET))
@@ -238,6 +243,10 @@ def panel(request):
 @solo_admin
 @require_POST
 def preparar_lote(request):
+    from .orquestador import activo
+    if activo():
+        from . import centro_operaciones
+        return centro_operaciones.solicitar(request)
     """Congela IDs ordenados; el navegador pide UN paso por request, sin cola nueva."""
     limite = request.POST.get('limite', '1')
     if limite not in ('1', '2', '5', '10', 'todos'):
@@ -256,17 +265,24 @@ def _credenciales():
     from google.oauth2.credentials import Credentials
     token = os.environ.get('GOOGLE_TOKEN_JSON')
     if not token:
-        raise PasoBloqueado('Falta configurar la conexión con Google.', 'sin_permisos')
-    return Credentials.from_authorized_user_info(json.loads(token))
+        raise PasoBloqueado('Falta configurar la conexión con Google.', 'sin_permisos', 'google_configuracion')
+    try:
+        return Credentials.from_authorized_user_info(json.loads(token))
+    except (ValueError, TypeError):
+        raise PasoBloqueado('La configuración de Google no es válida.', 'sin_permisos', 'google_configuracion') from None
 
 
 def _leer_meet(cita):
-    from googleapiclient.discovery import build
+    from google.auth.transport.requests import AuthorizedSession
     if not cita.id_evento_google:
         raise PasoBloqueado('La sesión no tiene evento de Meet. Capture las notas en el expediente.')
     try:
-        event = build('calendar', 'v3', credentials=_credenciales(), cache_discovery=False).events().get(
-            calendarId='primary', eventId=cita.id_evento_google).execute()
+        from urllib.parse import quote
+        with AuthorizedSession(_credenciales()) as session:
+            response = session.get('https://www.googleapis.com/calendar/v3/calendars/primary/events/' +
+                                   quote(cita.id_evento_google, safe=''), timeout=25)
+            _validar_respuesta_google(response)
+            event = response.json()
     except Exception as exc:
         status = getattr(getattr(exc, 'resp', None), 'status', None)
         if status in (401, 403, 404):
@@ -276,11 +292,26 @@ def _leer_meet(cita):
             for a in event.get('attachments', [])]
 
 
+def _validar_respuesta_google(response):
+    if response.status_code == 403:
+        try:
+            razones = {e.get('reason') for e in response.json().get('error', {}).get('errors', [])}
+        except (ValueError, TypeError, AttributeError):
+            razones = set()
+        if razones & {'rateLimitExceeded', 'userRateLimitExceeded', 'quotaExceeded', 'dailyLimitExceeded'}:
+            response.raise_for_status()
+        raise PasoBloqueado('La cuenta conectada no tiene permiso para leer el documento o evento.', 'sin_permisos')
+    if response.status_code in (401, 404):
+        raise PasoBloqueado('El documento o evento no es accesible para la cuenta conectada.', 'sin_permisos')
+    response.raise_for_status()
+
+
 def _leer_documentos(adjuntos):
     # Solo exportación autenticada. Nunca se interpreta una pantalla HTML de login como nota clínica.
     from google.auth.transport.requests import AuthorizedSession
+    if len(adjuntos) > 8:
+        raise PasoBloqueado('El evento contiene más de ocho documentos; revisar la selección antes de procesar.', 'conflicto')
     partes = []
-    sin_acceso = False
     with AuthorizedSession(_credenciales()) as session:
         for adjunto in adjuntos:
             match = re.fullmatch(r'https://(?:docs|drive)\.google\.com/(?:document|file)/d/([\w-]+)(?:[/?#].*)?', adjunto['fileUrl'])
@@ -288,16 +319,11 @@ def _leer_documentos(adjuntos):
                 continue
             response = session.get(f'https://www.googleapis.com/drive/v3/files/{match.group(1)}/export',
                                    params={'mimeType': 'text/plain'}, timeout=25)
-            if response.status_code in (401, 403, 404):
-                sin_acceso = True
-                continue
-            response.raise_for_status()
+            _validar_respuesta_google(response)
             if 'text/html' in response.headers.get('Content-Type', '').lower() or '<html' in response.text[:200].lower():
                 raise PasoBloqueado('Google devolvió una página web en lugar de notas.', 'sin_permisos')
             if response.text.strip():
                 partes.append(response.text.strip())
-    if sin_acceso:
-        raise PasoBloqueado('Google no permite exportar uno o más documentos (privados, inexistentes o sin permiso OAuth de lectura de Drive). Revise el acceso de la cuenta conectada o use la nota del expediente.', 'sin_permisos')
     if not partes:
         raise PasoBloqueado('No hay texto extraíble en los documentos adjuntos.')
     return '\n\n'.join(partes)
@@ -356,7 +382,6 @@ def ejecutar_paso(cita, tipo, usuario):
             if not (getattr(historial, campo) or '').strip():
                 setattr(historial, campo, datos.get(campo, ''))
         historial.save(update_fields=list(CAMPOS))
-        Cita.objects.filter(pk=cita.pk).update(estado='Completada')
         mensaje = 'Expediente completado; se conservaron todos los campos que ya tenían contenido.'
     elif tipo == 'ipp':
         if not _ipp(cita):
@@ -404,6 +429,10 @@ def ejecutar_paso(cita, tipo, usuario):
 @solo_admin
 @require_POST
 def reintento(request, cita_id):
+    from .orquestador import activo
+    if activo():
+        from . import centro_operaciones
+        return centro_operaciones.solicitar(request, cita_id)
     """Un paso por request. El cliente encadena los pasos de un flujo completo."""
     from . import views
     tipo = request.POST.get('tipo', '')

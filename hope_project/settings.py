@@ -235,3 +235,7 @@ ALLOWED_HOSTS = [
 PAYPAL_CLIENT_ID = os.environ.get('PAYPAL_CLIENT_ID', 'sb')
 PAYPAL_CLIENT_SECRET = os.environ.get('PAYPAL_CLIENT_SECRET', '')
 PAYPAL_MODE = os.environ.get('PAYPAL_MODE', 'live')
+
+# Un único interruptor para panel y motor; activación posterior al corte de cron.
+ORQUESTADOR_ACTIVO = os.environ.get("ORQUESTADOR_ACTIVO", "0") == "1"
+EMAIL_TIMEOUT = 30
