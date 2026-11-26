@@ -15,6 +15,7 @@ from .panel_bienestar_tectum import (
 
 urlpatterns = [
     path('panel-admin/api/orquestacion/', centro_operaciones.datos, name='orquestacion_datos'),
+    path('panel-admin/api/orquestacion/lote/', centro_operaciones.solicitar, name='orquestacion_lote'),
     path('panel-admin/api/orquestacion/modo/', centro_operaciones.cambiar_modo, name='orquestacion_modo'),
     path('panel-admin/api/orquestacion/<int:cita_id>/', centro_operaciones.historial, name='orquestacion_historial'),
 

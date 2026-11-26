@@ -35,3 +35,9 @@
 .oc-live label {display:block; font-weight:700; margin-bottom:5px;}
 .oc-live select {margin-bottom:10px;}
 @media(max-width:560px) {.oc-deliveries {grid-template-columns:1fr;}}
+.oc-age {display:inline-block;margin-top:.65rem;font-weight:700;color:#416254;font-size:.85rem}
+#oc-detail .oc-flow {display:flex;align-items:center;gap:32px;overflow-x:auto;padding:30px 22px;scrollbar-color:#83ab99 #eaf1ed}
+#oc-detail .oc-flow-step {box-sizing:border-box;flex:0 0 215px;margin:0;padding:16px 18px;box-shadow:0 3px 12px #183b2912}
+#oc-detail .oc-flow-dot {left:-10px;top:calc(50% - 10px)}
+#oc-detail .oc-flow-step:not(:last-child)::after {left:100%;top:50%;width:32px;height:2px}
+#oc-detail .oc-flow-step.procesando {outline:2px solid #24906e}

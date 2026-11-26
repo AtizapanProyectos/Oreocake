@@ -1863,3 +1863,9 @@ class AnalisisGrabacionClinica(models.Model):
     actualizado = models.DateTimeField(auto_now=True)
     notas = models.JSONField(default=dict, blank=True)
     progreso = models.JSONField(default=dict, blank=True)
+
+
+class SolicitudLoteSesion(models.Model):
+    cita = models.OneToOneField(Cita, on_delete=models.CASCADE)
+    responsable = models.ForeignKey('auth.User', on_delete=models.CASCADE)
+    creada = models.DateTimeField(auto_now_add=True)

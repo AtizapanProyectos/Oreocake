@@ -2,7 +2,7 @@
 {% block title %}Centro de operaciones · HOPE{% endblock %}
 {% block extra_css %}<link rel="stylesheet" href="{% static 'css/centro_operaciones.css' %}">{% endblock %}
 {% block content %}
-<main id="operations" data-url="{% url 'orquestacion_datos' %}" data-modo="{% url 'orquestacion_modo' %}">
+<main id="operations" data-url="{% url 'orquestacion_datos' %}" data-lote="{% url 'orquestacion_lote' %}" data-modo="{% url 'orquestacion_modo' %}">
  <header class="oc-header"><div><h1>Centro de orquestación</h1><p id="oc-mode-description">Consultando el modo de trabajo…</p></div><div class="oc-live">
   <label for="oc-mode">Modo del maestro</label>
   <select id="oc-mode" disabled><option value="manual">Manual</option><option value="automatico">Automático</option></select>
@@ -11,14 +11,14 @@
  <section id="oc-deliveries" class="oc-deliveries" aria-label="Estado de las citas según los filtros"></section>
  <section id="oc-kpis" class="oc-kpis" aria-label="Indicadores de ejecuciones de hoy"></section>
  <form id="oc-filters" class="oc-filters">
-  <label>Organización<select name="org"><option value="">Todas</option><option value="hope">HOPE</option><option value="tectum_inhouse">TECTUM In-House</option><option value="tectum_beneficios">TECTUM Beneficios</option></select></label>
+  <label>Organización<select name="org"><option value="">Todas</option><option value="hope">HOPE</option><option value="tectum">Todo TECTUM</option><option value="tectum_inhouse">TECTUM In-House</option><option value="tectum_beneficios">TECTUM Beneficios</option></select></label>
   <label>Servicio<select name="servicio"><option value="">Todos</option><option value="individual">Individual</option><option value="pareja">Pareja</option><option value="familiar">Familiar</option></select></label>
   <label>Modalidad<select name="modalidad"><option value="">Todas</option><option>En línea</option><option>Presencial</option></select></label>
   <label>Situación<select name="estado"><option value="">Todas</option>{% for value,label in estados.items %}<option value="{{ value }}">{{ label }}</option>{% endfor %}</select></label>
   <label>Desde<input type="date" name="desde"></label><label>Hasta<input type="date" name="hasta"></label>
   <label>Día de sesión<input type="date" name="fecha"></label><label>Fecha de creación<input type="date" name="creada"></label>
   <label>Paciente<input name="paciente" placeholder="Nombre o correo"></label><label>Profesional<input name="psicologo" placeholder="Nombre o correo"></label>
-  <label>Cita<input name="cita" type="number" min="1" placeholder="#"></label><button>Aplicar filtros</button>
+  <label>Cita<input name="cita" type="number" min="1" placeholder="#"></label><button>Aplicar filtros</button><button type="button" id="oc-batch">Ejecutar citas del filtro</button>
  </form>
  <section class="oc-work"><header><h2>Citas <span id="oc-total"></span></h2></header>
  <p id="oc-message" role="status" aria-live="polite"></p>
@@ -31,11 +31,11 @@
   <div class="oc-actions">
    <button id="oc-copy-ipp" type="button" hidden>Copiar liga del IPP</button>
    <button id="oc-test-pdf" type="button">Generar PDF sin enviar</button>
-   <button id="oc-test-full" type="button">Solicitar flujo completo</button>
+   <button id="oc-test-full" type="button">Ejecutar flujo ahora</button>
   </div>
   <p id="oc-ipp-status" role="status"></p>
   <input id="oc-ipp-link" aria-label="Liga del IPP" type="text" readonly hidden>
-  <p>El maestro toma la solicitud en su próximo ciclo.</p>
+  <p>La ejecución continúa aunque cierres este panel.</p>
   <div id="oc-detail-body"></div>
  </dialog>
  <div hidden>{% csrf_token %}</div>

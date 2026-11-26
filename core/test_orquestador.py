@@ -302,6 +302,21 @@ class OrquestadorTests(TestCase):
         self.assertFalse(EjecucionProceso.objects.filter(trabajo__cita=self.cita).exists())
         self.assertEqual(self.client.post(reverse('api_lote_automatizacion')).status_code, 400)
 
+    def test_lote_tectum_conserva_seleccion_y_procesa_una_vez(self):
+        self.cita.es_beneficios = True
+        self.cita.save()
+        Cita.objects.create(paciente=self.pac, fecha=self.cita.fecha, hora=time(12))
+        self.nota()
+        self.ipp()
+        for _ in range(2):
+            respuesta = self.client.post(reverse('orquestacion_lote'), {'alcance':'filtrado', 'org':'tectum'})
+            self.assertEqual(respuesta.status_code, 202)
+        self.assertEqual(list(motor.SolicitudLoteSesion.objects.values_list('cita_id', flat=True)), [self.cita.pk])
+        with self.mocks():
+            motor.correr()
+        self.assertFalse(motor.SolicitudLoteSesion.objects.exists())
+        self.assertEqual(ReporteClinicoPDF.objects.filter(cita=self.cita, correo_enviado=True).count(), 2)
+
     def test_selector_persiste_y_automatico_excluye_cita_futura(self):
         futura = Cita.objects.create(paciente=self.pac, psicologo=self.doc,
             fecha=timezone.localdate()+timedelta(days=1), hora=time(11))

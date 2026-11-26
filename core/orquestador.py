@@ -309,6 +309,9 @@ def procesar(trabajo):
     return estado == 'completado'
 
 
+from .models import SolicitudLoteSesion
+
+
 def correr(limite=25, segundos=240, cita_id=None):
     if not activo():
         return {'activo': False, 'etapas': 0}
@@ -323,6 +326,14 @@ def correr(limite=25, segundos=240, cita_id=None):
     total, reloj = 0, time.monotonic()
     try:
         automatico = modo_automatico()
+        if cita_id is None:
+            lote = SolicitudLoteSesion.objects.select_related('cita', 'responsable').order_by(
+                'cita__fecha', 'cita__hora', 'pk')[:limite]
+            for solicitud in lote:
+                with transaction.atomic():
+                    if elegible(solicitud.cita):
+                        solicitar(solicitud.cita, solicitud.responsable)
+                    solicitud.delete()
         for viejo in TrabajoProceso.objects.filter(estado='procesando', vence__lte=ahora):
             incierto = viejo.error == 'entrega_incierta'
             recuperado = 'revision_manual' if incierto or viejo.intentos >= 5 else 'espera_reintento'
@@ -352,7 +363,7 @@ def correr(limite=25, segundos=240, cita_id=None):
             Q(estado__in=['revision_manual','bloqueado'], etapa__in=ETAPAS[:4],
               cita__nota_clinica__notas_sesion__gt='', cita__nota_clinica__pendiente_revision_audio=False)).exclude(error='historico_ambiguo')
         # Ignore blocked earlier stages so they cannot starve later appointments.
-        candidatos = pendientes.filter(proximo_intento__lte=ahora).order_by('-manual', 'cita__fecha', 'cita__hora', 'cita_id')
+        candidatos = pendientes.filter(proximo_intento__lte=timezone.now()).order_by('-manual', 'cita__fecha', 'cita__hora', 'cita_id')
         ids = list(candidatos.values_list('cita_id', flat=True)[:limite])
         for pk in ids:
             cita = flujo._base().get(pk=pk)

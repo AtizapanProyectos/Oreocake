@@ -9,6 +9,7 @@ from django.urls import reverse
 from django.views.decorators.http import require_POST
 from .flujo_clinico import solo_admin, _ipp
 from .models import Cita, TrabajoProceso, EjecucionProceso, ControlOrquestador, LogEnvioReporteIPP, ReporteClinicoPDF
+from .models import SolicitudLoteSesion
 from . import orquestador as motor
 
 LABELS = {'sin_solicitud': 'Sin solicitud', 'pendiente': 'Solicitud registrada',
@@ -62,6 +63,8 @@ def filtrar(params):
     org = params.get('org')
     if org == 'hope':
         qs = qs.filter(es_tectum=False, es_beneficios=False)
+    elif org == 'tectum':
+        qs = qs.filter(Q(es_tectum=True) | Q(es_beneficios=True))
     elif org == 'tectum_inhouse':
         qs = qs.filter(es_tectum=True, es_beneficios=False)
     elif org == 'tectum_beneficios':
@@ -87,7 +90,7 @@ def fila(cita):
         'servicio': cita.get_tipo_sesion_display(), 'modalidad': cita.modalidad, 'asistencia': cita.registro_llegada,
         'confirmacion': 'Enviada' if cita.correo_confirmacion_enviado else 'Sin evidencia de envío',
         'fecha': f'{cita.fecha} {cita.hora:%H:%M}', 'creada': timezone.localtime(cita.fecha_creacion).isoformat(),
-        'estado': estado, 'estado_label': LABELS[estado], 'edad': edad, 'prioridad': 'Alta' if edad >=48 or estado in ('bloqueado','revision_manual') else 'Normal',
+        'estado': estado, 'estado_label': LABELS[estado], 'edad': edad, 'dias': (timezone.localdate() - cita.fecha).days, 'prioridad': 'Alta' if edad >=48 or estado in ('bloqueado','revision_manual') else 'Normal',
         'actualizado': max((t.actualizado.isoformat() for t in trabajos.values()), default=None),
         'siguiente': 'Revisar inasistencia' if no_vino else 'Selecciona una acción' if estado == 'sin_solicitud' else ETIQUETAS[pendiente.etapa] if pendiente else 'Entregas completas',
         'mensaje': pendiente.mensaje if pendiente else '', 'elegible': motor.elegible(cita),
@@ -172,7 +175,22 @@ def solicitar(request, cita_id=None):
     if not motor.activo():
         return JsonResponse({'mensaje':'El motor está desactivado.'}, status=409)
     if cita_id is None:
-        return JsonResponse({'mensaje':'Selecciona una cita individual en el panel.'}, status=400)
+        if request.POST.get('alcance') != 'filtrado' or request.POST.get('org', '') not in (
+                '', 'hope', 'tectum', 'tectum_inhouse', 'tectum_beneficios'):
+            return JsonResponse({'mensaje':'Selecciona el conjunto de citas.'}, status=400)
+        ahora = timezone.localtime()
+        try:
+            citas = filtrar(request.POST).filter(Q(fecha__lt=ahora.date()) |
+                Q(fecha=ahora.date(), hora__lte=ahora.time())).exclude(
+                modalidad='Presencial', registro_llegada='No Vino').exclude(
+                estado_visual__in=['completado', 'procesando']).order_by()
+            ids = list(citas.values_list('pk', flat=True))
+        except (ValueError, TypeError):
+            return JsonResponse({'mensaje':'Filtros inválidos.'}, status=400)
+        SolicitudLoteSesion.objects.bulk_create(
+            [SolicitudLoteSesion(cita_id=pk, responsable=request.user) for pk in ids],
+            batch_size=500, ignore_conflicts=True)
+        return JsonResponse({'mensaje':f'{len(ids)} citas seleccionadas para el maestro.'}, status=202)
     etapa = request.POST.get('tipo') or 'completo'
     etapa = {'reporte':'pdf_psicologo', 'correo':'correo_psicologo',
              'paciente':'correo_paciente', 'psicologo':'correo_psicologo'}.get(etapa, etapa)
@@ -185,4 +203,4 @@ def solicitar(request, cita_id=None):
         return JsonResponse({'mensaje':'La cita debe estar confirmada o completada y sin inasistencia registrada.'}, status=409)
     if not motor.solicitar(cita, request.user, etapa):
         return JsonResponse({'mensaje':'La cita ya tiene una etapa en ejecución.'}, status=409)
-    return JsonResponse({'status':'success', 'mensaje':'Solicitud registrada para el próximo ciclo del maestro.'}, status=202)
+    return JsonResponse({'status':'success', 'mensaje':'Solicitud registrada. El maestro la atenderá en cuanto esté libre.'}, status=202)

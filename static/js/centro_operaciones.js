@@ -120,11 +120,13 @@
        flujo.append(tarjeta);
      }
      const historial = eventos.map(evento => node('p', `${fmt(evento.inicio)} · ${evento.etapa} · ${evento.estado} · ${evento.responsable}${evento.duracion_ms === null ? '' : ` · ${evento.duracion_ms} ms`}${evento.error ? ' · ' + evento.error : ''}`));
+     const desplazamiento = $('oc-detail-body').querySelector('.oc-flow')?.scrollLeft;
      $('oc-detail-body').replaceChildren(
        node('p', `Asistencia: ${fila.asistencia} · Confirmación: ${fila.confirmacion}`),
        flujo, node('h3', 'Historial de ejecuciones'),
        ...(historial.length ? historial : [node('p', 'Todavía no hay intentos registrados.')])
      );
+     flujo.scrollLeft = desplazamiento || 0;
    } catch (error) {
      if (detailId === id) $('oc-detail-status').textContent = error.message;
    } finally {
@@ -143,7 +145,9 @@
    const accion = node('button', cita.estado === 'sin_solicitud' ? 'Abrir flujo' : 'Ver avance');
    accion.type = 'button';
    accion.onclick = () => detail(cita);
-   tarjeta.append(cabecera, node('h3', cita.paciente),
+   const dias = Math.abs(cita.dias);
+   const tiempo = cita.dias === 0 ? 'Hoy' : `${cita.dias > 0 ? 'Hace' : 'En'} ${dias} ${dias === 1 ? 'día' : 'días'}`;
+   tarjeta.append(cabecera, node('span', tiempo, 'oc-age'), node('h3', cita.paciente),
      node('p', `${cita.profesional} · ${cita.servicio}`),
      node('p', `${cita.fecha} · ${cita.modalidad}`), estado,
      node('p', cita.mensaje || cita.siguiente), accion);
@@ -152,6 +156,21 @@
  $('oc-rows').replaceChildren(...(tarjetas.length ? tarjetas : [node('p', 'No hay citas para estos filtros.')]));
  $('oc-activity').replaceChildren(...d.servicios.map(x=>node('p',`${x.tipo_sesion} · ${x.total} sesiones`)),...d.organizaciones.map(x=>node('p',`${x.es_beneficios?'TECTUM Beneficios':x.es_tectum?'TECTUM In-House':'HOPE'} · ${x.total} sesiones`)));$('oc-onsite').replaceChildren(...d.profesionales.map(x=>node('p',`${x.psicologo__usuario__first_name||'Sin asignar'} · ${x.registro_llegada} · ${x.total}`)));if(!d.profesionales.length)$('oc-onsite').append(node('p','Sin datos presenciales en este filtro.'));
  }catch(e){$('oc-sync').textContent='Actualización interrumpida';$('oc-message').textContent=e.message;}finally{loading=false;}}
+ $('oc-batch').onclick = async () => {
+   const filtros = params();
+   const org = form.elements.org.selectedOptions[0].text;
+   if (!confirm(`Ejecutar todas las citas pasadas que coincidan con estos filtros (organización: ${org}), en todas las páginas. Puede enviar correos reales. ¿Continuar?`)) return;
+   filtros.set('alcance', 'filtrado');
+   $('oc-batch').disabled = true;
+   try {
+     const respuesta = await request(root.dataset.lote, {method:'POST', body:filtros,
+       headers:{'X-CSRFToken':root.querySelector('[name=csrfmiddlewaretoken]').value}});
+     $('oc-message').textContent = respuesta.mensaje;
+     await refresh();
+   } catch (error) { $('oc-message').textContent = error.message; }
+   finally { $('oc-batch').disabled = false; }
+ };
+ setInterval(() => { if (!document.hidden && detailId) refreshDetail(); }, 2000);
  form.addEventListener('submit',e=>{e.preventDefault();page=1;refresh();});$('oc-prev').onclick=()=>{page--;refresh();};$('oc-next').onclick=()=>{page++;refresh();};$('oc-close').onclick=()=>$('oc-detail').close();$('oc-detail').addEventListener('close', () => { detailId = null; });
  $('oc-test-pdf').onclick = () => submit(detailId, 'pdf_psicologo');
  $('oc-copy-ipp').onclick = async () => {

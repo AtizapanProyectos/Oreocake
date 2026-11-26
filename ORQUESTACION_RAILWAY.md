@@ -9,7 +9,7 @@ El panel conserva `/panel-admin/automatizacion-notas/`; el indicador usa hora CD
 Retira sus programaciones durante el corte y activa únicamente el cron maestro.
 
 El selector del panel comparte el modo con el servicio cron. En Manual, el modo
-predeterminado, el maestro atiende únicamente solicitudes individuales. En Automático
+predeterminado, el maestro atiende solicitudes individuales y lotes filtrados. En Automático
 también busca citas elegibles desde dos horas después de su inicio y procesa pendientes
 históricos. Las solicitudes individuales conservan prioridad y no tienen espera por fecha.
 Si ya tienen bitácora válida e IPP, pasan a la preparación del reporte.
@@ -29,7 +29,7 @@ operativa; el botón no autoriza un reenvío de un correo incierto.
    Los archivos locales del contenedor anterior no aparecen automáticamente en un cron nuevo.
 4. Desplegar el código con `ORQUESTADOR_ACTIVO=0` en web y cron; aplicar una sola vez
    `python manage.py migrate`. Revisar previamente las migraciones pendientes: esta entrega
-   agrega `0086_centro_orquestacion`.
+   incluye `0086_centro_orquestacion` y `0087_solicitud_lote_sesion`.
 5. Si se conservaron los archivos locales o se restauraron desde el respaldo en `MEDIA_ROOT`,
    ejecutar en ese servicio `python manage.py preservar_pdf_reportes --limite 100`.
    Repetir con `--despues-id ULTIMO_ID` hasta terminar. No borra originales ni envía correos.
@@ -37,9 +37,9 @@ operativa; el botón no autoriza un reenvío de un correo incierto.
 6. Ejecutar `python manage.py orquestar_procesos --reconciliar --limite 100`.
    Repetir con `--despues-id ULTIMO_ID` hasta obtener cero reconciliadas.
    Este modo escribe estados persistentes, pero no contacta servicios ni envía.
-7. Preparar **un solo servicio cron** del mismo repositorio y versión que la web:
-   - Start Command: `python manage.py orquestar_procesos --limite 25 --segundos 240`
-   - Cron Schedule: `*/15 * * * *` (Railway interpreta UTC).
+7. Preparar **un solo servicio continuo** del mismo repositorio y versión que la web:
+   - Start Command: `python manage.py orquestar_procesos --continuo --limite 25 --segundos 240`
+   - Cron Schedule vacío para mantener el maestro disponible.
    - Misma BD y credenciales de Google, Groq y SMTP que la web.
    - Chromium instalado por `railpack.json`; conservar el comando Gunicorn de la web.
 8. Configurar `ORQUESTADOR_ACTIVO=1` en ambos servicios. Activar solamente el cron nuevo.
