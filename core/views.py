@@ -383,7 +383,7 @@ def _calcular_bloqueos_covision(fecha_inicio, fecha_fin):
     return bloqueos
 
 
-def obtener_slots_psicologo(psicologo, fecha_inicio, fecha_fin, tipo_sesion="individual", modalidad="En línea"):
+def obtener_slots_psicologo(psicologo, fecha_inicio, fecha_fin, tipo_sesion="individual", modalidad="En línea", excluir_citas=()):
     """
     🔥 BÚSQUEDA POR PSICÓLOGO: usada una vez que el paciente YA tiene un psicólogo asignado.
     Calcula disponibilidad real aunque el psicólogo cierre nuevas admisiones;
@@ -421,20 +421,21 @@ def obtener_slots_psicologo(psicologo, fecha_inicio, fecha_fin, tipo_sesion="ind
                 return e
         return None
 
-    festivos = set(
+    contexto = getattr(psicologo, '_agenda_contexto', None)
+    festivos = contexto['festivos'] if contexto is not None else set(
         DiaFestivo.objects.filter(fecha__gte=fecha_inicio, fecha__lte=fecha_fin)
         .values_list('fecha', flat=True)
     )
-    dias_libres = set(
+    dias_libres = contexto['dias_libres'] if contexto is not None else set(
         psicologo.dias_libres.filter(fecha__gte=fecha_inicio, fecha__lte=fecha_fin)
         .values_list('fecha', flat=True)
     )
 
-    citas_ocupadas = set(
+    citas_ocupadas = {(c.fecha, c.hora) for c in contexto['citas'] if c.pk not in excluir_citas and c.estado not in ('Cancelada', 'No asistió')} if contexto is not None else set(
         Cita.objects.filter(
             psicologo=psicologo, fecha__gte=fecha_inicio, fecha__lte=fecha_fin
         )
-        .exclude(estado__in=['Cancelada', 'No asistió'])
+        .exclude(estado__in=['Cancelada', 'No asistió']).exclude(pk__in=excluir_citas)
         .values_list('fecha', 'hora')
     )
 
@@ -447,11 +448,12 @@ def obtener_slots_psicologo(psicologo, fecha_inicio, fecha_fin, tipo_sesion="ind
     # (antes era una lista hardcodeada de fechas fijas que había que editar a mano).
     # La Co-Visión es la reunión quincenal de psicólogos: martes 8:00 am y
     # miércoles 7:00 pm, dura 1.5 h (bloquea los slots de 1 h que se solapen).
-    bloqueos_globales = _calcular_bloqueos_covision(fecha_inicio, fecha_fin)
+    bloqueos_globales = contexto['covision'] if contexto is not None else _calcular_bloqueos_covision(fecha_inicio, fecha_fin)
     bloqueos_individuales = {}
-    for fecha_bloqueo, inicio, fin in BloqueoAgendaPsicologo.objects.filter(
+    bloqueos_bd = contexto['bloqueos'] if contexto is not None else BloqueoAgendaPsicologo.objects.filter(
         psicologo=psicologo, activo=True, fecha__range=(fecha_inicio, fecha_fin),
-    ).values_list('fecha', 'hora_inicio', 'hora_fin'):
+    ).values_list('fecha', 'hora_inicio', 'hora_fin')
+    for fecha_bloqueo, inicio, fin in bloqueos_bd:
         bloqueos_individuales.setdefault(fecha_bloqueo, []).append((inicio, fin))
 
     while dia_actual <= fecha_fin and dias_procesados < max_iteraciones:
@@ -2104,6 +2106,7 @@ def capturar_orden_cita_paypal(request):
     if orden.startswith(PREFIJO_PAYPAL_MANUAL):
         return JsonResponse({'status': 'error', 'message': 'Esta orden se verifica desde recepción.'}, status=409)
     with transaction.atomic():
+        User.objects.select_for_update().get(pk=paciente_id)
         pago = PagoCitaPayPal.objects.select_for_update().filter(orden=orden, cita__paciente_id=paciente_id).first()
         if not pago:
             return JsonResponse({'status': 'error', 'message': 'No encontramos esa orden en tu cuenta.'}, status=404)
@@ -2116,6 +2119,7 @@ def capturar_orden_cita_paypal(request):
 
     try:
         with transaction.atomic():
+            User.objects.select_for_update().get(pk=paciente_id)
             pago = PagoCitaPayPal.objects.select_for_update().get(pk=pago.pk)
             if not pago.cita_id:
                 return JsonResponse({'status': 'error', 'message': 'La cita fue eliminada por administración. No se iniciará otro cobro.'}, status=409)
@@ -2220,6 +2224,9 @@ def recepcion_conciliar_paypal_manual(request, pago_id):
 
     try:
         with transaction.atomic():
+            paciente_pago = PagoCitaPayPal.objects.filter(pk=pago_id).values_list('cita__paciente_id', flat=True).first()
+            if paciente_pago:
+                User.objects.select_for_update().get(pk=paciente_pago)
             pago = PagoCitaPayPal.objects.select_for_update().filter(
                 pk=pago_id, orden__startswith=PREFIJO_PAYPAL_MANUAL, captura_iniciada=True,
             ).first()
@@ -2343,6 +2350,8 @@ def subir_comprobante_transferencia_ajax(request):
             usuario = User.objects.get(id=request.POST.get('paciente_id'))
         except (User.DoesNotExist, ValueError, TypeError):
             return JsonResponse({'status': 'error', 'message': 'Paciente no encontrado. Vuelve a seleccionarlo.'})
+
+    usuario = User.objects.select_for_update().get(pk=usuario.pk)
 
     # Flag gradual (SOLO flujo del paciente): sin fila en BD o activo=False =>
     # método oculto y endpoint inerte. Recepción siempre puede (validación humana).
@@ -2605,12 +2614,16 @@ def reagendar_cita_ajax(request):
     nueva_fecha_str = request.POST.get('fecha')
     nueva_hora_str = request.POST.get('hora')
 
+    User.objects.select_for_update().get(pk=request.user.pk)
     try:
         cita = Cita.objects.select_for_update().select_related('psicologo').get(
             id=cita_id, paciente=request.user, estado='Confirmada'
         )
     except Cita.DoesNotExist:
         return JsonResponse({'status': 'error', 'message': 'No encontramos esa cita.'})
+
+    if cita.psicologo_id:
+        PerfilPsicologo.objects.select_for_update().get(pk=cita.psicologo_id)
 
     # Regla: solo se puede reagendar hasta 1 hora antes de la sesión ACTUAL
     ahora = timezone.localtime(timezone.now())
@@ -4818,7 +4831,7 @@ def admin_guardar_cita_ajax(request, recepcion=False):
         return JsonResponse({'status': 'error', 'message': 'Selecciona un paciente antes de confirmar.'})
 
     try:
-        paciente_user = User.objects.get(id=paciente_id)
+        paciente_user = User.objects.select_for_update().get(id=paciente_id)
         perfil = paciente_user.perfil
     except Exception:
         return JsonResponse({'status': 'error', 'message': 'Paciente no encontrado o sin perfil.'})

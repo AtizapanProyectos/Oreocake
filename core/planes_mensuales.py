@@ -328,6 +328,8 @@ def reservar(request):
 
 def _plan_accesible(request, datos, bloquear=False):
     paciente = _paciente(request, datos)
+    if bloquear:
+        User.objects.select_for_update().get(pk=paciente.pk)
     qs = PlanMensual.objects.select_for_update() if bloquear else PlanMensual.objects
     try:
         plan = qs.get(pk=datos.get('plan_id'), paciente=paciente)

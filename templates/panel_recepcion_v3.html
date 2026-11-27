@@ -426,6 +426,7 @@ body.co-lock{overflow:hidden}
       <a class="tab" href="{{ url_agendar_online|default:'#' }}"><svg class="ic"><use href="#i-video"/></svg>En línea</a>
       <a class="tab" href="{{ url_agendar_presencial|default:'#' }}"><svg class="ic"><use href="#i-pin"/></svg>Presencial</a>
       <a class="tab" href="{{ url_citas|default:'#' }}"><svg class="ic"><use href="#i-cal"/></svg>Citas</a>
+      <a class="tab" href="{% url 'recepcion_agenda' %}" aria-label="Administración de Agenda" title="Administración de Agenda"><svg class="ic"><use href="#i-cal"/></svg>Agenda</a>
       <!-- MÓDULO: copia una línea para sumar nuevas funciones -->
       <a class="tab" href="{{ url_agregar_paciente|default:'#' }}"><svg class="ic"><use href="#i-users"/></svg>Pacientes</a>
     </nav>

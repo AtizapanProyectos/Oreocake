@@ -1,5 +1,6 @@
 from django.urls import path
 from . import views
+from . import agenda_recepcion
 from . import flujo_clinico, centro_operaciones
 from . import codigos_qr
 from . import planes_mensuales
@@ -14,6 +15,13 @@ from .panel_bienestar_tectum import (
 
 
 urlpatterns = [
+    path('recep-59/agenda/', agenda_recepcion.panel, name='recepcion_agenda'),
+    path('recep-59/agenda/datos/', agenda_recepcion.datos, name='recepcion_agenda_datos'),
+    path('recep-59/agenda/disponibilidad/', agenda_recepcion.disponibilidad, name='recepcion_agenda_disponibilidad'),
+    path('recep-59/agenda/candidatos/', agenda_recepcion.candidatos, name='recepcion_agenda_candidatos'),
+    path('recep-59/agenda/ejecutar/', agenda_recepcion.ejecutar, name='recepcion_agenda_ejecutar'),
+    path('recep-59/agenda/historial/', agenda_recepcion.historial, name='recepcion_agenda_historial'),
+    path('recep-59/agenda/sincronizacion/<int:pk>/', agenda_recepcion.reintentar, name='recepcion_agenda_reintentar'),
     path('panel-admin/api/orquestacion/', centro_operaciones.datos, name='orquestacion_datos'),
     path('panel-admin/api/orquestacion/lote/', centro_operaciones.solicitar, name='orquestacion_lote'),
     path('panel-admin/api/orquestacion/modo/', centro_operaciones.cambiar_modo, name='orquestacion_modo'),

@@ -809,6 +809,30 @@ class MetricaDiaria(models.Model):
     focos_rojos_activos = models.PositiveIntegerField(default=0)
     def __str__(self): return f"Métrica {self.fecha}"
 
+class OperacionAgenda(models.Model):
+    clave = models.UUIDField(default=uuid4, unique=True, editable=False)
+    usuario = models.ForeignKey(User, null=True, on_delete=models.SET_NULL)
+    accion = models.CharField(max_length=30)
+    solicitud = models.JSONField(default=dict)
+    resultado = models.JSONField(default=dict)
+    creada = models.DateTimeField(auto_now_add=True)
+
+
+class SincronizacionAgenda(models.Model):
+    operacion = models.ForeignKey(OperacionAgenda, on_delete=models.PROTECT, related_name='sincronizaciones')
+    cita = models.ForeignKey('Cita', on_delete=models.CASCADE, related_name='sincronizaciones_agenda')
+    estado = models.CharField(max_length=20, default='pendiente', db_index=True)
+    calendario_listo = models.BooleanField(default=False)
+    correo_iniciado = models.BooleanField(default=False)
+    intentos = models.PositiveIntegerField(default=0)
+    mensaje = models.CharField(max_length=400, blank=True)
+    proximo_intento = models.DateTimeField(default=timezone.now)
+    actualizada = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=['operacion', 'cita'], name='agenda_sync_operacion_cita')]
+
+
 class EventoAuditoria(models.Model):
     usuario = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     accion = models.CharField(max_length=100, db_index=True) # 🔥 OPTIMIZADO

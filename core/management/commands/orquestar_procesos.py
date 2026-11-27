@@ -2,6 +2,7 @@ import time
 
 from django.core.management.base import BaseCommand, CommandError
 from django.db import connections
+from django.core.management import call_command
 from core.orquestador import correr, reconciliar
 
 
@@ -24,12 +25,15 @@ class Command(BaseCommand):
                 raise CommandError('--continuo requiere el maestro general.')
             while True:
                 try:
+                    call_command('sincronizar_agenda_recepcion', limite=options['limite'], verbosity=0)
                     resultado = correr(options['limite'], options['segundos'])
                 finally:
                     connections.close_all()
                 if not resultado.get('etapas'):
                     time.sleep(3)
         try:
+            if not options['reconciliar']:
+                call_command('sincronizar_agenda_recepcion', limite=options['limite'], verbosity=0)
             resultado = reconciliar(options['limite'], options['despues_id']) if options['reconciliar'] else correr(options['limite'], options['segundos'], options.get('cita_id'))
             self.stdout.write(str(resultado))
         finally:
