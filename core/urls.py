@@ -1,6 +1,7 @@
 from django.urls import path
 from . import views
 from . import agenda_recepcion
+from . import pacientes_recepcion
 from . import flujo_clinico, centro_operaciones
 from . import codigos_qr
 from . import planes_mensuales
@@ -15,6 +16,11 @@ from .panel_bienestar_tectum import (
 
 
 urlpatterns = [
+    path('recep-59/pacientes/', pacientes_recepcion.panel, name='recepcion_pacientes'),
+    path('recep-59/pacientes/datos/', pacientes_recepcion.listado, name='recepcion_pacientes_datos'),
+    path('recep-59/pacientes/candidatos/', pacientes_recepcion.candidatos, name='recepcion_pacientes_candidatos'),
+    path('recep-59/pacientes/disponibilidad/', pacientes_recepcion.disponibilidad, name='recepcion_pacientes_disponibilidad'),
+    path('recep-59/pacientes/<int:pk>/', pacientes_recepcion.detalle, name='recepcion_pacientes_detalle'),
     path('recep-59/agenda/', agenda_recepcion.panel, name='recepcion_agenda'),
     path('recep-59/agenda/datos/', agenda_recepcion.datos, name='recepcion_agenda_datos'),
     path('recep-59/agenda/disponibilidad/', agenda_recepcion.disponibilidad, name='recepcion_agenda_disponibilidad'),

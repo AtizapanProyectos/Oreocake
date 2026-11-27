@@ -426,7 +426,7 @@ body.co-lock{overflow:hidden}
       <a class="tab" href="{{ url_inicio|default:'#' }}" aria-current="page"><svg class="ic"><use href="#i-home"/></svg>Inicio</a>
       <a class="tab" href="{% url 'recepcion_agenda' %}" aria-label="Administración de Agenda" title="Administración de Agenda"><svg class="ic"><use href="#i-cal"/></svg>Agenda</a>
       <!-- MÓDULO: copia una línea para sumar nuevas funciones -->
-      <a class="tab" href="{{ url_agregar_paciente|default:'#' }}"><svg class="ic"><use href="#i-users"/></svg>Pacientes</a>
+      <a class="tab" href="{% url 'recepcion_pacientes' %}"><svg class="ic"><use href="#i-users"/></svg>Pacientes</a>
     </nav>
     <div class="yo"><span>{% if usuario_nombre %}{{ usuario_nombre }}{% else %}Recepción HOPE{% endif %}</span><div class="avatar" aria-hidden="true">{% if usuario_nombre %}{{ usuario_nombre|slice:":1" }}{% else %}R{% endif %}</div></div>
   </div>

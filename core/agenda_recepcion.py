@@ -287,8 +287,47 @@ def disponibilidad(request):
     desde, hasta = rango(request.GET, 91)
     doctor = PerfilPsicologo.objects.get(pk=int(request.GET.get('psicologo') or cita.psicologo_id))
     excluir = list(futuras(cita.paciente, cita.tipo_sesion).values_list('pk', flat=True)) if request.GET.get('traslado') == '1' else [cita.pk]
+    dias = slots(doctor, desde, hasta, cita.tipo_sesion, cita.modalidad, excluir, paciente=cita.paciente)
     return JsonResponse({'status': 'success', 'version': version(ficha(cita)),
-                         'dias': slots(doctor, desde, hasta, cita.tipo_sesion, cita.modalidad, excluir, paciente=cita.paciente)})
+                         'dias': filtrar_intervalos(doctor, cita.paciente, cita.tipo_sesion, dias, excluir)})
+
+
+def filtrar_intervalos(doctor, paciente, servicio, dias, excluir=(), ocupadas=None):
+    """Exige la hora completa dentro de jornada y fuera de comida/otras sesiones."""
+    if not dias:
+        return dias
+    fechas = [date.fromisoformat(f) for f in dias]
+    if ocupadas is None:
+        ocupadas = list(vigentes(Cita.objects.filter(fecha__range=(min(fechas), max(fechas))).filter(
+            Q(psicologo=doctor) | Q(paciente=paciente))).exclude(pk__in=excluir))
+    ahora = timezone.localtime().replace(tzinfo=None)
+    esquemas = getattr(doctor, '_esquemas_rango', None)
+    if esquemas is None:
+        esquemas = list(EsquemaHorarioPsicologo.objects.filter(psicologo=doctor, activo=True,
+            fecha_inicio__lte=max(fechas), fecha_fin__gte=min(fechas)).prefetch_related('dias_personalizados').order_by('fecha_inicio'))
+    resultado = {}
+    for f, horas in dias.items():
+        dia = date.fromisoformat(f)
+        esquema = next((e for e in esquemas if e.fecha_inicio <= dia <= e.fecha_fin), None)
+        bloques = esquema.horario_para_dia(dia, servicio) if esquema else []
+        permitidas = []
+        for hora in horas:
+            comienzo = datetime.combine(dia, datetime.strptime(hora, '%H:%M').time())
+            fin = comienzo + timedelta(hours=1)
+            if comienzo <= ahora:
+                continue
+            if any(c.fecha == dia and abs((datetime.combine(dia, c.hora)-comienzo).total_seconds()) < 3600 for c in ocupadas):
+                continue
+            for b in bloques:
+                if not datetime.combine(dia, b['hora_inicio']) <= comienzo < fin <= datetime.combine(dia, b['hora_fin']):
+                    continue
+                comida_ini, comida_fin = b.get('hora_comida_inicio'), b.get('hora_comida_fin')
+                if comida_ini and comida_fin and comienzo < datetime.combine(dia, comida_fin) and fin > datetime.combine(dia, comida_ini):
+                    continue
+                permitidas.append(hora)
+                break
+        resultado[f] = permitidas
+    return resultado
 
 
 def validar_destino(cita, doctor, fecha, hora, excluir, excepcion):
@@ -302,6 +341,7 @@ def validar_destino(cita, doctor, fecha, hora, excluir, excepcion):
     if fuera and not excepcion:
         raise ErrorAgenda('Este horario requiere confirmar la excepción de plazos.')
     libres = slots(doctor, f, f, cita.tipo_sesion, cita.modalidad, excluir, paciente=cita.paciente)
+    libres = filtrar_intervalos(doctor, cita.paciente, cita.tipo_sesion, libres, excluir)
     if h.strftime('%H:%M') not in libres.get(str(f), []):
         raise ErrorAgenda('El horario no está libre o no es compatible con la agenda del terapeuta.', 409)
     # La restricción histórica de unicidad incluye canceladas que aún retengan terapeuta.
@@ -354,7 +394,7 @@ def cambios_citas(request, op, data):
         referencia = Cita.objects.get(pk=int(data['cita']))
         paciente = User.objects.select_for_update().get(pk=referencia.paciente_id)
         bloquear_pagos(paciente)
-        cita = Cita.objects.select_for_update().get(pk=referencia.pk, estado='Confirmada')
+        cita = vigentes(Cita.objects.select_for_update()).get(pk=referencia.pk, estado__in=['Confirmada', 'Pendiente'])
         if inicio(cita) <= timezone.now():
             raise ErrorAgenda('No se modifica una sesión que ya comenzó.')
         comprobar_version(data.get('version'), ficha(cita))
@@ -458,6 +498,7 @@ def editar_bloqueo(request, op, data):
 @autorizado
 @require_POST
 def ejecutar(request):
+    from .pacientes_recepcion import transferir
     data = json.loads(request.body)
     if not isinstance(data, dict):
         raise ErrorAgenda('La solicitud debe contener un objeto JSON.')
@@ -466,7 +507,7 @@ def ejecutar(request):
         raise ErrorAgenda('Escribe un motivo de 5 a 1000 caracteres.')
     data['motivo'] = motivo
     clave = UUID(data['clave'])
-    acciones = {'reagendar': cambios_citas, 'transferir': cambios_citas, 'configurar': editar_config,
+    acciones = {'reagendar': cambios_citas, 'transferir': cambios_citas, 'reasignar_paciente': transferir, 'configurar': editar_config,
                 'bloqueo': editar_bloqueo, 'eliminar_bloqueo': editar_bloqueo}
     if data.get('accion') not in acciones:
         raise ErrorAgenda('Acción no disponible.')

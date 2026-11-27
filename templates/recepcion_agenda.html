@@ -12,7 +12,7 @@
 <nav class="tabs" aria-label="Recepción">
 <a class="tab" href="{% url 'panel_recepcion' %}"><svg class="ic" aria-hidden="true"><use href="#i-home"/></svg>Inicio</a>
 <a class="tab" href="{% url 'recepcion_agenda' %}" aria-current="page"><svg class="ic" aria-hidden="true"><use href="#i-cal"/></svg>Agenda</a>
-<a class="tab" href="{% url 'recepcion_agregar_paciente' %}"><svg class="ic" aria-hidden="true"><use href="#i-users"/></svg>Pacientes</a>
+<a class="tab" href="{% url 'recepcion_pacientes' %}"><svg class="ic" aria-hidden="true"><use href="#i-users"/></svg>Pacientes</a>
 </nav><div class="yo"><span>{{ usuario_nombre }}</span><div class="avatar" aria-hidden="true">{{ usuario_nombre|slice:':1' }}</div></div>
 </div></header>
 <section class="agenda-hero" aria-labelledby="agenda-titulo"><div class="wrap agenda-hero-content">

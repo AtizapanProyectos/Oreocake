@@ -1,5 +1,31 @@
 # DOCUMENTACIÓN EXHAUSTIVA — ESPACIO HOPE (Django monolítico)
 
+## Pacientes de Recepción (27/11/2026)
+
+- `/recep-59/pacientes/` es el directorio completo con cuenta de usuario,
+  orden alfabético, filtros, paginación y detalle de citas/tratamientos. Los
+  pacientes sin cuenta no se pueden reagendar desde este módulo. Acceso
+  exclusivo de superusuarios activos, CSRF y respuestas privadas sin caché.
+- `core/pacientes_recepcion.py` añade `reasignar_paciente` al ejecutor
+  transaccional e idempotente de Agenda. Actualiza el perfil, todos los
+  tratamientos activos y todas las citas/reservas futuras vigentes juntas.
+  No activa servicios cerrados, no inventa tratamientos, no altera pagos,
+  citas comenzadas/completadas ni la autoría clínica de notas, evaluaciones,
+  reportes y grabaciones. La conservación del autor fue confirmada por el usuario.
+- Excepción administrativa solicitada expresamente: **solo en este traslado
+  manual**, admisión cerrada, género, capacidad por servicio y modalidad del
+  perfil producen avisos informativos, sin bloquear la selección. No se cambia
+  la configuración del psicólogo. Se mantienen esquemas por servicio,
+  descansos, festivos, comida, bloqueos, ocupación real y plazos; no se puede
+  imponer un horario inválido. Los pools automáticos y el traslado previo
+  por servicio de Agenda conservan sus reglas de admisión habituales.
+- Motivo obligatorio, versiones de datos, bloqueo transaccional y auditoría
+  de asignaciones anteriores/nuevas; las citas generan `SincronizacionAgenda`
+  para el proceso existente de calendario y correos. No requiere migración.
+- Pruebas aisladas: `core.test_pacientes_recepcion`, `core.test_agenda_recepcion`,
+  `core.test_pagos_recepcion`, `core.test_admision_pacientes`, exclusivamente
+  con `--settings=hope_project.settings_flujo_test`.
+
 ## Regla vigente: “Aceptar pacientes nuevos” (23/11/2026)
 
 - `PerfilPsicologo.esta_activo` controla únicamente nuevas asignaciones,

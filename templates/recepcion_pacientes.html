@@ -1,0 +1,42 @@
+{% load static %}
+<!doctype html><html lang="es"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Pacientes · Recepción HOPE</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@500;700;800&family=Figtree:wght@500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{% static 'css/recepcion_identidad.css' %}"><link rel="stylesheet" href="{% static 'css/recepcion_agenda.css' %}"><link rel="stylesheet" href="{% static 'css/recepcion_pacientes.css' %}">
+</head><body>{% include 'includes/recepcion_iconos.html' %}
+<header class="bar"><div class="wrap">
+<a href="{% url 'panel_recepcion' %}" aria-label="HOPE, inicio"><img src="{% static 'img/logo_hope_extendido.png' %}" alt="HOPE"></a>
+<nav class="tabs" aria-label="Recepción">
+<a class="tab" href="{% url 'panel_recepcion' %}"><svg class="ic" aria-hidden="true"><use href="#i-home"/></svg>Inicio</a>
+<a class="tab" href="{% url 'recepcion_agenda' %}"><svg class="ic" aria-hidden="true"><use href="#i-cal"/></svg>Agenda</a>
+<a class="tab" href="{% url 'recepcion_pacientes' %}" aria-current="page"><svg class="ic" aria-hidden="true"><use href="#i-users"/></svg>Pacientes</a>
+</nav><div class="yo"><span>{{ usuario_nombre }}</span><div class="avatar" aria-hidden="true">{{ usuario_nombre|slice:':1' }}</div></div>
+</div></header>
+<section class="agenda-hero"><div class="wrap agenda-hero-content"><div><h1>Pacientes</h1><p>Encuentra a cada consultante y acompaña su atención. Citas, tratamientos y cambios de psicólogo en un solo lugar.</p></div><a class="nuevo-paciente" href="{% url 'recepcion_agregar_paciente' %}"><svg class="ic" aria-hidden="true"><use href="#i-plus"/></svg>Registrar paciente</a></div><svg class="agenda-ola" viewBox="0 0 1440 80" preserveAspectRatio="none" aria-hidden="true"><path d="M0 46C260 90 410 0 710 34S1120 86 1440 18V80H0Z" fill="#FFD62E"/><path d="M0 55C260 10 480 88 760 45S1160 12 1440 47V80H0Z" fill="#F7F3FE"/></svg></section>
+<main class="wrap agenda-main" id="pacientes-app" data-listado="{% url 'recepcion_pacientes_datos' %}" data-base="{% url 'recepcion_pacientes' %}" data-candidatos="{% url 'recepcion_pacientes_candidatos' %}" data-disponibilidad="{% url 'recepcion_pacientes_disponibilidad' %}" data-reagendar-disponibilidad="{% url 'recepcion_agenda_disponibilidad' %}" data-ejecutar="{% url 'recepcion_agenda_ejecutar' %}" data-historial="{% url 'recepcion_agenda_historial' %}">
+<div id="directorio">
+<form id="filtros" class="toolbar"><div class="filter-main">
+<label class="buscar-paciente">Buscar paciente<input type="search" id="buscar" maxlength="150" placeholder="Nombre, correo o teléfono" autocomplete="off"></label>
+<label>Psicólogo<select id="psicologo"><option value="">Todos los psicólogos</option></select></label>
+<button type="submit">Buscar</button><button type="reset" class="secondary">Limpiar</button>
+</div><div class="patient-filters">
+<label>Citas<select id="filtro-citas"><option value="">Todos los pacientes</option><option value="con">Con citas próximas</option><option value="sin">Sin citas próximas</option></select></label>
+<label>Servicio<select id="servicio"><option value="">Todos los servicios</option><option value="individual">Individual</option><option value="pareja">Pareja</option><option value="familiar">Familiar</option></select></label>
+<label>Organización<select id="organizacion"><option value="">Todas las organizaciones</option><option value="hope">HOPE</option><option value="tectum">TECTUM In-House</option><option value="beneficios">TECTUM Beneficios</option></select></label>
+</div></form>
+<div class="agenda-heading"><h2>Directorio de la A a la Z</h2><p id="estado" role="status" aria-live="polite"></p></div>
+<div id="lista-pacientes" class="patient-grid" aria-busy="true"></div><nav id="paginacion" class="patient-pagination" aria-label="Páginas de pacientes"></nav>
+</div>
+<section id="detalle" hidden aria-labelledby="nombre-paciente" tabindex="-1">
+<button type="button" id="volver" class="secondary"><svg class="ic" aria-hidden="true"><use href="#i-left"/></svg>Volver a pacientes</button>
+<div id="contenido-detalle"></div>
+</section>
+<p id="notificacion" role="status" aria-live="polite"></p>
+</main>
+<dialog id="editor" aria-labelledby="titulo-editor"><form id="form-editor">
+<div class="dialog-head"><div class="dialog-symbol" aria-hidden="true"><svg class="ic"><use href="#i-users"/></svg></div><h2 id="titulo-editor"></h2><button type="button" id="cerrar" class="icon-button" aria-label="Cerrar ventana"><svg class="ic" aria-hidden="true"><use href="#i-close"/></svg></button></div>
+<div class="dialog-body"><div id="campos-editor"></div><p id="error-editor" role="alert"></p></div>
+<div id="confirmacion-editor" class="dialog-footer" hidden><label>Motivo del cambio<textarea id="motivo" minlength="5" maxlength="1000" required placeholder="Describe por qué se realiza este cambio"></textarea></label><p class="audit-note">Quedarán registrados tu usuario, la fecha, el motivo y las asignaciones anteriores y nuevas.</p><button id="guardar" type="submit">Confirmar cambio</button></div>
+</form></dialog><script src="{% static 'js/recepcion_pacientes.js' %}" defer></script></body></html>
