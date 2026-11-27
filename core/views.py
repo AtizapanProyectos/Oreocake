@@ -1572,7 +1572,7 @@ def guardar_consentimiento_ajax(request):
     declaracion_consentimiento = request.POST.get('declaracion_consentimiento', '').lower() in ['true', '1', 'yes']
     # HOPE firma el nuevo Word; paneles anteriores conservan su texto y versión.
     version_documento = request.POST.get('version_documento', '1.0')
-    if version_documento not in ('1.0', '2.0'):
+    if version_documento not in ('1.0', '2.0', '3.0'):
         return JsonResponse({'status': 'error', 'message': 'Actualiza la página para leer la versión vigente del consentimiento.'}, status=400)
 
     if not acepta_telepsicologia or not declaracion_consentimiento:

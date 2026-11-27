@@ -1488,7 +1488,7 @@ function mostrarErrorCita(mensaje, opts) {
       </div>
     </div>
     
-    <!-- Contenedor scrollable con el texto legal de las 13 secciones -->
+    <!-- Contenedor scrollable con el texto de las 14 secciones -->
     <div style="flex: 1; overflow-y: auto; max-height: 34vh; padding: 16px 18px; background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 14px; font-size: 12px; color: #334155; line-height: 1.55; margin-bottom: 14px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);">
         
         <div style="background: white; border: 1px solid #cbd5e1; border-radius: 10px; padding: 10px 14px; margin-bottom: 12px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
@@ -1497,13 +1497,13 @@ function mostrarErrorCita(mensaje, opts) {
             <div><strong>Fecha:</strong> {% now "d/m/Y" %}</div>
         </div>
 
-        {% include 'documentos/consentimiento_contenido_v2.html' %}
+        {% include 'documentos/consentimiento_contenido_v3.html' %}
     </div>
 
     <!-- Aceptación de Telepsicología -->
     <div style="margin-bottom: 12px;">
         <label style="display: flex; align-items: center; gap: 10px; font-size: 12px; font-weight: 700; color: #1e293b; cursor: pointer; user-select: none;">
-            <input type="checkbox" id="check-acepta-telepsicologia" checked style="width: 17px; height: 17px; accent-color: var(--c-purple); cursor: pointer;">
+            <input type="checkbox" id="check-acepta-telepsicologia" style="width: 17px; height: 17px; accent-color: var(--c-purple); cursor: pointer;">
             <span>Acepto los términos del Consentimiento Informado y autorizo la atención por Telepsicología.</span>
         </label>
     </div>
@@ -2995,7 +2995,7 @@ function guardarConsentimientoDigital() {
     formData.append('nombre_firmante', nombre);
     formData.append('acepta_telepsicologia', 'true');
     formData.append('declaracion_consentimiento', 'true');
-    formData.append('version_documento', '2.0');
+    formData.append('version_documento', '3.0');
     formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
 
     fetch("{% url 'guardar_consentimiento_ajax' %}", {
@@ -3012,6 +3012,7 @@ function guardarConsentimientoDigital() {
 
         if (data.status === 'success') {
             window.tieneConsentimiento = true;
+            window.consentimientoPdfUrl = data.pdf_url;
             cerrarModalConsentimiento();
 
             // 1. Ocultar tarjeta de bloqueo

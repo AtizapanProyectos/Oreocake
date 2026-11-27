@@ -162,7 +162,7 @@
     .page-break {
       page-break-before: always;
     }
-    {% if consentimiento.version == '2.0' %}
+    {% if consentimiento.version == '2.0' or consentimiento.version == '3.0' %}
     body { font-size: 10.5pt; line-height: 1.45; }
     h2.section-title { font-size: 10.5pt; break-after: avoid; }
     li { break-inside: avoid; }
@@ -187,7 +187,9 @@
     </div>
   </div>
 
-  {% if consentimiento.version == '2.0' %}
+  {% if consentimiento.version == '3.0' %}
+  {% include 'documentos/consentimiento_contenido_v3.html' %}
+  {% elif consentimiento.version == '2.0' %}
   {% include 'documentos/consentimiento_contenido_v2.html' %}
   {% else %}
   <h2 class="section-title">1. Objetivo del Documento</h2>
