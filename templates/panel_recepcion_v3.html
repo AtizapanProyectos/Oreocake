@@ -14,15 +14,14 @@
       'hope-consultorios-v1' / 'hope-psicologos-v1' / 'hope-estilo'), con estados
       Libre / En uso / Apartado por piso (alta/baja), psicólogo/a, consultante y
       "hasta las". Se abre por la tarjeta "Consultorios" de Más herramientas
-      (#modCo) o por el botón 🪑 de cada fila de la agenda (window.hopeConsultorios,
-      precargado con el primer consultorio libre al marcar "Sí vino").
+      (#modCo); la agenda diaria conserva únicamente las acciones de asistencia.
     Registro de PACIENTE (02/11/2026): bloque amarillo "Agregar paciente" y pestaña
       "Pacientes" → /recep-59/agregar-paciente/ → registro_hope_recepcion.html
       con el MISMO motor de registro de inicio.html (POST /registro-ajax/ por AJAX →
       crea la cuenta real en BD); con sesión de superusuario el POST lleva
       origen='recepcion' y registrar_usuario NO intercambia la sesión del staff.
     citas_hoy → SOLO sesiones PRESENCIALES del día; lista de dicts:
-                cita_id, hora, paciente, psicologa, modalidad ("presencial"),
+                cita_id, hora, paciente, email, telefono, psicologa, modalidad ("presencial"),
                 estado ("confirmada"|"en_sala"|"pendiente"|"atendida"|"no_vino"),
                 asistencia ("No registrado"|"Vino"|"No Vino"), pase_url, url
                 (estado 'en_sala'/'no_vino' se DERIVAN del registro de llegada)
@@ -91,7 +90,7 @@ a{color:inherit;text-decoration:none}
 .b3{--b:var(--yellow-s);--a:var(--yellow);--ic:var(--ink)}
 
 /* Cuerpo */
-.cuerpo{display:grid;grid-template-columns:minmax(0,1.75fr) minmax(280px,1fr);gap:22px;margin-top:26px;align-items:start}
+.cuerpo{display:grid;grid-template-columns:minmax(0,1fr);gap:22px;margin-top:26px;align-items:start}
 .caja{container-type:inline-size;background:#fff;border-radius:34px;padding:26px;border:2px solid var(--line)}
 .caja h2{font:800 22px var(--fh);color:var(--deep)}
 .cab{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-bottom:18px}
@@ -105,7 +104,6 @@ a{color:inherit;text-decoration:none}
 /* Agenda en filas */
 .lista{list-style:none;display:flex;flex-direction:column;gap:10px}
 .cita{display:grid;grid-template-columns:62px minmax(0,1fr) auto;gap:14px;align-items:center;padding:12px 14px;border-radius:20px;background:var(--bg)}
-.cita.sigue{background:var(--yellow-s)}
 .cita .h{font:800 17px var(--fh);color:var(--deep);text-align:center;line-height:1.1}
 .cita .h small{display:block;font:700 11px var(--fb);color:var(--muted)}
 .qui{display:flex;align-items:center;gap:12px;min-width:0}
@@ -131,18 +129,7 @@ a{color:inherit;text-decoration:none}
 
 /* Columna derecha */
 .col{display:flex;flex-direction:column;gap:22px}
-.sigue-c{position:relative;overflow:hidden;padding:26px;border-radius:34px;background:var(--deep);color:#fff}
-.sigue-c::after{content:"";position:absolute;right:-22px;bottom:-30px;width:90px;height:90px;border-radius:50%;background:var(--orange)}
-.sigue-c .deco2{position:absolute;right:40px;top:-24px;width:160px;height:160px;color:var(--teal);z-index:0}
-.sigue-c>*{position:relative;z-index:1}
-.sigue-c .k{font-weight:700;font-size:14px;color:#D9CFFF}
-.sigue-c .hh{margin-top:6px;font:800 46px/1 var(--fh);color:var(--yellow)}
-.sigue-c .nn{margin-top:10px;font-weight:700;font-size:16px;max-width:18ch}
-.cifras{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
-.cifra{padding:14px 16px;border-radius:22px;background:var(--cs)}
-.cifra b{display:block;font:800 30px/1 var(--fh);color:var(--cd)}
-.cifra span{font-size:13px;font-weight:700}
-.mods{display:grid;gap:10px;margin-top:14px}
+.mods{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin-top:14px}
 .mod{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:20px;border:2px dashed #D6CCF0;font-weight:700;font-size:14px;color:var(--muted)}
 .mod .ic{color:var(--purple)}
 .mod small{margin-left:auto;font-weight:800;font-size:11px;padding:2px 9px;border-radius:99px;background:var(--coral-s);color:var(--coral-d)}
@@ -271,12 +258,8 @@ body.co-lock{overflow:hidden}
   border-color:#D5C9F1;
   box-shadow:0 7px 18px rgba(54,35,112,.08);
 }
-.cita.sigue{
-  background:#FFFAE8;
-  border-color:#F3D978;
-}
 .cita .h{
-  align-self:stretch;
+  align-self:start;
   min-height:54px;
   display:flex;
   flex-direction:column;
@@ -398,6 +381,22 @@ body.co-lock{overflow:hidden}
   .chip{font-size:10.5px;padding:5px 9px}
 }
 
+
+/* Agenda con desplazamiento independiente y contactos legibles. */
+.agenda-scroll{max-height:clamp(320px,65vh,680px);overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;scrollbar-gutter:stable;scrollbar-width:thin;scrollbar-color:#A899D1 #F4F1FA;padding-right:8px}
+.agenda-scroll:focus-visible{outline:3px solid var(--purple);outline-offset:5px;border-radius:12px}
+.agenda-scroll::-webkit-scrollbar{width:8px}
+.agenda-scroll::-webkit-scrollbar-track{background:#F4F1FA;border-radius:8px}
+.agenda-scroll::-webkit-scrollbar-thumb{background:#A899D1;border-radius:8px}
+.contactos{grid-column:2;display:flex;flex-wrap:wrap;gap:5px 24px;margin-top:9px;font-size:13px;line-height:1.5}
+.contactos p{min-width:0;overflow-wrap:anywhere}
+.contactos strong{font-weight:700;color:var(--deep)}
+.contactos a{color:#4C348F;text-decoration:underline;text-underline-offset:3px;overflow-wrap:anywhere}
+.contactos a:focus-visible{outline:2px solid var(--purple);outline-offset:3px;border-radius:3px}
+.sin-contacto{color:var(--muted)}
+@media(max-width:600px){.contactos{grid-column:1/-1;display:block}.contactos p+p{margin-top:5px}.agenda-scroll{padding-right:5px}}
+@media print{.agenda-scroll{max-height:none;overflow:visible;padding-right:0}}
+
 </style>
 </head>
 <body>
@@ -423,9 +422,6 @@ body.co-lock{overflow:hidden}
     <a href="{{ url_inicio|default:'#' }}" aria-label="HOPE, inicio"><img src="{% if logo_url %}{{ logo_url }}{% else %}data:image/png;base64,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{% endif %}" alt="HOPE · Oportunidad, Prevención, Esperanza"></a>
     <nav class="tabs" aria-label="Recepción">
       <a class="tab" href="{{ url_inicio|default:'#' }}" aria-current="page"><svg class="ic"><use href="#i-home"/></svg>Inicio</a>
-      <a class="tab" href="{{ url_agendar_online|default:'#' }}"><svg class="ic"><use href="#i-video"/></svg>En línea</a>
-      <a class="tab" href="{{ url_agendar_presencial|default:'#' }}"><svg class="ic"><use href="#i-pin"/></svg>Presencial</a>
-      <a class="tab" href="{{ url_citas|default:'#' }}"><svg class="ic"><use href="#i-cal"/></svg>Citas</a>
       <a class="tab" href="{% url 'recepcion_agenda' %}" aria-label="Administración de Agenda" title="Administración de Agenda"><svg class="ic"><use href="#i-cal"/></svg>Agenda</a>
       <!-- MÓDULO: copia una línea para sumar nuevas funciones -->
       <a class="tab" href="{{ url_agregar_paciente|default:'#' }}"><svg class="ic"><use href="#i-users"/></svg>Pacientes</a>
@@ -477,34 +473,18 @@ body.co-lock{overflow:hidden}
     <section class="caja" aria-labelledby="t-agenda">
       <div class="cab">
         <h2 id="t-agenda">Agenda presencial de hoy</h2>
-        <label class="buscar"><svg class="ic" style="width:18px;height:18px"><use href="#i-search"/></svg><input id="q" type="search" placeholder="Buscar paciente o psicólogo/a" aria-label="Buscar cita"></label>
+        <label class="buscar"><svg class="ic" style="width:18px;height:18px"><use href="#i-search"/></svg><input id="q" type="search" placeholder="Buscar por nombre, correo o teléfono" aria-label="Buscar cita"></label>
       </div>
-      <ul class="lista" id="lista"></ul>
+      <div class="agenda-scroll" role="region" aria-label="Citas presenciales de hoy" tabindex="0">
+        <ul class="lista" id="lista"></ul>
+      </div>
     </section>
 
     <div class="col">
-      <section class="sigue-c" aria-live="polite">
-        <svg class="deco2" aria-hidden="true"><use href="#lazo-f"/></svg>
-        <p class="k">Siguiente cita</p>
-        <p class="hh" id="s-hora">--:--</p>
-        <p class="nn" id="s-nom">Sin citas pendientes</p>
-      </section>
-
-      <section class="caja" aria-labelledby="t-res">
-        <h2 id="t-res">Así va el día</h2>
-        <div class="cifras">
-          <div class="cifra" style="--cs:var(--pink-s);--cd:var(--pink-d)"><b id="n-pres">0</b><span>Presenciales</span></div>
-          <div class="cifra" style="--cs:var(--teal-s);--cd:var(--teal-d)"><b id="n-onl">0</b><span>En línea</span></div>
-          <div class="cifra" style="--cs:var(--yellow-s);--cd:var(--yellow-d)"><b id="n-sala">0</b><span>En recepción</span></div>
-          <div class="cifra" style="--cs:var(--lilac-s);--cd:var(--purple)"><b id="n-pend">0</b><span>Por confirmar</span></div>
-        </div>
-      </section>
-
       <section class="caja" id="modulos" aria-labelledby="t-mod">
         <h2 id="t-mod">Más herramientas</h2>
         <div class="mods">
-          <!-- MÓDULO 🪑 Consultorios: overlay 100% frontend (estado en localStorage).
-               La agenda también lo abre con el botón 🪑 que aparece al marcar "Sí vino". -->
+          <!-- Módulo Consultorios independiente; estado en localStorage. -->
           <button class="mod mod-act" id="modCo" type="button"><svg class="ic"><use href="#i-room"/></svg>Consultorios<small>Abrir</small></button>
           <!-- MÓDULO: duplica esta tarjeta (cámbiala a <a href> cuando esté lista) -->
           <div class="mod"><svg class="ic"><use href="#i-users"/></svg>Lista de espera<small>Pronto</small></div>
@@ -709,14 +689,12 @@ body.co-lock{overflow:hidden}
   // 🧹 02/11/2026: SIN datos de demostración. La agenda muestra SOLO las citas
   // reales presenciales de HOY que manda la vista (_recepcion_citas_hoy).
   // Si no llega citas_hoy (o llega vacío), la agenda se muestra vacía.
-  var ETQ={confirmada:"Confirmada",en_sala:"En recepción",pendiente:"Por confirmar",atendida:"Atendida",no_vino:"No vino"};
+  var ETQ={confirmada:"Confirmada",pendiente:"Por confirmar",atendida:"Atendida",no_vino:"No vino"};
   var el=document.getElementById("citas-data"),real=!!el,citas=real?JSON.parse(el.textContent):[];
   var UPLOAD_URL="{{ url_registrar_llegada|escapejs }}",TOK=(document.getElementById("csrf-hope")||{}).value||"";
   var $=function(id){return document.getElementById(id)},filtro="todas",q="";
   function esc(s){var d=document.createElement("div");d.textContent=s==null?"":s;return d.innerHTML}
   function ini(n){return (n||"?").split(" ").filter(Boolean).slice(0,2).map(function(p){return p[0]}).join("").toUpperCase()}
-  var abiertas=citas.filter(function(c){return c.estado!=="atendida"&&c.estado!=="no_vino"});
-  var sig=abiertas[0];
 
   function botonesLlegada(c){
     if(!real||!c.cita_id)return "";
@@ -726,26 +704,21 @@ body.co-lock{overflow:hidden}
 
   function pinta(){
     var v=citas.filter(function(c){
-      return (filtro==="todas"||c.modalidad===filtro)&&((c.paciente||"")+" "+(c.psicologa||"")).toLowerCase().indexOf(q)>-1;
+      return (filtro==="todas"||c.modalidad===filtro)&&((c.paciente||"")+" "+(c.psicologa||"")+" "+(c.email||"")+" "+(c.telefono||"")).toLowerCase().indexOf(q)>-1;
     });
     if(!v.length){$("lista").innerHTML='<li class="vacio">'+(citas.length?"No encontramos citas con ese filtro.":"Aún no hay citas presenciales para hoy. Cuando agendes la primera, aparecerá aquí.")+'</li>';return}
     $("lista").innerHTML=v.map(function(c){
       var h=String(c.hora||"").split(" ");
-      var pase=c.pase_url?'<a class="mini" href="'+esc(c.pase_url)+'">Ver pase</a>':"";
-      // 🪑 Módulo Consultorios: botón por fila (útil sobre todo al marcar "Sí vino")
-      var nomCo=(window.hopeConsultorios&&window.hopeConsultorios.nombreDeCita(c.cita_id))||"";
-      var btnCo='<button class="mini pide-co" data-co="'+esc(c.cita_id==null?"":c.cita_id)+'" title="Consultorios de recepción">🪑 '+esc(nomCo||"Consultorio")+'</button>';
-      return '<li class="cita'+(c===sig?" sigue":"")+'"><div class="h">'+esc(h[0])+'<small>'+esc(h[1]||"")+'</small></div>'+
-        '<div class="qui"><span class="ini '+esc(c.modalidad)+'" aria-hidden="true">'+esc(ini(c.paciente))+'</span><div style="min-width:0"><p class="n">'+esc(c.paciente)+'</p><p class="ps">'+esc(c.psicologa)+' · '+(c.modalidad==="online"?"En línea":"Presencial")+'</p></div></div>'+
-        '<div class="der"><span class="chip s-'+esc(c.estado)+'">'+(ETQ[c.estado]||esc(c.estado))+'</span>'+pase+btnCo+botonesLlegada(c)+'<a class="mini" href="'+esc(c.url||"#")+'">Gestionar</a></div></li>';
+      var estado=c.estado!=="en_sala"?'<span class="chip s-'+esc(c.estado)+'">'+esc(ETQ[c.estado]||c.estado)+'</span>':"";
+      var correo=c.email?'<a href="mailto:'+encodeURIComponent(c.email)+'">'+esc(c.email)+'</a>':'<span class="sin-contacto">No registrado</span>';
+      var numero=String(c.telefono||"").replace(/[^0-9+]/g,"");
+      var telefono=c.telefono?(numero?'<a href="tel:'+esc(numero)+'">'+esc(c.telefono)+'</a>':esc(c.telefono)):'<span class="sin-contacto">No registrado</span>';
+      return '<li class="cita"><div class="h">'+esc(h[0])+'<small>'+esc(h[1]||"")+'</small></div>'+
+        '<div class="qui"><span class="ini '+esc(c.modalidad)+'" aria-hidden="true">'+esc(ini(c.paciente))+'</span><div style="min-width:0"><p class="n">'+esc(c.paciente)+'</p><p class="ps">'+esc(c.psicologa)+' · Presencial</p>'+
+        '</div></div><div class="contactos"><p><strong>Correo:</strong> '+correo+'</p><p><strong>Teléfono:</strong> '+telefono+'</p></div>'+
+        '<div class="der">'+estado+botonesLlegada(c)+'</div></li>';
     }).join("");
   }
-  function cuenta(e,m){return citas.filter(function(c){return (e?c.estado===e:true)&&(m?c.modalidad===m:true)}).length}
-  $("n-pres").textContent=cuenta(null,"presencial");$("n-onl").textContent=cuenta(null,"online");
-  $("n-sala").textContent=cuenta("en_sala");$("n-pend").textContent=cuenta("pendiente");
-  if(sig){$("s-hora").textContent=sig.hora;$("s-nom").textContent=sig.paciente}
-  else{$("s-hora").textContent="--:--";$("s-nom").textContent="Sin citas pendientes"}
-
   function reloj(){
     var n=new Date(),hr=n.getHours();
     $("hora").textContent=n.toLocaleTimeString("es-MX",{hour:"2-digit",minute:"2-digit",hour12:false});
@@ -768,14 +741,7 @@ body.co-lock{overflow:hidden}
 
   // 🪑 Registro de llegada (solo datos reales): guarda en BD mediante
   // POST/CSRF a url_registrar_llegada y repinta el chip de la fila.
-  // El botón 🪑 de la fila abre el módulo de Consultorios (overlay, estado local).
   $("lista").addEventListener("click",function(e){
-    var pc=e.target.closest("button.pide-co");
-    if(pc){
-      var ac=citas.filter(function(x){return String(x.cita_id)===String(pc.dataset.co)})[0];
-      if(ac&&window.hopeConsultorios)window.hopeConsultorios.paraCita({cita_id:ac.cita_id,paciente:ac.paciente,psicologa:ac.psicologa});
-      return;
-    }
     var b=e.target.closest("button[data-valor]");
     if(!b||!UPLOAD_URL)return;
     e.preventDefault();
@@ -787,19 +753,9 @@ body.co-lock{overflow:hidden}
     .then(function(d){
       b.disabled=false;
       if(d.status!=="success"){b.classList.remove("sel");window.alert(d.mensaje||"No se pudo registrar la llegada.");return}
-      // Actualizar el dato local para que pinta() muestre el botón 🪑 al marcar "Sí vino"
+      // Conservar el estado real de asistencia al volver a dibujar la fila
       var lc=citas.filter(function(x){return String(x.cita_id)===String(b.dataset.id)})[0];
       if(lc){lc.asistencia=d.registro_llegada||lc.asistencia;lc.estado=d.estado||lc.estado}
-      // Reflejar el resultado REAL del servidor en toda la fila
-      var fila=b.closest("li.cita");
-      if(fila){
-        var chip=fila.querySelector(".chip");
-        if(chip){chip.className="chip s-"+d.estado;chip.textContent=ETQ[d.estado]||d.estado}
-        fila.querySelectorAll("button[data-valor]").forEach(function(x){
-          x.disabled=false;
-          x.classList.toggle("sel",x.dataset.valor===d.registro_llegada);
-        });
-      }
       pinta();
     })
     .catch(function(err){b.disabled=false;b.classList.remove("sel");window.alert("Error de red al registrar la llegada: "+err)});

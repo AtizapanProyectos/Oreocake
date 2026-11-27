@@ -12104,6 +12104,8 @@ def _recepcion_citas_hoy():
             'cita_id': c.id,
             'hora': hora_label,
             'paciente': _recepcion_nombre_paciente(c),
+            'email': c.paciente.email or '',
+            'telefono': getattr(getattr(c.paciente, 'perfil', None), 'telefono', '') or '',
             'psicologa': _recepcion_nombre_psicologo(c),
             'modalidad': 'presencial',
             'estado': _recepcion_estado_visual(c),
