@@ -103,11 +103,11 @@ def futuras(paciente, servicio):
                         Q(fecha__gt=ahora.date()) | Q(fecha=ahora.date(), hora__gt=ahora.time().replace(tzinfo=None)))).order_by('pk')
 
 
-def slots(doctor, desde, hasta, servicio, modalidad, excluir=()):
+def slots(doctor, desde, hasta, servicio, modalidad, excluir=(), paciente=None):
     from .views import obtener_slots_psicologo, parsear_hora_flexible
     contexto = getattr(doctor, '_agenda_contexto', None)
     if contexto is not None:
-        resultado = obtener_slots_psicologo(doctor, desde, hasta, servicio, modalidad, excluir_citas=excluir)
+        resultado = obtener_slots_psicologo(doctor, desde, hasta, servicio, modalidad, excluir_citas=excluir, paciente=paciente)
         retenidas = {(str(c.fecha), c.hora.strftime('%H:%M')) for c in contexto['citas'] if c.pk not in excluir}
         return {f: [parsear_hora_flexible(h).strftime('%H:%M') for h in horas
                     if (f, parsear_hora_flexible(h).strftime('%H:%M')) not in retenidas] for f, horas in resultado.items()}
@@ -115,7 +115,7 @@ def slots(doctor, desde, hasta, servicio, modalidad, excluir=()):
     todas = Cita.objects.filter(psicologo=doctor, fecha__range=(desde, hasta))
     expiradas = set(todas.values_list('pk', flat=True)) - set(vigentes(todas).values_list('pk', flat=True))
     resultado = obtener_slots_psicologo(doctor, desde, hasta, servicio, modalidad,
-                                      excluir_citas=set(excluir) | expiradas)
+                                      excluir_citas=set(excluir) | expiradas, paciente=paciente)
     # La restricción histórica de unicidad incluye canceladas que conservan terapeuta.
     retenidas = {(str(f), h.strftime('%H:%M')) for f, h in todas.exclude(pk__in=excluir).values_list('fecha', 'hora')}
     return {f: [parsear_hora_flexible(h).strftime('%H:%M') for h in horas
@@ -231,14 +231,14 @@ def preferencias(paciente, servicio):
     return 'Mujer' if 'Mujer' in texto else ('Hombre' if 'Hombre' in texto else '')
 
 
-def compatible(doctor, servicio, modalidades, genero):
+def compatible(doctor, servicio, modalidades, genero, paciente=None):
     from .views import CAPACIDAD_POR_TIPO_SESION, psicologo_atiende_modalidad
     razones = []
     if not doctor.esta_activo:
         razones.append('No acepta nuevos pacientes ni nuevas transferencias.')
     if not getattr(doctor, CAPACIDAD_POR_TIPO_SESION[servicio]):
         razones.append('No atiende este servicio.')
-    if any(not psicologo_atiende_modalidad(doctor, m) for m in modalidades):
+    if any(not psicologo_atiende_modalidad(doctor, m, paciente=paciente) for m in modalidades):
         razones.append('No atiende todas las modalidades de las citas seleccionadas.')
     diferencia = bool(genero and doctor.genero != genero)
     return razones, diferencia
@@ -266,8 +266,8 @@ def candidatos(request):
     for doctor in doctores:
         if request.GET.get('genero') in ('Hombre', 'Mujer') and doctor.genero != request.GET['genero']:
             continue
-        razones, excepcion = compatible(doctor, servicio, modalidades, genero)
-        libres = {m: slots(doctor, desde, hasta, servicio, m, [c.pk for c in citas]) for m in modalidades}
+        razones, excepcion = compatible(doctor, servicio, modalidades, genero, paciente=paciente)
+        libres = {m: slots(doctor, desde, hasta, servicio, m, [c.pk for c in citas], paciente=paciente) for m in modalidades}
         if not any(any(horas for horas in dias.values()) for dias in libres.values()):
             razones.append('Sin horarios libres en el intervalo consultado.')
         salida.append({'id': doctor.pk, 'nombre': nombre(doctor.usuario), 'genero': doctor.genero,
@@ -288,7 +288,7 @@ def disponibilidad(request):
     doctor = PerfilPsicologo.objects.get(pk=int(request.GET.get('psicologo') or cita.psicologo_id))
     excluir = list(futuras(cita.paciente, cita.tipo_sesion).values_list('pk', flat=True)) if request.GET.get('traslado') == '1' else [cita.pk]
     return JsonResponse({'status': 'success', 'version': version(ficha(cita)),
-                         'dias': slots(doctor, desde, hasta, cita.tipo_sesion, cita.modalidad, excluir)})
+                         'dias': slots(doctor, desde, hasta, cita.tipo_sesion, cita.modalidad, excluir, paciente=cita.paciente)})
 
 
 def validar_destino(cita, doctor, fecha, hora, excluir, excepcion):
@@ -301,7 +301,7 @@ def validar_destino(cita, doctor, fecha, hora, excluir, excepcion):
     fuera = destino < ahora + timedelta(hours=2) or f > ahora.date() + timedelta(days=90)
     if fuera and not excepcion:
         raise ErrorAgenda('Este horario requiere confirmar la excepción de plazos.')
-    libres = slots(doctor, f, f, cita.tipo_sesion, cita.modalidad, excluir)
+    libres = slots(doctor, f, f, cita.tipo_sesion, cita.modalidad, excluir, paciente=cita.paciente)
     if h.strftime('%H:%M') not in libres.get(str(f), []):
         raise ErrorAgenda('El horario no está libre o no es compatible con la agenda del terapeuta.', 409)
     # La restricción histórica de unicidad incluye canceladas que aún retengan terapeuta.
@@ -345,7 +345,7 @@ def cambios_citas(request, op, data):
         comprobar_version(data.get('version_psicologo'), config(destino))
         if asignado and destino.pk == asignado.pk:
             raise ErrorAgenda('Selecciona un psicólogo diferente al actual.')
-        razones, genero = compatible(destino, servicio, {c.modalidad for c in citas} or {data.get('modalidad', 'En línea')}, preferencias(paciente, servicio))
+        razones, genero = compatible(destino, servicio, {c.modalidad for c in citas} or {data.get('modalidad', 'En línea')}, preferencias(paciente, servicio), paciente=paciente)
         if razones:
             raise ErrorAgenda(' '.join(razones), 409)
         if genero and data.get('excepcion_genero') is not True:

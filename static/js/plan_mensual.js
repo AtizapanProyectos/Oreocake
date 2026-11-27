@@ -227,12 +227,17 @@
             const data = await api('disponibilidad', configuracion);
             if (version !== generacion) return;
             terapeutas = data.terapeutas;
+            const opcionVirtual = dialog.querySelector('[data-pm-modalidad="En línea"]');
+            if (opcionVirtual) {
+                opcionVirtual.hidden = data.virtual_habilitada === false;
+                opcionVirtual.style.display = data.virtual_habilitada === false ? 'none' : '';
+            }
             fechaHoy = data.hoy; fechaLimite = data.fecha_limite;
             $('terapeuta').textContent = data.psicologo_asignado ? 'Tus horarios con ' + data.psicologo_asignado.nombre : 'Elegiremos un terapeuta disponible para tus cuatro fechas.';
             configCotizada = JSON.stringify(configuracion);
             $('total').textContent = moneda(data.monto);
             $('por-sesion').textContent = moneda(data.por_sesion) + ' por sesión';
-            if (!terapeutas.length) mensaje(data.psicologo_asignado ? 'Tu terapeuta asignado no tiene horarios disponibles para esta modalidad. Contacta al equipo para revisar tus opciones.' : 'No hay horarios disponibles para esta modalidad por ahora.', true);
+            if (!terapeutas.length) mensaje(data.aviso || (data.psicologo_asignado ? 'Tu terapeuta asignado no tiene horarios disponibles para esta modalidad. Contacta al equipo para revisar tus opciones.' : 'No hay horarios disponibles para esta modalidad por ahora.'), true);
         } catch (error) { if (version === generacion) mensaje(error.message, true); }
         finally { if (version === generacion) { espera(false); renderCalendario(); renderSeleccion(); } }
     }
@@ -366,7 +371,7 @@
         if (ocupado) return;
         if (admin) {
             const ctx = window.contextoPlanMensualAdmin ? window.contextoPlanMensualAdmin() : {};
-            if (!ctx.pacienteId || ctx.esTectum) { alert('Selecciona primero un paciente HOPE para agendar su Plan Mensual.'); return; }
+            if (!ctx.pacienteId || ctx.esTectum || ctx.esBeneficios) { alert('Selecciona primero un paciente HOPE para agendar su Plan Mensual.'); return; }
             if (pacienteId !== String(ctx.pacienteId)) { plan = null; clave = null; seleccion = []; }
             pacienteId = String(ctx.pacienteId);
             $('paciente').hidden = false;

@@ -992,6 +992,7 @@ function mostrarErrorCita(mensaje, opts) {
             <!-- ⚡ SELECTOR DE MODALIDAD (movido ANTES de las fechas): al elegir
                  En línea o Presencial se recarga el carrusel de días/slots con el
                  pool de psicólogos de esa modalidad (filtro rendel backend). -->
+{% include 'includes/modalidad_hibrida.html' %}
             <div style="margin-bottom: 30px; text-align: left; max-width: 450px; margin-left: auto; margin-right: auto;">
                 <p style="font-size: 13px; font-weight: 700; color: var(--text-muted); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 1px;">Modalidad de tu sesión:</p>
                 <div style="display: flex; gap: 15px;">
@@ -2085,9 +2086,11 @@ function refrescarDisponibilidadPorTipo(tipo, modalidad) {
         .then(r => r.json())
         .then(data => {
             carousel.style.opacity = '1';
+            if (typeof data.virtual_habilitada === 'boolean') window.actualizarOpcionVirtual(data.virtual_habilitada);
             if (data.status !== 'success') {
                 // 🏢 Regla presencial del backend: paciente con sesiones en
                 // línea previas. Avisamos y volvemos a la modalidad En línea.
+                if (!data.bloqueado_presencial) mostrarToast(data.message || 'No pudimos consultar horarios.', 'error');
                 if (data.bloqueado_presencial) {
                     mostrarToast(data.message || 'Contacta a tu psicólogo para agendar una cita presencial', 'error');
                     fallbackModalidadEnLinea();

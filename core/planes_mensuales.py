@@ -128,19 +128,20 @@ def _asignado(paciente, servicio):
 
 
 def _terapeutas(paciente, servicio, modalidad):
-    from .views import CAPACIDAD_POR_TIPO_SESION, COMPATIBILIDAD_MODALIDAD_PSICOLOGO
+    from .views import CAPACIDAD_POR_TIPO_SESION, COMPATIBILIDAD_MODALIDAD_PSICOLOGO, psicologo_atiende_modalidad
 
     capacidad = CAPACIDAD_POR_TIPO_SESION[servicio]
     doctores = PerfilPsicologo.objects.filter(
-        modalidad_atencion__in=COMPATIBILIDAD_MODALIDAD_PSICOLOGO[modalidad],
         **{capacidad: True},
     )
     asignado = _asignado(paciente, servicio)
     if asignado:
         # No sustituir silenciosamente al terapeuta asignado cuando no es compatible
         # o no tiene disponibilidad. La misma regla se usa al reservar las cuatro citas.
+        if not psicologo_atiende_modalidad(asignado, modalidad, paciente=paciente):
+            return doctores.none()
         return doctores.filter(pk=asignado.pk)
-    doctores = doctores.filter(esta_activo=True)
+    doctores = doctores.filter(esta_activo=True, modalidad_atencion__in=COMPATIBILIDAD_MODALIDAD_PSICOLOGO[modalidad])
     cuestionario = CuestionarioRegistro.objects.filter(paciente=paciente, flujo_elegido=servicio).order_by('-fecha_completado').first()
     if not cuestionario:
         cuestionario = CuestionarioRegistro.objects.filter(paciente=paciente).order_by('-fecha_completado').first()
@@ -209,7 +210,7 @@ def disponibilidad(request):
         ).values_list('fecha', 'hora'))
         doctores = []
         for doctor in _terapeutas(paciente, servicio, modalidad).select_related('usuario'):
-            dias = obtener_slots_psicologo(doctor, hoy, limite, tipo_sesion=servicio, modalidad=modalidad)
+            dias = obtener_slots_psicologo(doctor, hoy, limite, tipo_sesion=servicio, modalidad=modalidad, paciente=paciente)
             # La unicidad histórica de Cita incluye filas canceladas que aún
             # conservan psicólogo. No ofrecer un slot que reservar() rechazaría.
             no_reutilizables = set(Cita.objects.filter(
@@ -225,7 +226,13 @@ def disponibilidad(request):
             if dias:
                 doctores.append({'id': doctor.pk, 'dias': dias})
         asignado = _asignado(paciente, servicio)
+        from .views import _virtual_presencial_restringida, psicologo_atiende_modalidad, MENSAJE_VIRTUAL_SOLO_TRAS_PRESENCIAL
+        aviso = (MENSAJE_VIRTUAL_SOLO_TRAS_PRESENCIAL
+                 if _virtual_presencial_restringida(asignado, modalidad)
+                 and not psicologo_atiende_modalidad(asignado, modalidad, paciente=paciente) else '')
         return JsonResponse({
+            'aviso': aviso,
+            'virtual_habilitada': psicologo_atiende_modalidad(asignado, 'En línea', paciente=paciente) if asignado else True,
             'status': 'success', 'terapeutas': doctores, 'monto': str(monto), 'por_sesion': str(monto / 4),
             'hoy': hoy.isoformat(), 'fecha_limite': limite.isoformat(),
             'modalidad_predeterminada': modalidad_predeterminada(paciente, servicio),
@@ -287,6 +294,10 @@ def reservar(request):
                 raise ErrorPlan('Ya tienes una cita o reserva en uno de esos horarios.', 409)
             doctor = None
             asignado = _asignado(paciente, servicio)
+            from .views import _virtual_presencial_restringida, psicologo_atiende_modalidad, MENSAJE_VIRTUAL_SOLO_TRAS_PRESENCIAL
+            if (_virtual_presencial_restringida(asignado, modalidad)
+                    and not psicologo_atiende_modalidad(asignado, modalidad, paciente=paciente)):
+                raise ErrorPlan(MENSAJE_VIRTUAL_SOLO_TRAS_PRESENCIAL, 409)
             candidatos = list(_terapeutas(paciente, servicio, modalidad).values_list('pk', flat=True))
             # El orden de los bloqueos no depende de la carga ni de preferencias:
             # dos pacientes que compiten por varios doctores no se bloquean al revés.
@@ -295,7 +306,7 @@ def reservar(request):
                 bloqueado = bloqueados[candidato_id]
                 if not bloqueado.esta_activo and (asignado is None or asignado.pk != bloqueado.pk):
                     continue
-                if all(h.strftime('%I:%M %p') in obtener_slots_psicologo_para_dia(bloqueado, f, servicio, modalidad) for f, h in fechas):
+                if all(h.strftime('%I:%M %p') in obtener_slots_psicologo_para_dia(bloqueado, f, servicio, modalidad, paciente=paciente) for f, h in fechas):
                     # La restricción única histórica también cuenta canceladas que
                     # todavía conservan terapeuta; no reutilizar esas filas.
                     if not any(Cita.objects.filter(psicologo=bloqueado, fecha=f, hora=h).exists() for f, h in fechas):

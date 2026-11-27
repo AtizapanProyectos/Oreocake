@@ -190,12 +190,47 @@ def _psicologo_asignado_servicio(paciente, tipo_servicio):
     return None
 
 
-def psicologo_atiende_modalidad(psicologo, modalidad):
+MENSAJE_VIRTUAL_SOLO_TRAS_PRESENCIAL = (
+    'Este psicólogo atiende en modalidad presencial. Las sesiones virtuales únicamente '
+    'se permiten para pacientes que hayan tenido previamente una consulta presencial con él.'
+)
+
+
+def _consultas_completadas_pasadas(paciente):
+    ahora = timezone.localtime()
+    return Cita.objects.filter(paciente=paciente, estado='Completada').filter(
+        Q(fecha__lt=ahora.date()) | Q(fecha=ahora.date(), hora__lt=ahora.time()),
+    ).order_by('-fecha', '-hora', '-pk')
+
+
+def _tiene_presencial_previa(paciente, psicologo=None):
+    if paciente is None:
+        return False
+    citas = _consultas_completadas_pasadas(paciente).filter(modalidad='Presencial')
+    if psicologo is not None:
+        citas = citas.filter(psicologo=psicologo)
+    return citas.exists()
+
+
+def _modalidad_previa(paciente, servicio='individual'):
+    citas = _consultas_completadas_pasadas(paciente)
+    return (citas.filter(tipo_sesion=servicio).values_list('modalidad', flat=True).first()
+            or citas.values_list('modalidad', flat=True).first() or 'En línea')
+
+
+def _virtual_presencial_restringida(psicologo, modalidad):
+    return (psicologo is not None and modalidad == 'En línea'
+            and psicologo.modalidad_atencion == 'Presencial')
+
+
+def psicologo_atiende_modalidad(psicologo, modalidad, paciente=None):
     """
     True si el psicólogo puede atender la modalidad solicitada de la cita.
     La admisión de pacientes nuevos se valida al seleccionar candidatos,
     independientemente de esta compatibilidad.
     - 'Mixto' responde a ambas modalidades.
+    - 'Presencial' permite virtual únicamente con consulta presencial previa
+      completada y pasada del mismo paciente y psicólogo.
     - El default de los registros históricos ('En línea') hace que el
       comportamiento en línea sea idéntico al de antes del cambio.
     - 'Mixto' como modalidad de cita no está habilitado aún (solo En línea /
@@ -208,6 +243,8 @@ def psicologo_atiende_modalidad(psicologo, modalidad):
     # ⚠️ Importante: getattr con default 'En línea' para que registros
     # históricos (o filas creadas sin pasar por el ORM) no queden excluidos.
     modalidad_psicologo = getattr(psicologo, 'modalidad_atencion', 'En línea') or 'En línea'
+    if modalidad == 'En línea' and modalidad_psicologo == 'Presencial':
+        return _tiene_presencial_previa(paciente, psicologo)
     return modalidad_psicologo in modalidades_permitidas
 
 # =========================================================================
@@ -383,7 +420,7 @@ def _calcular_bloqueos_covision(fecha_inicio, fecha_fin):
     return bloqueos
 
 
-def obtener_slots_psicologo(psicologo, fecha_inicio, fecha_fin, tipo_sesion="individual", modalidad="En línea", excluir_citas=()):
+def obtener_slots_psicologo(psicologo, fecha_inicio, fecha_fin, tipo_sesion="individual", modalidad="En línea", excluir_citas=(), paciente=None):
     """
     🔥 BÚSQUEDA POR PSICÓLOGO: usada una vez que el paciente YA tiene un psicólogo asignado.
     Calcula disponibilidad real aunque el psicólogo cierre nuevas admisiones;
@@ -400,7 +437,7 @@ def obtener_slots_psicologo(psicologo, fecha_inicio, fecha_fin, tipo_sesion="ind
     if not getattr(psicologo, campo_capacidad, False):
         return {}
 
-    if not psicologo_atiende_modalidad(psicologo, modalidad):
+    if not psicologo_atiende_modalidad(psicologo, modalidad, paciente=paciente):
         return {}
 
     esquemas_rango = getattr(psicologo, '_esquemas_rango', None)
@@ -519,12 +556,12 @@ def obtener_slots_psicologo(psicologo, fecha_inicio, fecha_fin, tipo_sesion="ind
 
     return slots_por_fecha
 
-def obtener_slots_psicologo_para_dia(psicologo, fecha, tipo_sesion="individual", modalidad="En línea"):
+def obtener_slots_psicologo_para_dia(psicologo, fecha, tipo_sesion="individual", modalidad="En línea", paciente=None):
     """
     Función auxiliar para consultar los espacios de un solo día.
     Llama a la función principal que ya actualizamos con el nuevo modelo.
     """
-    slots_map = obtener_slots_psicologo(psicologo, fecha, fecha, tipo_sesion=tipo_sesion, modalidad=modalidad)
+    slots_map = obtener_slots_psicologo(psicologo, fecha, fecha, tipo_sesion=tipo_sesion, modalidad=modalidad, paciente=paciente)
     return slots_map.get(fecha.strftime('%Y-%m-%d'), [])
 
 
@@ -1358,12 +1395,13 @@ def panel_generico(request):
     psicologo_inicial = _psicologo_asignado_servicio(request.user, tipo_sesion_inicial)
     if psicologo_inicial and (
             not getattr(psicologo_inicial, CAPACIDAD_POR_TIPO_SESION[tipo_sesion_inicial], False)
-            or not psicologo_atiende_modalidad(psicologo_inicial, 'En línea')):
+            or (not _virtual_presencial_restringida(psicologo_inicial, 'En línea')
+                and not psicologo_atiende_modalidad(psicologo_inicial, 'En línea', paciente=request.user))):
         psicologo_inicial = None
 
     if psicologo_inicial:
         # Paciente con psicólogo asignado a esta modalidad: solo sus horarios
-        dias_json = obtener_slots_psicologo(psicologo_inicial, hoy, fecha_limite, tipo_sesion=tipo_sesion_inicial)
+        dias_json = obtener_slots_psicologo(psicologo_inicial, hoy, fecha_limite, tipo_sesion=tipo_sesion_inicial, paciente=request.user)
     else:
         # Paciente sin psicólogo asignado a esta modalidad: slots globales de especialistas
         dias_json = obtener_slots_globales(hoy, fecha_limite, preferencia, tipo_sesion=tipo_sesion_inicial)
@@ -1433,6 +1471,10 @@ def panel_generico(request):
 
     return render(request, plantilla_panel, {
         'dias_disponibles_json': dias_json,
+        'virtual_restringida': (_virtual_presencial_restringida(psicologo_inicial, 'En línea')
+                               and not psicologo_atiende_modalidad(psicologo_inicial, 'En línea', paciente=request.user)),
+        'atiende_presencial': bool(psicologo_inicial and psicologo_inicial.modalidad_atencion in ('Presencial', 'Mixto')),
+        'mensaje_virtual_restringida': MENSAJE_VIRTUAL_SOLO_TRAS_PRESENCIAL,
         'dias_disponibles': dias_html,
         'cita_proxima': cita_proxima,
         'otras_citas_proximas': citas_proximas[1:] + otras_organizaciones,
@@ -1634,7 +1676,8 @@ def obtener_disponibilidad_por_tipo_ajax(request):
     # 🏢 Regla de negocio presencial: paciente con sesiones en línea previas
     # no agenda presencial desde el wizard (mensaje amigable, sin bloquearlo
     # por su historial para la modalidad en línea).
-    if modalidad == 'Presencial' and Cita.objects.filter(paciente=request.user, modalidad='En línea').exists():
+    if (modalidad == 'Presencial' and Cita.objects.filter(paciente=request.user, modalidad='En línea').exists()
+            and not _tiene_presencial_previa(request.user)):
         return JsonResponse({
             'status': 'error',
             'bloqueado_presencial': True,
@@ -1664,13 +1707,19 @@ def obtener_disponibilidad_por_tipo_ajax(request):
     # Buscamos si tiene psicólogo asignado específicamente en TratamientoPaciente para esta modalidad
     psicologo_asignado = _psicologo_asignado_servicio(request.user, tipo_sesion)
 
-    if psicologo_asignado and getattr(psicologo_asignado, campo_capacidad, False) and psicologo_atiende_modalidad(psicologo_asignado, modalidad):
-        dias_json = obtener_slots_psicologo(psicologo_asignado, hoy, fecha_limite, tipo_sesion=tipo_sesion, modalidad=modalidad)
+    if (_virtual_presencial_restringida(psicologo_asignado, modalidad)
+            and not psicologo_atiende_modalidad(psicologo_asignado, modalidad, paciente=request.user)):
+        return JsonResponse({'status': 'error', 'dias': {}, 'virtual_habilitada': False,
+                             'message': MENSAJE_VIRTUAL_SOLO_TRAS_PRESENCIAL})
+
+    if psicologo_asignado and getattr(psicologo_asignado, campo_capacidad, False) and psicologo_atiende_modalidad(psicologo_asignado, modalidad, paciente=request.user):
+        dias_json = obtener_slots_psicologo(psicologo_asignado, hoy, fecha_limite, tipo_sesion=tipo_sesion, modalidad=modalidad, paciente=request.user)
         doc_nombre = psicologo_asignado.usuario.first_name if psicologo_asignado.usuario else ""
         return JsonResponse({
             'status': 'success',
             'dias': dias_json,
             'psicologo_asignado': doc_nombre,
+            'virtual_habilitada': psicologo_atiende_modalidad(psicologo_asignado, 'En línea', paciente=request.user),
             'es_asignado': True
         })
     else:
@@ -1682,6 +1731,7 @@ def obtener_disponibilidad_por_tipo_ajax(request):
             'status': 'success',
             'dias': dias_json,
             'psicologo_asignado': None,
+            'virtual_habilitada': True,
             'es_asignado': False
         })
 
@@ -1842,7 +1892,7 @@ def _guardar_cita_paciente(request, reservar_pago=False, paciente_recepcion=None
             # línea no agendar presencial desde el wizard.
             if not es_recepcion and modalidad_str == 'Presencial' and Cita.objects.filter(
                 paciente=paciente, modalidad='En línea'
-            ).exists():
+            ).exists() and not _tiene_presencial_previa(paciente):
                 return JsonResponse({'status': 'error', 'message': MENSAJE_PRESENCIAL_CONTACTA})
 
             # 🔥 MULTISERVICIO: Buscamos si ya tiene psicólogo asignado a este servicio específico
@@ -1857,7 +1907,9 @@ def _guardar_cita_paciente(request, reservar_pago=False, paciente_recepcion=None
             # en línea el resultado es idéntico al histórico). Además, en
             # presencial no se asume que "su" psicólogo atiende presencial:
             # si no lo hace, cae al pool compatible y se reasigna el especialista.
-            if psicologo and not psicologo_atiende_modalidad(psicologo, modalidad_str):
+            if psicologo and not psicologo_atiende_modalidad(psicologo, modalidad_str, paciente=paciente):
+                if _virtual_presencial_restringida(psicologo, modalidad_str):
+                    return JsonResponse({'status': 'error', 'message': MENSAJE_VIRTUAL_SOLO_TRAS_PRESENCIAL}, status=409)
                 if modalidad_str == 'Presencial' and not es_recepcion:
                     return JsonResponse({'status': 'error', 'message': 'Contacta a tu psicólogo para agendar una cita presencial'})
                 psicologo = None
@@ -1894,7 +1946,7 @@ def _guardar_cita_paciente(request, reservar_pago=False, paciente_recepcion=None
                 # 1. Filtramos doctores que tengan el slot válido
                 doctores_con_slot_valido = []
                 for psicologo_temp in psicologos_candidatos:
-                    slots_del_dia = obtener_slots_psicologo_para_dia(psicologo_temp, fecha_obj, tipo_sesion=tipo_sesion_str, modalidad=modalidad_str)
+                    slots_del_dia = obtener_slots_psicologo_para_dia(psicologo_temp, fecha_obj, tipo_sesion=tipo_sesion_str, modalidad=modalidad_str, paciente=paciente)
                     if hora_obj.strftime('%I:%M %p') in slots_del_dia:
                         doctores_con_slot_valido.append(psicologo_temp.id)
 
@@ -1921,7 +1973,7 @@ def _guardar_cita_paciente(request, reservar_pago=False, paciente_recepcion=None
             if es_nueva_asignacion and not psicologo.esta_activo:
                 return JsonResponse({'status': 'error', 'message': 'Este terapeuta ya no acepta pacientes nuevos. Elige otro horario.'}, status=409)
             if (hora_obj.strftime('%I:%M %p') not in obtener_slots_psicologo_para_dia(
-                    psicologo, fecha_obj, tipo_sesion=tipo_sesion_str, modalidad=modalidad_str)
+                    psicologo, fecha_obj, tipo_sesion=tipo_sesion_str, modalidad=modalidad_str, paciente=paciente)
                     or Cita.objects.filter(psicologo=psicologo, fecha=fecha_obj, hora=hora_obj).exists()):
                 return JsonResponse({'status': 'error', 'message': 'Ese horario ya no está disponible. Elige otro.'}, status=409)
 
@@ -2429,12 +2481,14 @@ def subir_comprobante_transferencia_ajax(request):
         if psicologo and not getattr(psicologo, campo_capacidad, False):
             psicologo = None
 
-        if psicologo and not psicologo_atiende_modalidad(psicologo, modalidad_str):
+        if psicologo and not psicologo_atiende_modalidad(psicologo, modalidad_str, paciente=usuario):
+            if _virtual_presencial_restringida(psicologo, modalidad_str):
+                return JsonResponse({'status': 'error', 'message': MENSAJE_VIRTUAL_SOLO_TRAS_PRESENCIAL}, status=409)
             psicologo = None
 
         # Asignación automática idéntica a guardar_cita_ajax (mismo orden y desempate aleatorio)
         if psicologo and hora_obj.strftime('%I:%M %p') not in obtener_slots_psicologo_para_dia(
-            psicologo, fecha_obj, tipo_sesion=tipo_sesion_str, modalidad=modalidad_str,
+            psicologo, fecha_obj, tipo_sesion=tipo_sesion_str, modalidad=modalidad_str, paciente=usuario,
         ):
             return JsonResponse({'status': 'error', 'message': 'Ese horario ya no está disponible. Elige otro.'}, status=409)
 
@@ -2465,7 +2519,7 @@ def subir_comprobante_transferencia_ajax(request):
             doctores_con_slot_valido = []
             for psicologo_temp in psicologos_candidatos:
                 slots_del_dia = obtener_slots_psicologo_para_dia(
-                    psicologo_temp, fecha_obj, tipo_sesion=tipo_sesion_str, modalidad=modalidad_str
+                    psicologo_temp, fecha_obj, tipo_sesion=tipo_sesion_str, modalidad=modalidad_str, paciente=usuario,
                 )
                 if hora_obj.strftime('%I:%M %p') in slots_del_dia:
                     doctores_con_slot_valido.append(psicologo_temp.id)
@@ -2505,6 +2559,13 @@ def subir_comprobante_transferencia_ajax(request):
 
         # Google Meet (degradación silenciosa igual que guardar_cita_ajax: si falla Google, la cita existe sin Meet)
         # 🪑 Presencial NO genera Meet (igual que todas las citas presenciales).
+        psicologo = PerfilPsicologo.objects.select_for_update().get(pk=psicologo.pk)
+        if not psicologo_atiende_modalidad(psicologo, modalidad_str, paciente=usuario):
+            return JsonResponse({'status': 'error', 'message': MENSAJE_VIRTUAL_SOLO_TRAS_PRESENCIAL}, status=409)
+        if hora_obj.strftime('%I:%M %p') not in obtener_slots_psicologo_para_dia(
+                psicologo, fecha_obj, tipo_sesion_str, modalidad_str, paciente=usuario):
+            return JsonResponse({'status': 'error', 'message': 'Ese horario ya no está disponible. Elige otro.'}, status=409)
+
         link_final = None
         id_google = None
         if modalidad_str == 'En línea':
@@ -2640,6 +2701,10 @@ def reagendar_cita_ajax(request):
     if not cita.psicologo:
         return JsonResponse({'status': 'error', 'message': 'Esta cita no tiene terapeuta asignado.'})
 
+    if (_virtual_presencial_restringida(cita.psicologo, cita.modalidad)
+            and not psicologo_atiende_modalidad(cita.psicologo, cita.modalidad, paciente=cita.paciente)):
+        return JsonResponse({'status': 'error', 'message': MENSAJE_VIRTUAL_SOLO_TRAS_PRESENCIAL}, status=409)
+
     nuevo_inicio = timezone.make_aware(datetime.combine(nueva_fecha, nueva_hora))
     if nuevo_inicio < ahora + timedelta(hours=2) or nueva_fecha > ahora.date() + timedelta(days=90):
         return JsonResponse({'status': 'error', 'message': 'Elige un horario con dos horas de anticipación dentro de los próximos 90 días.'})
@@ -2651,7 +2716,7 @@ def reagendar_cita_ajax(request):
     # horarios de psicólogos Presencial/Mixto; una En línea queda igual que siempre.
     slots_del_dia = obtener_slots_psicologo_para_dia(
         cita.psicologo, nueva_fecha, tipo_sesion=cita.tipo_sesion,
-        modalidad=cita.modalidad or 'En línea'
+        modalidad=cita.modalidad or 'En línea', paciente=cita.paciente,
     )
     if nueva_hora.strftime('%I:%M %p') not in slots_del_dia:
         return JsonResponse({'status': 'error', 'message': 'Ese horario ya no está disponible.'})
@@ -4733,6 +4798,8 @@ def admin_buscar_pacientes_ajax(request):
         'email': p.usuario.email if p.usuario else '',
         'psicologo_asignado': p.psicologo_asignado.usuario.first_name if p.psicologo_asignado else None,
         'es_tectum': getattr(p, 'es_tectum', False),
+        'es_beneficios': p.es_beneficios,
+        'modalidad_predeterminada': _modalidad_previa(p.usuario),
     } for p in pacientes if p.usuario]
 
     return JsonResponse({'status': 'success', 'resultados': resultados})
@@ -4793,14 +4860,23 @@ def admin_disponibilidad_ajax(request):
     # 🔥 MULTISERVICIO: Buscamos si ya tiene psicólogo para esta modalidad en TratamientoPaciente
     psicologo_asignado = _psicologo_asignado_servicio(paciente, tipo_sesion)
 
-    if psicologo_asignado and getattr(psicologo_asignado, campo_capacidad, False) and psicologo_atiende_modalidad(psicologo_asignado, modalidad):
-        dias_json = obtener_slots_psicologo(psicologo_asignado, hoy, fecha_limite, tipo_sesion=tipo_sesion, modalidad=modalidad)
+    if (_virtual_presencial_restringida(psicologo_asignado, modalidad)
+            and not psicologo_atiende_modalidad(psicologo_asignado, modalidad, paciente=paciente)):
+        return JsonResponse({'status': 'error', 'dias': {}, 'virtual_habilitada': False,
+                             'modalidad_predeterminada': _modalidad_previa(paciente, tipo_sesion),
+                             'message': MENSAJE_VIRTUAL_SOLO_TRAS_PRESENCIAL})
+
+    if psicologo_asignado and getattr(psicologo_asignado, campo_capacidad, False) and psicologo_atiende_modalidad(psicologo_asignado, modalidad, paciente=paciente):
+        dias_json = obtener_slots_psicologo(psicologo_asignado, hoy, fecha_limite, tipo_sesion=tipo_sesion, modalidad=modalidad, paciente=paciente)
     else:
         dias_json = obtener_slots_globales(hoy, fecha_limite, preferencia, tipo_sesion=tipo_sesion, modalidad=modalidad)
 
     return JsonResponse({
         'status': 'success',
         'dias': dias_json,
+        'modalidad_predeterminada': _modalidad_previa(paciente, tipo_sesion),
+        'virtual_habilitada': (psicologo_atiende_modalidad(psicologo_asignado, 'En línea', paciente=paciente)
+                               if psicologo_asignado else True),
         'psicologo_asignado': psicologo_asignado.usuario.first_name if psicologo_asignado else None,
     })
 
@@ -4876,12 +4952,14 @@ def admin_guardar_cita_ajax(request, recepcion=False):
         # idénticas a las del agendamiento del paciente): en presencial solo
         # psicólogos Presencial o Mixto. Si no es compatible, reasignamos
         # desde el pool habilitado para esa modalidad.
-        if psicologo and not psicologo_atiende_modalidad(psicologo, modalidad_str):
+        if psicologo and not psicologo_atiende_modalidad(psicologo, modalidad_str, paciente=paciente_user):
+            if _virtual_presencial_restringida(psicologo, modalidad_str):
+                return JsonResponse({'status': 'error', 'message': MENSAJE_VIRTUAL_SOLO_TRAS_PRESENCIAL}, status=409)
             psicologo = None
 
         # Asignación automática (misma lógica que guardar_cita_ajax)
         if psicologo and hora_obj.strftime('%I:%M %p') not in obtener_slots_psicologo_para_dia(
-            psicologo, fecha_obj, tipo_sesion=tipo_sesion_str, modalidad=modalidad_str,
+            psicologo, fecha_obj, tipo_sesion=tipo_sesion_str, modalidad=modalidad_str, paciente=paciente_user,
         ):
             return JsonResponse({'status': 'error', 'message': 'Ese horario ya no está disponible. Elige otro.'}, status=409)
 
@@ -4912,7 +4990,7 @@ def admin_guardar_cita_ajax(request, recepcion=False):
 
             doctores_con_slot_valido = []
             for psicologo_temp in psicologos_candidatos:
-                slots_del_dia = obtener_slots_psicologo_para_dia(psicologo_temp, fecha_obj, tipo_sesion=tipo_sesion_str, modalidad=modalidad_str)
+                slots_del_dia = obtener_slots_psicologo_para_dia(psicologo_temp, fecha_obj, tipo_sesion=tipo_sesion_str, modalidad=modalidad_str, paciente=paciente_user)
                 if hora_obj.strftime('%I:%M %p') in slots_del_dia:
                     doctores_con_slot_valido.append(psicologo_temp.id)
 
@@ -4951,6 +5029,13 @@ def admin_guardar_cita_ajax(request, recepcion=False):
                 return JsonResponse({'status': 'error', 'message': 'El terapeuta ya tiene una cita en ese horario. Elige otro.'})
 
         # Google Meet (misma función que ya usa todo el sistema)
+        psicologo = PerfilPsicologo.objects.select_for_update().get(pk=psicologo.pk)
+        if not psicologo_atiende_modalidad(psicologo, modalidad_str, paciente=paciente_user):
+            return JsonResponse({'status': 'error', 'message': MENSAJE_VIRTUAL_SOLO_TRAS_PRESENCIAL}, status=409)
+        if hora_obj.strftime('%I:%M %p') not in obtener_slots_psicologo_para_dia(
+                psicologo, fecha_obj, tipo_sesion_str, modalidad_str, paciente=paciente_user):
+            return JsonResponse({'status': 'error', 'message': 'Ese horario ya no está disponible. Elige otro.'}, status=409)
+
         link_final = None
         id_google = None
         if modalidad_str == 'En línea':

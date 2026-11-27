@@ -207,17 +207,32 @@
                 </div>
 
                 <div class="hpa-card hpa-disabled" id="hpa-card-convenio">
-                    <h2>2. Convenio / Plataforma</h2>
-                    <div style="display: flex; gap: 12px; margin-top: 10px;">
-                        <label id="lbl-convenio-hope" style="flex: 1; display: flex; align-items: center; gap: 10px; background: #fdf2f8; border: 2px solid #5a3fa3; padding: 12px 16px; border-radius: 14px; cursor: pointer; font-weight: 700;">
-                            <input type="radio" name="convenio_tipo" value="hope" checked onchange="cambiarConvenioAdmin('hope')">
-                            <span>Espacio HOPE (General)</span>
-                        </label>
-                        <label id="lbl-convenio-tectum" style="flex: 1; display: flex; align-items: center; gap: 10px; background: #ffffff; border: 2px solid #cbd5e1; padding: 12px 16px; border-radius: 14px; cursor: pointer; font-weight: 700;">
-                            <input type="radio" name="convenio_tipo" value="tectum" onchange="cambiarConvenioAdmin('tectum')">
-                            <span>TECTUM In-House</span>
-                        </label>
+                    <h2>2. Características especiales del consultante</h2>
+                    <div id="hpa-card-modalidad">
+                    <h3>Tipo de paciente</h3>
+                    <div class="hpa-modalidad-row">
+                        <div class="hpa-modalidad-btn activo" data-modalidad="En línea">
+                            <input type="radio" name="atencion" value="En línea" checked> Atención virtual
+                        </div>
+                        <div class="hpa-modalidad-btn" data-modalidad="Presencial">
+                            <input type="radio" name="atencion" value="Presencial"> Atención presencial
+                        </div>
                     </div>
+                    <div class="hpa-meet-note" id="hpa-note-enlinea">
+                        <i class="fas fa-circle-check"></i>
+                        <span>Si es <strong>En línea</strong>, al confirmar se genera el Google Meet automáticamente y se le envía por correo al paciente.</span>
+                    </div>
+                    <div class="hpa-meet-note" id="hpa-note-presencial" style="display: none; background: #f3e8ff; color: #5a3fa3;">
+                        <i class="fas fa-qrcode"></i>
+                        <span>Si es <strong>Presencial</strong>, NO se genera Meet: al confirmar se le envía al paciente su <strong>pase de acceso (PDF con QR)</strong> para Clínica HOPE (Lago Margarita 47, CDMX).</span>
+                    </div>
+                </div>
+                    <h3>Programas institucionales</h3>
+                    <div style="display:flex;flex-wrap:wrap;gap:12px">
+                        <label><input type="checkbox" name="programa" value="tectum" onchange="cambiarConvenioAdmin(this.checked ? 'tectum' : 'hope')"> Tectum In-House</label>
+                        <label><input type="checkbox" name="programa" value="beneficios" onchange="cambiarConvenioAdmin(this.checked ? 'beneficios' : 'hope')"> Tectum Beneficios</label>
+                    </div>
+                    <p>Sin programa seleccionado: Espacio HOPE.</p>
                 </div>
 
                 <div class="hpa-card hpa-disabled" id="hpa-card-tipo">
@@ -246,25 +261,7 @@
                     <div class="hpa-aviso" id="hpa-aviso-modalidad"></div>
                 </div>
 
-                <div class="hpa-card hpa-disabled" id="hpa-card-modalidad">
-                    <h2>4. ¿En línea o presencial?</h2>
-                    <div class="hpa-modalidad-row">
-                        <div class="hpa-modalidad-btn activo" data-modalidad="En línea">
-                            <i class="fas fa-video"></i>En línea
-                        </div>
-                        <div class="hpa-modalidad-btn" data-modalidad="Presencial">
-                            <i class="fas fa-door-open"></i>Presencial
-                        </div>
-                    </div>
-                    <div class="hpa-meet-note" id="hpa-note-enlinea">
-                        <i class="fas fa-circle-check"></i>
-                        <span>Si es <strong>En línea</strong>, al confirmar se genera el Google Meet automáticamente y se le envía por correo al paciente.</span>
-                    </div>
-                    <div class="hpa-meet-note" id="hpa-note-presencial" style="display: none; background: #f3e8ff; color: #5a3fa3;">
-                        <i class="fas fa-qrcode"></i>
-                        <span>Si es <strong>Presencial</strong>, NO se genera Meet: al confirmar se le envía al paciente su <strong>pase de acceso (PDF con QR)</strong> para Clínica HOPE (Lago Margarita 47, CDMX).</span>
-                    </div>
-                </div>
+
 
                 <div class="hpa-card hpa-disabled" id="hpa-card-calendario">
                     <h2>5. Elige día y hora</h2>
@@ -357,49 +354,37 @@ document.addEventListener('DOMContentLoaded', function () {
     const MES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
 
     let esTectumSeleccionado = false;
-    window.contextoPlanMensualAdmin = () => ({pacienteId, nombre: document.getElementById('hpa-paciente-nombre').textContent, tipoSesion, modalidad, integrantesFamilia, esTectum: esTectumSeleccionado});
+    let esBeneficiosSeleccionado = false;
+    let disponibilidadVersion = 0;
+    let precargarModalidad = false;
+    window.contextoPlanMensualAdmin = () => ({pacienteId, nombre: document.getElementById('hpa-paciente-nombre').textContent, tipoSesion, modalidad, integrantesFamilia, esTectum: esTectumSeleccionado, esBeneficios: esBeneficiosSeleccionado});
 
     window.cambiarConvenioAdmin = function(tipo) {
-        const radioHope = document.querySelector('input[name="convenio_tipo"][value="hope"]');
-        const radioTectum = document.querySelector('input[name="convenio_tipo"][value="tectum"]');
-        const lblHope = document.getElementById('lbl-convenio-hope');
-        const lblTectum = document.getElementById('lbl-convenio-tectum');
-        const resumenConvenio = document.getElementById('hpa-resumen-convenio');
-
-        if (tipo === 'tectum') {
-            esTectumSeleccionado = true;
-            if (radioTectum) radioTectum.checked = true;
-            if (lblTectum) {
-                lblTectum.style.background = '#e0f2fe';
-                lblTectum.style.borderColor = '#0284c7';
-                lblTectum.style.color = '#0369a1';
-            }
-            if (lblHope) {
-                lblHope.style.background = '#ffffff';
-                lblHope.style.borderColor = '#cbd5e1';
-                lblHope.style.color = '#1a1035';
-            }
-            if (resumenConvenio) {
-                resumenConvenio.innerHTML = '<span style="color:#0284c7;">TECTUM In-House</span>';
-            }
-        } else {
-            esTectumSeleccionado = false;
-            if (radioHope) radioHope.checked = true;
-            if (lblHope) {
-                lblHope.style.background = '#fdf2f8';
-                lblHope.style.borderColor = '#5a3fa3';
-                lblHope.style.color = '#5a3fa3';
-            }
-            if (lblTectum) {
-                lblTectum.style.background = '#ffffff';
-                lblTectum.style.borderColor = '#cbd5e1';
-                lblTectum.style.color = '#1a1035';
-            }
-            if (resumenConvenio) {
-                resumenConvenio.innerHTML = '<span style="color:#5a3fa3;">Espacio HOPE (General)</span>';
-            }
-        }
+        esTectumSeleccionado = tipo === 'tectum';
+        esBeneficiosSeleccionado = tipo === 'beneficios';
+        document.querySelectorAll('input[name="programa"]').forEach(input => {
+            input.checked = input.value === tipo;
+        });
+        document.getElementById('hpa-resumen-convenio').textContent =
+            esTectumSeleccionado ? 'TECTUM In-House' :
+            esBeneficiosSeleccionado ? 'TECTUM Beneficios' : 'Espacio HOPE (General)';
+        fetchPrecio();
     };
+
+    function aplicarModalidad(valor) {
+        modalidad = valor;
+        document.querySelectorAll('.hpa-modalidad-btn').forEach(btn => {
+            const activa = btn.dataset.modalidad === valor;
+            btn.classList.toggle('activo', activa);
+            btn.querySelector('input').checked = activa;
+        });
+        document.getElementById('hpa-note-enlinea').style.display = valor === 'Presencial' ? 'none' : 'flex';
+        document.getElementById('hpa-note-presencial').style.display = valor === 'Presencial' ? 'flex' : 'none';
+        fechaSeleccionada = null;
+        horaSeleccionada = null;
+        horasGrid.innerHTML = '';
+        actualizarResumen();
+    }
 
     function formatoMoneda(valor) {
         const n = Number(valor || 0);
@@ -464,11 +449,9 @@ document.addEventListener('DOMContentLoaded', function () {
         resultadosBox.classList.remove('activo');
         buscarInput.value = '';
 
-        if (p.es_tectum) {
-            cambiarConvenioAdmin('tectum');
-        } else {
-            cambiarConvenioAdmin('hope');
-        }
+        cambiarConvenioAdmin(p.es_beneficios ? 'beneficios' : p.es_tectum ? 'tectum' : 'hope');
+        aplicarModalidad(p.modalidad_predeterminada || 'En línea');
+        precargarModalidad = true;
 
         habilitarSiguientesPasos();
         fetchDisponibilidad();
@@ -477,6 +460,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
     document.getElementById('hpa-cambiar-paciente').addEventListener('click', function () {
         pacienteId = null;
+        disponibilidadVersion++;
+        precargarModalidad = false;
+        diasDisponibles = {};
+        aplicarModalidad('En línea');
         pacienteElegidoBox.classList.remove('activo');
         cardsDependientes.forEach(function (id) { document.getElementById(id).classList.add('hpa-disabled'); });
         diasScroll.innerHTML = '<div class="hpa-vacio">Selecciona primero un paciente.</div>';
@@ -571,59 +558,43 @@ document.addEventListener('DOMContentLoaded', function () {
     // ------------------------------------------------------------------
     function fetchDisponibilidad() {
         if (!pacienteId) return;
-        diasScroll.innerHTML = '<div class="hpa-vacio">Buscando horarios…</div>';
+        const version = ++disponibilidadVersion;
+        fechaSeleccionada = null;
+        horaSeleccionada = null;
+        diasDisponibles = {};
+        horasGrid.innerHTML = '';
+        actualizarResumen();
+        diasScroll.textContent = 'Buscando horarios…';
         avisoBox.classList.remove('activo');
-
-        const params = new URLSearchParams({ paciente_id: pacienteId, tipo_sesion: tipoSesion, modalidad: modalidad });
-        fetch(URL_DISPONIBILIDAD + '?' + params.toString())
-            .then(function (r) {
-                // 🔎 DEBUG: si el server responde con error HTTP (500, 400, etc.)
-                // igual intentamos leer el body como JSON, pero dejamos rastro
-                // del status en consola para saber qué truena.
-                console.log('[DEBUG disponibilidad] HTTP status:', r.status);
-                return r.json().catch(function (parseErr) {
-                    console.error('[DEBUG disponibilidad] La respuesta no es JSON válido:', parseErr);
-                    throw new Error('Respuesta no-JSON del servidor (status ' + r.status + '). Revisa la consola.');
-                });
-            })
-            .then(function (data) {
-                console.log('[DEBUG disponibilidad] Payload recibido:', data);
-                if (data.status === 'success') {
-                    diasDisponibles = data.dias || {};
-                    fechaSeleccionada = null;
-                    horaSeleccionada = null;
-                    if (data.aviso) {
-                        avisoBox.textContent = data.aviso;
-                        avisoBox.classList.add('activo');
+        const params = new URLSearchParams({paciente_id: pacienteId, tipo_sesion: tipoSesion, modalidad});
+        fetch(URL_DISPONIBILIDAD + '?' + params)
+            .then(r => r.json())
+            .then(data => {
+                if (version !== disponibilidadVersion) return;
+                if (precargarModalidad && data.modalidad_predeterminada) {
+                    precargarModalidad = false;
+                    if (modalidad !== data.modalidad_predeterminada) {
+                        aplicarModalidad(data.modalidad_predeterminada);
+                        fetchDisponibilidad();
+                        return;
                     }
-                    if (!Object.keys(diasDisponibles).length) {
-                        // 🔥 DEBUG: no truena, pero no hay ni un solo día con horarios.
-                        // Mandamos alert con el detalle para poder copiarlo/mandarlo.
-                        alert(
-                            'DEBUG - No hay horarios:\n' +
-                            'tipo_sesion: ' + tipoSesion + '\n' +
-                            'modalidad: ' + modalidad + '\n' +
-                            'paciente_id: ' + pacienteId + '\n' +
-                            'aviso del server: ' + (data.aviso || '(sin aviso)') + '\n' +
-                            'payload completo en la consola (F12 > Console)'
-                        );
-                    }
-                    renderDias();
-                    actualizarResumen();
-                } else {
-                    // 🔥 DEBUG: el server respondió pero con status distinto a 'success'
-                    alert(
-                        'DEBUG - Error del servidor al pedir disponibilidad:\n' +
-                        (data.message || '(el servidor no mandó "message")') + '\n\n' +
-                        'Payload completo:\n' + JSON.stringify(data, null, 2)
-                    );
-                    diasScroll.innerHTML = '<div class="hpa-vacio">' + (data.message || 'No pudimos cargar la disponibilidad.') + '</div>';
                 }
+                if (data.status !== 'success') {
+                    diasScroll.textContent = data.message || 'No pudimos cargar la disponibilidad.';
+                    avisoBox.textContent = data.message || '';
+                    avisoBox.classList.add('activo');
+                    return;
+                }
+                diasDisponibles = data.dias || {};
+                if (data.aviso) {
+                    avisoBox.textContent = data.aviso;
+                    avisoBox.classList.add('activo');
+                }
+                renderDias();
+                actualizarResumen();
             })
-            .catch(function (err) {
-                console.error('[DEBUG disponibilidad] Excepción en fetch:', err);
-                alert('DEBUG - Error de conexión / excepción JS:\n' + (err && err.message ? err.message : err));
-                diasScroll.innerHTML = '<div class="hpa-vacio">Error de conexión. Intenta de nuevo.</div>';
+            .catch(() => {
+                if (version === disponibilidadVersion) diasScroll.textContent = 'Error de conexión. Intenta de nuevo.';
             });
     }
 
@@ -651,6 +622,7 @@ document.addEventListener('DOMContentLoaded', function () {
             document.querySelectorAll('.hpa-tipo-btn').forEach(function (b) { b.classList.remove('activo'); });
             btn.classList.add('activo');
             tipoSesion = btn.dataset.tipo;
+            precargarModalidad = true;
 
             document.getElementById('hpa-familiar-box').classList.toggle('activo', tipoSesion === 'familiar');
 
@@ -679,25 +651,11 @@ document.addEventListener('DOMContentLoaded', function () {
     const noteEnLinea = document.getElementById('hpa-note-enlinea');
     const notePresencial = document.getElementById('hpa-note-presencial');
 
-    document.querySelectorAll('.hpa-modalidad-btn').forEach(function (btn) {
-        btn.addEventListener('click', function () {
-            document.querySelectorAll('.hpa-modalidad-btn').forEach(function (b) { b.classList.remove('activo'); });
-            btn.classList.add('activo');
-            modalidad = btn.dataset.modalidad;
-
-            // Nota contextual según modalidad (Meet vs pase presencial).
-            if (noteEnLinea && notePresencial) {
-                noteEnLinea.style.display = (modalidad === 'Presencial') ? 'none' : 'flex';
-                notePresencial.style.display = (modalidad === 'Presencial') ? 'flex' : 'none';
-            }
-
-            // La disponibilidad depende de la modalidad (solo psicólogos
-            // Presencial/Mixto ofertan slots presenciales): refetch.
-            if (pacienteId) {
-                fechaSeleccionada = null;
-                horaSeleccionada = null;
-                fetchDisponibilidad();
-            }
+    document.querySelectorAll('.hpa-modalidad-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            precargarModalidad = false;
+            aplicarModalidad(btn.dataset.modalidad);
+            fetchDisponibilidad();
         });
     });
 
@@ -720,6 +678,7 @@ document.addEventListener('DOMContentLoaded', function () {
         formData.append('modalidad', modalidad);
         formData.append('tipo_servicio', tipoSesion);
         formData.append('es_tectum', esTectumSeleccionado ? '1' : '0');
+        formData.append('es_beneficios', esBeneficiosSeleccionado ? '1' : '0');
         if (tipoSesion === 'familiar') {
             formData.append('integrantes_familia', integrantesFamilia);
         }

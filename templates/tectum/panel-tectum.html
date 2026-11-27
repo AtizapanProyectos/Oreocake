@@ -437,6 +437,7 @@ function mostrarErrorCita(mensaje) {
                 </div>
             </div>
 
+{% include 'includes/modalidad_hibrida.html' %}
             <!-- Modalidad: Online / Presencial -->
             <div style="text-align: center; margin-top: 15px;">
                 <span style="font-size: 0.85rem; text-transform: uppercase; font-weight: 800; letter-spacing: 1px; color: var(--text-muted);">
@@ -446,6 +447,11 @@ function mostrarErrorCita(mensaje) {
                     <div class="modalidad-pill activo" onclick="seleccionarModalidad('En línea', this)">
                         <i class="fas fa-video"></i> En línea (Google Meet)
                     </div>
+                    {% if atiende_presencial %}
+                    <div class="modalidad-pill" onclick="seleccionarModalidad('Presencial', this)">
+                        <i class="fas fa-door-open"></i> Presencial
+                    </div>
+                    {% endif %}
 
                 </div>
             </div>
@@ -922,6 +928,7 @@ function seleccionarModalidad(mod, el) {
     document.querySelectorAll('.modalidad-pill').forEach(p => p.classList.remove('activo'));
     if (el) el.classList.add('activo');
     document.getElementById('resumen-modalidad').innerText = mod;
+    refrescarDisponibilidad(servicioSeleccionado);
 }
 
 function seleccionarDia(fechaStr, el) {
@@ -977,10 +984,11 @@ function refrescarDisponibilidad(tipo) {
     fechaSeleccionada = null;
     horaSeleccionada = null;
     document.getElementById('slotsContainerTectum').replaceChildren();
-    fetch("{% url 'disponibilidad_por_tipo' %}?tipo_sesion=" + encodeURIComponent(tipo))
+    fetch("{% url 'disponibilidad_por_tipo' %}?tipo_sesion=" + encodeURIComponent(tipo) + '&modalidad=' + encodeURIComponent(modalidadSeleccionada))
         .then(r => r.json())
         .then(data => {
             if (revision !== revisionDisponibilidad) return;
+            if (typeof data.virtual_habilitada === 'boolean') window.actualizarOpcionVirtual(data.virtual_habilitada);
             if (data.status !== 'success') mostrarErrorCita(data.message || 'No pudimos consultar horarios.');
             if (data.status === 'success') {
                 const carousel = document.getElementById('dateCarouselTectum');

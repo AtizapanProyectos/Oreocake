@@ -1,0 +1,20 @@
+<script>
+// Keep the virtual option aligned with the server's patient/therapist eligibility.
+window.actualizarOpcionVirtual = function(habilitada) {
+    document.querySelectorAll('input[name="modalidad_opcion"][value="En línea"]').forEach(input => {
+        input.closest('label').hidden = !habilitada;
+        input.closest('label').style.display = habilitada ? '' : 'none';
+    });
+    document.querySelectorAll('.modalidad-pill').forEach(pill => {
+        if ((pill.getAttribute('onclick') || '').includes("'En línea'")) {
+            pill.hidden = !habilitada;
+            pill.style.display = habilitada ? '' : 'none';
+        }
+    });
+    document.getElementById('aviso-modalidad-hibrida').hidden = habilitada;
+};
+document.addEventListener('DOMContentLoaded', () => {
+    window.actualizarOpcionVirtual({{ virtual_restringida|yesno:'false,true' }});
+});
+</script>
+<p id="aviso-modalidad-hibrida" role="status" {% if not virtual_restringida %}hidden{% endif %}>{{ mensaje_virtual_restringida }}</p>
