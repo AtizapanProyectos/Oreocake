@@ -50,7 +50,7 @@ test('precarga modalidad y Beneficios, permite cambiar y limpia al cambiar pacie
     window.test.elegirPaciente({id: 1, nombre: 'Consultante', es_beneficios: true, modalidad_predeterminada: 'Presencial'});
     assert.equal(window.test.estado().modalidad, 'Presencial');
     assert.equal(programas[1].checked, true);
-    modalidades[0].listeners.click();
+    modalidades[0].listeners.change();
     assert.equal(window.test.estado().modalidad, 'En línea');
     window.cambiarConvenioAdmin('tectum');
     assert.equal(programas[0].checked, true);
