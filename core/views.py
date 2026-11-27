@@ -1469,7 +1469,7 @@ def panel_generico(request):
         cita__paciente=request.user, cita__estado='Pendiente', captura_iniciada=True,
     ).exclude(orden__startswith=PREFIJO_PAYPAL_MANUAL).values_list('orden', flat=True).first()
 
-    return render(request, plantilla_panel, {
+    respuesta = render(request, plantilla_panel, {
         'dias_disponibles_json': dias_json,
         'virtual_restringida': (_virtual_presencial_restringida(psicologo_inicial, 'En línea')
                                and not psicologo_atiende_modalidad(psicologo_inicial, 'En línea', paciente=request.user)),
@@ -1509,6 +1509,10 @@ def panel_generico(request):
             'min_integrantes_familiar': MIN_INTEGRANTES_FAMILIAR,
         }),
     })
+    if plantilla_panel == 'panel_generico.html':
+        # PayPal necesita mantener la comunicación con su ventana de checkout.
+        respuesta['Cross-Origin-Opener-Policy'] = 'same-origin-allow-popups'
+    return respuesta
 
 
 def inscribir_taller_ajax(request):
