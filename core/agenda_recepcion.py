@@ -177,7 +177,7 @@ def precargar(doctores, desde, hasta):
 @require_GET
 @ensure_csrf_cookie
 def panel(request):
-    return render(request, 'recepcion_agenda.html')
+    return render(request, 'recepcion_agenda.html', {'usuario_nombre': request.user.get_short_name() or request.user.username})
 
 
 @autorizado

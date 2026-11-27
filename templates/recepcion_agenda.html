@@ -1,11 +1,42 @@
 {% load static %}
-<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Administración de Agenda · HOPE</title><link rel="stylesheet" href="{% static 'css/recepcion_agenda.css' %}"></head>
-<body><header><a href="{% url 'panel_recepcion' %}">← Recepción</a><img src="{% static 'img/logo_hope_extendido.png' %}" alt="HOPE"><span>Administración de Agenda</span></header>
-<main id="agenda-app" data-datos="{% url 'recepcion_agenda_datos' %}" data-disponibilidad="{% url 'recepcion_agenda_disponibilidad' %}" data-candidatos="{% url 'recepcion_agenda_candidatos' %}" data-ejecutar="{% url 'recepcion_agenda_ejecutar' %}" data-historial="{% url 'recepcion_agenda_historial' %}">
-<div class="intro"><p class="eyebrow">Recepción · acceso administrativo</p><h1>Administración de Agenda</h1><p>Consulta las sesiones, encuentra horarios y gestiona cambios con historial. Horarios de Ciudad de México.</p></div>
-<form id="filtros" class="toolbar"><label>Fecha<input id="fecha" type="date" required></label><label>Vista<select id="vista"><option value="dia">Día</option><option value="semana">Semana</option></select></label><label>Psicólogo<select id="psicologo"><option value="">Todos</option></select></label><label>Modalidad<select id="modalidad"><option value="">Ambas</option><option>Presencial</option><option>En línea</option></select></label><label>Horarios libres de<select id="servicio"><option value="individual">Individual</option><option value="pareja">Pareja</option><option value="familiar">Familiar</option></select></label><label class="check"><input id="canceladas" type="checkbox"> Incluir canceladas</label><button>Consultar</button><button id="historial" type="button" class="secondary">Historial</button></form>
-<p id="estado" role="status" aria-live="polite"></p><div id="contenido"></div>
-<section class="help"><strong>Admisión de nuevos consultantes</strong><p>“Aceptando nuevos pacientes” solo controla nuevas asignaciones y transferencias. Los pacientes asignados conservan su terapeuta y pueden seguir agendando y reagendando. Las modalidades muestran la compatibilidad real de atención.</p></section>
-</main><dialog id="editor"><form id="form-editor"><div class="dialog-head"><h2 id="titulo-editor"></h2><button type="button" id="cerrar" class="secondary">Cerrar</button></div><div id="campos-editor"></div><p id="error-editor" role="alert"></p><div id="confirmacion-editor"><label>Motivo obligatorio<textarea id="motivo" minlength="5" maxlength="1000" required placeholder="Explica el cambio para el historial"></textarea></label><button id="guardar" type="submit">Revisar y confirmar cambio</button></div></form></dialog>
-<script src="{% static 'js/recepcion_agenda.js' %}" defer></script></body></html>
+<!doctype html><html lang="es"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Agenda por psicólogo · Recepción HOPE</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@500;700;800&family=Figtree:wght@500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{% static 'css/recepcion_identidad.css' %}"><link rel="stylesheet" href="{% static 'css/recepcion_agenda.css' %}">
+</head><body>
+{% include 'includes/recepcion_iconos.html' %}
+<header class="bar"><div class="wrap">
+<a href="{% url 'panel_recepcion' %}" aria-label="HOPE, inicio"><img src="{% static 'img/logo_hope_extendido.png' %}" alt="HOPE"></a>
+<nav class="tabs" aria-label="Recepción">
+<a class="tab" href="{% url 'panel_recepcion' %}"><svg class="ic" aria-hidden="true"><use href="#i-home"/></svg>Inicio</a>
+<a class="tab" href="{% url 'recepcion_agenda' %}" aria-current="page"><svg class="ic" aria-hidden="true"><use href="#i-cal"/></svg>Agenda</a>
+<a class="tab" href="{% url 'recepcion_agregar_paciente' %}"><svg class="ic" aria-hidden="true"><use href="#i-users"/></svg>Pacientes</a>
+</nav><div class="yo"><span>{{ usuario_nombre }}</span><div class="avatar" aria-hidden="true">{{ usuario_nombre|slice:':1' }}</div></div>
+</div></header>
+<section class="agenda-hero" aria-labelledby="agenda-titulo"><div class="wrap agenda-hero-content">
+<div><h1 id="agenda-titulo">Agenda de psicólogos</h1><p>Los consultantes de cada día, en un solo lugar. Organiza horarios y gestiona nuevas admisiones con tu equipo.</p></div>
+<div class="agenda-fecha"><svg class="ic" aria-hidden="true"><use href="#i-cal"/></svg><div><strong id="fecha-label">Hoy</strong><span>Hora de Ciudad de México</span></div></div>
+</div><svg class="agenda-ola" viewBox="0 0 1440 80" preserveAspectRatio="none" aria-hidden="true"><path d="M0 46C260 90 410 0 710 34S1120 86 1440 18V80H0Z" fill="#FFD62E"/><path d="M0 55C260 10 480 88 760 45S1160 12 1440 47V80H0Z" fill="#F7F3FE"/></svg></section>
+<main class="wrap agenda-main" id="agenda-app" data-datos="{% url 'recepcion_agenda_datos' %}" data-disponibilidad="{% url 'recepcion_agenda_disponibilidad' %}" data-candidatos="{% url 'recepcion_agenda_candidatos' %}" data-ejecutar="{% url 'recepcion_agenda_ejecutar' %}" data-historial="{% url 'recepcion_agenda_historial' %}">
+<form id="filtros" class="toolbar"><div class="filter-main">
+<div class="date-navigation"><button type="button" id="dia-anterior" class="icon-button" aria-label="Día anterior"><svg class="ic" aria-hidden="true"><use href="#i-left"/></svg></button><label>Fecha<input id="fecha" type="date" required></label><button type="button" id="dia-siguiente" class="icon-button" aria-label="Día siguiente"><svg class="ic" aria-hidden="true"><use href="#i-right"/></svg></button><button type="button" id="ir-hoy" class="secondary">Hoy</button></div>
+<label class="filter-doctor">Psicólogo<select id="psicologo"><option value="">Todo el equipo</option></select></label>
+<label>Modalidad<select id="modalidad"><option value="">Todas las consultas</option><option>Presencial</option><option>En línea</option></select></label>
+<button type="submit" class="filter-submit"><svg class="ic" aria-hidden="true"><use href="#i-cal"/></svg>Ver agendas</button>
+</div><details class="filter-extras"><summary>Más opciones</summary><div class="filter-extra-fields">
+<label>Vista<select id="vista"><option value="dia">Día</option><option value="semana">Semana</option></select></label>
+<label>Horarios libres de<select id="servicio"><option value="individual">Individual</option><option value="pareja">Pareja</option><option value="familiar">Familiar</option></select></label>
+<label class="check"><input id="canceladas" type="checkbox"> Incluir citas canceladas</label>
+<button type="button" id="historial" class="secondary"><svg class="ic" aria-hidden="true"><use href="#i-history"/></svg>Historial de cambios</button>
+</div></details></form>
+<div class="agenda-heading"><h2 id="titulo-listado">Las citas de hoy</h2><p id="estado" role="status" aria-live="polite" tabindex="-1"></p></div>
+<div id="contenido" class="doctors-grid" aria-busy="true"></div>
+<p class="admission-note"><svg class="ic" aria-hidden="true"><use href="#i-users"/></svg><span>Al desactivar <strong>“Aceptando nuevos pacientes”</strong>, los consultantes actuales conservan su terapeuta y pueden seguir agendando y reagendando.</span></p>
+</main>
+<dialog id="editor" aria-labelledby="titulo-editor"><form id="form-editor">
+<div class="dialog-head"><div class="dialog-symbol" aria-hidden="true"><svg class="ic"><use id="icono-editor" href="#i-cal"/></svg></div><h2 id="titulo-editor"></h2><button type="button" id="cerrar" class="icon-button" aria-label="Cerrar ventana"><svg class="ic" aria-hidden="true"><use href="#i-close"/></svg></button></div>
+<div class="dialog-body"><div id="campos-editor"></div><p id="error-editor" role="alert"></p></div>
+<div id="confirmacion-editor" class="dialog-footer"><label>Motivo del cambio<textarea id="motivo" minlength="5" maxlength="1000" required placeholder="Describe por qué se realiza este cambio"></textarea></label><p class="audit-note">El cambio quedará registrado con tu usuario y este motivo.</p><button id="guardar" type="submit">Guardar cambio</button></div>
+</form></dialog><script src="{% static 'js/recepcion_agenda.js' %}" defer></script></body></html>
